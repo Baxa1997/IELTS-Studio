@@ -37,16 +37,21 @@ const inputStyle: React.CSSProperties = {
  * cohesive: Google OAuth (client redirect) and email/password via the shared
  * `signIn` server action. No AI or business logic here — just the form.
  */
-export function SignInForm() {
+export function SignInForm({ next }: { next?: string | null }) {
   const [state, formAction, pending] = useActionState(signIn, initialState);
   const [googlePending, setGooglePending] = useState(false);
 
   async function signInWithGoogle() {
     setGooglePending(true);
     const supabase = createClient();
+    // Carry the post-login target through OAuth: the /auth/callback route forwards
+    // to `next` after exchanging the code.
+    const callback = next
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      : `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callback },
     });
     // On success the browser is redirected to Google; we only land here on error.
     if (error) setGooglePending(false);
@@ -91,6 +96,7 @@ export function SignInForm() {
 
       {/* email + password */}
       <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <div>
           <label htmlFor="email" style={labelStyle}>Email</label>
           <input id="email" name="email" type="email" autoComplete="email" required placeholder="you@email.com" className="lp-input" style={inputStyle} />

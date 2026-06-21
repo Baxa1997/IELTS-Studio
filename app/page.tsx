@@ -167,7 +167,7 @@ function SiteNav({ home }: { home: string | null }) {
             <Link href="/sign-in" className="lp-nav-cta-secondary" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, textDecoration: "none" }}>
               Sign in
             </Link>
-            <Link href="/grade" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
+            <Link href="/sign-in?next=/write" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
               Try it free
             </Link>
           </>
@@ -207,7 +207,7 @@ function Hero() {
             Watch the AI grade your essay the way an examiner does — criterion by criterion, mistake by mistake — then show the one fix that moves you up, and track every band as you improve.
           </p>
           <div style={{ display: "flex", gap: 14, marginTop: 30, flexWrap: "wrap" }}>
-            <Link href="/grade" style={BTN_PRIMARY}>
+            <Link href="/sign-in?next=/write" style={BTN_PRIMARY}>
               Grade an essay free
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14" />
@@ -693,10 +693,10 @@ function FinalCta() {
           Find out your real band in 60 seconds
         </h2>
         <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 17, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "14px auto 0", maxWidth: 520 }}>
-          Paste an essay, get a calibrated band and the one fix that moves you up — no account needed.
+          Paste an essay, get a calibrated band and the one fix that moves you up — free to start.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, marginTop: 28 }}>
-          <Link href="/grade" style={{ ...BTN_GHOST, background: "#fff", border: "none", color: INDIGO }}>
+          <Link href="/sign-in?next=/write" style={{ ...BTN_GHOST, background: "#fff", border: "none", color: INDIGO }}>
             Grade an essay free
           </Link>
           <Link href="/sign-up" style={{ ...BTN_GHOST, background: "transparent", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }}>
@@ -730,7 +730,7 @@ const FOOTER_COLS: { head: string; links: { label: string; href: string }[] }[] 
   {
     head: "Get started",
     links: [
-      { label: "Grade an essay free", href: "/grade" },
+      { label: "Grade an essay free", href: "/sign-in?next=/write" },
       { label: "Create an account", href: "/sign-up" },
       { label: "Sign in", href: "/sign-in" },
     ],

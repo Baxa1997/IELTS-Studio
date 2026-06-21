@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
-import { getSession, roleHome } from "@/lib/auth";
+import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 
 import { SignInForm } from "./sign-in-form";
 
@@ -22,10 +22,17 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function SignInPage() {
-  // Already signed in? Skip the form and go to the role's home.
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const next = safeNextPath((await searchParams).next);
+
+  // Already signed in? Skip the form and go to `next` (e.g. a "Try it free" CTA)
+  // or the role's home.
   const session = await getSession();
-  if (session) redirect(roleHome(session.role));
+  if (session) redirect(next ?? roleHome(session.role));
 
   return (
     <div
@@ -33,7 +40,7 @@ export default async function SignInPage() {
       style={{ minHeight: "100dvh", display: "grid", gridTemplateColumns: "0.92fr 1.08fr", fontFamily: SANS, color: INK }}
     >
       <BrandAside />
-      <FormSide />
+      <FormSide next={next} />
     </div>
   );
 }
@@ -122,7 +129,7 @@ function BrandAside() {
 
 // ---- right form panel ------------------------------------------------------
 
-function FormSide() {
+function FormSide({ next }: { next: string | null }) {
   return (
     <main style={{ background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "44px clamp(20px,5vw,56px)" }}>
       <div style={{ width: "100%", maxWidth: 408 }}>
@@ -140,7 +147,7 @@ function FormSide() {
           Continue your IELTS Writing &amp; Reading practice.
         </p>
 
-        <SignInForm />
+        <SignInForm next={next} />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 24 }}>
           <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 14.5, color: "#6b6e84", margin: 0 }}>

@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { getSession, roleHome } from "@/lib/auth";
+import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -12,20 +12,22 @@ export interface AuthFormState {
   notice?: string;
 }
 
-/** Sign in with email + password, then route to the role's home. */
+/** Sign in with email + password, then route to `next` (if a safe in-app path was
+ *  passed, e.g. from a "Try it free" CTA) or the role's home. */
 export async function signIn(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "Email and password are required." };
+  const next = safeNextPath(String(formData.get("next") ?? ""));
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
 
   const session = await getSession();
-  redirect(session ? roleHome(session.role) : "/dashboard");
+  redirect(next ?? (session ? roleHome(session.role) : "/dashboard"));
 }
 
 /**

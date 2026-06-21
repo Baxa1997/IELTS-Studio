@@ -29,6 +29,18 @@ export function roleHome(role: AppRole): "/admin" | "/dashboard" | "/console" {
 }
 
 /**
+ * Validate a post-login `?next=` redirect target. Only an in-app absolute path is
+ * allowed (never a protocol-relative `//host` or external URL — that would be an
+ * open redirect), and we never bounce back into the auth flow. Returns the path or
+ * null, so callers fall back to `roleHome`.
+ */
+export function safeNextPath(raw: string | null | undefined): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null;
+  if (raw.startsWith("/auth") || raw.startsWith("/sign-")) return null;
+  return raw;
+}
+
+/**
  * Resolve the current session's identity. super_admin is read from app_metadata
  * (set by the provisioning script, never user-editable); everyone else resolves
  * their role from their profile row, read under RLS (own row only).
