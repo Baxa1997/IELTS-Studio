@@ -1,6 +1,7 @@
 import "server-only";
 
 import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
+import { ExternalAccountClient } from "google-auth-library";
 
 import { serverEnv } from "@/lib/env";
 
@@ -13,8 +14,12 @@ const DEFAULT_MODEL = "gemini-2.5-flash";
 /**
  * Build the GenAI client for the configured backend:
  *   - "developer" — Gemini Developer API, authed with GEMINI_API_KEY.
- *   - "vertex"    — Vertex AI, authed with project/location + ADC (or an inline
- *                   service-account key via GOOGLE_VERTEX_CREDENTIALS).
+ *   - "vertex"    — Vertex AI, authed with project/location + one of:
+ *                     • Workload Identity Federation (GEMINI_VERTEX_AUTH=wif) —
+ *                       keyless; exchanges the platform OIDC token for GCP creds
+ *                       (Vercel/serverless, where SA key files are policy-blocked),
+ *                     • an inline service-account key (GOOGLE_VERTEX_CREDENTIALS),
+ *                     • or ADC (gcloud login / attached SA) when neither is set.
  * Env is only read here, when a provider is actually instantiated — the health
  * route and skeleton stay runnable without any AI credentials.
  */
@@ -25,6 +30,13 @@ function buildClient(): GoogleGenAI {
       project: serverEnv.googleCloudProject,
       location: serverEnv.googleCloudLocation,
     };
+
+    const wif = serverEnv.vertexWif;
+    if (wif) {
+      options.googleAuthOptions = { authClient: buildWifAuthClient(wif) };
+      return new GoogleGenAI(options);
+    }
+
     const credentials = serverEnv.googleVertexCredentials;
     if (credentials) {
       type Creds = NonNullable<GoogleGenAIOptions["googleAuthOptions"]>["credentials"];
@@ -33,6 +45,37 @@ function buildClient(): GoogleGenAI {
     return new GoogleGenAI(options);
   }
   return new GoogleGenAI({ apiKey: serverEnv.geminiApiKey });
+}
+
+/**
+ * Keyless Vertex auth (Workload Identity Federation). Builds a Google
+ * ExternalAccountClient that trades the runtime's OIDC token for a short-lived,
+ * impersonated service-account access token — no downloadable key. The subject
+ * token is supplied per-request by Vercel's OIDC helper (imported lazily so the
+ * dependency is only pulled when WIF is actually enabled).
+ */
+type VertexWifConfig = NonNullable<typeof serverEnv.vertexWif>;
+
+function buildWifAuthClient(wif: VertexWifConfig) {
+  // `@vercel/functions` is only present/needed on Vercel; require lazily so local
+  // and non-WIF builds never touch it.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getVercelOidcToken } = require("@vercel/functions/oidc") as {
+    getVercelOidcToken: () => Promise<string>;
+  };
+
+  const authClient = ExternalAccountClient.fromJSON({
+    type: "external_account",
+    audience: `//iam.googleapis.com/projects/${wif.projectNumber}/locations/global/workloadIdentityPools/${wif.poolId}/providers/${wif.providerId}`,
+    subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+    token_url: "https://sts.googleapis.com/v1/token",
+    service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/serviceAccounts/${wif.serviceAccountEmail}:generateAccessToken`,
+    subject_token_supplier: { getSubjectToken: () => getVercelOidcToken() },
+  });
+  if (!authClient) {
+    throw new Error("Failed to build Vertex Workload Identity Federation auth client.");
+  }
+  return authClient;
 }
 
 /**

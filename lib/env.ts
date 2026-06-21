@@ -101,6 +101,32 @@ export const serverEnv = {
     }
   },
 
+  /** Keyless Vertex auth via Workload Identity Federation. Opt-in with
+   *  GEMINI_VERTEX_AUTH=wif (for serverless like Vercel, where downloadable SA
+   *  keys are often blocked by org policy). The runtime's OIDC token is exchanged
+   *  for short-lived GCP credentials — no key file. Returns null when not enabled,
+   *  so local dev keeps using gcloud ADC / GOOGLE_VERTEX_CREDENTIALS unchanged. */
+  get vertexWif(): {
+    projectNumber: string;
+    poolId: string;
+    providerId: string;
+    serviceAccountEmail: string;
+  } | null {
+    if (process.env.GEMINI_VERTEX_AUTH !== "wif") return null;
+    return {
+      projectNumber: required("GCP_PROJECT_NUMBER", process.env.GCP_PROJECT_NUMBER),
+      poolId: required("GCP_WORKLOAD_IDENTITY_POOL_ID", process.env.GCP_WORKLOAD_IDENTITY_POOL_ID),
+      providerId: required(
+        "GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID",
+        process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID,
+      ),
+      serviceAccountEmail: required(
+        "GCP_SERVICE_ACCOUNT_EMAIL",
+        process.env.GCP_SERVICE_ACCOUNT_EMAIL,
+      ),
+    };
+  },
+
   // ── Observability: Langfuse (optional) ──
   /** Langfuse ingestion config, or null when not set (tracing no-ops). */
   get langfuse(): { host: string; publicKey: string; secretKey: string } | null {
