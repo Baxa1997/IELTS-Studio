@@ -41,6 +41,22 @@ function buildClient(): GoogleGenAI {
     if (credentials) {
       type Creds = NonNullable<GoogleGenAIOptions["googleAuthOptions"]>["credentials"];
       options.googleAuthOptions = { credentials: credentials as Creds };
+    } else if (process.env.VERCEL) {
+      // On Vercel there's no ADC to fall back on, so a Vertex client with no WIF and
+      // no key would fail later with an opaque "Could not load the default
+      // credentials." Fail fast with exactly what's missing instead.
+      throw new Error(
+        "Vertex on Vercel has no usable credentials. " +
+          `GEMINI_VERTEX_AUTH=${JSON.stringify(process.env.GEMINI_VERTEX_AUTH ?? null)}; ` +
+          `WIF vars present: ${JSON.stringify({
+            GCP_PROJECT_NUMBER: Boolean(process.env.GCP_PROJECT_NUMBER),
+            GCP_WORKLOAD_IDENTITY_POOL_ID: Boolean(process.env.GCP_WORKLOAD_IDENTITY_POOL_ID),
+            GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID: Boolean(
+              process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID,
+            ),
+            GCP_SERVICE_ACCOUNT_EMAIL: Boolean(process.env.GCP_SERVICE_ACCOUNT_EMAIL),
+          })}. Set all GCP_* WIF vars (and GEMINI_VERTEX_AUTH=wif) for Production, then redeploy.`,
+      );
     }
     return new GoogleGenAI(options);
   }

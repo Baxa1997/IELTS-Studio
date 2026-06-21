@@ -112,7 +112,21 @@ export const serverEnv = {
     providerId: string;
     serviceAccountEmail: string;
   } | null {
-    if (process.env.GEMINI_VERTEX_AUTH !== "wif") return null;
+    // Activate WIF when explicitly flagged (tolerant of case/whitespace/quotes) OR,
+    // on Vercel, implicitly whenever the full WIF config is present — so a missing or
+    // mistyped GEMINI_VERTEX_AUTH can't silently drop us back to (nonexistent) ADC.
+    const flag = (process.env.GEMINI_VERTEX_AUTH ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/^["']|["']$/g, "");
+    const hasAllVars = Boolean(
+      process.env.GCP_PROJECT_NUMBER &&
+        process.env.GCP_WORKLOAD_IDENTITY_POOL_ID &&
+        process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID &&
+        process.env.GCP_SERVICE_ACCOUNT_EMAIL,
+    );
+    const enabled = flag === "wif" || (Boolean(process.env.VERCEL) && hasAllVars);
+    if (!enabled) return null;
     return {
       projectNumber: required("GCP_PROJECT_NUMBER", process.env.GCP_PROJECT_NUMBER),
       poolId: required("GCP_WORKLOAD_IDENTITY_POOL_ID", process.env.GCP_WORKLOAD_IDENTITY_POOL_ID),
