@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IELTS W&R — Design Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     DESIGN TOKENS  — copy these into globals.css / tailwind config
+     ============================================================ */
+  :root{
+    --paper:#FAF9F6;        /* app background (warm, not stark white) */
+    --surface:#FFFFFF;      /* card background */
+    --ink:#14152A;          /* primary text / hero numerals */
+    --ink-soft:#5C5F73;     /* secondary text */
+    --ink-faint:#9A9CAB;    /* tertiary / captions */
+    --line:#ECEAE3;         /* borders / dividers */
+    --accent:#3D3AE0;       /* primary action + the band scale */
+    --accent-press:#2E2BB8;
+    --accent-tint:#EDEDFC;  /* accent background wash */
+    --pos:#1A7F4B;          /* band went up / good */
+    --pos-tint:#E6F4EC;
+    --warn:#B45309;         /* needs attention */
+    --warn-tint:#FBF0E1;
+    --neg:#C2410C;          /* band dropped */
+    --radius-card:16px;
+    --radius-ctrl:10px;
+    --shadow-card:0 1px 2px rgba(20,20,40,.04), 0 10px 30px -16px rgba(20,20,40,.18);
+    --shadow-pop:0 1px 2px rgba(20,20,40,.05), 0 18px 40px -18px rgba(20,20,40,.28);
+    --font-display:'Space Grotesk', sans-serif;
+    --font-body:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+
+  /* ---------- top nav ---------- */
+  nav.top{position:sticky;top:0;z-index:30;background:rgba(250,249,246,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-inner{height:64px;display:flex;align-items:center;gap:36px}
+  .wordmark{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:-.01em}
+  .wordmark span{color:var(--accent)}
+  .nav-links{display:flex;gap:6px}
+  .nav-links a{font-size:14px;font-weight:500;color:var(--ink-soft);text-decoration:none;padding:7px 12px;border-radius:8px;cursor:pointer}
+  .nav-links a:hover{background:#fff;color:var(--ink)}
+  .nav-links a.active{background:#fff;color:var(--ink);box-shadow:var(--shadow-card)}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .who{text-align:right;line-height:1.2}
+  .who b{font-weight:600;font-size:13.5px;display:block}
+  .who small{color:var(--ink-faint);font-size:12px}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:15px}
+
+  /* ---------- generic ---------- */
+  .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint)}
+  h1.page{font-family:var(--font-display);font-weight:600;font-size:30px;letter-spacing:-.02em;margin-top:4px}
+  .sub{color:var(--ink-soft);font-size:15px;margin-top:6px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+  .btn{font-family:var(--font-body);font-weight:600;font-size:14px;border:none;border-radius:var(--radius-ctrl);padding:11px 18px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-press)}
+  .btn-ghost{background:transparent;color:var(--ink-soft);padding:11px 8px}
+  .btn-ghost:hover{color:var(--ink)}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;padding:4px 9px;border-radius:999px}
+  .chip.pos{background:var(--pos-tint);color:var(--pos)}
+  .chip.warn{background:var(--warn-tint);color:var(--warn)}
+  .chip.accent{background:var(--accent-tint);color:var(--accent)}
+
+  /* ---------- band trajectory hero ---------- */
+  .hero{display:grid;grid-template-columns:1.15fr 1fr;gap:20px;margin-top:24px}
+  .hero .now{padding:26px 28px;display:flex;flex-direction:column;justify-content:space-between}
+  .now-top{display:flex;align-items:flex-start;justify-content:space-between}
+  .bandnum{font-family:var(--font-display);font-weight:600;font-size:64px;line-height:.95;letter-spacing:-.03em}
+  .bandnum small{font-size:18px;color:var(--ink-faint);font-weight:500}
+  .targetline{font-size:14px;color:var(--ink-soft);margin-top:2px}
+  .targetline b{color:var(--ink)}
+  /* the IELTS 0–9 scale = the signature instrument */
+  .scale{margin-top:26px}
+  .scale-track{position:relative;height:8px;border-radius:999px;background:#EFEEE8;overflow:visible}
+  .scale-fill{position:absolute;left:0;top:0;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ink),var(--accent))}
+  .scale-now{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 0 0 1px var(--accent);transform:translate(-50%,-50%)}
+  .scale-target{position:absolute;top:-7px;width:2px;height:22px;background:var(--ink);opacity:.55}
+  .scale-target::after{content:attr(data-l);position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+  .scale-ticks{display:flex;justify-content:space-between;margin-top:9px}
+  .scale-ticks span{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+
+  .skills{padding:22px;display:flex;flex-direction:column;gap:2px}
+  .skills h3{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:8px}
+  .srow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .srow:last-child{border-bottom:none}
+  .sicon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:13px;color:#fff;flex-shrink:0}
+  .srow .nm{font-weight:500;font-size:14px}
+  .srow .meta{color:var(--ink-faint);font-size:12.5px}
+  .srow .val{margin-left:auto;font-family:var(--font-display);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
+  .delta{font-size:12px;font-weight:600;margin-left:8px}
+  .delta.up{color:var(--pos)} .delta.down{color:var(--neg)} .delta.flat{color:var(--ink-faint)}
+
+  /* ---------- action grid ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+  .action{padding:24px;display:flex;flex-direction:column;min-height:188px}
+  .action .ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px}
+  .action h2{font-family:var(--font-display);font-weight:600;font-size:20px;letter-spacing:-.01em}
+  .action p{color:var(--ink-soft);font-size:14px;margin-top:6px;flex-grow:1}
+  .action .foot{display:flex;align-items:center;gap:14px;margin-top:18px}
+
+  /* ---------- focus + activity ---------- */
+  .grid-foot{display:grid;grid-template-columns:1fr 1.3fr;gap:20px;margin:20px 0 60px}
+  .panel{padding:22px}
+  .panel h3{font-family:var(--font-display);font-size:16px;font-weight:600;margin-bottom:4px}
+  .panel .h-sub{font-size:13px;color:var(--ink-faint);margin-bottom:16px}
+  .focus-blk{background:var(--warn-tint);border:1px solid #F1E2CB;border-radius:12px;padding:16px}
+  .focus-blk .lab{font-size:12px;font-weight:600;color:var(--warn);text-transform:uppercase;letter-spacing:.05em}
+  .focus-blk .big{font-family:var(--font-display);font-weight:600;font-size:18px;margin-top:4px}
+  .focus-blk p{font-size:13.5px;color:var(--ink-soft);margin-top:6px}
+  .act{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .act:last-child{border:none}
+  .act .ai{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:14px;flex-shrink:0}
+  .act .at{font-weight:500;font-size:14px}
+  .act .ad{font-size:12.5px;color:var(--ink-faint)}
+  .act .score{margin-left:auto;font-family:var(--font-display);font-weight:600;font-variant-numeric:tabular-nums}
+
+  .disclaimer{border-top:1px solid var(--line);padding:22px 0 50px;color:var(--ink-faint);font-size:12px}
+
+  /* ---------- results view ---------- */
+  .view{display:none}
+  .view.active{display:block;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .res-hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center;padding:26px 30px;margin-top:24px}
+  .res-overall{text-align:center;padding-right:28px;border-right:1px solid var(--line)}
+  .res-overall .n{font-family:var(--font-display);font-weight:700;font-size:58px;line-height:1;letter-spacing:-.03em}
+  .res-overall .l{font-size:12px;color:var(--ink-faint);margin-top:4px}
+  .blocker{background:var(--ink);color:#fff;border-radius:14px;padding:20px 22px}
+  .blocker .lab{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#A7A8FF}
+  .blocker h3{font-family:var(--font-display);font-weight:600;font-size:20px;margin-top:6px}
+  .blocker p{color:#C9CAD6;font-size:14px;margin-top:8px;max-width:62ch}
+  .blocker .fix{display:inline-block;margin-top:14px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;padding:8px 14px;border-radius:8px}
+  .crit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+  .crit{padding:18px}
+  .crit .cn{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+  .crit .cb{font-family:var(--font-display);font-weight:600;font-size:30px;margin-top:6px;font-variant-numeric:tabular-nums}
+  .crit .cap{font-size:12.5px;color:var(--ink-faint);margin-top:6px;line-height:1.45}
+  .crit .cap b{color:var(--warn);font-weight:600}
+  .bar{height:5px;border-radius:999px;background:#EFEEE8;margin-top:12px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--ink),var(--accent))}
+
+  @media(max-width:880px){
+    .hero,.grid2,.grid-foot,.res-hero{grid-template-columns:1fr}
+    .crit-grid{grid-template-columns:1fr 1fr}
+    .res-overall{border-right:none;border-bottom:1px solid var(--line);padding:0 0 18px;margin-bottom:4px}
+    .nav-links{display:none}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap nav-inner">
+    <div class="wordmark">IELTS&nbsp;<span>W&amp;R</span></div>
+    <div class="nav-links">
+      <a class="active" data-view="dash">Dashboard</a>
+      <a data-view="result">Writing&nbsp;result</a>
+      <a>Reading</a>
+    </div>
+    <div class="nav-right">
+      <div class="who"><b>Bakhriddin Nurullayev</b><small>Student</small></div>
+      <div class="avatar">B</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ DASHBOARD ============ -->
+<main class="view active" id="dash">
+  <div class="wrap">
+    <header style="margin-top:34px">
+      <div class="eyebrow">Your progress</div>
+      <h1 class="page">Welcome back, Bakhriddin</h1>
+      <p class="sub">You're 1.0 band from your goal. Your weakest area is grammar — let's close it.</p>
+    </header>
+
+    <!-- hero: current band + the 0–9 instrument + per-skill -->
+    <section class="hero">
+      <div class="card now">
+        <div>
+          <div class="now-top">
+            <div>
+              <div class="eyebrow">Predicted band</div>
+              <div class="bandnum">6.5<small>&nbsp;/ 9.0</small></div>
+              <div class="targetline">Target <b>7.5</b> · 44 tasks completed</div>
+            </div>
+            <span class="chip pos">▲ 0.5 this month</span>
+          </div>
+
+          <div class="scale">
+            <div class="scale-track">
+              <div class="scale-fill" style="width:50%"></div>
+              <div class="scale-target" style="left:70%" data-l="Target 7.5"></div>
+              <div class="scale-now" style="left:50%"></div>
+            </div>
+            <div class="scale-ticks">
+              <span>4.0</span><span>5.0</span><span>6.0</span><span>7.0</span><span>8.0</span><span>9.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card skills">
+        <h3>Bands by skill</h3>
+        <div class="srow">
+          <div class="sicon" style="background:#3D3AE0">R</div>
+          <div><div class="nm">Reading</div><div class="meta">8 tasks · weakest: Section 3</div></div>
+          <div class="val">7.0<span class="delta up">▲.5</span></div>
+        </div>
+        <div class="srow">
+          <div class="sicon" style="background:#1A7F4B">W</div>
+          <div><div class="nm">Writing</div><div class="meta">5 tasks · weakest: Grammar</div></div>
+          <div class="val">6.0<span class="delta down">▼.5</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- primary actions -->
+    <section class="grid2">
+      <div class="card action">
+        <div class="ico" style="background:#1A7F4B"><svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M15 2l3 3-8 8H7v-3z"/></svg></div>
+        <h2>Writing studio</h2>
+        <p>One fresh Task 2 prompt, a 40-minute timer, and a graded breakdown of exactly what to fix.</p>
+        <div class="foot">
+          <a class="btn btn-primary" data-view="result">Open studio →</a>
+          <span class="chip accent">Revision loop</span>
+        </div>
+      </div>
+
+      <div class="card action">
+        <div class="ico" style="background:#3D3AE0"><svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h7a3 3 0 0 1 3 3v11a2.5 2.5 0 0 0-2.5-2.5H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v11a2.5 2.5 0 0 1 2.5-2.5H22z"/></svg></div>
+        <h2>Reading practice</h2>
+        <p>Timed passages with instant marking — and a line-by-line reason for why every answer is right.</p>
+        <div class="foot">
+          <a class="btn btn-primary">Start practice →</a>
+          <span class="chip accent">Per-answer why</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- focus + recent -->
+    <section class="grid-foot">
+      <div class="card panel">
+        <h3>This week's focus</h3>
+        <div class="h-sub">Picked from your last graded essays</div>
+        <div class="focus-blk">
+          <div class="lab">Score-blocker</div>
+          <div class="big">Grammatical Range</div>
+          <p>Complex sentences keep breaking down. Fixing this is your fastest route from 6.0 → 6.5 in Writing.</p>
+        </div>
+        <a class="btn btn-ghost" style="padding-left:0;margin-top:12px">Drill this skill →</a>
+      </div>
+
+      <div class="card panel">
+        <h3>Recent activity</h3>
+        <div class="h-sub">Last 5 submissions</div>
+        <div class="act">
+          <div class="ai" style="background:var(--pos-tint);color:var(--pos)">W</div>
+          <div><div class="at">Task 2 — Education funding</div><div class="ad">Graded · 2 days ago</div></div>
+          <div class="score">6.0</div>
+        </div>
+        <div class="act">
+          <div class="ai" style="background:var(--accent-tint);color:var(--accent)">R</div>
+          <div><div class="at">Reading — True/False/Not Given set</div><div class="ad">Marked · 3 days ago</div></div>
+          <div class="score">7.0</div>
+        </div>
+        <div class="act">
+          <div class="ai" style="background:var(--pos-tint);color:var(--pos)">W</div>
+          <div><div class="at">Task 2 — Urban transport</div><div class="ad">Revised draft 2 · 4 days ago</div></div>
+          <div class="score">6.5</div>
+        </div>
+        <div class="act">
+          <div class="ai" style="background:var(--accent-tint);color:var(--accent)">R</div>
+          <div><div class="at">Reading — Matching headings</div><div class="ad">Marked · 6 days ago</div></div>
+          <div class="score">6.5</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="disclaimer wrap" style="padding-left:0;padding-right:0">
+      Band scores are diagnostic estimates, not official IELTS results. Not affiliated with or endorsed by the British Council, IDP, or Cambridge Assessment English.
+    </div>
+  </div>
+</main>
+
+<!-- ============ WRITING RESULT (hero screen) ============ -->
+<main class="view" id="result">
+  <div class="wrap">
+    <header style="margin-top:34px">
+      <div class="eyebrow">Writing · Task 2 · Education funding</div>
+      <h1 class="page">Your essay, graded</h1>
+      <p class="sub">Lead with the one fix that moves your band the most — then the per-criterion detail.</p>
+    </header>
+
+    <!-- overall + score-blocker as the hero -->
+    <section class="card res-hero">
+      <div class="res-overall">
+        <div class="n">6.0</div>
+        <div class="l">overall band</div>
+        <span class="chip accent" style="margin-top:10px">→ 6.5 with fixes</span>
+      </div>
+      <div class="blocker">
+        <div class="lab">Fix this first · score-blocker</div>
+        <h3>Grammatical Range &amp; Accuracy</h3>
+        <p>Your ideas are solid, but complex sentences keep breaking down (GRA-04 ×4). That single pattern is capping the whole essay. Rebuild three of your longer sentences and you reach 6.5.</p>
+        <span class="fix">Start revision →</span>
+      </div>
+    </section>
+
+    <!-- four criteria -->
+    <section class="crit-grid">
+      <div class="card crit">
+        <div class="cn">Task Response</div>
+        <div class="cb">6</div>
+        <div class="bar"><i style="width:67%"></i></div>
+        <div class="cap">Both views covered, opinion clear. Capped by <b>thin development</b> — add one concrete example each.</div>
+      </div>
+      <div class="card crit">
+        <div class="cn">Coherence &amp; Cohesion</div>
+        <div class="cb">6</div>
+        <div class="bar"><i style="width:67%"></i></div>
+        <div class="cap">Clear structure. Capped by <b>linker overuse</b> — "Moreover" appears 4×.</div>
+      </div>
+      <div class="card crit">
+        <div class="cn">Lexical Resource</div>
+        <div class="cb">6</div>
+        <div class="bar"><i style="width:67%"></i></div>
+        <div class="cap">Meaning always clear. Capped by <b>repetition</b> of basic words; few precise collocations.</div>
+      </div>
+      <div class="card crit" style="outline:2px solid var(--ink);outline-offset:-1px">
+        <div class="cn">Grammatical Range</div>
+        <div class="cb">5</div>
+        <div class="bar"><i style="width:56%"></i></div>
+        <div class="cap"><b>Score-blocker.</b> Complex sentences carry recurring errors (GRA-04 ×4).</div>
+      </div>
+    </section>
+
+    <div style="margin:24px 0 70px;display:flex;gap:12px">
+      <a class="btn btn-primary" data-view="result">Revise this essay →</a>
+      <a class="btn btn-ghost" data-view="dash">Back to dashboard</a>
+    </div>
+  </div>
+</main>
+
+<script>
+  // simple view switch so you can see both screens with one token system
+  document.querySelectorAll('[data-view]').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.preventDefault();
+      const v=el.getAttribute('data-view');
+      document.querySelectorAll('.view').forEach(m=>m.classList.toggle('active',m.id===v));
+      document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.getAttribute('data-view')===v));
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IELTS Writing Task 2 Grading Result",
+  "type": "object",
+  "required": ["task_type", "word_count", "criteria", "overall_band", "band_with_fixes", "score_blocker", "disclaimer"],
+  "properties": {
+    "task_type": {
+      "type": "string",
+      "enum": ["opinion", "discussion", "discussion_and_opinion", "problem_solution", "two_part_question", "advantages_disadvantages"]
+    },
+    "word_count": { "type": "integer" },
+    "under_length": { "type": "boolean", "description": "true if below ~250 words; caps TR" },
+    "criteria": {
+      "type": "object",
+      "required": ["task_response", "coherence_cohesion", "lexical_resource", "grammatical_range_accuracy"],
+      "properties": {
+        "task_response":              { "$ref": "#/$defs/criterion" },
+        "coherence_cohesion":         { "$ref": "#/$defs/criterion" },
+        "lexical_resource":           { "$ref": "#/$defs/criterion" },
+        "grammatical_range_accuracy": { "$ref": "#/$defs/criterion" }
+      }
+    },
+    "overall_band": {
+      "type": "number",
+      "description": "Average of the four criteria, rounded to nearest 0.5",
+      "enum": [4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0]
+    },
+    "band_with_fixes": {
+      "type": "number",
+      "description": "Realistic band if the score-blocker is fixed. Must be honest, not inflated."
+    },
+    "score_blocker": {
+      "type": "object",
+      "required": ["criterion", "explanation", "first_fix"],
+      "properties": {
+        "criterion": { "type": "string", "enum": ["TR", "CC", "LR", "GRA"] },
+        "explanation": { "type": "string", "description": "Why this is the single biggest thing capping the band" },
+        "first_fix": { "type": "string", "description": "The one concrete action to take first" }
+      }
+    },
+    "disclaimer": {
+      "type": "string",
+      "default": "This is a diagnostic estimate, not an official IELTS score. Not affiliated with or endorsed by the British Council, IDP, or Cambridge."
+    }
+  },
+  "$defs": {
+    "criterion": {
+      "type": "object",
+      "required": ["band", "evidence", "what_caps_it", "fix"],
+      "properties": {
+        "band": {
+          "type": "number",
+          "enum": [4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
+          "description": "Whole-band judgment per criterion before overall averaging"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["error_id", "quote", "note"],
+            "properties": {
+              "error_id": { "type": "string", "description": "ID from error-taxonomy.md, e.g. TR-03, CC-01" },
+              "quote": { "type": "string", "description": "Short excerpt from the essay showing the issue" },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        "what_caps_it": { "type": "string", "description": "Specifically what holds this criterion below the next band" },
+        "fix": { "type": "string", "description": "Concrete, actionable fix for this criterion" }
+      }
+    }
+  }
+}
