@@ -121,6 +121,7 @@ async function composeReadingSet(
     });
     set = readingSetOutputSchema.parse(parseJson(res.content));
   } catch (err) {
+    console.error("[reading.compose] generate failed:", err);
     throw new ReadingServiceError(`Reading generation failed: ${msg(err)}`, "generation_failed");
   }
 
@@ -758,5 +759,22 @@ function parseJson(raw: string): unknown {
 }
 
 function msg(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+  if (err instanceof Error) {
+    const e = err as Error & {
+      cause?: unknown;
+      status?: number;
+      response?: { data?: unknown };
+    };
+    const parts: string[] = [];
+    if (e.name && e.name !== "Error") parts.push(e.name);
+    if (e.message) parts.push(e.message);
+    if (e.status) parts.push(`status=${e.status}`);
+    if (e.response?.data) parts.push(`data=${JSON.stringify(e.response.data).slice(0, 400)}`);
+    if (e.cause) {
+      const c = e.cause as { message?: string };
+      parts.push(`cause=${c?.message ?? String(e.cause)}`);
+    }
+    return parts.join(" | ") || e.stack?.split("\n")[0] || "unknown error";
+  }
+  return String(err) || "unknown error";
 }
