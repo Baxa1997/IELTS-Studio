@@ -1,6 +1,7 @@
 import "server-only";
 
 import { GoogleGenAI, type GoogleGenAIOptions } from "@google/genai";
+import { getVercelOidcToken } from "@vercel/functions/oidc";
 import { ExternalAccountClient } from "google-auth-library";
 
 import { serverEnv } from "@/lib/env";
@@ -67,19 +68,18 @@ function buildClient(): GoogleGenAI {
  * Keyless Vertex auth (Workload Identity Federation). Builds a Google
  * ExternalAccountClient that trades the runtime's OIDC token for a short-lived,
  * impersonated service-account access token — no downloadable key. The subject
- * token is supplied per-request by Vercel's OIDC helper (imported lazily so the
- * dependency is only pulled when WIF is actually enabled).
+ * token is supplied per-request by Vercel's OIDC helper.
+ *
+ * `getVercelOidcToken` is imported statically (not `require`d lazily): under
+ * Turbopack a dynamic require of a subpath export can fail to be traced into the
+ * serverless bundle, which previously made the auth client silently fall back to
+ * GCE metadata lookup (the `MetadataLookupWarning` → 404). A static import is
+ * always bundled; the module has no import-time side effects, so local/non-WIF
+ * builds that never call this function are unaffected.
  */
 type VertexWifConfig = NonNullable<typeof serverEnv.vertexWif>;
 
 function buildWifAuthClient(wif: VertexWifConfig) {
-  // `@vercel/functions` is only present/needed on Vercel; require lazily so local
-  // and non-WIF builds never touch it.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { getVercelOidcToken } = require("@vercel/functions/oidc") as {
-    getVercelOidcToken: () => Promise<string>;
-  };
-
   const authClient = ExternalAccountClient.fromJSON({
     type: "external_account",
     audience: `//iam.googleapis.com/projects/${wif.projectNumber}/locations/global/workloadIdentityPools/${wif.poolId}/providers/${wif.providerId}`,
