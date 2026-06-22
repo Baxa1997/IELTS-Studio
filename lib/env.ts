@@ -52,9 +52,15 @@ export const clientEnv = {
    *  isn't subject to the 60s serverless cap that 504s full-test generation.
    *  When unset/blank, the studio falls back to the same-origin /api/reading/*
    *  routes — fine for local dev, but those 504 on Vercel Hobby. No trailing slash.
-   *  e.g. https://lucid.shopsready.com/ielts */
+   *  e.g. https://lucid.shopsready.com/ielts
+   *
+   *  Must use STATIC `process.env.NEXT_PUBLIC_…` access (like the getters above),
+   *  not the dynamic `env()` helper: Next.js only inlines NEXT_PUBLIC_* into the
+   *  browser bundle for literal member access, so `process.env[name]` would be
+   *  undefined client-side and silently disable the browser-direct path. */
   get aiBackendUrl(): string | undefined {
-    return env("NEXT_PUBLIC_AI_BACKEND_URL")?.replace(/\/+$/, "");
+    const v = process.env.NEXT_PUBLIC_AI_BACKEND_URL?.trim();
+    return v ? v.replace(/\/+$/, "") : undefined;
   },
 };
 
