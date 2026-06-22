@@ -4,6 +4,7 @@ import { serverEnv } from "@/lib/env";
 
 import { retrieveAnchors, type Anchor } from "./anchors";
 import { GeminiProvider } from "./gemini";
+import { RemoteAIProvider } from "./remote";
 import type { AiTask, AIProvider, CompletionResult, InlineFile } from "./provider";
 import { buildGeneratePrompt, buildGradePrompt } from "./prompts";
 import {
@@ -63,7 +64,10 @@ const providers = new Map<string, AIProvider>();
 function providerForModel(model: string): AIProvider {
   let provider = providers.get(model);
   if (!provider) {
-    provider = new GeminiProvider(model);
+    // Remote engine (Contabo) when configured; otherwise Vertex/Gemini in-process.
+    // Per-task model routing is unchanged — the model id flows through either way.
+    const remote = serverEnv.aiEngine;
+    provider = remote ? new RemoteAIProvider(model, remote) : new GeminiProvider(model);
     providers.set(model, provider);
   }
   return provider;

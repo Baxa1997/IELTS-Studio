@@ -82,6 +82,17 @@ export const serverEnv = {
     };
   },
 
+  /** Remote IELTS AI engine (the self-hosted Contabo backend). When both
+   *  AI_ENGINE_URL and AI_ENGINE_KEY are set, every model call is routed through
+   *  it (see lib/ai/remote.ts) instead of calling Vertex in-process — which
+   *  sidesteps Vercel's WIF fragility and serverless time limits. Null when
+   *  unset, so local dev keeps using Gemini/Vertex directly. */
+  get aiEngine(): { url: string; key: string } | null {
+    const url = env("AI_ENGINE_URL");
+    const key = env("AI_ENGINE_KEY");
+    return url && key ? { url, key } : null;
+  },
+
   // ── Gemini Developer API (backend = "developer") ──
   get geminiApiKey(): string {
     return required("GEMINI_API_KEY", process.env.GEMINI_API_KEY);

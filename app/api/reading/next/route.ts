@@ -7,6 +7,9 @@ import { generateReadingForStudent, ReadingServiceError } from "@/lib/reading/se
 // Node runtime, evaluated per request.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// A passage generate + validate call to the AI engine exceeds the default
+// segment timeout. 60s is safe on any Vercel plan.
+export const maxDuration = 60;
 
 /**
  * POST /api/reading/next
