@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Figure } from "@/lib/writing/figure";
+import { computeWritingInsights, type WritingInsights } from "@/lib/writing/insights";
+import { bandColor } from "@/lib/ui/band";
 
 import { ANN_STYLE, matchRanges, type Annotation } from "./annotations";
 import { FigureView } from "./figure";
@@ -46,14 +48,6 @@ function critName(key: CritKey, taskType: string): string {
 function critShort(key: CritKey, taskType: string): string {
   if (key === "TR") return taskType === "task2" ? "Task Response" : "Task Achievement";
   return { CC: "Coherence", LR: "Lexical Resource", GRA: "Grammar" }[key];
-}
-
-/** Conservative band colour — only Band 7+ earns the "green" treatment. */
-function scoreColor(b: number): string {
-  if (b >= 7) return EMERALD;
-  if (b >= 6) return "#2C3247";
-  if (b >= 5) return AMBER;
-  return RED;
 }
 
 const TASK_PILL: Record<string, string> = {
@@ -106,7 +100,8 @@ export function EssayFeedback({
   disclaimer,
 }: Props) {
   const ranges = matchRanges(essayText, annotations);
-  const [tab, setTab] = useState<"bands" | "issues">("bands");
+  const insights = useMemo(() => computeWritingInsights(essayText), [essayText]);
+  const [tab, setTab] = useState<"bands" | "issues" | "insights">("bands");
   const [selected, setSelected] = useState<number | null>(null); // 1-based issue index
   const fixListRef = useRef<HTMLDivElement>(null);
 
@@ -184,11 +179,11 @@ export function EssayFeedback({
       {/* score summary strip */}
       <div style={{ flex: "none", background: "#fff", borderBottom: "1px solid #E7E3D5", padding: "16px 22px", display: "flex", alignItems: "center", gap: 26 }} className="lp-fb-strip">
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 16, paddingRight: 26, borderRight: "1px solid #EEE9DA" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontSize: 52, fontWeight: 800, lineHeight: 0.85, color: scoreColor(overallBand), fontVariantNumeric: "tabular-nums", letterSpacing: "-.02em" }}>{overallBand.toFixed(1)}</span>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase" }}>Overall</span>
-              <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase" }}>band</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 62, fontWeight: 800, lineHeight: 0.82, color: bandColor(overallBand).fg, fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em" }}>{overallBand.toFixed(1)}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase", lineHeight: 1.1 }}>Overall<br />band</span>
+              <span style={{ alignSelf: "flex-start", fontSize: 11.5, fontWeight: 700, color: bandColor(overallBand).fg, background: bandColor(overallBand).bg, padding: "2px 9px", borderRadius: 999 }}>{bandColor(overallBand).label}</span>
             </div>
           </div>
           {showLift ? (
@@ -261,16 +256,19 @@ export function EssayFeedback({
         <aside className="lp-fb-aside" style={{ width: 480, flex: "none", background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div className="lp-fb-noprint" style={{ flex: "none", padding: "14px 16px", borderBottom: "1px solid #F0EDE1" }}>
             <div style={{ display: "flex", gap: 4, background: "#F1EFE4", borderRadius: 11, padding: 4 }}>
-              <button type="button" onClick={() => setTab("bands")} style={tabStyle(tab === "bands")}>Bands &amp; feedback</button>
+              <button type="button" onClick={() => setTab("bands")} style={tabStyle(tab === "bands")}>Bands</button>
               <button type="button" onClick={() => setTab("issues")} style={tabStyle(tab === "issues")}>Fixes · {ranges.length}</button>
+              <button type="button" onClick={() => setTab("insights")} style={tabStyle(tab === "insights")}>Insights</button>
             </div>
           </div>
 
           <div ref={fixListRef} className="lp-fb-col" style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 16 }}>
             {tab === "bands" ? (
               <BandsView taskType={taskType} criteria={criteria} blocker={blocker} bandWithFixes={bandWithFixes} overallBand={overallBand} />
-            ) : (
+            ) : tab === "issues" ? (
               <IssuesView ranges={ranges} selected={selected} />
+            ) : (
+              <InsightsView insights={insights} taskType={taskType} />
             )}
           </div>
         </aside>
@@ -400,6 +398,103 @@ function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRange
       })}
     </div>
   );
+}
+
+/**
+ * Structural "at a glance" panel — the surface metrics the big public graders show
+ * (word count, sentences, paragraphs, linking words, repeated words), computed
+ * deterministically from the essay (no model, no band judgement). Helps the writer
+ * see range/cohesion habits the per-criterion feedback then explains.
+ */
+function InsightsView({ insights, taskType }: { insights: WritingInsights; taskType: string }) {
+  const minWords = taskType === "task2" ? 250 : 150;
+  const wordsOk = insights.wordCount >= minWords;
+  const linkOk = insights.linkingUnique >= 5;
+  const runOn = insights.longestSentence > 40;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* word count, headline */}
+      <div style={{ background: "#fff", border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: MUTED }}>Word count</span>
+          <span style={{ fontSize: 24, fontWeight: 800, color: wordsOk ? "#1A7A48" : AMBER, fontVariantNumeric: "tabular-nums" }}>{insights.wordCount}</span>
+        </div>
+        <p style={{ margin: "4px 0 0", fontSize: 12.5, color: wordsOk ? "#2C7A52" : "#9A7B2A" }}>
+          {wordsOk ? `Above the ${minWords}-word minimum.` : `Aim for at least ${minWords} words — short answers cap Task Response.`}
+        </p>
+      </div>
+
+      {/* mini stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <Stat label="Sentences" value={insights.sentenceCount} />
+        <Stat label="Avg length" value={insights.avgSentenceLength} suffix=" w" />
+        <Stat label="Paragraphs" value={insights.paragraphCount} />
+      </div>
+
+      {/* linking words */}
+      <div style={{ background: "#fff", border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>Linking words</span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: linkOk ? "#2C7A52" : AMBER, background: linkOk ? "#E9F5EE" : "#F6EAD0", padding: "2px 9px", borderRadius: 999 }}>
+            {insights.linkingUnique} distinct · {insights.linkingTotal} total
+          </span>
+        </div>
+        {insights.linkingUsed.length ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {insights.linkingUsed.slice(0, 12).map((w) => (
+              <span key={w} style={chip("#EEF0F6", "#41496A")}>{w}</span>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: 0, fontSize: 13, color: "#9A7B2A" }}>No connectives detected — cohesion will suffer. Use markers like <em>however</em>, <em>for example</em>, <em>as a result</em>.</p>
+        )}
+        {insights.linkingUsed.length && !linkOk ? (
+          <p style={{ margin: "9px 0 0", fontSize: 12.5, color: "#9A7B2A" }}>Aim for 5+ different connectives across the essay.</p>
+        ) : null}
+      </div>
+
+      {/* repeated words */}
+      <div style={{ background: "#fff", border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>Most repeated words</span>
+        {insights.repeated.length ? (
+          <>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+              {insights.repeated.map((r) => (
+                <span key={r.word} style={chip("#F6EAD0", "#9A6A12")}>{r.word} <strong>×{r.count}</strong></span>
+              ))}
+            </div>
+            <p style={{ margin: "10px 0 0", fontSize: 12.5, color: MUTED }}>Vary these with synonyms — repetition narrows Lexical Resource.</p>
+          </>
+        ) : (
+          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#2C7A52" }}>Good — no word is over-repeated.</p>
+        )}
+      </div>
+
+      {runOn ? (
+        <div style={{ background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 13, padding: "13px 16px" }}>
+          <p style={{ margin: 0, fontSize: 13, color: "#9A7B2A" }}>Longest sentence is <strong>{insights.longestSentence} words</strong> — check it isn&rsquo;t a run-on; splitting it can lift Grammar.</p>
+        </div>
+      ) : null}
+
+      <p style={{ margin: "2px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>
+        These are objective surface stats, not a band — your band and the reasons behind it are on the Bands tab.
+      </p>
+    </div>
+  );
+}
+
+function Stat({ label, value, suffix = "" }: { label: string; value: number; suffix?: string }) {
+  return (
+    <div style={{ background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 11, padding: "11px 12px", textAlign: "center" }}>
+      <div style={{ fontSize: 21, fontWeight: 800, color: "#2C3247", fontVariantNumeric: "tabular-nums" }}>{value}{suffix}</div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: "#9A9EAE", marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
+function chip(bg: string, fg: string): React.CSSProperties {
+  return { fontSize: 12.5, fontWeight: 600, color: fg, background: bg, padding: "3px 9px", borderRadius: 7 };
 }
 
 /** Render the essay, wrapping each matched range in a numbered, clickable highlight. */

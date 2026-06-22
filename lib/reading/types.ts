@@ -32,6 +32,42 @@ export const READING_QUESTION_LABELS: Record<ReadingQuestionType, string> = {
   multiple_choice: "Multiple choice",
 };
 
+/**
+ * The Cambridge-style instruction line shown above each group of same-type
+ * questions, exactly as the real exam frames them ("Do the following statements
+ * agree with the information…", "Complete the sentences below…"). These are the
+ * standard public rubric phrasings — NOT copied from any test book (CLAUDE.md §IP).
+ * The "Questions X–Y" range is computed at render time, not stored here.
+ */
+export const READING_INSTRUCTIONS: Record<ReadingQuestionType, string> = {
+  true_false_not_given:
+    "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
+  yes_no_not_given:
+    "Do the following statements agree with the claims of the writer? Write YES if the statement agrees with the views of the writer, NO if the statement contradicts the views of the writer, or NOT GIVEN if it is impossible to say what the writer thinks.",
+  matching_headings:
+    "Choose the correct heading for each paragraph from the list of headings below.",
+  matching_information:
+    "Which paragraph contains the following information? Write the correct letter. You may use any letter more than once.",
+  sentence_completion:
+    "Complete the sentences below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer.",
+  summary_completion:
+    "Complete the summary below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer.",
+  multiple_choice: "Choose the correct letter.",
+};
+
+/** Completion types render a fill-in-the-blank inside the sentence, not a
+ *  separate text box. The blank marker the generator writes (and the UI replaces
+ *  with an inline input) is a run of underscores. */
+export const READING_GAP_TYPES: ReadonlyArray<ReadingQuestionType> = [
+  "sentence_completion",
+  "summary_completion",
+];
+export function isReadingGapType(t: ReadingQuestionType): boolean {
+  return READING_GAP_TYPES.includes(t);
+}
+/** Matches the underscore blank the generator places where the answer goes. */
+export const READING_GAP_MARKER = /_{2,}/;
+
 export const READING_MODULES = ["academic", "general"] as const;
 export type ReadingModule = (typeof READING_MODULES)[number];
 

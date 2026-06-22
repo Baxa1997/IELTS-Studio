@@ -16,6 +16,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // usage logging), then caps the output depth for the anonymous preview.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Gemini 3 Pro + a thinking budget makes a grade heavier than flash; give it the
+// full serverless window.
+export const maxDuration = 60;
 
 /**
  * POST /api/public/grade  — the no-login grader.

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { ReadingQuestionType } from "@/lib/reading/types";
+import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/types";
 
 import { INDIGO, INK, MUTED, RED, SANS } from "./tokens";
 
@@ -105,6 +105,73 @@ function TextAnswer({ value, onChange }: { value: string; onChange: (v: string) 
       className="lp-input"
       style={{ width: "100%", maxWidth: 360, padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 14, color: INK }}
     />
+  );
+}
+
+/** A bordered fill-in-the-blank input sized to sit INLINE inside a sentence
+ *  (Cambridge gap-fill style). Width grows with the typed answer. */
+function InlineBlank({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={label}
+      placeholder="…"
+      autoComplete="off"
+      spellCheck={false}
+      className="lp-input"
+      style={{
+        display: "inline-block",
+        width: `${Math.max(7, Math.min(22, value.length + 3))}ch`,
+        margin: "0 4px",
+        padding: "3px 9px",
+        border: `1.5px solid ${value.trim() ? INDIGO : "#C9C7D6"}`,
+        borderRadius: 8,
+        background: value.trim() ? "#F6F5FE" : "#fff",
+        fontFamily: SANS,
+        fontWeight: 600,
+        fontSize: "inherit",
+        lineHeight: "inherit",
+        color: INK,
+        verticalAlign: "baseline",
+        textAlign: "center",
+      }}
+    />
+  );
+}
+
+/**
+ * A completion question rendered as the FULL sentence with the answer typed into a
+ * bordered blank INSIDE the sentence (not a separate box below it). The generator
+ * marks the gap with a run of underscores; if none is present (legacy data) the
+ * blank is appended so the sentence still reads with the input in line.
+ */
+export function GapSentence({
+  prompt,
+  value,
+  onChange,
+  questionNumber,
+}: {
+  prompt: string;
+  value: string;
+  onChange: (v: string) => void;
+  questionNumber: number;
+}) {
+  const label = `Answer for question ${questionNumber}`;
+  const match = prompt.match(READING_GAP_MARKER);
+  let before = prompt;
+  let after = "";
+  if (match && match.index != null) {
+    before = prompt.slice(0, match.index);
+    after = prompt.slice(match.index + match[0].length);
+  }
+  return (
+    <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.9, color: INK }}>
+      {before}
+      <InlineBlank value={value} onChange={onChange} label={label} />
+      {after}
+    </span>
   );
 }
 

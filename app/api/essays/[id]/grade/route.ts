@@ -12,6 +12,9 @@ import { figureToText, parseFigure } from "@/lib/writing/figure";
 // service-role client — Node runtime, evaluated per request.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Gemini 3 Pro + a thinking budget makes a grade heavier than flash; give it the
+// full serverless window. A rare overrun falls through to the async queue below.
+export const maxDuration = 60;
 
 interface RouteContext {
   params: Promise<{ id: string }>;

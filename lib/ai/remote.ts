@@ -41,6 +41,9 @@ export class RemoteAIProvider implements AIProvider {
       ...(request.system ? { system: request.system } : {}),
       ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
       ...(request.responseFormat === "json" ? { json: true } : {}),
+      // Private reasoning budget (grading). The engine maps this onto Vertex's
+      // generationConfig.thinkingConfig; the thoughts never come back in `text`.
+      ...(request.thinkingBudget !== undefined ? { thinking_budget: request.thinkingBudget } : {}),
       ...(request.files?.length
         ? { files: request.files.map((f) => ({ mime_type: f.mimeType, data: f.data })) }
         : {}),

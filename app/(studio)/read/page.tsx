@@ -117,8 +117,12 @@ export default async function ReadingHubPage() {
       types: e ? [...e.types] : [],
     };
   };
-  const libraryPassages = (libPassagesRes.data ?? []).map(toPassageCard).filter((c) => c.questionCount > 0);
-  const ownPassages = (ownPassagesRes.data ?? []).map(toPassageCard).filter((c) => c.questionCount > 0);
+  const libraryPassages = (libPassagesRes.data ?? [])
+    .map(toPassageCard)
+    .filter((c) => c.questionCount > 0);
+  const ownPassages = (ownPassagesRes.data ?? [])
+    .map(toPassageCard)
+    .filter((c) => c.questionCount > 0);
 
   const target = Math.max(
     estimates.bySkill.reading.targetBand,

@@ -62,7 +62,7 @@ export function buildGradePrompt(
   const system = [
     "You are a calibrated, conservative IELTS Writing examiner.",
     `For this script, the TR criterion is ${TR_LABEL[input.taskType]}.`,
-    "Follow the procedure exactly. Do not show your working — emit only the final JSON.",
+    "Work through the procedure THOROUGHLY in your private reasoning — that is what the thinking budget is for: judge each criterion (TR, CC, LR, GRA) one at a time, quoting evidence from THIS essay and naming the fault that caps it, and calibrate every band against the anchors before you commit to it. Then emit ONLY the final JSON object — no reasoning, no prose, no code fence.",
     "",
     skill.procedure, // includes its own "## Grading procedure" heading
     "",
@@ -304,11 +304,12 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       common,
       "Write ONE original passage and questions that are objectively answerable FROM THE PASSAGE ALONE — no outside knowledge.",
       "Number questions sequentially from 1 and use ONLY the question types named in the spec.",
+      "Group questions by type: keep ALL questions of the same type together in one contiguous numbered block (e.g. Q1–6 True/False/Not Given, then Q7–10 sentence completion) — never interleave types — so each block reads under a single Cambridge-style instruction.",
       "For EVERY question give the single defensible answer AND quote, verbatim, the exact sentence from the passage that justifies it.",
       "true_false_not_given / yes_no_not_given: 'Not Given' (or 'Not Mentioned') means the passage neither confirms nor contradicts the statement — for those, supporting_sentence may be empty.",
       "matching_headings: put the full heading bank in options and the correct heading text in answer; prompt names the paragraph (e.g. 'Paragraph B'). Label passage paragraphs 'A) ', 'B) ', … in body.",
       "matching_information: answer is the paragraph label that contains the information.",
-      "sentence_completion / summary_completion: answer is the exact word(s) taken from the passage, within any stated word limit.",
+      "sentence_completion / summary_completion: write the candidate-facing 'prompt' as the FULL sentence with the missing word(s) shown as a run of underscores '______' exactly where the answer goes (e.g. 'The research was funded by the ______ government.'). The answer is the exact word(s) copied verbatim from the passage, NO MORE THAN TWO WORDS (and/or a number). Put the gap mid-sentence where natural, not always at the end.",
       "multiple_choice: options are the choices and answer is the exact text of the correct option; make distractors plausible.",
       "Pitch vocabulary and abstraction at the target band in the spec.",
       READING_SET_CONTRACT,

@@ -9,8 +9,17 @@ import { figureToText, parseFigure } from "@/lib/writing/figure";
 // Drains the grading queue — Node runtime (reads the skill, calls the model).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Gemini 3 Pro + a thinking budget makes each grade heavier; give the drainer the
+// full serverless window (BATCH is small so the batch still fits).
+export const maxDuration = 60;
 
-const BATCH = 5; // jobs per invocation; call this often (e.g. every minute via cron)
+const BATCH = 5; // hard cap on jobs per invocation; call this often (e.g. every minute via cron)
+// Stop claiming new jobs once we're this close to maxDuration. A Gemini 3 Pro +
+// thinking grade is heavy (~10-40s), so we claim ONE job at a time and only when
+// there's time to finish it — otherwise a job flipped to 'processing' that we
+// can't complete before the function is killed would be stranded (claimJobs only
+// re-picks 'queued'). Better to leave it 'queued' for the next invocation.
+const DRAIN_BUDGET_MS = 50_000;
 
 /**
  * POST /api/jobs/grade-queue  — the queue drainer.
@@ -27,13 +36,19 @@ export async function POST(req: Request): Promise<Response> {
   if (!isAuthorized(req, secret)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
-  const jobs = await claimJobs(admin, BATCH);
+  const startedAt = Date.now();
 
+  let claimed = 0;
   let succeeded = 0;
   let failed = 0;
   let skipped = 0;
 
-  for (const job of jobs) {
+  // Claim one due job at a time, only while there's budget to finish it. Stops on
+  // the first empty claim (queue drained) or when the time budget / BATCH cap is hit.
+  while (claimed < BATCH && Date.now() - startedAt < DRAIN_BUDGET_MS) {
+    const [job] = await claimJobs(admin, 1);
+    if (!job) break;
+    claimed += 1;
     // Load the essay + its prompt (service-role — cross-tenant drainer).
     const { data: essay } = await admin
       .from("essays")
@@ -88,7 +103,7 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  return NextResponse.json({ claimed: jobs.length, succeeded, failed, skipped });
+  return NextResponse.json({ claimed, succeeded, failed, skipped });
 }
 
 function isAuthorized(req: Request, secret: string): boolean {

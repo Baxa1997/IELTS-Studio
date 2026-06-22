@@ -20,7 +20,17 @@ import {
 } from "./schema";
 import { loadGradingSkill, parseGradeOutput } from "./skill";
 import { logUsage } from "./usage";
-import { GRADE_PROMPT_VERSION, GENERATE_PROMPT_VERSION } from "./version";
+import { CEFR_GRADE_PROMPT_VERSION, GRADE_PROMPT_VERSION, GENERATE_PROMPT_VERSION } from "./version";
+import { buildCefrGradePrompt } from "@/lib/cefr/grade-prompt";
+import {
+  CEFR_GRADE_DISCLAIMER,
+  cefrGradeInputSchema,
+  cefrGradeSchema,
+  type CefrGrade,
+  type CefrGradeInput,
+  type CefrGradeResult,
+} from "@/lib/cefr/schema";
+import { CEFR_LEVELS, type CefrLevel } from "@/lib/cefr/levels";
 
 /**
  * The single server-side entry point for ALL model access.
@@ -44,6 +54,12 @@ import { GRADE_PROMPT_VERSION, GENERATE_PROMPT_VERSION } from "./version";
 const GRADING_TEMPERATURE = 0;
 /** Generation wants variety across prompts/passages. */
 const GENERATION_TEMPERATURE = 0.7;
+/** Private reasoning budget (tokens) for the grader to work criterion-by-criterion
+ *  BEFORE committing a band — the biggest accuracy lever (CLAUDE.md: "force
+ *  criterion-by-criterion reasoning with evidence before emitting a number").
+ *  Bounded so a single grade still fits the serverless window; the thoughts are
+ *  never returned (the reply is forced to JSON). Generation does NOT use this. */
+const GRADE_THINKING_BUDGET = 2048;
 
 const GRADE_RESILIENCE = { timeoutMs: 60_000, retries: 2 };
 const GENERATE_RESILIENCE = { timeoutMs: 45_000, retries: 2 };
@@ -109,6 +125,7 @@ export async function gradeEssay(rawInput: GradeEssayInput): Promise<EssayGrade>
           system,
           prompt: user,
           temperature: GRADING_TEMPERATURE,
+          thinkingBudget: GRADE_THINKING_BUDGET,
           responseFormat: "json",
           signal,
         }),
@@ -131,6 +148,7 @@ export async function gradeEssay(rawInput: GradeEssayInput): Promise<EssayGrade>
             system,
             prompt: repairPrompt(user, first.text, err.message),
             temperature: GRADING_TEMPERATURE,
+            thinkingBudget: GRADE_THINKING_BUDGET,
             responseFormat: "json",
             signal,
           }),
@@ -251,6 +269,199 @@ async function nonAttemptFloor(input: GradeEssayInput): Promise<EssayGrade | nul
   });
 
   return { ...grade, model: FLOOR_MODEL, disclaimer: skill.disclaimer };
+}
+
+// ---- CEFR writing grader (distinct track) ----------------------------------
+
+/** Below this many words a CEFR submission can't show the level's demands — graded
+ *  deterministically (no model call), like the IELTS non-attempt floor. */
+const CEFR_NON_ATTEMPT_WORDS: Record<CefrLevel, number> = {
+  A1: 8,
+  A2: 12,
+  B1: 25,
+  B2: 40,
+  C1: 60,
+  C2: 70,
+};
+
+const CEFR_FLOOR_MODEL = "rule:cefr-non-attempt";
+
+/**
+ * Grade a CEFR writing task against the four Cambridge-aligned subscales and place
+ * it on the CEFR ladder (A1–C2). Conservative — between two levels it returns the
+ * lower one (CLAUDE.md §2). Goes through the same provider/resilience/usage plumbing
+ * as IELTS grading; stateless (the caller decides whether to persist).
+ */
+export async function gradeCefrWriting(rawInput: CefrGradeInput): Promise<CefrGradeResult> {
+  const input = cefrGradeInputSchema.parse(rawInput);
+
+  const floor = cefrNonAttemptFloor(input);
+  if (floor) {
+    await logUsage({
+      organizationId: input.meta.organizationId,
+      userId: input.meta.userId,
+      task: "grade",
+      provider: "rule",
+      model: CEFR_FLOOR_MODEL,
+      requestKind: "cefr_writing",
+      inputTokens: 0,
+      outputTokens: 0,
+      latencyMs: 0,
+      ok: true,
+      promptVersion: CEFR_GRADE_PROMPT_VERSION,
+      resultSummary: `cefr non-attempt (${wordCount(input.text)}w)`,
+      input: input.text,
+      output: floor,
+    });
+    return floor;
+  }
+
+  const provider = getProvider("grade");
+  const { system, user } = buildCefrGradePrompt(input);
+  const startedAt = Date.now();
+  const usage = { input: 0, output: 0 };
+  let model = provider.name;
+
+  try {
+    const first = await withResilience(
+      (signal) =>
+        provider.complete({
+          task: "grade",
+          system,
+          prompt: user,
+          temperature: GRADING_TEMPERATURE,
+          responseFormat: "json",
+          signal,
+        }),
+      GRADE_RESILIENCE,
+    );
+    model = first.model;
+    addUsage(usage, first);
+
+    let grade: CefrGrade;
+    try {
+      grade = parseCefrGrade(first.text);
+    } catch (err) {
+      // Malformed JSON isn't transient — re-ask once with the error echoed back.
+      const repair = await withResilience(
+        (signal) =>
+          provider.complete({
+            task: "grade",
+            system,
+            prompt: repairPrompt(user, first.text, errorMessage(err)),
+            temperature: GRADING_TEMPERATURE,
+            responseFormat: "json",
+            signal,
+          }),
+        GRADE_RESILIENCE,
+      );
+      model = repair.model;
+      addUsage(usage, repair);
+      grade = parseCefrGrade(repair.text); // still bad → throws, caught below
+    }
+
+    // Derive the relational fields server-side so the verdict is always internally
+    // consistent regardless of any model slip: the target is what we asked for,
+    // on_target is estimated≥target on the CEFR ladder, and next_level is the level
+    // immediately above the estimate (keep the model's "focus" advice).
+    grade = reconcileCefrGrade(grade, input.targetLevel);
+
+    await logUsage({
+      organizationId: input.meta.organizationId,
+      userId: input.meta.userId,
+      task: "grade",
+      provider: provider.name,
+      model,
+      requestKind: "cefr_writing",
+      inputTokens: usage.input,
+      outputTokens: usage.output,
+      latencyMs: Date.now() - startedAt,
+      ok: true,
+      promptVersion: CEFR_GRADE_PROMPT_VERSION,
+      resultSummary: `cefr ${grade.estimated_level} (target ${grade.target_level})`,
+      input: user,
+      output: grade,
+    });
+
+    return { ...grade, model, disclaimer: CEFR_GRADE_DISCLAIMER };
+  } catch (err) {
+    await logUsage({
+      organizationId: input.meta.organizationId,
+      userId: input.meta.userId,
+      task: "grade",
+      provider: provider.name,
+      model,
+      requestKind: "cefr_writing",
+      inputTokens: usage.input,
+      outputTokens: usage.output,
+      latencyMs: Date.now() - startedAt,
+      ok: false,
+      error: errorMessage(err),
+      promptVersion: CEFR_GRADE_PROMPT_VERSION,
+      resultSummary: "cefr grade failed",
+      input: user,
+    });
+    throw err;
+  }
+}
+
+/** Strip any code fence / prose and validate the model's CEFR JSON against the schema. */
+function parseCefrGrade(text: string): CefrGrade {
+  const trimmed = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  const json = start >= 0 && end > start ? trimmed.slice(start, end + 1) : trimmed;
+  let obj: unknown;
+  try {
+    obj = JSON.parse(json);
+  } catch {
+    throw new Error("CEFR grade reply was not valid JSON.");
+  }
+  const parsed = cefrGradeSchema.safeParse(obj);
+  if (!parsed.success) {
+    throw new Error(`CEFR grade JSON failed validation: ${parsed.error.issues.map((i) => i.path.join(".") + " " + i.message).join("; ")}`);
+  }
+  return parsed.data;
+}
+
+/** Force the relational fields to be consistent with the (trusted) estimated_level
+ *  and the (authoritative) target. Keeps the model's prose advice intact. */
+function reconcileCefrGrade(grade: CefrGrade, targetLevel: CefrLevel): CefrGrade {
+  const ei = CEFR_LEVELS.indexOf(grade.estimated_level);
+  const ti = CEFR_LEVELS.indexOf(targetLevel);
+  const nextLevel = CEFR_LEVELS[Math.min(CEFR_LEVELS.length - 1, ei + 1)];
+  return {
+    ...grade,
+    target_level: targetLevel,
+    on_target: ei >= ti,
+    next_level: { level: nextLevel, focus: grade.next_level.focus },
+  };
+}
+
+/** Deterministic low result for a submission too short to assess at the target level. */
+function cefrNonAttemptFloor(input: CefrGradeInput): CefrGradeResult | null {
+  const words = wordCount(input.text);
+  if (words >= CEFR_NON_ATTEMPT_WORDS[input.targetLevel]) return null;
+
+  const note = `Only ${words} word${words === 1 ? "" : "s"} were written — too short to show ${input.targetLevel} writing.`;
+  const sub = (improve: string) => ({ mark: 0, comment: note, improve });
+
+  const grade: CefrGrade = {
+    estimated_level: "A1",
+    target_level: input.targetLevel,
+    on_target: false,
+    subscales: {
+      content: sub("Address every point the task asks for."),
+      communicative_achievement: sub("Write a complete message in the right format and tone."),
+      organisation: sub("Write in full, connected sentences."),
+      language: sub("Show a range of words and structures."),
+    },
+    summary: `This is too short to assess at ${input.targetLevel}. Write a full response that covers the whole task.`,
+    strengths: ["You made a start on the task."],
+    improvements: ["Write a complete answer that addresses every point in the task."],
+    next_level: { level: input.targetLevel, focus: "Write a full-length response so your level can be assessed." },
+  };
+  return { ...grade, model: CEFR_FLOOR_MODEL, disclaimer: CEFR_GRADE_DISCLAIMER };
 }
 
 export async function generate(rawInput: GenerateInput): Promise<GenerateResult> {

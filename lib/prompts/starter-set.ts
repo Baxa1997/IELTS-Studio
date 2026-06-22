@@ -1,8 +1,9 @@
 /**
- * Curated starter prompts — 10 Academic Task 1 (each with its figure) + 10 Task 2,
- * spread across bands 5–8 and topic families, so a new learner's library isn't
- * empty. Copied into each org once (see ./starter, source = 'seed'). All ORIGINAL
- * content (no copyrighted test material); figures use clean, invented data.
+ * Curated starter prompts — 14 Academic Task 1 (each with its figure) + 22 Task 2
+ * (36 total), spread across bands 5–8 and topic families, so a new learner's
+ * library isn't empty. Copied into each org once (see ./starter, source = 'seed').
+ * All ORIGINAL content (no copyrighted test material); figures use clean, invented
+ * data.
  */
 
 import type { Figure } from "@/lib/writing/figure";
@@ -205,6 +206,77 @@ const TASK1: StarterPrompt[] = [
       ],
     },
   },
+  {
+    task_type: "task1_academic",
+    category: null,
+    topic_family: "business",
+    difficulty: 5,
+    prompt_text: `The bar chart below shows the number of cups of coffee sold each day of the week at a city café in one typical week.\n\n${T1_TAIL}`,
+    figure: {
+      kind: "bar",
+      title: "Daily coffee sales at a city café",
+      unit: "",
+      y_label: "Cups sold",
+      categories: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      series: [{ name: "Cups", values: [180, 175, 190, 210, 260, 320, 150] }],
+    },
+  },
+  {
+    task_type: "task1_academic",
+    category: null,
+    topic_family: "environment",
+    difficulty: 6,
+    prompt_text: `The pie chart below shows the share of total energy consumed by four sectors in a country in 2020.\n\n${T1_TAIL}`,
+    figure: {
+      kind: "pie",
+      title: "Energy consumption by sector, 2020",
+      unit: "%",
+      slices: [
+        { label: "Industry", value: 38 },
+        { label: "Transport", value: 27 },
+        { label: "Households", value: 24 },
+        { label: "Services", value: 11 },
+      ],
+    },
+  },
+  {
+    task_type: "task1_academic",
+    category: null,
+    topic_family: "leisure",
+    difficulty: 7,
+    prompt_text: `The chart below compares the average number of books read per year by three age groups, split by format, in 2022.\n\n${T1_TAIL}`,
+    figure: {
+      kind: "grouped_bar",
+      title: "Books read per year by age group and format, 2022",
+      unit: "",
+      x_label: "Age group",
+      y_label: "Books per year",
+      categories: ["18–34", "35–54", "55+"],
+      series: [
+        { name: "Print", values: [6, 9, 14] },
+        { name: "Digital", values: [11, 7, 3] },
+      ],
+    },
+  },
+  {
+    task_type: "task1_academic",
+    category: null,
+    topic_family: "economy",
+    difficulty: 7,
+    prompt_text: `The line graph below shows the unemployment rate in two regions of a country between 2010 and 2022.\n\n${T1_TAIL}`,
+    figure: {
+      kind: "line",
+      title: "Unemployment rate by region, 2010–2022",
+      unit: "%",
+      x_label: "Year",
+      y_label: "Unemployment rate (%)",
+      categories: ["2010", "2013", "2016", "2019", "2022"],
+      series: [
+        { name: "Northern region", values: [9.5, 8.1, 6.4, 5.2, 4.0] },
+        { name: "Southern region", values: [12.0, 11.2, 10.5, 9.1, 7.8] },
+      ],
+    },
+  },
 ];
 
 // ---- Task 2 (argumentative essay) ------------------------------------------
@@ -289,6 +361,94 @@ const TASK2: StarterPrompt[] = [
     difficulty: 7,
     prompt_text:
       "Some people believe children should live with their parents until they finish their studies, while others think young people should become independent earlier. Discuss both views and give your own opinion.",
+  },
+  {
+    task_type: "task2",
+    category: "opinion",
+    topic_family: "environment",
+    difficulty: 6,
+    prompt_text:
+      "Some people argue that individuals can do little to reduce climate change and that it is the responsibility of governments and large companies. To what extent do you agree or disagree?",
+  },
+  {
+    task_type: "task2",
+    category: "problem_solution",
+    topic_family: "education",
+    difficulty: 6,
+    prompt_text:
+      "In many countries, the number of students leaving school without basic reading and writing skills is rising. What are the causes of this problem, and what solutions can you suggest?",
+  },
+  {
+    task_type: "task2",
+    category: "two_part",
+    topic_family: "technology",
+    difficulty: 7,
+    prompt_text:
+      "People today increasingly rely on online reviews before buying a product or service. Why has this become so common? Do the advantages of this trend outweigh the disadvantages?",
+  },
+  {
+    task_type: "task2",
+    category: "discussion",
+    topic_family: "work",
+    difficulty: 8,
+    prompt_text:
+      "Some people think a job that pays well is more important than job satisfaction, while others believe enjoying your work matters more than the salary. Discuss both views and give your own opinion.",
+  },
+  {
+    task_type: "task2",
+    category: "opinion",
+    topic_family: "culture",
+    difficulty: 7,
+    prompt_text:
+      "Museums and historical sites are mainly visited by tourists rather than by local people. Why is this the case, and what could be done to encourage local residents to visit them?",
+  },
+  {
+    task_type: "task2",
+    category: "opinion",
+    topic_family: "health",
+    difficulty: 6,
+    prompt_text:
+      "Many people now do most of their daily activities, such as shopping and working, without leaving home. Do the advantages of this development outweigh the disadvantages?",
+  },
+  {
+    task_type: "task2",
+    category: "discussion",
+    topic_family: "environment",
+    difficulty: 7,
+    prompt_text:
+      "Some people think that protecting the environment should be the government's priority, while others believe economic growth is more important. Discuss both views and give your own opinion.",
+  },
+  {
+    task_type: "task2",
+    category: "problem_solution",
+    topic_family: "society",
+    difficulty: 7,
+    prompt_text:
+      "In many large cities, the gap between the richest and poorest residents is growing wider. What problems does this cause, and what measures could reduce the gap?",
+  },
+  {
+    task_type: "task2",
+    category: "opinion",
+    topic_family: "education",
+    difficulty: 5,
+    prompt_text:
+      "Some people believe that children should start learning a foreign language at primary school rather than secondary school. To what extent do you agree or disagree?",
+  },
+  {
+    task_type: "task2",
+    category: "two_part",
+    topic_family: "lifestyle",
+    difficulty: 6,
+    prompt_text:
+      "Fewer young people today take part in regular physical exercise than in the past. Why might this be happening? What can be done to encourage young people to be more active?",
+  },
+  {
+    task_type: "task2",
+    category: "opinion",
+    topic_family: "government",
+    difficulty: 8,
+    prompt_text:
+      "Some people think that countries should produce all the food their population needs and import as little as possible. To what extent do you agree or disagree?",
   },
 ];
 

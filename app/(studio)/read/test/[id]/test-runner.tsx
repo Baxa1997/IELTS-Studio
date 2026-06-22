@@ -6,9 +6,11 @@ import { AlertTriangle } from "lucide-react";
 
 import type { GradedItem } from "@/lib/reading/grade";
 import { READING_QUESTION_LABELS, READING_TEST_DURATION_SECONDS } from "@/lib/reading/types";
+import { bandColor } from "@/lib/ui/band";
 
 import { CoachPanel } from "../../_shared/coach-panel";
-import { QuestionInput, Timer, type DeliveredQuestion } from "../../_shared/question-inputs";
+import { QuestionGroups } from "../../_shared/question-groups";
+import { Timer, type DeliveredQuestion } from "../../_shared/question-inputs";
 import { perfColor, ReviewItem, statusOf, WeakTypes, type TypeBreakdown } from "../../_shared/review";
 import { AMBER, INDIGO, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens";
 import { WordLookup } from "../../_shared/word-lookup";
@@ -278,25 +280,14 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
               <span style={{ fontSize: 14, fontWeight: 600, color: "#A6A2B8", fontVariantNumeric: "tabular-nums" }}>{partAnswered} of {partCount}</span>
             </div>
 
-            {passage.questions.map((q) => {
-              const n = numberById.get(q.id);
-              const flagged = !!flags[q.id];
-              return (
-                <fieldset key={q.id} id={`q-${q.id}`} style={{ border: "none", margin: "0 0 28px", padding: 0, scrollMarginTop: 16 }}>
-                  <legend style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: 0, width: "100%" }}>
-                    <span style={{ fontWeight: 700, color: INK, fontSize: 17, lineHeight: 1.45, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
-                    <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".04em", textTransform: "uppercase", color: "#A6A2B8" }}>{READING_QUESTION_LABELS[q.question_type]}</span>
-                      <span style={{ fontSize: 16.5, lineHeight: 1.45, color: INK }}>{q.prompt}</span>
-                    </span>
-                    <button type="button" onClick={() => toggleFlag(q.id)} aria-pressed={flagged} title="Flag for review" style={flagStyle(flagged)}>⚑</button>
-                  </legend>
-                  <div style={{ paddingLeft: 26, marginTop: 12 }}>
-                    <QuestionInput question={q} value={answers[q.id] ?? ""} onChange={(v) => setAnswer(q.id, v)} />
-                  </div>
-                </fieldset>
-              );
-            })}
+            <QuestionGroups
+              questions={passage.questions}
+              number={(q) => numberById.get(q.id) ?? q.order_index}
+              answers={answers}
+              onAnswer={setAnswer}
+              flags={flags}
+              onToggleFlag={toggleFlag}
+            />
           </div>
         </div>
 
@@ -379,25 +370,6 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     fontSize: 13,
     cursor: disabled ? "default" : "pointer",
     fontFamily: SANS,
-  };
-}
-
-function flagStyle(on: boolean): React.CSSProperties {
-  return {
-    flex: "none",
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    fontSize: 14,
-    fontFamily: SANS,
-    transition: "all .14s ease",
-    background: on ? "#FEF6E7" : "#fff",
-    border: `1.5px solid ${on ? "#F6D58A" : "#EAE8F2"}`,
-    color: on ? "#C77C09" : "#B6B2C8",
   };
 }
 
@@ -539,11 +511,14 @@ function TestResultsView({
         <div style={{ display: "flex", alignItems: "flex-start", gap: 34, flexWrap: "wrap", marginBottom: 30 }}>
           <div style={{ flex: "none" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span style={{ fontSize: 72, fontWeight: 700, lineHeight: 0.9, color: INDIGO, letterSpacing: "-.02em", fontVariantNumeric: "tabular-nums" }}>{result.band.toFixed(1)}</span>
+              <span style={{ fontSize: 84, fontWeight: 800, lineHeight: 0.86, color: bandColor(result.band).fg, letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums" }}>{result.band.toFixed(1)}</span>
               <span style={{ fontSize: 16, fontWeight: 500, color: "#8C88A0" }}>indicative<br />band</span>
             </div>
-            <div style={{ marginTop: 12, fontSize: 15, color: "#46435C", fontWeight: 500 }}>
-              <span style={{ color: INK, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{result.correctCount} / {result.total}</span> correct · {result.percent.toFixed(0)}%
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: bandColor(result.band).fg, background: bandColor(result.band).bg, padding: "4px 12px", borderRadius: 999 }}>{bandColor(result.band).label}</span>
+              <span style={{ fontSize: 15, color: "#46435C", fontWeight: 500 }}>
+                <span style={{ color: INK, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{result.correctCount} / {result.total}</span> correct · {result.percent.toFixed(0)}%
+              </span>
             </div>
           </div>
 

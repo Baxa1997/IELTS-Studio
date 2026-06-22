@@ -133,6 +133,11 @@ export class GeminiProvider implements AIProvider {
         ...(request.responseFormat === "json"
           ? { responseMimeType: "application/json" }
           : {}),
+        // Let the model reason before answering (grading), but keep the thoughts
+        // OUT of the response — we force JSON output, so includeThoughts stays false.
+        ...(request.thinkingBudget !== undefined
+          ? { thinkingConfig: { thinkingBudget: request.thinkingBudget, includeThoughts: false } }
+          : {}),
         ...(request.signal ? { abortSignal: request.signal } : {}),
       },
     });

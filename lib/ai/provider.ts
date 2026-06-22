@@ -37,6 +37,11 @@ export interface CompletionRequest {
   /** Grading runs low-temperature for consistency; generation can be higher.
    *  The service sets this; callers don't. */
   temperature?: number;
+  /** Token budget for the model's PRIVATE reasoning before it answers (Gemini
+   *  "thinking"). The reasoning is never returned — only the final text — so this
+   *  buys deliberation (criterion-by-criterion grading) without polluting the JSON.
+   *  Set by the service for the grade task; omitted ⇒ provider/model default. */
+  thinkingBudget?: number;
   /** Shape of the reply. Defaults to "text". */
   responseFormat?: ResponseFormat;
   /** Cancels the in-flight model call (used by the service's timeout). */
