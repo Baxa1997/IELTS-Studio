@@ -20,6 +20,17 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
+/** Read an env var, treating missing OR empty/whitespace-only as unset.
+ *  A Vercel variable that exists but is blank ("") is NOT nullish, so it slips
+ *  past `?? default` and propagates an empty string downstream — e.g. an empty
+ *  GOOGLE_CLOUD_LOCATION makes the Vertex SDK fall back to its own regional
+ *  default, where the global-only Gemini 3.x models 404. Normalize to undefined
+ *  so the intended default actually applies. */
+function env(name: string): string | undefined {
+  const v = process.env[name]?.trim();
+  return v ? v : undefined;
+}
+
 /** Parse a non-negative integer env var, falling back to a default. */
 function intEnv(value: string | undefined, fallback: number): number {
   const n = Number(value);
@@ -63,11 +74,11 @@ export const serverEnv = {
    *  GEMINI_GENERATE_MODEL / GEMINI_FAST_MODEL, or set GEMINI_MODEL for all.
    *  Defaults to the stable 2.5-flash when unset. */
   get geminiModels(): { grade: string; generate: string; fast: string } {
-    const fallback = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+    const fallback = env("GEMINI_MODEL") ?? "gemini-2.5-flash";
     return {
-      grade: process.env.GEMINI_GRADE_MODEL ?? fallback,
-      generate: process.env.GEMINI_GENERATE_MODEL ?? fallback,
-      fast: process.env.GEMINI_FAST_MODEL ?? "gemini-2.5-flash-lite",
+      grade: env("GEMINI_GRADE_MODEL") ?? fallback,
+      generate: env("GEMINI_GENERATE_MODEL") ?? fallback,
+      fast: env("GEMINI_FAST_MODEL") ?? "gemini-2.5-flash-lite",
     };
   },
 
@@ -78,13 +89,12 @@ export const serverEnv = {
 
   // ── Vertex AI (backend = "vertex") ──
   get googleCloudProject(): string {
-    return required(
-      "GOOGLE_CLOUD_PROJECT",
-      process.env.GOOGLE_CLOUD_PROJECT ?? process.env.GOOGLE_VERTEX_PROJECT,
-    );
+    return required("GOOGLE_CLOUD_PROJECT", env("GOOGLE_CLOUD_PROJECT") ?? env("GOOGLE_VERTEX_PROJECT"));
   },
   get googleCloudLocation(): string {
-    return process.env.GOOGLE_CLOUD_LOCATION ?? process.env.GOOGLE_VERTEX_LOCATION ?? "global";
+    // Gemini 3.x are global-only; an empty/blank env must default here, not leak
+    // through to the SDK's regional default (which 404s those models).
+    return env("GOOGLE_CLOUD_LOCATION") ?? env("GOOGLE_VERTEX_LOCATION") ?? "global";
   },
   /** Optional inline service-account key JSON. When absent, Vertex falls back to
    *  Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS, or the SA
