@@ -4,9 +4,51 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 
+import { clientEnv } from "@/lib/env";
+import { createClient } from "@/lib/supabase/client";
+
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INDIGO = "#4338CA";
 const INK = "#1A1C33";
+
+type GenResult = { ok: boolean; id?: string; message?: string };
+
+/**
+ * Kick off a reading generation. Prefers the self-hosted AI backend: the browser
+ * POSTs straight to it with the user's Supabase access token, so the request
+ * never rides a Vercel function and escapes the 60s serverless cap that 504s
+ * full-test generation. Falls back to the same-origin /api/reading/* route
+ * (cookie auth) when no backend URL is configured — fine for local dev.
+ */
+async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
+  const backend = clientEnv.aiBackendUrl;
+  if (backend) {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return { ok: false, message: "Your session expired — please sign in again." };
+
+    const res = await fetch(`${backend}/reading/${path}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      id?: string;
+      message?: string;
+      detail?: string | { message?: string };
+    };
+    const detailMsg =
+      typeof body.detail === "string" ? body.detail : body.detail?.message;
+    return { ok: res.ok && Boolean(body.id), id: body.id, message: body.message ?? detailMsg };
+  }
+
+  // Local-dev fallback: same-origin Next route (these 504 on Vercel Hobby).
+  const res = await fetch(`/api/reading/${path}`, { method: "POST" });
+  const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
+  return { ok: res.ok && Boolean(body.id), id: body.id, message: body.message };
+}
 
 /**
  * B2C reading: generate one fresh passage on demand. POSTs to /api/reading/next
@@ -28,14 +70,13 @@ export function GeneratePassageButton({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/reading/next", { method: "POST" });
-      const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
-      if (!res.ok || !body.id) {
-        setError(body.message ?? "Couldn't generate a passage. Please try again.");
+      const result = await postReadingGenerate("next");
+      if (!result.ok || !result.id) {
+        setError(result.message ?? "Couldn't generate a passage. Please try again.");
         setLoading(false);
         return;
       }
-      router.push(`/read/${body.id}`); // navigate away — keep the spinner until then
+      router.push(`/read/${result.id}`); // navigate away — keep the spinner until then
     } catch {
       setError("Network error — please try again.");
       setLoading(false);
@@ -97,14 +138,13 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/reading/test", { method: "POST" });
-      const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
-      if (!res.ok || !body.id) {
-        setError(body.message ?? "Couldn't build your test. Please try again.");
+      const result = await postReadingGenerate("test");
+      if (!result.ok || !result.id) {
+        setError(result.message ?? "Couldn't build your test. Please try again.");
         setLoading(false);
         return;
       }
-      router.push(`/read/test/${body.id}`); // navigate away — keep the spinner until then
+      router.push(`/read/test/${result.id}`); // navigate away — keep the spinner until then
     } catch {
       setError("Network error — please try again.");
       setLoading(false);

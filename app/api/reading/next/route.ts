@@ -7,8 +7,10 @@ import { generateReadingForStudent, ReadingServiceError } from "@/lib/reading/se
 // Node runtime, evaluated per request.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// A passage generate + validate call to the AI engine exceeds the default
-// segment timeout. 60s is safe on any Vercel plan.
+// Fallback only: the studio now calls the self-hosted AI backend DIRECTLY from
+// the browser (NEXT_PUBLIC_AI_BACKEND_URL). This same-origin route stays for
+// local dev when that env var is unset. Keep maxDuration at the Hobby cap (60) —
+// higher fails the Hobby build, and generation moved to the backend anyway.
 export const maxDuration = 60;
 
 /**

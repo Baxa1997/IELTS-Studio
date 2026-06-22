@@ -45,6 +45,17 @@ export const clientEnv = {
   get supabaseAnonKey(): string {
     return required("NEXT_PUBLIC_SUPABASE_ANON_KEY", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   },
+
+  /** Self-hosted Python AI backend (Contabo) for the heavy, slow skill endpoints
+   *  (reading/writing generation). The browser calls it DIRECTLY with the user's
+   *  Supabase access token, so the request never touches a Vercel function and
+   *  isn't subject to the 60s serverless cap that 504s full-test generation.
+   *  When unset/blank, the studio falls back to the same-origin /api/reading/*
+   *  routes — fine for local dev, but those 504 on Vercel Hobby. No trailing slash.
+   *  e.g. https://lucid.shopsready.com/ielts */
+  get aiBackendUrl(): string | undefined {
+    return env("NEXT_PUBLIC_AI_BACKEND_URL")?.replace(/\/+$/, "");
+  },
 };
 
 /** Which Gemini backend the AI service talks to:

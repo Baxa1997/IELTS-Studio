@@ -7,9 +7,12 @@ import { generateReadingTestForStudent, ReadingServiceError } from "@/lib/readin
 // calls) and writes via service-role — Node runtime, evaluated per request.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Three passages in parallel, each a generate + validate call to the AI engine —
-// well past the default segment timeout. 60s is the Hobby max and within Pro;
-// bump to 300 on Pro if the full test ever times out.
+// Fallback only: the studio now calls the self-hosted AI backend DIRECTLY from
+// the browser (NEXT_PUBLIC_AI_BACKEND_URL) so full-test generation runs off
+// Vercel entirely. This same-origin route stays for local dev when that env var
+// is unset. Keep maxDuration at the Hobby cap (60) — anything higher fails the
+// Hobby build, and on Vercel the full test exceeds 60s here regardless (which is
+// exactly why generation moved to the backend).
 export const maxDuration = 60;
 
 /**
