@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 import { CEFR, CEFR_LEVELS, type CefrLevel } from "@/lib/cefr/levels";
-import { CEFR_SUBSCALES } from "@/lib/cefr/descriptors";
-import { CEFR_SUBSCALE_KEYS, type CefrGradeResult } from "@/lib/cefr/schema";
+import { type CefrGradeResult } from "@/lib/cefr/schema";
 import { cefrTasksForLevel, getCefrTask, type CefrWritingTask } from "@/lib/cefr/writing-tasks";
+
+import { CefrFeedback } from "./cefr-feedback";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -15,19 +16,7 @@ const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const GREEN = "#15803D";
-const AMBER = "#B5852A";
 const RED = "#C5503C";
-
-const SUBSCALE_NAME: Record<string, string> = Object.fromEntries(
-  CEFR_SUBSCALES.map((s) => [s.key, s.name]),
-);
-
-/** 0–5 subscale mark → colour (5/4 strong, 3 borderline, ≤2 weak). */
-function markColor(mark: number): string {
-  if (mark >= 4) return GREEN;
-  if (mark === 3) return AMBER;
-  return RED;
-}
 
 function countWords(text: string): number {
   const t = text.trim();
@@ -76,16 +65,33 @@ export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: Cef
   // ---- Result phase --------------------------------------------------------
   if (grade && task) {
     return (
-      <ResultView
-        grade={grade}
-        task={task}
-        onRevise={() => setGrade(null)}
-        onNew={() => {
-          setGrade(null);
-          setTask(null);
-          setText("");
-        }}
-      />
+      <div style={{ fontFamily: SANS, color: INK, maxWidth: 880 }}>
+        <Link href="/cefr" style={backBtn}>
+          <ArrowLeft size={15} /> CEFR practice
+        </Link>
+        <div style={{ marginTop: 16 }}>
+          <CefrFeedback
+            grade={grade}
+            taskTitle={task.title}
+            footer={
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setGrade(null)} style={primaryBtn(false)}>Revise this task</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGrade(null);
+                    setTask(null);
+                    setText("");
+                  }}
+                  style={{ ...primaryBtn(false), background: "#fff", color: INK, border: "1px solid #E2DED0", boxShadow: "none" }}
+                >
+                  Try another task
+                </button>
+              </div>
+            }
+          />
+        </div>
+      </div>
     );
   }
 
@@ -95,7 +101,7 @@ export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: Cef
     const inRange = words >= min && words <= max;
     return (
       <div style={{ fontFamily: SANS, color: INK, maxWidth: 860 }}>
-        <button type="button" onClick={() => setTask(null)} style={backBtn}>
+        <button type="button" onClick={() => setTask(null)} style={{ ...backBtn, border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
           <ArrowLeft size={15} /> Choose another task
         </button>
 
@@ -150,7 +156,7 @@ export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: Cef
   // ---- Choose phase --------------------------------------------------------
   return (
     <div style={{ fontFamily: SANS, color: INK, maxWidth: 980 }}>
-      <Link href="/cefr" style={{ ...backBtn, display: "inline-flex", textDecoration: "none" }}>
+      <Link href="/cefr" style={backBtn}>
         <ArrowLeft size={15} /> CEFR practice
       </Link>
 
@@ -201,93 +207,6 @@ export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: Cef
   );
 }
 
-// ---- Result --------------------------------------------------------------
-
-function ResultView({ grade, task, onRevise, onNew }: { grade: CefrGradeResult; task: CefrWritingTask; onRevise: () => void; onNew: () => void }) {
-  const est = CEFR[grade.estimated_level];
-  return (
-    <div style={{ fontFamily: SANS, color: INK, maxWidth: 880 }}>
-      <Link href="/cefr" style={{ ...backBtn, display: "inline-flex", textDecoration: "none" }}>
-        <ArrowLeft size={15} /> CEFR practice
-      </Link>
-
-      {/* Hero */}
-      <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 16, padding: "20px 24px", background: est.bg, border: `1px solid ${est.color}33`, borderRadius: 16, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 60, lineHeight: 0.85, color: est.color, letterSpacing: "-.02em" }}>{grade.estimated_level}</span>
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: MUTED }}>Estimated CEFR level</p>
-          <p style={{ margin: "3px 0 0", fontSize: 16, fontWeight: 700, color: INK }}>{est.name}</p>
-          <span style={{ display: "inline-block", marginTop: 8, fontSize: 12.5, fontWeight: 700, color: grade.on_target ? GREEN : AMBER, background: grade.on_target ? "#E9F7EE" : "#F6EAD0", padding: "3px 10px", borderRadius: 999 }}>
-            {grade.on_target ? `Meets the ${grade.target_level} target` : `Below the ${grade.target_level} target`}
-          </span>
-        </div>
-      </div>
-
-      <p style={{ fontSize: 15, lineHeight: 1.6, color: "#3A3F58", margin: "18px 0 0" }}>{grade.summary}</p>
-
-      {/* Subscales */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(380px,1fr))", gap: 14, marginTop: 18 }}>
-        {CEFR_SUBSCALE_KEYS.map((key) => {
-          const s = grade.subscales[key];
-          const c = markColor(s.mark);
-          return (
-            <div key={key} style={{ background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, padding: "16px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>{SUBSCALE_NAME[key]}</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: c, fontVariantNumeric: "tabular-nums" }}>{s.mark}<span style={{ fontSize: 13, color: "#9097A8", fontWeight: 600 }}>/5</span></span>
-              </div>
-              <div style={{ marginTop: 9, height: 6, borderRadius: 3, background: "#EFECE0", overflow: "hidden" }}>
-                <div style={{ width: `${(s.mark / 5) * 100}%`, height: "100%", borderRadius: 3, background: c }} />
-              </div>
-              <p style={{ margin: "11px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "#41496A" }}>{s.comment}</p>
-              <p style={{ margin: "8px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "#2C3247" }}>
-                <strong style={{ color: INDIGO }}>Improve:</strong> {s.improve}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Strengths + improvements */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 14, marginTop: 14 }}>
-        <ListCard title="Strengths" color={GREEN} items={grade.strengths} icon={<Check size={14} />} />
-        <ListCard title="Work on next" color={AMBER} items={grade.improvements} icon={<ArrowRight size={14} />} />
-      </div>
-
-      {/* Next level */}
-      <div style={{ marginTop: 14, padding: "16px 18px", background: "#EFEEFC", border: "1px solid #DEDCF5", borderRadius: 14 }}>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase", color: INDIGO }}>To reach {grade.next_level.level}</p>
-        <p style={{ margin: "5px 0 0", fontSize: 14.5, lineHeight: 1.55, color: "#2C3247" }}>{grade.next_level.focus}</p>
-      </div>
-
-      <p style={{ margin: "18px 0 0", fontSize: 12, lineHeight: 1.5, color: "#9A99A8" }}>{grade.disclaimer}</p>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
-        <button type="button" onClick={onRevise} style={primaryBtn(false)}>Revise this task</button>
-        <button type="button" onClick={onNew} style={{ ...primaryBtn(false), background: "#fff", color: INK, border: "1px solid #E2DED0", boxShadow: "none" }}>Try another task</button>
-      </div>
-
-      <p style={{ marginTop: 14, fontSize: 12.5, color: "#9097A8" }}>Task: {task.title}</p>
-    </div>
-  );
-}
-
-function ListCard({ title, color, items, icon }: { title: string; color: string; items: string[]; icon: React.ReactNode }) {
-  return (
-    <div style={{ background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, padding: "16px 18px" }}>
-      <p style={{ margin: "0 0 10px", fontWeight: 700, fontSize: 14.5, color: INK }}>{title}</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-        {items.map((it, i) => (
-          <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
-            <span style={{ flex: "none", width: 20, height: 20, borderRadius: 6, background: `${color}1A`, color, display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>{icon}</span>
-            <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "#41496A" }}>{it}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function LevelChip({ level }: { level: CefrLevel }) {
   const info = CEFR[level];
   return (
@@ -299,10 +218,7 @@ const backBtn: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
-  border: "none",
-  background: "transparent",
-  padding: 0,
-  cursor: "pointer",
+  textDecoration: "none",
   fontFamily: SANS,
   fontSize: 14,
   fontWeight: 600,

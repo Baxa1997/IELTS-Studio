@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { gradeCefrWriting } from "@/lib/ai";
 import { getSession } from "@/lib/auth";
 import { isCefrLevel, type CefrLevel } from "@/lib/cefr/levels";
+import { saveCefrAttempt } from "@/lib/cefr/store";
 import { getCefrTask } from "@/lib/cefr/writing-tasks";
 
 // Grades a CEFR writing task through the single server-side AI service (CEFR
@@ -42,12 +43,16 @@ export async function POST(req: Request): Promise<Response> {
   let targetLevel: CefrLevel;
   let genre: string;
   let prompt: string;
+  let taskId: string | null = null;
+  let taskTitle: string | null = null;
 
   const task = typeof body.taskId === "string" ? getCefrTask(body.taskId) : undefined;
   if (task) {
     targetLevel = task.level;
     genre = task.genre;
     prompt = task.prompt;
+    taskId = task.id;
+    taskTitle = task.title;
   } else {
     const lvl = resolveLevel(body.level);
     if (!lvl) return fail(400, "bad_level");
@@ -65,7 +70,21 @@ export async function POST(req: Request): Promise<Response> {
       text,
       meta: { organizationId: session.profile.organization_id, userId: session.profile.id },
     });
-    return NextResponse.json({ grade });
+
+    // Save to the learner's CEFR history (best-effort — never blocks the grade).
+    const attemptId = await saveCefrAttempt({
+      organizationId: session.profile.organization_id,
+      studentId: session.profile.id,
+      taskId,
+      taskTitle,
+      targetLevel,
+      genre,
+      prompt,
+      response: text,
+      grade,
+    });
+
+    return NextResponse.json({ grade, attemptId });
   } catch (err) {
     console.error("[cefr.grade] failed:", err);
     return fail(502, "grade_failed", "Couldn't grade your writing. Please try again.");

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { loadRecentCefrAttempts } from "@/lib/cefr/store";
 import { loadStudyPlan } from "@/lib/plan/service";
+import { createClient } from "@/lib/supabase/server";
 
 import { CefrHub } from "./cefr-hub";
 
@@ -19,5 +21,8 @@ export default async function CefrPage() {
   const plan = await loadStudyPlan(profile.id);
   if (!plan) return null;
 
-  return <CefrHub />;
+  const supabase = await createClient();
+  const recent = await loadRecentCefrAttempts(supabase);
+
+  return <CefrHub recent={recent} />;
 }

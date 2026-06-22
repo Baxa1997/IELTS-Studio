@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { BookOpen, PenLine } from "lucide-react";
 
-import { CEFR, CEFR_LEVEL_LIST, type CefrLevel } from "@/lib/cefr/levels";
+import { CEFR, CEFR_LEVEL_LIST, isCefrLevel, type CefrLevel } from "@/lib/cefr/levels";
+import type { CefrAttemptSummary } from "@/lib/cefr/store";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -19,7 +20,7 @@ const MUTED = "#5A6076";
  * scoring) is the next build; until then each mode shows the level's IELTS-band
  * bridge so the learner can practise at the equivalent level today.
  */
-export function CefrHub() {
+export function CefrHub({ recent = [] }: { recent?: CefrAttemptSummary[] }) {
   const [level, setLevel] = useState<CefrLevel>("B1");
   const info = CEFR[level];
 
@@ -94,11 +95,56 @@ export function CefrHub() {
         />
       </div>
 
+      {/* History */}
+      {recent.length > 0 ? (
+        <div style={{ marginTop: 32 }}>
+          <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 19, margin: "0 0 12px" }}>Your recent CEFR writing</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {recent.map((a) => (
+              <RecentRow key={a.id} a={a} />
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <p style={{ margin: "30px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "#9A99A8", maxWidth: 720 }}>
         CEFR levels and their IELTS overlap follow the public Council of Europe framework. A CEFR result is an indicative level, not an official IELTS® score, and this product is not affiliated with or endorsed by IELTS®.
       </p>
     </div>
   );
+}
+
+function RecentRow({ a }: { a: CefrAttemptSummary }) {
+  const c = isCefrLevel(a.estimated_level) ? CEFR[a.estimated_level] : null;
+  const when = formatWhen(a.created_at);
+  return (
+    <Link
+      href={`/cefr/writing/${a.id}`}
+      className="lp-hover"
+      style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: "#fff", border: "1px solid #E7E3D5", borderRadius: 12, textDecoration: "none" }}
+    >
+      <span style={{ flex: "none", width: 44, height: 44, borderRadius: 11, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: SERIF, fontWeight: 800, fontSize: 18, color: c?.color ?? INK, background: c?.bg ?? "#F1EFE5" }}>
+        {a.estimated_level}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 14.5, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.task_title ?? "CEFR writing"}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 12.5, color: MUTED, textTransform: "capitalize" }}>
+          {a.genre} · target {a.target_level} · {a.on_target ? "met" : "below"}{when ? ` · ${when}` : ""}
+        </p>
+      </div>
+      <span style={{ flex: "none", color: INDIGO }} aria-hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </span>
+    </Link>
+  );
+}
+
+function formatWhen(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
 }
 
 function ModeCard({
