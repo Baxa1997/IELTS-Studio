@@ -2,153 +2,72 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 import { CEFR, CEFR_LEVELS, type CefrLevel } from "@/lib/cefr/levels";
-import { type CefrGradeResult } from "@/lib/cefr/schema";
 import { cefrTasksForLevel, getCefrTask, type CefrWritingTask } from "@/lib/cefr/writing-tasks";
-
-import { CefrFeedback } from "./cefr-feedback";
+import { WritingStudio } from "@/app/(studio)/write/writing-studio";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
-const GREEN = "#15803D";
 const RED = "#C5503C";
-
-function countWords(text: string): number {
-  const t = text.trim();
-  return t ? t.split(/\s+/).length : 0;
-}
 
 export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: CefrLevel; initialTaskId: string | null }) {
   const [level, setLevel] = useState<CefrLevel>(initialLevel);
   const [task, setTask] = useState<CefrWritingTask | null>(() => (initialTaskId ? getCefrTask(initialTaskId) ?? null : null));
-  const [text, setText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [grade, setGrade] = useState<CefrGradeResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   const tasks = useMemo(() => cefrTasksForLevel(level), [level]);
-  const words = countWords(text);
 
-  async function submit() {
-    if (!task || submitting) return;
-    if (words < 1) {
-      setError("Write something before submitting.");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
+  // Generate a fresh, level-pitched task on demand (the dynamic counterpart to the
+  // authored cards). Selecting it opens the studio, which grades it via /api/cefr/grade.
+  async function generateTask() {
+    if (genLoading) return;
+    setGenLoading(true);
+    setGenError(null);
     try {
-      const res = await fetch("/api/cefr/grade", {
+      const res = await fetch("/api/cefr/writing/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: task.id, text }),
+        body: JSON.stringify({ level }),
       });
-      const body = (await res.json().catch(() => ({}))) as { grade?: CefrGradeResult; message?: string; error?: string };
-      if (res.ok && body.grade) {
-        setGrade(body.grade);
-        window.scrollTo({ top: 0 });
+      const body = (await res.json().catch(() => ({}))) as { task?: CefrWritingTask; message?: string };
+      if (res.ok && body.task) {
+        setTask(body.task);
       } else {
-        setError(body.message ?? "Couldn't grade your writing. Please try again.");
+        setGenError(body.message ?? "Couldn't create a task. Please try again.");
       }
     } catch {
-      setError("Network error — please try again.");
+      setGenError("Network error — please try again.");
     } finally {
-      setSubmitting(false);
+      setGenLoading(false);
     }
   }
 
-  // ---- Result phase --------------------------------------------------------
-  if (grade && task) {
-    return (
-      <div style={{ fontFamily: SANS, color: INK, maxWidth: 880 }}>
-        <Link href="/cefr" style={backBtn}>
-          <ArrowLeft size={15} /> CEFR practice
-        </Link>
-        <div style={{ marginTop: 16 }}>
-          <CefrFeedback
-            grade={grade}
-            taskTitle={task.title}
-            footer={
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => setGrade(null)} style={primaryBtn(false)}>Revise this task</button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGrade(null);
-                    setTask(null);
-                    setText("");
-                  }}
-                  style={{ ...primaryBtn(false), background: "#fff", color: INK, border: "1px solid #E2DED0", boxShadow: "none" }}
-                >
-                  Try another task
-                </button>
-              </div>
-            }
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // ---- Write phase ---------------------------------------------------------
+  // ---- Studio phase --------------------------------------------------------
+  // A selected task (curated OR generated) opens the full writing studio — same UI
+  // as IELTS (prompt panel, timed editor, coach), graded on the CEFR scale. Rendered
+  // as a fixed overlay so it escapes the app shell and fills the viewport.
   if (task) {
-    const [min, max] = task.words;
-    const inRange = words >= min && words <= max;
     return (
-      <div style={{ fontFamily: SANS, color: INK, maxWidth: 860 }}>
-        <button type="button" onClick={() => setTask(null)} style={{ ...backBtn, border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
-          <ArrowLeft size={15} /> Choose another task
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0 12px" }}>
-          <LevelChip level={task.level} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: MUTED, textTransform: "capitalize" }}>{task.genre}</span>
-        </div>
-
-        {/* Task card */}
-        <div style={{ background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, padding: "18px 20px" }}>
-          <p style={{ margin: 0, fontFamily: SERIF, fontSize: 18, lineHeight: 1.5, color: "#2B3145" }}>{task.prompt}</p>
-          <ul style={{ margin: "12px 0 0", paddingLeft: 18, color: MUTED, fontSize: 14, lineHeight: 1.7 }}>
-            {task.points.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Editor */}
-        <div style={{ marginTop: 16 }}>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Write your answer here…"
-            className="lp-input"
-            style={{ width: "100%", minHeight: 320, resize: "vertical", padding: "16px 18px", border: "1px solid #E2DED0", borderRadius: 14, background: "#fff", fontFamily: SANS, fontSize: 15.5, lineHeight: 1.7, color: INK }}
-          />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13.5, fontWeight: 600, color: inRange ? GREEN : MUTED }}>
-              {words} words <span style={{ color: "#9097A8", fontWeight: 500 }}>· target {min}–{max}</span>
-            </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {error ? <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">{error}</span> : null}
-              <button type="button" onClick={() => void submit()} disabled={submitting} style={primaryBtn(submitting)}>
-                {submitting ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Grading…
-                  </>
-                ) : (
-                  <>
-                    Get my CEFR level <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+      <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#F4F1E7" }}>
+        <WritingStudio
+          mode="cefr"
+          cefrTask={{
+            id: task.id,
+            level: task.level,
+            genre: task.genre,
+            title: task.title,
+            promptText: task.prompt,
+            points: task.points,
+            words: task.words,
+          }}
+          onExit={() => setTask(null)}
+        />
       </div>
     );
   }
@@ -178,17 +97,50 @@ export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: Cef
         })}
       </div>
 
+      {/* Dynamic task generator — an original {level} task created for the learner,
+          not a fixed prompt. Sits above the curated cards. */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          flexWrap: "wrap",
+          marginTop: 18,
+          padding: "16px 18px",
+          borderRadius: 16,
+          background: "linear-gradient(135deg,#F4F4FB,#FBFAF4)",
+          border: "1px solid #E0E1F4",
+        }}
+      >
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "#EBECFA", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+          <Sparkles size={22} />
+        </div>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16, color: INK }}>Generate a fresh {level} task</div>
+          <div style={{ fontFamily: SANS, fontSize: 13.5, color: MUTED, marginTop: 2, lineHeight: 1.5 }}>
+            An original topic created for your level — never a fixed test. {genError ? <span style={{ color: RED, fontWeight: 600 }} role="alert">{genError}</span> : null}
+          </div>
+        </div>
+        <button type="button" onClick={() => void generateTask()} disabled={genLoading} style={primaryBtn(genLoading)}>
+          {genLoading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> Creating…
+            </>
+          ) : (
+            <>
+              <Sparkles size={16} /> New task
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Task cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 14, marginTop: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 14, marginTop: 14 }}>
         {tasks.map((t) => (
           <button
             key={t.id}
             type="button"
-            onClick={() => {
-              setTask(t);
-              setText("");
-              setError(null);
-            }}
+            onClick={() => setTask(t)}
             className="lp-hover"
             style={{ textAlign: "left", cursor: "pointer", background: "#fff", border: "1px solid #E7E3D5", borderRadius: 16, padding: "18px 18px 16px", display: "flex", flexDirection: "column", gap: 10, fontFamily: SANS }}
           >
@@ -204,13 +156,6 @@ export function CefrWriting({ initialLevel, initialTaskId }: { initialLevel: Cef
         ))}
       </div>
     </div>
-  );
-}
-
-function LevelChip({ level }: { level: CefrLevel }) {
-  const info = CEFR[level];
-  return (
-    <span style={{ fontSize: 13, fontWeight: 800, color: info.color, background: info.bg, padding: "4px 11px", borderRadius: 999 }}>{level} · {info.name}</span>
   );
 }
 

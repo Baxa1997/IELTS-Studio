@@ -87,6 +87,7 @@ export const generateInputSchema = z.object({
     "writing_task1_academic",
     "writing_tutor",
     "writing_samples",
+    "cefr_writing_task",
     "reading_passage",
     "reading_set",
     "reading_validation",
@@ -120,6 +121,16 @@ export type WritingSample = z.infer<typeof writingSampleSchema>;
 export const writingSamplesResultSchema = z.object({
   samples: z.array(writingSampleSchema).min(1),
 });
+
+/** A dynamically generated CEFR writing task (the level + word target are fixed by
+ *  the caller; the model supplies the original situation, genre and content points). */
+export const cefrWritingTaskResultSchema = z.object({
+  genre: z.string().min(1),
+  title: z.string().min(1),
+  prompt: z.string().min(1),
+  points: z.array(z.string().min(1)).min(2).max(4),
+});
+export type CefrWritingTaskResult = z.infer<typeof cefrWritingTaskResultSchema>;
 
 export interface GenerateResult {
   content: string;

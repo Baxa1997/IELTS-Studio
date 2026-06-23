@@ -47,10 +47,14 @@ export default async function Home() {
       <Hero />
       <TrustStrip />
       <RevisionLoop />
+      <AdaptiveEngine />
+      <CoachSection />
       <Guidance />
       <Skills />
+      <Grounding />
       <Testimonials />
       <ContentMoat />
+      <Faq />
       <Pricing />
       <FinalCta />
       <SiteFooter />
@@ -216,20 +220,35 @@ function Hero() {
           {/* today → gap → projected */}
           <div className="lp-hero-gap" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(20px,4vw,36px)", marginTop: 18 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(64px,9vw,108px)", lineHeight: 0.9, color: "rgba(26,28,51,.20)" }}>6.5</div>
-              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".18em", color: "#a8a596", marginTop: 8 }}>TODAY</div>
+              <div
+                style={{
+                  fontFamily: SERIF,
+                  fontWeight: 600,
+                  fontSize: "clamp(64px,9vw,108px)",
+                  lineHeight: 0.9,
+                  // warm low-band gradient (yellow → orange → red) vs. the indigo target
+                  background: "linear-gradient(135deg,#F5B53C 0%,#EC7A33 48%,#D6402F 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  color: "transparent",
+                }}
+              >
+                6.0
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".18em", color: "#C2792F", marginTop: 8 }}>TODAY</div>
             </div>
             <div style={{ width: "clamp(150px,22vw,236px)", marginBottom: 30 }}>
               <div style={{ position: "relative", height: 4, background: "#ECEAE2", borderRadius: 3 }}>
-                <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "100%", borderRadius: 3, background: `linear-gradient(90deg,#A9AEEC,${INDIGO})` }}>
+                <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "100%", borderRadius: 3, background: `linear-gradient(90deg,#EC7A33,#D6402F 14%,#9A78D0 60%,${INDIGO})` }}>
                   <span style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, borderRadius: "50%", background: INDIGO, boxShadow: "0 0 0 4px rgba(59,67,181,.16),0 0 18px rgba(59,67,181,.5)" }} />
                 </div>
               </div>
               <div style={{ textAlign: "center", marginTop: 14, fontFamily: MONO, fontSize: 11, letterSpacing: ".18em", color: "#b4b1a3" }}>THE GAP</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(64px,9vw,108px)", lineHeight: 0.9, color: INDIGO, animation: "hb-glow 3.6s ease-in-out infinite" }}>7.5</div>
-              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".18em", color: INDIGO, marginTop: 8 }}>AI-PROJECTED BAND</div>
+              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(64px,9vw,108px)", lineHeight: 0.9, color: INDIGO, animation: "hb-glow 3.6s ease-in-out infinite" }}>9.0</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".18em", color: INDIGO, marginTop: 8 }}>TARGET BAND</div>
             </div>
           </div>
 
@@ -244,7 +263,18 @@ function Hero() {
             <Link href="/sign-in?next=/write" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 26px", borderRadius: 14, textDecoration: "none", boxShadow: "0 12px 26px rgba(59,67,181,.26)" }}>
               Grade an essay free <span aria-hidden>→</span>
             </Link>
+            <Link href="/sign-in?next=/cefr" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#ECEBFB", color: INDIGO, border: "1.5px solid #DEDCF5", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 22px", borderRadius: 14, textDecoration: "none" }}>Practice CEFR</Link>
             <a href="#how" style={{ display: "inline-flex", alignItems: "center", background: "#fff", color: INK, border: "1.5px solid #E4E0D0", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 24px", borderRadius: 14, textDecoration: "none" }}>See how it works</a>
+          </div>
+
+          {/* adaptive-practice proof — practice is generated for YOUR level, not a fixed test */}
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 9, marginTop: 22 }}>
+            {["Generated for your level", "Fresh topic every session", "CEFR A1–C2 + IELTS bands"].map((t) => (
+              <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 600, fontSize: 13, color: "#4b4e63", background: "#fff", border: "1px solid #E7E3D5", borderRadius: 999, padding: "7px 14px" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: INDIGO, flex: "none" }} />
+                {t}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -272,17 +302,17 @@ function Hero() {
           </div>
 
           <div className="lp-hero-bars" style={{ display: "flex", gap: 18, marginTop: 20 }}>
-            <CritBar label="LEXICAL" band="6.0" pct={66} color="#E0A82E" />
+            <CritBar label="LEXICAL" band="5.5" pct={61} color="#E0A82E" />
             <CritBar label="GRAMMAR" band="6.0" pct={66} color={INDIGO} />
-            <CritBar label="COHERENCE" band="6.5" pct={72} color={INDIGO} />
+            <CritBar label="COHERENCE" band="6.0" pct={66} color={INDIGO} />
             <CritBar label="TASK RESPONSE" band="6.5" pct={72} color={INDIGO} />
           </div>
 
           <div className="lp-hero-cardfoot" style={{ marginTop: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderTop: "1px dashed #EAE7DE", paddingTop: 15 }}>
             <span style={{ fontSize: 15, color: "#57564d" }}>
-              <strong style={{ color: INK, fontWeight: 600 }}>Overall 6.5 today.</strong> Apply the highlighted fixes and you&rsquo;re projected at <strong style={{ color: INDIGO, fontWeight: 700 }}>7.5</strong>.
+              <strong style={{ color: INK, fontWeight: 600 }}>Overall 6.0 today.</strong> Apply the highlighted fixes and your next draft is projected at <strong style={{ color: INDIGO, fontWeight: 700 }}>7.0</strong> &mdash; on the way to your target.
             </span>
-            <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#1F8A5B", background: "#e9f5ef", border: "1px solid #cfe7da", borderRadius: 999, padding: "5px 13px", whiteSpace: "nowrap" }}>+1.0 reachable</span>
+            <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#1F8A5B", background: "#e9f5ef", border: "1px solid #cfe7da", borderRadius: 999, padding: "5px 13px", whiteSpace: "nowrap" }}>+1.0 next draft</span>
           </div>
         </div>
 
@@ -385,7 +415,7 @@ function RevisionLoop() {
     {
       n: "Step 1",
       head: "Write or paste",
-      body: "Pick a Task 1/2 prompt or paste your essay. The AI reads it like an examiner and grades each criterion in seconds.",
+      body: "Pick a Task 1 or Task 2 topic, or paste your own essay. The AI reads it like an examiner and grades each criterion in seconds.",
       icon: (
         <>
           <path d="M12 20h9" />
@@ -439,6 +469,149 @@ function RevisionLoop() {
   );
 }
 
+// ---- personalised practice: text + a "tuned to you" mockup -----------------
+
+function FeaturePoint({ head, body }: { head: string; body: string }) {
+  return (
+    <div style={{ display: "flex", gap: 13 }}>
+      <span style={{ marginTop: 3, flex: "none" }}>
+        <Check size={20} sw={2.6} />
+      </span>
+      <div>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16.5, color: INK }}>{head}</div>
+        <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: "#6b6e84", margin: "3px 0 0" }}>{body}</p>
+      </div>
+    </div>
+  );
+}
+
+function AdaptiveEngine() {
+  return (
+    <Band id="adaptive" bg="#F4F4FB">
+      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(28px,5vw,64px)", alignItems: "center" }}>
+        {/* left: the personalisation story */}
+        <div>
+          <SectionHead
+            title="Built around you — not a recycled test"
+            sub="Nothing here is a one-size-fits-all paper. Every question is created for your level, so the learner next to you is working on something completely different."
+            maxSub={560}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 30 }}>
+            <FeaturePoint head="It follows your level" body="We read your current band (or your CEFR level, A1–C2) and set every task right at your edge — hard enough to grow you, never so hard it just discourages." />
+            <FeaturePoint head="No two learners get the same set" body="Each question is built for you the moment you start, so what you practise is genuinely yours — not a fixed test everyone shares or can memorise." />
+            <FeaturePoint head="It gets harder as you improve" body="As your scores rise, so does the difficulty and the vocabulary expected — the practice keeps pulling you toward your target instead of leaving you where you are." />
+          </div>
+        </div>
+
+        {/* right: a "tuned to you" topic mockup */}
+        <div style={{ background: "#fff", border: "1px solid #E0E1F4", borderRadius: 20, boxShadow: "0 26px 54px -36px rgba(20,20,48,.45)", padding: "22px 22px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".14em", color: "#908d80" }}>TODAY&rsquo;S TOPIC · FOR YOU</span>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: INDIGO, background: "#ECEDFB", border: "1px solid #DADCF4", borderRadius: 999, padding: "3px 11px" }}>Tuned to Band 6.0</span>
+          </div>
+          <p style={{ fontFamily: SERIF, fontSize: 19, lineHeight: 1.45, color: INK, margin: "14px 0 0" }}>
+            Some people think children should begin learning a foreign language at primary school rather than secondary school. Do you agree or disagree?
+          </p>
+          <div style={{ marginTop: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: MONO, fontSize: 10, letterSpacing: ".1em", color: "#b4b1a3" }}>
+              <span>EASIER</span>
+              <span style={{ color: INDIGO }}>YOUR LEVEL</span>
+              <span>HARDER</span>
+            </div>
+            <div style={{ height: 5, borderRadius: 3, background: "#ECEAF6", marginTop: 7, position: "relative" }}>
+              <span style={{ position: "absolute", left: "52%", top: "50%", transform: "translate(-50%,-50%)", width: 15, height: 15, borderRadius: "50%", background: INDIGO, boxShadow: "0 0 0 4px rgba(59,67,181,.16)" }} />
+            </div>
+          </div>
+          <div style={{ marginTop: 18, borderTop: "1px dashed #E6E4F2", paddingTop: 14, display: "flex", gap: 11, alignItems: "flex-start" }}>
+            <span style={{ flex: "none", width: 30, height: 30, borderRadius: 8, background: "#F3F2FC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+              </svg>
+            </span>
+            <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.5, color: "#8a897c", margin: 0 }}>
+              A learner aiming for <strong style={{ color: INK }}>Band 7.5</strong> sees a harder, more abstract version of this topic — same skill, different question.
+            </p>
+          </div>
+        </div>
+      </div>
+    </Band>
+  );
+}
+
+// ---- coach: text + a chat mockup -------------------------------------------
+
+function CoachBubble({ side, children }: { side: "you" | "coach"; children: React.ReactNode }) {
+  const you = side === "you";
+  return (
+    <div style={{ display: "flex", justifyContent: you ? "flex-end" : "flex-start" }}>
+      <div
+        style={{
+          maxWidth: "86%",
+          padding: "11px 14px",
+          borderRadius: 13,
+          borderTopRightRadius: you ? 4 : 13,
+          borderTopLeftRadius: you ? 13 : 4,
+          fontFamily: SANS,
+          fontSize: 14,
+          lineHeight: 1.55,
+          background: you ? INDIGO : "#F4F4FB",
+          color: you ? "#fff" : "#3a3d52",
+          border: you ? "none" : "1px solid #E6E7FB",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function CoachSection() {
+  return (
+    <Band id="coach" bg="#fff">
+      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(28px,5vw,64px)", alignItems: "center" }}>
+        {/* left: a coach chat mockup */}
+        <div style={{ background: "#fff", border: "1px solid #E7E4D6", borderRadius: 20, boxShadow: "0 26px 54px -36px rgba(20,20,48,.45)", padding: "18px 18px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, paddingBottom: 14, borderBottom: "1px solid #F0EDE1" }}>
+            <span style={{ flex: "none", width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+            </span>
+            <div>
+              <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>Your coach</div>
+              <div style={{ fontFamily: SANS, fontSize: 12, color: "#8A8FA0" }}>Ideas &amp; sharper words — not answers</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 11, padding: "16px 2px 6px" }}>
+            <CoachBubble side="you">I don&rsquo;t know how to start my introduction.</CoachBubble>
+            <CoachBubble side="coach">Don&rsquo;t repeat the question back. Say your opinion in one clear sentence, then name your two reasons. Try opening with &ldquo;I strongly believe that…&rdquo;.</CoachBubble>
+            <CoachBubble side="you">What&rsquo;s a stronger word than &ldquo;good&rdquo;?</CoachBubble>
+            <CoachBubble side="coach">For an argument, &ldquo;compelling&rdquo;, &ldquo;convincing&rdquo;, or &ldquo;well-founded&rdquo; — pick by what you actually mean.</CoachBubble>
+          </div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", paddingTop: 8 }}>
+            {["Plan an outline", "Sharper words", "Check my idea"].map((c) => (
+              <span key={c} style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: INDIGO, background: "#ECEBFB", border: "1px solid #E1DFF7", borderRadius: 999, padding: "6px 12px" }}>{c}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* right: what the coach does */}
+        <div>
+          <SectionHead
+            title="A coach beside you in every practice"
+            sub="Every writing and reading session has a coach you can ask anything — so you&rsquo;re never stuck staring at a blank page."
+            maxSub={560}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 30 }}>
+            <FeaturePoint head="It helps you think, not cheat" body="Ask for ideas, a structure, or a sharper word while you write — but it never writes the answer for you, so the band you earn is really yours." />
+            <FeaturePoint head="Ask in your own language" body="Stuck on a word or the task itself? Ask in any language. The coach replies in plain terms and shows you the move on a different example." />
+            <FeaturePoint head="It explains every mistake after grading" body="Once you submit, the coach walks through why each fix matters and how to get it right next time — the same for a wrong reading answer." />
+          </div>
+        </div>
+      </div>
+    </Band>
+  );
+}
+
 // ---- guidance: practice every writing task ---------------------------------
 
 function Guidance() {
@@ -479,7 +652,7 @@ function Guidance() {
   ];
   return (
     <Band id="practice" bg="#fff">
-      <SectionHead title="Guided practice for every writing task" sub="Original, exam-faithful prompts for each task type — graded the moment you submit, with a fix you can act on right away." />
+      <SectionHead title="Guided practice for every writing task" sub="Original, exam-style questions for each task type — graded the moment you submit, with a fix you can act on right away." />
       <div className="lp-cols-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 18, marginTop: 42 }}>
         {tasks.map((t) => (
           <div key={t.title} className="lp-hover" style={{ background: "#fff", border: "1px solid #E7E4D6", borderRadius: 16, padding: 26, display: "flex", flexDirection: "column" }}>
@@ -659,8 +832,125 @@ function ContentMoat() {
           No past papers. Unlimited fresh, exam-faithful practice.
         </h2>
         <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 17, lineHeight: 1.6, color: MUTED, margin: "14px 0 0", maxWidth: 720 }}>
-          We never copy Cambridge or official test books — every passage and prompt is AI-generated to the exam spec and expert-verified. Your practice never runs out, never goes stale, and stays on the right side of copyright.
+          We never copy Cambridge or official test books — every passage and question is AI-generated to the exam spec and expert-verified. Your practice never runs out, never goes stale, and stays on the right side of copyright.
         </p>
+      </div>
+    </Band>
+  );
+}
+
+// ---- grounding: the resources the examiner reasons from --------------------
+
+function Grounding() {
+  const sources = [
+    {
+      name: "Official IELTS public band descriptors",
+      body: "The published Task Response, Coherence & Cohesion, Lexical Resource and Grammatical Range & Accuracy criteria real examiners apply. We score against these — not the model's gut.",
+      icon: (
+        <>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+        </>
+      ),
+    },
+    {
+      name: "CEFR descriptors · A1–C2",
+      body: "The Council of Europe's Common European Framework — our distinct CEFR track and a corroboration layer for level and vocabulary that must agree with the IELTS descriptors.",
+      icon: (
+        <>
+          <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+          <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+          <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+          <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+          <path d="M7 12h10" />
+          <path d="M12 7v10" />
+        </>
+      ),
+    },
+    {
+      name: "Calibrated exemplar corpus",
+      body: "Our own anchor essays at each band, retrieved on every grade to pin both the floor and the ceiling — the core lever that keeps the AI from inflating your score.",
+      icon: (
+        <>
+          <path d="M12 2 4 5v6c0 5 3.4 7.7 8 9 4.6-1.3 8-4 8-9V5l-8-3Z" />
+          <path d="m9 12 2 2 4-4" />
+        </>
+      ),
+    },
+    {
+      name: "Documented error taxonomy",
+      body: "A catalogue of the recurring faults that cap each band, so the one thing holding you back is named precisely — not hidden behind a vague 'use better vocabulary'.",
+      icon: (
+        <>
+          <path d="M10 2h4" />
+          <path d="M12 14v-4" />
+          <circle cx="12" cy="14" r="8" />
+        </>
+      ),
+    },
+  ];
+  return (
+    <Band id="grounding" bg="#FBFAF4">
+      <SectionHead
+        title="Grounded in the real standards — not a black box"
+        sub="Every band is anchored to published, authoritative frameworks and our own calibrated corpus, so the score is explainable criterion by criterion."
+        maxSub={680}
+      />
+      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginTop: 42 }}>
+        {sources.map((s) => (
+          <div key={s.name} className="lp-hover" style={{ background: "#fff", border: "1px solid #E7E4D6", borderRadius: 16, padding: 26, display: "flex", gap: 16 }}>
+            <div style={{ width: 46, height: 46, borderRadius: 12, background: "#EBECFA", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{s.icon}</svg>
+            </div>
+            <div>
+              <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 17, color: INK }}>{s.name}</div>
+              <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 14.5, lineHeight: 1.6, color: "#6b6e84", margin: "6px 0 0" }}>{s.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13.5, lineHeight: 1.6, color: "#8a897c", margin: "20px 0 0", maxWidth: 760 }}>
+        We never ingest copyrighted Cambridge/Oxford test books or official past papers — only the public descriptors above and original, expert-verified content of our own.
+      </p>
+    </Band>
+  );
+}
+
+// ---- faq --------------------------------------------------------------------
+
+function Faq() {
+  const qs = [
+    {
+      q: "Is this affiliated with IELTS?",
+      a: "No. We're an independent practice tool — not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English. We ground our scoring in the public band descriptors anyone can read.",
+    },
+    {
+      q: "Do you use real past papers?",
+      a: "Never. Every passage and question is original and AI-generated to the exam spec, so you're never practising on leaked material — and we stay firmly on the right side of copyright.",
+    },
+    {
+      q: "How accurate is the grading?",
+      a: "It's calibrated to within about half a band of human raters and deliberately conservative. When you sit between two bands we round down and tell you exactly what's missing for the higher one.",
+    },
+    {
+      q: "Will it inflate my score to keep me happy?",
+      a: "No — that's the whole point. A false 7.0 is the one thing that breaks trust on exam day, so we'd rather show you the work that's left than hand you a number you won't repeat.",
+    },
+    {
+      q: "What about Speaking and Listening?",
+      a: "In development. Writing and Reading are live today and where most scores are won or lost; Speaking and Listening are on the roadmap and will be included free for members when they launch.",
+    },
+  ];
+  return (
+    <Band id="faq" bg="#F4F4FB">
+      <SectionHead title="Questions, answered straight" sub="The same honesty we put into your band — applied to how this works." maxSub={560} />
+      <div style={{ marginTop: 34, maxWidth: 860, background: "#fff", border: "1px solid #E7E4D6", borderRadius: 18, overflow: "hidden" }}>
+        {qs.map((item, i) => (
+          <div key={item.q} style={{ padding: "22px 26px", borderTop: i === 0 ? "none" : "1px solid #EEEBDD" }}>
+            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 17, color: INK }}>{item.q}</div>
+            <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 15, lineHeight: 1.65, color: "#6b6e84", margin: "8px 0 0" }}>{item.a}</p>
+          </div>
+        ))}
       </div>
     </Band>
   );
@@ -672,7 +962,7 @@ const PLAN_CTA: Record<OrgPlan, { label: string; href: string }> = {
   trial: { label: "Start free", href: "/sign-up" },
   starter: { label: "Choose plan", href: "/sign-up" },
   pro: { label: "Choose plan", href: "/sign-up" },
-  enterprise: { label: "Contact us", href: "mailto:sales@example.com" },
+  enterprise: { label: "Choose plan", href: "/sign-up" },
 };
 
 function planFeatures(id: OrgPlan): string[] {

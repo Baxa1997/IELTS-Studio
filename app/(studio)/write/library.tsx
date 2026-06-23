@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import type { LibraryPrompt } from "./writing-studio";
+import { saveDraft } from "./actions";
 
 export type { LibraryPrompt };
 
@@ -25,10 +27,18 @@ const cardStyle: React.CSSProperties = {
 };
 
 const TABS: { key: string; label: string; soon?: boolean }[] = [
+  { key: "check_own", label: "Check own writing" },
   { key: "task1_academic", label: "Academic · Task 1" },
   { key: "task2", label: "Academic · Task 2" },
   { key: "task1_general", label: "General Training" },
   { key: "custom", label: "Your own topic" },
+];
+
+/** Task-type options shared by the "Check own writing" and custom-prompt panels. */
+const TASK_OPTIONS: { k: string; l: string }[] = [
+  { k: "task2", l: "Academic · Task 2" },
+  { k: "task1_general", l: "General Training" },
+  { k: "task1_academic", l: "Academic · Task 1" },
 ];
 
 const ARROW = (
@@ -64,7 +74,7 @@ export function WritingLibrary({
   pitchBand: number;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<string>("task2");
+  const [tab, setTab] = useState<string>("check_own");
   const [busy, setBusy] = useState(false);
   const [generatingKind, setGeneratingKind] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -72,6 +82,13 @@ export function WritingLibrary({
   // custom
   const [customText, setCustomText] = useState("");
   const [customTask, setCustomTask] = useState<string>("task2");
+
+  // check own writing (paste a question + an already-written essay → grade it)
+  const [checkQuestion, setCheckQuestion] = useState("");
+  const [checkEssay, setCheckEssay] = useState("");
+  const [checkTask, setCheckTask] = useState<string>("task2");
+  const [gradingModal, setGradingModal] = useState(false);
+  const checkWords = useMemo(() => (checkEssay.trim() ? checkEssay.trim().split(/\s+/).filter(Boolean).length : 0), [checkEssay]);
 
   // library search + filters
   const [query, setQuery] = useState("");
@@ -114,7 +131,7 @@ export function WritingLibrary({
         message?: string;
       };
       if (!res.ok || !body.prompt?.id) {
-        setMessage(body.message ?? "Couldn't generate a prompt. Please try again.");
+        setMessage(body.message ?? "Couldn't generate a topic. Please try again.");
         setBusy(false);
         setGeneratingKind(null);
         return;
@@ -127,10 +144,69 @@ export function WritingLibrary({
     }
   }
 
+  // Grade an essay the learner already wrote: create a custom prompt for the pasted
+  // question, save the essay as a draft, then run the SAME grade route as everywhere
+  // else, and open its stored feedback. A modal covers the wait.
+  async function gradeOwn() {
+    if (busy) return;
+    const q = checkQuestion.trim();
+    const essay = checkEssay.trim();
+    if (q.length < 10) {
+      setMessage("Paste the question or task — at least a sentence.");
+      return;
+    }
+    if (checkWords < 20) {
+      setMessage("Paste or write your full essay first (at least 20 words).");
+      return;
+    }
+    setBusy(true);
+    setGradingModal(true);
+    setMessage(null);
+    try {
+      // 1) register the question as a custom prompt
+      const pr = await fetch("/api/prompts/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptText: q, taskType: checkTask }),
+      });
+      const pb = (await pr.json().catch(() => ({}))) as { prompt?: { id: string }; message?: string };
+      if (!pr.ok || !pb.prompt?.id) {
+        setMessage(pb.message ?? "Couldn't start grading. Please try again.");
+        setBusy(false);
+        setGradingModal(false);
+        return;
+      }
+      // 2) save the pasted essay as this prompt's draft
+      const saved = await saveDraft({ promptId: pb.prompt.id, essayId: null, content: essay });
+      if (!saved.essayId) {
+        setMessage("Couldn't save your essay. Please try again.");
+        setBusy(false);
+        setGradingModal(false);
+        return;
+      }
+      // 3) grade it exactly like any other essay, then open the stored feedback
+      const gr = await fetch(`/api/essays/${saved.essayId}/grade`, { method: "POST" });
+      if (gr.status === 200) {
+        router.push(`/activities/essay/${saved.essayId}`); // keep the modal up until navigation
+        return;
+      }
+      const gb = (await gr.json().catch(() => ({}))) as { message?: string };
+      if (gr.status === 202) setMessage(gb.message ?? "Grading is busy — your essay is saved; try again from Activities shortly.");
+      else if (gr.status === 429) setMessage("You’ve reached your monthly grading limit.");
+      else setMessage(gb.message ?? "Grading failed. Please try again.");
+      setBusy(false);
+      setGradingModal(false);
+    } catch {
+      setMessage("Network error — please try again.");
+      setBusy(false);
+      setGradingModal(false);
+    }
+  }
+
   async function submitCustom() {
     if (busy) return;
     if (customText.trim().length < 10) {
-      setMessage("Paste the full prompt — at least a sentence.");
+      setMessage("Paste the full question — at least a sentence.");
       return;
     }
     setBusy(true);
@@ -146,7 +222,7 @@ export function WritingLibrary({
         message?: string;
       };
       if (!res.ok || !body.prompt?.id) {
-        setMessage(body.message ?? "Couldn't use that prompt. Please try again.");
+        setMessage(body.message ?? "Couldn't use that question. Please try again.");
         setBusy(false);
         return;
       }
@@ -191,20 +267,22 @@ export function WritingLibrary({
           >
             Writing practice
           </h1>
-          <p
-            style={{
-              fontFamily: SANS,
-              fontSize: 16.5,
-              lineHeight: 1.55,
-              color: MUTED,
-              margin: "14px 0 0",
-              maxWidth: 650,
-            }}
-          >
-            Pick a topic, generate a fresh one, or paste your own. You&rsquo;ll get an
-            examiner-strict band per criterion — then revise the same response until it&rsquo;s
-            where you want it.
-          </p>
+          {tab === "check_own" ? (
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: 16.5,
+                lineHeight: 1.55,
+                color: MUTED,
+                margin: "14px 0 0",
+                maxWidth: 760,
+              }}
+            >
+              Check an essay you&rsquo;ve already written, pick a topic, or generate a fresh one.
+              You&rsquo;ll get an examiner-strict band per criterion — then revise the same response
+              until it&rsquo;s where you want it.
+            </p>
+          ) : null}
         </div>
         <Link
           href="/dashboard"
@@ -316,10 +394,60 @@ export function WritingLibrary({
         </p>
       ) : null}
 
-      {tab === "custom" ? (
+      {tab === "check_own" ? (
+        <div style={{ ...cardStyle, padding: "clamp(20px,3vw,32px)", maxWidth: 920 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <p style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 22, color: INK, margin: 0 }}>Check your own writing</p>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: INDIGO, background: "#ECEBFB", border: "1px solid #E1DFF7", borderRadius: 999, padding: "3px 11px" }}>Graded like the real thing</span>
+          </div>
+          <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "8px 0 18px", maxWidth: 660 }}>
+            Already written an essay? Paste the question and your answer below — you&rsquo;ll get an examiner-strict band per criterion with evidence and fixes, saved to your Activities.
+          </p>
+
+          {/* task type */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+            {TASK_OPTIONS.map((o) => (
+              <button key={o.k} type="button" onClick={() => setCheckTask(o.k)} style={ownPill(checkTask === o.k)}>
+                {o.l}
+              </button>
+            ))}
+          </div>
+
+          {/* question */}
+          <label style={fieldLabel}>The question / task</label>
+          <textarea
+            value={checkQuestion}
+            onChange={(e) => setCheckQuestion(e.target.value)}
+            placeholder="Paste the exact IELTS question or task…"
+            className="lp-input"
+            style={{ ...fieldArea, minHeight: 96 }}
+          />
+
+          {/* essay */}
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", margin: "18px 0 8px" }}>
+            <label style={{ ...fieldLabel, marginBottom: 0 }}>Your essay</label>
+            <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: checkWords >= 20 ? EMERALD : "#9097A8" }}>{checkWords} words</span>
+          </div>
+          <textarea
+            value={checkEssay}
+            onChange={(e) => setCheckEssay(e.target.value)}
+            placeholder="Paste or write your full answer here…"
+            className="lp-input"
+            style={{ ...fieldArea, minHeight: 300, fontFamily: SERIF, fontSize: 16, lineHeight: 1.8 }}
+          />
+
+          <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => void gradeOwn()} disabled={busy} style={genButton(busy, true)}>
+              {busy ? "Grading…" : "Grade my essay"}
+              {busy ? null : ARROW}
+            </button>
+            <span style={{ fontFamily: SANS, fontSize: 13, color: "#9097A8" }}>Conservative and examiner-strict — your band here is your band on exam day.</span>
+          </div>
+        </div>
+      ) : tab === "custom" ? (
         <div style={{ ...cardStyle, padding: 24, maxWidth: 720 }}>
           <p style={{ fontFamily: SANS, fontWeight: 700, fontSize: 17, color: INK, margin: 0 }}>
-            Paste your own prompt
+            Paste your own question
           </p>
           <p
             style={{
@@ -362,7 +490,7 @@ export function WritingLibrary({
           <textarea
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
-            placeholder="Paste the full IELTS writing prompt here…"
+            placeholder="Paste the full IELTS writing question here…"
             className="lp-input"
             style={{
               width: "100%",
@@ -385,7 +513,7 @@ export function WritingLibrary({
               disabled={busy}
               style={genButton(busy)}
             >
-              {busy ? "Loading…" : "Use this prompt"}
+              {busy ? "Loading…" : "Use this question"}
             </button>
           </div>
         </div>
@@ -630,6 +758,71 @@ export function WritingLibrary({
           )}
         </>
       )}
+
+      {gradingModal ? <GradingModal /> : null}
+    </div>
+  );
+}
+
+const fieldLabel: React.CSSProperties = {
+  display: "block",
+  fontFamily: SANS,
+  fontWeight: 700,
+  fontSize: 13.5,
+  color: "#41496A",
+  marginBottom: 8,
+};
+
+const fieldArea: React.CSSProperties = {
+  width: "100%",
+  resize: "vertical",
+  padding: "14px 16px",
+  border: "1px solid #E2DED0",
+  borderRadius: 12,
+  background: "#fff",
+  fontFamily: SANS,
+  fontSize: 14.5,
+  lineHeight: 1.6,
+  color: INK,
+};
+
+function ownPill(on: boolean): React.CSSProperties {
+  return {
+    fontFamily: SANS,
+    fontWeight: 600,
+    fontSize: 13,
+    padding: "7px 13px",
+    borderRadius: 999,
+    cursor: "pointer",
+    border: on ? `1px solid ${INDIGO}` : "1px solid #E2DED0",
+    background: on ? "#ECEBFB" : "#fff",
+    color: on ? INDIGO : INK,
+  };
+}
+
+/** Full-screen "AI is grading your essay" overlay shown while the grade call runs. */
+function GradingModal() {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Grading your essay"
+      style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(20,20,40,.5)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+    >
+      <div style={{ background: "#fff", borderRadius: 20, padding: "34px 34px 30px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)" }}>
+        <span style={{ display: "inline-flex", width: 60, height: 60, borderRadius: 17, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 28px -12px rgba(59,67,181,.7)" }}>
+          <Loader2 size={28} color="#fff" className="animate-spin" />
+        </span>
+        <h3 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 21, color: INK, margin: "18px 0 0" }}>AI is grading your essay…</h3>
+        <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "9px 0 0" }}>
+          Reading every criterion the way an examiner would — Task, Coherence, Vocabulary, Grammar. This takes about 15–30 seconds; please keep this tab open.
+        </p>
+        <div style={{ display: "inline-flex", gap: 6, marginTop: 18 }} aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <span key={i} style={{ width: 7, height: 7, borderRadius: 999, background: INDIGO, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

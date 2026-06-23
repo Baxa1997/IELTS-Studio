@@ -60,6 +60,9 @@ export async function POST(req: Request): Promise<Response> {
     genre = (typeof body.genre === "string" ? body.genre : "essay").slice(0, 40) || "essay";
     prompt = (typeof body.prompt === "string" ? body.prompt : "").trim().slice(0, 4000);
     if (!prompt) return fail(400, "bad_prompt", "Missing the task prompt.");
+    // Dynamically generated tasks carry their own title/id (not in the static set).
+    taskTitle = typeof body.taskTitle === "string" ? body.taskTitle.slice(0, 200) : null;
+    taskId = typeof body.taskId === "string" ? body.taskId.slice(0, 80) : null;
   }
 
   try {

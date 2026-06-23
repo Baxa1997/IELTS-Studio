@@ -32,7 +32,7 @@ export default async function PublicGradePage() {
             Get a real band on your essay in seconds
           </h1>
           <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
-            Pick a Task 2 prompt, paste your essay, and see a per-criterion band and your top 3
+            Pick a Task 2 question, paste your essay, and see a per-criterion band and your top 3
             fixes — calibrated to be conservative, not flattering. No account needed.
           </p>
         </div>

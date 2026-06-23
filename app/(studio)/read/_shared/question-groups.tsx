@@ -5,6 +5,10 @@ import { isReadingGapType, READING_INSTRUCTIONS } from "@/lib/reading/types";
 import { GapSentence, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { INDIGO, INK, MUTED, SANS } from "./tokens";
 
+/** Each question sits in its own card; the border is brand-indigo (not faint grey)
+ *  so the box around the question + its options is clearly visible. */
+const QUESTION_BORDER = "#C5C9F1";
+
 /**
  * Renders a passage's questions the way the real Cambridge exam frames them:
  * consecutive questions of the same TYPE are grouped under one instruction header
@@ -54,8 +58,8 @@ export function QuestionGroups({
               const gap = isReadingGapType(q.question_type);
               const flagged = !!flags?.[q.id];
               return (
-                <fieldset key={q.id} id={`q-${q.id}`} style={{ border: "none", margin: 0, padding: 0, scrollMarginTop: 16 }}>
-                  <legend style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: 0, width: "100%" }}>
+                <div key={q.id} id={`q-${q.id}`} role="group" style={{ border: `1.5px solid ${QUESTION_BORDER}`, borderRadius: 14, padding: "16px 18px", background: "#fff", scrollMarginTop: 16 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 11, width: "100%" }}>
                     <span style={{ flex: "none", fontWeight: 700, color: INK, fontSize: 16.5, lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       {gap ? (
@@ -72,14 +76,14 @@ export function QuestionGroups({
                     {onToggleFlag ? (
                       <button type="button" onClick={() => onToggleFlag(q.id)} aria-pressed={flagged} title="Flag for review" style={flagStyle(flagged)}>⚑</button>
                     ) : null}
-                  </legend>
+                  </div>
 
                   {gap ? null : (
                     <div style={{ paddingLeft: 26, marginTop: 12 }}>
                       <QuestionInput question={q} value={answers[q.id] ?? ""} onChange={(v) => onAnswer(q.id, v)} />
                     </div>
                   )}
-                </fieldset>
+                </div>
               );
             })}
           </section>

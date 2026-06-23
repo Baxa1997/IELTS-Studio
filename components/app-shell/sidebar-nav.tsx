@@ -117,7 +117,7 @@ export function SidebarNav({ role }: { role: string }) {
             href={href}
             aria-current={active ? "page" : undefined}
             className={active ? undefined : "lp-sb-item"}
-            style={{ ...itemBase, fontWeight: active ? 700 : 600, color: active ? INDIGO : "#5A6076", background: active ? "#fff" : "transparent", border: active ? "1px solid #EFEDE2" : "1px solid transparent", boxShadow: active ? "0 4px 14px -8px rgba(26,33,56,.4)" : "none" }}
+            style={{ ...itemBase, fontWeight: active ? 700 : 600, color: active ? "#fff" : "#5A6076", background: active ? INDIGO : "transparent", border: active ? `1px solid ${INDIGO}` : "1px solid transparent", boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none" }}
           >
             <Icon size={20} strokeWidth={2} />
             {label}

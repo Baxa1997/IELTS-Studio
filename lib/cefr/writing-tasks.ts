@@ -170,6 +170,32 @@ const TASKS: CefrWritingTask[] = [
   },
 ];
 
+/** Canonical word target per CEFR level (min, max) — derived from the authored
+ *  ladder above, so AI-generated tasks share the same calibrated length demands. */
+export const CEFR_WORD_TARGETS: Record<CefrLevel, [number, number]> = {
+  A1: [25, 45],
+  A2: [45, 70],
+  B1: [90, 130],
+  B2: [140, 190],
+  C1: [220, 260],
+  C2: [240, 280],
+};
+
+export function cefrWordTarget(level: CefrLevel): [number, number] {
+  return CEFR_WORD_TARGETS[level];
+}
+
+/** Genres that suit each level — used to steer dynamic task generation so a fresh
+ *  A1 task is a note/message and a C1 task is an essay/proposal/report. */
+export const CEFR_GENRES: Record<CefrLevel, CefrTaskGenre[]> = {
+  A1: ["note", "message"],
+  A2: ["email", "message"],
+  B1: ["email", "article", "story"],
+  B2: ["essay", "review", "article"],
+  C1: ["essay", "proposal", "report"],
+  C2: ["essay", "article"],
+};
+
 /** All tasks for one CEFR level (kept in authored order). */
 export function cefrTasksForLevel(level: CefrLevel): CefrWritingTask[] {
   return TASKS.filter((t) => t.level === level);

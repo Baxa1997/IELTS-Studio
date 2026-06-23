@@ -20,6 +20,7 @@ import {
   type EssayTaskType,
   type WritingSample,
   writingSamplesResultSchema,
+  cefrWritingTaskResultSchema,
 } from "./schema";
 import { loadGradingSkill, parseGradeOutput } from "./skill";
 import { logUsage } from "./usage";
@@ -34,6 +35,12 @@ import {
   type CefrGradeResult,
 } from "@/lib/cefr/schema";
 import { CEFR_LEVELS, type CefrLevel } from "@/lib/cefr/levels";
+import {
+  CEFR_GENRES,
+  cefrWordTarget,
+  type CefrTaskGenre,
+  type CefrWritingTask,
+} from "@/lib/cefr/writing-tasks";
 
 /**
  * The single server-side entry point for ALL model access.
@@ -486,6 +493,7 @@ export async function generate(rawInput: GenerateInput): Promise<GenerateResult>
     input.kind === "reading_validation" ||
     input.kind === "writing_task1_academic" ||
     input.kind === "writing_samples" ||
+    input.kind === "cefr_writing_task" ||
     input.kind === "vocabulary_translate";
   // A dictionary lookup and the answer-key checker both want a stable, repeatable
   // answer; everything else wants variety.
@@ -587,6 +595,57 @@ export async function generateWritingSamples(input: WritingSamplesInput): Promis
     .replace(/\s*```$/, "");
   const parsed = writingSamplesResultSchema.parse(JSON.parse(stripped));
   return [...parsed.samples].sort((a, b) => a.band - b.band);
+}
+
+// ---- CEFR dynamic writing task (level-pitched, generated on demand) ---------
+
+export interface CefrWritingTaskInput {
+  level: CefrLevel;
+  /** Optionally force a genre; otherwise the model picks one suited to the level. */
+  genre?: CefrTaskGenre | null;
+  meta: { organizationId: string; userId: string | null };
+}
+
+/**
+ * Generate ONE original CEFR writing task pitched to the target level — the dynamic
+ * counterpart to the authored `CEFR_WRITING_TASKS`. The level and word target are
+ * fixed here (calibrated, deterministic); the model supplies a fresh situation,
+ * genre and content points. Returns a full CefrWritingTask the studio can render
+ * and grade (via the grade route's level/genre/prompt fallback path).
+ */
+export async function generateCefrWritingTask(input: CefrWritingTaskInput): Promise<CefrWritingTask> {
+  const [minW, maxW] = cefrWordTarget(input.level);
+  const allowed = input.genre ? [input.genre] : CEFR_GENRES[input.level];
+
+  const { content } = await generate({
+    kind: "cefr_writing_task",
+    spec: {
+      level: input.level,
+      genres: allowed.join(", "),
+      words: `${minW}–${maxW}`,
+    },
+    meta: input.meta,
+  });
+
+  const stripped = content
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  const parsed = cefrWritingTaskResultSchema.parse(JSON.parse(stripped));
+
+  // Keep the model's genre only if it is one we recognise; otherwise fall back to
+  // the first allowed genre for the level (the word target is always canonical).
+  const genre = (allowed as string[]).includes(parsed.genre) ? (parsed.genre as CefrTaskGenre) : allowed[0];
+
+  return {
+    id: `gen-${input.level.toLowerCase()}-${Date.now().toString(36)}`,
+    level: input.level,
+    genre,
+    title: parsed.title,
+    prompt: parsed.prompt,
+    points: parsed.points,
+    words: [minW, maxW],
+  };
 }
 
 // ---- Transcription (photo/PDF of a written answer → editable text) ---------

@@ -753,7 +753,9 @@ function defaultReadingSpec(targetBand: number = DEFAULT_TARGET_BAND) {
     topic: pickRandom(READING_TOPICS),
     targetBand,
     questionTypes: pickRandom(READING_TYPE_SETS),
-    totalQuestions: 9,
+    // A real IELTS passage section runs 13–14 questions; randomise 13–15 for variety
+    // and to match the exam's density (was a too-light 9).
+    totalQuestions: 13 + Math.floor(Math.random() * 3),
   };
 }
 

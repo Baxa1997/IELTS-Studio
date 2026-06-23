@@ -52,7 +52,7 @@ export function QuestionInput({
     case "yes_no_not_given": {
       const choices = VERDICT_OPTIONS[question_type === "true_false_not_given" ? "tfng" : "ynng"];
       return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {choices.map(([val, label]) => (
             <Pill key={val} name={`q-${id}`} value={val} label={label} checked={value === val} onChange={onChange} />
           ))}
@@ -183,13 +183,14 @@ function Pill({ name, value, label, checked, onChange }: { name: string; value: 
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 13,
+        gap: 10,
         width: "fit-content",
         cursor: "pointer",
         borderRadius: 10,
-        padding: "8px 12px 8px 8px",
-        background: checked ? "#F2F1FC" : "transparent",
-        transition: "background .14s ease",
+        padding: "8px 14px 8px 10px",
+        background: checked ? "#F2F1FC" : "#fff",
+        border: `1.5px solid ${checked ? INDIGO : "#E5E3EF"}`,
+        transition: "background .14s ease, border-color .14s ease",
       }}
     >
       <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={SR_ONLY} />

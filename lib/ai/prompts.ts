@@ -58,6 +58,14 @@ const WRITING_SAMPLES_CONTRACT = `Emit ONE JSON object and nothing else — no p
 }
 Order the samples from lower band to higher. Do NOT write the band, a title, or any label inside the "essay" text itself — only the essay prose.`;
 
+const CEFR_WRITING_TASK_CONTRACT = `Emit ONE JSON object and nothing else — no prose, no code fence — of this exact shape:
+{
+  "genre": "<one of the allowed genres>",
+  "title": "<short card label, e.g. 'Email · invite a friend'>",
+  "prompt": "<the full task the learner reads: the situation in 1-2 sentences, then what to write>",
+  "points": ["<content point 1>", "<content point 2>", "<content point 3>"]
+}`;
+
 export function buildGradePrompt(
   input: GradeEssayInput,
   skill: GradingSkill,
@@ -223,6 +231,33 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       .join("\n");
 
     return { system: rules.join(" "), user };
+  }
+
+  // cefr_writing_task — an ORIGINAL CEFR practice task generated on demand, pitched
+  // to a target level (A1–C2). The level + word target are fixed by the caller; the
+  // model invents a fresh situation, an appropriate genre, and the content points
+  // the writer must cover. Variety matters (every session is new), so this runs at
+  // generation temperature — but it must stay calibrated to the level and original.
+  if (input.kind === "cefr_writing_task") {
+    const level = String(input.spec.level ?? "B1");
+    const genres = String(input.spec.genres ?? "essay");
+    const words = String(input.spec.words ?? "");
+
+    const rules = [
+      "You are a CEFR writing-test author creating ONE original practice task for a language learner.",
+      common,
+      `Target CEFR level: ${level}. Pitch the topic, situation, register and the language it demands EXACTLY at ${level} — not easier, not harder. At low levels (A1/A2) keep the situation concrete, personal and simple; at high levels (C1/C2) make it abstract and intellectually demanding.`,
+      `Choose ONE genre suitable for this level from: ${genres}. Set a realistic, self-contained situation and tell the learner clearly what to write.`,
+      "Give exactly THREE content points the writer must cover — these drive the Content subscale, so make them specific and checkable.",
+      words ? `The task must be answerable in about ${words} words.` : "",
+      "Keep it globally accessible (no region-specific knowledge required) and write the prompt in clear, level-appropriate English the learner reads directly, like a real exam task.",
+      CEFR_WRITING_TASK_CONTRACT,
+    ].filter(Boolean);
+
+    return {
+      system: rules.join(" "),
+      user: `Write one original ${level} CEFR writing task.\nSpec:\n${specLines}`,
+    };
   }
 
   // Academic Task 1 — describe a chart/graph/table. Returns JSON: the rubric the

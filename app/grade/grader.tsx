@@ -66,7 +66,7 @@ export function PublicGrader() {
       {/* ---- Input ---- */}
       <section className="space-y-4">
         <div>
-          <label className="text-sm font-medium">1. Pick a Task 2 prompt</label>
+          <label className="text-sm font-medium">1. Pick a Task 2 question</label>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {PUBLIC_PROMPTS.map((p) => (
               <button
@@ -229,7 +229,7 @@ function messageFor(httpStatus: number, code: string | undefined): string {
     case "too_long":
       return `That's over ${MAX_WORDS} words. Sign up to grade full-length essays.`;
     case "invalid_prompt":
-      return "Please pick one of the prompts above.";
+      return "Please pick one of the questions above.";
     case "grade_failed":
       return "Grading failed this time — please try again in a moment.";
     default:

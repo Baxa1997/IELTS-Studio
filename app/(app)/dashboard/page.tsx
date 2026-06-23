@@ -185,7 +185,7 @@ function NextTask({ rec }: { rec: Recommendation }) {
 }
 
 const CRITERION_TIP: Record<string, string> = {
-  TR: "answer every part of the prompt and state a clear position — that alone lifts Task Response fastest.",
+  TR: "answer every part of the question and state a clear position — that alone lifts Task Response fastest.",
   CC: "give each idea its own paragraph and connect sentences with referencing, not just linking words.",
   LR: "swap repeated, vague words for precise topic vocabulary and natural collocations.",
   GRA: "add a few accurate complex sentences and proof-read for article and subject–verb agreement.",

@@ -42,9 +42,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   starter: {
     id: "starter",
     name: "Starter",
-    price: 49,
+    // Usage limits are placeholders — the real quotas land in a later billing pass.
+    price: 4.99,
     currency: "usd",
-    priceUzs: 600_000,
+    priceUzs: 60_000,
     gradeLimit: 200,
     generateLimit: 300,
     seatLimit: 50,
@@ -53,9 +54,9 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   pro: {
     id: "pro",
     name: "Pro",
-    price: 199,
+    price: 14.99,
     currency: "usd",
-    priceUzs: 2_400_000,
+    priceUzs: 185_000,
     gradeLimit: 2000,
     generateLimit: 3000,
     seatLimit: 250,
@@ -64,9 +65,9 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   enterprise: {
     id: "enterprise",
     name: "Enterprise",
-    price: null,
+    price: 29.99,
     currency: "usd",
-    priceUzs: null,
+    priceUzs: 370_000,
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,
