@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AppRole } from "@/lib/auth";
 import { generate } from "@/lib/ai";
+import { CEFR, cefrToBand, type CefrLevel } from "@/lib/cefr/levels";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -90,6 +91,8 @@ interface ComposedReadingSet {
   module: ReadingModule;
   topic: string;
   targetBand: number;
+  /** CEFR track only (A1..C2); null for IELTS-band passages. */
+  cefrLevel: string | null;
   prepared: PreparedQuestion[];
   flaggedCount: number;
   validationFailed: boolean;
@@ -116,6 +119,8 @@ async function composeReadingSet(
         target_band: input.targetBand,
         question_types: input.questionTypes,
         total_questions: input.totalQuestions,
+        ...(input.cefrLevel ? { cefr_level: input.cefrLevel } : {}),
+        ...(input.passageWords ? { passage_words: input.passageWords } : {}),
       },
       meta,
     });
@@ -191,6 +196,7 @@ async function composeReadingSet(
     module: input.module,
     topic: input.topic,
     targetBand: input.targetBand,
+    cefrLevel: input.cefrLevel ?? null,
     prepared,
     flaggedCount,
     validationFailed,
@@ -218,6 +224,10 @@ async function storeReadingSet(
       module: composed.module,
       topic: composed.topic,
       difficulty: composed.targetBand,
+      // Only set on the CEFR track. Omitted for IELTS so the insert never references
+      // the cefr_level column on the IELTS path (forward-compatible if the column
+      // hasn't been migrated yet — only CEFR reading needs it).
+      ...(composed.cefrLevel ? { cefr_level: composed.cefrLevel } : {}),
       status,
       source: "ai",
       needs_review: status === "approved" ? false : composed.flaggedCount > 0 || composed.validationFailed,
@@ -291,6 +301,43 @@ export async function generateReadingSet(
 export async function generateReadingForStudent(actor: ReadingActor): Promise<GeneratedReadingSet> {
   const targetBand = await resolveReadingTargetBand(actor);
   const input = parse(generateReadingInputSchema, defaultReadingSpec(targetBand));
+  const composed = await composeReadingSet(input, {
+    organizationId: actor.organizationId,
+    userId: actor.userId,
+  });
+  const kept = keepValidated(composed.prepared);
+  const admin = createAdminClient();
+  return storeReadingSet(
+    admin,
+    { organizationId: actor.organizationId, createdBy: actor.userId },
+    composed,
+    kept,
+    "approved",
+  );
+}
+
+/**
+ * Distinct CEFR track: generate ONE shorter, level-graded reading passage (A1–C2)
+ * + a few comprehension questions, pitched at the chosen CEFR level, and store it
+ * already-approved (auto-served like the IELTS B2C path). It rides the SAME
+ * compose → answer-key-check → store pipeline (accuracy is the moat), but the
+ * passage is shorter so the two model calls fit the serverless window, and it
+ * carries a cefr_level so the result is reported as a CEFR level, not a band.
+ */
+export async function generateCefrReadingForStudent(
+  actor: ReadingActor,
+  level: CefrLevel,
+): Promise<GeneratedReadingSet> {
+  const input = parse(generateReadingInputSchema, {
+    module: "academic",
+    topic: pickRandom(READING_TOPICS),
+    targetBand: clampBand(cefrToBand(level)),
+    // A CEFR-friendly mix that's answerable from a short text at the level.
+    questionTypes: ["true_false_not_given", "multiple_choice", "sentence_completion"],
+    totalQuestions: 6,
+    cefrLevel: level,
+    passageWords: CEFR[level].readingWords,
+  });
   const composed = await composeReadingSet(input, {
     organizationId: actor.organizationId,
     userId: actor.userId,

@@ -312,6 +312,7 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "sentence_completion / summary_completion: write the candidate-facing 'prompt' as the FULL sentence with the missing word(s) shown as a run of underscores '______' exactly where the answer goes (e.g. 'The research was funded by the ______ government.'). The answer is the exact word(s) copied verbatim from the passage, NO MORE THAN TWO WORDS (and/or a number). Put the gap mid-sentence where natural, not always at the end.",
       "multiple_choice: options are the choices and answer is the exact text of the correct option; make distractors plausible.",
       "Pitch vocabulary and abstraction at the target band in the spec.",
+      "CEFR mode: if the spec includes a 'cefr_level' and 'passage_words', this is a CEFR practice text — write a SHORTER original passage of approximately that many words pitched at that CEFR level (A1–C2): use high-frequency vocabulary, shorter and clearer sentences, and a simple linear structure, and write comprehension questions a learner AT that level can answer directly from the text. If no cefr_level is given, write a full-length Academic passage as usual.",
       READING_SET_CONTRACT,
     ].join(" ");
     return { system, user: `Write one IELTS Academic Reading set.\nSpec:\n${specLines}` };

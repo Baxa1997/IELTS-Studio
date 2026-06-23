@@ -90,8 +90,8 @@ export function CefrHub({ recent = [] }: { recent?: CefrAttemptSummary[] }) {
           title="CEFR Reading"
           can={info.readingCan}
           meta={`~${info.readingWords}-word passage · level ${info.code}`}
-          bridgeHref="/read"
-          bridgeLabel="Practise reading now"
+          startHref={`/cefr/reading?level=${info.code}`}
+          startLabel="Start reading"
         />
       </div>
 

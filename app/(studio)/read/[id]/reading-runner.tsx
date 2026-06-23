@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 
 import type { GradedItem } from "@/lib/reading/grade";
 import type { ReadingModule } from "@/lib/reading/types";
+import { CEFR, isCefrLevel } from "@/lib/cefr/levels";
 import { bandColor } from "@/lib/ui/band";
 
 import { CoachPanel } from "../_shared/coach-panel";
@@ -24,6 +25,8 @@ export interface RunnerPassage {
   module: ReadingModule;
   topic: string | null;
   difficulty: number | null;
+  /** CEFR track only (A1..C2): report the result as a CEFR level, not a band. */
+  cefrLevel?: string | null;
 }
 
 export type { DeliveredQuestion };
@@ -152,7 +155,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
   if (phase === "results" && result) {
     return (
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px clamp(16px,4vw,32px) 64px" }}>
-        <ResultsView result={result} disclaimer={disclaimer} passageBody={passage.body} />
+        <ResultsView result={result} disclaimer={disclaimer} passageBody={passage.body} cefrLevel={passage.cefrLevel ?? null} />
       </div>
     );
   }
@@ -369,19 +372,37 @@ function ConfirmFinishModal({ unanswered, onCancel, onConfirm }: { unanswered: n
 
 // ---- Results ---------------------------------------------------------------
 
-function ResultsView({ result, disclaimer, passageBody }: { result: ReadingResult; disclaimer: string | null; passageBody: string }) {
+function ResultsView({ result, disclaimer, passageBody, cefrLevel }: { result: ReadingResult; disclaimer: string | null; passageBody: string; cefrLevel?: string | null }) {
   const wrong = result.items.filter((it) => !it.is_correct);
+  const cefr = cefrLevel && isCefrLevel(cefrLevel) ? cefrLevel : null;
   const bc = bandColor(result.band);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       <section style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 64, lineHeight: 0.9, color: bc.fg, fontVariantNumeric: "tabular-nums", letterSpacing: "-.02em" }}>{result.band.toFixed(1)}</span>
-          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: MUTED }}>Indicative band</span>
-            <span style={{ alignSelf: "flex-start", fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: bc.fg, background: bc.bg, padding: "3px 10px", borderRadius: 999 }}>{bc.label}</span>
+        {cefr ? (
+          (() => {
+            const info = CEFR[cefr];
+            const pct = result.percent;
+            const note = pct >= 80 ? `Comfortable at ${cefr}` : pct >= 50 ? `Working at ${cefr}` : `Below ${cefr} — try a lower level`;
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 64, lineHeight: 0.9, color: info.color, letterSpacing: "-.02em" }}>{cefr}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: MUTED }}>CEFR {info.name} reading</span>
+                  <span style={{ alignSelf: "flex-start", fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: info.color, background: info.bg, padding: "3px 10px", borderRadius: 999 }}>{note}</span>
+                </div>
+              </div>
+            );
+          })()
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontFamily: SERIF, fontWeight: 800, fontSize: 64, lineHeight: 0.9, color: bc.fg, fontVariantNumeric: "tabular-nums", letterSpacing: "-.02em" }}>{result.band.toFixed(1)}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: MUTED }}>Indicative band</span>
+              <span style={{ alignSelf: "flex-start", fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: bc.fg, background: bc.bg, padding: "3px 10px", borderRadius: 999 }}>{bc.label}</span>
+            </div>
           </div>
-        </div>
+        )}
         <p style={{ fontFamily: SANS, fontSize: 14, color: MUTED, margin: 0 }}>
           <span style={{ color: INK, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{result.correctCount}/{result.total}</span> correct · {result.percent.toFixed(0)}%
         </p>

@@ -9,6 +9,8 @@
 
 import { z } from "zod";
 
+import { CEFR_LEVELS } from "@/lib/cefr/levels";
+
 // ---- Question types --------------------------------------------------------
 
 export const READING_QUESTION_TYPES = [
@@ -116,6 +118,12 @@ export const generateReadingInputSchema = z.object({
     .default(DEFAULT_TARGET_BAND),
   questionTypes: z.array(z.enum(READING_QUESTION_TYPES)).min(1).max(READING_QUESTION_TYPES.length),
   totalQuestions: z.number().int().min(4).max(14).default(10),
+  /** CEFR track only: the level this passage is graded for (A1..C2). When set, the
+   *  generator writes a shorter, level-pitched text and the result is reported as a
+   *  CEFR level rather than an IELTS band. */
+  cefrLevel: z.enum(CEFR_LEVELS).optional(),
+  /** Target passage length in words — CEFR practice uses shorter texts. */
+  passageWords: z.number().int().min(80).max(700).optional(),
 });
 export type GenerateReadingInput = z.infer<typeof generateReadingInputSchema>;
 
