@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Figure } from "@/lib/writing/figure";
 import { computeWritingInsights, type WritingInsights } from "@/lib/writing/insights";
@@ -77,6 +77,18 @@ interface Props {
   onRevise?: () => void;
   /** Compliance line shown under the essay; falls back to a default. */
   disclaimer?: string;
+  /** When set, a "Model answers" tab is shown that lazy-loads Band 7 + Band 8
+   *  sample answers for THIS task to compare against. Omit to hide the tab. */
+  promptText?: string | null;
+}
+
+/** A band-targeted model answer, as returned by /api/writing/samples. */
+interface ModelSample {
+  band: number;
+  title?: string;
+  essay: string;
+  highlights?: string[];
+  to_next?: string;
 }
 
 const DEFAULT_DISCLAIMER = "AI-estimated bands — not affiliated with or endorsed by IELTS®.";
@@ -98,12 +110,42 @@ export function EssayFeedback({
   reviseHref = null,
   onRevise,
   disclaimer,
+  promptText = null,
 }: Props) {
   const ranges = matchRanges(essayText, annotations);
   const insights = useMemo(() => computeWritingInsights(essayText), [essayText]);
-  const [tab, setTab] = useState<"bands" | "issues" | "insights">("bands");
+  const showSamples = Boolean(promptText && promptText.trim());
+  const [tab, setTab] = useState<"bands" | "issues" | "insights" | "samples">("bands");
   const [selected, setSelected] = useState<number | null>(null); // 1-based issue index
   const fixListRef = useRef<HTMLDivElement>(null);
+
+  // Lazy-loaded Band 7 + Band 8 model answers for THIS task (fetched once, on the
+  // first open of the Model answers tab — they're an extra AI generation).
+  const [samples, setSamples] = useState<ModelSample[] | null>(null);
+  const [samplesState, setSamplesState] = useState<"idle" | "loading" | "error">("idle");
+  const loadSamples = useCallback(async () => {
+    if (!showSamples || samplesState === "loading" || samples) return;
+    setSamplesState("loading");
+    try {
+      const res = await fetch("/api/writing/samples", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskType, promptText, figure }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { samples?: ModelSample[] };
+      if (res.ok && Array.isArray(body.samples) && body.samples.length) {
+        setSamples(body.samples);
+        setSamplesState("idle");
+      } else {
+        setSamplesState("error");
+      }
+    } catch {
+      setSamplesState("error");
+    }
+  }, [showSamples, samplesState, samples, taskType, promptText, figure]);
+  useEffect(() => {
+    if (tab === "samples") void loadSamples();
+  }, [tab, loadSamples]);
 
   // When a highlight is picked, reveal the fix list and scroll the row into view.
   useEffect(() => {
@@ -259,6 +301,9 @@ export function EssayFeedback({
               <button type="button" onClick={() => setTab("bands")} style={tabStyle(tab === "bands")}>Bands</button>
               <button type="button" onClick={() => setTab("issues")} style={tabStyle(tab === "issues")}>Fixes · {ranges.length}</button>
               <button type="button" onClick={() => setTab("insights")} style={tabStyle(tab === "insights")}>Insights</button>
+              {showSamples ? (
+                <button type="button" onClick={() => setTab("samples")} style={tabStyle(tab === "samples")}>Model answers</button>
+              ) : null}
             </div>
           </div>
 
@@ -267,12 +312,97 @@ export function EssayFeedback({
               <BandsView taskType={taskType} criteria={criteria} blocker={blocker} bandWithFixes={bandWithFixes} overallBand={overallBand} />
             ) : tab === "issues" ? (
               <IssuesView ranges={ranges} selected={selected} />
-            ) : (
+            ) : tab === "insights" ? (
               <InsightsView insights={insights} taskType={taskType} />
+            ) : (
+              <SamplesView samples={samples} state={samplesState} overallBand={overallBand} onRetry={() => void loadSamples()} />
             )}
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Model answers tab — Band 7 + Band 8 sample answers for THIS task, to compare
+ * the learner's own essay against (the "Band 8 sample comparison" feature). Lazy:
+ * the parent fetches on first open. Honest by construction — the generator writes
+ * each sample AT its labelled band, anchor-calibrated, never inflated.
+ */
+function SamplesView({
+  samples,
+  state,
+  overallBand,
+  onRetry,
+}: {
+  samples: ModelSample[] | null;
+  state: "idle" | "loading" | "error";
+  overallBand: number;
+  onRetry: () => void;
+}) {
+  if (!samples) {
+    if (state === "error") {
+      return (
+        <div style={{ padding: "8px 2px" }}>
+          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answers just now.</p>
+          <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: INDIGO, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+            Try again
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "44px 16px", textAlign: "center" }}>
+        <span className="animate-spin" style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid #E4E1F4`, borderTopColor: INDIGO, display: "inline-block" }} aria-hidden />
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: MUTED, maxWidth: 280 }}>Writing a Band 7 and a Band 8 model answer for this exact task… about 30 seconds.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: MUTED }}>
+        You scored <strong style={{ color: bandColor(overallBand).fg }}>{overallBand.toFixed(1)}</strong>. Here&rsquo;s what a 7 and an 8 look like on this exact task — read for the moves, don&rsquo;t copy them.
+      </p>
+      {samples.map((s, i) => {
+        const tier = bandColor(s.band);
+        const diff = Math.round((s.band - overallBand) * 10) / 10;
+        return (
+          <div key={i} style={{ border: "1px solid #E7E3D5", borderRadius: 13, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: tier.bg, borderBottom: `1px solid ${tier.fg}22` }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+                <span style={{ fontSize: 22, fontWeight: 800, color: tier.fg, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{s.band.toFixed(1)}</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: INK }}>{s.title || `Band ${s.band.toFixed(1)} model answer`}</span>
+              </span>
+              {diff > 0 ? (
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: tier.fg, background: "#fff", border: `1px solid ${tier.fg}33`, padding: "3px 9px", borderRadius: 999 }}>+{diff.toFixed(1)} above you</span>
+              ) : diff === 0 ? (
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: tier.fg, background: "#fff", border: `1px solid ${tier.fg}33`, padding: "3px 9px", borderRadius: 999 }}>your band</span>
+              ) : null}
+            </div>
+            {s.highlights && s.highlights.length ? (
+              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: "1px solid #F0EDE1" }}>
+                {s.highlights.map((h, j) => (
+                  <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "#41496A" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>
+                    <span>{h}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <div style={{ padding: "14px 16px", fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.75, color: "#262B3D", whiteSpace: "pre-wrap" }}>{s.essay}</div>
+            {s.to_next && s.to_next.trim() ? (
+              <div style={{ margin: "0 14px 14px", padding: "9px 12px", background: "#FBFAF4", border: "1px solid #ECEADC", borderRadius: 9, fontSize: 12.5, lineHeight: 1.5, color: MUTED }}>
+                <strong style={{ color: INK }}>To reach the next band:</strong> {s.to_next}
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+      <p style={{ margin: "4px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>
+        Original AI-written model answers for study — not official IELTS® answers. Learn the structure and phrasing; submit only your own writing.
+      </p>
     </div>
   );
 }

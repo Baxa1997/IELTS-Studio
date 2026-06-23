@@ -2,7 +2,7 @@ import "server-only";
 
 import { serverEnv } from "@/lib/env";
 
-import { retrieveAnchors, type Anchor } from "./anchors";
+import { retrieveAnchors, retrieveAnchorsForTask, type Anchor } from "./anchors";
 import { GeminiProvider } from "./gemini";
 import { RemoteAIProvider } from "./remote";
 import type { AiTask, AIProvider, CompletionResult, InlineFile } from "./provider";
@@ -17,6 +17,9 @@ import {
   type GenerateInput,
   type GenerateResult,
   type GradeEssayInput,
+  type EssayTaskType,
+  type WritingSample,
+  writingSamplesResultSchema,
 } from "./schema";
 import { loadGradingSkill, parseGradeOutput } from "./skill";
 import { logUsage } from "./usage";
@@ -482,6 +485,7 @@ export async function generate(rawInput: GenerateInput): Promise<GenerateResult>
     input.kind === "reading_set" ||
     input.kind === "reading_validation" ||
     input.kind === "writing_task1_academic" ||
+    input.kind === "writing_samples" ||
     input.kind === "vocabulary_translate";
   // A dictionary lookup and the answer-key checker both want a stable, repeatable
   // answer; everything else wants variety.
@@ -541,6 +545,48 @@ export async function generate(rawInput: GenerateInput): Promise<GenerateResult>
     });
     throw err;
   }
+}
+
+// ---- Writing model answers (the Band-8 sample comparison) ------------------
+
+export interface WritingSamplesInput {
+  taskType: EssayTaskType;
+  promptText: string;
+  /** Academic Task 1 only: the figure flattened to text (figureToText), so the
+   *  model answers describe the SAME data the student saw. */
+  figure?: string;
+  meta: { organizationId: string; userId: string | null };
+}
+
+/**
+ * Generate two original, band-targeted model answers (Band 7 + Band 8) for one
+ * task — the comparison panel a learner studies after grading. The GENERATOR
+ * writes these (separate from the grader, CLAUDE.md), grounded in the calibrated
+ * anchors so the bands are honest, not inflated. Returns the samples low→high.
+ */
+export async function generateWritingSamples(input: WritingSamplesInput): Promise<WritingSample[]> {
+  const anchors = await retrieveAnchorsForTask(input.taskType, 4);
+  const anchorBlock = anchors.length
+    ? anchors.map((a, i) => `--- calibrated anchor ${i + 1} (≈ band ${a.band}) ---\n${a.content}`).join("\n\n")
+    : "";
+
+  const { content } = await generate({
+    kind: "writing_samples",
+    spec: {
+      task_type: input.taskType,
+      prompt: input.promptText,
+      figure: input.figure ?? "",
+      anchor_block: anchorBlock,
+    },
+    meta: input.meta,
+  });
+
+  const stripped = content
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  const parsed = writingSamplesResultSchema.parse(JSON.parse(stripped));
+  return [...parsed.samples].sort((a, b) => a.band - b.band);
 }
 
 // ---- Transcription (photo/PDF of a written answer → editable text) ---------
@@ -721,4 +767,4 @@ function errorMessage(err: unknown): string {
   return (err instanceof Error ? err.message : String(err)).slice(0, 500);
 }
 
-export type { EssayGrade, GradeEssayInput, GenerateInput, GenerateResult } from "./schema";
+export type { EssayGrade, GradeEssayInput, GenerateInput, GenerateResult, WritingSample } from "./schema";

@@ -39,7 +39,7 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
       .limit(1)
       .maybeSingle(),
     essay.prompt_id
-      ? supabase.from("writing_prompts").select("topic_family, figure").eq("id", essay.prompt_id).maybeSingle()
+      ? supabase.from("writing_prompts").select("topic_family, figure, prompt_text").eq("id", essay.prompt_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -62,6 +62,7 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
       blocker={blocker}
       essayText={(essay.content as string | null) ?? ""}
       annotations={annotations}
+      promptText={(promptRes.data?.prompt_text as string | null) ?? null}
       reviseHref={essay.prompt_id ? `/write/${essay.prompt_id as string}` : null}
     />
   );

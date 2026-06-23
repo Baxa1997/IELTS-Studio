@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
 import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 
-import { LiveGradingPanel } from "./_landing/live-grading-panel";
-
 // Marketing fonts — scoped to this page via CSS variables, so the rest of the
-// app keeps Geist. Newsreader (serif display) + Hanken Grotesk (UI sans).
+// app keeps Geist. Newsreader (serif display) + Hanken Grotesk (UI sans) +
+// JetBrains Mono (the small calibrated/telemetry labels in the hero banner).
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
 const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-jetbrains", display: "swap" });
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
+const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
 const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 const MUTED = "#565a72";
@@ -34,7 +35,7 @@ export default async function Home() {
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} lp-root`}
       style={{
         background: "linear-gradient(180deg,#FBFAF3 0%,#F1EFE2 60%,#F3F1E5 100%)",
         fontFamily: SANS,
@@ -134,45 +135,55 @@ function Logo({ light = false }: { light?: boolean }) {
 
 function SiteNav({ home }: { home: string | null }) {
   return (
-    <div
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 20,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "18px clamp(20px,5vw,64px)",
-        borderBottom: "1px solid #EAE7D8",
-        background: "rgba(251,250,243,.86)",
-        backdropFilter: "blur(10px)",
-      }}
-    >
-      <Link href="/" style={{ textDecoration: "none" }}>
-        <Logo />
-      </Link>
-      <div className="lp-nav-links" style={{ display: "flex", alignItems: "center", gap: 34, fontFamily: SANS, fontWeight: 500, fontSize: 15, color: "#4b4e63" }}>
-        <a href="#how" style={{ color: "inherit", textDecoration: "none" }}>How it works</a>
-        <a href="#skills" style={{ color: "inherit", textDecoration: "none" }}>Skills</a>
-        <a href="#reviews" style={{ color: "inherit", textDecoration: "none" }}>Reviews</a>
-        <a href="#pricing" style={{ color: "inherit", textDecoration: "none" }}>Pricing</a>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-        {home ? (
-          <Link href={home} style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
-            Open dashboard
-          </Link>
-        ) : (
-          <>
-            <Link href="/sign-in" className="lp-nav-cta-secondary" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, textDecoration: "none" }}>
-              Sign in
+    // Sticky outer rail — transparent, just provides the top/side gap so the
+    // island floats off the page edges.
+    <div style={{ position: "sticky", top: 0, zIndex: 30, padding: "16px clamp(14px,4vw,40px) 0", pointerEvents: "none" }}>
+      <nav
+        className="lp-nav-island"
+        style={{
+          pointerEvents: "auto",
+          maxWidth: 1180,
+          margin: "0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 20,
+          padding: "11px 14px 11px 22px",
+          borderRadius: 18,
+          background: "#fff",
+          border: "1px solid #E5E2D2",
+          // Solid, lifted "island" — a crisp top highlight, a tight contact
+          // shadow, and a broad ambient one so it reads as a real floating object.
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(26,28,51,.06), 0 14px 34px -14px rgba(26,28,51,.28), 0 4px 12px -6px rgba(26,28,51,.12)",
+        }}
+      >
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <Logo />
+        </Link>
+        <div className="lp-nav-links" style={{ display: "flex", alignItems: "center", gap: 30, fontFamily: SANS, fontWeight: 500, fontSize: 15, color: "#4b4e63" }}>
+          <a href="#how" style={{ color: "inherit", textDecoration: "none" }}>How it works</a>
+          <a href="#skills" style={{ color: "inherit", textDecoration: "none" }}>Skills</a>
+          <a href="#reviews" style={{ color: "inherit", textDecoration: "none" }}>Reviews</a>
+          <a href="#pricing" style={{ color: "inherit", textDecoration: "none" }}>Pricing</a>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {home ? (
+            <Link href={home} style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
+              Open dashboard
             </Link>
-            <Link href="/sign-in?next=/write" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
-              Try it free
-            </Link>
-          </>
-        )}
-      </div>
+          ) : (
+            <>
+              <Link href="/sign-in" className="lp-nav-cta-secondary" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, textDecoration: "none", padding: "0 6px" }}>
+                Sign in
+              </Link>
+              <Link href="/sign-in?next=/write" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
+                Try it free
+              </Link>
+            </>
+          )}
+        </div>
+      </nav>
     </div>
   );
 }
@@ -181,72 +192,144 @@ function SiteNav({ home }: { home: string | null }) {
 
 function Hero() {
   return (
-    <div style={{ position: "relative", minHeight: "calc(100vh - 73px)", display: "flex", alignItems: "center", overflow: "hidden" }}>
-      {/* soft brand glow behind the panel for depth */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <div style={{ position: "absolute", right: "-4%", top: "6%", width: 560, height: 560, borderRadius: "50%", background: "radial-gradient(circle, rgba(59,67,181,.13), transparent 62%)" }} />
-        <div style={{ position: "absolute", left: "-8%", bottom: "-6%", width: 440, height: 440, borderRadius: "50%", background: "radial-gradient(circle, rgba(216,169,58,.10), transparent 64%)" }} />
-      </div>
-      <div
-        className="lp-hero-grid"
-        style={{ ...SHELL, position: "relative", padding: "36px clamp(20px,5vw,64px)", display: "grid", gridTemplateColumns: "0.86fr 1.14fr", gap: "clamp(36px,5vw,54px)", alignItems: "center", width: "100%" }}
-      >
-        {/* left copy */}
-        <div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "#EBECFA", border: "1px solid #D4D6F4", color: INDIGO, fontFamily: SANS, fontWeight: 600, fontSize: 13, padding: "7px 14px", borderRadius: 999 }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-            AI-graded · Writing &amp; Reading
+    <div style={{ position: "relative", background: "#fff", overflow: "hidden" }}>
+      {/* scoped animations + responsive rules for the banner */}
+      <style>{HERO_STYLES}</style>
+
+      {/* dot grid + soft indigo glow */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(59,67,181,.045) 1px,transparent 1.4px)", backgroundSize: "26px 26px" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: 90, width: 760, height: 380, transform: "translateX(-50%)", background: "radial-gradient(ellipse,rgba(59,67,181,.09),transparent 64%)", pointerEvents: "none" }} />
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1160, margin: "0 auto", padding: "40px clamp(20px,5vw,40px) 60px" }}>
+        {/* live status row */}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 9, fontFamily: MONO, fontSize: 11.5, letterSpacing: ".1em", color: "#908d80" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#1F8A5B", animation: "hb-pulse 1.8s infinite" }} />
+            AI EXAMINER · CALIBRATED ±0.5
           </div>
-          <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(34px,5.2vw,56px)", lineHeight: 1.04, color: INK, letterSpacing: "-.02em", margin: "20px 0 0", textWrap: "balance" }}>
-            Know your <span style={{ color: INDIGO, fontStyle: "italic" }}>real</span> band. Then close the gap.
-          </h1>
-          <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 18, lineHeight: 1.6, color: MUTED, margin: "20px 0 0", maxWidth: 480 }}>
-            Watch the AI grade your essay the way an examiner does — criterion by criterion, mistake by mistake — then show the one fix that moves you up, and track every band as you improve.
-          </p>
-          <div style={{ display: "flex", gap: 14, marginTop: 30, flexWrap: "wrap" }}>
-            <Link href="/sign-in?next=/write" style={BTN_PRIMARY}>
-              Grade an essay free
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14" />
-                <path d="m13 5 7 7-7 7" />
-              </svg>
-            </Link>
-            <a href="#how" style={BTN_GHOST}>See how it works</a>
-          </div>
-          <div style={{ display: "flex", gap: 9, marginTop: 30, flexWrap: "wrap" }}>
-            <SkillChip label="Writing" />
-            <SkillChip label="Reading" />
-            <SkillChip label="Speaking" soon />
-            <SkillChip label="Listening" soon />
-          </div>
-          <p style={{ fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: "#8a897c", margin: "20px 0 0" }}>
-            No login for your first grade · conservative by design · not affiliated with IELTS®
-          </p>
         </div>
 
-        {/* right: live AI grading panel */}
-        <LiveGradingPanel />
+        {/* centered hero */}
+        <div style={{ textAlign: "center", marginTop: 28 }}>
+          <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".22em", color: INDIGO, textTransform: "uppercase" }}>Calibrated ±0.5 to human raters</div>
+
+          {/* today → gap → projected */}
+          <div className="lp-hero-gap" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(20px,4vw,36px)", marginTop: 18 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(64px,9vw,108px)", lineHeight: 0.9, color: "rgba(26,28,51,.20)" }}>6.5</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".18em", color: "#a8a596", marginTop: 8 }}>TODAY</div>
+            </div>
+            <div style={{ width: "clamp(150px,22vw,236px)", marginBottom: 30 }}>
+              <div style={{ position: "relative", height: 4, background: "#ECEAE2", borderRadius: 3 }}>
+                <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "100%", borderRadius: 3, background: `linear-gradient(90deg,#A9AEEC,${INDIGO})` }}>
+                  <span style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, borderRadius: "50%", background: INDIGO, boxShadow: "0 0 0 4px rgba(59,67,181,.16),0 0 18px rgba(59,67,181,.5)" }} />
+                </div>
+              </div>
+              <div style={{ textAlign: "center", marginTop: 14, fontFamily: MONO, fontSize: 11, letterSpacing: ".18em", color: "#b4b1a3" }}>THE GAP</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(64px,9vw,108px)", lineHeight: 0.9, color: INDIGO, animation: "hb-glow 3.6s ease-in-out infinite" }}>7.5</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".18em", color: INDIGO, marginTop: 8 }}>AI-PROJECTED BAND</div>
+            </div>
+          </div>
+
+          <h1 style={{ fontFamily: SERIF, fontWeight: 500, fontSize: "clamp(30px,4.6vw,46px)", lineHeight: 1.16, color: INK, maxWidth: 780, margin: "28px auto 0", letterSpacing: "-.01em", textWrap: "balance" }}>
+            See the band you&rsquo;d <span style={{ fontStyle: "italic", color: INDIGO }}>actually</span> get &mdash; then close the gap.
+          </h1>
+          <p style={{ fontSize: 17, lineHeight: 1.6, color: "#57564d", maxWidth: 610, margin: "16px auto 0" }}>
+            Most tools round you up to keep you happy. Our examiner reasons through every criterion &mdash; calibrated to within half a band of human raters &mdash; then shows the one fix that moves you up.
+          </p>
+
+          <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 28, flexWrap: "wrap" }}>
+            <Link href="/sign-in?next=/write" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 26px", borderRadius: 14, textDecoration: "none", boxShadow: "0 12px 26px rgba(59,67,181,.26)" }}>
+              Grade an essay free <span aria-hidden>→</span>
+            </Link>
+            <a href="#how" style={{ display: "inline-flex", alignItems: "center", background: "#fff", color: INK, border: "1.5px solid #E4E0D0", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 24px", borderRadius: 14, textDecoration: "none" }}>See how it works</a>
+          </div>
+        </div>
+
+        {/* AI examiner reasoning card */}
+        <div style={{ maxWidth: 1000, margin: "46px auto 0", background: "#fff", border: "1px solid #EAE7DE", borderRadius: 22, boxShadow: "0 18px 46px rgba(20,20,48,.08)", padding: "22px clamp(18px,3vw,26px)" }}>
+          <div className="lp-hero-cardhead" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap" }}>
+              <span style={{ width: 32, height: 32, borderRadius: 9, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                <svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z" fill="#fff" /></svg>
+              </span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>AI Examiner</span>
+              <span style={{ fontSize: 14, color: "#908d80" }}>reasoning through your essay</span>
+              <span style={{ display: "inline-flex", gap: 4, marginLeft: 2, alignItems: "center" }}>
+                {[0, 0.2, 0.4].map((d) => (
+                  <span key={d} style={{ width: 5, height: 5, borderRadius: "50%", background: INDIGO, animation: `hb-dots 1.2s infinite ${d}s` }} />
+                ))}
+              </span>
+            </div>
+            <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".1em", color: "#a8a596", whiteSpace: "nowrap" }}>14,000+ RATED ESSAYS · ±0.5 OF HUMAN RATERS</span>
+          </div>
+
+          <div style={{ marginTop: 16, fontSize: 16, lineHeight: 1.75, color: "#3f3e37" }}>
+            Read <strong style={{ color: INK, fontWeight: 600 }}>248 words</strong> across 18 sentences and weighed all four criteria. Found <Chip tone="amber">subject–verb agreement ×2</Chip>, <Chip tone="amber">repetitive lexical range</Chip>, and <Chip tone="indigo">under-developed ideas</Chip>. <strong style={{ color: INK, fontWeight: 600 }}>The single fix that moves you most:</strong> correct the agreement and add two complex sentences with subordinate clauses
+            <span aria-hidden style={{ display: "inline-block", width: 2, height: 17, background: INDIGO, verticalAlign: -2, marginLeft: 3, animation: "hb-blink 1.1s steps(1) infinite" }} />
+          </div>
+
+          <div className="lp-hero-bars" style={{ display: "flex", gap: 18, marginTop: 20 }}>
+            <CritBar label="LEXICAL" band="6.0" pct={66} color="#E0A82E" />
+            <CritBar label="GRAMMAR" band="6.0" pct={66} color={INDIGO} />
+            <CritBar label="COHERENCE" band="6.5" pct={72} color={INDIGO} />
+            <CritBar label="TASK RESPONSE" band="6.5" pct={72} color={INDIGO} />
+          </div>
+
+          <div className="lp-hero-cardfoot" style={{ marginTop: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, borderTop: "1px dashed #EAE7DE", paddingTop: 15 }}>
+            <span style={{ fontSize: 15, color: "#57564d" }}>
+              <strong style={{ color: INK, fontWeight: 600 }}>Overall 6.5 today.</strong> Apply the highlighted fixes and you&rsquo;re projected at <strong style={{ color: INDIGO, fontWeight: 700 }}>7.5</strong>.
+            </span>
+            <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#1F8A5B", background: "#e9f5ef", border: "1px solid #cfe7da", borderRadius: 999, padding: "5px 13px", whiteSpace: "nowrap" }}>+1.0 reachable</span>
+          </div>
+        </div>
+
+        <p style={{ textAlign: "center", fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: "#8a897c", margin: "22px 0 0" }}>
+          No login for your first grade · conservative by design · not affiliated with or endorsed by IELTS®
+        </p>
       </div>
     </div>
   );
 }
 
-function SkillChip({ label, soon = false }: { label: string; soon?: boolean }) {
-  if (soon) {
-    return (
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "1px dashed #C8C6B6", borderRadius: 999, padding: "8px 14px", fontFamily: SANS, fontWeight: 600, fontSize: 13, color: "#8a897c" }}>
-        {label}
-        <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 11, color: INDIGO, background: "#EBECFA", padding: "2px 7px", borderRadius: 5 }}>Soon</span>
-      </div>
-    );
-  }
+const HERO_STYLES = `
+@keyframes hb-blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes hb-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes hb-glow{0%,100%{text-shadow:0 0 0 rgba(59,67,181,0)}50%{text-shadow:0 0 34px rgba(59,67,181,.35)}}
+@keyframes hb-dots{0%{opacity:.3}25%{opacity:1}100%{opacity:.3}}
+@media (max-width:760px){
+  .lp-hero-bars{flex-wrap:wrap}
+  .lp-hero-bars>div{flex:1 1 42%}
+  .lp-hero-cardhead{flex-direction:column;align-items:flex-start;gap:9px}
+  .lp-hero-cardfoot{flex-direction:column;align-items:flex-start;gap:10px}
+}
+@media (prefers-reduced-motion:reduce){
+  .lp-root [style*="animation"]{animation:none!important}
+}
+`;
+
+/** An inline highlight chip in the examiner's reasoning (a flagged fault). */
+function Chip({ tone, children }: { tone: "amber" | "indigo"; children: React.ReactNode }) {
+  const s =
+    tone === "amber"
+      ? { background: "#FBF1DA", color: "#9a6a10", border: "1px solid #F0E1BB" }
+      : { background: "#ECEDFB", color: INDIGO, border: "1px solid #DADCF4" };
+  return <span style={{ ...s, borderRadius: 7, padding: "1px 7px", fontWeight: 600, whiteSpace: "nowrap" }}>{children}</span>;
+}
+
+/** One criterion meter in the reasoning card. */
+function CritBar({ label, band, pct, color }: { label: string; band: string; pct: number; color: string }) {
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #E1DFD0", borderRadius: 999, padding: "8px 14px", fontFamily: SANS, fontWeight: 600, fontSize: 13, color: INK }}>
-      {label}
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: INDIGO }} />
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".06em", color: "#908d80", whiteSpace: "nowrap" }}>{label}</span>
+        <span style={{ fontFamily: SERIF, fontSize: 18, color: INK }}>{band}</span>
+      </div>
+      <div style={{ height: 4, borderRadius: 3, background: "#ECEAE2", marginTop: 7, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3 }} />
+      </div>
     </div>
   );
 }

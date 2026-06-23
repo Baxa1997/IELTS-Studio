@@ -67,6 +67,16 @@ export function retrieveAnchors(input: GradeEssayInput, k = 2): Promise<Anchor[]
   return staticAnchorStore.nearest(input, k);
 }
 
+/**
+ * Anchors for a task type without an essay in hand — used to GROUND model-answer
+ * generation (the Band-8 sample feature) so the generator writes genuinely at-band
+ * essays, not inflated ones. The static store only reads `taskType`, so a bare
+ * shape is enough; the pgvector swap would take a target band instead.
+ */
+export function retrieveAnchorsForTask(taskType: EssayTaskType, k = 3): Promise<Anchor[]> {
+  return staticAnchorStore.nearest({ taskType } as GradeEssayInput, k);
+}
+
 // ---- internals -------------------------------------------------------------
 
 let cache: Anchor[] | null = null;

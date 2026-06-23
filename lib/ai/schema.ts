@@ -86,6 +86,7 @@ export const generateInputSchema = z.object({
     "writing_prompt",
     "writing_task1_academic",
     "writing_tutor",
+    "writing_samples",
     "reading_passage",
     "reading_set",
     "reading_validation",
@@ -98,6 +99,27 @@ export const generateInputSchema = z.object({
 });
 export type GenerateInput = z.infer<typeof generateInputSchema>;
 export type GenerateKind = GenerateInput["kind"];
+
+/** One band-targeted model answer for the "Model answers" comparison (the Band-8
+ *  sample feature). Original AI content, honestly written AT its stated band — a
+ *  Band 7 sample must really be a 7, not an inflated one (CLAUDE.md: no inflation,
+ *  trust is the moat). */
+export const writingSampleSchema = z.object({
+  band: z.number().min(4).max(9),
+  /** Short label for the column, e.g. "Band 8 model answer". */
+  title: z.string().optional().default(""),
+  /** The model essay itself. */
+  essay: z.string().min(1),
+  /** 2–4 specifics that earn this band, tied to the criteria (TR/CC/LR/GRA). */
+  highlights: z.array(z.string()).default([]),
+  /** What would lift it to the next band (empty for the top sample). */
+  to_next: z.string().optional().default(""),
+});
+export type WritingSample = z.infer<typeof writingSampleSchema>;
+
+export const writingSamplesResultSchema = z.object({
+  samples: z.array(writingSampleSchema).min(1),
+});
 
 export interface GenerateResult {
   content: string;

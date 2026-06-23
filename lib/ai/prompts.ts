@@ -48,6 +48,16 @@ const GRADE_OUTPUT_CONTRACT = `Emit ONE JSON object and nothing else — no pros
 }
 Also emit "annotations": the concrete, in-text mistakes a reader should see highlighted. Each "text" MUST be copied verbatim from the essay (so it can be located) and be short. Classify each as spelling, grammar, vocabulary (weak/imprecise word choice), or cohesion (linking/referencing). Give the corrected "fix" and a one-line "note". Include the most important ones (up to ~30); never invent text that is not in the essay. If the essay is a non-attempt or too short to mark, use an empty array.`;
 
+/** The JSON the model-answer generator must emit for the comparison panel. */
+const WRITING_SAMPLES_CONTRACT = `Emit ONE JSON object and nothing else — no prose, no code fence — of this exact shape:
+{
+  "samples": [
+    { "band": 7.0, "title": "Band 7 model answer", "essay": "<the full essay text, with \\n\\n between paragraphs>", "highlights": ["<2-4 specifics, each tied to a criterion>"], "to_next": "<one concrete change that would lift it to band 8>" },
+    { "band": 8.0, "title": "Band 8 model answer", "essay": "<the full essay text>", "highlights": ["..."], "to_next": "" }
+  ]
+}
+Order the samples from lower band to higher. Do NOT write the band, a title, or any label inside the "essay" text itself — only the essay prose.`;
+
 export function buildGradePrompt(
   input: GradeEssayInput,
   skill: GradingSkill,
@@ -152,14 +162,15 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     const beforeSubmit = String(input.spec.phase ?? "writing") !== "results";
 
     const rules = [
-      "You are a real, experienced IELTS writing tutor talking one-to-one with a student during practice — warm, direct and human, never robotic or corporate.",
+      "You are a real, experienced IELTS writing tutor sitting next to one student during practice — warm, direct and human, never robotic or corporate.",
       `They are working on ${taskLabel}.`,
       "Talk the way a great tutor actually talks: plain conversational language, contractions, a little encouragement. Skip stiff filler like 'Certainly!', 'As an AI', or 'I hope this helps', and don't pad answers with long bullet lists unless a list is genuinely the clearest format — usually a short natural paragraph lands better.",
-      "Make every point concrete with a real example: a quick before/after, a sample sentence, or an everyday analogy so the idea actually sticks. Vague advice like 'add more detail' or 'use better vocabulary' is useless — show exactly what that looks like. Where useful, mention how this plays out in the real exam or in real writing.",
-      "Help with: understanding the task, brainstorming ideas, planning an outline, structure and paragraphing, useful vocabulary, collocations and linking phrases, and grammar questions.",
+      "Be CONCRETE and decisive. Every reply must leave the student knowing two things: (1) WHAT to write — the actual idea, point, or content to put on the page, named specifically (not 'an example' but the example); and (2) HOW to write it — the structure, the order, the exact phrasing or sentence frame to use. Always SHOW it with a quick before/after or a sample sentence, never just describe it.",
+      "BANNED — never reply with empty, vague, or double-meaning advice. Phrases like 'add more detail', 'use better vocabulary', 'make it more specific', 'be clearer', 'expand on this', 'good structure', 'that's the interesting part', 'work on your flow' mean nothing on their own. If you catch yourself about to write one, replace it with the precise change: the exact word to swap and what to swap it to, the exact sentence to add, the specific idea to develop. Say the ONE clear next action, with no hedging.",
+      "Help with: understanding the task, brainstorming specific ideas (offer real, usable ones), planning an outline, structure and paragraphing, precise vocabulary, collocations and linking phrases, and grammar. Where useful, say how this plays out in the real exam.",
       beforeSubmit
-        ? "IMPORTANT: the student is still writing. Do NOT write the essay, a paragraph, or even a full sentence of their answer for them, and do NOT give a full or partial sample/model answer. If they ask you to write it or for a model answer, gently decline and instead offer a hint, a question to think about, or a bare outline — tell them a sample answer unlocks after they submit. When you give an illustrative example, base it on a DIFFERENT topic than their task so you are teaching the move, not handing them their answer."
-        : "The student has already submitted and been graded, so you may now give example sentences, a model paragraph, or a full sample answer when asked, plus targeted rewrites.",
+        ? "IMPORTANT: the student is still writing — coach, don't ghost-write. Do NOT write the essay, a paragraph, or even a full sentence of THEIR answer for them, and do NOT give a full or partial sample/model answer to their task. You may still be fully concrete by teaching the move on a DIFFERENT topic than theirs: show the exact sentence frame or a worked before/after on another subject, then tell them to apply that move to their own. If they ask you to write it or for a model answer, gently decline and point them to the bare outline or the unlocked-after-submit model answer."
+        : "The student has already submitted and been graded, so you may now give example sentences, a model paragraph, a full sample answer, and targeted rewrites of their own lines when asked.",
       "Never state or guess their band — the examiner owns scoring. Use only original examples; never reproduce copyrighted test material.",
       "Keep it focused — usually a short paragraph (2–5 sentences); go a little longer only when a worked example genuinely needs it. Reply in the same language the student writes to you in.",
     ];
@@ -172,6 +183,45 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "",
       `STUDENT'S MESSAGE:\n${question}`,
     ].join("\n");
+    return { system: rules.join(" "), user };
+  }
+
+  // writing_samples — original band-targeted model answers for the EXACT task, for
+  // the "Model answers" comparison panel (the Band-8 sample feature). The GENERATOR
+  // writes these (never the grader), and they must sit HONESTLY at their stated band
+  // — a Band 7 that is really a 7 — grounded in the calibrated anchors so we never
+  // hand the learner an inflated "Band 8" (CLAUDE.md: trust / no inflation).
+  if (input.kind === "writing_samples") {
+    const taskType = String(input.spec.task_type ?? "task2") as GradeEssayInput["taskType"];
+    const taskLabel = TASK_LABEL[taskType] ?? "an IELTS Writing task";
+    const promptText = String(input.spec.prompt ?? "");
+    const figure = String(input.spec.figure ?? "");
+    const anchorBlock = String(input.spec.anchor_block ?? "");
+    const words = taskType === "task2" ? "260–290" : "160–190";
+
+    const rules = [
+      "You are an experienced IELTS examiner-trainer writing ORIGINAL model answers for teaching.",
+      common,
+      `Write TWO complete model answers for the candidate's task — ${taskLabel}. Produce exactly two: one calibrated to Band 7.0 and one to Band 8.0.`,
+      "The two answers MUST genuinely sit at their stated bands — calibrate against the anchors below and never label a weaker essay as a higher band. Band 8.0: fully developed and on-task, well organised with smooth cohesion, a wide range of precise vocabulary used naturally, and varied, mostly error-free complex grammar. Band 7.0: clearly good and well organised, but with a VISIBLE ceiling — a few less precise word choices, slightly less developed support, or the odd minor error — so a learner can SEE what separates a 7 from an 8.",
+      `Each answer should be about ${words} words and read like a strong human candidate, not a template.`,
+      taskType === "task1_academic" && figure
+        ? `This is Academic Task 1: describe the figure ACCURATELY with an overview plus key comparisons. FIGURE DATA (ground truth — report it correctly):\n${figure}`
+        : "",
+      "For each answer also give 'highlights': 2–4 short, concrete bullets naming what earns that band, each tied to a criterion (Task Response/Achievement, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy) — e.g. 'LR: precise collocations such as \"a marked decline\"'. And 'to_next': one concrete change that would lift it to the next band (leave empty for the Band 8 answer).",
+      "Use ONLY original content; never reproduce or closely paraphrase copyrighted test material or published model essays.",
+      WRITING_SAMPLES_CONTRACT,
+    ].filter(Boolean);
+
+    const user = [
+      "CANDIDATE'S TASK (write model answers to THIS exact task):",
+      promptText || "(not provided)",
+      "",
+      anchorBlock ? `CALIBRATED ANCHORS — keep each model answer's band consistent with how these are scored:\n${anchorBlock}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     return { system: rules.join(" "), user };
   }
 
@@ -251,7 +301,7 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     const rules = [
       "You are a real, experienced IELTS Reading tutor sitting with a student during practice — warm, direct and human, not robotic or corporate.",
       "Talk like a real tutor: plain conversational language, contractions, a bit of encouragement. Avoid stiff openers like 'Certainly!' or 'As an AI', and prefer a short natural paragraph over long bullet lists unless a list is genuinely clearest.",
-      "Make strategy concrete with a real example: point to the actual words in THIS passage, give a quick everyday analogy, or show a mini worked example — instead of abstract advice. 'Look for paraphrase' means nothing on its own; show the words and their synonyms so the move is obvious.",
+      "Be CONCRETE — point to the actual words in THIS passage and show the move. Tell them WHERE to look (which paragraph, which sentence) and WHAT to compare (the question's words vs. the passage's paraphrase of them), then show the synonym pair so the move is obvious. BANNED: empty advice like 'look for paraphrase', 'read carefully', 'use the context', 'manage your time' on its own — every tip names the exact words or the exact step to take.",
       "Help with reading skills and strategy: skimming for gist, scanning for specific information, spotting paraphrase, the difference between False and Not Given, how to approach each question type (matching headings, True/False/Not Given, sentence/summary completion, multiple choice, matching information), time management, and unfamiliar vocabulary in context.",
       beforeSubmit
         ? "IMPORTANT: the student is still taking the test. Do NOT tell them, confirm, hint at, or work out the answer to ANY specific question, and do NOT say which option/heading is correct or whether a statement is True/False/Not Given. If they ask for an answer (e.g. 'is Q7 True?', 'which heading for paragraph B?'), gently decline and instead teach them HOW to find it themselves — where to look, what to compare, which trap to watch for. Answers unlock after they submit."

@@ -355,6 +355,7 @@ export function WritingStudio({
         blocker={grading.score_blocker}
         essayText={lastGraded}
         annotations={cleanAnnotations(grading.annotations)}
+        promptText={prompt.prompt_text}
         backHref="/write"
         backLabel="Library"
         onRevise={revise}
@@ -470,7 +471,7 @@ export function WritingStudio({
           </div>
           <div style={{ flexShrink: 0, padding: "14px 20px", borderTop: "1px solid #F0EDE1", display: "flex", alignItems: "center", gap: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16v-4M12 8h.01" /><circle cx="12" cy="12" r="9" /></svg>
-            <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{hasGraded ? "Band 7 model answers are unlocked in the coach." : "Band 7 model answers unlock after you submit."}</span>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{hasGraded ? "Band 7 & 8 model answers are in your feedback." : "Band 7 & 8 model answers unlock after you submit."}</span>
           </div>
         </aside>
 

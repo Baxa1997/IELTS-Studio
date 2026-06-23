@@ -9,6 +9,7 @@ import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
 import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
 import { BandCard } from "./band-card";
+import { WritingHero } from "./writing-hero";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -41,6 +42,9 @@ export default async function DashboardPage() {
         </div>
         <StreakBadge days={streakDays} />
       </div>
+
+      {/* encouraging writing hero — honest band + clear CTAs */}
+      <WritingHero estimate={estimates.bySkill.writing} firstName={firstNameOf(profile.full_name)} />
 
       {/* study plan strip */}
       <PlanStrip plan={plan} tasksThisWeek={tasksThisWeek} />
@@ -77,6 +81,10 @@ const ARROW = (
 
 function greeting(name: string | null): string {
   return name ? `Welcome back, ${name.split(" ")[0]}` : "Welcome back";
+}
+
+function firstNameOf(name: string | null): string | null {
+  return name ? name.split(" ")[0] : null;
 }
 
 function StreakBadge({ days }: { days: number }) {
