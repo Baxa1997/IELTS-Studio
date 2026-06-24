@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { AppShell } from "@/components/app-shell/shell";
-import { TargetCard } from "@/components/app-shell/target-card";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -13,8 +11,6 @@ import { WritingLibrary, type LibraryPrompt } from "./library";
 
 export const dynamic = "force-dynamic";
 
-const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
-
 /**
  * Writing library ("outside"). Students only. Renders INSIDE the app shell (the
  * sidebar stays). Browse cached AI prompts, generate a fresh one, or paste your
@@ -22,10 +18,10 @@ const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teach
  * Practised prompts carry their best band and link straight to that essay's feedback.
  */
 export default async function WritePage() {
-  const { user, profile } = await requireOrgUser();
+  const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect(roleHome(profile.role));
 
-  // New learners onboard first — the (studio) layout renders the takeover, so this
+  // New learners onboard first — the (shell) layout renders the takeover, so this
   // page renders nothing until a plan exists. Then ensure the starter set is seeded.
   const plan = await loadStudyPlan(profile.id);
   if (!plan) return null;
@@ -63,7 +59,6 @@ export default async function WritePage() {
   const practised = Array.from(new Set((done ?? []).map((d) => d.prompt_id as string)));
 
   const est = await loadStudentEstimates(profile.id);
-  const target = Math.max(est.bySkill.reading.targetBand, est.bySkill.writing.targetBand);
 
   // The band generated tasks are pitched at — surfaced so the learner sees tasks
   // are tuned to their level (the route applies the same pitch server-side).
@@ -73,16 +68,6 @@ export default async function WritePage() {
     targetBand: plan.targetBand,
   });
 
-  return (
-    <AppShell
-      role={profile.role}
-      home={roleHome(profile.role)}
-      name={profile.full_name ?? user.email ?? "Account"}
-      roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
-      contentClassName=""
-      sidebarFooter={<TargetCard target={target} done={est.diagnosticComplete} />}
-    >
-      <WritingLibrary library={library} practised={practised} pitchBand={pitchBand} />
-    </AppShell>
-  );
+  // The shell (sidebar + header) is owned by the (shell) layout.
+  return <WritingLibrary library={library} practised={practised} pitchBand={pitchBand} />;
 }

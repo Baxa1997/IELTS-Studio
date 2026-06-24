@@ -181,7 +181,7 @@ function SiteNav({ home }: { home: string | null }) {
               <Link href="/sign-in" className="lp-nav-cta-secondary" style={{ fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, textDecoration: "none", padding: "0 6px" }}>
                 Sign in
               </Link>
-              <Link href="/sign-in?next=/write" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
+              <Link href="/write" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
                 Try it free
               </Link>
             </>
@@ -200,8 +200,9 @@ function Hero() {
       {/* scoped animations + responsive rules for the banner */}
       <style>{HERO_STYLES}</style>
 
-      {/* dot grid + soft indigo glow */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(59,67,181,.045) 1px,transparent 1.4px)", backgroundSize: "26px 26px" }} />
+      {/* dot grid + soft indigo glow — purely decorative, so they must never
+          intercept clicks meant for the hero CTAs beneath them */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(rgba(59,67,181,.045) 1px,transparent 1.4px)", backgroundSize: "26px 26px" }} />
       <div aria-hidden style={{ position: "absolute", left: "50%", top: 90, width: 760, height: 380, transform: "translateX(-50%)", background: "radial-gradient(ellipse,rgba(59,67,181,.09),transparent 64%)", pointerEvents: "none" }} />
 
       <div style={{ position: "relative", zIndex: 1, maxWidth: 1160, margin: "0 auto", padding: "40px clamp(20px,5vw,40px) 60px" }}>
@@ -215,10 +216,10 @@ function Hero() {
 
         {/* centered hero */}
         <div style={{ textAlign: "center", marginTop: 28 }}>
-          <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".22em", color: INDIGO, textTransform: "uppercase" }}>Calibrated ±0.5 to human raters</div>
+          <div className="hb-rise hb-d1" style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".22em", color: INDIGO, textTransform: "uppercase" }}>Calibrated ±0.5 to human raters</div>
 
           {/* today → gap → projected */}
-          <div className="lp-hero-gap" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(20px,4vw,36px)", marginTop: 18 }}>
+          <div className="lp-hero-gap hb-rise hb-d2" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(20px,4vw,36px)", marginTop: 18 }}>
             <div style={{ textAlign: "center" }}>
               <div
                 style={{
@@ -240,7 +241,7 @@ function Hero() {
             </div>
             <div style={{ width: "clamp(150px,22vw,236px)", marginBottom: 30 }}>
               <div style={{ position: "relative", height: 4, background: "#ECEAE2", borderRadius: 3 }}>
-                <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "100%", borderRadius: 3, background: `linear-gradient(90deg,#EC7A33,#D6402F 14%,#9A78D0 60%,${INDIGO})` }}>
+                <div className="hb-bar-fill" style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "100%", borderRadius: 3, background: `linear-gradient(90deg,#EC7A33,#D6402F 14%,#9A78D0 60%,${INDIGO})` }}>
                   <span style={{ position: "absolute", right: -8, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, borderRadius: "50%", background: INDIGO, boxShadow: "0 0 0 4px rgba(59,67,181,.16),0 0 18px rgba(59,67,181,.5)" }} />
                 </div>
               </div>
@@ -252,23 +253,26 @@ function Hero() {
             </div>
           </div>
 
-          <h1 style={{ fontFamily: SERIF, fontWeight: 500, fontSize: "clamp(30px,4.6vw,46px)", lineHeight: 1.16, color: INK, maxWidth: 780, margin: "28px auto 0", letterSpacing: "-.01em", textWrap: "balance" }}>
+          <h1 className="hb-rise hb-d3" style={{ fontFamily: SERIF, fontWeight: 500, fontSize: "clamp(30px,4.6vw,46px)", lineHeight: 1.16, color: INK, maxWidth: 780, margin: "28px auto 0", letterSpacing: "-.01em", textWrap: "balance" }}>
             See the band you&rsquo;d <span style={{ fontStyle: "italic", color: INDIGO }}>actually</span> get &mdash; then close the gap.
           </h1>
-          <p style={{ fontSize: 17, lineHeight: 1.6, color: "#57564d", maxWidth: 610, margin: "16px auto 0" }}>
+          <p className="hb-rise hb-d3" style={{ fontSize: 17, lineHeight: 1.6, color: "#57564d", maxWidth: 610, margin: "16px auto 0" }}>
             Most tools round you up to keep you happy. Our examiner reasons through every criterion &mdash; calibrated to within half a band of human raters &mdash; then shows the one fix that moves you up.
           </p>
 
-          <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 28, flexWrap: "wrap" }}>
-            <Link href="/sign-in?next=/write" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 26px", borderRadius: 14, textDecoration: "none", boxShadow: "0 12px 26px rgba(59,67,181,.26)" }}>
+          <div className="hb-rise hb-d4" style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 28, flexWrap: "wrap" }}>
+            {/* Straight into the Writing studio (the "Writing" menu item). Linking
+                directly avoids bouncing the click through /sign-in: signed-in users
+                land in the studio, signed-out users get a clean middleware redirect. */}
+            <Link href="/write" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 26px", borderRadius: 14, textDecoration: "none", boxShadow: "0 12px 26px rgba(59,67,181,.26)" }}>
               Grade an essay free <span aria-hidden>→</span>
             </Link>
-            <Link href="/sign-in?next=/cefr" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#ECEBFB", color: INDIGO, border: "1.5px solid #DEDCF5", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 22px", borderRadius: 14, textDecoration: "none" }}>Practice CEFR</Link>
+            <Link href="/cefr" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#ECEBFB", color: INDIGO, border: "1.5px solid #DEDCF5", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 22px", borderRadius: 14, textDecoration: "none" }}>Practice CEFR</Link>
             <a href="#how" style={{ display: "inline-flex", alignItems: "center", background: "#fff", color: INK, border: "1.5px solid #E4E0D0", fontFamily: SANS, fontWeight: 600, fontSize: 16, padding: "15px 24px", borderRadius: 14, textDecoration: "none" }}>See how it works</a>
           </div>
 
           {/* adaptive-practice proof — practice is generated for YOUR level, not a fixed test */}
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 9, marginTop: 22 }}>
+          <div className="hb-rise hb-d5" style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 9, marginTop: 22 }}>
             {["Generated for your level", "Fresh topic every session", "CEFR A1–C2 + IELTS bands"].map((t) => (
               <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 600, fontSize: 13, color: "#4b4e63", background: "#fff", border: "1px solid #E7E3D5", borderRadius: 999, padding: "7px 14px" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: INDIGO, flex: "none" }} />
@@ -279,7 +283,7 @@ function Hero() {
         </div>
 
         {/* AI examiner reasoning card */}
-        <div style={{ maxWidth: 1000, margin: "46px auto 0", background: "#fff", border: "1px solid #EAE7DE", borderRadius: 22, boxShadow: "0 18px 46px rgba(20,20,48,.08)", padding: "22px clamp(18px,3vw,26px)" }}>
+        <div className="hb-rise hb-d6" style={{ maxWidth: 1000, margin: "46px auto 0", background: "#fff", border: "1px solid #EAE7DE", borderRadius: 22, boxShadow: "0 18px 46px rgba(20,20,48,.08)", padding: "22px clamp(18px,3vw,26px)" }}>
           <div className="lp-hero-cardhead" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap" }}>
               <span style={{ width: 32, height: 32, borderRadius: 9, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
@@ -317,7 +321,7 @@ function Hero() {
         </div>
 
         <p style={{ textAlign: "center", fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: "#8a897c", margin: "22px 0 0" }}>
-          No login for your first grade · conservative by design · not affiliated with or endorsed by IELTS®
+          Calibrated and conservative by design · not affiliated with or endorsed by IELTS®
         </p>
       </div>
     </div>
@@ -329,6 +333,20 @@ const HERO_STYLES = `
 @keyframes hb-pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes hb-glow{0%,100%{text-shadow:0 0 0 rgba(59,67,181,0)}50%{text-shadow:0 0 34px rgba(59,67,181,.35)}}
 @keyframes hb-dots{0%{opacity:.3}25%{opacity:1}100%{opacity:.3}}
+/* Entrance: each hero block rises + fades in, staggered, so the banner assembles
+   itself on load instead of snapping in. */
+@keyframes hb-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.hb-rise{animation:hb-rise .68s cubic-bezier(.22,.68,.18,1) both}
+.hb-d1{animation-delay:.04s}
+.hb-d2{animation-delay:.12s}
+.hb-d3{animation-delay:.22s}
+.hb-d4{animation-delay:.34s}
+.hb-d5{animation-delay:.46s}
+.hb-d6{animation-delay:.56s}
+/* The 6.0→9.0 gap line draws itself left-to-right (the indigo marker rides the
+   growing fill), reinforcing "close the gap". */
+@keyframes hb-bar{from{width:0}to{width:100%}}
+.hb-bar-fill{animation:hb-bar 1.25s cubic-bezier(.4,.7,.2,1) .42s both}
 @media (max-width:760px){
   .lp-hero-bars{flex-wrap:wrap}
   .lp-hero-bars>div{flex:1 1 42%}
@@ -337,6 +355,8 @@ const HERO_STYLES = `
 }
 @media (prefers-reduced-motion:reduce){
   .lp-root [style*="animation"]{animation:none!important}
+  .hb-rise,.hb-bar-fill{animation:none!important}
+  .hb-bar-fill{width:100%!important}
 }
 `;
 
@@ -1069,7 +1089,7 @@ function FinalCta() {
           Paste an essay, get a calibrated band and the one fix that moves you up — free to start.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 14, marginTop: 28 }}>
-          <Link href="/sign-in?next=/write" style={{ ...BTN_GHOST, background: "#fff", border: "none", color: INDIGO }}>
+          <Link href="/write" style={{ ...BTN_GHOST, background: "#fff", border: "none", color: INDIGO }}>
             Grade an essay free
           </Link>
           <Link href="/sign-up" style={{ ...BTN_GHOST, background: "transparent", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }}>
@@ -1103,7 +1123,7 @@ const FOOTER_COLS: { head: string; links: { label: string; href: string }[] }[] 
   {
     head: "Get started",
     links: [
-      { label: "Grade an essay free", href: "/sign-in?next=/write" },
+      { label: "Grade an essay free", href: "/write" },
       { label: "Create an account", href: "/sign-up" },
       { label: "Sign in", href: "/sign-in" },
     ],

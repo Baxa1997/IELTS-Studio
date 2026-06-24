@@ -6,8 +6,10 @@ import type React from "react";
 import { useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-import type { LibraryPrompt } from "./writing-studio";
-import { saveDraft } from "./actions";
+// These live with the full-screen runner in the (studio) group; the hub library
+// only needs the prompt type and the save-draft action from them.
+import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
+import { saveDraft } from "@/app/(studio)/write/actions";
 
 export type { LibraryPrompt };
 

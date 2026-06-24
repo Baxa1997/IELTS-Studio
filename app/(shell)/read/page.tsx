@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { AppShell } from "@/components/app-shell/shell";
-import { TargetCard } from "@/components/app-shell/target-card";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
@@ -13,11 +11,10 @@ import { ReadingHub, type LibraryTest, type PassageCard, type TestCard } from ".
 
 export const dynamic = "force-dynamic";
 
-const ROLE_LABEL: Record<string, string> = {
-  center_admin: "Center admin",
-  teacher: "Teacher",
-  student: "Student",
-};
+// A real IELTS passage runs 13–14 questions and we now generate 13–15. Hide any
+// legacy/under-density passages (the old too-light ~9-question rows, or stray
+// short CEFR sets) so the practice hub only offers exam-realistic passages.
+const MIN_PRACTICE_QUESTIONS = 11;
 
 /**
  * Reading hub — sidebar shell (like /write); the runner pages are full-screen.
@@ -30,7 +27,7 @@ const ROLE_LABEL: Record<string, string> = {
  * items clone into the learner's org on Start; both show only a "Start" button.
  */
 export default async function ReadingHubPage() {
-  const { user, profile } = await requireOrgUser();
+  const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect(roleHome(profile.role));
 
   const supabase = await createClient();
@@ -119,40 +116,28 @@ export default async function ReadingHubPage() {
   };
   const libraryPassages = (libPassagesRes.data ?? [])
     .map(toPassageCard)
-    .filter((c) => c.questionCount > 0);
+    .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS);
   const ownPassages = (ownPassagesRes.data ?? [])
     .map(toPassageCard)
-    .filter((c) => c.questionCount > 0);
+    .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS);
 
-  const target = Math.max(
-    estimates.bySkill.reading.targetBand,
-    estimates.bySkill.writing.targetBand,
-  );
-
+  // The shell (sidebar + header) is owned by the (shell) layout; this page only
+  // paints its own full-bleed surface inside it.
   return (
-    <AppShell
-      role={profile.role}
-      home={roleHome(profile.role)}
-      name={profile.full_name ?? user.email ?? "Account"}
-      roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
-      contentClassName=""
-      sidebarFooter={<TargetCard target={target} done={estimates.diagnosticComplete} />}
+    <div
+      style={{
+        minHeight: "calc(100dvh - 3.5rem)",
+        background: "linear-gradient(178deg,#FBFAEF 0%,#F4F2E1 100%)",
+      }}
     >
-      <div
-        style={{
-          minHeight: "calc(100dvh - 3.5rem)",
-          background: "linear-gradient(178deg,#FBFAEF 0%,#F4F2E1 100%)",
-        }}
-      >
-        <ReadingHub
-          levelBand={levelBand}
-          levelMeasured={levelMeasured}
-          libraryTests={libraryTests}
-          ownTests={ownTests}
-          libraryPassages={libraryPassages}
-          ownPassages={ownPassages}
-        />
-      </div>
-    </AppShell>
+      <ReadingHub
+        levelBand={levelBand}
+        levelMeasured={levelMeasured}
+        libraryTests={libraryTests}
+        ownTests={ownTests}
+        libraryPassages={libraryPassages}
+        ownPassages={ownPassages}
+      />
+    </div>
   );
 }

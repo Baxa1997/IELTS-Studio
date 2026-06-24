@@ -117,7 +117,10 @@ export const generateReadingInputSchema = z.object({
     .max(MAX_TARGET_BAND)
     .default(DEFAULT_TARGET_BAND),
   questionTypes: z.array(z.enum(READING_QUESTION_TYPES)).min(1).max(READING_QUESTION_TYPES.length),
-  totalQuestions: z.number().int().min(4).max(15).default(13),
+  // Upper bound is above the 13–15 a single passage actually serves: the student
+  // path over-requests so that after the answer-key validator drops unconfirmed
+  // questions, ~13–15 still survive (keepValidated caps the kept set at 15).
+  totalQuestions: z.number().int().min(4).max(18).default(13),
   /** CEFR track only: the level this passage is graded for (A1..C2). When set, the
    *  generator writes a shorter, level-pitched text and the result is reported as a
    *  CEFR level rather than an IELTS band. */

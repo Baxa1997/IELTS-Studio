@@ -675,9 +675,14 @@ async function clonePassageInto(
 
 /** Keep validator-confirmed questions; fall back to all if too few survive (a short
  *  quiz beats an empty one). Renumber so order_index stays contiguous from 1. */
+/** Single passage is served at the exam-realistic ceiling; over-generation above
+ *  this only exists to survive validator drops, never to inflate the count. */
+const MAX_PASSAGE_QUESTIONS = 15;
+
 function keepValidated(prepared: PreparedQuestion[]): PreparedQuestion[] {
   let kept = prepared.filter((q) => !q.needs_review);
   if (kept.length < 4) kept = prepared;
+  if (kept.length > MAX_PASSAGE_QUESTIONS) kept = kept.slice(0, MAX_PASSAGE_QUESTIONS);
   return kept.map((q, i) => ({ ...q, order_index: i + 1 }));
 }
 
@@ -753,9 +758,12 @@ function defaultReadingSpec(targetBand: number = DEFAULT_TARGET_BAND) {
     topic: pickRandom(READING_TOPICS),
     targetBand,
     questionTypes: pickRandom(READING_TYPE_SETS),
-    // A real IELTS passage section runs 13–14 questions; randomise 13–15 for variety
-    // and to match the exam's density (was a too-light 9).
-    totalQuestions: 13 + Math.floor(Math.random() * 3),
+    // A real IELTS passage section runs 13–14 questions; we serve 13–15. Request a
+    // few EXTRA (16–18) so that after the answer-key validator drops any it can't
+    // confirm, ~13–15 still survive — keepValidated caps the kept set back to 15.
+    // (Earlier this requested 13–15 with no headroom, so drops left passages as
+    // light as 9.)
+    totalQuestions: 16 + Math.floor(Math.random() * 3),
   };
 }
 
