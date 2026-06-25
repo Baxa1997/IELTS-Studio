@@ -5,7 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { SignUpForm } from "./sign-up-form";
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  const { email } = await searchParams;
   return (
     <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-6 py-16">
       <Card>
@@ -20,7 +25,7 @@ export default function SignUpPage() {
             <span className="text-muted-foreground text-xs">or</span>
             <span className="bg-border h-px flex-1" />
           </div>
-          <SignUpForm />
+          <SignUpForm defaultEmail={email} />
           <p className="text-muted-foreground text-sm">
             Already have an account?{" "}
             <Link href="/sign-in" className="underline underline-offset-4">

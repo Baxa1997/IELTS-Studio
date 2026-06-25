@@ -12,7 +12,7 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INDIGO = "#3B43B5";
 const INK = "#1A2138";
-const BORDER = "#E0DBCB";
+const BORDER = "#ECEAF2";
 
 /**
  * The authenticated app shell (Option A brand) — a unified top header spanning the
@@ -48,9 +48,9 @@ export function AppShell({
   const close = () => setOpen(false);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden", background: "#F4F1E7", fontFamily: SANS, color: INK }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden", background: "#fff", fontFamily: SANS, color: INK }}>
       {/* ===== unified top header (spans sidebar + main) ===== */}
-      <header style={{ height: 66, flex: "none", display: "flex", background: "#FBFAF3", borderBottom: `1px solid ${BORDER}` }}>
+      <header style={{ height: 66, flex: "none", display: "flex", background: "#fff", borderBottom: `1px solid ${BORDER}` }}>
         {/* desktop: brand column matching the sidebar width */}
         <div className="lp-shell-brandcol" style={{ width: 272, flex: "none", alignItems: "center", gap: 11, padding: "0 22px", borderRight: `1px solid ${BORDER}` }}>
           <Link href={home} style={{ textDecoration: "none" }}><Logo /></Link>
@@ -73,7 +73,7 @@ export function AppShell({
           </span>
           <div className="lp-shell-usermeta" style={{ width: 1, height: 28, background: BORDER }} />
           <form action={signOut}>
-            <button type="submit" style={{ display: "flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: "1px solid #E2DED0", background: "#fff", borderRadius: 10, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: "#6E7388", cursor: "pointer", whiteSpace: "nowrap" }}>
+            <button type="submit" style={{ display: "flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: `1px solid ${BORDER}`, background: "#fff", borderRadius: 10, fontFamily: "inherit", fontSize: 14, fontWeight: 600, color: "#6E7388", cursor: "pointer", whiteSpace: "nowrap" }}>
               <LogOut size={15} strokeWidth={2} />
               <span className="lp-shell-usermeta">Sign out</span>
             </button>
@@ -87,7 +87,7 @@ export function AppShell({
 
         <aside
           className={open ? "lp-shell-sidebar lp-shell-sidebar--open" : "lp-shell-sidebar"}
-          style={{ width: 272, flex: "none", background: "#FBFAF3", borderRight: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", padding: "20px 16px" }}
+          style={{ width: 272, flex: "none", background: "#FAFAFC", borderRight: `1px solid ${BORDER}`, display: "flex", flexDirection: "column", padding: "20px 16px" }}
         >
           {/* mobile-only brand + close at the top of the drawer */}
           <div className="flex items-center justify-between md:hidden" style={{ padding: "4px 8px 18px" }}>

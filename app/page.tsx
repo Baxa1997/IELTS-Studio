@@ -53,7 +53,7 @@ export default async function Home() {
     <div
       className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} lp-root`}
       style={{
-        background: "linear-gradient(180deg,#FBFAF3 0%,#F1EFE2 60%,#F3F1E5 100%)",
+        background: "#fff",
         fontFamily: SANS,
         color: INK,
         minHeight: "100%",
@@ -130,7 +130,7 @@ function Band({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} style={{ background: bg, borderTop: "1px solid #EAE7D8" }}>
+    <section id={id} style={{ background: bg, borderTop: "1px solid #ECEAF2" }}>
       <div style={{ ...SHELL, paddingTop: pad, paddingBottom: pad }}>{children}</div>
     </section>
   );
@@ -140,10 +140,12 @@ function SectionHead({
   title,
   sub,
   maxSub = 660,
+  light = false,
 }: {
   title: string;
   sub: string;
   maxSub?: number;
+  light?: boolean;
 }) {
   return (
     <>
@@ -153,7 +155,7 @@ function SectionHead({
           fontWeight: 600,
           fontSize: "clamp(30px,4.5vw,42px)",
           lineHeight: 1.1,
-          color: INK,
+          color: light ? "#fff" : INK,
           letterSpacing: "-.015em",
           margin: 0,
         }}
@@ -166,7 +168,7 @@ function SectionHead({
           fontWeight: 400,
           fontSize: 18,
           lineHeight: 1.6,
-          color: "#6b6e84",
+          color: light ? "rgba(255,255,255,.82)" : "#6b6e84",
           margin: "14px 0 0",
           maxWidth: maxSub,
         }}
@@ -317,8 +319,8 @@ function SiteNav({ home }: { home: string | null }) {
               >
                 Sign in
               </Link>
-              <Link href="/write" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
-                Try it free
+              <Link href="/start" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
+                Get started
               </Link>
             </>
           )}
@@ -567,11 +569,11 @@ function Hero() {
               flexWrap: "wrap",
             }}
           >
-            {/* Straight into the Writing studio (the "Writing" menu item). Linking
-                directly avoids bouncing the click through /sign-in: signed-in users
-                land in the studio, signed-out users get a clean middleware redirect. */}
+            {/* Into the onboarding wizard (build a plan in a minute, account at the
+                end). Signed-in visitors are redirected to their role home by the
+                /start page itself. */}
             <Link
-              href="/write"
+              href="/start"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -923,7 +925,7 @@ function CritBar({
 
 function ExamCoachBriefing() {
   return (
-    <section style={{ background: "#F4F3FE", borderTop: "1px solid #E2E0F8", borderBottom: "1px solid #E2E0F8" }}>
+    <section style={{ background: "#fff", borderTop: "1px solid #ECEAF2", borderBottom: "1px solid #ECEAF2" }}>
       <style>{`
         @media(max-width:860px){.ecb-grid{grid-template-columns:1fr!important}}
         @media(max-width:680px){.ecb-flow{flex-direction:column!important;gap:20px!important}.ecb-flow-line{display:none!important}}
@@ -1168,28 +1170,41 @@ function TrustStrip() {
     },
   ];
   return (
-    <Band bg="#fff" pad="clamp(28px,4vw,40px)">
+    <Band bg={INDIGO} pad="clamp(30px,4vw,44px)">
       <div
         className="lp-cols-3"
         style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 40 }}
       >
         {items.map((it) => (
-          <div key={it.head} style={{ display: "flex", gap: 12 }}>
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={INDIGO}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ flex: "none", marginTop: 1 }}
+          <div key={it.head} style={{ display: "flex", gap: 14 }}>
+            <span
+              style={{
+                flex: "none",
+                width: 40,
+                height: 40,
+                borderRadius: 11,
+                background: "rgba(255,255,255,.14)",
+                border: "1px solid rgba(255,255,255,.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              {it.icon}
-            </svg>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#C7F25B"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {it.icon}
+              </svg>
+            </span>
             <div>
-              <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, color: INK }}>
+              <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15.5, color: "#fff" }}>
                 {it.head}
               </div>
               <div
@@ -1198,7 +1213,7 @@ function TrustStrip() {
                   fontWeight: 400,
                   fontSize: 14,
                   lineHeight: 1.5,
-                  color: "#6b6e84",
+                  color: "rgba(255,255,255,.78)",
                   marginTop: 2,
                 }}
               >
@@ -1253,7 +1268,7 @@ function RevisionLoop() {
     },
   ];
   return (
-    <Band id="how" bg="#FBFAF4">
+    <Band id="how" bg="#fff">
       <SectionHead
         title="The revision loop, not score-and-forget"
         sub="Every other app grades you and dumps you at the next test. We do the opposite — the AI walks a single essay from 6 to 7 with you, and remembers every version."
@@ -1339,20 +1354,20 @@ function RevisionLoop() {
 
 // ---- personalised practice: text + a "tuned to you" mockup -----------------
 
-function FeaturePoint({ head, body }: { head: string; body: string }) {
+function FeaturePoint({ head, body, light = false }: { head: string; body: string; light?: boolean }) {
   return (
     <div style={{ display: "flex", gap: 13 }}>
       <span style={{ marginTop: 3, flex: "none" }}>
-        <Check size={20} sw={2.6} />
+        <Check size={20} sw={2.6} color={light ? "#C7F25B" : INDIGO} />
       </span>
       <div>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16.5, color: INK }}>{head}</div>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16.5, color: light ? "#fff" : INK }}>{head}</div>
         <p
           style={{
             fontFamily: SANS,
             fontSize: 14.5,
             lineHeight: 1.6,
-            color: "#6b6e84",
+            color: light ? "rgba(255,255,255,.82)" : "#6b6e84",
             margin: "3px 0 0",
           }}
         >
@@ -1365,7 +1380,7 @@ function FeaturePoint({ head, body }: { head: string; body: string }) {
 
 function AdaptiveEngine() {
   return (
-    <Band id="adaptive" bg="#F4F4FB">
+    <Band id="adaptive" bg="#fff">
       <div
         className="lp-cols-2"
         style={{
@@ -1564,7 +1579,7 @@ function CoachBubble({ side, children }: { side: "you" | "coach"; children: Reac
 
 function CoachSection() {
   return (
-    <Band id="coach" bg="#fff">
+    <Band id="coach" bg={INDIGO}>
       <div
         className="lp-cols-2"
         style={{
@@ -1667,20 +1682,24 @@ function CoachSection() {
         {/* right: what the coach does */}
         <div>
           <SectionHead
+            light
             title="A coach beside you in every practice"
             sub="Every writing and reading session has a coach you can ask anything — so you&rsquo;re never stuck staring at a blank page."
             maxSub={560}
           />
           <div style={{ display: "flex", flexDirection: "column", gap: 18, marginTop: 30 }}>
             <FeaturePoint
+              light
               head="It helps you think, not cheat"
               body="Ask for ideas, a structure, or a sharper word while you write — but it never writes the answer for you, so the band you earn is really yours."
             />
             <FeaturePoint
+              light
               head="Ask in your own language"
               body="Stuck on a word or the task itself? Ask in any language. The coach replies in plain terms and shows you the move on a different example."
             />
             <FeaturePoint
+              light
               head="It explains every mistake after grading"
               body="Once you submit, the coach walks through why each fix matters and how to get it right next time — the same for a wrong reading answer."
             />
@@ -1852,7 +1871,7 @@ function Guidance() {
 
 function Skills() {
   return (
-    <Band id="skills" bg="#F4F4FB">
+    <Band id="skills" bg="#fff">
       <SectionHead
         title="Deep on the skills that decide Band 8"
         sub="We go deepest on Writing and Reading — where most scores are won or lost — with Speaking and Listening on the way."
@@ -2210,7 +2229,7 @@ function Testimonials() {
 
 function ContentMoat() {
   return (
-    <Band bg="#FBFAF4">
+    <Band bg="#fff">
       <div
         style={{
           background: "linear-gradient(135deg,#F4F4FB,#FBFAF4)",
@@ -2334,7 +2353,7 @@ function Grounding() {
     },
   ];
   return (
-    <Band id="grounding" bg="#FBFAF4">
+    <Band id="grounding" bg="#fff">
       <SectionHead
         title="Grounded in the real standards — not a black box"
         sub="Every band is anchored to published, authoritative frameworks and our own calibrated corpus, so the score is explainable criterion by criterion."
@@ -2447,7 +2466,7 @@ function Faq() {
     },
   ];
   return (
-    <Band id="faq" bg="#F4F4FB">
+    <Band id="faq" bg="#fff">
       <SectionHead
         title="Questions, answered straight"
         sub="The same honesty we put into your band — applied to how this works."
@@ -2710,7 +2729,7 @@ function FinalCta() {
             Grade an essay free
           </Link>
           <Link
-            href="/sign-up"
+            href="/start"
             style={{
               ...BTN_GHOST,
               background: "transparent",
@@ -2718,7 +2737,7 @@ function FinalCta() {
               color: "#fff",
             }}
           >
-            Create an account
+            Build your plan
           </Link>
         </div>
       </div>

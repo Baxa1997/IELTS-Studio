@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 
 const initialState: AuthFormState = {};
 
-export function SignUpForm() {
+export function SignUpForm({ defaultEmail }: { defaultEmail?: string }) {
   const [state, formAction, pending] = useActionState(signUp, initialState);
 
   return (
@@ -24,7 +24,7 @@ export function SignUpForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Input id="email" name="email" type="email" autoComplete="email" defaultValue={defaultEmail} required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>

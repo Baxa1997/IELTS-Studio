@@ -9,7 +9,7 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
-const MUTED = "#8a897c";
+const MUTED = "#8A8FA0";
 
 const TARGET_OPTIONS: number[] = [];
 for (let b = MIN_TARGET_BAND; b <= MAX_TARGET_BAND; b += 0.5) TARGET_OPTIONS.push(b);
@@ -45,7 +45,7 @@ export function BandCard({ estimate }: { estimate: SkillEstimateView }) {
   const delta = measured && base != null ? Math.round((currentBand - base) * 10) / 10 : 0;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E7E4D6", borderRadius: 16, padding: 20 }}>
+    <div style={{ background: "#fff", border: "1px solid #ECEAF2", borderRadius: 16, padding: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ width: 32, height: 32, borderRadius: 9, background: "#EBECFA", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -78,7 +78,7 @@ export function BandCard({ estimate }: { estimate: SkillEstimateView }) {
         <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 14, color: MUTED, paddingBottom: 6 }}>→ target {target.toFixed(1)}</span>
       </div>
 
-      <div style={{ height: 7, background: "#EFEEE2", borderRadius: 999, overflow: "hidden", marginTop: 12 }} aria-hidden>
+      <div style={{ height: 7, background: "#E7E7F2", borderRadius: 999, overflow: "hidden", marginTop: 12 }} aria-hidden>
         <div style={{ width: `${Math.round(fill * 100)}%`, height: "100%", background: measured ? INDIGO : "#cfcebf", borderRadius: 999 }} />
       </div>
 

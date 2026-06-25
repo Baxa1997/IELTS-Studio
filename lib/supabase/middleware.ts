@@ -7,7 +7,8 @@ import { clientEnv, isSupabaseConfigured } from "@/lib/env";
 // `/auth` covers the OAuth callback, which must run before a session exists.
 // `/grade` is the public, no-login essay grader (the marketing funnel); `/` lets
 // the root page route anonymous visitors there instead of a login wall.
-const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/accept-invite", "/auth", "/grade"];
+// `/start` is the pre-auth onboarding wizard (account creation is its last step).
+const PUBLIC_PATHS = ["/", "/start", "/sign-in", "/sign-up", "/accept-invite", "/auth", "/grade"];
 
 function isPublicPath(pathname: string): boolean {
   // APIs authenticate themselves; redirecting them to /sign-in would be wrong.

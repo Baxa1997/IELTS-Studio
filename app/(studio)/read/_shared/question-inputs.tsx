@@ -181,6 +181,8 @@ function Pill({ name, value, label, checked, onChange }: { name: string; value: 
   return (
     <label
       style={{
+        position: "relative", // contain the visually-hidden radio so focusing it
+        // (on click) can't scroll the pane to the runner's top-left origin.
         display: "flex",
         alignItems: "center",
         gap: 10,

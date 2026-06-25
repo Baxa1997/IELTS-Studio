@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
+import { applyPendingPlan } from "@/lib/plan/apply-pending";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,9 +64,14 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   });
   if (error) return { error: error.message };
   if (!data.session) {
+    // Email confirmation required — the stashed plan (if any) applies when they
+    // return through /auth/callback. Don't clear it here.
     return { notice: "Check your email to confirm your account, then sign in." };
   }
-  redirect("/dashboard");
+  // Session is live immediately: persist a plan stashed by the /start wizard and
+  // send first-time learners into the diagnostic.
+  const applied = await applyPendingPlan();
+  redirect(applied ? "/diagnostic" : "/dashboard");
 }
 
 export async function signOut(): Promise<void> {
