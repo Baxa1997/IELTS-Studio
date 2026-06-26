@@ -7,8 +7,11 @@ import { CardsSkeleton } from "@/components/app-shell/page-skeleton";
  * so the whole frame, sidebar included, flashed to a skeleton on every click.)
  */
 export default function HubLoading() {
+  // Full-bleed with 24px side padding to match the real hubs (the (shell) layout
+  // passes contentClassName="" so the pages paint edge-to-edge and supply their own
+  // padding). A centered max-width here made content jump wider when it streamed in.
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "26px clamp(16px,4vw,32px) 64px" }}>
+    <div style={{ width: "100%", padding: "32px 24px 64px" }}>
       <CardsSkeleton tabs cards={4} />
     </div>
   );

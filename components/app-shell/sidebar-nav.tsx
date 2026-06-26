@@ -3,16 +3,16 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BookMarked,
+  BookA,
   BookOpen,
   ClipboardCheck,
   CreditCard,
+  GraduationCap,
   Headphones,
-  Languages,
+  History,
   LayoutDashboard,
-  LayoutGrid,
   Mic,
-  PenLine,
+  SquarePen,
   Target,
   Users,
 } from "lucide-react";
@@ -22,6 +22,9 @@ import {
  * menu grouped into sections; staff get the console set. Active state by pathname.
  * Client component — it needs `usePathname` and holds the icons (which can't cross
  * the server→client boundary), so the server shell passes only the role string.
+ *
+ * Labels/section titles/badges carry `lp-sb-*` classes so the shell can collapse the
+ * rail to an icon-only strip purely in CSS (no prop drilling of a collapsed flag).
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -40,16 +43,16 @@ const STUDENT: Section[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Plan", href: "/plan", icon: Target },
-      { label: "Activities", href: "/activities", icon: LayoutGrid },
+      { label: "Activities", href: "/activities", icon: History },
     ],
   },
   {
     title: "Practice",
     items: [
-      { label: "Writing", href: "/write", icon: PenLine },
+      { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
-      { label: "CEFR practice", href: "/cefr", icon: Languages },
-      { label: "Vocabulary", href: "/vocabulary", icon: BookMarked },
+      { label: "CEFR practice", href: "/cefr", icon: GraduationCap },
+      { label: "Vocabulary", href: "/vocabulary", icon: BookA },
     ],
   },
   {
@@ -100,12 +103,12 @@ function PendingDot() {
 const itemBase: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 12,
-  height: 44,
-  padding: "0 13px",
-  borderRadius: 11,
+  gap: 11,
+  height: 42,
+  padding: "0 12px",
+  borderRadius: 10,
   fontFamily: SANS,
-  fontSize: 14.5,
+  fontSize: 14,
   textDecoration: "none",
   whiteSpace: "nowrap",
 };
@@ -120,24 +123,24 @@ export function SidebarNav({ role }: { role: string }) {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <nav style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+    <nav style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {sections.map((section, si) => (
-        <div key={section.title ?? si}>
+        <div key={section.title ?? si} className={section.title ? "lp-sb-section lp-sb-section--titled" : "lp-sb-section"}>
           {section.title ? (
-            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase", color: "#A7ABBA", padding: "0 13px", margin: "0 0 7px" }}>
+            <div className="lp-sb-section-title" style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10.5, letterSpacing: ".09em", textTransform: "uppercase", color: "#A7ABBA", padding: "0 12px", margin: "0 0 6px" }}>
               {section.title}
             </div>
           ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {section.items.map(({ label, href, icon: Icon, soon }) => {
               if (soon) {
                 return (
-                  <span key={label} title="Coming soon" aria-disabled="true" style={{ ...itemBase, justifyContent: "space-between", color: "#A7ABBA", fontWeight: 600, cursor: "default" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <Icon size={19} strokeWidth={2} />
-                      {label}
+                  <span key={label} data-label={label} aria-label={label} aria-disabled="true" className="lp-sb-link" style={{ ...itemBase, justifyContent: "space-between", color: "#A7ABBA", fontWeight: 600, cursor: "default" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                      <Icon size={20} strokeWidth={2.25} />
+                      <span className="lp-sb-label">{label}</span>
                     </span>
-                    <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10, letterSpacing: ".05em", color: "#9097A8", background: "#EEF0F4", padding: "2px 7px", borderRadius: 6 }}>SOON</span>
+                    <span className="lp-sb-soon-badge" style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10, letterSpacing: ".05em", color: "#9097A8", background: "#EEF0F4", padding: "2px 7px", borderRadius: 6 }}>SOON</span>
                   </span>
                 );
               }
@@ -146,13 +149,15 @@ export function SidebarNav({ role }: { role: string }) {
                 <Link
                   key={href}
                   href={href}
+                  data-label={label}
+                  aria-label={label}
                   aria-current={active ? "page" : undefined}
-                  className={active ? undefined : "lp-sb-item"}
+                  className={active ? "lp-sb-link" : "lp-sb-link lp-sb-item"}
                   style={{ ...itemBase, fontWeight: active ? 700 : 600, color: active ? "#fff" : "#5A6076", background: active ? INDIGO : "transparent", border: active ? `1px solid ${INDIGO}` : "1px solid transparent", boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none" }}
                 >
-                  <Icon size={19} strokeWidth={2} />
-                  {label}
-                  <span style={{ marginLeft: "auto", display: "flex" }}>
+                  <Icon size={20} strokeWidth={2.25} />
+                  <span className="lp-sb-label">{label}</span>
+                  <span className="lp-sb-trail" style={{ marginLeft: "auto", display: "flex" }}>
                     <PendingDot />
                   </span>
                 </Link>

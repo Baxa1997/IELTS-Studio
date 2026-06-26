@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, FileText, Layers, Loader2 } from "lucide-react";
+import { ArrowRight, FileText, Layers, Loader2, Sparkles } from "lucide-react";
 
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
 
@@ -91,23 +91,91 @@ export function ReadingHub({
   }
 
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "26px clamp(16px,4vw,32px) 64px", fontFamily: SANS, color: INK }}>
+    <div
+      style={{
+        width: "100%",
+        padding: "26px 24px 64px",
+        fontFamily: SANS,
+        color: INK,
+      }}
+    >
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 14,
+          flexWrap: "wrap",
+        }}
+      >
         <div>
-          <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(28px,3.6vw,38px)", lineHeight: 1.05, letterSpacing: "-.4px", margin: 0 }}>Reading</h1>
-          <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0" }}>Start a ready-made test in one click, or generate a fresh one — marked instantly, with the evidence behind every answer.</p>
+          <h1
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 600,
+              fontSize: "clamp(28px,3.6vw,38px)",
+              lineHeight: 1.05,
+              letterSpacing: "-.4px",
+              margin: 0,
+            }}
+          >
+            Reading
+          </h1>
+          <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0" }}>
+            Start a ready-made test in one click, or generate a fresh one — marked instantly, with
+            the evidence behind every answer.
+          </p>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "#EAEAFB", border: "1px solid rgba(67,56,202,.16)", color: INDIGO, padding: "8px 14px", borderRadius: 999, fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 9,
+            background: "#EAEAFB",
+            border: "1px solid rgba(67,56,202,.16)",
+            color: INDIGO,
+            padding: "8px 14px",
+            borderRadius: 999,
+            fontSize: 14,
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: INDIGO }} />
-          {levelBand != null ? `${levelMeasured ? "Your band" : "Target"} · ${levelBand.toFixed(1)}` : "Level not set"}
+          {levelBand != null
+            ? `${levelMeasured ? "Your band" : "Target"} · ${levelBand.toFixed(1)}`
+            : "Level not set"}
         </span>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 6, background: "#EFEDE0", border: "1px solid rgba(28,27,46,.08)", borderRadius: 14, padding: 5, marginTop: 22, maxWidth: 520 }}>
-        <TabButton active={tab === "test"} onClick={() => setTab("test")} icon={<Layers size={17} />} label="Full reading test" sub="3 passages · 60 min" />
-        <TabButton active={tab === "passage"} onClick={() => setTab("passage")} icon={<FileText size={17} />} label="Passage practice" sub="1 passage · ~20 min" />
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          background: "#F1F1F8",
+          border: "1px solid #ECEAF2",
+          borderRadius: 14,
+          padding: 5,
+          marginTop: 22,
+          maxWidth: 520,
+        }}
+      >
+        <TabButton
+          active={tab === "test"}
+          onClick={() => setTab("test")}
+          icon={<Layers size={17} />}
+          label="Full reading test"
+          sub="3 passages · 60 min"
+        />
+        <TabButton
+          active={tab === "passage"}
+          onClick={() => setTab("passage")}
+          icon={<FileText size={17} />}
+          label="Passage practice"
+          sub="1 passage · ~20 min"
+        />
       </div>
 
       {/* Panel */}
@@ -117,23 +185,6 @@ export function ReadingHub({
           blurb="Three original passages that rise in difficulty, pitched to your band — moved through freely under one 60-minute timer."
           action={<StartTestButton label="Generate fresh test" />}
         >
-          {libraryTests.length > 0 ? (
-            <>
-              <SectionLabel>Ready to start</SectionLabel>
-              <Grid>
-                {libraryTests.map((t) => (
-                  <TestTile
-                    key={t.id}
-                    title="Sample reading test"
-                    footerLeft={t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"}
-                    onStart={() => void startLibrary("test", t.id)}
-                    loading={loadingId === t.id}
-                  />
-                ))}
-              </Grid>
-            </>
-          ) : null}
-
           {ownTests.length > 0 ? (
             <>
               <SectionLabel>Your tests</SectionLabel>
@@ -142,7 +193,8 @@ export function ReadingHub({
                   <TestTile
                     key={t.id}
                     title="Full reading test"
-                    footerLeft={`${fmtDate(t.createdAt)}${t.targetBand ? ` · band ${t.targetBand}` : ""}`}
+                    footerLeft={fmtDate(t.createdAt)}
+                    isNew
                     href={`/read/test/${t.id}`}
                   />
                 ))}
@@ -150,8 +202,30 @@ export function ReadingHub({
             </>
           ) : null}
 
+          {libraryTests.length > 0 ? (
+            <>
+              <SectionLabel>Ready to start</SectionLabel>
+              <Grid>
+                {libraryTests.map((t) => (
+                  <TestTile
+                    key={t.id}
+                    title="Sample reading test"
+                    footerLeft={
+                      t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
+                    }
+                    onStart={() => void startLibrary("test", t.id)}
+                    loading={loadingId === t.id}
+                  />
+                ))}
+              </Grid>
+            </>
+          ) : null}
+
           {libraryTests.length === 0 && ownTests.length === 0 ? (
-            <EmptyHint>No ready tests yet — generate one above. Each is 3 passages, marked over all 40 questions.</EmptyHint>
+            <EmptyHint>
+              No ready tests yet — generate one above. Each is 3 passages, marked over all 40
+              questions.
+            </EmptyHint>
           ) : null}
         </Panel>
       ) : (
@@ -160,23 +234,28 @@ export function ReadingHub({
           blurb="One original passage with marked questions (~20 min) — the same instant feedback, when you're short on time."
           action={<GeneratePassageButton label="Generate fresh passage" />}
         >
-          {libraryPassages.length > 0 ? (
-            <>
-              <SectionLabel>Ready to start</SectionLabel>
-              <Grid>
-                {libraryPassages.map((p) => (
-                  <PassageTile key={p.id} p={p} onStart={() => void startLibrary("passage", p.id)} loading={loadingId === p.id} />
-                ))}
-              </Grid>
-            </>
-          ) : null}
-
           {ownPassages.length > 0 ? (
             <>
               <SectionLabel>Your passages</SectionLabel>
               <Grid>
                 {ownPassages.map((p) => (
-                  <PassageTile key={p.id} p={p} href={`/read/${p.id}`} />
+                  <PassageTile key={p.id} p={p} isNew href={`/read/${p.id}`} />
+                ))}
+              </Grid>
+            </>
+          ) : null}
+
+          {libraryPassages.length > 0 ? (
+            <>
+              <SectionLabel>Ready to start</SectionLabel>
+              <Grid>
+                {libraryPassages.map((p) => (
+                  <PassageTile
+                    key={p.id}
+                    p={p}
+                    onStart={() => void startLibrary("passage", p.id)}
+                    loading={loadingId === p.id}
+                  />
                 ))}
               </Grid>
             </>
@@ -189,11 +268,17 @@ export function ReadingHub({
       )}
 
       {error ? (
-        <p style={{ margin: "16px 0 0", fontSize: 13.5, color: "#c2410c", fontFamily: SANS }} role="alert">{error}</p>
+        <p
+          style={{ margin: "16px 0 0", fontSize: 13.5, color: "#c2410c", fontFamily: SANS }}
+          role="alert"
+        >
+          {error}
+        </p>
       ) : null}
 
       <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
-        Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by IELTS®.
+        Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by
+        IELTS®.
       </p>
     </div>
   );
@@ -203,9 +288,24 @@ export function ReadingHub({
 
 /** A full-test card. Renders as a link (own test → opens directly) or a button
  *  (library sample → clones on click). Identical visuals either way. */
-function TestTile({ title, footerLeft, href, onStart, loading }: { title: string; footerLeft: string; href?: string; onStart?: () => void; loading?: boolean }) {
+function TestTile({
+  title,
+  footerLeft,
+  href,
+  onStart,
+  loading,
+  isNew,
+}: {
+  title: string;
+  footerLeft: string;
+  href?: string;
+  onStart?: () => void;
+  loading?: boolean;
+  isNew?: boolean;
+}) {
   const body = (
     <>
+      {isNew ? <AiCorner /> : null}
       <div style={rowBetween}>
         <RisingBars />
       </div>
@@ -221,29 +321,78 @@ function TestTile({ title, footerLeft, href, onStart, loading }: { title: string
     </>
   );
   return href ? (
-    <Link href={href} className="lp-hover" style={cardStyle}>{body}</Link>
+    <Link href={href} className="lp-hover" style={cardStyle}>
+      {body}
+    </Link>
   ) : (
-    <button type="button" onClick={onStart} disabled={loading} className="lp-hover" style={cardAsButton(loading)}>{body}</button>
+    <button
+      type="button"
+      onClick={onStart}
+      disabled={loading}
+      className="lp-hover"
+      style={cardAsButton(loading)}
+    >
+      {body}
+    </button>
   );
 }
 
 /** A passage card. Link (own) or button (library sample → clones on click). */
-function PassageTile({ p, href, onStart, loading }: { p: PassageCard; href?: string; onStart?: () => void; loading?: boolean }) {
+function PassageTile({
+  p,
+  href,
+  onStart,
+  loading,
+  isNew,
+}: {
+  p: PassageCard;
+  href?: string;
+  onStart?: () => void;
+  loading?: boolean;
+  isNew?: boolean;
+}) {
   const tier = bandTier(p.difficulty);
   const body = (
     <>
+      {isNew ? <AiCorner /> : null}
       <div style={rowBetween}>
-        <span style={iconTile}><FileText size={19} /></span>
-        {tier ? <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: tier.bg, color: tier.fg }}>{tier.label}</span> : null}
+        <span style={iconTile}>
+          <FileText size={19} />
+        </span>
+        {!isNew && tier ? (
+          <span
+            style={{
+              padding: "4px 10px",
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 700,
+              background: tier.bg,
+              color: tier.fg,
+            }}
+          >
+            {tier.label}
+          </span>
+        ) : null}
       </div>
       <div>
-        <h4 style={{ ...cardTitle, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</h4>
+        <h4
+          style={{
+            ...cardTitle,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {p.title}
+        </h4>
         <span style={cardSub}>{p.topic ?? "Academic Reading"}</span>
       </div>
       {p.types.length ? (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {p.types.slice(0, 3).map((t) => (
-            <span key={t} style={typeTag}>{READING_QUESTION_LABELS[t]}</span>
+            <span key={t} style={typeTag}>
+              {READING_QUESTION_LABELS[t]}
+            </span>
           ))}
         </div>
       ) : null}
@@ -255,15 +404,37 @@ function PassageTile({ p, href, onStart, loading }: { p: PassageCard; href?: str
     </>
   );
   return href ? (
-    <Link href={href} className="lp-hover" style={cardStyle}>{body}</Link>
+    <Link href={href} className="lp-hover" style={cardStyle}>
+      {body}
+    </Link>
   ) : (
-    <button type="button" onClick={onStart} disabled={loading} className="lp-hover" style={cardAsButton(loading)}>{body}</button>
+    <button
+      type="button"
+      onClick={onStart}
+      disabled={loading}
+      className="lp-hover"
+      style={cardAsButton(loading)}
+    >
+      {body}
+    </button>
   );
 }
 
 // ---- Pieces ----------------------------------------------------------------
 
-function TabButton({ active, onClick, icon, label, sub }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; sub: string }) {
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+  sub,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+}) {
   return (
     <button
       type="button"
@@ -285,19 +456,56 @@ function TabButton({ active, onClick, icon, label, sub }: { active: boolean; onC
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>{icon}</span>
+      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>
+        {icon}
+      </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
-        <span style={{ fontFamily: SANS, fontWeight: active ? 700 : 600, fontSize: 14.5 }}>{label}</span>
-        <span style={{ fontFamily: SANS, fontSize: 12, color: active ? "#7C78C9" : "#9A99A8", marginTop: 2 }}>{sub}</span>
+        <span style={{ fontFamily: SANS, fontWeight: active ? 700 : 600, fontSize: 14.5 }}>
+          {label}
+        </span>
+        <span
+          style={{
+            fontFamily: SANS,
+            fontSize: 12,
+            color: active ? "#7C78C9" : "#9A99A8",
+            marginTop: 2,
+          }}
+        >
+          {sub}
+        </span>
       </span>
     </button>
   );
 }
 
-function Panel({ title, blurb, action, children }: { title: string; blurb: string; action: React.ReactNode; children: React.ReactNode }) {
+function Panel({
+  title,
+  blurb,
+  action,
+  children,
+}: {
+  title: string;
+  blurb: string;
+  action: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <>
-      <div style={{ marginTop: 18, background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, padding: "18px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, flexWrap: "wrap", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
+      <div
+        style={{
+          marginTop: 18,
+          background: "#fff",
+          border: "1px solid rgba(28,27,46,.09)",
+          borderRadius: 14,
+          padding: "18px 20px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 18,
+          flexWrap: "wrap",
+          boxShadow: "0 1px 3px rgba(28,27,46,.04)",
+        }}
+      >
         <div style={{ maxWidth: 560 }}>
           <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, margin: 0 }}>{title}</h2>
           <p style={{ fontSize: 14, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}>{blurb}</p>
@@ -312,14 +520,26 @@ function Panel({ title, blurb, action, children }: { title: string; blurb: strin
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "26px 0 14px" }}>
-      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>{children}</span>
+      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>
+        {children}
+      </span>
       <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
     </div>
   );
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>{children}</div>;
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+        gap: 14,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
@@ -332,14 +552,55 @@ function Divider() {
   return <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />;
 }
 
+/** Top-right corner marker for the learner's own AI-generated cards (shown instead
+ *  of a band). */
+function AiCorner() {
+  return (
+    <span
+      title="AI-generated"
+      aria-label="AI-generated"
+      style={{
+        position: "absolute",
+        top: 14,
+        right: 14,
+        zIndex: 2,
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+        color: "#fff",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
+      }}
+    >
+      <Sparkles size={14} strokeWidth={2.4} />
+    </span>
+  );
+}
+
 /** Footer action: "Start" → arrow, or a spinner while the clone is in flight. */
 function StartAction({ loading }: { loading?: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14.5, fontWeight: 600 }}>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        color: INDIGO,
+        fontSize: 14.5,
+        fontWeight: 600,
+      }}
+    >
       {loading ? (
-        <><Loader2 className="animate-spin" size={15} /> Opening…</>
+        <>
+          <Loader2 className="animate-spin" size={15} /> Opening…
+        </>
       ) : (
-        <>Start <ArrowRight size={15} strokeWidth={2.2} /></>
+        <>
+          Start <ArrowRight size={15} strokeWidth={2.2} />
+        </>
       )}
     </span>
   );
@@ -379,6 +640,7 @@ function fmtDate(iso: string): string {
 // ---- Shared styles ---------------------------------------------------------
 
 const cardStyle: React.CSSProperties = {
+  position: "relative",
   background: "#fff",
   border: "1px solid rgba(28,27,46,.09)",
   borderRadius: 16,
@@ -403,9 +665,38 @@ function cardAsButton(loading?: boolean): React.CSSProperties {
   };
 }
 
-const rowBetween: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 };
-const cardTitle: React.CSSProperties = { fontFamily: SERIF, fontWeight: 600, fontSize: 18, lineHeight: 1.25, margin: "0 0 4px" };
+const rowBetween: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+};
+const cardTitle: React.CSSProperties = {
+  fontFamily: SERIF,
+  fontWeight: 600,
+  fontSize: 18,
+  lineHeight: 1.25,
+  margin: "0 0 4px",
+};
 const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#7A7989", fontWeight: 500 };
 const metaText: React.CSSProperties = { fontSize: 13, color: "#8A899A" };
-const iconTile: React.CSSProperties = { width: 40, height: 40, borderRadius: 11, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" };
-const typeTag: React.CSSProperties = { background: "#F4F3EE", border: "1px solid rgba(28,27,46,.07)", color: "#5A596B", fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 7 };
+const iconTile: React.CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: 11,
+  background: "#EFEEFC",
+  color: INDIGO,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flex: "none",
+};
+const typeTag: React.CSSProperties = {
+  background: "#F4F4FB",
+  border: "1px solid #ECEAF2",
+  color: "#5A596B",
+  fontSize: 12,
+  fontWeight: 600,
+  padding: "3px 9px",
+  borderRadius: 7,
+};

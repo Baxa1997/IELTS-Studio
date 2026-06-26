@@ -126,8 +126,8 @@ export default async function ReadingHubPage() {
   return (
     <div
       style={{
-        minHeight: "calc(100dvh - 3.5rem)",
-        background: "linear-gradient(178deg,#FBFAEF 0%,#F4F2E1 100%)",
+        minHeight: "100%",
+        background: "#fff",
       }}
     >
       <ReadingHub

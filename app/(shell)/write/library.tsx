@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
 // These live with the full-screen runner in the (studio) group; the hub library
 // only needs the prompt type and the save-draft action from them.
@@ -33,7 +33,7 @@ const TABS: { key: string; label: string; soon?: boolean }[] = [
   { key: "task1_academic", label: "Academic · Task 1" },
   { key: "task2", label: "Academic · Task 2" },
   { key: "task1_general", label: "General Training" },
-  { key: "custom", label: "Your own topic" },
+  // { key: "custom", label: "Your own topic" },
 ];
 
 /** Task-type options shared by the "Check own writing" and custom-prompt panels. */
@@ -77,6 +77,25 @@ export function WritingLibrary({
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<string>("check_own");
+  // Remember the active tab across navigation. Generating a topic sends you to the
+  // (studio) runner and back, which remounts AppShell (it lives in a different route
+  // group) and would otherwise reset this to the first tab. sessionStorage survives
+  // that remount; restored after mount to avoid a hydration mismatch.
+  useEffect(() => {
+    const saved = sessionStorage.getItem("write_tab");
+    // Restore after mount (not a lazy initializer) so the client's first render
+    // matches the server's, avoiding a hydration mismatch on the tab.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from sessionStorage on mount
+    if (saved && TABS.some((t) => t.key === saved)) setTab(saved);
+  }, []);
+  function selectTab(key: string) {
+    setTab(key);
+    try {
+      sessionStorage.setItem("write_tab", key);
+    } catch {
+      // sessionStorage can throw in private mode — remembering the tab is best-effort.
+    }
+  }
   const [busy, setBusy] = useState(false);
   const [generatingKind, setGeneratingKind] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -90,7 +109,10 @@ export function WritingLibrary({
   const [checkEssay, setCheckEssay] = useState("");
   const [checkTask, setCheckTask] = useState<string>("task2");
   const [gradingModal, setGradingModal] = useState(false);
-  const checkWords = useMemo(() => (checkEssay.trim() ? checkEssay.trim().split(/\s+/).filter(Boolean).length : 0), [checkEssay]);
+  const checkWords = useMemo(
+    () => (checkEssay.trim() ? checkEssay.trim().split(/\s+/).filter(Boolean).length : 0),
+    [checkEssay],
+  );
 
   // library search + filters
   const [query, setQuery] = useState("");
@@ -98,7 +120,17 @@ export function WritingLibrary({
   const [bandFilter, setBandFilter] = useState<number | null>(null);
 
   const done = useMemo(() => new Set(practised), [practised]);
-  const cards = useMemo(() => library.filter((p) => p.task_type === tab), [library, tab]);
+  // Cards for the active tab: the learner's freshly-generated prompts first (newest
+  // first — the query already orders by created_at desc), then the curated set sorted
+  // by band, lowest → highest.
+  const cards = useMemo(() => {
+    const inTab = library.filter((p) => p.task_type === tab);
+    const generated = inTab.filter((p) => p.generated);
+    const curated = inTab
+      .filter((p) => !p.generated)
+      .sort((a, b) => (a.difficulty ?? 99) - (b.difficulty ?? 99));
+    return [...generated, ...curated];
+  }, [library, tab]);
   const visible = cards.filter((p) => {
     if (
       query.trim() &&
@@ -126,7 +158,9 @@ export function WritingLibrary({
       const res = await fetch("/api/prompts/next", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskType: kind }),
+        // fresh: the explicit "Generate a topic" button always makes a brand-new AI
+        // prompt (so it appears, AI-badged and first, in the library afterward).
+        body: JSON.stringify({ taskType: kind, fresh: true }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         prompt?: { id: string };
@@ -171,7 +205,10 @@ export function WritingLibrary({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ promptText: q, taskType: checkTask }),
       });
-      const pb = (await pr.json().catch(() => ({}))) as { prompt?: { id: string }; message?: string };
+      const pb = (await pr.json().catch(() => ({}))) as {
+        prompt?: { id: string };
+        message?: string;
+      };
       if (!pr.ok || !pb.prompt?.id) {
         setMessage(pb.message ?? "Couldn't start grading. Please try again.");
         setBusy(false);
@@ -193,7 +230,10 @@ export function WritingLibrary({
         return;
       }
       const gb = (await gr.json().catch(() => ({}))) as { message?: string };
-      if (gr.status === 202) setMessage(gb.message ?? "Grading is busy — your essay is saved; try again from Activities shortly.");
+      if (gr.status === 202)
+        setMessage(
+          gb.message ?? "Grading is busy — your essay is saved; try again from Activities shortly.",
+        );
       else if (gr.status === 429) setMessage("You’ve reached your monthly grading limit.");
       else setMessage(gb.message ?? "Grading failed. Please try again.");
       setBusy(false);
@@ -238,9 +278,8 @@ export function WritingLibrary({
   return (
     <div
       style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        padding: "36px clamp(16px,4vw,40px) 64px",
+        width: "100%",
+        padding: "32px 24px 64px",
         fontFamily: SANS,
       }}
     >
@@ -338,7 +377,7 @@ export function WritingLibrary({
             <button
               key={t.key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => selectTab(t.key)}
               disabled={t.soon}
               style={{
                 display: "inline-flex",
@@ -397,54 +436,186 @@ export function WritingLibrary({
       ) : null}
 
       {tab === "check_own" ? (
-        <div style={{ ...cardStyle, padding: "clamp(20px,3vw,32px)", maxWidth: 920 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <p style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 22, color: INK, margin: 0 }}>Check your own writing</p>
-            <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: INDIGO, background: "#ECEBFB", border: "1px solid #E1DFF7", borderRadius: 999, padding: "3px 11px" }}>Graded like the real thing</span>
-          </div>
-          <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "8px 0 18px", maxWidth: 660 }}>
-            Already written an essay? Paste the question and your answer below — you&rsquo;ll get an examiner-strict band per criterion with evidence and fixes, saved to your Activities.
-          </p>
+        <div
+          className="lp-check-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0,0.9fr) minmax(0,1.2fr)",
+            gap: 18,
+            alignItems: "stretch",
+          }}
+        >
+          {/* LEFT — the question / task you answered */}
+          <section
+            style={{
+              ...cardStyle,
+              padding: "clamp(20px,2.4vw,26px)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={iconChip}>
+                <ClipboardCheck size={18} strokeWidth={2} />
+              </span>
+              <div>
+                <p
+                  style={{
+                    fontFamily: SERIF,
+                    fontWeight: 600,
+                    fontSize: 20,
+                    color: INK,
+                    margin: 0,
+                  }}
+                >
+                  The question
+                </p>
+                <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "1px 0 0" }}>
+                  Paste the task exactly as you answered it
+                </p>
+              </div>
+            </div>
 
-          {/* task type */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-            {TASK_OPTIONS.map((o) => (
-              <button key={o.k} type="button" onClick={() => setCheckTask(o.k)} style={ownPill(checkTask === o.k)}>
-                {o.l}
+            {/* task type */}
+            <div style={{ display: "flex", gap: 8, margin: "18px 0 14px", flexWrap: "wrap" }}>
+              {TASK_OPTIONS.map((o) => (
+                <button
+                  key={o.k}
+                  type="button"
+                  onClick={() => setCheckTask(o.k)}
+                  style={ownPill(checkTask === o.k)}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+
+            <label style={fieldLabel}>The question / task</label>
+            <textarea
+              value={checkQuestion}
+              onChange={(e) => setCheckQuestion(e.target.value)}
+              placeholder="Paste the exact IELTS question or task…"
+              className="lp-input"
+              style={{ ...fieldArea, flex: 1, minHeight: 190, resize: "none" }}
+            />
+          </section>
+
+          {/* RIGHT — your essay + grade */}
+          <section
+            style={{
+              ...cardStyle,
+              padding: "clamp(20px,2.4vw,26px)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={iconChip}>
+                  <PenLine size={18} strokeWidth={2} />
+                </span>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+                    <p
+                      style={{
+                        fontFamily: SERIF,
+                        fontWeight: 600,
+                        fontSize: 20,
+                        color: INK,
+                        margin: 0,
+                      }}
+                    >
+                      Your essay
+                    </p>
+                    <span
+                      style={{
+                        fontFamily: SANS,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: INDIGO,
+                        background: "#ECEBFB",
+                        border: "1px solid #E1DFF7",
+                        borderRadius: 999,
+                        padding: "3px 10px",
+                      }}
+                    >
+                      Graded like the real thing
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "1px 0 0" }}>
+                    Examiner-strict band per criterion, with fixes
+                  </p>
+                </div>
+              </div>
+              <span
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: checkWords >= 20 ? EMERALD : "#9097A8",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {checkWords} words
+              </span>
+            </div>
+
+            <textarea
+              value={checkEssay}
+              onChange={(e) => setCheckEssay(e.target.value)}
+              placeholder="Paste or write your full answer here…"
+              className="lp-input"
+              style={{
+                ...fieldArea,
+                flex: 1,
+                minHeight: 300,
+                marginTop: 16,
+                fontFamily: SERIF,
+                fontSize: 16,
+                lineHeight: 1.8,
+                resize: "none",
+              }}
+            />
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => void gradeOwn()}
+                disabled={busy}
+                style={genButton(busy, true)}
+              >
+                {busy ? "Grading…" : "Grade my essay"}
+                {busy ? null : ARROW}
               </button>
-            ))}
-          </div>
-
-          {/* question */}
-          <label style={fieldLabel}>The question / task</label>
-          <textarea
-            value={checkQuestion}
-            onChange={(e) => setCheckQuestion(e.target.value)}
-            placeholder="Paste the exact IELTS question or task…"
-            className="lp-input"
-            style={{ ...fieldArea, minHeight: 96 }}
-          />
-
-          {/* essay */}
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", margin: "18px 0 8px" }}>
-            <label style={{ ...fieldLabel, marginBottom: 0 }}>Your essay</label>
-            <span style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: checkWords >= 20 ? EMERALD : "#9097A8" }}>{checkWords} words</span>
-          </div>
-          <textarea
-            value={checkEssay}
-            onChange={(e) => setCheckEssay(e.target.value)}
-            placeholder="Paste or write your full answer here…"
-            className="lp-input"
-            style={{ ...fieldArea, minHeight: 300, fontFamily: SERIF, fontSize: 16, lineHeight: 1.8 }}
-          />
-
-          <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => void gradeOwn()} disabled={busy} style={genButton(busy, true)}>
-              {busy ? "Grading…" : "Grade my essay"}
-              {busy ? null : ARROW}
-            </button>
-            <span style={{ fontFamily: SANS, fontSize: 13, color: "#9097A8" }}>Conservative and examiner-strict — your band here is your band on exam day.</span>
-          </div>
+              <span
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 13,
+                  color: "#9097A8",
+                  flex: "1 1 180px",
+                  minWidth: 0,
+                }}
+              >
+                Conservative and examiner-strict — your band here is your band on exam day.
+              </span>
+            </div>
+          </section>
         </div>
       ) : tab === "custom" ? (
         <div style={{ ...cardStyle, padding: 24, maxWidth: 720 }}>
@@ -570,7 +741,18 @@ export function WritingLibrary({
                   <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 18, color: INK }}>
                     Let AI choose a fresh topic
                   </div>
-                  <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: INDIGO, background: "#fff", border: "1px solid #DEDCF5", borderRadius: 999, padding: "3px 10px" }}>
+                  <span
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      color: INDIGO,
+                      background: "#fff",
+                      border: "1px solid #DEDCF5",
+                      borderRadius: 999,
+                      padding: "3px 10px",
+                    }}
+                  >
                     Tuned to band {pitchBand.toFixed(1)}
                   </span>
                 </div>
@@ -766,6 +948,19 @@ export function WritingLibrary({
   );
 }
 
+const iconChip: React.CSSProperties = {
+  flex: "none",
+  width: 38,
+  height: 38,
+  borderRadius: 11,
+  background: "#ECEBFB",
+  color: INDIGO,
+  border: "1px solid #E1DFF7",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
 const fieldLabel: React.CSSProperties = {
   display: "block",
   fontFamily: SANS,
@@ -809,19 +1004,78 @@ function GradingModal() {
       role="dialog"
       aria-modal="true"
       aria-label="Grading your essay"
-      style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(20,20,40,.5)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 80,
+        background: "rgba(20,20,40,.5)",
+        backdropFilter: "blur(3px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
     >
-      <div style={{ background: "#fff", borderRadius: 20, padding: "34px 34px 30px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)" }}>
-        <span style={{ display: "inline-flex", width: 60, height: 60, borderRadius: 17, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 28px -12px rgba(59,67,181,.7)" }}>
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 20,
+          padding: "34px 34px 30px",
+          maxWidth: 400,
+          width: "100%",
+          textAlign: "center",
+          boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)",
+        }}
+      >
+        <span
+          style={{
+            display: "inline-flex",
+            width: 60,
+            height: 60,
+            borderRadius: 17,
+            background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 12px 28px -12px rgba(59,67,181,.7)",
+          }}
+        >
           <Loader2 size={28} color="#fff" className="animate-spin" />
         </span>
-        <h3 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 21, color: INK, margin: "18px 0 0" }}>AI is grading your essay…</h3>
-        <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "9px 0 0" }}>
-          Reading every criterion the way an examiner would — Task, Coherence, Vocabulary, Grammar. This takes about 15–30 seconds; please keep this tab open.
+        <h3
+          style={{
+            fontFamily: SERIF,
+            fontWeight: 600,
+            fontSize: 21,
+            color: INK,
+            margin: "18px 0 0",
+          }}
+        >
+          AI is grading your essay…
+        </h3>
+        <p
+          style={{
+            fontFamily: SANS,
+            fontSize: 14.5,
+            lineHeight: 1.6,
+            color: MUTED,
+            margin: "9px 0 0",
+          }}
+        >
+          Reading every criterion the way an examiner would — Task, Coherence, Vocabulary, Grammar.
+          This takes about 15–30 seconds; please keep this tab open.
         </p>
         <div style={{ display: "inline-flex", gap: 6, marginTop: 18 }} aria-hidden>
           {[0, 1, 2].map((i) => (
-            <span key={i} style={{ width: 7, height: 7, borderRadius: 999, background: INDIGO, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
+            <span
+              key={i}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: 999,
+                background: INDIGO,
+                animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out`,
+              }}
+            />
           ))}
         </div>
       </div>
@@ -848,6 +1102,33 @@ function genButton(disabled: boolean, big = false): React.CSSProperties {
     boxShadow: "0 10px 24px -10px rgba(59,67,181,.8)",
     flex: "none",
   };
+}
+
+/** Top-right corner marker for prompts this learner generated with AI. */
+function AiCorner() {
+  return (
+    <span
+      title="AI-generated"
+      aria-label="AI-generated"
+      style={{
+        position: "absolute",
+        top: 12,
+        right: 12,
+        zIndex: 2,
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+        color: "#fff",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
+      }}
+    >
+      <Sparkles size={14} strokeWidth={2.4} />
+    </span>
+  );
 }
 
 function PromptCard({
@@ -883,6 +1164,7 @@ function PromptCard({
       className="lp-hover"
       style={{
         ...cardStyle,
+        position: "relative",
         height: "100%",
         padding: "18px 18px 16px",
         display: "flex",
@@ -891,7 +1173,8 @@ function PromptCard({
         cursor: busy ? "default" : "pointer",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+      {p.generated ? <AiCorner /> : null}
+      <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", paddingRight: p.generated ? 40 : 0 }}>
         {p.topic_family && p.topic_family !== "custom" ? (
           <span
             style={{
@@ -908,7 +1191,7 @@ function PromptCard({
             {p.topic_family}
           </span>
         ) : null}
-        {p.difficulty ? (
+        {!p.generated && p.difficulty ? (
           <span
             style={{
               fontFamily: SANS,

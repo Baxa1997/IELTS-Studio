@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
@@ -38,6 +39,8 @@ export default async function ShellLayout({ children }: { children: React.ReactN
     sidebarFooter = <TargetCard target={target} done={est.diagnosticComplete} />;
   }
 
+  const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
+
   return (
     <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
       <AppShell
@@ -47,6 +50,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
         contentClassName=""
         sidebarFooter={sidebarFooter}
+        initialCollapsed={collapsed}
       >
         {children}
       </AppShell>

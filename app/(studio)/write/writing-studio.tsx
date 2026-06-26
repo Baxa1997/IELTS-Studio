@@ -28,6 +28,10 @@ export interface ServedPrompt {
   category: string | null;
   topic_family: string | null;
   difficulty: number | null;
+  /** True for prompts this learner generated on demand (source = 'ai') vs. the
+   *  curated starter set (source = 'seed') — used by the library to surface fresh
+   *  ones first, without a band. Absent on the studio's served prompt. */
+  generated?: boolean;
 }
 
 export type LibraryPrompt = ServedPrompt;
@@ -367,6 +371,7 @@ export function WritingStudio({
       /* best-effort cleanup — navigation proceeds regardless */
     }
     router.push("/write");
+    router.refresh(); // re-fetch the library so a freshly generated prompt shows
   }, [persist, prompt.id, router, isCefr, onExit]);
 
   // Upload/paste a photo or PDF of a written answer → transcribe to editable text.

@@ -230,6 +230,12 @@
     grid-template-columns: 1fr !important;
   }
 }
+/* "Check own writing" two-pane (question | essay) collapses to one column. */
+@media (max-width: 900px) {
+  .lp-check-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
 .lp-root .lp-link {
   transition: gap 0.2s ease, color 0.2s ease;
 }
@@ -240,13 +246,15 @@
   color: #fff;
 }
 
-/* App-shell sidebar: off-canvas drawer on mobile, static rail (below the unified
-   top header) on desktop. The frame is fixed-height and only <main> scrolls. */
+/* App-shell sidebar: off-canvas drawer on mobile, static rail on desktop. The frame
+   is fixed-height and only <main> scrolls. On desktop it can collapse to an
+   icon-only strip (the --collapsed modifier) — a pure CSS transform. */
 .lp-shell-sidebar {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
+  width: 272px;
   z-index: 40;
   transform: translateX(-100%);
   transition: transform 0.2s ease;
@@ -259,30 +267,121 @@
     position: static;
     transform: none;
     z-index: auto;
+    /* Collapse instantly. The inner content (labels hide via display:none, glyphs
+       re-center into 44px tiles, the brand restacks) can't tween and snaps at frame
+       0, so animating only the rail width left those changes out of sync with the
+       shrinking rail — that desync was the "jump". A synchronized instant toggle
+       reads as crisp instead of janky. */
+    transition: none;
+  }
+  .lp-shell-sidebar--collapsed {
+    width: 72px;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  /* Hide everything textual; only icons/avatars remain (keep the brand MARK). */
+  .lp-shell-sidebar--collapsed .lp-sb-label,
+  .lp-shell-sidebar--collapsed .lp-sb-section-title,
+  .lp-shell-sidebar--collapsed .lp-sb-soon-badge,
+  .lp-shell-sidebar--collapsed .lp-sb-trail,
+  .lp-shell-sidebar--collapsed .lp-sb-wordmark,
+  .lp-shell-sidebar--collapsed .lp-sb-target,
+  .lp-shell-sidebar--collapsed .lp-sb-profile-text,
+  .lp-shell-sidebar--collapsed .lp-sb-profile-chev {
+    display: none !important;
+  }
+  /* Brand stacks: the mark on top, the expand toggle centred beneath it — so the
+     toggle never spills past the rail edge. */
+  .lp-shell-sidebar--collapsed .lp-sb-brandrow {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 0 0 14px !important;
+  }
+  /* Every nav glyph sits in a uniform, centred 44px tile for an even rhythm. */
+  .lp-shell-sidebar--collapsed .lp-sb-link {
+    width: 44px !important;
+    height: 44px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-collapse {
+    justify-content: center !important;
+  }
+  /* Let the rail overflow so hover tooltips can sit beside the icons. */
+  .lp-shell-sidebar--collapsed .lp-sb-scroll {
+    overflow: visible !important;
+  }
+  /* Collapsed nav: hover a glyph → a label tooltip to its right (the only place the
+     name shows once labels are hidden). */
+  .lp-shell-sidebar--collapsed .lp-sb-link {
+    position: relative;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-link:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    background: #1a2138;
+    color: #fff;
+    font-family: var(--font-hanken), system-ui, sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 11px;
+    border-radius: 9px;
+    box-shadow: 0 12px 28px -12px rgba(20, 20, 48, 0.55);
+    z-index: 60;
+    pointer-events: none;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-link:hover::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: #1a2138;
+    z-index: 60;
+    pointer-events: none;
+  }
+  /* Profile collapses to just the avatar — no frame. */
+  .lp-shell-sidebar--collapsed .lp-sb-profile-btn {
+    justify-content: center !important;
+    padding: 0 !important;
+    height: 44px !important;
+    border-color: transparent !important;
+    background: transparent !important;
+  }
+  /* Keep a faint divider between groups now that their titles are gone. */
+  .lp-shell-sidebar--collapsed .lp-sb-section--titled {
+    border-top: 1px solid #eceaf2;
+    padding-top: 12px;
+    margin-top: 6px;
   }
 }
 
-/* Header brand: a sidebar-width brand column on desktop, a compact hamburger+logo
-   on mobile. Display lives here (not inline) so the breakpoint can toggle it. */
-.lp-shell-brandcol {
+/* The collapse toggle is a desktop-only affordance. */
+.lp-sb-collapse {
   display: none;
 }
-.lp-shell-mobilebrand {
+@media (min-width: 768px) {
+  .lp-sb-collapse {
+    display: flex;
+  }
+}
+
+/* The top bar carries the hamburger + brand on mobile only; on desktop the sidebar
+   owns the brand and <main> runs full height, so the bar is hidden. */
+.lp-shell-topbar {
   display: flex;
 }
 @media (min-width: 768px) {
-  .lp-shell-brandcol {
-    display: flex;
-  }
-  .lp-shell-mobilebrand {
+  .lp-shell-topbar {
     display: none;
-  }
-}
-
-/* Hide the name/role + sign-out label on very narrow screens (avatar + icon stay). */
-@media (max-width: 600px) {
-  .lp-shell-usermeta {
-    display: none !important;
   }
 }
 
@@ -302,11 +401,18 @@
 
 /* App-shell sidebar nav (Option A) */
 .lp-sb-item {
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .lp-sb-item:hover {
-  background: #f1f0e6;
-  color: #1a1c33;
+  background: #ecebfb;
+  color: #3b43b5;
+}
+/* Profile-menu rows (Sign out) — soft red wash on hover. */
+.lp-menu-item {
+  transition: background 0.15s ease;
+}
+.lp-menu-item:hover {
+  background: #fbecea;
 }
 .lp-row {
   transition: background 0.15s ease;

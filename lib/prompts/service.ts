@@ -146,6 +146,15 @@ export async function pickNextPromptForStudent(
   rawFilters: PromptFilters = {},
 ): Promise<StoredPrompt> {
   const filters = parse(promptFiltersSchema, rawFilters);
+
+  // Explicit "Generate a topic": always produce a brand-new AI prompt (and claim it)
+  // rather than re-serving an existing unseen one — so the learner gets a genuinely
+  // fresh, AI-marked topic that surfaces first in their library.
+  if (filters.fresh) {
+    const tt = filters.taskType ?? "task2";
+    if (GENERATABLE.has(tt)) return generateOnDemand(actor, tt, filters);
+  }
+
   const supabase = await createClient();
   const studentId = actor.userId;
 

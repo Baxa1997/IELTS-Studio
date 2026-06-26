@@ -25,7 +25,7 @@ export interface CefrLevelInfo {
   /** Reading "can-do" the level practice targets. */
   readingCan: string;
   /** Writing "can-do" the level practice targets. */
-  writingCan: string;
+  writingCan?: string;
   /** The writing task this level is practised with (kept short by design). */
   writingTask: string;
   /** Rough word target for the writing task at this level. */
@@ -43,7 +43,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     name: "Beginner",
     blurb: "Understands and uses very basic everyday phrases.",
     ieltsApprox: "IELTS < 3.5",
-    readingCan: "Understand familiar names, words and very simple sentences on notices and posters.",
+    readingCan:
+      "Understand familiar names, words and very simple sentences on notices and posters.",
     writingCan: "Write a short, simple postcard or fill in a form with personal details.",
     writingTask: "Write a short note or message",
     writingWords: 40,
@@ -57,7 +58,7 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     blurb: "Handles short, routine exchanges on familiar topics.",
     ieltsApprox: "IELTS 3.5–4.0",
     readingCan: "Read short, simple texts and find specific information in everyday material.",
-    writingCan: "Write short, simple notes and a basic personal letter, e.g. saying thank you.",
+    // writingCan: "Write short, simple notes and a basic personal letter, e.g. saying thank you.",
     writingTask: "Write a short personal message or email",
     writingWords: 60,
     readingWords: 180,
@@ -70,7 +71,7 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     blurb: "Deals with most situations and writes connected text on familiar topics.",
     ieltsApprox: "IELTS 4.0–5.0",
     readingCan: "Understand texts that consist of everyday or job-related language.",
-    writingCan: "Write straightforward connected text on familiar topics, or a personal letter describing experiences.",
+    // writingCan: "Write straightforward connected text on familiar topics, or a personal letter describing experiences.",
     writingTask: "Write an informal letter or short opinion",
     writingWords: 120,
     readingWords: 260,
@@ -82,8 +83,10 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     name: "Upper-intermediate",
     blurb: "Argues a viewpoint clearly and reads with a good degree of independence.",
     ieltsApprox: "IELTS 5.5–6.5",
-    readingCan: "Read articles and reports on contemporary problems and understand the writer's stance.",
-    writingCan: "Write clear, detailed text on a range of subjects and an essay passing on information or reasons.",
+    readingCan:
+      "Read articles and reports on contemporary problems and understand the writer's stance.",
+    // writingCan:
+    //   "Write clear, detailed text on a range of subjects and an essay passing on information or reasons.",
     writingTask: "Write a short essay or article",
     writingWords: 180,
     readingWords: 340,
@@ -96,7 +99,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     blurb: "Expresses ideas fluently and structures longer, complex text well.",
     ieltsApprox: "IELTS 7.0–8.0",
     readingCan: "Understand long, demanding texts and appreciate distinctions of style.",
-    writingCan: "Write clear, well-structured text on complex subjects, underlining the relevant salient issues.",
+    // writingCan:
+    //   "Write clear, well-structured text on complex subjects, underlining the relevant salient issues.",
     writingTask: "Write a structured essay or report",
     writingWords: 220,
     readingWords: 420,
@@ -108,8 +112,10 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     name: "Proficient",
     blurb: "Reads and writes with near-native ease and precision.",
     ieltsApprox: "IELTS 8.5–9.0",
-    readingCan: "Read with ease virtually all forms of the written language, including abstract texts.",
-    writingCan: "Write clear, smoothly-flowing, complex text in an appropriate and effective style.",
+    readingCan:
+      "Read with ease virtually all forms of the written language, including abstract texts.",
+    // writingCan:
+    //   "Write clear, smoothly-flowing, complex text in an appropriate and effective style.",
     writingTask: "Write a sophisticated essay or critique",
     writingWords: 250,
     readingWords: 480,

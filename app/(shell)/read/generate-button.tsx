@@ -88,6 +88,9 @@ export function GeneratePassageButton({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    // Reserve width for the widest label state so swapping to "Generating… ~1 min"
+    // (or back) never resizes the button and shifts its position.
+    minWidth: 236,
     fontFamily: SANS,
     fontWeight: 600,
     fontSize: 15,
@@ -161,6 +164,9 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
           alignItems: "center",
           justifyContent: "center",
           gap: 8,
+          // Reserve width for the longest state ("Building your test… ~2 min") so the
+          // button doesn't grow and jump left when generation starts.
+          minWidth: 258,
           fontFamily: SANS,
           fontWeight: 600,
           fontSize: 15,

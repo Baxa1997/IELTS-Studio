@@ -33,7 +33,7 @@ export default async function WritePage() {
   // custom pastes stay out). RLS restricts to the learner's org.
   const { data: lib } = await supabase
     .from("writing_prompts")
-    .select("id, task_type, category, prompt_text, topic_family, difficulty, created_at")
+    .select("id, task_type, category, prompt_text, topic_family, difficulty, source, created_at")
     .eq("status", "approved")
     .in("source", ["ai", "seed"])
     .order("created_at", { ascending: false })
@@ -47,6 +47,8 @@ export default async function WritePage() {
     figure: null, // cards don't render the chart; the studio detail page loads it
     topic_family: (r.topic_family as string | null) ?? null,
     difficulty: (r.difficulty as number | null) ?? null,
+    // On-demand generations (source = 'ai') surface first, badged "New", no band.
+    generated: (r.source as string | null) === "ai",
   }));
 
   // Which prompts this learner has already attempted — badged + filterable in the

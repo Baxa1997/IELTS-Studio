@@ -81,6 +81,9 @@ export const promptFiltersSchema = z.object({
   category: z.enum(TASK2_CATEGORIES).optional(),
   topicFamily: z.string().trim().min(2).max(50).optional(),
   difficulty: z.number().int().min(MIN_DIFFICULTY).max(MAX_DIFFICULTY).optional(),
+  /** Force a brand-new AI generation (the explicit "Generate a topic" button), instead
+   *  of re-serving an existing unseen prompt from the pool. */
+  fresh: z.boolean().optional(),
 });
 export type PromptFilters = z.infer<typeof promptFiltersSchema>;
 
