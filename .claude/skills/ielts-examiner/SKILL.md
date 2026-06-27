@@ -13,9 +13,10 @@ Scope today: **Writing Task 2**, **Academic Writing Task 1** (data description),
 and **General Training Task 1** (letter). Each mode is scored on its **own** band
 table — never on another's: Academic Task 1 on the data-description criteria, GT
 Task 1 on the letter criteria (purpose, bullet coverage, tone/register), Task 2 on
-the Task 2 table. Calibrated anchors now exist for Task 2 (ladder 3.0–8.0) and
-Academic Task 1 (≈4.5–8.0); GT Task 1 letter anchors are a later add (it scores
-from the descriptors until then). Bands below the lowest anchor — and any genuine
+the Task 2 table. Calibrated anchors now exist for **all three modes** — Task 2
+(ladder 3.0–9.0), Academic Task 1 (≈4.5–9.0) and GT Task 1 letters (5.0, 6.5, 7.5,
+9.0) — so the floor and the **Band 9 ceiling** are pinned for each.
+Bands below the lowest anchor — and any genuine
 3.5 — are scored from the descriptors and computed as the mean of the criteria; the
 very bottom (non-attempt / blank / off-topic) is the deterministic floor, not an
 anchor.
@@ -29,8 +30,10 @@ anchor.
 | `references/writing-task1-general-rubric.md` | Band table (4–9) for General Training Task 1 (letter) — Task Achievement (purpose + all three bullet points + consistent tone/register), CC, LR, GRA |
 | `references/error-taxonomy.md` | The recurring faults that cap each criterion, by band |
 | `references/cefr-and-vocabulary.md` | CEFR↔IELTS mapping + lexical frequency-band calibration — a **corroboration** layer that must agree with the descriptors, never override them |
-| `references/anchors/anchor-01.md` … `anchor-10.md` | Calibrated **Task 2** exemplar ladder: 3.0, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0. Retrieval hands the grader an even spread across the ladder so both floor and ceiling are pinned |
-| `references/anchors/t1a-anchor-01.md` … `t1a-anchor-05.md` | Calibrated **Academic Task 1** exemplars (≈4.5, 5.5, 6.5, 7.5, 8.0), each with its figure + the accurate-summary key |
+| `references/band9-model-answers.md` | What a genuine **Band 9** looks like on each criterion, the 8→9 line, and how to write an honest Band 9 model answer — used to recognise the ceiling when grading and to ground the Band 9 sample in the comparison panel |
+| `references/anchors/anchor-01.md` … `anchor-11.md` | Calibrated **Task 2** exemplar ladder: 3.0, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, **9.0**. Retrieval hands the grader an even spread across the ladder so both floor and ceiling are pinned |
+| `references/anchors/t1a-anchor-01.md` … `t1a-anchor-06.md` | Calibrated **Academic Task 1** exemplars (≈4.5, 5.5, 6.5, 7.5, 8.0, **9.0**), each with its figure + the accurate-summary key |
+| `references/anchors/t1g-anchor-01.md` … `t1g-anchor-04.md` | Calibrated **GT Task 1** letter exemplars (5.0, 6.5, 7.5, **9.0**) spanning formal and informal register, each with its purpose + bullet-coverage + tone key |
 | `assets/output-schema.json` | **Canonical** JSON Schema for grade output + the non-affiliation disclaimer |
 
 > Anchors are first-draft, **expert-verification pending**. Calibration is
@@ -58,6 +61,29 @@ GRA up:
 - **At/near or above the minimum** → score normally; if still under the minimum,
   apply the standard underlength note on TR.
 
+**On-question & authenticity check — apply alongside the gate above.** Read the
+prompt's actual demand before you score TR:
+
+- **Answer the question that was asked.** An opinion prompt ("to what extent do you
+  agree?") needs a clear, sustained position; "discuss both views and give your own
+  opinion" needs **both** views *and* the writer's own stance; a problem/solution prompt
+  needs the causes and/or solutions it asks for; a two-part question needs **both**
+  parts. A fluent essay that answers a *different* question than the one set — or only
+  half of a two-part prompt — is **off-task**: cap TR at **5–6** (taxonomy
+  `TR-WRONGTYPE` / `TR-PARTS`), however strong the language.
+- **Reward only language that fits THIS prompt.** Memorised template scaffolding and
+  pre-learned "padding" sentences that could sit on any essay are **not** development
+  (TR) and do **not** count as lexical or grammatical *range* (LR/GRA) — judge the
+  on-topic content only (`TR-TEMPLATE`). A misused "big word" lowers LR; it never raises
+  it.
+- **Substantially memorised responses cap TR hard.** If you are confident the script is
+  largely a pre-learned essay — a frame and sentences that could be dropped onto almost
+  any prompt and that do not engage the *specific* question set — cap **TR at ≈ Band 4**,
+  however polished the language (this mirrors the 2025 examiner retraining; modern
+  prompts are deliberately specific to defeat templates). Be conservative about
+  *applying* this: a genuine essay that merely uses a few common linkers is **not**
+  memorised — reserve the Band-4 cap for responses that are clearly canned.
+
 Then proceed:
 
 1. **Ground in the descriptors, not gut.** Score only against
@@ -83,6 +109,10 @@ Then proceed:
    *clearly* as strong as an exemplar scored at that band, drop the overall by 0.5.
    Competitor graders are known to inflate; staying half a band conservative is the
    product's whole edge.
+   **Cross-criterion consistency:** the four criteria rarely span more than ~2 bands on
+   a real script. If one criterion sits well above the others, re-check its evidence
+   before committing — a single over-generous criterion is the most common way the mean
+   drifts upward.
 6. **Name the score-blocker.** Identify the single criterion + reason most
    responsible for holding the overall band down.
 7. **State the ceiling with fixes.** Give the realistic band the writer would

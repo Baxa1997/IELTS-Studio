@@ -13,6 +13,8 @@ checklist behind the descriptors, not a substitute for them.
 
 | Code | Fault | Typically caps at |
 |------|-------|-------------------|
+| TR-WRONGTYPE | Answers a different question than the one set (e.g. gives an opinion when asked to discuss both views; ignores half a two-part prompt) | 5–6 |
+| TR-TEMPLATE | Memorised template scaffolding / pre-learned padding that fits any topic — not genuine, on-prompt development | 4 if substantially memorised; 5–6 for partial scaffolding |
 | TR-PARTS | One part of a multi-part prompt ignored or barely touched | 6 |
 | TR-POSITION | Position unclear, drifting, or self-contradictory | 5–6 |
 | TR-UNDERDEV | Main ideas asserted but not extended/explained | 6 |
