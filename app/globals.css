@@ -253,6 +253,34 @@
   animation: lp-ai-bg 12s ease infinite;
 }
 
+/* ---- Grading overlay (the "we're marking your essay" modal) ---------------- */
+@keyframes lp-grade-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lp-grade-cap {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+/* Spinning conic ring used for the emblem. */
+@keyframes lp-grade-spin { to { transform: rotate(360deg); } }
+.lp-grade-ring {
+  background: conic-gradient(from 90deg, transparent 0deg, rgba(59, 67, 181, 0) 110deg, #3b43b5 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+  animation: lp-grade-spin 1.05s linear infinite;
+}
+/* Indeterminate progress shimmer. */
+@keyframes lp-grade-bar {
+  0% { background-position: 200% 0; }
+  100% { background-position: 0% 0; }
+}
+.lp-grade-bar {
+  background-image: linear-gradient(90deg, #e4e3f7 0%, #3b43b5 50%, #e4e3f7 100%);
+  background-size: 200% 100%;
+  animation: lp-grade-bar 1.4s linear infinite;
+}
+
 /* Collapse the multi-column grids and trim nav on narrow screens. */
 @media (max-width: 1024px) {
   .lp-hero-grid { grid-template-columns: 1fr !important; }

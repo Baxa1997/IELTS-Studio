@@ -535,6 +535,9 @@ export function WritingStudio({
 
   return (
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: "#F4F1E7" }}>
+      {/* grading modal — a calm, on-brand cover every time we mark a submission */}
+      {submitting ? <GradingOverlay mode={mode} /> : null}
+
       {/* header */}
       <header style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: "1px solid #E7E3D5", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
@@ -620,7 +623,7 @@ export function WritingStudio({
           </div>
           <div style={{ flexShrink: 0, padding: "14px 20px", borderTop: "1px solid #F0EDE1", display: "flex", alignItems: "center", gap: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16v-4M12 8h.01" /><circle cx="12" cy="12" r="9" /></svg>
-            <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{isCefr ? "Graded on the CEFR scale (A1–C2) — Content, Communication, Organisation, Language." : hasGraded ? "Band 7 & 8 model answers are in your feedback." : "Band 7 & 8 model answers unlock after you submit."}</span>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{isCefr ? "Graded on the CEFR scale (A1–C2) — Content, Communication, Organisation, Language." : hasGraded ? "A model answer for this task is in your feedback." : "A model answer for this task unlocks after you submit."}</span>
           </div>
         </aside>
 
@@ -863,6 +866,80 @@ function Timer({ seconds, onExpire }: { seconds: number; onExpire: () => void })
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a897c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
       <span style={{ fontVariantNumeric: "tabular-nums" }}>{mm}:{String(ss).padStart(2, "0")}</span> left
     </span>
+  );
+}
+
+// ---- Grading overlay -------------------------------------------------------
+
+const GRADING_STEPS_IELTS = [
+  "Reading your response, line by line…",
+  "Checking grammar, vocabulary & cohesion…",
+  "Weighing it against the official band descriptors…",
+  "Comparing with calibrated band examples…",
+  "Calibrating a fair, exam-accurate band…",
+];
+const GRADING_STEPS_CEFR = [
+  "Reading your response, line by line…",
+  "Checking range, accuracy & organisation…",
+  "Mapping it to the CEFR can-do levels…",
+  "Calibrating a fair, conservative level…",
+];
+
+/**
+ * Full-screen modal shown every time the learner submits for grading. A calm,
+ * on-brand "give us a moment to do this properly" cover — a spinning emblem, a
+ * rotating line of what's happening, and an indeterminate bar — so the wait reads
+ * as care (accuracy) rather than lag. Covers the editor so nothing can be edited
+ * mid-grade. Mounts only while submitting, so its interval cleans up on its own.
+ */
+function GradingOverlay({ mode }: { mode: StudioMode }) {
+  const isCefr = mode === "cefr";
+  const steps = isCefr ? GRADING_STEPS_CEFR : GRADING_STEPS_IELTS;
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setStep((s) => (s + 1) % steps.length), 2200);
+    return () => window.clearInterval(id);
+  }, [steps.length]);
+
+  return (
+    <div
+      role="alertdialog"
+      aria-label={isCefr ? "Estimating your level" : "Grading your essay"}
+      aria-live="polite"
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(20,22,40,.46)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+    >
+      <div style={{ width: "min(424px, 94vw)", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 40px 90px -30px rgba(20,22,40,.7)", animation: "lp-grade-in .4s cubic-bezier(.33,1,.68,1) both" }}>
+        {/* animated brand header with the spinning emblem */}
+        <div className="lp-ai-surface" style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: "1px solid #E4E2F3" }}>
+          <span style={{ position: "relative", width: 66, height: 66, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <span className="lp-grade-ring" style={{ position: "absolute", inset: 0, borderRadius: "50%" }} aria-hidden />
+            <span style={{ position: "absolute", inset: 7, borderRadius: "50%", background: "#fff", boxShadow: "inset 0 0 0 1px rgba(59,67,181,.12)" }} aria-hidden />
+            <svg className="lp-ai-spark" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ position: "relative" }}><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+          </span>
+          <h2 style={{ margin: "18px 0 0", fontFamily: SANS, fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-.01em" }}>
+            {isCefr ? "Estimating your level" : "Grading your essay"}
+          </h2>
+          <p style={{ margin: "8px 0 0", fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: "#46496A", maxWidth: 320 }}>
+            Hang tight — we read every line and weigh it against the {isCefr ? "CEFR can-do descriptors" : "official band descriptors"} so your result is as accurate as possible.
+          </p>
+        </div>
+
+        {/* rotating status line + indeterminate progress */}
+        <div style={{ padding: "20px 26px 24px" }}>
+          <div style={{ minHeight: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span key={step} style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: INDIGO, textAlign: "center", animation: "lp-grade-cap .5s ease both" }}>
+              {steps[step]}
+            </span>
+          </div>
+          <div style={{ marginTop: 16, height: 6, borderRadius: 999, background: "#EDEBF8", overflow: "hidden" }}>
+            <div className="lp-grade-bar" style={{ height: "100%", width: "100%", borderRadius: 999 }} />
+          </div>
+          <p style={{ margin: "14px 0 0", fontFamily: SANS, fontSize: 12, color: "#9094A8", textAlign: "center" }}>
+            This usually takes about 20–30 seconds. Please don&rsquo;t close this tab.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 

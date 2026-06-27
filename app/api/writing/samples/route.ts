@@ -19,8 +19,8 @@ const TASK_TYPES = new Set<EssayTaskType>(["task1_academic", "task1_general", "t
 /**
  * POST /api/writing/samples
  *
- * Band-targeted model answers (Band 7 + Band 8) for one task — the comparison the
- * learner studies AFTER grading. Cached per (org, task) so re-opening is free.
+ * A single top-quality model answer for one task — the exemplar the learner studies
+ * AFTER grading ("Write it better"). Cached per (org, task) so re-opening is free.
  *
  * Forward-compatible: if the `writing_samples` cache table hasn't been migrated
  * yet, the cache read/write just no-op (errors are swallowed) and we generate
@@ -47,7 +47,10 @@ export async function POST(req: Request): Promise<Response> {
   const figureText = figure ? figureToText(figure) : undefined;
 
   const orgId = session.profile.organization_id;
-  const promptHash = createHash("sha256").update(`${taskType}\n${promptText}`).digest("hex");
+  // The `v` prefix is the samples-format version: bump it to invalidate older cached
+  // sets so a format change is served fresh. v3 = a single model answer (v2 was the
+  // Band 7/8/9 trio; v1 was 7/8).
+  const promptHash = createHash("sha256").update(`v3\n${taskType}\n${promptText}`).digest("hex");
   const admin = createAdminClient();
 
   // Cache hit? (No-op / live generation if the table isn't migrated yet.)

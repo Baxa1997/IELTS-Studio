@@ -52,11 +52,10 @@ Also emit "annotations": the concrete, in-text mistakes a reader should see high
 const WRITING_SAMPLES_CONTRACT = `Emit ONE JSON object and nothing else — no prose, no code fence — of this exact shape:
 {
   "samples": [
-    { "band": 7.0, "title": "Band 7 model answer", "essay": "<the full essay text, with \\n\\n between paragraphs>", "highlights": ["<2-4 specifics, each tied to a criterion>"], "to_next": "<one concrete change that would lift it to band 8>" },
-    { "band": 8.0, "title": "Band 8 model answer", "essay": "<the full essay text>", "highlights": ["..."], "to_next": "" }
+    { "band": 9.0, "title": "Model answer", "essay": "<the full essay text, with \\n\\n between paragraphs>", "highlights": ["<2-4 specifics, each tied to a criterion>"], "to_next": "" }
   ]
 }
-Order the samples from lower band to higher. Do NOT write the band, a title, or any label inside the "essay" text itself — only the essay prose.`;
+Emit exactly ONE sample. Do NOT write the band, a title, or any label inside the "essay" text itself — only the essay prose.`;
 
 const CEFR_WRITING_TASK_CONTRACT = `Emit ONE JSON object and nothing else — no prose, no code fence — of this exact shape:
 {
@@ -234,15 +233,15 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     const words = taskType === "task2" ? "260–290" : "160–190";
 
     const rules = [
-      "You are an experienced IELTS examiner-trainer writing ORIGINAL model answers for teaching.",
+      "You are an experienced IELTS examiner-trainer writing ONE ORIGINAL model answer for teaching.",
       common,
-      `Write TWO complete model answers for the candidate's task — ${taskLabel}. Produce exactly two: one calibrated to Band 7.0 and one to Band 8.0.`,
-      "The two answers MUST genuinely sit at their stated bands — calibrate against the anchors below and never label a weaker essay as a higher band. Band 8.0: fully developed and on-task, well organised with smooth cohesion, a wide range of precise vocabulary used naturally, and varied, mostly error-free complex grammar. Band 7.0: clearly good and well organised, but with a VISIBLE ceiling — a few less precise word choices, slightly less developed support, or the odd minor error — so a learner can SEE what separates a 7 from an 8.",
-      `Each answer should be about ${words} words and read like a strong human candidate, not a template.`,
+      `Write a SINGLE, exemplary model answer for the candidate's task — ${taskLabel}. It should be the kind of response a top candidate would produce: a fully operational, Band 9-level answer the learner can study to see how the task is done well.`,
+      "It must be genuinely excellent (calibrate against the anchors below; never inflate weaker writing): a fully developed argument (or, for Task 1, an overview capturing the truly defining features); cohesion so natural it attracts no attention (carried by logic and reference, not visible signposting like 'Firstly/However'); the EXACT word every time with idiomatic collocation (rarer items only where they are more precise, never decoration); and a wide range of structures used with full flexibility AND accuracy (essentially error-free). Concise because every sentence does work — do not pad it.",
+      `The answer should be about ${words} words and read like a real strong candidate, not a template.`,
       taskType === "task1_academic" && figure
         ? `This is Academic Task 1: describe the figure ACCURATELY with an overview plus key comparisons. FIGURE DATA (ground truth — report it correctly):\n${figure}`
         : "",
-      "For each answer also give 'highlights': 2–4 short, concrete bullets naming what earns that band, each tied to a criterion (Task Response/Achievement, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy) — e.g. 'LR: precise collocations such as \"a marked decline\"'. And 'to_next': one concrete change that would lift it to the next band (leave empty for the Band 8 answer).",
+      "Also give 'highlights': 2–4 short, concrete bullets naming what makes the answer strong, each tied to a criterion (Task Response/Achievement, Coherence & Cohesion, Lexical Resource, Grammatical Range & Accuracy) — e.g. 'LR: precise collocations such as \"a marked decline\"'. Leave 'to_next' EMPTY.",
       "Use ONLY original content; never reproduce or closely paraphrase copyrighted test material or published model essays.",
       WRITING_SAMPLES_CONTRACT,
     ].filter(Boolean);

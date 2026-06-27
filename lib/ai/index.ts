@@ -555,7 +555,7 @@ export async function generate(rawInput: GenerateInput): Promise<GenerateResult>
   }
 }
 
-// ---- Writing model answers (the Band-8 sample comparison) ------------------
+// ---- Writing model answer (the "Write it better" panel) --------------------
 
 export interface WritingSamplesInput {
   taskType: EssayTaskType;
@@ -567,10 +567,11 @@ export interface WritingSamplesInput {
 }
 
 /**
- * Generate two original, band-targeted model answers (Band 7 + Band 8) for one
- * task — the comparison panel a learner studies after grading. The GENERATOR
- * writes these (separate from the grader, CLAUDE.md), grounded in the calibrated
- * anchors so the bands are honest, not inflated. Returns the samples low→high.
+ * Generate ONE original, top-quality model answer for a task — the exemplar a
+ * learner studies after grading ("Write it better"). The GENERATOR writes it
+ * (separate from the grader, CLAUDE.md), grounded in the calibrated anchors
+ * (including the Band 9 ceiling anchor) so it is a genuine top-band answer, not an
+ * inflated one. Returns a one-element array (kept as an array for back-compat).
  */
 export async function generateWritingSamples(input: WritingSamplesInput): Promise<WritingSample[]> {
   const anchors = await retrieveAnchorsForTask(input.taskType, 4);

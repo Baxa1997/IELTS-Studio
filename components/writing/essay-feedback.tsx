@@ -77,8 +77,8 @@ interface Props {
   onRevise?: () => void;
   /** Compliance line shown under the essay; falls back to a default. */
   disclaimer?: string;
-  /** When set, a "Model answers" tab is shown that lazy-loads Band 7 + Band 8
-   *  sample answers for THIS task to compare against. Omit to hide the tab. */
+  /** When set, a "Write it better" tab is shown that lazy-loads a single top-quality
+   *  model answer for THIS task to study. Omit to hide the tab. */
   promptText?: string | null;
 }
 
@@ -119,8 +119,8 @@ export function EssayFeedback({
   const [selected, setSelected] = useState<number | null>(null); // 1-based issue index
   const fixListRef = useRef<HTMLDivElement>(null);
 
-  // Lazy-loaded Band 7 + Band 8 model answers for THIS task (fetched once, on the
-  // first open of the Model answers tab — they're an extra AI generation).
+  // Lazy-loaded model answer for THIS task (fetched once, on the first open of the
+  // "Write it better" tab — it's an extra AI generation). One sample in the array.
   const [samples, setSamples] = useState<ModelSample[] | null>(null);
   const [samplesState, setSamplesState] = useState<"idle" | "loading" | "error">("idle");
   const loadSamples = useCallback(async () => {
@@ -144,6 +144,7 @@ export function EssayFeedback({
     }
   }, [showSamples, samplesState, samples, taskType, promptText, figure]);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- lazy-load the samples on first open of the tab
     if (tab === "samples") void loadSamples();
   }, [tab, loadSamples]);
 
@@ -302,7 +303,7 @@ export function EssayFeedback({
               <button type="button" onClick={() => setTab("issues")} style={tabStyle(tab === "issues")}>Fixes · {ranges.length}</button>
               <button type="button" onClick={() => setTab("insights")} style={tabStyle(tab === "insights")}>Insights</button>
               {showSamples ? (
-                <button type="button" onClick={() => setTab("samples")} style={tabStyle(tab === "samples")}>Model answers</button>
+                <button type="button" onClick={() => setTab("samples")} style={tabStyle(tab === "samples")}>Write it better</button>
               ) : null}
             </div>
           </div>
@@ -315,7 +316,7 @@ export function EssayFeedback({
             ) : tab === "insights" ? (
               <InsightsView insights={insights} taskType={taskType} />
             ) : (
-              <SamplesView samples={samples} state={samplesState} overallBand={overallBand} onRetry={() => void loadSamples()} />
+              <SamplesView samples={samples} state={samplesState} onRetry={() => void loadSamples()} />
             )}
           </div>
         </aside>
@@ -325,27 +326,26 @@ export function EssayFeedback({
 }
 
 /**
- * Model answers tab — Band 7 + Band 8 sample answers for THIS task, to compare
- * the learner's own essay against (the "Band 8 sample comparison" feature). Lazy:
- * the parent fetches on first open. Honest by construction — the generator writes
- * each sample AT its labelled band, anchor-calibrated, never inflated.
+ * "Write it better" tab — ONE original, top-quality model answer for THIS task, for
+ * the learner to study (structure, linking, phrasing). Lazy: the parent fetches on
+ * first open. Honest by construction — the generator writes a genuine Band 9-level
+ * exemplar, anchor-calibrated (incl. the Band 9 ceiling), never inflated. The band
+ * number is intentionally NOT surfaced; it reads simply as "the model answer".
  */
 function SamplesView({
   samples,
   state,
-  overallBand,
   onRetry,
 }: {
   samples: ModelSample[] | null;
   state: "idle" | "loading" | "error";
-  overallBand: number;
   onRetry: () => void;
 }) {
   if (!samples) {
     if (state === "error") {
       return (
         <div style={{ padding: "8px 2px" }}>
-          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answers just now.</p>
+          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answer just now.</p>
           <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: INDIGO, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
             Try again
           </button>
@@ -355,53 +355,52 @@ function SamplesView({
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "44px 16px", textAlign: "center" }}>
         <span className="animate-spin" style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid #E4E1F4`, borderTopColor: INDIGO, display: "inline-block" }} aria-hidden />
-        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: MUTED, maxWidth: 280 }}>Writing a Band 7 and a Band 8 model answer for this exact task… about 30 seconds.</p>
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: MUTED, maxWidth: 280 }}>Writing a model answer for this exact task… about 30 seconds.</p>
       </div>
     );
   }
 
+  const sample = samples[0];
+  if (!sample) {
+    return (
+      <div style={{ padding: "8px 2px" }}>
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answer just now.</p>
+        <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: INDIGO, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const wordCount = sample.essay.trim().split(/\s+/).filter(Boolean).length;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: MUTED }}>
-        You scored <strong style={{ color: bandColor(overallBand).fg }}>{overallBand.toFixed(1)}</strong>. Here&rsquo;s what a 7 and an 8 look like on this exact task — read for the moves, don&rsquo;t copy them.
+        A model answer for this exact task — read it for the <strong style={{ color: INK }}>moves</strong> (how it&rsquo;s structured, how ideas are linked, the phrasing), then write your own. Don&rsquo;t copy it.
       </p>
-      {samples.map((s, i) => {
-        const tier = bandColor(s.band);
-        const diff = Math.round((s.band - overallBand) * 10) / 10;
-        return (
-          <div key={i} style={{ border: "1px solid #E7E3D5", borderRadius: 13, overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: tier.bg, borderBottom: `1px solid ${tier.fg}22` }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-                <span style={{ fontSize: 22, fontWeight: 800, color: tier.fg, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{s.band.toFixed(1)}</span>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: INK }}>{s.title || `Band ${s.band.toFixed(1)} model answer`}</span>
-              </span>
-              {diff > 0 ? (
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: tier.fg, background: "#fff", border: `1px solid ${tier.fg}33`, padding: "3px 9px", borderRadius: 999 }}>+{diff.toFixed(1)} above you</span>
-              ) : diff === 0 ? (
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: tier.fg, background: "#fff", border: `1px solid ${tier.fg}33`, padding: "3px 9px", borderRadius: 999 }}>your band</span>
-              ) : null}
-            </div>
-            {s.highlights && s.highlights.length ? (
-              <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: "1px solid #F0EDE1" }}>
-                {s.highlights.map((h, j) => (
-                  <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "#41496A" }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>
-                    <span>{h}</span>
-                  </div>
-                ))}
+      <div style={{ border: "1px solid #E7E3D5", borderRadius: 13, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: "#F2F1FC", borderBottom: "1px solid #E1DFF7" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+            <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>{sample.title || "Model answer"}</span>
+          </span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: INDIGO, background: "#fff", border: "1px solid #DAD8F2", padding: "3px 9px", borderRadius: 999, fontVariantNumeric: "tabular-nums" }}>{wordCount} words</span>
+        </div>
+        {sample.highlights && sample.highlights.length ? (
+          <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: "1px solid #F0EDE1" }}>
+            {sample.highlights.map((h, j) => (
+              <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "#41496A" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>
+                <span>{h}</span>
               </div>
-            ) : null}
-            <div style={{ padding: "14px 16px", fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.75, color: "#262B3D", whiteSpace: "pre-wrap" }}>{s.essay}</div>
-            {s.to_next && s.to_next.trim() ? (
-              <div style={{ margin: "0 14px 14px", padding: "9px 12px", background: "#FBFAF4", border: "1px solid #ECEADC", borderRadius: 9, fontSize: 12.5, lineHeight: 1.5, color: MUTED }}>
-                <strong style={{ color: INK }}>To reach the next band:</strong> {s.to_next}
-              </div>
-            ) : null}
+            ))}
           </div>
-        );
-      })}
+        ) : null}
+        <div style={{ padding: "14px 16px", fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.75, color: "#262B3D", whiteSpace: "pre-wrap" }}>{sample.essay}</div>
+      </div>
       <p style={{ margin: "4px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>
-        Original AI-written model answers for study — not official IELTS® answers. Learn the structure and phrasing; submit only your own writing.
+        An original AI-written model answer for study — not an official IELTS® answer. Learn the structure and phrasing; submit only your own writing.
       </p>
     </div>
   );
