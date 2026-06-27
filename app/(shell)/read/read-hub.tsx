@@ -492,10 +492,10 @@ function Panel({
   return (
     <>
       <div
+        className="lp-ai-surface"
         style={{
           marginTop: 18,
-          background: "#fff",
-          border: "1px solid rgba(28,27,46,.09)",
+          border: "1px solid #DEDCF5",
           borderRadius: 14,
           padding: "18px 20px",
           display: "flex",
@@ -503,7 +503,6 @@ function Panel({
           justifyContent: "space-between",
           gap: 18,
           flexWrap: "wrap",
-          boxShadow: "0 1px 3px rgba(28,27,46,.04)",
         }}
       >
         <div style={{ maxWidth: 560 }}>

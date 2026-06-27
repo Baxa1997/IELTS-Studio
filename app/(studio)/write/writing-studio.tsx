@@ -446,6 +446,13 @@ export function WritingStudio({
     [tutorInput, tutorPending, taskKind, prompt.prompt_text, lastGraded, isCefr, cefrTask],
   );
 
+  // Once a coach reply has finished typing, clear its animate flag so reopening the
+  // coach (which remounts the panel) replays it instantly instead of re-typing every
+  // old reply at once — the "jumping / rewriting loop" bug.
+  const markTutorAnimated = useCallback((idx: number) => {
+    setTutorMsgs((m) => (m[idx]?.animate ? m.map((msg, j) => (j === idx ? { ...msg, animate: false } : msg)) : m));
+  }, []);
+
   // ---- Results -------------------------------------------------------------
 
   // CEFR results: the four-subscale CEFR feedback (level estimate), wrapped in a
@@ -686,7 +693,7 @@ export function WritingStudio({
         {/* coach */}
         {tutorOpen ? (
           <aside className="lp-write-coach" style={{ width: 316, flexShrink: 0, background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", overflow: "hidden" }}>
-            <TutorPanel msgs={tutorMsgs} input={tutorInput} setInput={setTutorInput} pending={tutorPending} onSend={sendTutor} scrollRef={tutorScrollRef} unlockedSamples={hasGraded} onClose={() => setTutorOpen(false)} />
+            <TutorPanel msgs={tutorMsgs} input={tutorInput} setInput={setTutorInput} pending={tutorPending} onSend={sendTutor} scrollRef={tutorScrollRef} unlockedSamples={hasGraded} onClose={() => setTutorOpen(false)} onAnimated={markTutorAnimated} />
           </aside>
         ) : null}
 
@@ -735,6 +742,7 @@ function TutorPanel({
   scrollRef,
   unlockedSamples,
   onClose,
+  onAnimated,
 }: {
   msgs: TutorMsg[];
   input: string;
@@ -744,6 +752,7 @@ function TutorPanel({
   scrollRef: React.RefObject<HTMLDivElement | null>;
   unlockedSamples: boolean;
   onClose: () => void;
+  onAnimated: (idx: number) => void;
 }) {
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff", minWidth: 0 }}>
@@ -766,7 +775,7 @@ function TutorPanel({
           </div>
         ) : (
           msgs.map((m, i) => (
-            <Bubble key={i} msg={m} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} />
+            <Bubble key={i} msg={m} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => onAnimated(i)} />
           ))
         )}
         {pending ? (
@@ -814,12 +823,12 @@ function AutosavePill({ state }: { state: "idle" | "saving" | "saved" | "error" 
   );
 }
 
-function Bubble({ msg, onReveal }: { msg: TutorMsg; onReveal?: () => void }) {
+function Bubble({ msg, onReveal, onDone }: { msg: TutorMsg; onReveal?: () => void; onDone?: () => void }) {
   const isUser = msg.role === "user";
   return (
     <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
       <div style={{ maxWidth: "85%", padding: "11px 14px", borderRadius: 12, fontFamily: SANS, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: isUser ? INDIGO : "#F6F6FC", color: isUser ? "#fff" : "#3a3d52", border: isUser ? "none" : "1px solid #E6E7FB", borderTopRightRadius: isUser ? 3 : 12, borderTopLeftRadius: isUser ? 12 : 3 }}>
-        {isUser ? msg.content : <Typewriter text={msg.content} animate={!!msg.animate} onReveal={onReveal} caretColor="#9A9EAE" />}
+        {isUser ? msg.content : <Typewriter text={msg.content} animate={!!msg.animate} onReveal={onReveal} onDone={onDone} caretColor="#9A9EAE" />}
       </div>
     </div>
   );

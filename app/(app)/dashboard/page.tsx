@@ -13,6 +13,7 @@ import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
 import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
 import { BandCard } from "./band-card";
+import { DashboardCoach } from "./dashboard-coach";
 import { WritingHero } from "./writing-hero";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -44,6 +45,21 @@ export default async function DashboardPage() {
 
   const days = daysUntil(plan.examDate);
 
+  const reading = estimates.bySkill.reading;
+  const writing = estimates.bySkill.writing;
+  const bandText = (b: number | null) => (b != null ? `Band ${b.toFixed(1)}` : "not measured yet");
+  const coachContext = [
+    `Target band: ${plan.targetBand.toFixed(1)}`,
+    `Reading: ${bandText(reading.currentBand)}`,
+    `Writing: ${bandText(writing.currentBand)}`,
+    weakestCriterion ? `Weakest writing area: ${weakestCriterion.label}` : "",
+    weakestReadingType ? `Weakest reading question type: ${weakestReadingType.label}` : "",
+    `Weekly goal: ${tasksThisWeek}/${plan.weeklyGoal} tasks done this week`,
+    days != null && days >= 0 ? `Test is ${days} day${days === 1 ? "" : "s"} away` : "No exam date set",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return (
     <div style={{ fontFamily: SANS, color: INK }}>
       <style>{DASH_CSS}</style>
@@ -71,6 +87,8 @@ export default async function DashboardPage() {
           <FocusCard writing={weakestCriterion} reading={weakestReadingType} />
         </aside>
       </div>
+
+      <DashboardCoach context={coachContext} firstName={firstNameOf(profile.full_name)} />
     </div>
   );
 }

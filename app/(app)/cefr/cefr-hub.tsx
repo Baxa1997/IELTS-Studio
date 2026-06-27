@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, Loader2, PenLine, Sparkles } from "lucide-react";
 
-import { CEFR, CEFR_LEVEL_LIST, isCefrLevel, type CefrLevel } from "@/lib/cefr/levels";
+import { CEFR, CEFR_LEVELS, isCefrLevel, type CefrLevel } from "@/lib/cefr/levels";
 import { cefrTasksForLevel, type CefrWritingTask } from "@/lib/cefr/writing-tasks";
 import type { CefrAttemptSummary } from "@/lib/cefr/store";
 import { WritingStudio } from "@/app/(studio)/write/writing-studio";
@@ -21,11 +21,11 @@ const RED = "#C5503C";
 type Skill = "writing" | "reading";
 
 /**
- * The CEFR hub — ONE surface for the whole CEFR track. The learner picks a level
- * once (A1→C2), flips between Writing and Reading with a segmented control, and the
- * matching tasks appear inline — no second level prompt on a separate page. Writing
- * tasks open the shared studio (graded on the CEFR scale); Reading generates a short
- * level-graded passage and drops into the reader.
+ * The CEFR hub — ONE surface for the whole CEFR track, framed as SEPARATE from the
+ * IELTS-band modules: short, level-graded practice reported as a CEFR level (A1→C2),
+ * not a band. Structure is deliberately flat: a single level bar, then one practice
+ * panel that switches between Writing and Reading. Writing opens the shared studio
+ * (graded on the CEFR scale); Reading generates a short level-graded passage.
  */
 export function CefrHub({
   recent = [],
@@ -40,16 +40,13 @@ export function CefrHub({
   const [level, setLevel] = useState<CefrLevel>(initialLevel);
   const [skill, setSkill] = useState<Skill>(initialSkill);
 
-  // Writing
   const [task, setTask] = useState<CefrWritingTask | null>(null);
   const [genLoading, setGenLoading] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
-  const tasks = useMemo(() => cefrTasksForLevel(level), [level]);
-
-  // Reading
   const [readLoading, setReadLoading] = useState(false);
   const [readError, setReadError] = useState<string | null>(null);
 
+  const tasks = useMemo(() => cefrTasksForLevel(level), [level]);
   const info = CEFR[level];
 
   async function generateWriting() {
@@ -121,13 +118,13 @@ export function CefrHub({
   }
 
   return (
-    <div style={{ fontFamily: SANS, color: INK }}>
-      {/* Header */}
+    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1080 }}>
+      {/* ===== Header ===== */}
       <h1
         style={{
           fontFamily: SERIF,
           fontWeight: 600,
-          fontSize: "clamp(26px,3vw,36px)",
+          fontSize: "clamp(27px,3vw,38px)",
           lineHeight: 1.05,
           letterSpacing: "-.01em",
           margin: 0,
@@ -135,176 +132,317 @@ export function CefrHub({
       >
         CEFR practice
       </h1>
+      <p style={{ margin: "10px 0 0", fontSize: 15.5, lineHeight: 1.55, color: MUTED, maxWidth: 620 }}>
+        Short, level-graded practice across the A1–C2 framework — scored as a{" "}
+        <strong style={{ color: INK }}>CEFR level</strong>, not an IELTS band.
+      </p>
 
-      {/* Step 1 — pick a level (once) */}
-      <StepLabel n={1} text="Choose your level" />
-      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        {CEFR_LEVEL_LIST.map((l) => {
-          const on = l.code === level;
+      {/* ===== Level bar ===== */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          margin: "26px 0 10px",
+        }}
+      >
+        <span style={eyebrow}>Your level</span>
+        <span style={{ height: 1, flex: 1, background: LINE }} />
+      </div>
+      <div
+        role="tablist"
+        aria-label="CEFR level"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(6,1fr)",
+          gap: 6,
+          padding: 6,
+          background: "#F4F4F8",
+          border: `1px solid ${LINE}`,
+          borderRadius: 16,
+        }}
+      >
+        {CEFR_LEVELS.map((code) => {
+          const c = CEFR[code];
+          const on = code === level;
           return (
             <button
-              key={l.code}
+              key={code}
               type="button"
-              onClick={() => setLevel(l.code)}
-              aria-pressed={on}
+              role="tab"
+              aria-selected={on}
+              onClick={() => setLevel(code)}
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-start",
+                alignItems: "center",
                 gap: 2,
-                padding: "10px 16px",
-                borderRadius: 12,
+                padding: "11px 4px 9px",
+                borderRadius: 11,
+                border: "none",
                 cursor: "pointer",
-                minWidth: 96,
-                textAlign: "left",
-                background: on ? l.bg : "#fff",
-                border: `1.5px solid ${on ? l.color : LINE}`,
-                boxShadow: on ? "0 4px 14px -9px rgba(26,33,56,.45)" : "none",
-                transition: "border-color .15s ease, background .15s ease",
+                background: on ? "#fff" : "transparent",
+                boxShadow: on ? "0 3px 10px -5px rgba(20,20,48,.4)" : "none",
+                transition: "background .15s ease",
               }}
             >
               <span
                 style={{
                   fontFamily: SANS,
                   fontWeight: 800,
-                  fontSize: 18,
-                  color: on ? l.color : INK,
+                  fontSize: 17,
+                  color: on ? c.color : "#8A8FA0",
                 }}
               >
-                {l.code}
+                {code}
               </span>
               <span
                 style={{
                   fontFamily: SANS,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
-                  color: on ? l.color : "#8A8FA0",
+                  color: on ? c.color : "#A6A9B6",
+                  maxWidth: "100%",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {l.name}
+                {c.name}
               </span>
             </button>
           );
         })}
       </div>
 
-      {/* Selected-level summary */}
+      {/* ===== Practice panel (one card; switches skill) ===== */}
       <div
         style={{
-          marginTop: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          padding: "14px 18px",
-          background: info.bg,
-          border: `1px solid ${info.color}33`,
-          borderRadius: 14,
-          flexWrap: "wrap",
+          marginTop: 16,
+          background: "#fff",
+          border: `1px solid ${LINE}`,
+          borderRadius: 18,
+          overflow: "hidden",
         }}
       >
-        <span
+        {/* header: level identity + skill toggle */}
+        <div
           style={{
-            fontFamily: SERIF,
-            fontWeight: 700,
-            fontSize: 28,
-            color: info.color,
-            lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            padding: "16px 18px",
+            background: info.bg,
+            borderBottom: `1px solid ${info.color}22`,
+            flexWrap: "wrap",
           }}
         >
-          {info.code}
-        </span>
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 15.5, color: INK }}>
-            {info.name} <span style={{ fontWeight: 600, color: MUTED }}>· {info.ieltsApprox}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
+            <span
+              style={{
+                flex: "none",
+                width: 50,
+                height: 50,
+                borderRadius: 13,
+                background: "#fff",
+                border: `1.5px solid ${info.color}40`,
+                color: info.color,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: SERIF,
+                fontWeight: 800,
+                fontSize: 21,
+              }}
+            >
+              {info.code}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: INK }}>{info.name}</p>
+              <p style={{ margin: "2px 0 0", fontSize: 13, color: MUTED }}>{info.ieltsApprox}</p>
+            </div>
+          </div>
+          <div
+            role="tablist"
+            aria-label="Skill"
+            style={{
+              display: "inline-flex",
+              gap: 4,
+              padding: 4,
+              background: "#fff",
+              border: `1px solid ${info.color}2E`,
+              borderRadius: 12,
+            }}
+          >
+            <SkillPill active={skill === "writing"} onClick={() => setSkill("writing")} icon={<PenLine size={16} />} label="Writing" />
+            <SkillPill active={skill === "reading"} onClick={() => setSkill("reading")} icon={<BookOpen size={16} />} label="Reading" />
+          </div>
+        </div>
+
+        {/* body: can-do + the single primary action */}
+        <div style={{ padding: "20px 18px" }}>
+          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "#41496A" }}>
+            {skill === "writing"
+              ? info.writingCan ?? `Practise a short ${info.writingTask.toLowerCase()} at ${info.code}.`
+              : info.readingCan}
           </p>
-          <p style={{ margin: "3px 0 0", fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-            {info.blurb}
-          </p>
+
+          <div
+            className="lp-ai-surface"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              marginTop: 16,
+              flexWrap: "wrap",
+              padding: "16px 16px",
+              border: "1px solid #DEDCF5",
+              borderRadius: 14,
+            }}
+          >
+            {skill === "writing" ? (
+              <button
+                type="button"
+                onClick={() => void generateWriting()}
+                disabled={genLoading}
+                className={genLoading ? undefined : "lp-ai-pulse"}
+                style={primaryBtn(genLoading)}
+              >
+                {genLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Creating…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} className="lp-ai-spark" /> Generate a {info.code} task
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void generateReading()}
+                disabled={readLoading}
+                className={readLoading ? undefined : "lp-ai-pulse"}
+                style={primaryBtn(readLoading)}
+              >
+                {readLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Generating… ~40s
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} className="lp-ai-spark" /> Generate a {info.code} reading
+                  </>
+                )}
+              </button>
+            )}
+
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+              {(skill === "writing"
+                ? [info.writingTask, `~${info.writingWords} words`]
+                : [`~${info.readingWords} words`, "6 questions · marked instantly"]
+              ).map((f) => (
+                <span key={f} style={factPill}>
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {(skill === "writing" ? genError : readError) ? (
+            <p role="alert" style={{ margin: "12px 0 0", fontSize: 13.5, color: RED, fontWeight: 600 }}>
+              {skill === "writing" ? genError : readError}
+            </p>
+          ) : null}
+          {skill === "reading" && readLoading ? (
+            <p style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
+              Writing an original {info.code} passage — hang tight, don&rsquo;t close this tab.
+            </p>
+          ) : null}
         </div>
       </div>
 
-      {/* Step 2 — pick a skill */}
-      <StepLabel n={2} text="Pick a skill" />
-      <div
-        role="tablist"
-        aria-label="CEFR skill"
-        style={{
-          display: "inline-flex",
-          gap: 4,
-          padding: 4,
-          marginTop: 10,
-          background: "#F1F1F8",
-          border: `1px solid ${LINE}`,
-          borderRadius: 13,
-        }}
-      >
-        {(
-          [
-            ["writing", "Writing", PenLine],
-            ["reading", "Reading", BookOpen],
-          ] as const
-        ).map(([key, label, Icon]) => {
-          const on = skill === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              role="tab"
-              aria-selected={on}
-              onClick={() => setSkill(key)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                height: 40,
-                padding: "0 20px",
-                borderRadius: 9,
-                border: "none",
-                cursor: "pointer",
-                fontFamily: SANS,
-                fontWeight: 700,
-                fontSize: 14.5,
-                background: on ? "#fff" : "transparent",
-                color: on ? INDIGO : MUTED,
-                boxShadow: on ? "0 2px 8px -4px rgba(20,20,48,.3)" : "none",
-                transition: "background .15s ease, color .15s ease",
-              }}
-            >
-              <Icon size={17} strokeWidth={2} />
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      {/* ===== Ready writing tasks (writing only) ===== */}
+      {skill === "writing" && tasks.length > 0 ? (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
+            <span style={eyebrow}>Or pick a ready task</span>
+            <span style={{ height: 1, flex: 1, background: LINE }} />
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))",
+              gap: 14,
+            }}
+          >
+            {tasks.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTask(t)}
+                className="lp-hover"
+                style={{
+                  textAlign: "left",
+                  cursor: "pointer",
+                  background: "#fff",
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 16,
+                  padding: "18px 18px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  fontFamily: SANS,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontWeight: 700, fontSize: 15.5, color: INK }}>{t.title}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: MUTED, whiteSpace: "nowrap" }}>
+                    {t.words[0]}–{t.words[1]} w
+                  </span>
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 13.5,
+                    lineHeight: 1.5,
+                    color: MUTED,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {t.prompt}
+                </p>
+                <span
+                  style={{
+                    marginTop: 2,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    color: INDIGO,
+                  }}
+                >
+                  Start writing <ArrowRight size={14} />
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
-      {/* Step 3 — the chosen skill's tasks, inline */}
-      <div style={{ marginTop: 16 }}>
-        {skill === "writing" ? (
-          <WritingPanel
-            level={level}
-            can={info.writingCan}
-            tasks={tasks}
-            genLoading={genLoading}
-            genError={genError}
-            onGenerate={() => void generateWriting()}
-            onPick={setTask}
-          />
-        ) : (
-          <ReadingPanel
-            info={info}
-            loading={readLoading}
-            error={readError}
-            onGenerate={() => void generateReading()}
-          />
-        )}
-      </div>
-
-      {/* History */}
+      {/* ===== History ===== */}
       {recent.length > 0 ? (
-        <div style={{ marginTop: 34 }}>
-          <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 19, margin: "0 0 12px" }}>
-            Your recent CEFR writing
-          </h2>
+        <div style={{ marginTop: 30 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
+            <span style={eyebrow}>Recent CEFR writing</span>
+            <span style={{ height: 1, flex: 1, background: LINE }} />
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {recent.map((a) => (
               <RecentRow key={a.id} a={a} />
@@ -313,15 +451,7 @@ export function CefrHub({
         </div>
       ) : null}
 
-      <p
-        style={{
-          margin: "30px 0 0",
-          fontSize: 12.5,
-          lineHeight: 1.5,
-          color: "#9A99A8",
-          maxWidth: 720,
-        }}
-      >
+      <p style={{ margin: "30px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "#9A99A8", maxWidth: 720 }}>
         CEFR levels and their IELTS overlap follow the public Council of Europe framework. A CEFR
         result is an indicative level, not an official IELTS® score, and this product is not
         affiliated with or endorsed by IELTS®.
@@ -330,317 +460,67 @@ export function CefrHub({
   );
 }
 
-function StepLabel({ n, text }: { n: number; text: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 26 }}>
-      <span
-        style={{
-          flex: "none",
-          width: 22,
-          height: 22,
-          borderRadius: "50%",
-          background: "#EBECFA",
-          color: INDIGO,
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: SANS,
-          fontWeight: 800,
-          fontSize: 12,
-        }}
-      >
-        {n}
-      </span>
-      <span
-        style={{
-          fontFamily: SANS,
-          fontWeight: 700,
-          fontSize: 11,
-          letterSpacing: ".09em",
-          textTransform: "uppercase",
-          color: "#8A8FA0",
-        }}
-      >
-        {text}
-      </span>
-    </div>
-  );
-}
+const eyebrow: React.CSSProperties = {
+  fontFamily: SANS,
+  fontWeight: 700,
+  fontSize: 11.5,
+  letterSpacing: ".08em",
+  textTransform: "uppercase",
+  color: "#8A8FA0",
+};
 
-function WritingPanel({
-  level,
-  can,
-  tasks,
-  genLoading,
-  genError,
-  onGenerate,
-  onPick,
+const factPill: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  fontFamily: SANS,
+  fontSize: 12.5,
+  fontWeight: 600,
+  color: "#5A6076",
+  background: "#F4F4F8",
+  border: `1px solid ${LINE}`,
+  borderRadius: 999,
+  padding: "6px 11px",
+  whiteSpace: "nowrap",
+};
+
+/** A skill toggle pill inside the panel header. */
+function SkillPill({
+  active,
+  onClick,
+  icon,
+  label,
 }: {
-  level: CefrLevel;
-  can?: string;
-  tasks: CefrWritingTask[];
-  genLoading: boolean;
-  genError: string | null;
-  onGenerate: () => void;
-  onPick: (t: CefrWritingTask) => void;
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
 }) {
   return (
-    <div>
-      {can ? (
-        <p
-          style={{
-            margin: "0 0 14px",
-            fontSize: 14.5,
-            lineHeight: 1.55,
-            color: "#41496A",
-            maxWidth: 640,
-          }}
-        >
-          {can}
-        </p>
-      ) : null}
-
-      {/* Generate a fresh, level-pitched task */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "wrap",
-          padding: "16px 18px",
-          borderRadius: 16,
-          background: "linear-gradient(135deg,#F4F4FB,#FAFAFF)",
-          border: `1px solid #E0E1F4`,
-        }}
-      >
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 12,
-            background: "#EBECFA",
-            color: INDIGO,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flex: "none",
-          }}
-        >
-          <Sparkles size={22} />
-        </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16, color: INK }}>
-            Generate a fresh {level} task
-          </div>
-          <div
-            style={{
-              fontFamily: SANS,
-              fontSize: 13.5,
-              color: MUTED,
-              marginTop: 2,
-              lineHeight: 1.5,
-            }}
-          >
-            An original topic created for your level — never a fixed test.{" "}
-            {genError ? (
-              <span style={{ color: RED, fontWeight: 600 }} role="alert">
-                {genError}
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={genLoading}
-          style={primaryBtn(genLoading)}
-        >
-          {genLoading ? (
-            <>
-              <Loader2 size={16} className="animate-spin" /> Creating…
-            </>
-          ) : (
-            <>
-              <Sparkles size={16} /> New task
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Curated task cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))",
-          gap: 14,
-          marginTop: 14,
-        }}
-      >
-        {tasks.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => onPick(t)}
-            className="lp-hover"
-            style={{
-              textAlign: "left",
-              cursor: "pointer",
-              background: "#fff",
-              border: `1px solid ${LINE}`,
-              borderRadius: 16,
-              padding: "18px 18px 16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-              fontFamily: SANS,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-              }}
-            >
-              <span style={{ fontWeight: 700, fontSize: 15.5, color: INK }}>{t.title}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: MUTED, whiteSpace: "nowrap" }}>
-                {t.words[0]}–{t.words[1]} w
-              </span>
-            </div>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 13.5,
-                lineHeight: 1.5,
-                color: MUTED,
-                display: "-webkit-box",
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {t.prompt}
-            </p>
-            <span
-              style={{
-                marginTop: 2,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 13.5,
-                fontWeight: 700,
-                color: INDIGO,
-              }}
-            >
-              Start writing <ArrowRight size={14} />
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReadingPanel({
-  info,
-  loading,
-  error,
-  onGenerate,
-}: {
-  info: (typeof CEFR)[CefrLevel];
-  loading: boolean;
-  error: string | null;
-  onGenerate: () => void;
-}) {
-  return (
-    <div>
-      <div
-        style={{
-          padding: "18px 20px",
-          background: "#fff",
-          border: `1px solid ${LINE}`,
-          borderRadius: 16,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: "#EFEEFC",
-              color: INDIGO,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flex: "none",
-            }}
-          >
-            <BookOpen size={20} />
-          </span>
-          <div>
-            <p style={{ margin: 0, fontWeight: 700, fontSize: 15.5, color: INK }}>
-              One short {info.code} passage
-            </p>
-            <p style={{ margin: "2px 0 0", fontSize: 13.5, color: MUTED }}>
-              ~{info.readingWords}-word passage · 6 questions · marked instantly
-            </p>
-          </div>
-        </div>
-        <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.55, color: "#41496A" }}>
-          {info.readingCan}
-        </p>
-      </div>
-
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16, flexWrap: "wrap" }}
-      >
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={loading}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 9,
-            height: 48,
-            padding: "0 22px",
-            border: "none",
-            borderRadius: 12,
-            background: INDIGO,
-            color: "#fff",
-            fontFamily: SANS,
-            fontSize: 15.5,
-            fontWeight: 700,
-            cursor: loading ? "default" : "pointer",
-            opacity: loading ? 0.75 : 1,
-            boxShadow: "0 12px 24px -12px rgba(59,67,181,.8)",
-          }}
-        >
-          {loading ? (
-            <>
-              <Loader2 size={17} className="animate-spin" /> Generating… ~40s
-            </>
-          ) : (
-            <>
-              <Sparkles size={17} /> Generate a CEFR reading
-            </>
-          )}
-        </button>
-        {loading ? (
-          <span style={{ fontSize: 13, color: MUTED }}>
-            Writing an original {info.code} passage — hang tight, don&rsquo;t close this tab.
-          </span>
-        ) : null}
-      </div>
-
-      {error ? (
-        <p role="alert" style={{ marginTop: 14, fontSize: 13.5, color: "#c2410c" }}>
-          {error}
-        </p>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        height: 36,
+        padding: "0 15px",
+        borderRadius: 9,
+        border: "none",
+        cursor: "pointer",
+        fontFamily: SANS,
+        fontWeight: 700,
+        fontSize: 14,
+        background: active ? INDIGO : "transparent",
+        color: active ? "#fff" : MUTED,
+        transition: "background .15s ease, color .15s ease",
+      }}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
@@ -719,10 +599,10 @@ function primaryBtn(busy: boolean): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    height: 44,
+    height: 46,
     padding: "0 20px",
     border: "none",
-    borderRadius: 11,
+    borderRadius: 12,
     background: INDIGO,
     color: "#fff",
     fontFamily: SANS,
@@ -731,5 +611,6 @@ function primaryBtn(busy: boolean): React.CSSProperties {
     cursor: busy ? "default" : "pointer",
     opacity: busy ? 0.7 : 1,
     boxShadow: "0 10px 22px -10px rgba(59,67,181,.7)",
+    flex: "none",
   };
 }

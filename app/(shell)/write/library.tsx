@@ -694,8 +694,8 @@ export function WritingLibrary({
         <>
           {/* AI banner */}
           <div
+            className="lp-ai-surface"
             style={{
-              background: "linear-gradient(110deg,#EEEDFB,#F3F2FC)",
               border: "1px solid #DEDCF5",
               borderRadius: 18,
               padding: "16px 20px",
@@ -723,6 +723,7 @@ export function WritingLibrary({
                 }}
               >
                 <svg
+                  className="lp-ai-spark"
                   width="26"
                   height="26"
                   viewBox="0 0 24 24"
@@ -765,6 +766,7 @@ export function WritingLibrary({
               type="button"
               onClick={() => void generate(tab)}
               disabled={busy}
+              className={busy ? undefined : "lp-ai-pulse"}
               style={genButton(busy, true)}
             >
               {generatingKind === tab ? "Generating… ~15s" : "Generate a topic"}

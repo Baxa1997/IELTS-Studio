@@ -53,6 +53,12 @@ export function CoachPanel({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, open]);
 
+  // Once a reply finishes typing, drop its animate flag so reopening the coach (which
+  // remounts the transcript) replays it instantly rather than re-typing every reply.
+  function markAnimated(idx: number) {
+    setMessages((m) => (m[idx]?.animate ? m.map((msg, j) => (j === idx ? { ...msg, animate: false } : msg)) : m));
+  }
+
   async function send() {
     const q = input.trim();
     if (!q || sending) return;
@@ -179,6 +185,7 @@ export function CoachPanel({
                   text={m.content}
                   animate={!!m.animate}
                   onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })}
+                  onDone={() => markAnimated(i)}
                   caretColor={MUTED}
                 />
               ) : (

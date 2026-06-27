@@ -107,14 +107,19 @@ export function GeneratePassageButton({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-      <button onClick={() => void go()} disabled={loading} style={style}>
+      <button
+        onClick={() => void go()}
+        disabled={loading}
+        className={loading ? undefined : "lp-ai-pulse"}
+        style={style}
+      >
         {loading ? (
           <>
             <Loader2 className="animate-spin" size={16} /> Generating… ~1 min
           </>
         ) : (
           <>
-            <Sparkles size={16} /> {label}
+            <Sparkles size={16} className="lp-ai-spark" /> {label}
           </>
         )}
       </button>
@@ -159,6 +164,7 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
       <button
         onClick={() => void go()}
         disabled={loading}
+        className={loading ? undefined : "lp-ai-pulse"}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -186,7 +192,7 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
           </>
         ) : (
           <>
-            <Sparkles size={16} /> {label}
+            <Sparkles size={16} className="lp-ai-spark" /> {label}
           </>
         )}
       </button>

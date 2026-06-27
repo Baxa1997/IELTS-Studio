@@ -13,19 +13,31 @@ export function Typewriter({
   text,
   animate,
   onReveal,
+  onDone,
   caretColor,
 }: {
   text: string;
   animate: boolean;
   onReveal?: () => void;
+  /** Fires once the reveal finishes. The parent uses this to flip the message's
+   *  `animate` flag off, so re-mounting the chat (reopen/re-enter) replays it
+   *  instantly instead of re-typing every old reply at once. */
+  onDone?: () => void;
   caretColor?: string;
 }) {
   const [shown, setShown] = useState(() => (animate ? "" : text));
+  // Keep the latest callbacks in refs (synced in an effect, not during render) so the
+  // running interval always calls the current ones without restarting the animation.
   const onRevealRef = useRef(onReveal);
-  onRevealRef.current = onReveal;
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onRevealRef.current = onReveal;
+    onDoneRef.current = onDone;
+  });
 
   useEffect(() => {
     if (!animate) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- show the full text at once when not animating
       setShown(text);
       return;
     }
@@ -34,9 +46,12 @@ export function Typewriter({
     setShown("");
     const id = window.setInterval(() => {
       i = Math.min(text.length, i + chunk);
-      setShown(text.slice(0, i));
+      setShown(text.slice(0, i)); // in a timer callback (not the effect body) — allowed
       onRevealRef.current?.();
-      if (i >= text.length) window.clearInterval(id);
+      if (i >= text.length) {
+        window.clearInterval(id);
+        onDoneRef.current?.();
+      }
     }, 16);
     return () => window.clearInterval(id);
   }, [text, animate]);

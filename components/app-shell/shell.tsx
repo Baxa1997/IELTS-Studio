@@ -13,6 +13,20 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const BORDER = "#3333";
+/** Light app canvas behind the floating content card (and the sidebar). */
+const CANVAS = "#F1F1F6";
+
+/** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
+ *  layout boundary remounts this component, and Next's Router Cache can hand back a
+ *  STALE `initialCollapsed` prop (captured when the rail was last expanded) — so a
+ *  menu click would re-expand a collapsed rail. Reading the cookie at mount makes the
+ *  current choice authoritative regardless of the cached prop. Falls back to the
+ *  server-provided prop during SSR (no `document`). */
+function readCollapsed(fallback: boolean): boolean {
+  if (typeof document === "undefined") return fallback;
+  const m = document.cookie.match(/(?:^|;\s*)sb_collapsed=([01])/);
+  return m ? m[1] === "1" : fallback;
+}
 
 /**
  * The authenticated app shell (Option A brand). The sidebar is the only chrome: it
@@ -51,7 +65,9 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false); // mobile drawer
-  const [collapsed, setCollapsed] = useState(initialCollapsed); // desktop icon-rail
+  // Seed from the live cookie (not just the prop) so a menu click that remounts the
+  // shell can't re-expand a collapsed rail off a stale cached prop.
+  const [collapsed, setCollapsed] = useState(() => readCollapsed(initialCollapsed)); // desktop icon-rail
   const close = () => setOpen(false);
 
   // Persist the collapse choice in a cookie so it holds across navigation — the
@@ -78,7 +94,7 @@ export function AppShell({
         flexDirection: "column",
         height: "100dvh",
         overflow: "hidden",
-        background: "#fff",
+        background: CANVAS,
         fontFamily: SANS,
         color: INK,
       }}
@@ -136,7 +152,7 @@ export function AppShell({
           style={{
             flex: "none",
             background: "#FAFAFC",
-            borderRight: `1px solid ${BORDER}`,
+            borderRight: "1px solid #E5E3F0",
             display: "flex",
             flexDirection: "column",
             padding: "18px 16px",
@@ -214,8 +230,25 @@ export function AppShell({
           </div>
         </aside>
 
-        <main className="lp-shell-main" style={{ flex: 1, minWidth: 0, overflow: "auto" }}>
-          <div className={contentClassName ?? "w-full px-6 py-6"}>{children}</div>
+        {/* main is a fixed 10px gutter; the content lives on a floating rounded card
+            that scrolls internally, so it reads as a separated surface on the canvas. */}
+        <main
+          className="lp-shell-main"
+          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: 10 }}
+        >
+          <div
+            className="lp-shell-surface"
+            style={{
+              height: "100%",
+              overflow: "auto",
+              background: "#fff",
+              borderRadius: 18,
+              border: "1px solid #E9E7F2",
+              boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
+            }}
+          >
+            <div className={contentClassName ?? "w-full px-6 py-6"}>{children}</div>
+          </div>
         </main>
       </div>
     </div>

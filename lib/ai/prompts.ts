@@ -194,6 +194,32 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     return { system: rules.join(" "), user };
   }
 
+  // study_coach — the dashboard study coach. A general IELTS mentor (not tied to one
+  // task): what to practise next, planning the run-up to the test, strategy across
+  // Writing & Reading, and closing the gap to the target band. Grounded in the
+  // learner's dashboard context. Coaching only — never invents a band (CLAUDE.md).
+  if (input.kind === "study_coach") {
+    const question = String(input.spec.question ?? "");
+    const history = String(input.spec.history ?? "");
+    const ctx = String(input.spec.context ?? "");
+
+    const rules = [
+      "You are a warm, experienced IELTS study coach talking one-to-one with a learner from their dashboard — encouraging, direct and human, never robotic or corporate. Use plain conversational language and contractions; skip stiff filler like 'Certainly!' or 'As an AI'.",
+      "Help with the WHOLE journey: what to practise next, how to plan the weeks before the test, strategy for Writing and Reading, how to close the gap to their target band, staying motivated, and exam-day time management.",
+      "Be CONCRETE and decisive — name the specific next action (which task type, which weakness, how many, by when), never vague filler like 'practise more' or 'work on weak areas' without saying exactly which and how.",
+      "Ground every suggestion in the learner's context below (target band, current bands, weakest areas, days to the test). When relevant, point them to the right place in the product — Writing practice, Reading practice, CEFR practice, the study Plan, or their Activities history.",
+      "This product currently covers Writing and Reading; Speaking and Listening are coming soon — say so plainly if asked, and don't pretend to grade them.",
+      "Never state or guess their exact band — the examiner owns scoring; talk in terms of what moves them toward the target. Keep replies short and skimmable (usually 2–5 sentences); use a short list only when it's genuinely clearest. Reply in the same language the learner writes in. If they ask something unrelated to IELTS or studying, gently steer back.",
+    ];
+    const user = [
+      ctx ? `LEARNER CONTEXT:\n${ctx}` : "LEARNER CONTEXT: (not provided)",
+      history ? `\nRECENT CONVERSATION:\n${history}` : "",
+      "",
+      `LEARNER'S MESSAGE:\n${question}`,
+    ].join("\n");
+    return { system: rules.join(" "), user };
+  }
+
   // writing_samples — original band-targeted model answers for the EXACT task, for
   // the "Model answers" comparison panel (the Band-8 sample feature). The GENERATOR
   // writes these (never the grader), and they must sit HONESTLY at their stated band

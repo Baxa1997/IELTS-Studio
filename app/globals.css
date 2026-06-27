@@ -192,6 +192,67 @@
   flex: none;
 }
 
+/* ── "AI is ready" cue ────────────────────────────────────────────────────────
+   A small, looping nudge on the generate button + its sparkle, so the eye lands on
+   the AI action first. Deliberately gentle (slow, low-amplitude) and it settles on
+   hover/focus — the user is already engaged by then. Honors reduced-motion via the
+   global kill-switch below. */
+@keyframes lp-ai-pulse {
+  0%,
+  100% {
+    box-shadow: 0 10px 22px -12px rgba(59, 67, 181, 0.65), 0 0 0 0 rgba(59, 67, 181, 0);
+  }
+  50% {
+    box-shadow: 0 13px 26px -12px rgba(59, 67, 181, 0.85), 0 0 0 5px rgba(59, 67, 181, 0.1);
+  }
+}
+.lp-ai-pulse {
+  animation: lp-ai-pulse 2.6s ease-in-out infinite;
+}
+.lp-ai-pulse:hover,
+.lp-ai-pulse:focus-visible {
+  animation: none;
+}
+@keyframes lp-ai-twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.16) rotate(7deg);
+    opacity: 1;
+  }
+}
+.lp-ai-spark {
+  transform-origin: center;
+  animation: lp-ai-twinkle 2.3s ease-in-out infinite;
+}
+
+/* The shared "AI generate" surface — a slow, gently shifting lavender gradient that
+   marks every AI-generation section identically (writing / reading / CEFR). Subtle by
+   design (slow + low-contrast) so it draws the eye without distracting. Apply the
+   class and DON'T set an inline `background` on the same element. */
+@keyframes lp-ai-bg {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.lp-ai-surface {
+  /* A clearly-visible LIGHT shade of the brand indigo (not near-white), with enough
+     contrast between stops that the slow sweep is actually noticeable. Dark text
+     still reads fine on it. */
+  background-image: linear-gradient(120deg, #d6d7f5, #bcbdec, #cfc6f1, #c0c2ef, #d6d7f5);
+  background-size: 300% 300%;
+  animation: lp-ai-bg 12s ease infinite;
+}
+
 /* Collapse the multi-column grids and trim nav on narrow screens. */
 @media (max-width: 1024px) {
   .lp-hero-grid { grid-template-columns: 1fr !important; }
@@ -262,57 +323,103 @@
 .lp-shell-sidebar--open {
   transform: translateX(0);
 }
+
+/* ── Smooth collapse ──────────────────────────────────────────────────────────
+   The rail width and EVERY textual element tween on the same timing, so collapsing
+   reads as one motion instead of labels popping while the rail slides. Text shrinks
+   via max-width/opacity (display:none can't animate); the icons keep their place
+   (the rail padding near-centres them), so nothing repositions. These base rules
+   define the expanded state + the easing; the `--collapsed` overrides (in the
+   desktop media query) flip them to zero. */
+.lp-sb-label,
+.lp-sb-wordmark,
+.lp-sb-soon-badge,
+.lp-sb-trail,
+.lp-sb-profile-text,
+.lp-sb-profile-chev {
+  max-width: 200px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    margin 0.28s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.lp-sb-section-title,
+.lp-sb-target {
+  max-height: 240px;
+  overflow: hidden;
+  transition:
+    max-height 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    margin 0.3s ease;
+}
+.lp-sb-section--titled {
+  border-top: 1px solid transparent;
+  transition: border-color 0.24s ease, padding 0.28s ease, margin 0.28s ease;
+}
+/* The glyph must never shrink. In the slim collapsed rail the flex gaps overflow the
+   narrow link box, and with the label collapsed the icon is the only item left to
+   give — flexbox would squeeze it down to a sliver (the active item became an empty
+   tile). Pinning the icon keeps every glyph full-size and left-anchored (≈centred by
+   the rail padding). */
+.lp-sb-link svg {
+  flex: none;
+}
+
 @media (min-width: 768px) {
   .lp-shell-sidebar {
     position: static;
     transform: none;
     z-index: auto;
-    /* Collapse instantly. The inner content (labels hide via display:none, glyphs
-       re-center into 44px tiles, the brand restacks) can't tween and snaps at frame
-       0, so animating only the rail width left those changes out of sync with the
-       shrinking rail — that desync was the "jump". A synchronized instant toggle
-       reads as crisp instead of janky. */
-    transition: none;
+    transition:
+      width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
   }
   .lp-shell-sidebar--collapsed {
     width: 72px;
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
-  /* Hide everything textual; only icons/avatars remain (keep the brand MARK). */
+  /* Inline text collapses to zero width — the rail narrows without clipping the
+     tooltips (which need overflow:visible below). */
   .lp-shell-sidebar--collapsed .lp-sb-label,
-  .lp-shell-sidebar--collapsed .lp-sb-section-title,
+  .lp-shell-sidebar--collapsed .lp-sb-wordmark,
   .lp-shell-sidebar--collapsed .lp-sb-soon-badge,
   .lp-shell-sidebar--collapsed .lp-sb-trail,
-  .lp-shell-sidebar--collapsed .lp-sb-wordmark,
-  .lp-shell-sidebar--collapsed .lp-sb-target,
   .lp-shell-sidebar--collapsed .lp-sb-profile-text,
   .lp-shell-sidebar--collapsed .lp-sb-profile-chev {
-    display: none !important;
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin-left: 0 !important;
   }
-  /* Brand stacks: the mark on top, the expand toggle centred beneath it — so the
-     toggle never spills past the rail edge. */
-  .lp-shell-sidebar--collapsed .lp-sb-brandrow {
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 12px !important;
-    padding: 0 0 14px !important;
+  /* Block text (section titles, the target card) collapses its height. */
+  .lp-shell-sidebar--collapsed .lp-sb-section-title,
+  .lp-shell-sidebar--collapsed .lp-sb-target {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
-  /* Every nav glyph sits in a uniform, centred 44px tile for an even rhythm. */
-  .lp-shell-sidebar--collapsed .lp-sb-link {
-    width: 44px !important;
-    height: 44px !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    justify-content: center !important;
-    border-radius: 12px !important;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-collapse {
-    justify-content: center !important;
+  /* Profile collapses to a clean, centred avatar — drop the frame (fades out via the
+     .lp-sb-item transition) and trim the padding so the 36px avatar sits dead-centre
+     in the 48px rail. */
+  .lp-shell-sidebar--collapsed .lp-sb-profile-btn {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    background: transparent !important;
+    border-color: transparent !important;
   }
   /* Let the rail overflow so hover tooltips can sit beside the icons. */
   .lp-shell-sidebar--collapsed .lp-sb-scroll {
     overflow: visible !important;
+  }
+  /* A faint divider stands in for each hidden section title. */
+  .lp-shell-sidebar--collapsed .lp-sb-section--titled {
+    border-top-color: #eceaf2;
+    padding-top: 12px;
+    margin-top: 4px;
   }
   /* Collapsed nav: hover a glyph → a label tooltip to its right (the only place the
      name shows once labels are hidden). */
@@ -347,20 +454,6 @@
     border-right-color: #1a2138;
     z-index: 60;
     pointer-events: none;
-  }
-  /* Profile collapses to just the avatar — no frame. */
-  .lp-shell-sidebar--collapsed .lp-sb-profile-btn {
-    justify-content: center !important;
-    padding: 0 !important;
-    height: 44px !important;
-    border-color: transparent !important;
-    background: transparent !important;
-  }
-  /* Keep a faint divider between groups now that their titles are gone. */
-  .lp-shell-sidebar--collapsed .lp-sb-section--titled {
-    border-top: 1px solid #eceaf2;
-    padding-top: 12px;
-    margin-top: 6px;
   }
 }
 
