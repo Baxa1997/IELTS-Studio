@@ -29,6 +29,7 @@ alter table public.writing_samples enable row level security;
 
 -- Learners read the cached model answers for their own org. Inserts come from the
 -- server-side generator via the service-role client, so no INSERT policy here.
+drop policy if exists writing_samples_select on public.writing_samples;
 create policy writing_samples_select on public.writing_samples
   for select to authenticated
   using (organization_id = (select public.current_org_id()));

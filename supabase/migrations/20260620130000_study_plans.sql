@@ -49,7 +49,7 @@ create table if not exists public.study_plans (
 );
 create index if not exists study_plans_org_idx on public.study_plans (organization_id);
 
-create trigger study_plans_set_updated_at
+create or replace trigger study_plans_set_updated_at
   before update on public.study_plans
   for each row execute function public.set_updated_at();
 

@@ -5,10 +5,12 @@
 -- org-scoped content; attempts are student-owned like essays.
 -- ============================================================================
 
-create type public.reading_module as enum ('academic', 'general');
-
+do $$ begin
+  create type public.reading_module as enum ('academic', 'general');
+exception when duplicate_object then null;
+end $$;
 -- ---------- reading_passages ------------------------------------------------
-create table public.reading_passages (
+create table if not exists public.reading_passages (
   id              uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete cascade,
   title           text not null,
@@ -18,10 +20,10 @@ create table public.reading_passages (
   created_at      timestamptz not null default now(),
   unique (id, organization_id)
 );
-create index reading_passages_org_idx on public.reading_passages (organization_id);
+create index if not exists reading_passages_org_idx on public.reading_passages (organization_id);
 
 -- ---------- reading_questions (stub) ---------------------------------------
-create table public.reading_questions (
+create table if not exists public.reading_questions (
   id              uuid primary key default gen_random_uuid(),
   passage_id      uuid not null,
   organization_id uuid not null,
@@ -32,10 +34,10 @@ create table public.reading_questions (
   foreign key (passage_id, organization_id)
     references public.reading_passages (id, organization_id) on delete cascade
 );
-create index reading_questions_passage_idx on public.reading_questions (passage_id);
+create index if not exists reading_questions_passage_idx on public.reading_questions (passage_id);
 
 -- ---------- reading_attempts (stub) ----------------------------------------
-create table public.reading_attempts (
+create table if not exists public.reading_attempts (
   id              uuid primary key default gen_random_uuid(),
   organization_id uuid not null,
   student_id      uuid not null,
@@ -50,7 +52,7 @@ create table public.reading_attempts (
   foreign key (passage_id, organization_id)
     references public.reading_passages (id, organization_id) on delete cascade
 );
-create index reading_attempts_org_student_idx on public.reading_attempts (organization_id, student_id);
+create index if not exists reading_attempts_org_student_idx on public.reading_attempts (organization_id, student_id);
 
 -- ---------- Row Level Security ---------------------------------------------
 alter table public.reading_passages  enable row level security;
@@ -58,9 +60,11 @@ alter table public.reading_questions enable row level security;
 alter table public.reading_attempts  enable row level security;
 
 -- passages: members read; teacher/admin manage (same pattern as writing_prompts)
+drop policy if exists passages_read on public.reading_passages;
 create policy passages_read on public.reading_passages
   for select to authenticated
   using (organization_id = (select public.current_org_id()));
+drop policy if exists passages_manage on public.reading_passages;
 create policy passages_manage on public.reading_passages
   for all to authenticated
   using (organization_id = (select public.current_org_id())
@@ -69,9 +73,11 @@ create policy passages_manage on public.reading_passages
               and (select public.current_app_role()) in ('teacher', 'center_admin'));
 
 -- questions: members read; teacher/admin manage
+drop policy if exists questions_read on public.reading_questions;
 create policy questions_read on public.reading_questions
   for select to authenticated
   using (organization_id = (select public.current_org_id()));
+drop policy if exists questions_manage on public.reading_questions;
 create policy questions_manage on public.reading_questions
   for all to authenticated
   using (organization_id = (select public.current_org_id())
@@ -80,6 +86,7 @@ create policy questions_manage on public.reading_questions
               and (select public.current_app_role()) in ('teacher', 'center_admin'));
 
 -- attempts: students see only their own; teacher/admin see all in org (essays pattern)
+drop policy if exists attempts_select on public.reading_attempts;
 create policy attempts_select on public.reading_attempts
   for select to authenticated
   using (
@@ -87,6 +94,7 @@ create policy attempts_select on public.reading_attempts
     and ((select public.current_app_role()) in ('center_admin', 'teacher')
          or student_id = (select auth.uid()))
   );
+drop policy if exists attempts_insert on public.reading_attempts;
 create policy attempts_insert on public.reading_attempts
   for insert to authenticated
   with check (
@@ -94,6 +102,7 @@ create policy attempts_insert on public.reading_attempts
     and (student_id = (select auth.uid())
          or (select public.current_app_role()) in ('center_admin', 'teacher'))
   );
+drop policy if exists attempts_update on public.reading_attempts;
 create policy attempts_update on public.reading_attempts
   for update to authenticated
   using (
@@ -102,6 +111,7 @@ create policy attempts_update on public.reading_attempts
          or (select public.current_app_role()) in ('center_admin', 'teacher'))
   )
   with check (organization_id = (select public.current_org_id()));
+drop policy if exists attempts_delete on public.reading_attempts;
 create policy attempts_delete on public.reading_attempts
   for delete to authenticated
   using (

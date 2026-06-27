@@ -95,11 +95,11 @@ create index if not exists grading_jobs_claim_idx on public.grading_jobs (status
 
 -- ---------- updated_at triggers --------------------------------------------
 drop trigger if exists subscriptions_set_updated_at on public.subscriptions;
-create trigger subscriptions_set_updated_at
+create or replace trigger subscriptions_set_updated_at
   before update on public.subscriptions
   for each row execute function public.set_updated_at();
 drop trigger if exists grading_jobs_set_updated_at on public.grading_jobs;
-create trigger grading_jobs_set_updated_at
+create or replace trigger grading_jobs_set_updated_at
   before update on public.grading_jobs
   for each row execute function public.set_updated_at();
 

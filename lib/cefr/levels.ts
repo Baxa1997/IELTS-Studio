@@ -49,8 +49,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     writingTask: "Write a short note or message",
     writingWords: 40,
     readingWords: 120,
-    color: "#B45309",
-    bg: "#FBEFDD",
+    color: "#C2410C",
+    bg: "#FBEAE0",
   },
   A2: {
     code: "A2",
@@ -62,8 +62,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     writingTask: "Write a short personal message or email",
     writingWords: 60,
     readingWords: 180,
-    color: "#B45309",
-    bg: "#FBEFDD",
+    color: "#CA8A04",
+    bg: "#FAF1D8",
   },
   B1: {
     code: "B1",
@@ -75,8 +75,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     writingTask: "Write an informal letter or short opinion",
     writingWords: 120,
     readingWords: 260,
-    color: "#1F6FB0",
-    bg: "#E6F0F8",
+    color: "#0E7490",
+    bg: "#DFF1F4",
   },
   B2: {
     code: "B2",
@@ -90,8 +90,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     writingTask: "Write a short essay or article",
     writingWords: 180,
     readingWords: 340,
-    color: "#1F6FB0",
-    bg: "#E6F0F8",
+    color: "#0369A1",
+    bg: "#E0EEF8",
   },
   C1: {
     code: "C1",
@@ -104,8 +104,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     writingTask: "Write a structured essay or report",
     writingWords: 220,
     readingWords: 420,
-    color: "#147A4F",
-    bg: "#E3F4EA",
+    color: "#7C3AED",
+    bg: "#EEE7FC",
   },
   C2: {
     code: "C2",
@@ -119,8 +119,8 @@ export const CEFR: Record<CefrLevel, CefrLevelInfo> = {
     writingTask: "Write a sophisticated essay or critique",
     writingWords: 250,
     readingWords: 480,
-    color: "#147A4F",
-    bg: "#E3F4EA",
+    color: "#A21CAF",
+    bg: "#F6E4F7",
   },
 };
 

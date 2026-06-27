@@ -6,11 +6,17 @@
 -- ============================================================================
 
 -- ---------- Enums -----------------------------------------------------------
-create type public.user_role as enum ('center_admin', 'teacher', 'student');
-create type public.org_plan  as enum ('trial', 'starter', 'pro', 'enterprise');
+do $$ begin
+  create type public.user_role as enum ('center_admin', 'teacher', 'student');
+exception when duplicate_object then null;
+end $$;
 
+do $$ begin
+  create type public.org_plan  as enum ('trial', 'starter', 'pro', 'enterprise');
+exception when duplicate_object then null;
+end $$;
 -- ---------- Tables ----------------------------------------------------------
-create table public.organizations (
+create table if not exists public.organizations (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   slug       text unique,                          -- white-label routing handle
@@ -20,7 +26,7 @@ create table public.organizations (
   updated_at timestamptz not null default now()
 );
 
-create table public.profiles (
+create table if not exists public.profiles (
   id              uuid primary key references auth.users (id) on delete cascade,
   organization_id uuid not null references public.organizations (id) on delete cascade,
   role            public.user_role not null default 'student',
@@ -31,7 +37,7 @@ create table public.profiles (
   -- user's tenant un-forgeable at the DB level (see writing/reading migrations)
   unique (id, organization_id)
 );
-create index profiles_organization_id_idx on public.profiles (organization_id);
+create index if not exists profiles_organization_id_idx on public.profiles (organization_id);
 
 -- ---------- RLS helper functions -------------------------------------------
 -- SECURITY DEFINER so the lookup against profiles bypasses RLS — this is what
@@ -70,10 +76,10 @@ begin
 end;
 $$;
 
-create trigger organizations_set_updated_at
+create or replace trigger organizations_set_updated_at
   before update on public.organizations
   for each row execute function public.set_updated_at();
-create trigger profiles_set_updated_at
+create or replace trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
 
@@ -83,10 +89,12 @@ alter table public.profiles      enable row level security;
 
 -- organizations: members read their own org; only center_admin edits it.
 -- No insert/delete for end users — provisioning runs through service_role.
+drop policy if exists org_select on public.organizations;
 create policy org_select on public.organizations
   for select to authenticated
   using (id = (select public.current_org_id()));
 
+drop policy if exists org_update on public.organizations;
 create policy org_update on public.organizations
   for update to authenticated
   using (id = (select public.current_org_id())
@@ -95,6 +103,7 @@ create policy org_update on public.organizations
               and (select public.current_app_role()) = 'center_admin');
 
 -- profiles: see your own profile; admins/teachers see the org roster.
+drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
   for select to authenticated
   using (
@@ -104,6 +113,7 @@ create policy profiles_select on public.profiles
   );
 
 -- edit your own profile, but you cannot move orgs or escalate your own role
+drop policy if exists profiles_self_update on public.profiles;
 create policy profiles_self_update on public.profiles
   for update to authenticated
   using (id = (select auth.uid()))
@@ -114,6 +124,7 @@ create policy profiles_self_update on public.profiles
   );
 
 -- center_admin fully manages profiles within their own org (invite/assign/role)
+drop policy if exists profiles_admin_manage on public.profiles;
 create policy profiles_admin_manage on public.profiles
   for all to authenticated
   using (organization_id = (select public.current_org_id())

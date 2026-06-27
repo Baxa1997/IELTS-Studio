@@ -41,6 +41,9 @@ alter table public.cefr_attempts enable row level security;
 -- A learner only ever sees their OWN attempts, inside their org. No teacher/admin
 -- read path — private study material (B2C). Inserts come from the server-side
 -- grader via the service-role client, so no INSERT policy for authenticated users.
+-- (Postgres has no "create policy if not exists", so drop-then-create keeps the
+-- whole migration safe to re-run.)
+drop policy if exists cefr_attempts_select on public.cefr_attempts;
 create policy cefr_attempts_select on public.cefr_attempts
   for select to authenticated
   using (organization_id = (select public.current_org_id())

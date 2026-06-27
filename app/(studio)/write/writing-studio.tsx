@@ -11,6 +11,7 @@ import { FigureView } from "@/components/writing/figure";
 import type { Figure } from "@/lib/writing/figure";
 import { CefrFeedback } from "@/app/(app)/cefr/writing/cefr-feedback";
 import { CEFR, type CefrLevel } from "@/lib/cefr/levels";
+import { cefrTheme, IELTS_STUDIO_THEME, accentStrong, type StudioTheme } from "@/lib/cefr/theme";
 import type { CefrGradeResult } from "@/lib/cefr/schema";
 
 import { saveDraft } from "./actions";
@@ -81,8 +82,6 @@ type Phase = "writing" | "results";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A1C33";
 const EMERALD = "#2f8f5b";
 
 const AUTOSAVE_MS = 1500;
@@ -173,6 +172,14 @@ export function WritingStudio({
       difficulty: null,
     };
   const taskKind = prompt.task_type;
+
+  // CEFR theming: the studio chrome is driven by a theme so the CEFR track reads as
+  // its own product (cool canvas + the level's colour), while IELTS keeps today's look
+  // exactly (IELTS_STUDIO_THEME). Shadowing INDIGO/INK here reskins every accent/ink
+  // reference in this component at once; helper components below keep the module tokens.
+  const theme = isCefr ? cefrTheme(cefrTask!.level) : IELTS_STUDIO_THEME;
+  const INDIGO = theme.accent;
+  const INK = theme.ink;
 
   const [phase, setPhase] = useState<Phase>("writing");
   const [essayId, setEssayId] = useState<string | null>(initialEssayId);
@@ -459,12 +466,12 @@ export function WritingStudio({
   // scrollable page with its own back/revise actions.
   if (phase === "results" && isCefr && cefrGrade) {
     return (
-      <div style={{ height: "100dvh", overflowY: "auto", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
+      <div style={{ height: "100dvh", overflowY: "auto", background: theme.canvas }}>
         <div style={{ maxWidth: 880, margin: "0 auto", padding: "26px clamp(16px,4vw,28px) 64px" }}>
           <button
             type="button"
             onClick={() => onExit?.()}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 14px 0 11px", border: "1px solid #E2DED0", background: "#fff", borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 14px 0 11px", border: `1px solid ${theme.line}`, background: "#fff", borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             CEFR tasks
@@ -478,7 +485,7 @@ export function WritingStudio({
                   <button type="button" onClick={revise} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", border: "none", borderRadius: 11, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: "0 10px 22px -10px rgba(59,67,181,.7)" }}>
                     Revise this task
                   </button>
-                  <button type="button" onClick={() => onExit?.()} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", border: "1px solid #E2DED0", borderRadius: 11, background: "#fff", color: INK, fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>
+                  <button type="button" onClick={() => onExit?.()} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", border: `1px solid ${theme.line}`, borderRadius: 11, background: "#fff", color: INK, fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>
                     Try another task
                   </button>
                 </div>
@@ -534,18 +541,18 @@ export function WritingStudio({
   const submitDisabled = submitting || !content.trim() || unchangedSinceGrade;
 
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: "#F4F1E7" }}>
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.canvas }}>
       {/* grading modal — a calm, on-brand cover every time we mark a submission */}
-      {submitting ? <GradingOverlay mode={mode} /> : null}
+      {submitting ? <GradingOverlay mode={mode} theme={theme} /> : null}
 
       {/* header */}
-      <header style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: "1px solid #E7E3D5", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
+      <header style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: `1px solid ${theme.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-          <button type="button" onClick={() => void goLibrary()} style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: "1px solid #E2DED0", background: "#FBFAF4", borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}>
+          <button type="button" onClick={() => void goLibrary()} style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${theme.line}`, background: theme.soft, borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             {isCefr ? "CEFR tasks" : "Library"}
           </button>
-          <div style={{ width: 1, height: 24, background: "#E7E3D5" }} />
+          <div style={{ width: 1, height: 24, background: theme.line }} />
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
             <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: INK, color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flexShrink: 0 }}>{taskNo}</span>
             <span style={{ fontSize: 14, fontWeight: 500, color: "#41496A" }}>{taskKindLabel}</span>
@@ -555,11 +562,11 @@ export function WritingStudio({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
           {timed ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: "1px solid #E2DED0", borderRadius: 9, background: "#FBFAF4" }}><Timer seconds={taskSeconds} onExpire={onExpire} /></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${theme.line}`, borderRadius: 9, background: theme.soft }}><Timer seconds={taskSeconds} onExpire={onExpire} /></div>
           ) : null}
           {!isCefr ? <SaveBadge state={saveState} /> : null}
-          <div style={{ width: 1, height: 24, background: "#E7E3D5" }} />
-          <button type="button" onClick={() => void submit()} disabled={submitDisabled} style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: submitDisabled ? "default" : "pointer", opacity: submitDisabled ? 0.55 : 1, boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
+          <div style={{ width: 1, height: 24, background: theme.line }} />
+          <button type="button" onClick={() => void submit()} disabled={submitDisabled} style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: submitDisabled ? "default" : "pointer", opacity: submitDisabled ? 0.55 : 1, boxShadow: theme.accentShadow }}>
             {submitting ? "Grading…" : hasGraded ? "Resubmit for grading" : "Submit for grading"}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </button>
@@ -569,13 +576,13 @@ export function WritingStudio({
       {/* body: prompt | answer | coach */}
       <div className="lp-write-main" style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", gap: 16, padding: 16 }}>
         {/* prompt */}
-        <aside className="lp-write-topic" style={{ width: 356, flexShrink: 0, background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <aside className="lp-write-topic" style={{ width: 356, flexShrink: 0, background: "#fff", border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-            <div style={{ padding: "18px 20px 16px", borderBottom: "1px solid #F0EDE1" }}>
+            <div style={{ padding: "18px 20px 16px", borderBottom: `1px solid ${theme.softLine}` }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 13 }}>
                 <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: "#9A9684" }}>THE TASK</span>
                 {prompt.category && CATEGORY_LABEL[prompt.category] ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 11px", borderRadius: 7, background: "#ECEBFB", color: INDIGO, fontFamily: SANS, fontSize: 12.5, fontWeight: 700 }}>{CATEGORY_LABEL[prompt.category]}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 11px", borderRadius: 7, background: theme.accentSoft, color: INDIGO, fontFamily: SANS, fontSize: 12.5, fontWeight: 700 }}>{CATEGORY_LABEL[prompt.category]}</span>
                 ) : null}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -591,7 +598,7 @@ export function WritingStudio({
               </div>
             </div>
             {prompt.figure ? (
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid #F0EDE1" }}>
+              <div style={{ padding: "16px 20px", borderBottom: `1px solid ${theme.softLine}` }}>
                 <FigureView figure={prompt.figure} />
               </div>
             ) : null}
@@ -600,14 +607,14 @@ export function WritingStudio({
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {requirementList
                   .map((c) => (
-                    <div key={c} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 10 }}>
+                    <div key={c} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.soft, border: `1px solid ${theme.softLine}`, borderRadius: 10 }}>
                       <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: "#E5F3EA", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
                       <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#2C3247" }}>{c}</span>
                     </div>
                   ))}
                 {/* live word-count requirement */}
-                <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: "#F2F1FC", border: "1px solid #E1DFF7", borderRadius: 10 }}>
-                  <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: lengthMet ? "#E5F3EA" : "#fff", border: lengthMet ? "none" : "2px solid #C9C5F0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 10 }}>
+                  <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: lengthMet ? "#E5F3EA" : "#fff", border: lengthMet ? "none" : `2px solid ${theme.accentLine}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {lengthMet ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> : null}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -615,21 +622,21 @@ export function WritingStudio({
                       <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#2C3247" }}>{isCefr ? `About ${cefrTask!.words[0]}–${cefrTask!.words[1]} words` : `At least ${minWords} words`}</span>
                       <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{words}</span>
                     </div>
-                    <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: "#E1DFF7", overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: INDIGO, transition: "width .3s ease" }} /></div>
+                    <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: theme.accentSoft, overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: INDIGO, transition: "width .3s ease" }} /></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div style={{ flexShrink: 0, padding: "14px 20px", borderTop: "1px solid #F0EDE1", display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ flexShrink: 0, padding: "14px 20px", borderTop: `1px solid ${theme.softLine}`, display: "flex", alignItems: "center", gap: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16v-4M12 8h.01" /><circle cx="12" cy="12" r="9" /></svg>
             <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{isCefr ? "Graded on the CEFR scale (A1–C2) — Content, Communication, Organisation, Language." : hasGraded ? "A model answer for this task is in your feedback." : "A model answer for this task unlocks after you submit."}</span>
           </div>
         </aside>
 
         {/* answer */}
-        <main className="lp-write-answer" style={{ flex: 1, minWidth: 0, background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ height: 60, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #F0EDE1", gap: 12 }}>
+        <main className="lp-write-answer" style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ height: 60, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${theme.softLine}`, gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
               <h2 style={{ margin: 0, fontFamily: SANS, fontSize: 16, fontWeight: 700, color: INK }}>Your answer</h2>
               {!isCefr ? <AutosavePill state={saveState} /> : null}
@@ -637,7 +644,7 @@ export function WritingStudio({
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ fontFamily: SANS, fontSize: 13, color: "#8A8FA0", fontWeight: 500 }}>{lengthMet ? "Target reached" : `${wordsToTarget} words to target`}</div>
               <div style={{ position: "relative", width: 46, height: 46 }}>
-                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="#EDEAFB" strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" stroke={INDIGO} strokeWidth="4.5" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={ringOffset} transform="rotate(-90 23 23)" style={{ transition: "stroke-dashoffset .35s ease" }} /></svg>
+                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke={theme.accentSoft} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" stroke={INDIGO} strokeWidth="4.5" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={ringOffset} transform="rotate(-90 23 23)" style={{ transition: "stroke-dashoffset .35s ease" }} /></svg>
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontSize: 13, fontWeight: 800, color: INK, fontVariantNumeric: "tabular-nums" }}>{words}</div>
               </div>
             </div>
@@ -657,7 +664,7 @@ export function WritingStudio({
               style={{ flex: 1, width: "100%", maxWidth: 680, minHeight: 240, resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: SERIF, fontSize: 16.5, lineHeight: 1.85, color: "#272C3E" }}
             />
           </div>
-          <div style={{ flexShrink: 0, minHeight: 48, padding: "0 22px", borderTop: "1px solid #F0EDE1", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#FBFAF4", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flexShrink: 0, minHeight: 48, padding: "0 22px", borderTop: `1px solid ${theme.softLine}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.soft, gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: SANS }}>
               <span style={{ fontSize: 13, color: "#767C90", fontVariantNumeric: "tabular-nums" }}><strong style={{ color: INK, fontWeight: 700 }}>{words}</strong> words</span>
               <span style={{ fontSize: 13, color: "#767C90", fontVariantNumeric: "tabular-nums" }}>{chars.toLocaleString()} characters</span>
@@ -680,12 +687,12 @@ export function WritingStudio({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || submitting}
                 title="Upload a photo or PDF of your written answer — we'll transcribe it for you to review"
-                style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: "1px solid #E2DED0", background: "#fff", borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#41496A", cursor: uploading || submitting ? "default" : "pointer", opacity: uploading || submitting ? 0.6 : 1 }}
+                style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: `1px solid ${theme.line}`, background: "#fff", borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: "#41496A", cursor: uploading || submitting ? "default" : "pointer", opacity: uploading || submitting ? 0.6 : 1 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7388" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
                 {uploading ? "Reading…" : "Upload answer"}
               </button>
-              <button type="button" onClick={() => setSpellOn((s) => !s)} aria-pressed={spellOn} style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: `1px solid ${spellOn ? "#C9C5F0" : "#E2DED0"}`, background: spellOn ? "#F2F1FC" : "#fff", borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: spellOn ? INDIGO : "#41496A", cursor: "pointer" }}>
+              <button type="button" onClick={() => setSpellOn((s) => !s)} aria-pressed={spellOn} style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: `1px solid ${spellOn ? theme.accentLine : theme.line}`, background: spellOn ? theme.accentSoft : "#fff", borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: spellOn ? INDIGO : "#41496A", cursor: "pointer" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={spellOn ? INDIGO : "#6E7388"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
                 Spelling check{spellOn ? " · on" : ""}
               </button>
@@ -695,8 +702,8 @@ export function WritingStudio({
 
         {/* coach */}
         {tutorOpen ? (
-          <aside className="lp-write-coach" style={{ width: 316, flexShrink: 0, background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", overflow: "hidden" }}>
-            <TutorPanel msgs={tutorMsgs} input={tutorInput} setInput={setTutorInput} pending={tutorPending} onSend={sendTutor} scrollRef={tutorScrollRef} unlockedSamples={hasGraded} onClose={() => setTutorOpen(false)} onAnimated={markTutorAnimated} />
+          <aside className="lp-write-coach" style={{ width: 316, flexShrink: 0, background: "#fff", border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", overflow: "hidden" }}>
+            <TutorPanel msgs={tutorMsgs} input={tutorInput} setInput={setTutorInput} pending={tutorPending} onSend={sendTutor} scrollRef={tutorScrollRef} unlockedSamples={hasGraded} onClose={() => setTutorOpen(false)} onAnimated={markTutorAnimated} theme={theme} />
           </aside>
         ) : null}
 
@@ -718,7 +725,7 @@ export function WritingStudio({
       </div>
 
       {/* status footer */}
-      <footer style={{ flexShrink: 0, minHeight: 46, background: "#fff", borderTop: "1px solid #E7E3D5", display: "flex", alignItems: "center", gap: 10, padding: "8px 18px" }}>
+      <footer style={{ flexShrink: 0, minHeight: 46, background: "#fff", borderTop: `1px solid ${theme.line}`, display: "flex", alignItems: "center", gap: 10, padding: "8px 18px" }}>
         <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: message ? "#FBE9DD" : "#E5F3EA", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {message ? (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c2410c" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4M12 16h.01" /></svg>
@@ -746,6 +753,7 @@ function TutorPanel({
   unlockedSamples,
   onClose,
   onAnimated,
+  theme,
 }: {
   msgs: TutorMsg[];
   input: string;
@@ -756,11 +764,14 @@ function TutorPanel({
   unlockedSamples: boolean;
   onClose: () => void;
   onAnimated: (idx: number) => void;
+  theme: StudioTheme;
 }) {
+  const INDIGO = theme.accent;
+  const INK = theme.ink;
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff", minWidth: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 16px", borderBottom: "1px solid #F0EDE1" }}>
-        <span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 16px", borderBottom: `1px solid ${theme.softLine}` }}>
+        <span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 10, background: theme.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -773,12 +784,12 @@ function TutorPanel({
       </div>
       <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
         {msgs.length === 0 ? (
-          <div style={{ background: "#F2F1FC", border: "1px solid #E6E4F8", borderRadius: 13, borderTopLeftRadius: 4, padding: "13px 14px", fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: "#3A3F58" }}>
+          <div style={{ background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 13, borderTopLeftRadius: 4, padding: "13px 14px", fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: "#3A3F58" }}>
             Hey! I can help you understand the task, plan ideas, and find sharper vocabulary — but <strong style={{ color: INK }}>you</strong> write the answer.
           </div>
         ) : (
           msgs.map((m, i) => (
-            <Bubble key={i} msg={m} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => onAnimated(i)} />
+            <Bubble key={i} msg={m} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => onAnimated(i)} accent={theme.accent} />
           ))
         )}
         {pending ? (
@@ -793,11 +804,11 @@ function TutorPanel({
       </div>
       <div style={{ flexShrink: 0, padding: "0 14px 8px", display: "flex", flexWrap: "wrap", gap: 7 }}>
         {TUTOR_CHIPS.map((c) => (
-          <button key={c} type="button" onClick={() => onSend(c)} disabled={pending} style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: INDIGO, background: "#ECEBFB", border: "1px solid #E1DFF7", borderRadius: 999, padding: "6px 12px", cursor: pending ? "default" : "pointer" }}>{c}</button>
+          <button key={c} type="button" onClick={() => onSend(c)} disabled={pending} style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: INDIGO, background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 999, padding: "6px 12px", cursor: pending ? "default" : "pointer" }}>{c}</button>
         ))}
       </div>
-      <div style={{ flexShrink: 0, padding: "12px 14px", borderTop: "1px solid #F0EDE1" }}>
-        <form onSubmit={(e) => { e.preventDefault(); onSend(); }} style={{ display: "flex", alignItems: "center", gap: 8, background: "#FBFAF4", border: "1px solid #E2DED0", borderRadius: 11, padding: "5px 6px 5px 13px" }} className="lp-field">
+      <div style={{ flexShrink: 0, padding: "12px 14px", borderTop: `1px solid ${theme.softLine}` }}>
+        <form onSubmit={(e) => { e.preventDefault(); onSend(); }} style={{ display: "flex", alignItems: "center", gap: 8, background: theme.soft, border: `1px solid ${theme.line}`, borderRadius: 11, padding: "5px 6px 5px 13px" }} className="lp-field">
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask in any language…" style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none", fontFamily: SANS, fontSize: 13.5, color: INK }} />
           <button type="submit" disabled={pending || !input.trim()} aria-label="Send" style={{ flexShrink: 0, width: 34, height: 34, border: "none", borderRadius: 9, background: INDIGO, cursor: pending || !input.trim() ? "default" : "pointer", opacity: pending || !input.trim() ? 0.5 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
@@ -826,11 +837,11 @@ function AutosavePill({ state }: { state: "idle" | "saving" | "saved" | "error" 
   );
 }
 
-function Bubble({ msg, onReveal, onDone }: { msg: TutorMsg; onReveal?: () => void; onDone?: () => void }) {
+function Bubble({ msg, onReveal, onDone, accent }: { msg: TutorMsg; onReveal?: () => void; onDone?: () => void; accent: string }) {
   const isUser = msg.role === "user";
   return (
     <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
-      <div style={{ maxWidth: "85%", padding: "11px 14px", borderRadius: 12, fontFamily: SANS, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: isUser ? INDIGO : "#F6F6FC", color: isUser ? "#fff" : "#3a3d52", border: isUser ? "none" : "1px solid #E6E7FB", borderTopRightRadius: isUser ? 3 : 12, borderTopLeftRadius: isUser ? 12 : 3 }}>
+      <div style={{ maxWidth: "85%", padding: "11px 14px", borderRadius: 12, fontFamily: SANS, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: isUser ? accent : "#F6F6FC", color: isUser ? "#fff" : "#3a3d52", border: isUser ? "none" : "1px solid #E6E7FB", borderTopRightRadius: isUser ? 3 : 12, borderTopLeftRadius: isUser ? 12 : 3 }}>
         {isUser ? msg.content : <Typewriter text={msg.content} animate={!!msg.animate} onReveal={onReveal} onDone={onDone} caretColor="#9A9EAE" />}
       </div>
     </div>
@@ -892,9 +903,11 @@ const GRADING_STEPS_CEFR = [
  * as care (accuracy) rather than lag. Covers the editor so nothing can be edited
  * mid-grade. Mounts only while submitting, so its interval cleans up on its own.
  */
-function GradingOverlay({ mode }: { mode: StudioMode }) {
+function GradingOverlay({ mode, theme }: { mode: StudioMode; theme: StudioTheme }) {
   const isCefr = mode === "cefr";
   const steps = isCefr ? GRADING_STEPS_CEFR : GRADING_STEPS_IELTS;
+  const INDIGO = theme.accent;
+  const INK = theme.ink;
   const [step, setStep] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setStep((s) => (s + 1) % steps.length), 2200);
@@ -908,9 +921,9 @@ function GradingOverlay({ mode }: { mode: StudioMode }) {
       aria-live="polite"
       style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(20,22,40,.46)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
     >
-      <div style={{ width: "min(424px, 94vw)", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 40px 90px -30px rgba(20,22,40,.7)", animation: "lp-grade-in .4s cubic-bezier(.33,1,.68,1) both" }}>
-        {/* animated brand header with the spinning emblem */}
-        <div className="lp-ai-surface" style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: "1px solid #E4E2F3" }}>
+      <div style={{ width: "min(424px, 94vw)", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 40px 90px -30px rgba(20,22,40,.7)", animation: "lp-grade-in .4s cubic-bezier(.33,1,.68,1) both", "--grade-accent": theme.accent, "--ai-soft": theme.accentSoft, "--ai-strong": accentStrong(theme.accent) } as React.CSSProperties}>
+        {/* animated brand header with the spinning emblem (accent-tinted for CEFR) */}
+        <div className={isCefr ? "lp-ai-surface-accent" : "lp-ai-surface"} style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: `1px solid ${theme.accentLine}` }}>
           <span style={{ position: "relative", width: 66, height: 66, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <span className="lp-grade-ring" style={{ position: "absolute", inset: 0, borderRadius: "50%" }} aria-hidden />
             <span style={{ position: "absolute", inset: 7, borderRadius: "50%", background: "#fff", boxShadow: "inset 0 0 0 1px rgba(59,67,181,.12)" }} aria-hidden />
@@ -931,7 +944,7 @@ function GradingOverlay({ mode }: { mode: StudioMode }) {
               {steps[step]}
             </span>
           </div>
-          <div style={{ marginTop: 16, height: 6, borderRadius: 999, background: "#EDEBF8", overflow: "hidden" }}>
+          <div style={{ marginTop: 16, height: 6, borderRadius: 999, background: theme.accentSoft, overflow: "hidden" }}>
             <div className="lp-grade-bar" style={{ height: "100%", width: "100%", borderRadius: 999 }} />
           </div>
           <p style={{ margin: "14px 0 0", fontFamily: SANS, fontSize: 12, color: "#9094A8", textAlign: "center" }}>

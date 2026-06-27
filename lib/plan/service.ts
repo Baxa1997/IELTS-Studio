@@ -23,7 +23,7 @@ import {
  */
 
 const COLUMNS =
-  "self_reported_band, target_band, exam_date, weekly_goal, last_level_check_at, next_level_check_at, starter_seeded";
+  "self_reported_band, target_band, exam_date, weekly_goal, last_level_check_at, next_level_check_at, starter_seeded, created_at";
 
 export interface PlanActor {
   studentId: string;
@@ -40,6 +40,7 @@ function rowToPlan(r: Record<string, unknown> | null): StudyPlan | null {
     lastLevelCheckAt: (r.last_level_check_at as string | null) ?? null,
     nextLevelCheckAt: (r.next_level_check_at as string | null) ?? null,
     starterSeeded: Boolean(r.starter_seeded),
+    createdAt: (r.created_at as string | null) ?? new Date().toISOString(),
   };
 }
 

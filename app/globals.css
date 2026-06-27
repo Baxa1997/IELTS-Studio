@@ -253,6 +253,109 @@
   animation: lp-ai-bg 12s ease infinite;
 }
 
+/* Accent-driven variant for the CEFR track — same animated sweep, but glows in the
+   active level's colour. Set --ai-soft / --ai-strong inline (the level's soft tint
+   and a slightly stronger tint). Falls back to the indigo surface if unset. */
+.lp-ai-surface-accent {
+  background-image: linear-gradient(
+    120deg,
+    var(--ai-soft, #d6d7f5),
+    var(--ai-strong, #bcbdec),
+    var(--ai-soft, #d6d7f5)
+  );
+  background-size: 300% 300%;
+  animation: lp-ai-bg 12s ease infinite;
+}
+
+/* ── Animated "AI generate" banner (the aurora topic-generator section) ───────
+   A richer, eye-catching treatment of the AI-generate surface used on the writing
+   library's "Let AI choose a fresh topic" banner: an aurora gradient, drifting
+   orbs, floating sparkles, a spinning halo around the icon, and a shimmer sweep on
+   the CTA. All animation lives here so the JSX only carries class names + inline
+   `animation` shorthands keyed to these frames. Reduced-motion is honoured at the
+   bottom of this block, independently of `.lp-root`. */
+@keyframes aib-aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes aib-ring-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes aib-glow {
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50% { opacity: 0.12; transform: scale(1.35); }
+}
+@keyframes aib-spark-a {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.55; }
+  50% { transform: translateY(-11px) scale(1.2); opacity: 1; }
+}
+@keyframes aib-spark-b {
+  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.4; }
+  50% { transform: translateY(-8px) rotate(18deg); opacity: 0.85; }
+}
+@keyframes aib-spark-c {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.6; }
+  50% { transform: translateY(-14px) scale(1.3); opacity: 1; }
+}
+@keyframes aib-shimmer {
+  0% { transform: translateX(-160%) skewX(-22deg); }
+  100% { transform: translateX(500%) skewX(-22deg); }
+}
+@keyframes aib-orb-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(22px, -14px) scale(1.05); }
+  66% { transform: translate(-12px, 9px) scale(0.97); }
+}
+@keyframes aib-orb-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(-18px, 12px) scale(1.04); }
+  70% { transform: translate(14px, -9px) scale(0.98); }
+}
+@keyframes aib-orb-c {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(10px, -16px); }
+}
+@keyframes aib-live-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.75); }
+  50% { box-shadow: 0 0 0 5px rgba(74, 222, 128, 0); }
+}
+/* The dark aurora gradient + background-size are set INLINE by <AiGenerateSection>
+   (guaranteed regardless of stylesheet load order); this class only drives the
+   aurora sweep so the surface can never render as a transparent/white box. */
+.aib-card {
+  animation: aib-aurora 11s ease infinite;
+}
+.aib-cta { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.aib-cta:hover:not(:disabled) { transform: scale(1.04); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35); }
+.aib-cta:disabled { cursor: default; }
+
+/* Respect reduced-motion here too — this banner can live outside `.lp-root`. */
+@media (prefers-reduced-motion: reduce) {
+  .aib-card,
+  .aib-card * { animation: none !important; transition: none !important; }
+}
+
+/* ── Study-plan accents (the exam-paced plan page) ────────────────────────────
+   The light plan page carries inline `animation` shorthands keyed to these frames
+   (status-dot pulses + the CTA shimmer). Reduced-motion is already neutralised
+   globally (`.lp-root *` at the bottom of this file), and the plan page lives under
+   `.lp-root`, so no separate guard is needed here. */
+@keyframes plan-pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 143, 91, 0.6); }
+  50% { box-shadow: 0 0 0 5px rgba(47, 143, 91, 0); }
+}
+@keyframes plan-pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(185, 121, 26, 0.55); }
+  50% { box-shadow: 0 0 0 5px rgba(185, 121, 26, 0); }
+}
+@keyframes plan-pulse-indigo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 67, 181, 0.55); }
+  50% { box-shadow: 0 0 0 5px rgba(59, 67, 181, 0); }
+}
+@keyframes plan-shimmer {
+  0% { transform: translateX(-140%) skewX(-20deg); }
+  100% { transform: translateX(400%) skewX(-20deg); }
+}
+
 /* ---- Grading overlay (the "we're marking your essay" modal) ---------------- */
 @keyframes lp-grade-in {
   from { opacity: 0; transform: translateY(10px) scale(0.985); }
@@ -265,7 +368,7 @@
 /* Spinning conic ring used for the emblem. */
 @keyframes lp-grade-spin { to { transform: rotate(360deg); } }
 .lp-grade-ring {
-  background: conic-gradient(from 90deg, transparent 0deg, rgba(59, 67, 181, 0) 110deg, #3b43b5 360deg);
+  background: conic-gradient(from 90deg, transparent 0deg, rgba(59, 67, 181, 0) 110deg, var(--grade-accent, #3b43b5) 360deg);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
   animation: lp-grade-spin 1.05s linear infinite;
@@ -276,7 +379,7 @@
   100% { background-position: 0% 0; }
 }
 .lp-grade-bar {
-  background-image: linear-gradient(90deg, #e4e3f7 0%, #3b43b5 50%, #e4e3f7 100%);
+  background-image: linear-gradient(90deg, #e4e3f7 0%, var(--grade-accent, #3b43b5) 50%, #e4e3f7 100%);
   background-size: 200% 100%;
   animation: lp-grade-bar 1.4s linear infinite;
 }

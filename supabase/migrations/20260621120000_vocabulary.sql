@@ -40,20 +40,24 @@ alter table public.vocabulary_items enable row level security;
 
 -- A learner can only ever see/manage their OWN words, inside their org. No
 -- teacher/admin read path — this is private study material (B2C, CLAUDE.md).
+drop policy if exists vocabulary_select on public.vocabulary_items;
 create policy vocabulary_select on public.vocabulary_items
   for select to authenticated
   using (organization_id = (select public.current_org_id())
          and student_id = (select auth.uid()));
+drop policy if exists vocabulary_insert on public.vocabulary_items;
 create policy vocabulary_insert on public.vocabulary_items
   for insert to authenticated
   with check (organization_id = (select public.current_org_id())
               and student_id = (select auth.uid()));
+drop policy if exists vocabulary_update on public.vocabulary_items;
 create policy vocabulary_update on public.vocabulary_items
   for update to authenticated
   using (organization_id = (select public.current_org_id())
          and student_id = (select auth.uid()))
   with check (organization_id = (select public.current_org_id())
               and student_id = (select auth.uid()));
+drop policy if exists vocabulary_delete on public.vocabulary_items;
 create policy vocabulary_delete on public.vocabulary_items
   for delete to authenticated
   using (organization_id = (select public.current_org_id())

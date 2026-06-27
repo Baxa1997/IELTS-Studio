@@ -6,6 +6,7 @@ import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
+import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 // These live with the full-screen runner in the (studio) group; the hub library
 // only needs the prompt type and the save-draft action from them.
 import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
@@ -692,86 +693,23 @@ export function WritingLibrary({
         </div>
       ) : (
         <>
-          {/* AI banner */}
-          <div
-            className="lp-ai-surface"
-            style={{
-              border: "1px solid #DEDCF5",
-              borderRadius: 18,
-              padding: "16px 20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 24,
-              marginBottom: 38,
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <span
-                style={{
-                  flex: "none",
-                  width: 54,
-                  height: 54,
-                  borderRadius: 14,
-                  background: "#fff",
-                  border: "1px solid #E4E2F4",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 4px 14px -6px rgba(59,67,181,.4)",
-                }}
-              >
-                <svg
-                  className="lp-ai-spark"
-                  width="26"
-                  height="26"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={INDIGO}
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" />
-                  <path d="M19 14l.7 1.9L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.6L19 14z" />
-                </svg>
-              </span>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-                  <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 18, color: INK }}>
-                    Let AI choose a fresh topic
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: SANS,
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                      color: INDIGO,
-                      background: "#fff",
-                      border: "1px solid #DEDCF5",
-                      borderRadius: 999,
-                      padding: "3px 10px",
-                    }}
-                  >
-                    Tuned to band {pitchBand.toFixed(1)}
-                  </span>
-                </div>
-                <div style={{ marginTop: 4, fontFamily: SANS, fontSize: 14.5, color: MUTED }}>
-                  A brand-new, exam-style prompt pitched at your level — closest to the real test.
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => void generate(tab)}
-              disabled={busy}
-              className={busy ? undefined : "lp-ai-pulse"}
-              style={genButton(busy, true)}
-            >
-              {generatingKind === tab ? "Generating… ~15s" : "Generate a topic"}
-              {generatingKind === tab ? null : ARROW}
-            </button>
+          {/* AI banner — the shared aurora "AI generate" section */}
+          <div style={{ marginBottom: 38 }}>
+            <AiGenerateSection
+              title="Let AI choose a fresh topic"
+              badge={`Tuned to band ${pitchBand.toFixed(1)}`}
+              description="A brand-new, exam-style prompt pitched at your level — closest to the real test."
+              cta={
+                <AiGenerateButton
+                  label="Generate a topic"
+                  busyLabel="Generating… ~15s"
+                  busy={busy}
+                  generating={generatingKind === tab}
+                  onClick={() => void generate(tab)}
+                  minWidth={200}
+                />
+              }
+            />
           </div>
 
           {/* ready topics header */}

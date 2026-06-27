@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useRef, useState } from "react";
 import {
-  ArrowLeft, BookOpen, CalendarDays, Check, Compass, Gauge, GraduationCap, Headphones,
-  Layers, Mic, PenLine, ShieldCheck, Sparkles, Target, Timer, TrendingUp,
+  ArrowLeft, BookOpen, CalendarDays, Check, Gauge, GraduationCap, Headphones,
+  Layers, Mic, PenLine, ShieldCheck, Sparkles, Target,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,19 +27,30 @@ const TINT_BORDER = "#D8DAF3";
 
 const STEPS = ["Get started", "Your goal", "Your level", "Create account"] as const;
 
-type TimelineKey = "lt1" | "1to3" | "3to6" | "none";
-const TIMELINES: { key: TimelineKey; label: string; desc: string; Icon: LucideIcon }[] = [
-  { key: "lt1", label: "Less than a month", desc: "Full mocks + high-impact fixes", Icon: Timer },
-  { key: "1to3", label: "1–3 months", desc: "Accuracy, timing, review habits", Icon: TrendingUp },
-  { key: "3to6", label: "3–6 months", desc: "Grow your band steadily", Icon: Compass },
-  { key: "none", label: "No date yet", desc: "Keep the plan flexible", Icon: CalendarDays },
-];
-function timelineToExamDate(key: TimelineKey): string | null {
-  if (key === "none") return null;
-  const days = key === "lt1" ? 21 : key === "1to3" ? 60 : 135;
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+/** Coach flavour keyed off how far out the *real* exam date is (or none yet). We no
+ *  longer invent a date from a fuzzy range — the countdown only ever reflects a date
+ *  the learner actually picked. */
+function coachHorizon(examDate: string): { id: string; text: string } {
+  if (!examDate) return { id: "tl-none", text: "No date yet — flexible pace; I'll keep momentum with short daily reps. Add a real date any time for a live countdown." };
+  const days = daysFromToday(examDate);
+  if (days < 0) return { id: "tl-past", text: "That date has already passed — pick a future date so the plan can pace itself." };
+  if (days <= 31) return { id: "tl-lt1", text: "Under a month out — I'll front-load full mocks and only the highest-impact fixes." };
+  if (days <= 92) return { id: "tl-1to3", text: "Around 1–3 months out — accuracy first, then I add timing pressure once you're stable." };
+  if (days <= 183) return { id: "tl-3to6", text: "3–6 months out — steady band growth, no cramming." };
+  return { id: "tl-far", text: "Plenty of runway — steady growth now, ramp the intensity as the date nears." };
+}
+
+/** Whole days from today to an ISO date (client-side; the wizard is "use client"). */
+function daysFromToday(iso: string): number {
+  const then = Date.parse(`${iso}T00:00:00`);
+  if (Number.isNaN(then)) return 0;
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return Math.round((then - start) / 86_400_000);
+}
+
+function fmtExam(iso: string): string {
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${iso}T00:00:00`));
 }
 
 /**
@@ -58,7 +69,11 @@ export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" })
   const [step, setStep] = useState(0);
   const [target, setTarget] = useState(7);
   const [self, setSelf] = useState<number | null>(null);
-  const [timeline, setTimeline] = useState<TimelineKey>("none");
+  const [examDate, setExamDate] = useState<string>("");
+
+  // "Today" (UTC) for the date input's `min`. toISOString() is UTC on both server
+  // and client, so this is stable across hydration; the real guard is `isPast`.
+  const [minDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,10 +90,10 @@ export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" })
 
   const onTarget = (n: number) => { setTarget(n); pulseCoach(); };
   const onSelf = (n: number | null) => { setSelf(n); pulseCoach(); };
-  const onTimeline = (k: TimelineKey) => { setTimeline(k); pulseCoach(); };
+  const onExamDate = (iso: string) => { setExamDate(iso); pulseCoach(); };
 
   function buildPlan(): StudyPlanInput {
-    return { selfReportedBand: self, targetBand: target, examDate: timelineToExamDate(timeline) };
+    return { selfReportedBand: self, targetBand: target, examDate: examDate || null };
   }
   function next() { setError(null); setStep((s) => Math.min(s + 1, STEPS.length - 1)); pulseCoach(); }
   function back() { setError(null); setStep((s) => Math.max(s - 1, 0)); }
@@ -142,15 +157,15 @@ export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" })
 
           {step === 0 ? <StepWelcome mode={mode} onContinue={next} /> : null}
           {step === 1 ? <StepGoal target={target} setTarget={onTarget} onContinue={next} /> : null}
-          {step === 2 ? <StepLevel self={self} setSelf={onSelf} timeline={timeline} setTimeline={onTimeline} onContinue={next} /> : null}
+          {step === 2 ? <StepLevel self={self} setSelf={onSelf} examDate={examDate} setExamDate={onExamDate} minDate={minDate} onContinue={next} /> : null}
           {step === 3 ? (
-            <StepAccount mode={mode} target={target} self={self} timeline={timeline} busy={busy} error={error} onGoogle={continueWithGoogle} onComplete={completeAuthed} />
+            <StepAccount mode={mode} target={target} self={self} examDate={examDate} busy={busy} error={error} onGoogle={continueWithGoogle} onComplete={completeAuthed} />
           ) : null}
         </div>
       </main>
 
       {/* ── Right sidebar: the live examiner coach ── */}
-      <CoachPanel step={step} target={target} self={self} timeline={timeline} thinking={thinking} />
+      <CoachPanel step={step} target={target} self={self} examDate={examDate} thinking={thinking} />
     </div>
   );
 }
@@ -250,8 +265,11 @@ function StepGoal({ target, setTarget, onContinue }: { target: number; setTarget
   );
 }
 
-// ── Step 3: Level + timeline ─────────────────────────────────────────────────
-function StepLevel({ self, setSelf, timeline, setTimeline, onContinue }: { self: number | null; setSelf: (n: number | null) => void; timeline: TimelineKey; setTimeline: (k: TimelineKey) => void; onContinue: () => void }) {
+// ── Step 3: Level + exam date ────────────────────────────────────────────────
+function StepLevel({ self, setSelf, examDate, setExamDate, minDate, onContinue }: { self: number | null; setSelf: (n: number | null) => void; examDate: string; setExamDate: (iso: string) => void; minDate: string; onContinue: () => void }) {
+  const noDate = examDate === "";
+  const days = noDate ? null : daysFromToday(examDate);
+  const isPast = days != null && days < 0;
   return (
     <div>
       <Heading title="Where are you starting from?" sub="Your best guess is fine — the diagnostic sharpens it. This sets how hard your first tasks are." />
@@ -266,20 +284,41 @@ function StepLevel({ self, setSelf, timeline, setTimeline, onContinue }: { self:
       </div>
       <div style={{ marginTop: 24 }}>
         <Label>When&rsquo;s your test?</Label>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-          {TIMELINES.map((t) => (
-            <OptionCard key={t.key} Icon={t.Icon} title={t.label} desc={t.desc} selected={timeline === t.key} onClick={() => setTimeline(t.key)} />
-          ))}
+        <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.5, color: MUTED, margin: "4px 0 0", maxWidth: 540 }}>
+          Booked a real exam? Add the exact date for a live countdown and a week-by-week plan. No date yet is fine — you can add one any time from your plan.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12, alignItems: "stretch" }}>
+          <label style={{ position: "relative", flex: "1 1 220px", minWidth: 0 }}>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", display: "flex", pointerEvents: "none" }}>
+              <CalendarDays size={18} color={noDate ? "#9A9DAC" : INDIGO} strokeWidth={2} />
+            </span>
+            <input
+              type="date"
+              value={examDate}
+              min={minDate || undefined}
+              onChange={(e) => setExamDate(e.target.value)}
+              aria-label="Exam date"
+              style={{ width: "100%", height: 54, padding: "0 14px 0 42px", borderRadius: 14, cursor: "pointer", background: noDate ? "#fff" : TINT, border: `1.5px solid ${isPast ? "#E0A07A" : noDate ? LINE : INDIGO}`, fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, boxShadow: noDate || isPast ? "none" : "0 10px 22px -16px rgba(59,67,181,.7)" }}
+            />
+          </label>
+          <button type="button" onClick={() => setExamDate("")} aria-pressed={noDate} className="onb-opt" style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 9, padding: "0 18px", height: 54, borderRadius: 14, cursor: "pointer", background: noDate ? TINT : "#fff", border: `1.5px solid ${noDate ? INDIGO : LINE}`, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: noDate ? INDIGO : MUTED }}>
+            <Radio selected={noDate} /> No date yet
+          </button>
         </div>
+        {days != null ? (
+          <p style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, margin: "10px 0 0", color: isPast ? "#c2410c" : INDIGO }}>
+            {isPast ? "That date is in the past — pick a future date or choose “No date yet.”" : `${days} ${days === 1 ? "day" : "days"} to go · ${fmtExam(examDate)}`}
+          </p>
+        ) : null}
       </div>
-      <PrimaryButton onClick={onContinue} style={{ marginTop: 24 }}>Continue</PrimaryButton>
+      <PrimaryButton onClick={onContinue} disabled={isPast} style={{ marginTop: 24 }}>Continue</PrimaryButton>
     </div>
   );
 }
 
 // ── Step 4: Create account (signup → Google) / lock plan (authed → save) ──────
-function StepAccount({ mode, target, self, timeline, busy, error, onGoogle, onComplete }: { mode: "signup" | "authed"; target: number; self: number | null; timeline: TimelineKey; busy: boolean; error: string | null; onGoogle: () => void; onComplete: () => void }) {
-  const timelineLabel = TIMELINES.find((t) => t.key === timeline)!.label;
+function StepAccount({ mode, target, self, examDate, busy, error, onGoogle, onComplete }: { mode: "signup" | "authed"; target: number; self: number | null; examDate: string; busy: boolean; error: string | null; onGoogle: () => void; onComplete: () => void }) {
+  const examLabel = examDate ? fmtExam(examDate) : "No date yet";
   const authed = mode === "authed";
   return (
     <div>
@@ -293,7 +332,7 @@ function StepAccount({ mode, target, self, timeline, busy, error, onGoogle, onCo
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
           <StatTile Icon={Target} label="Target" value={`Band ${target.toFixed(1)}`} />
           <StatTile Icon={Gauge} label="Current" value={self != null ? `Band ${self.toFixed(1)}` : "To be set"} />
-          <StatTile Icon={CalendarDays} label="Timeline" value={timelineLabel} />
+          <StatTile Icon={CalendarDays} label="Exam date" value={examLabel} />
           <StatTile Icon={Layers} label="Focus" value="Reading & Writing" />
         </div>
       </div>
@@ -332,7 +371,7 @@ function StepAccount({ mode, target, self, timeline, busy, error, onGoogle, onCo
 // ── The live examiner coach ──────────────────────────────────────────────────
 type Note = { id: string; Icon: LucideIcon; text: string };
 
-function coachNotes(step: number, target: number, self: number | null, timeline: TimelineKey): Note[] {
+function coachNotes(step: number, target: number, self: number | null, examDate: string): Note[] {
   const notes: Note[] = [
     { id: "hi", Icon: Sparkles, text: "I'm your examiner coach. I'm reading your answers as you go — no pressure." },
   ];
@@ -354,21 +393,16 @@ function coachNotes(step: number, target: number, self: number | null, timeline:
   }
 
   if (step >= 2) {
-    const map: Record<TimelineKey, string> = {
-      lt1: "Under a month — I'll front-load full mocks and only the highest-impact fixes.",
-      "1to3": "1–3 months — accuracy first, then I add timing pressure once you're stable.",
-      "3to6": "3–6 months — steady band growth, no cramming.",
-      none: "No date yet — flexible pace; I'll keep momentum with short daily reps.",
-    };
-    notes.push({ id: `tl-${timeline}`, Icon: CalendarDays, text: map[timeline] });
+    const h = coachHorizon(examDate);
+    notes.push({ id: h.id, Icon: CalendarDays, text: h.text });
   }
 
   if (step >= 3) notes.push({ id: "ready", Icon: ShieldCheck, text: "Plan ready. Create your account and I'll grade your first task." });
   return notes;
 }
 
-function CoachPanel({ step, target, self, timeline, thinking }: { step: number; target: number; self: number | null; timeline: TimelineKey; thinking: boolean }) {
-  const notes = coachNotes(step, target, self, timeline);
+function CoachPanel({ step, target, self, examDate, thinking }: { step: number; target: number; self: number | null; examDate: string; thinking: boolean }) {
+  const notes = coachNotes(step, target, self, examDate);
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
 
   return (
@@ -455,21 +489,6 @@ function Badge({ live }: { live: boolean }) {
     <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10.5, letterSpacing: ".05em", textTransform: "uppercase", color: live ? "#1F8A5B" : "#9A9DAC", background: live ? "#E9F5EF" : "#F2F2F4", border: `1px solid ${live ? "#CFE7DA" : "#E6E6EA"}`, borderRadius: 999, padding: "3px 9px" }}>
       {live ? "Live" : "Soon"}
     </span>
-  );
-}
-
-function OptionCard({ Icon, title, desc, selected, onClick }: { Icon: LucideIcon; title: string; desc?: string; selected: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} aria-pressed={selected} className="onb-opt" style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", padding: "13px 14px", borderRadius: 14, cursor: "pointer", background: selected ? TINT : "#fff", border: `1.5px solid ${selected ? INDIGO : LINE}`, boxShadow: selected ? "0 10px 22px -16px rgba(59,67,181,.7)" : "none", transition: "border-color .15s, box-shadow .15s, background .15s" }}>
-      <span style={{ flex: "none", width: 38, height: 38, borderRadius: 11, background: selected ? "#fff" : "#F5F5F8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={18} color={selected ? INDIGO : "#6E7388"} strokeWidth={2} />
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>{title}</span>
-        {desc ? <span style={{ display: "block", fontFamily: SANS, fontSize: 12.5, lineHeight: 1.35, color: MUTED, marginTop: 1 }}>{desc}</span> : null}
-      </span>
-      <Radio selected={selected} />
-    </button>
   );
 }
 

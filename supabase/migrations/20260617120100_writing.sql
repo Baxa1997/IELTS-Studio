@@ -5,11 +5,17 @@
 -- AI gradings are written server-side via service_role (bypasses RLS).
 -- ============================================================================
 
-create type public.essay_task_type as enum ('task1_academic', 'task1_general', 'task2');
-create type public.essay_status    as enum ('draft', 'submitted', 'grading', 'graded');
+do $$ begin
+  create type public.essay_task_type as enum ('task1_academic', 'task1_general', 'task2');
+exception when duplicate_object then null;
+end $$;
 
+do $$ begin
+  create type public.essay_status    as enum ('draft', 'submitted', 'grading', 'graded');
+exception when duplicate_object then null;
+end $$;
 -- ---------- writing_prompts -------------------------------------------------
-create table public.writing_prompts (
+create table if not exists public.writing_prompts (
   id              uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete cascade,
   task_type       public.essay_task_type not null,
@@ -19,10 +25,10 @@ create table public.writing_prompts (
   created_by      uuid references public.profiles (id),
   created_at      timestamptz not null default now()
 );
-create index writing_prompts_org_idx on public.writing_prompts (organization_id);
+create index if not exists writing_prompts_org_idx on public.writing_prompts (organization_id);
 
 -- ---------- essays ----------------------------------------------------------
-create table public.essays (
+create table if not exists public.essays (
   id              uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete cascade,
   student_id      uuid not null,
@@ -38,16 +44,16 @@ create table public.essays (
   foreign key (student_id, organization_id)
     references public.profiles (id, organization_id) on delete cascade
 );
-create index essays_org_student_idx on public.essays (organization_id, student_id);
+create index if not exists essays_org_student_idx on public.essays (organization_id, student_id);
 
-create trigger essays_set_updated_at
+create or replace trigger essays_set_updated_at
   before update on public.essays
   for each row execute function public.set_updated_at();
 
 -- ---------- gradings --------------------------------------------------------
 -- One essay can have many gradings (drafts across the revision loop, plus
 -- teacher overrides that feed grader calibration).
-create table public.gradings (
+create table if not exists public.gradings (
   id                  uuid primary key default gen_random_uuid(),
   essay_id            uuid not null,
   organization_id     uuid not null,
@@ -66,7 +72,7 @@ create table public.gradings (
   foreign key (essay_id, organization_id)
     references public.essays (id, organization_id) on delete cascade
 );
-create index gradings_essay_idx on public.gradings (essay_id, created_at desc);
+create index if not exists gradings_essay_idx on public.gradings (essay_id, created_at desc);
 
 -- ---------- Row Level Security ---------------------------------------------
 alter table public.writing_prompts enable row level security;
@@ -74,10 +80,12 @@ alter table public.essays          enable row level security;
 alter table public.gradings        enable row level security;
 
 -- writing_prompts: any member reads; teacher/admin manage.
+drop policy if exists prompts_read on public.writing_prompts;
 create policy prompts_read on public.writing_prompts
   for select to authenticated
   using (organization_id = (select public.current_org_id()));
 
+drop policy if exists prompts_manage on public.writing_prompts;
 create policy prompts_manage on public.writing_prompts
   for all to authenticated
   using (organization_id = (select public.current_org_id())
@@ -86,6 +94,7 @@ create policy prompts_manage on public.writing_prompts
               and (select public.current_app_role()) in ('teacher', 'center_admin'));
 
 -- essays: students see only their own; teachers/admins see all in their org.
+drop policy if exists essays_select on public.essays;
 create policy essays_select on public.essays
   for select to authenticated
   using (
@@ -94,6 +103,7 @@ create policy essays_select on public.essays
          or student_id = (select auth.uid()))
   );
 
+drop policy if exists essays_insert on public.essays;
 create policy essays_insert on public.essays
   for insert to authenticated
   with check (
@@ -102,6 +112,7 @@ create policy essays_insert on public.essays
          or (select public.current_app_role()) in ('center_admin', 'teacher'))
   );
 
+drop policy if exists essays_update on public.essays;
 create policy essays_update on public.essays
   for update to authenticated
   using (
@@ -111,6 +122,7 @@ create policy essays_update on public.essays
   )
   with check (organization_id = (select public.current_org_id()));
 
+drop policy if exists essays_delete on public.essays;
 create policy essays_delete on public.essays
   for delete to authenticated
   using (
@@ -121,6 +133,7 @@ create policy essays_delete on public.essays
 
 -- gradings: visible if you can see the parent essay; only teacher/admin write
 -- (the AI grader runs server-side as service_role and bypasses RLS).
+drop policy if exists gradings_select on public.gradings;
 create policy gradings_select on public.gradings
   for select to authenticated
   using (
@@ -131,6 +144,7 @@ create policy gradings_select on public.gradings
                       and e.student_id = (select auth.uid())))
   );
 
+drop policy if exists gradings_write on public.gradings;
 create policy gradings_write on public.gradings
   for all to authenticated
   using (organization_id = (select public.current_org_id())

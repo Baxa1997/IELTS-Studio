@@ -79,8 +79,10 @@ export default async function ReadingRunnerPage({ params }: PageProps) {
   };
 
   // Full-screen, no sidebar — a focused single detail page for the actual reading.
+  // CEFR passages get a cool background (matching the CEFR track identity); IELTS
+  // keeps the warm tan.
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
+    <div style={{ minHeight: "100dvh", background: runnerPassage.cefrLevel ? "#EEF1F7" : "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
       <ReadingRunner passage={runnerPassage} questions={delivered} />
     </div>
   );

@@ -2,14 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
 
+import { AiGenerateButton } from "@/components/ai-generate-section";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#4338CA";
-const INK = "#1A1C33";
 
 type GenResult = { ok: boolean; id?: string; message?: string };
 
@@ -56,10 +54,8 @@ async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
  * model passes, so it takes ~1 min — we show that wait explicitly.
  */
 export function GeneratePassageButton({
-  variant = "default",
   label = "Generate a passage",
 }: {
-  variant?: "default" | "outline";
   label?: string;
 }) {
   const router = useRouter();
@@ -83,48 +79,18 @@ export function GeneratePassageButton({
     }
   }
 
-  const base: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    // Reserve width for the widest label state so swapping to "Generating… ~1 min"
-    // (or back) never resizes the button and shifts its position.
-    minWidth: 236,
-    fontFamily: SANS,
-    fontWeight: 600,
-    fontSize: 15,
-    padding: "11px 18px",
-    borderRadius: 11,
-    border: "none",
-    cursor: loading ? "default" : "pointer",
-    opacity: loading ? 0.7 : 1,
-  };
-  const style: React.CSSProperties =
-    variant === "outline"
-      ? { ...base, background: "#fff", border: "1px solid #DAD8C9", color: INK }
-      : { ...base, background: INDIGO, color: "#fff", boxShadow: "0 12px 24px -12px rgba(59,67,181,.7)" };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-      <button
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+      <AiGenerateButton
+        label={label}
+        busyLabel="Generating… ~1 min"
+        busy={loading}
+        generating={loading}
         onClick={() => void go()}
-        disabled={loading}
-        className={loading ? undefined : "lp-ai-pulse"}
-        style={style}
-      >
-        {loading ? (
-          <>
-            <Loader2 className="animate-spin" size={16} /> Generating… ~1 min
-          </>
-        ) : (
-          <>
-            <Sparkles size={16} className="lp-ai-spark" /> {label}
-          </>
-        )}
-      </button>
+        minWidth={244}
+      />
       {error ? (
-        <p style={{ fontFamily: SANS, fontSize: 13, color: "#c2410c", margin: 0 }} role="alert">
+        <p style={{ fontFamily: SANS, fontSize: 13, color: "#fecaca", margin: 0, textAlign: "right" }} role="alert">
           {error}
         </p>
       ) : null}
@@ -160,49 +126,22 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-      <button
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+      <AiGenerateButton
+        label={label}
+        busyLabel="Building your test… ~2 min"
+        busy={loading}
+        generating={loading}
         onClick={() => void go()}
-        disabled={loading}
-        className={loading ? undefined : "lp-ai-pulse"}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          // Reserve width for the longest state ("Building your test… ~2 min") so the
-          // button doesn't grow and jump left when generation starts.
-          minWidth: 258,
-          fontFamily: SANS,
-          fontWeight: 600,
-          fontSize: 15,
-          padding: "11px 18px",
-          borderRadius: 11,
-          border: "none",
-          background: INDIGO,
-          color: "#fff",
-          cursor: loading ? "default" : "pointer",
-          opacity: loading ? 0.75 : 1,
-          boxShadow: "0 12px 24px -14px rgba(67,56,202,.7)",
-        }}
-      >
-        {loading ? (
-          <>
-            <Loader2 className="animate-spin" size={16} /> Building your test… ~2 min
-          </>
-        ) : (
-          <>
-            <Sparkles size={16} className="lp-ai-spark" /> {label}
-          </>
-        )}
-      </button>
+        minWidth={266}
+      />
       {loading ? (
-        <p style={{ fontFamily: SANS, fontSize: 12.5, color: "#6b6e84", margin: 0 }}>
+        <p style={{ fontFamily: SANS, fontSize: 12.5, color: "rgba(255,255,255,0.78)", margin: 0, textAlign: "right", maxWidth: 280 }}>
           Writing 3 original passages at your level — hang tight, don’t close this tab.
         </p>
       ) : null}
       {error ? (
-        <p style={{ fontFamily: SANS, fontSize: 13, color: "#c2410c", margin: 0 }} role="alert">
+        <p style={{ fontFamily: SANS, fontSize: 13, color: "#fecaca", margin: 0, textAlign: "right" }} role="alert">
           {error}
         </p>
       ) : null}

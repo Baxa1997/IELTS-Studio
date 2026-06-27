@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, FileText, Layers, Loader2, Sparkles } from "lucide-react";
 
+import { AiGenerateSection } from "@/components/ai-generate-section";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
 
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
@@ -491,25 +492,8 @@ function Panel({
 }) {
   return (
     <>
-      <div
-        className="lp-ai-surface"
-        style={{
-          marginTop: 18,
-          border: "1px solid #DEDCF5",
-          borderRadius: 14,
-          padding: "18px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 18,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ maxWidth: 560 }}>
-          <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, margin: 0 }}>{title}</h2>
-          <p style={{ fontSize: 14, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}>{blurb}</p>
-        </div>
-        {action}
+      <div style={{ marginTop: 18, marginBottom: 30 }}>
+        <AiGenerateSection title={title} description={blurb} cta={action} />
       </div>
       {children}
     </>

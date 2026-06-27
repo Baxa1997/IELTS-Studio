@@ -18,6 +18,9 @@ export interface StudyPlan {
   lastLevelCheckAt: string | null;
   nextLevelCheckAt: string | null;
   starterSeeded: boolean;
+  /** When the plan was created — the start of the study window (for the countdown's
+   *  "% elapsed" ring). */
+  createdAt: string;
 }
 
 // ---- Form options ----------------------------------------------------------

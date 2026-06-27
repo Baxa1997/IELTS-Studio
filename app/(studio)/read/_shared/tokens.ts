@@ -32,13 +32,13 @@ export const btnBase: CSSProperties = {
   textDecoration: "none",
 };
 
-export function primaryBtn(disabled = false): CSSProperties {
+export function primaryBtn(disabled = false, accent?: string): CSSProperties {
   return {
     ...btnBase,
-    background: INDIGO,
+    background: accent ?? INDIGO,
     color: "#fff",
     opacity: disabled ? 0.55 : 1,
     cursor: disabled ? "default" : "pointer",
-    boxShadow: "0 12px 24px -12px rgba(79,70,229,.7)",
+    boxShadow: accent ? `0 12px 24px -12px ${accent}b3` : "0 12px 24px -12px rgba(79,70,229,.7)",
   };
 }

@@ -6,7 +6,7 @@ import { AlertTriangle } from "lucide-react";
 
 import type { GradedItem } from "@/lib/reading/grade";
 import type { ReadingModule } from "@/lib/reading/types";
-import { CEFR, isCefrLevel } from "@/lib/cefr/levels";
+import { CEFR, isCefrLevel, type CefrLevel } from "@/lib/cefr/levels";
 import { bandColor } from "@/lib/ui/band";
 
 import { CoachPanel } from "../_shared/coach-panel";
@@ -56,6 +56,10 @@ const MAX_FONT = 1.4;
  * gives it the Cambridge instruction headers + inline gap-fills too.
  */
 export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; questions: DeliveredQuestion[] }) {
+  // CEFR passages carry their level's colour as the accent (and return to the CEFR
+  // hub on exit); IELTS passages keep the indigo accent and return to /read.
+  const accent = isCefrLevel(passage.cefrLevel ?? "") ? CEFR[passage.cefrLevel as CefrLevel].color : INDIGO;
+  const exitHref = passage.cefrLevel ? "/cefr" : "/read";
   const [phase, setPhase] = useState<Phase>("reading");
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
@@ -179,7 +183,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
         {/* Top bar: exit · timer · finish */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
           <div style={{ justifySelf: "start" }}>
-            <Link href="/read" aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, textDecoration: "none" }}>
+            <Link href={exitHref} aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, textDecoration: "none" }}>
               ←
             </Link>
           </div>
@@ -197,7 +201,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
             </Timer>
           </div>
           <div style={{ justifySelf: "end" }}>
-            <button type="button" onClick={finish} disabled={submitting} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: submitting ? "#9a96d6" : INDIGO, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", fontFamily: SANS, boxShadow: "0 4px 14px rgba(79,70,229,.28)" }}>
+            <button type="button" onClick={finish} disabled={submitting} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.7 : 1, fontFamily: SANS, boxShadow: `0 4px 14px ${accent}47` }}>
               {submitting ? "Marking…" : "Submit answers"}
             </button>
           </div>
@@ -219,7 +223,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
             </div>
           </div>
           <div style={{ height: 3, background: "#EEEDF6" }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: INDIGO, transition: "width .3s ease" }} />
+            <div style={{ height: "100%", width: `${pct}%`, background: accent, transition: "width .3s ease" }} />
           </div>
           {message ? (
             <div style={{ padding: "8px 28px", background: "#FDECEC", borderTop: "1px solid #F3B4B4" }}>
@@ -422,7 +426,7 @@ function ResultsView({ result, disclaimer, passageBody, cefrLevel }: { result: R
       {disclaimer ? <p style={{ fontFamily: SANS, fontSize: 12, color: "#9a998c", margin: 0 }}>{disclaimer}</p> : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-        <Link href="/read" style={primaryBtn()}>Try another passage</Link>
+        <Link href={cefr ? "/cefr" : "/read"} style={primaryBtn(false, cefr ? CEFR[cefr].color : undefined)}>Try another passage</Link>
         <Link href="/dashboard" style={{ ...btnBase, background: "transparent", color: MUTED }}>Back to dashboard</Link>
       </div>
     </div>

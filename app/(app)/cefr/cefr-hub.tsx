@@ -2,30 +2,32 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type React from "react";
 import { useMemo, useState } from "react";
 import { ArrowRight, BookOpen, Loader2, PenLine, Sparkles } from "lucide-react";
 
 import { CEFR, CEFR_LEVELS, isCefrLevel, type CefrLevel } from "@/lib/cefr/levels";
+import { cefrTheme, accentStrong } from "@/lib/cefr/theme";
 import { cefrTasksForLevel, type CefrWritingTask } from "@/lib/cefr/writing-tasks";
 import type { CefrAttemptSummary } from "@/lib/cefr/store";
 import { WritingStudio } from "@/app/(studio)/write/writing-studio";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const LINE = "#ECEAF2";
+const INK = "#1B2030";
+const MUTED = "#5C6473";
+const LINE = "#E6E8F0";
 const RED = "#C5503C";
 
 type Skill = "writing" | "reading";
 
 /**
- * The CEFR hub — ONE surface for the whole CEFR track, framed as SEPARATE from the
- * IELTS-band modules: short, level-graded practice reported as a CEFR level (A1→C2),
- * not a band. Structure is deliberately flat: a single level bar, then one practice
- * panel that switches between Writing and Reading. Writing opens the shared studio
- * (graded on the CEFR scale); Reading generates a short level-graded passage.
+ * The CEFR hub — the CEFR track's OWN home, deliberately unlike the IELTS modules.
+ * The identity is the **ladder you climb**: a six-rung A1→C2 rail in the level
+ * spectrum, and the whole surface is tinted by the active level's colour (never the
+ * IELTS indigo). One level-first journey: pick a rung, see what it means, then take
+ * its two challenges (Writing + Reading) side by side. Writing opens the shared
+ * studio (themed to the level); Reading generates a short level-graded passage.
  */
 export function CefrHub({
   recent = [],
@@ -38,7 +40,6 @@ export function CefrHub({
 }) {
   const router = useRouter();
   const [level, setLevel] = useState<CefrLevel>(initialLevel);
-  const [skill, setSkill] = useState<Skill>(initialSkill);
 
   const [task, setTask] = useState<CefrWritingTask | null>(null);
   const [genLoading, setGenLoading] = useState(false);
@@ -48,6 +49,8 @@ export function CefrHub({
 
   const tasks = useMemo(() => cefrTasksForLevel(level), [level]);
   const info = CEFR[level];
+  const theme = cefrTheme(level);
+  const accent = theme.accent;
 
   async function generateWriting() {
     if (genLoading) return;
@@ -59,10 +62,7 @@ export function CefrHub({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ level }),
       });
-      const body = (await res.json().catch(() => ({}))) as {
-        task?: CefrWritingTask;
-        message?: string;
-      };
+      const body = (await res.json().catch(() => ({}))) as { task?: CefrWritingTask; message?: string };
       if (res.ok && body.task) setTask(body.task);
       else setGenError(body.message ?? "Couldn't create a task. Please try again.");
     } catch {
@@ -95,11 +95,11 @@ export function CefrHub({
     }
   }
 
-  // A selected task (curated OR generated) opens the full writing studio as a
-  // fixed overlay that escapes the app shell and fills the viewport.
+  // A selected task (curated OR generated) opens the full writing studio as a fixed
+  // overlay that escapes the app shell and fills the viewport — themed to the level.
   if (task) {
     return (
-      <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#F4F1E7" }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 60, background: theme.canvas }}>
         <WritingStudio
           mode="cefr"
           cefrTask={{
@@ -118,8 +118,29 @@ export function CefrHub({
   }
 
   return (
-    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1080 }}>
+    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1040 }}>
       {/* ===== Header ===== */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            height: 26,
+            padding: "0 11px",
+            borderRadius: 999,
+            background: theme.accentSoft,
+            color: accent,
+            fontFamily: SANS,
+            fontWeight: 800,
+            fontSize: 11.5,
+            letterSpacing: ".09em",
+            textTransform: "uppercase",
+          }}
+        >
+          CEFR track
+        </span>
+      </div>
       <h1
         style={{
           fontFamily: SERIF,
@@ -127,39 +148,25 @@ export function CefrHub({
           fontSize: "clamp(27px,3vw,38px)",
           lineHeight: 1.05,
           letterSpacing: "-.01em",
-          margin: 0,
+          margin: "12px 0 0",
         }}
       >
-        CEFR practice
+        Climb the framework, level by level
       </h1>
-      <p style={{ margin: "10px 0 0", fontSize: 15.5, lineHeight: 1.55, color: MUTED, maxWidth: 620 }}>
-        Short, level-graded practice across the A1–C2 framework — scored as a{" "}
+      <p style={{ margin: "10px 0 0", fontSize: 15.5, lineHeight: 1.55, color: MUTED, maxWidth: 600 }}>
+        Short, level-graded practice across the A1–C2 ladder — scored as a{" "}
         <strong style={{ color: INK }}>CEFR level</strong>, not an IELTS band.
       </p>
 
-      {/* ===== Level bar ===== */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 9,
-          margin: "26px 0 10px",
-        }}
-      >
-        <span style={eyebrow}>Your level</span>
-        <span style={{ height: 1, flex: 1, background: LINE }} />
-      </div>
+      {/* ===== The ladder ===== */}
       <div
         role="tablist"
         aria-label="CEFR level"
         style={{
+          marginTop: 22,
           display: "grid",
           gridTemplateColumns: "repeat(6,1fr)",
-          gap: 6,
-          padding: 6,
-          background: "#F4F4F8",
-          border: `1px solid ${LINE}`,
-          borderRadius: 16,
+          gap: 8,
         }}
       >
         {CEFR_LEVELS.map((code) => {
@@ -172,26 +179,36 @@ export function CefrHub({
               role="tab"
               aria-selected={on}
               onClick={() => setLevel(code)}
+              className="lp-hover"
               style={{
+                position: "relative",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 2,
-                padding: "11px 4px 9px",
-                borderRadius: 11,
-                border: "none",
+                gap: 6,
+                padding: "13px 6px 11px",
+                borderRadius: 14,
                 cursor: "pointer",
-                background: on ? "#fff" : "transparent",
-                boxShadow: on ? "0 3px 10px -5px rgba(20,20,48,.4)" : "none",
-                transition: "background .15s ease",
+                background: on ? c.bg : "#fff",
+                border: `1.5px solid ${on ? c.color : LINE}`,
+                boxShadow: on ? `0 10px 22px -14px ${c.color}` : "none",
+                transition: "background .15s ease, border-color .15s ease",
               }}
             >
+              {/* rung marker */}
               <span
                 style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: 9,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: on ? c.color : c.bg,
+                  color: on ? "#fff" : c.color,
                   fontFamily: SANS,
                   fontWeight: 800,
-                  fontSize: 17,
-                  color: on ? c.color : "#8A8FA0",
+                  fontSize: 13.5,
                 }}
               >
                 {code}
@@ -201,7 +218,7 @@ export function CefrHub({
                   fontFamily: SANS,
                   fontSize: 11,
                   fontWeight: 600,
-                  color: on ? c.color : "#A6A9B6",
+                  color: on ? c.color : "#9AA0AE",
                   maxWidth: "100%",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -215,169 +232,91 @@ export function CefrHub({
         })}
       </div>
 
-      {/* ===== Practice panel (one card; switches skill) ===== */}
+      {/* ===== Level identity ===== */}
       <div
         style={{
           marginTop: 16,
-          background: "#fff",
-          border: `1px solid ${LINE}`,
-          borderRadius: 18,
-          overflow: "hidden",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "18px 20px",
+          background: theme.accentSoft,
+          border: `1px solid ${theme.accentLine}`,
+          borderRadius: 16,
+          flexWrap: "wrap",
         }}
       >
-        {/* header: level identity + skill toggle */}
-        <div
+        <span
           style={{
-            display: "flex",
+            flex: "none",
+            width: 54,
+            height: 54,
+            borderRadius: 14,
+            background: accent,
+            color: "#fff",
+            display: "inline-flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            padding: "16px 18px",
-            background: info.bg,
-            borderBottom: `1px solid ${info.color}22`,
-            flexWrap: "wrap",
+            justifyContent: "center",
+            fontFamily: SERIF,
+            fontWeight: 800,
+            fontSize: 22,
+            boxShadow: `0 10px 22px -10px ${accent}`,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
-            <span
-              style={{
-                flex: "none",
-                width: 50,
-                height: 50,
-                borderRadius: 13,
-                background: "#fff",
-                border: `1.5px solid ${info.color}40`,
-                color: info.color,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: SERIF,
-                fontWeight: 800,
-                fontSize: 21,
-              }}
-            >
-              {info.code}
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: INK }}>{info.name}</p>
-              <p style={{ margin: "2px 0 0", fontSize: 13, color: MUTED }}>{info.ieltsApprox}</p>
-            </div>
+          {info.code}
+        </span>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 800, fontSize: 18, color: INK }}>{info.name}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: accent }}>{info.ieltsApprox}</span>
           </div>
-          <div
-            role="tablist"
-            aria-label="Skill"
-            style={{
-              display: "inline-flex",
-              gap: 4,
-              padding: 4,
-              background: "#fff",
-              border: `1px solid ${info.color}2E`,
-              borderRadius: 12,
-            }}
-          >
-            <SkillPill active={skill === "writing"} onClick={() => setSkill("writing")} icon={<PenLine size={16} />} label="Writing" />
-            <SkillPill active={skill === "reading"} onClick={() => setSkill("reading")} icon={<BookOpen size={16} />} label="Reading" />
-          </div>
-        </div>
-
-        {/* body: can-do + the single primary action */}
-        <div style={{ padding: "20px 18px" }}>
-          <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: "#41496A" }}>
-            {skill === "writing"
-              ? info.writingCan ?? `Practise a short ${info.writingTask.toLowerCase()} at ${info.code}.`
-              : info.readingCan}
-          </p>
-
-          <div
-            className="lp-ai-surface"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              marginTop: 16,
-              flexWrap: "wrap",
-              padding: "16px 16px",
-              border: "1px solid #DEDCF5",
-              borderRadius: 14,
-            }}
-          >
-            {skill === "writing" ? (
-              <button
-                type="button"
-                onClick={() => void generateWriting()}
-                disabled={genLoading}
-                className={genLoading ? undefined : "lp-ai-pulse"}
-                style={primaryBtn(genLoading)}
-              >
-                {genLoading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Creating…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} className="lp-ai-spark" /> Generate a {info.code} task
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void generateReading()}
-                disabled={readLoading}
-                className={readLoading ? undefined : "lp-ai-pulse"}
-                style={primaryBtn(readLoading)}
-              >
-                {readLoading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" /> Generating… ~40s
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={16} className="lp-ai-spark" /> Generate a {info.code} reading
-                  </>
-                )}
-              </button>
-            )}
-
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-              {(skill === "writing"
-                ? [info.writingTask, `~${info.writingWords} words`]
-                : [`~${info.readingWords} words`, "6 questions · marked instantly"]
-              ).map((f) => (
-                <span key={f} style={factPill}>
-                  {f}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {(skill === "writing" ? genError : readError) ? (
-            <p role="alert" style={{ margin: "12px 0 0", fontSize: 13.5, color: RED, fontWeight: 600 }}>
-              {skill === "writing" ? genError : readError}
-            </p>
-          ) : null}
-          {skill === "reading" && readLoading ? (
-            <p style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
-              Writing an original {info.code} passage — hang tight, don&rsquo;t close this tab.
-            </p>
-          ) : null}
+          <p style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.5, color: "#41485C" }}>{info.blurb}</p>
         </div>
       </div>
 
-      {/* ===== Ready writing tasks (writing only) ===== */}
-      {skill === "writing" && tasks.length > 0 ? (
-        <div style={{ marginTop: 24 }}>
+      {/* ===== The two challenges ===== */}
+      <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "26px 0 13px" }}>
+        <span style={eyebrow}>Practise this level</span>
+        <span style={{ height: 1, flex: 1, background: LINE }} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 14 }}>
+        <ChallengeCard
+          theme={theme}
+          featured={initialSkill === "writing"}
+          icon={<PenLine size={18} />}
+          kicker="Writing"
+          can={info.writingCan ?? `Practise a short ${info.writingTask.toLowerCase()} at ${info.code}.`}
+          facts={[info.writingTask, `~${info.writingWords} words`]}
+          busy={genLoading}
+          busyLabel="Creating…"
+          label={`Generate a ${info.code} task`}
+          onGenerate={() => void generateWriting()}
+          error={genError}
+        />
+        <ChallengeCard
+          theme={theme}
+          featured={initialSkill === "reading"}
+          icon={<BookOpen size={18} />}
+          kicker="Reading"
+          can={info.readingCan}
+          facts={[`~${info.readingWords} words`, "6 questions · marked instantly"]}
+          busy={readLoading}
+          busyLabel="Generating… ~40s"
+          label={`Generate a ${info.code} reading`}
+          onGenerate={() => void generateReading()}
+          error={readError}
+          note={readLoading ? `Writing an original ${info.code} passage — hang tight, don't close this tab.` : null}
+        />
+      </div>
+
+      {/* ===== Ready writing tasks ===== */}
+      {tasks.length > 0 ? (
+        <div style={{ marginTop: 26 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
-            <span style={eyebrow}>Or pick a ready task</span>
+            <span style={eyebrow}>Or start a ready {info.code} task</span>
             <span style={{ height: 1, flex: 1, background: LINE }} />
           </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))",
-              gap: 14,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12 }}>
             {tasks.map((t) => (
               <button
                 key={t.id}
@@ -389,16 +328,16 @@ export function CefrHub({
                   cursor: "pointer",
                   background: "#fff",
                   border: `1px solid ${LINE}`,
-                  borderRadius: 16,
-                  padding: "18px 18px 16px",
+                  borderRadius: 14,
+                  padding: "16px 16px 14px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: 10,
+                  gap: 9,
                   fontFamily: SANS,
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: 15.5, color: INK }}>{t.title}</span>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>{t.title}</span>
                   <span style={{ fontSize: 12, fontWeight: 600, color: MUTED, whiteSpace: "nowrap" }}>
                     {t.words[0]}–{t.words[1]} w
                   </span>
@@ -410,24 +349,14 @@ export function CefrHub({
                     lineHeight: 1.5,
                     color: MUTED,
                     display: "-webkit-box",
-                    WebkitLineClamp: 3,
+                    WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
                   }}
                 >
                   {t.prompt}
                 </p>
-                <span
-                  style={{
-                    marginTop: 2,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: 13.5,
-                    fontWeight: 700,
-                    color: INDIGO,
-                  }}
-                >
+                <span style={{ marginTop: 2, display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, color: accent }}>
                   Start writing <ArrowRight size={14} />
                 </span>
               </button>
@@ -452,9 +381,8 @@ export function CefrHub({
       ) : null}
 
       <p style={{ margin: "30px 0 0", fontSize: 12.5, lineHeight: 1.5, color: "#9A99A8", maxWidth: 720 }}>
-        CEFR levels and their IELTS overlap follow the public Council of Europe framework. A CEFR
-        result is an indicative level, not an official IELTS® score, and this product is not
-        affiliated with or endorsed by IELTS®.
+        CEFR levels and their IELTS overlap follow the public Council of Europe framework. A CEFR result is an
+        indicative level, not an official IELTS® score, and this product is not affiliated with or endorsed by IELTS®.
       </p>
     </div>
   );
@@ -469,58 +397,143 @@ const eyebrow: React.CSSProperties = {
   color: "#8A8FA0",
 };
 
-const factPill: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  fontFamily: SANS,
-  fontSize: 12.5,
-  fontWeight: 600,
-  color: "#5A6076",
-  background: "#F4F4F8",
-  border: `1px solid ${LINE}`,
-  borderRadius: 999,
-  padding: "6px 11px",
-  whiteSpace: "nowrap",
-};
+/** A small style object carrying the accent CSS vars for the animated generate surface. */
+function aiVars(theme: ReturnType<typeof cefrTheme>): React.CSSProperties {
+  return { ["--ai-soft"]: theme.accentSoft, ["--ai-strong"]: accentStrong(theme.accent) } as React.CSSProperties;
+}
 
-/** A skill toggle pill inside the panel header. */
-function SkillPill({
-  active,
-  onClick,
+/** One practice challenge (Writing or Reading) for the active level. */
+function ChallengeCard({
+  theme,
+  featured,
   icon,
+  kicker,
+  can,
+  facts,
+  busy,
+  busyLabel,
   label,
+  onGenerate,
+  error,
+  note = null,
 }: {
-  active: boolean;
-  onClick: () => void;
+  theme: ReturnType<typeof cefrTheme>;
+  featured: boolean;
   icon: React.ReactNode;
+  kicker: string;
+  can: string;
+  facts: string[];
+  busy: boolean;
+  busyLabel: string;
   label: string;
+  onGenerate: () => void;
+  error: string | null;
+  note?: string | null;
 }) {
+  const accent = theme.accent;
   return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
+    <div
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 7,
-        height: 36,
-        padding: "0 15px",
-        borderRadius: 9,
-        border: "none",
-        cursor: "pointer",
-        fontFamily: SANS,
-        fontWeight: 700,
-        fontSize: 14,
-        background: active ? INDIGO : "transparent",
-        color: active ? "#fff" : MUTED,
-        transition: "background .15s ease, color .15s ease",
+        display: "flex",
+        flexDirection: "column",
+        background: "#fff",
+        border: `1.5px solid ${featured ? theme.accentLine : LINE}`,
+        borderRadius: 16,
+        padding: "18px 18px 18px",
+        boxShadow: featured ? `0 12px 26px -18px ${accent}` : "none",
       }}
     >
-      {icon}
-      {label}
-    </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: theme.accentSoft,
+            color: accent,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {icon}
+        </span>
+        <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: 15.5, color: INK }}>{kicker}</span>
+      </div>
+
+      <p style={{ margin: "13px 0 0", fontSize: 14, lineHeight: 1.55, color: "#41485C", flex: 1 }}>{can}</p>
+
+      <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 13 }}>
+        {facts.map((f) => (
+          <span
+            key={f}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              fontFamily: SANS,
+              fontSize: 12,
+              fontWeight: 600,
+              color: MUTED,
+              background: "#F4F5F9",
+              border: `1px solid ${LINE}`,
+              borderRadius: 999,
+              padding: "5px 10px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {f}
+          </span>
+        ))}
+      </div>
+
+      <div
+        className="lp-ai-surface-accent"
+        style={{ ...aiVars(theme), marginTop: 14, padding: 12, borderRadius: 13, border: `1px solid ${theme.accentLine}` }}
+      >
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={busy}
+          className={busy ? undefined : "lp-ai-pulse"}
+          style={{
+            width: "100%",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            height: 46,
+            border: "none",
+            borderRadius: 11,
+            background: accent,
+            color: "#fff",
+            fontFamily: SANS,
+            fontSize: 14.5,
+            fontWeight: 700,
+            cursor: busy ? "default" : "pointer",
+            opacity: busy ? 0.75 : 1,
+            boxShadow: `0 10px 22px -10px ${accent}`,
+          }}
+        >
+          {busy ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> {busyLabel}
+            </>
+          ) : (
+            <>
+              <Sparkles size={16} className="lp-ai-spark" /> {label}
+            </>
+          )}
+        </button>
+      </div>
+
+      {error ? (
+        <p role="alert" style={{ margin: "11px 0 0", fontSize: 13.5, color: RED, fontWeight: 600 }}>
+          {error}
+        </p>
+      ) : note ? (
+        <p style={{ margin: "10px 0 0", fontSize: 12.5, color: MUTED }}>{note}</p>
+      ) : null}
+    </div>
   );
 }
 
@@ -555,23 +568,13 @@ function RecentRow({ a }: { a: CefrAttemptSummary }) {
           fontWeight: 800,
           fontSize: 18,
           color: c?.color ?? INK,
-          background: c?.bg ?? "#F1EFE5",
+          background: c?.bg ?? "#EEF1F7",
         }}
       >
         {a.estimated_level}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p
-          style={{
-            margin: 0,
-            fontWeight: 700,
-            fontSize: 14.5,
-            color: INK,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 14.5, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {a.task_title ?? "CEFR writing"}
         </p>
         <p style={{ margin: "2px 0 0", fontSize: 12.5, color: MUTED, textTransform: "capitalize" }}>
@@ -579,7 +582,7 @@ function RecentRow({ a }: { a: CefrAttemptSummary }) {
           {when ? ` · ${when}` : ""}
         </p>
       </div>
-      <span style={{ flex: "none", color: INDIGO }} aria-hidden>
+      <span style={{ flex: "none", color: c?.color ?? INK }} aria-hidden>
         <ArrowRight size={16} />
       </span>
     </Link>
@@ -592,25 +595,4 @@ function formatWhen(iso: string): string {
   } catch {
     return "";
   }
-}
-
-function primaryBtn(busy: boolean): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    height: 46,
-    padding: "0 20px",
-    border: "none",
-    borderRadius: 12,
-    background: INDIGO,
-    color: "#fff",
-    fontFamily: SANS,
-    fontSize: 14.5,
-    fontWeight: 700,
-    cursor: busy ? "default" : "pointer",
-    opacity: busy ? 0.7 : 1,
-    boxShadow: "0 10px 22px -10px rgba(59,67,181,.7)",
-    flex: "none",
-  };
 }

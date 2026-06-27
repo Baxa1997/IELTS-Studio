@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { requireOrgUser } from "@/lib/auth";
+import { CEFR } from "@/lib/cefr/levels";
 import { attemptToGradeResult, getCefrAttempt } from "@/lib/cefr/store";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,7 +12,6 @@ import { CefrFeedback } from "../cefr-feedback";
 export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#3B43B5";
 const MUTED = "#5A6076";
 
 /**
@@ -29,6 +29,7 @@ export default async function CefrAttemptPage({ params }: { params: Promise<{ id
   if (!attempt) notFound();
 
   const grade = attemptToGradeResult(attempt);
+  const accent = CEFR[grade.estimated_level].color;
   const againHref = attempt.task_id ? `/cefr/writing?task=${attempt.task_id}` : "/cefr/writing";
 
   return (
@@ -43,7 +44,7 @@ export default async function CefrAttemptPage({ params }: { params: Promise<{ id
           footer={
             <Link
               href={againHref}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", borderRadius: 11, background: INDIGO, color: "#fff", fontWeight: 700, fontSize: 14.5, textDecoration: "none", boxShadow: "0 10px 22px -10px rgba(59,67,181,.7)" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", borderRadius: 11, background: accent, color: "#fff", fontWeight: 700, fontSize: 14.5, textDecoration: "none", boxShadow: `0 10px 22px -10px ${accent}b3` }}
             >
               Practise this task again
             </Link>
