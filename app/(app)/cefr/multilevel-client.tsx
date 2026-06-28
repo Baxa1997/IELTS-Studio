@@ -419,20 +419,21 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
         </div>
       </div>
 
-      {/* Split: reading (70%) | coach (30%) */}
+      {/* Split: reading text (left) | coach (right) — mirrors the IELTS reading runner,
+          with the coach in the panel the IELTS test uses for questions. */}
       <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <div ref={scrollRef} style={{ flex: 1, overflow: "auto", padding: "clamp(20px,3vw,30px) clamp(16px,3vw,30px) 90px", minHeight: 0, borderRight: coachOpen ? `1px solid ${LINE}` : "none" }}>
-          <div style={{ maxWidth: 760, margin: "0 auto" }}>
+        <article ref={scrollRef} style={{ flex: 1, overflow: "auto", padding: "30px clamp(20px,4vw,52px) 90px", minHeight: 0, borderRight: coachOpen ? `1px solid ${LINE}` : "none" }}>
+          <div style={{ maxWidth: 720 }}>
             {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
-            {paper.parts.map((part) => (
-              <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
+            {paper.parts.map((part, i) => (
+              <PartBlock key={part.part} first={i === 0} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
             ))}
             {error ? <Alert>{error}</Alert> : null}
           </div>
-        </div>
+        </article>
 
         {coachOpen ? (
-          <aside style={{ width: "30%", minWidth: 300, maxWidth: 460, flex: "none", minHeight: 0, display: "flex" }}>
+          <aside style={{ width: "38%", minWidth: 320, maxWidth: 560, flex: "none", minHeight: 0, display: "flex" }}>
             <CefrCoach passageBody={coach.body} questions={coach.questions} phase={graded ? "results" : "reading"} onClose={() => setCoachOpen(false)} />
           </aside>
         ) : null}
@@ -608,12 +609,12 @@ function coachContext(parts: ReadingPart[]): { body: string; questions: string }
   return { body: body.join("\n\n"), questions: qs.join("\n") };
 }
 
-function PartBlock({ part, answers, set, results, graded }: {
-  part: ReadingPart; answers: Record<string, string>; set: (n: number | string, v: string) => void;
+function PartBlock({ part, first, answers, set, results, graded }: {
+  part: ReadingPart; first: boolean; answers: Record<string, string>; set: (n: number | string, v: string) => void;
   results: Map<number, QResult>; graded: boolean;
 }) {
   return (
-    <section style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(18px,2.2vw,26px)", marginBottom: 18 }}>
+    <section style={{ padding: first ? "0 0 28px" : "28px 0", borderTop: first ? "none" : `1px solid ${LINE}` }}>
       <PartHeading n={part.part} cefr={part.cefr} />
       {part.part === 1 ? <Part1 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
       {part.part === 2 ? <Part2 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
