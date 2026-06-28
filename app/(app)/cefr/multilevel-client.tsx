@@ -112,14 +112,14 @@ export function MultilevelClient() {
     <div style={{ maxWidth: 880, margin: "0 auto", padding: "clamp(20px,3vw,36px) 20px 80px" }}>
       <header style={{ marginBottom: 28 }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 11px", borderRadius: 999, background: TINT, border: `1px solid ${TINT_BORDER}`, color: INDIGO, fontFamily: SANS, fontWeight: 700, fontSize: 12, marginBottom: 12 }}>
-          <Layers size={14} /> Multilevel · B1→C1
+          <Layers size={14} /> CEFR · B1→C1
         </div>
         <h1 style={{ fontFamily: SERIF, fontSize: "clamp(26px,3.4vw,34px)", color: INK, margin: 0, fontWeight: 600 }}>
-          Uzbekistan Multilevel practice
+          CEFR practice
         </h1>
         <p style={{ fontFamily: SANS, color: MUTED, fontSize: 15, margin: "8px 0 0", lineHeight: 1.6 }}>
-          The State Testing Centre (DTM) format — a 5-part, 35-question Reading paper and a
-          3-task Writing paper, generated fresh and graded instantly.
+          The Uzbekistan Multilevel (State Testing Centre / DTM) format — a 5-part, 35-question
+          Reading paper and a 3-task Writing paper, generated fresh and graded instantly.
         </p>
       </header>
 
