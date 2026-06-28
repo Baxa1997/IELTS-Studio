@@ -287,15 +287,9 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
               cta={<AiGenerateButton label="Generate full paper" busyLabel="Writing your paper…" generating={busy === "r-full"} busy={!!busy} minWidth={200} onClick={() => onReading({ scope: "full" }, "r-full")} />}
             />
           </div>
-          <SectionLabel>Or practise a single part</SectionLabel>
-          <Grid>
-            {READING_PARTS.map((p) => (
-              <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`)} />
-            ))}
-          </Grid>
 
           {recent.length > 0 ? (
-            <div style={{ marginTop: 30 }}>
+            <div style={{ marginBottom: 28 }}>
               <SectionLabel>Your recent papers</SectionLabel>
               <Grid>
                 {recent.map((it) => {
@@ -307,10 +301,9 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
                       Icon={full ? History : FileText}
                       eyebrow="Saved paper"
                       title={full ? "Full reading paper" : `Part ${part ?? ""}`}
-                      desc={full ? "Reopen all five parts — retake or review your answers." : "Reopen this single-part practice."}
+                      desc={full ? "Open all five parts — retake or review your answers." : "Open this single-part practice."}
                       level={fmtWhen(it.created_at)}
                       meta={full ? "35 questions" : "single part"}
-                      cta="Reopen"
                       busyLabel="Opening…"
                       loading={busy === `item-${it.id}`}
                       disabled={!!busy}
@@ -321,6 +314,13 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
               </Grid>
             </div>
           ) : null}
+
+          <SectionLabel>Or practise a single part</SectionLabel>
+          <Grid>
+            {READING_PARTS.map((p) => (
+              <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`)} />
+            ))}
+          </Grid>
         </>
       ) : (
         <>
