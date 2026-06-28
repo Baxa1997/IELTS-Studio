@@ -234,7 +234,10 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
               <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#9a96a8", margin: 0 }}>
                 {kindLabel} Reading{passage.topic ? ` · ${passage.topic}` : ""}
               </p>
-              <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "8px 0 20px" }}>{passage.title}</h1>
+              <p style={{ fontSize: 14, fontStyle: "italic", color: MUTED, margin: "10px 0 0", lineHeight: 1.5 }}>
+                You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions 1–{total}</strong>, which are based on the reading passage below.
+              </p>
+              <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>{passage.title}</h1>
               <div style={{ lineHeight: 1.75, color: "#3A3650", fontSize: fontPx, whiteSpace: "pre-wrap" }}>{passage.body}</div>
             </div>
           </article>

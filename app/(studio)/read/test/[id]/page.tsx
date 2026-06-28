@@ -45,7 +45,7 @@ export default async function ReadingTestPage({ params }: PageProps) {
   const admin = createAdminClient();
   const { data: questions } = await admin
     .from("reading_questions")
-    .select("id, question_type, order_index, prompt, options, passage_id") // answer-free
+    .select("id, question_type, order_index, prompt, options, word_limit, section, passage_id") // answer-free
     .in("passage_id", passages.map((p) => p.id as string))
     .eq("organization_id", profile.organization_id)
     .order("order_index", { ascending: true });
@@ -60,6 +60,8 @@ export default async function ReadingTestPage({ params }: PageProps) {
       order_index: q.order_index as number,
       prompt: (q.prompt as string) ?? "",
       options: (q.options as string[] | null) ?? null,
+      word_limit: (q.word_limit as string | null) ?? null,
+      section: (q.section as string | null) ?? null,
     });
     byPassage.set(pid, list);
   }

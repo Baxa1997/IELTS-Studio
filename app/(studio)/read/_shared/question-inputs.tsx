@@ -13,6 +13,10 @@ export interface DeliveredQuestion {
   order_index: number;
   prompt: string;
   options: string[] | null;
+  /** Completion groups: the group's word-limit phrase (rendered in the heading). */
+  word_limit?: string | null;
+  /** Note completion: optional sub-heading grouping consecutive note lines. */
+  section?: string | null;
 }
 
 const LETTERS = "ABCDEFGHIJKLMNOP".split("");
@@ -72,14 +76,23 @@ export function QuestionInput({
     }
 
     case "matching_headings":
-    case "matching_information": {
+    case "matching_information":
+    case "matching_sentence_endings": {
       if (!options?.length) return <TextAnswer value={value} onChange={onChange} />;
+      // Headings are labelled with roman numerals, sentence endings with letters
+      // (A–F), and matching-information answers carry the bare option text.
+      const label = (i: number) =>
+        question_type === "matching_headings"
+          ? `${roman(i)}. ${options[i]}`
+          : question_type === "matching_sentence_endings"
+            ? `${LETTERS[i] ?? i + 1}. ${options[i]}`
+            : options[i];
       return (
         <select value={value} onChange={(e) => onChange(e.target.value)} className="lp-input" style={{ width: "100%", padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 14, color: INK }}>
           <option value="">Choose…</option>
           {options.map((opt, i) => (
             <option key={i} value={opt}>
-              {question_type === "matching_headings" ? `${roman(i)}. ${opt}` : opt}
+              {label(i)}
             </option>
           ))}
         </select>
@@ -88,6 +101,7 @@ export function QuestionInput({
 
     case "sentence_completion":
     case "summary_completion":
+    case "note_completion":
     default:
       return <TextAnswer value={value} onChange={onChange} />;
   }

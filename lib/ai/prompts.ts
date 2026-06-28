@@ -379,12 +379,16 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       common,
       "Write ONE original passage and questions that are objectively answerable FROM THE PASSAGE ALONE — no outside knowledge.",
       "Number questions sequentially from 1 and use ONLY the question types named in the spec.",
-      "Group questions by type: keep ALL questions of the same type together in one contiguous numbered block (e.g. Q1–6 True/False/Not Given, then Q7–10 sentence completion) — never interleave types — so each block reads under a single Cambridge-style instruction.",
+      "Group questions by type: keep ALL questions of the same type together in one contiguous numbered block (e.g. Q1–6 True/False/Not Given, then Q7–10 note completion) — never interleave types — so each block reads under a single Cambridge-style group instruction.",
       "For EVERY question give the single defensible answer AND quote, verbatim, the exact sentence from the passage that justifies it.",
+      "CRITICAL — the instruction line and the word limit are NOT part of any question. NEVER write 'Complete the notes below', 'Choose ONE WORD ONLY', 'NO MORE THAN TWO WORDS', a heading like 'The saiga'/'Adaptations', or any rubric text inside a question's 'prompt'. The 'prompt' holds ONLY the statement, sentence, or note line itself. The word limit goes in the separate 'word_limit' field; note sub-headings go in the separate 'section' field.",
       "true_false_not_given / yes_no_not_given: 'Not Given' (or 'Not Mentioned') means the passage neither confirms nor contradicts the statement — for those, supporting_sentence may be empty.",
       "matching_headings: put the full heading bank in options and the correct heading text in answer; prompt names the paragraph (e.g. 'Paragraph B'). Label passage paragraphs 'A) ', 'B) ', … in body.",
       "matching_information: answer is the paragraph label that contains the information.",
-      "sentence_completion / summary_completion: write the candidate-facing 'prompt' as the FULL sentence with the missing word(s) shown as a run of underscores '______' exactly where the answer goes (e.g. 'The research was funded by the ______ government.'). The answer is the exact word(s) copied verbatim from the passage, NO MORE THAN TWO WORDS (and/or a number). Put the gap mid-sentence where natural, not always at the end.",
+      "matching_sentence_endings: 'prompt' is the SENTENCE BEGINNING (a stem ending mid-thought, no blank, e.g. 'The findings at Kalambo Falls revealed that'); 'options' is a SHARED bank of possible endings (provide 1–2 MORE endings than there are questions in the block, so some are unused), identical for every question in the block; 'answer' is the exact text of the correct ending. Endings are labelled A, B, C… in the UI.",
+      "sentence_completion / summary_completion / note_completion: write the candidate-facing 'prompt' as the sentence or note line with the missing word(s) shown as a run of underscores '______' exactly where the answer goes (e.g. 'The research was funded by the ______ government.', or a note line like 'grows a thick ______ in winter'). The answer is the exact word(s) copied verbatim from the passage. Put the gap mid-line where natural, not always at the end.",
+      "For EVERY sentence_completion / summary_completion / note_completion question set 'word_limit' to the SAME exact phrase for the whole block — one of: 'ONE WORD ONLY', 'ONE WORD AND/OR A NUMBER', 'NO MORE THAN TWO WORDS', 'NO MORE THAN TWO WORDS AND/OR A NUMBER', 'NO MORE THAN THREE WORDS', 'NO MORE THAN THREE WORDS AND/OR A NUMBER' — and make it MATCH the answers (use 'ONE WORD ONLY' only if every answer in the block is a single word). Leave 'word_limit' null for all other types.",
+      "note_completion forms a structured set of notes. Use the 'section' field to give consecutive note lines a sub-heading (e.g. 'Adaptations', then 'Reasons for population decline'); reuse the same 'section' string for every line under it. Keep note lines short and telegraphic, like real exam notes, not full sentences. Use 'section' ONLY for note_completion.",
       "multiple_choice: options are the choices and answer is the exact text of the correct option; make distractors plausible.",
       "Pitch vocabulary and abstraction at the target band in the spec.",
       READING_SET_CONTRACT,
@@ -457,15 +461,17 @@ const READING_SET_CONTRACT = `Emit ONE JSON object and nothing else — no prose
     {
       "type": "<one of the requested question types>",
       "number": <int, sequential from 1>,
-      "prompt": "<the statement or question the candidate sees>",
-      "options": ["<choice or heading>", "…"] ,
+      "prompt": "<ONLY the statement / question / sentence-stem / gapped line — never the rubric, word limit, or a heading>",
+      "options": ["<choice, heading, or ending>", "…"] ,
       "answer": "<the single defensible answer key>",
       "supporting_sentence": "<verbatim sentence from the passage that justifies the answer; empty only for Not Given>",
-      "explanation": "<one line: why this is the answer / why a distractor is a trap>"
+      "explanation": "<one line: why this is the answer / why a distractor is a trap>",
+      "word_limit": "<completion types ONLY: the group's exact word-limit phrase, same for the whole block; null otherwise>",
+      "section": "<note_completion ONLY: optional sub-heading for this note line; null otherwise>"
     }
   ]
 }
-Set "options" to null for question types that have no options (true/false/not given, completion).`;
+Set "options" to null for types that have no options (true/false/not given, yes/no/not given, sentence/summary/note completion). Set "word_limit" only for sentence/summary/note completion. Set "section" only for note_completion.`;
 
 /** The exact JSON the validation pass must emit — in lockstep with
  *  readingValidationOutputSchema. */

@@ -39,7 +39,7 @@ export default async function ReadingRunnerPage({ params }: PageProps) {
   const admin = createAdminClient();
   const { data: questions } = await admin
     .from("reading_questions")
-    .select("id, question_type, order_index, prompt, options") // deliberately answer-free
+    .select("id, question_type, order_index, prompt, options, word_limit, section") // deliberately answer-free
     .eq("passage_id", id)
     .eq("organization_id", profile.organization_id)
     .order("order_index", { ascending: true });
@@ -52,6 +52,8 @@ export default async function ReadingRunnerPage({ params }: PageProps) {
     order_index: q.order_index as number,
     prompt: (q.prompt as string) ?? "",
     options: (q.options as string[] | null) ?? null,
+    word_limit: (q.word_limit as string | null) ?? null,
+    section: (q.section as string | null) ?? null,
   }));
 
   const runnerPassage: RunnerPassage = {

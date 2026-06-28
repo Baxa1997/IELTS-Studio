@@ -172,7 +172,8 @@ export function isCorrect(q: GradableQuestion, studentAnswer: string): boolean {
 
     case "multiple_choice":
     case "matching_headings":
-    case "matching_information": {
+    case "matching_information":
+    case "matching_sentence_endings": {
       // Accept the option text, or the bare letter/roman the key may use.
       const correctText = norm(resolveCorrectText(q.options, q.answer_key));
       return student === correctText || student === norm(q.answer_key);
@@ -180,6 +181,7 @@ export function isCorrect(q: GradableQuestion, studentAnswer: string): boolean {
 
     case "sentence_completion":
     case "summary_completion":
+    case "note_completion":
     default: {
       // Typed free-text. Real IELTS marks an answer right regardless of a leading
       // article or whether a number is written as a figure or a word, and accepts

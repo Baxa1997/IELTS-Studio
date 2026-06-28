@@ -16,8 +16,10 @@ export const READING_QUESTION_TYPES = [
   "yes_no_not_given",
   "matching_headings",
   "matching_information",
+  "matching_sentence_endings",
   "sentence_completion",
   "summary_completion",
+  "note_completion",
   "multiple_choice",
 ] as const;
 export type ReadingQuestionType = (typeof READING_QUESTION_TYPES)[number];
@@ -27,19 +29,43 @@ export const READING_QUESTION_LABELS: Record<ReadingQuestionType, string> = {
   yes_no_not_given: "Yes / No / Not Given",
   matching_headings: "Matching headings",
   matching_information: "Matching information",
+  matching_sentence_endings: "Matching sentence endings",
   sentence_completion: "Sentence completion",
   summary_completion: "Summary completion",
+  note_completion: "Note completion",
   multiple_choice: "Multiple choice",
 };
 
 /**
- * The Cambridge-style instruction line shown above each group of same-type
- * questions, exactly as the real exam frames them ("Do the following statements
- * agree with the information…", "Complete the sentences below…"). These are the
- * standard public rubric phrasings — NOT copied from any test book (CLAUDE.md §IP).
- * The "Questions X–Y" range is computed at render time, not stored here.
+ * The word-limit options a completion group can carry, exactly as the real exam
+ * phrases them ("Choose ONE WORD ONLY …", "… NO MORE THAN TWO WORDS …"). The limit
+ * is a GROUP-LEVEL property generated WITH the questions — never part of an
+ * individual question's text — and is rendered once in the group heading. This is
+ * the fix for the limit being conflated with the questions.
  */
-export const READING_INSTRUCTIONS: Record<ReadingQuestionType, string> = {
+export const READING_WORD_LIMITS = [
+  "ONE WORD ONLY",
+  "ONE WORD AND/OR A NUMBER",
+  "NO MORE THAN TWO WORDS",
+  "NO MORE THAN TWO WORDS AND/OR A NUMBER",
+  "NO MORE THAN THREE WORDS",
+  "NO MORE THAN THREE WORDS AND/OR A NUMBER",
+] as const;
+export type ReadingWordLimit = (typeof READING_WORD_LIMITS)[number];
+
+/** Fallback when the generator omits a limit for a completion group. */
+export const DEFAULT_WORD_LIMIT: ReadingWordLimit = "NO MORE THAN TWO WORDS AND/OR A NUMBER";
+
+/** The completion family — the "Complete the … below" lead that prefixes the
+ *  word-limit line in the group heading. */
+const COMPLETION_LEAD: Partial<Record<ReadingQuestionType, string>> = {
+  sentence_completion: "Complete the sentences below.",
+  summary_completion: "Complete the summary below.",
+  note_completion: "Complete the notes below.",
+};
+
+/** The fixed instruction for the non-completion types (no word limit). */
+const FIXED_INSTRUCTIONS: Partial<Record<ReadingQuestionType, string>> = {
   true_false_not_given:
     "Do the following statements agree with the information given in the passage? Write TRUE if the statement agrees with the information, FALSE if the statement contradicts the information, or NOT GIVEN if there is no information on this.",
   yes_no_not_given:
@@ -48,19 +74,39 @@ export const READING_INSTRUCTIONS: Record<ReadingQuestionType, string> = {
     "Choose the correct heading for each paragraph from the list of headings below.",
   matching_information:
     "Which paragraph contains the following information? Write the correct letter. You may use any letter more than once.",
-  sentence_completion:
-    "Complete the sentences below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer.",
-  summary_completion:
-    "Complete the summary below. Choose NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer.",
+  matching_sentence_endings:
+    "Complete each sentence with the correct ending from the list below.",
   multiple_choice: "Choose the correct letter.",
 };
 
-/** Completion types render a fill-in-the-blank inside the sentence, not a
- *  separate text box. The blank marker the generator writes (and the UI replaces
+/**
+ * The Cambridge-style instruction line shown above each group of same-type
+ * questions, exactly as the real exam frames them. For completion groups the
+ * GROUP'S word limit is folded into the lead ("Complete the notes below. Choose
+ * ONE WORD ONLY from the passage for each answer.") — the limit lives in the
+ * heading, never inside a question. These are the standard public rubric phrasings,
+ * NOT copied from any test book (CLAUDE.md §IP). The "Questions X–Y" range is
+ * computed at render time, not stored here.
+ */
+export function readingGroupInstruction(
+  type: ReadingQuestionType,
+  wordLimit?: string | null,
+): string {
+  const lead = COMPLETION_LEAD[type];
+  if (lead) {
+    const limit = (wordLimit?.trim() || DEFAULT_WORD_LIMIT).toUpperCase();
+    return `${lead} Choose ${limit} from the passage for each answer.`;
+  }
+  return FIXED_INSTRUCTIONS[type] ?? "";
+}
+
+/** Completion types render a fill-in-the-blank inside the sentence/note line, not
+ *  a separate text box. The blank marker the generator writes (and the UI replaces
  *  with an inline input) is a run of underscores. */
 export const READING_GAP_TYPES: ReadonlyArray<ReadingQuestionType> = [
   "sentence_completion",
   "summary_completion",
+  "note_completion",
 ];
 export function isReadingGapType(t: ReadingQuestionType): boolean {
   return READING_GAP_TYPES.includes(t);
@@ -90,9 +136,9 @@ export const READING_TEST_DURATION_SECONDS = 60 * 60;
  * three passages don't feel identical.
  */
 export const FULL_TEST_TYPE_SETS: ReadonlyArray<ReadingQuestionType[]> = [
-  ["true_false_not_given", "multiple_choice", "sentence_completion"],
+  ["note_completion", "true_false_not_given", "multiple_choice"],
   ["matching_information", "summary_completion", "true_false_not_given"],
-  ["matching_headings", "yes_no_not_given", "multiple_choice"],
+  ["multiple_choice", "matching_sentence_endings", "yes_no_not_given"],
 ];
 
 /** Below this, the validator's confidence in an answer key trips teacher review. */
@@ -132,6 +178,12 @@ export const readingQuestionOutSchema = z.object({
   answer: z.string().min(1),
   supporting_sentence: z.string().default(""),
   explanation: z.string().default(""),
+  // Completion groups only: the exact word-limit phrase for THIS group (rendered as
+  // the group heading, never inside a prompt). Null/absent for non-completion types.
+  word_limit: z.string().nullish(),
+  // Note/table completion only: an optional sub-heading (e.g. "Adaptations") that
+  // groups consecutive note lines under it, exactly like the Cambridge notes layout.
+  section: z.string().nullish(),
 });
 export type ReadingQuestionOut = z.infer<typeof readingQuestionOutSchema>;
 
@@ -173,6 +225,10 @@ export interface StoredReadingQuestion {
   answer_key: string;
   supporting_sentence: string;
   explanation: string;
+  /** Completion groups: the group's word-limit phrase (rendered in the heading). */
+  word_limit: string | null;
+  /** Note/table completion: optional sub-heading grouping consecutive note lines. */
+  section: string | null;
   confidence: number | null;
   needs_review: boolean;
   validation_verdict: string | null;

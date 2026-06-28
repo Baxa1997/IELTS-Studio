@@ -1,6 +1,6 @@
 "use client";
 
-import { isReadingGapType, READING_INSTRUCTIONS } from "@/lib/reading/types";
+import { isReadingGapType, readingGroupInstruction } from "@/lib/reading/types";
 
 import { GapSentence, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { INDIGO, INK, MUTED, SANS } from "./tokens";
@@ -8,6 +8,8 @@ import { INDIGO, INK, MUTED, SANS } from "./tokens";
 /** Each question sits in its own card; the border is brand-indigo (not faint grey)
  *  so the box around the question + its options is clearly visible. */
 const QUESTION_BORDER = "#C5C9F1";
+
+const ENDING_LETTERS = "ABCDEFGHIJ".split("");
 
 /**
  * Renders a passage's questions the way the real Cambridge exam frames them:
@@ -43,46 +45,73 @@ export function QuestionGroups({
         const first = number(group[0]);
         const last = number(group[group.length - 1]);
         const range = first === last ? `Question ${first}` : `Questions ${first}–${last}`;
+        const type = group[0].question_type;
+        const instruction = readingGroupInstruction(type, group[0].word_limit);
+        // The shared endings bank (A–F) for a matching-sentence-endings block is the
+        // same on every question; show it once under the instruction.
+        const endingsBank = type === "matching_sentence_endings" ? group[0].options ?? null : null;
+        let lastSection: string | null = null;
         return (
           <section key={gi} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {/* Cambridge instruction header */}
             <div style={{ borderLeft: `3px solid ${INDIGO}`, paddingLeft: 14 }}>
               <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 15, color: INK, margin: 0, fontVariantNumeric: "tabular-nums" }}>{range}</p>
               <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "5px 0 0" }}>
-                {READING_INSTRUCTIONS[group[0].question_type]}
+                {instruction}
               </p>
             </div>
+
+            {endingsBank ? (
+              <ul style={{ listStyle: "none", margin: 0, padding: "14px 18px", border: "1px solid #E5E3EF", borderRadius: 12, background: "#FAFAFD", display: "flex", flexDirection: "column", gap: 7 }}>
+                {endingsBank.map((opt, i) => (
+                  <li key={i} style={{ display: "flex", gap: 9, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: INK }}>
+                    <span style={{ flex: "none", fontWeight: 700, color: INDIGO }}>{ENDING_LETTERS[i] ?? i + 1}</span>
+                    <span>{opt}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
 
             {group.map((q) => {
               const n = number(q);
               const gap = isReadingGapType(q.question_type);
               const flagged = !!flags?.[q.id];
+              // Note-completion sub-heading (e.g. "Adaptations") — render once, when
+              // it first appears, exactly like the Cambridge notes layout.
+              const sectionHeading =
+                q.section && q.section.trim() && q.section !== lastSection ? q.section.trim() : null;
+              if (sectionHeading) lastSection = q.section!;
               return (
-                <div key={q.id} id={`q-${q.id}`} role="group" style={{ border: `1.5px solid ${QUESTION_BORDER}`, borderRadius: 14, padding: "16px 18px", background: "#fff", scrollMarginTop: 16 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 11, width: "100%" }}>
-                    <span style={{ flex: "none", fontWeight: 700, color: INK, fontSize: 16.5, lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      {gap ? (
-                        <GapSentence
-                          prompt={q.prompt}
-                          value={answers[q.id] ?? ""}
-                          onChange={(v) => onAnswer(q.id, v)}
-                          questionNumber={n}
-                        />
-                      ) : (
-                        <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.5, color: INK, whiteSpace: "pre-wrap" }}>{q.prompt}</span>
-                      )}
-                    </span>
-                    {onToggleFlag ? (
-                      <button type="button" onClick={() => onToggleFlag(q.id)} aria-pressed={flagged} title="Flag for review" style={flagStyle(flagged)}>⚑</button>
-                    ) : null}
-                  </div>
-
-                  {gap ? null : (
-                    <div style={{ paddingLeft: 26, marginTop: 12 }}>
-                      <QuestionInput question={q} value={answers[q.id] ?? ""} onChange={(v) => onAnswer(q.id, v)} />
+                <div key={q.id} style={{ display: "contents" }}>
+                  {sectionHeading ? (
+                    <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 14.5, color: INK, margin: "4px 0 -4px" }}>{sectionHeading}</p>
+                  ) : null}
+                  <div id={`q-${q.id}`} role="group" style={{ border: `1.5px solid ${QUESTION_BORDER}`, borderRadius: 14, padding: "16px 18px", background: "#fff", scrollMarginTop: 16 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 11, width: "100%" }}>
+                      <span style={{ flex: "none", fontWeight: 700, color: INK, fontSize: 16.5, lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        {gap ? (
+                          <GapSentence
+                            prompt={q.prompt}
+                            value={answers[q.id] ?? ""}
+                            onChange={(v) => onAnswer(q.id, v)}
+                            questionNumber={n}
+                          />
+                        ) : (
+                          <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.5, color: INK, whiteSpace: "pre-wrap" }}>{q.prompt}</span>
+                        )}
+                      </span>
+                      {onToggleFlag ? (
+                        <button type="button" onClick={() => onToggleFlag(q.id)} aria-pressed={flagged} title="Flag for review" style={flagStyle(flagged)}>⚑</button>
+                      ) : null}
                     </div>
-                  )}
+
+                    {gap ? null : (
+                      <div style={{ paddingLeft: 26, marginTop: 12 }}>
+                        <QuestionInput question={q} value={answers[q.id] ?? ""} onChange={(v) => onAnswer(q.id, v)} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}

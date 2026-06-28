@@ -54,7 +54,7 @@ const CAN_AUTHOR: AppRole[] = ["center_admin", "teacher"];
 const PASSAGE_COLUMNS =
   "id, title, body, module, topic, difficulty, status, source, needs_review";
 const QUESTION_COLUMNS =
-  "id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation, confidence, needs_review, validation_verdict, validation_note";
+  "id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation, word_limit, section, confidence, needs_review, validation_verdict, validation_note";
 const TEST_COLUMNS = "id, module, target_band, status, source, needs_review";
 
 export class ReadingServiceError extends Error {
@@ -78,6 +78,8 @@ interface PreparedQuestion {
   answer_key: string;
   supporting_sentence: string;
   explanation: string;
+  word_limit: string | null;
+  section: string | null;
   confidence: number | null;
   needs_review: boolean;
   validation_verdict: string | null;
@@ -178,6 +180,8 @@ async function composeReadingSet(
       answer_key: q.answer,
       supporting_sentence: q.supporting_sentence,
       explanation: q.explanation,
+      word_limit: q.word_limit ?? null,
+      section: q.section ?? null,
       confidence: item?.confidence ?? null,
       needs_review: needsReview,
       validation_verdict: item?.verdict ?? null,
@@ -612,6 +616,8 @@ async function clonePassageInto(
         answer_key: q.answer_key,
         supporting_sentence: q.supporting_sentence,
         explanation: q.explanation,
+        word_limit: q.word_limit,
+        section: q.section,
         confidence: q.confidence,
         needs_review: q.needs_review,
         validation_verdict: q.validation_verdict,
@@ -697,12 +703,13 @@ const READING_TOPICS = [
   "the engineering of long-span bridges",
 ] as const;
 
-/** Reliable question-type mixes (one is chosen at random for variety). */
+/** Reliable question-type mixes (one is chosen at random for variety). Each mirrors
+ *  a real Cambridge part: a completion/notes block + a verdict block + one more. */
 const READING_TYPE_SETS: ReadingQuestionType[][] = [
-  ["true_false_not_given", "multiple_choice", "sentence_completion"],
+  ["note_completion", "true_false_not_given", "multiple_choice"],
   ["true_false_not_given", "matching_information", "summary_completion"],
-  ["yes_no_not_given", "multiple_choice", "sentence_completion"],
-  ["matching_headings", "true_false_not_given", "multiple_choice"],
+  ["yes_no_not_given", "multiple_choice", "matching_sentence_endings"],
+  ["matching_headings", "true_false_not_given", "sentence_completion"],
 ];
 
 function defaultReadingSpec(targetBand: number = DEFAULT_TARGET_BAND) {
