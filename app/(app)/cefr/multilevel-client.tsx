@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, Layers, PenLine } from "lucide-react";
+import { AlignLeft, ArrowRight, BookOpen, FileText, Layers, ListChecks, ListOrdered, Loader2, PenLine, SquarePen } from "lucide-react";
 
+import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
@@ -103,76 +104,222 @@ type WritingGrade = {
 
 // ---- Top-level -------------------------------------------------------------
 
-type Mode = "menu" | "reading" | "writing";
+type Tab = "reading" | "writing";
+type ReadingReq = { scope: "full" } | { scope: "part"; part: number };
+type WritingReq = { scope: "full" } | { scope: "task"; task: string };
+type View =
+  | { kind: "reading"; paper: ReadingPaper; req: ReadingReq }
+  | { kind: "writing"; paper: WritingPaper; req: WritingReq };
 
 export function MultilevelClient() {
-  const [mode, setMode] = useState<Mode>("menu");
+  const [tab, setTab] = useState<Tab>("reading");
+  const [view, setView] = useState<View | null>(null);
+  const [busy, setBusy] = useState<string | null>(null); // the card key currently generating
+  const [error, setError] = useState<string | null>(null);
+
+  async function startReading(req: ReadingReq, key: string) {
+    if (busy) return;
+    setBusy(key); setError(null);
+    try {
+      const paper = await callEngine<ReadingPaper>("reading/generate", req);
+      setView({ kind: "reading", paper, req });
+      window.scrollTo({ top: 0 });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Generation failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function startWriting(req: WritingReq, key: string) {
+    if (busy) return;
+    setBusy(key); setError(null);
+    try {
+      const paper = await callEngine<WritingPaper>("writing/generate", req);
+      setView({ kind: "writing", paper, req });
+      window.scrollTo({ top: 0 });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Generation failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (view?.kind === "reading") {
+    return (
+      <ReadingRunner
+        key={view.paper.id}
+        paper={view.paper}
+        regenBusy={!!busy}
+        onNew={() => void startReading(view.req, "new")}
+        onExit={() => setView(null)}
+      />
+    );
+  }
+  if (view?.kind === "writing") {
+    return (
+      <WritingRunner
+        key={view.paper.id}
+        paper={view.paper}
+        regenBusy={!!busy}
+        onNew={() => void startWriting(view.req, "new")}
+        onExit={() => setView(null)}
+      />
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 880, margin: "0 auto", padding: "clamp(20px,3vw,36px) 20px 80px" }}>
-      <header style={{ marginBottom: 28 }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 11px", borderRadius: 999, background: TINT, border: `1px solid ${TINT_BORDER}`, color: INDIGO, fontFamily: SANS, fontWeight: 700, fontSize: 12, marginBottom: 12 }}>
-          <Layers size={14} /> CEFR · B1→C1
-        </div>
-        <h1 style={{ fontFamily: SERIF, fontSize: "clamp(26px,3.4vw,34px)", color: INK, margin: 0, fontWeight: 600 }}>
-          CEFR practice
-        </h1>
-        <p style={{ fontFamily: SANS, color: MUTED, fontSize: 15, margin: "8px 0 0", lineHeight: 1.6 }}>
-          The Uzbekistan Multilevel (State Testing Centre / DTM) format — a 5-part, 35-question
-          Reading paper and a 3-task Writing paper, generated fresh and graded instantly.
-        </p>
-      </header>
-
-      {mode === "menu" ? <Menu onPick={setMode} /> : null}
-      {mode === "reading" ? <ReadingRunner onExit={() => setMode("menu")} /> : null}
-      {mode === "writing" ? <WritingRunner onExit={() => setMode("menu")} /> : null}
-    </div>
+    <Hub
+      tab={tab}
+      onTab={setTab}
+      busy={busy}
+      error={error}
+      onReading={(req, key) => void startReading(req, key)}
+      onWriting={(req, key) => void startWriting(req, key)}
+    />
   );
 }
 
-function Menu({ onPick }: { onPick: (m: Mode) => void }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 16 }}>
-      <MenuCard
-        Icon={BookOpen}
-        title="Reading paper"
-        meta="5 parts · 35 questions · 60 min"
-        body="Gap-fill, text matching, headings, multiple choice + True/False/No Information, and an academic summary. Auto-graded."
-        cta="Generate reading paper"
-        onClick={() => onPick("reading")}
-      />
-      <MenuCard
-        Icon={PenLine}
-        title="Writing paper"
-        meta="3 tasks · B1 → B2 → C1"
-        body="An informal note to a friend, a formal letter to a manager, and a forum opinion post. Graded against a calibrated CEFR rubric."
-        cta="Generate writing paper"
-        onClick={() => onPick("writing")}
-      />
-    </div>
-  );
-}
+// ---- Hub (tabbed, full-width landing) --------------------------------------
 
-function MenuCard({ Icon, title, meta, body, cta, onClick }: {
-  Icon: typeof BookOpen; title: string; meta: string; body: string; cta: string; onClick: () => void;
+const READING_PARTS = [
+  { part: 1, title: "Sentence gap-fill", desc: "Type the missing words to complete a short text.", level: "B1", count: 6, Icon: AlignLeft },
+  { part: 2, title: "Text matching", desc: "Match eight statements to ten short notices.", level: "B1–B2", count: 8, Icon: Layers },
+  { part: 3, title: "Heading matching", desc: "Choose the best heading for each paragraph.", level: "B2", count: 6, Icon: ListOrdered },
+  { part: 4, title: "Multiple choice + T/F/NI", desc: "An academic passage with MCQ and True / False / Not Given.", level: "B2–C1", count: 9, Icon: ListChecks },
+  { part: 5, title: "Summary + multiple choice", desc: "Fill the summary gaps, then answer multiple choice.", level: "C1", count: 6, Icon: FileText },
+];
+
+const WRITING_TASKS_META = [
+  { task: "1.1", title: "Informal message", desc: "A short note to a friend.", level: "B1", Icon: SquarePen },
+  { task: "1.2", title: "Formal letter", desc: "A letter to a manager or an official.", level: "B2", Icon: PenLine },
+  { task: "2", title: "Forum opinion post", desc: "An argued response to an online discussion.", level: "C1", Icon: FileText },
+];
+
+function Hub({ tab, onTab, busy, error, onReading, onWriting }: {
+  tab: Tab; onTab: (t: Tab) => void; busy: string | null; error: string | null;
+  onReading: (req: ReadingReq, key: string) => void;
+  onWriting: (req: WritingReq, key: string) => void;
 }) {
   return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: 22, display: "flex", flexDirection: "column" }}>
-      <span style={{ width: 40, height: 40, borderRadius: 11, background: TINT, border: `1px solid ${TINT_BORDER}`, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-        <Icon size={20} />
-      </span>
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 17, color: INK }}>{title}</div>
-      <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 12.5, color: INDIGO, margin: "3px 0 10px" }}>{meta}</div>
-      <p style={{ fontFamily: SANS, fontSize: 13.5, color: MUTED, lineHeight: 1.6, margin: "0 0 18px", flex: 1 }}>{body}</p>
-      <PrimaryButton onClick={onClick}>{cta}</PrimaryButton>
+    <div style={{ width: "100%", padding: "26px clamp(16px,3vw,28px) 64px", fontFamily: SANS, color: INK }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(28px,3.6vw,38px)", lineHeight: 1.05, letterSpacing: "-.4px", margin: 0, color: INK }}>CEFR practice</h1>
+          <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0", maxWidth: 660 }}>
+            The Uzbekistan Multilevel (DTM) exam — a 5-part / 35-question Reading paper and a
+            3-task Writing paper, generated fresh and graded instantly.
+          </p>
+        </div>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 9, background: TINT, border: `1px solid ${TINT_BORDER}`, color: INDIGO, padding: "8px 14px", borderRadius: 999, fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>
+          <Layers size={15} /> B1 → C1
+        </span>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 6, background: "#F1F1F8", border: "1px solid #ECEAF2", borderRadius: 14, padding: 5, marginTop: 22, maxWidth: 520 }}>
+        <TabButton active={tab === "reading"} onClick={() => onTab("reading")} icon={<BookOpen size={17} />} label="Reading paper" sub="5 parts · 35 questions" />
+        <TabButton active={tab === "writing"} onClick={() => onTab("writing")} icon={<PenLine size={17} />} label="Writing paper" sub="3 tasks · B1 → C1" />
+      </div>
+
+      {tab === "reading" ? (
+        <>
+          <div style={{ marginTop: 18, marginBottom: 28 }}>
+            <AiGenerateSection
+              title="Full reading paper"
+              description="Five original passages in the exact DTM format — 35 questions, rising B1 → C1, auto-graded with the evidence behind every answer."
+              cta={<AiGenerateButton label="Generate full paper" busyLabel="Writing your paper…" generating={busy === "r-full"} busy={!!busy} minWidth={200} onClick={() => onReading({ scope: "full" }, "r-full")} />}
+            />
+          </div>
+          <SectionLabel>Or practise a single part</SectionLabel>
+          <Grid>
+            {READING_PARTS.map((p) => (
+              <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`)} />
+            ))}
+          </Grid>
+        </>
+      ) : (
+        <>
+          <div style={{ marginTop: 18, marginBottom: 28 }}>
+            <AiGenerateSection
+              title="Full writing paper"
+              description="Three prompts at rising levels — an informal note (B1), a formal letter (B2) and a forum post (C1), graded on a calibrated CEFR rubric."
+              cta={<AiGenerateButton label="Generate full paper" busyLabel="Writing your prompts…" generating={busy === "w-full"} busy={!!busy} minWidth={200} onClick={() => onWriting({ scope: "full" }, "w-full")} />}
+            />
+          </div>
+          <SectionLabel>Or practise a single task</SectionLabel>
+          <Grid>
+            {WRITING_TASKS_META.map((t) => (
+              <PracticeCard key={t.task} Icon={t.Icon} eyebrow={`Task ${t.task}`} title={t.title} desc={t.desc} level={t.level} meta="Graded · model answer" loading={busy === `w-${t.task}`} disabled={!!busy} onClick={() => onWriting({ scope: "task", task: t.task }, `w-${t.task}`)} />
+            ))}
+          </Grid>
+        </>
+      )}
+
+      {error ? <Alert>{error}</Alert> : null}
+
+      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
+        Original content in the Uzbekistan Multilevel (DTM) format. Not affiliated with or endorsed by the State Testing Centre.
+      </p>
     </div>
+  );
+}
+
+function TabButton({ active, onClick, icon, label, sub }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; sub: string }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={active} style={{ flex: 1, display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left", background: active ? "#fff" : "transparent", color: active ? INDIGO : MUTED, boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none", transition: "background .15s ease" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>{icon}</span>
+      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+        <span style={{ fontFamily: SANS, fontWeight: active ? 700 : 600, fontSize: 14.5 }}>{label}</span>
+        <span style={{ fontFamily: SANS, fontSize: 12, color: active ? "#7C78C9" : "#9A99A8", marginTop: 2 }}>{sub}</span>
+      </span>
+    </button>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0 16px" }}>
+      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>{children}</span>
+      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+    </div>
+  );
+}
+
+function Grid({ children }: { children: React.ReactNode }) {
+  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>{children}</div>;
+}
+
+function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabled, onClick }: {
+  Icon: typeof BookOpen; eyebrow: string; title: string; desc: string; level: string; meta: string;
+  loading: boolean; disabled: boolean; onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className="lp-hover" style={{ position: "relative", background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: 18, display: "flex", flexDirection: "column", gap: 12, textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: disabled && !loading ? 0.55 : 1, boxShadow: "0 1px 3px rgba(28,27,46,.04)", width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <span style={{ width: 40, height: 40, borderRadius: 11, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon size={19} /></span>
+        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: TINT, color: INDIGO }}>{level}</span>
+      </div>
+      <div>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11.5, color: FAINT, letterSpacing: ".05em", textTransform: "uppercase", marginBottom: 3 }}>{eyebrow}</div>
+        <h4 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, lineHeight: 1.25, margin: "0 0 4px", color: INK }}>{title}</h4>
+        <span style={{ fontSize: 13.5, color: "#7A7989", fontWeight: 500, lineHeight: 1.5 }}>{desc}</span>
+      </div>
+      <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 13, color: "#8A899A" }}>{meta}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14.5, fontWeight: 600 }}>
+          {loading ? (<><Loader2 className="animate-spin" size={15} /> Generating…</>) : (<>Start <ArrowRight size={15} strokeWidth={2.2} /></>)}
+        </span>
+      </div>
+    </button>
   );
 }
 
 // ---- Reading ---------------------------------------------------------------
 
-function ReadingRunner({ onExit }: { onExit: () => void }) {
-  const [paper, setPaper] = useState<ReadingPaper | null>(null);
+function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPaper; regenBusy: boolean; onNew: () => void; onExit: () => void }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [grade, setGrade] = useState<ReadingGrade | null>(null);
   const [busy, setBusy] = useState(false);
@@ -180,19 +327,7 @@ function ReadingRunner({ onExit }: { onExit: () => void }) {
 
   const set = (n: number | string, v: string) => setAnswers((a) => ({ ...a, [String(n)]: v }));
 
-  async function generate() {
-    setBusy(true); setError(null); setGrade(null); setAnswers({});
-    try {
-      setPaper(await callEngine<ReadingPaper>("reading/generate", { scope: "full" }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Generation failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function submit() {
-    if (!paper) return;
     setBusy(true); setError(null);
     try {
       const res = await callEngine<ReadingGrade>("reading/grade", { item_id: paper.id, answers });
@@ -205,26 +340,13 @@ function ReadingRunner({ onExit }: { onExit: () => void }) {
     }
   }
 
-  if (!paper) {
-    return (
-      <Launch
-        title="Reading paper"
-        blurb="Five original passages in the exact DTM format — 35 questions, difficulty rising B1 → C1."
-        busyLabel="Writing your paper… ~40s"
-        busy={busy}
-        error={error}
-        onGenerate={generate}
-        onExit={onExit}
-      />
-    );
-  }
-
   const correctByNum = new Map<number, QResult>();
   grade?.parts.forEach((p) => p.results.forEach((r) => correctByNum.set(r.number, r)));
+  const label = paper.parts.length > 1 ? `Reading · ${paper.parts.length} parts` : `Reading · Part ${paper.parts[0]?.part}`;
 
   return (
-    <div>
-      <RunnerHeader onExit={onExit} label="Reading · 35 questions" />
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "clamp(20px,3vw,32px) clamp(16px,3vw,24px) 80px" }}>
+      <RunnerHeader onExit={onExit} label={label} />
       {grade ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
 
       {paper.parts.map((part) => (
@@ -236,9 +358,9 @@ function ReadingRunner({ onExit }: { onExit: () => void }) {
         {!grade ? (
           <PrimaryButton onClick={submit} disabled={busy}>{busy ? "Grading…" : "Submit answers"}</PrimaryButton>
         ) : (
-          <PrimaryButton onClick={generate} disabled={busy}>{busy ? "Generating…" : "New paper"}</PrimaryButton>
+          <PrimaryButton onClick={onNew} disabled={regenBusy}>{regenBusy ? "Generating…" : "New paper"}</PrimaryButton>
         )}
-        <GhostButton onClick={onExit}>Back to menu</GhostButton>
+        <GhostButton onClick={onExit}>Back to CEFR</GhostButton>
       </div>
     </div>
   );
@@ -368,46 +490,17 @@ function Part5({ p, answers, set, results, graded }: { p: P5; answers: Record<st
 
 // ---- Writing ---------------------------------------------------------------
 
-function WritingRunner({ onExit }: { onExit: () => void }) {
-  const [paper, setPaper] = useState<WritingPaper | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function generate() {
-    setBusy(true); setError(null);
-    try {
-      setPaper(await callEngine<WritingPaper>("writing/generate", { scope: "full" }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Generation failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!paper) {
-    return (
-      <Launch
-        title="Writing paper"
-        blurb="Three prompts at rising levels — an informal note (B1), a formal letter (B2), and a forum post (C1). Section 1's two letters share one situation."
-        busyLabel="Writing your prompts… ~15s"
-        busy={busy}
-        error={error}
-        onGenerate={generate}
-        onExit={onExit}
-      />
-    );
-  }
-
+function WritingRunner({ paper, regenBusy, onNew, onExit }: { paper: WritingPaper; regenBusy: boolean; onNew: () => void; onExit: () => void }) {
+  const label = paper.tasks.length > 1 ? `Writing · ${paper.tasks.length} tasks` : `Writing · Task ${paper.tasks[0]?.task}`;
   return (
-    <div>
-      <RunnerHeader onExit={onExit} label="Writing · 3 tasks" />
+    <div style={{ maxWidth: 940, margin: "0 auto", padding: "clamp(20px,3vw,32px) clamp(16px,3vw,24px) 80px" }}>
+      <RunnerHeader onExit={onExit} label={label} />
       {paper.tasks.map((t) => (
         <WritingTaskCard key={t.task} itemId={paper.id} task={t} />
       ))}
-      {error ? <Alert>{error}</Alert> : null}
       <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-        <PrimaryButton onClick={generate} disabled={busy}>{busy ? "Generating…" : "New paper"}</PrimaryButton>
-        <GhostButton onClick={onExit}>Back to menu</GhostButton>
+        <PrimaryButton onClick={onNew} disabled={regenBusy}>{regenBusy ? "Generating…" : "New paper"}</PrimaryButton>
+        <GhostButton onClick={onExit}>Back to CEFR</GhostButton>
       </div>
     </div>
   );
@@ -508,29 +601,11 @@ function WritingResult({ g }: { g: WritingGrade }) {
 
 // ---- Shared UI -------------------------------------------------------------
 
-function Launch({ title, blurb, busyLabel, busy, error, onGenerate, onExit }: {
-  title: string; blurb: string; busyLabel: string; busy: boolean; error: string | null;
-  onGenerate: () => void; onExit: () => void;
-}) {
-  return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 18, padding: "clamp(24px,4vw,44px)", textAlign: "center" }}>
-      <h2 style={{ fontFamily: SERIF, fontSize: 24, color: INK, margin: "0 0 8px", fontWeight: 600 }}>{title}</h2>
-      <p style={{ fontFamily: SANS, fontSize: 14.5, color: MUTED, lineHeight: 1.65, maxWidth: 480, margin: "0 auto 22px" }}>{blurb}</p>
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-        <PrimaryButton onClick={onGenerate} disabled={busy}>{busy ? busyLabel : "Generate"}</PrimaryButton>
-        <GhostButton onClick={onExit}>Back to menu</GhostButton>
-      </div>
-      {busy ? <p style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, marginTop: 16 }}>Writing original content at exam level — don’t close this tab.</p> : null}
-      {error ? <Alert>{error}</Alert> : null}
-    </div>
-  );
-}
-
 function RunnerHeader({ onExit, label }: { onExit: () => void; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
       <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13, color: INDIGO }}>{label}</span>
-      <button onClick={onExit} style={{ fontFamily: SANS, fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }}>← Menu</button>
+      <button onClick={onExit} style={{ fontFamily: SANS, fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }}>← CEFR</button>
     </div>
   );
 }
