@@ -1,8 +1,8 @@
 "use client";
 
-import { isReadingGapType, readingGroupInstruction } from "@/lib/reading/types";
+import { isReadingGapType, READING_GAP_MARKER, readingGroupInstruction } from "@/lib/reading/types";
 
-import { GapSentence, QuestionInput, type DeliveredQuestion } from "./question-inputs";
+import { GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { INDIGO, INK, MUTED, SANS } from "./tokens";
 
 /** Each question sits in its own card; the border is brand-indigo (not faint grey)
@@ -50,6 +50,10 @@ export function QuestionGroups({
         // The shared endings bank (A–F) for a matching-sentence-endings block is the
         // same on every question; show it once under the instruction.
         const endingsBank = type === "matching_sentence_endings" ? group[0].options ?? null : null;
+        // Note completion renders as the structured Cambridge notes box (title,
+        // sub-headings, bullets, nested dashes, gap-less context lines) — not as
+        // one card per line like every other type.
+        const isNote = type === "note_completion";
         let lastSection: string | null = null;
         return (
           <section key={gi} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -72,7 +76,18 @@ export function QuestionGroups({
               </ul>
             ) : null}
 
-            {group.map((q) => {
+            {isNote ? (
+              <NoteBlock
+                group={group}
+                number={number}
+                answers={answers}
+                onAnswer={onAnswer}
+                flags={flags}
+                onToggleFlag={onToggleFlag}
+              />
+            ) : null}
+
+            {!isNote && group.map((q) => {
               const n = number(q);
               const gap = isReadingGapType(q.question_type);
               const flagged = !!flags?.[q.id];
@@ -150,4 +165,132 @@ function flagStyle(on: boolean): React.CSSProperties {
     border: `1.5px solid ${on ? "#F6D58A" : "#EAE8F2"}`,
     color: on ? "#C77C09" : "#B6B2C8",
   };
+}
+
+// ---- Note completion: the structured Cambridge notes box -------------------
+
+const NOTE_INDENT_PX = 22;
+
+/**
+ * Renders a note-completion group as ONE notes box, like the real exam: a title,
+ * bold section sub-headings, top-level bullets, nested sub-dashes, plain context
+ * lines with no blank, and the answerable lines with a numbered inline gap. The
+ * layout comes from each question's `note_meta` (title/indent/before); the gap is
+ * still wired to the same answers map the per-card renderer uses.
+ */
+function NoteBlock({
+  group,
+  number,
+  answers,
+  onAnswer,
+  flags,
+  onToggleFlag,
+}: {
+  group: DeliveredQuestion[];
+  number: (q: DeliveredQuestion) => number;
+  answers: Record<string, string>;
+  onAnswer: (id: string, value: string) => void;
+  flags?: Record<string, boolean>;
+  onToggleFlag?: (id: string) => void;
+}) {
+  const title = group.find((q) => q.note_meta?.title?.trim())?.note_meta?.title?.trim() || null;
+
+  return (
+    <div style={{ border: "1px solid #E5E3EF", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
+      {title ? (
+        <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 12px" }}>{title}</h3>
+      ) : null}
+      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+        {group.map((q, i) => {
+          const n = number(q);
+          // Show a section heading only when it differs from the previous note
+          // line's (pure — no mutable cursor across the render).
+          const sec = q.section?.trim() || null;
+          const prevSec = i > 0 ? group[i - 1].section?.trim() || null : null;
+          const section = sec && sec !== prevSec ? sec : null;
+          const before = q.note_meta?.before ?? [];
+          const indent = q.note_meta?.indent ?? 0;
+          return (
+            <div key={q.id} style={{ display: "contents" }}>
+              {section ? (
+                <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 14.5, color: INK, margin: "6px 0 0" }}>{section}</p>
+              ) : null}
+              {before.map((line, i) => (
+                <NoteContextRow key={`${q.id}-b${i}`} text={line.text} indent={line.indent ?? 0} />
+              ))}
+              <NoteGapRow
+                q={q}
+                n={n}
+                indent={indent}
+                value={answers[q.id] ?? ""}
+                onChange={(v) => onAnswer(q.id, v)}
+                flagged={!!flags?.[q.id]}
+                onToggleFlag={onToggleFlag ? () => onToggleFlag(q.id) : undefined}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** A note line with no blank — a lead-in bullet or a plain note between gaps. */
+function NoteContextRow({ text, indent }: { text: string; indent: number }) {
+  return (
+    <div style={{ display: "flex", gap: 9, paddingLeft: indent * NOTE_INDENT_PX, fontFamily: SANS, fontSize: 15.5, lineHeight: 1.6, color: INK }}>
+      <span aria-hidden style={{ flex: "none", color: MUTED }}>{indent >= 1 ? "–" : "•"}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>{text}</span>
+    </div>
+  );
+}
+
+/** An answerable note line: bullet/dash · text · numbered inline gap · text. */
+function NoteGapRow({
+  q,
+  n,
+  indent,
+  value,
+  onChange,
+  flagged,
+  onToggleFlag,
+}: {
+  q: DeliveredQuestion;
+  n: number;
+  indent: number;
+  value: string;
+  onChange: (v: string) => void;
+  flagged: boolean;
+  onToggleFlag?: () => void;
+}) {
+  const match = q.prompt.match(READING_GAP_MARKER);
+  let before = q.prompt;
+  let after = "";
+  if (match && match.index != null) {
+    before = q.prompt.slice(0, match.index);
+    after = q.prompt.slice(match.index + match[0].length);
+  }
+  return (
+    <div id={`q-${q.id}`} role="group" style={{ display: "flex", alignItems: "baseline", gap: 9, paddingLeft: indent * NOTE_INDENT_PX, scrollMarginTop: 80 }}>
+      <span aria-hidden style={{ flex: "none", color: MUTED, fontFamily: SANS, fontSize: 15.5 }}>{indent >= 1 ? "–" : "•"}</span>
+      <span style={{ flex: 1, minWidth: 0, fontFamily: SANS, fontSize: 15.5, lineHeight: 2, color: INK }}>
+        {before}
+        <NumberBadge n={n} />
+        <InlineBlank value={value} onChange={onChange} label={`Answer for question ${n}`} />
+        {after}
+      </span>
+      {onToggleFlag ? (
+        <button type="button" onClick={onToggleFlag} aria-pressed={flagged} title="Flag for review" style={flagStyle(flagged)}>⚑</button>
+      ) : null}
+    </div>
+  );
+}
+
+/** The small boxed question number that sits inline just before a note's blank. */
+function NumberBadge({ n }: { n: number }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 22, height: 22, padding: "0 5px", margin: "0 5px", borderRadius: 6, border: `1.5px solid ${INDIGO}`, background: "#F4F3FC", color: INDIGO, fontWeight: 700, fontSize: 12.5, lineHeight: 1, fontVariantNumeric: "tabular-nums", verticalAlign: "middle" }}>
+      {n}
+    </span>
+  );
 }

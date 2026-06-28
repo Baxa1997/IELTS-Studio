@@ -125,21 +125,52 @@ export const DEFAULT_TARGET_BAND = 7;
 
 /** A real IELTS Reading test = 3 passages, difficulty rising P1→P3. */
 export const FULL_TEST_PASSAGE_COUNT = 3;
-/** Questions per passage; sums to 40 like the real exam. */
-export const FULL_TEST_QUESTION_SPLIT = [13, 13, 14] as const;
 /** 60 minutes for the whole test (the real allowance). */
 export const READING_TEST_DURATION_SECONDS = 60 * 60;
 
+/** One question-type block within a passage: the type and how many of it. */
+export interface ReadingGroupPlan {
+  type: ReadingQuestionType;
+  count: number;
+}
+
 /**
- * Question-type mix per passage POSITION (index 0→P1 … 2→P3), escalating in
- * difficulty and spanning all real types across the test. One per passage so the
- * three passages don't feel identical.
+ * The full-test blueprint, per passage POSITION (index 0→P1 … 2→P3), modelled on a
+ * real Cambridge Academic Reading paper (e.g. C21): each passage is an ordered set
+ * of typed blocks with exact counts, summing to 13/13/14 = 40. The BLOCK ORDER
+ * within a passage is shuffled at generation time (the "position is dynamic" rule)
+ * while the type inventory + counts stay fixed, so every test reads like the real
+ * exam but never the same way twice. Content is always original (CLAUDE.md §IP).
+ *
+ *   P1: 7× note completion  + 6× true/false/not given
+ *   P2: 5× true/false/not given + 8× note completion
+ *   P3: 4× multiple choice + 4× matching sentence endings + 6× yes/no/not given
  */
-export const FULL_TEST_TYPE_SETS: ReadonlyArray<ReadingQuestionType[]> = [
-  ["note_completion", "true_false_not_given", "multiple_choice"],
-  ["matching_information", "summary_completion", "true_false_not_given"],
-  ["multiple_choice", "matching_sentence_endings", "yes_no_not_given"],
+export const FULL_TEST_BLUEPRINT: ReadonlyArray<ReadingGroupPlan[]> = [
+  [
+    { type: "note_completion", count: 7 },
+    { type: "true_false_not_given", count: 6 },
+  ],
+  [
+    { type: "true_false_not_given", count: 5 },
+    { type: "note_completion", count: 8 },
+  ],
+  [
+    { type: "multiple_choice", count: 4 },
+    { type: "matching_sentence_endings", count: 4 },
+    { type: "yes_no_not_given", count: 6 },
+  ],
 ];
+
+/** The distinct types per passage (derived from the blueprint), kept for callers
+ *  that only need the type inventory. */
+export const FULL_TEST_TYPE_SETS: ReadonlyArray<ReadingQuestionType[]> =
+  FULL_TEST_BLUEPRINT.map((groups) => [...new Set(groups.map((g) => g.type))]);
+
+/** Questions per passage (derived from the blueprint); sums to 40 like the real exam. */
+export const FULL_TEST_QUESTION_SPLIT: ReadonlyArray<number> = FULL_TEST_BLUEPRINT.map((groups) =>
+  groups.reduce((n, g) => n + g.count, 0),
+);
 
 /** Below this, the validator's confidence in an answer key trips teacher review. */
 export const CONFIDENCE_THRESHOLD = 0.7;
@@ -165,8 +196,47 @@ export const generateReadingInputSchema = z.object({
   // path over-requests so that after the answer-key validator drops unconfirmed
   // questions, ~13–15 still survive (keepValidated caps the kept set at 15).
   totalQuestions: z.number().int().min(4).max(18).default(13),
+  // Optional EXACT block plan (ordered {type,count}). When present the generator
+  // must produce these blocks, in this order, with these counts (the full-test
+  // path uses it to match the Cambridge structure); single-passage practice omits
+  // it and lets the model distribute `totalQuestions` across `questionTypes`.
+  questionPlan: z
+    .array(z.object({ type: z.enum(READING_QUESTION_TYPES), count: z.number().int().min(1).max(15) }))
+    .min(1)
+    .max(6)
+    .optional(),
 });
 export type GenerateReadingInput = z.infer<typeof generateReadingInputSchema>;
+
+// ---- Rich note-completion layout (the Cambridge notes box) -----------------
+
+/**
+ * A context line inside a note-completion box that is NOT itself answerable — a
+ * lead-in bullet that introduces sub-points ("has a large bulbous nose … that"),
+ * or a plain note with no blank sitting between gapped lines. `indent` nests it
+ * (0 = bullet, 1 = sub-dash).
+ */
+export const noteContextLineSchema = z.object({
+  text: z.string().min(1),
+  indent: z.coerce.number().int().min(0).max(2).default(0),
+});
+export type NoteContextLine = z.infer<typeof noteContextLineSchema>;
+
+/**
+ * The structured layout for ONE note-completion line, so the block renders like
+ * the real exam notes box (a title, bullets, nested sub-dashes, and gap-less
+ * context lines). Carried per question but `title` is group-level (repeated). It
+ * is render-only — it never touches the answer key or grading.
+ */
+export const noteMetaSchema = z.object({
+  /** The notes box title ("The saiga"); same on every line of the block. */
+  title: z.string().nullish(),
+  /** This line's own nesting: 0 = bullet, 1 = sub-dash. */
+  indent: z.coerce.number().int().min(0).max(2).default(0),
+  /** Gap-less context lines shown immediately before this line. */
+  before: z.array(noteContextLineSchema).nullish(),
+});
+export type NoteMeta = z.infer<typeof noteMetaSchema>;
 
 // ---- Model output: the generated set (mirrors READING_SET_CONTRACT) --------
 
@@ -184,6 +254,8 @@ export const readingQuestionOutSchema = z.object({
   // Note/table completion only: an optional sub-heading (e.g. "Adaptations") that
   // groups consecutive note lines under it, exactly like the Cambridge notes layout.
   section: z.string().nullish(),
+  // Note completion only: the structured layout for this line (title/indent/context).
+  note_meta: noteMetaSchema.nullish(),
 });
 export type ReadingQuestionOut = z.infer<typeof readingQuestionOutSchema>;
 
@@ -229,6 +301,8 @@ export interface StoredReadingQuestion {
   word_limit: string | null;
   /** Note/table completion: optional sub-heading grouping consecutive note lines. */
   section: string | null;
+  /** Note completion: structured layout for this line (title/indent/context). */
+  note_meta: NoteMeta | null;
   confidence: number | null;
   needs_review: boolean;
   validation_verdict: string | null;

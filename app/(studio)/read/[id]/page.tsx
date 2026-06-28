@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import type { ReadingModule, ReadingQuestionType } from "@/lib/reading/types";
+import type { NoteMeta, ReadingModule, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,7 +39,7 @@ export default async function ReadingRunnerPage({ params }: PageProps) {
   const admin = createAdminClient();
   const { data: questions } = await admin
     .from("reading_questions")
-    .select("id, question_type, order_index, prompt, options, word_limit, section") // deliberately answer-free
+    .select("id, question_type, order_index, prompt, options, word_limit, section, note_meta") // deliberately answer-free
     .eq("passage_id", id)
     .eq("organization_id", profile.organization_id)
     .order("order_index", { ascending: true });
@@ -54,6 +54,7 @@ export default async function ReadingRunnerPage({ params }: PageProps) {
     options: (q.options as string[] | null) ?? null,
     word_limit: (q.word_limit as string | null) ?? null,
     section: (q.section as string | null) ?? null,
+    note_meta: (q.note_meta as NoteMeta | null) ?? null,
   }));
 
   const runnerPassage: RunnerPassage = {

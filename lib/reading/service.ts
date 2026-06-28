@@ -10,9 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CONFIDENCE_THRESHOLD,
   DEFAULT_TARGET_BAND,
+  FULL_TEST_BLUEPRINT,
   FULL_TEST_PASSAGE_COUNT,
-  FULL_TEST_QUESTION_SPLIT,
-  FULL_TEST_TYPE_SETS,
   generateReadingInputSchema,
   MAX_TARGET_BAND,
   MIN_TARGET_BAND,
@@ -22,6 +21,8 @@ import {
   type GeneratedReadingSet,
   type GeneratedReadingTest,
   type GenerateReadingInput,
+  type NoteMeta,
+  type ReadingGroupPlan,
   type ReadingModule,
   type ReadingQuestionType,
   type ReadingValidationItem,
@@ -54,7 +55,7 @@ const CAN_AUTHOR: AppRole[] = ["center_admin", "teacher"];
 const PASSAGE_COLUMNS =
   "id, title, body, module, topic, difficulty, status, source, needs_review";
 const QUESTION_COLUMNS =
-  "id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation, word_limit, section, confidence, needs_review, validation_verdict, validation_note";
+  "id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation, word_limit, section, note_meta, confidence, needs_review, validation_verdict, validation_note";
 const TEST_COLUMNS = "id, module, target_band, status, source, needs_review";
 
 export class ReadingServiceError extends Error {
@@ -80,6 +81,7 @@ interface PreparedQuestion {
   explanation: string;
   word_limit: string | null;
   section: string | null;
+  note_meta: NoteMeta | null;
   confidence: number | null;
   needs_review: boolean;
   validation_verdict: string | null;
@@ -107,7 +109,12 @@ async function composeReadingSet(
   input: GenerateReadingInput,
   meta: { organizationId: string; userId: string },
 ): Promise<ComposedReadingSet> {
-  // 1) Generate the passage + questions.
+  // 1) Generate the passage + questions. When the caller pins an exact block plan
+  //    (the full test), pass it as an authoritative, human-readable line so the
+  //    model produces the precise Cambridge structure (counts + order).
+  const questionPlanLine = input.questionPlan
+    ? input.questionPlan.map((g, i) => `${i + 1}) ${g.count}× ${g.type}`).join("; ")
+    : undefined;
   let set;
   try {
     const res = await generate({
@@ -118,6 +125,7 @@ async function composeReadingSet(
         target_band: input.targetBand,
         question_types: input.questionTypes,
         total_questions: input.totalQuestions,
+        ...(questionPlanLine ? { question_plan: questionPlanLine } : {}),
       },
       meta,
     });
@@ -182,6 +190,7 @@ async function composeReadingSet(
       explanation: q.explanation,
       word_limit: q.word_limit ?? null,
       section: q.section ?? null,
+      note_meta: q.type === "note_completion" ? q.note_meta ?? null : null,
       confidence: item?.confidence ?? null,
       needs_review: needsReview,
       validation_verdict: item?.verdict ?? null,
@@ -354,12 +363,16 @@ async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Pro
   const composedSets = await Promise.all(
     Array.from({ length: FULL_TEST_PASSAGE_COUNT }, (_, i) => {
       const band = clampBand(p.centerBand + (i - 1)); // P1 easier → P3 harder
+      // The Cambridge blueprint fixes the type inventory + counts; the BLOCK ORDER
+      // is shuffled so the position is dynamic but the structure is constant.
+      const plan = shuffle(FULL_TEST_BLUEPRINT[i] as ReadingGroupPlan[]);
       const input = parse(generateReadingInputSchema, {
         module: "academic",
         topic: topics[i],
         targetBand: band,
-        questionTypes: FULL_TEST_TYPE_SETS[i],
-        totalQuestions: FULL_TEST_QUESTION_SPLIT[i],
+        questionTypes: [...new Set(plan.map((g) => g.type))],
+        totalQuestions: plan.reduce((n, g) => n + g.count, 0),
+        questionPlan: plan,
       });
       return composeReadingSet(input, p.meta);
     }),
@@ -618,6 +631,7 @@ async function clonePassageInto(
         explanation: q.explanation,
         word_limit: q.word_limit,
         section: q.section,
+        note_meta: q.note_meta,
         confidence: q.confidence,
         needs_review: q.needs_review,
         validation_verdict: q.validation_verdict,
@@ -675,12 +689,18 @@ function clampBand(b: number): number {
 
 /** Distinct random pick (no repeated topic within one test). */
 function pickDistinct<T>(xs: readonly T[], n: number): T[] {
+  return shuffle(xs).slice(0, Math.min(n, xs.length));
+}
+
+/** A shuffled copy (Fisher–Yates) — used to randomise the block order within a
+ *  passage so the position is dynamic while the type inventory stays fixed. */
+function shuffle<T>(xs: readonly T[]): T[] {
   const a = [...xs];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
-  return a.slice(0, Math.min(n, a.length));
+  return a;
 }
 
 // ---- B2C generation defaults ----------------------------------------------

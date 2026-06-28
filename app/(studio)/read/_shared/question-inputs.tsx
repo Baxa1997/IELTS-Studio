@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/types";
+import { READING_GAP_MARKER, type NoteMeta, type ReadingQuestionType } from "@/lib/reading/types";
 
 import { INDIGO, INK, MUTED, RED, SANS } from "./tokens";
 
@@ -17,6 +17,8 @@ export interface DeliveredQuestion {
   word_limit?: string | null;
   /** Note completion: optional sub-heading grouping consecutive note lines. */
   section?: string | null;
+  /** Note completion: structured layout for this line (title/indent/context). */
+  note_meta?: NoteMeta | null;
 }
 
 const LETTERS = "ABCDEFGHIJKLMNOP".split("");
@@ -124,7 +126,7 @@ function TextAnswer({ value, onChange }: { value: string; onChange: (v: string) 
 
 /** A bordered fill-in-the-blank input sized to sit INLINE inside a sentence
  *  (Cambridge gap-fill style). Width grows with the typed answer. */
-function InlineBlank({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+export function InlineBlank({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   return (
     <input
       type="text"

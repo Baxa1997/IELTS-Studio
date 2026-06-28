@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import type { ReadingQuestionType } from "@/lib/reading/types";
+import type { NoteMeta, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,7 +45,7 @@ export default async function ReadingTestPage({ params }: PageProps) {
   const admin = createAdminClient();
   const { data: questions } = await admin
     .from("reading_questions")
-    .select("id, question_type, order_index, prompt, options, word_limit, section, passage_id") // answer-free
+    .select("id, question_type, order_index, prompt, options, word_limit, section, note_meta, passage_id") // answer-free
     .in("passage_id", passages.map((p) => p.id as string))
     .eq("organization_id", profile.organization_id)
     .order("order_index", { ascending: true });
@@ -62,6 +62,7 @@ export default async function ReadingTestPage({ params }: PageProps) {
       options: (q.options as string[] | null) ?? null,
       word_limit: (q.word_limit as string | null) ?? null,
       section: (q.section as string | null) ?? null,
+      note_meta: (q.note_meta as NoteMeta | null) ?? null,
     });
     byPassage.set(pid, list);
   }
