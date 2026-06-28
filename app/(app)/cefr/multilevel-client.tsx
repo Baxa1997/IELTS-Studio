@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Check, Clock, Eraser, FileText, Highlighter, History, Layers, ListChecks, ListOrdered, Loader2, Maximize2, MessageCircle, PenLine, Send, Sparkles, SquarePen, X } from "lucide-react";
+import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Check, Clock, Eraser, FileText, Highlighter, History, Layers, ListChecks, ListOrdered, Loader2, Maximize2, MessageCircle, Minimize2, PanelRightClose, PenLine, Send, Sparkles, SquarePen, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
@@ -399,6 +399,33 @@ function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabl
   );
 }
 
+// ---- Fullscreen ------------------------------------------------------------
+
+// True OS fullscreen (browser Fullscreen API) for the exam surface — fullscreens
+// the runner's own root so it fills the screen with no browser chrome, like the
+// real test. Tracks state via fullscreenchange; webkit-prefixed fallback for Safari.
+function useFullscreen(ref: React.RefObject<HTMLElement | null>) {
+  const [isFull, setIsFull] = useState(false);
+  useEffect(() => {
+    const d = document as Document & { webkitFullscreenElement?: Element };
+    const onChange = () => setIsFull(!!(document.fullscreenElement || d.webkitFullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange);
+    };
+  }, []);
+  const toggle = useCallback(() => {
+    const el = ref.current as (HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }) | null;
+    const d = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => Promise<void> };
+    const active = document.fullscreenElement || d.webkitFullscreenElement;
+    if (!active) void (el?.requestFullscreen?.() ?? el?.webkitRequestFullscreen?.())?.catch?.(() => {});
+    else void (document.exitFullscreen?.() ?? d.webkitExitFullscreen?.())?.catch?.(() => {});
+  }, [ref]);
+  return { isFull, toggle };
+}
+
 // ---- Text highlighter (marker) ---------------------------------------------
 
 // A real-exam-style highlighter for the reading text: pick a transparent pen,
@@ -503,6 +530,8 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
   const [coachOpen, setCoachOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const hl = useHighlighter(scrollRef);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const fs = useFullscreen(rootRef);
 
   const set = (n: number | string, v: string) => setAnswers((a) => ({ ...a, [String(n)]: v }));
 
@@ -544,7 +573,7 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
         : `Answer all ${total} questions, then submit.`;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", background: D_PAGE, fontFamily: JAKARTA, color: D_INK, overflow: "hidden" }}>
+    <div ref={rootRef} style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", background: D_PAGE, fontFamily: JAKARTA, color: D_INK, overflow: "hidden" }}>
       {/* The design's fonts, loaded only for this exam surface (not app-wide, so a
           global next/font would be heavier than needed); falls back to the app fonts. */}
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -557,6 +586,9 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <button type="button" onClick={onExit} aria-label="Exit practice" style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "rgba(255,255,255,.75)" }}>
             <ArrowLeft size={16} />
+          </button>
+          <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "rgba(255,255,255,.75)" }}>
+            {fs.isFull ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
             <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 16, color: "#fff" }}>Reading</span>
@@ -603,8 +635,8 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
             <div style={{ width: `${pct}%`, height: "100%", background: D_VIOLET, borderRadius: 2, transition: "width .3s ease" }} />
           </div>
           <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: D_VIOLET, fontVariantNumeric: "tabular-nums" }}>{answeredCount} / {total}</span>
-          <button type="button" onClick={() => setCoachOpen((o) => !o)} title={coachOpen ? "Full page (hide the coach)" : "Show the coach"} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${D_LINE}`, background: coachOpen ? "#fff" : D_VTINT2, color: D_VIOLET, fontFamily: JAKARTA, fontWeight: 600, fontSize: 12.5, cursor: "pointer" }}>
-            {coachOpen ? <><Maximize2 size={14} /> Full page</> : <><MessageCircle size={14} /> Coach</>}
+          <button type="button" onClick={() => setCoachOpen((o) => !o)} title={coachOpen ? "Hide the coach" : "Show the coach"} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${D_LINE}`, background: coachOpen ? "#fff" : D_VTINT2, color: D_VIOLET, fontFamily: JAKARTA, fontWeight: 600, fontSize: 12.5, cursor: "pointer" }}>
+            {coachOpen ? <><PanelRightClose size={14} /> Hide coach</> : <><MessageCircle size={14} /> Coach</>}
           </button>
         </div>
       </div>
@@ -994,6 +1026,8 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
   const [coachOpen, setCoachOpen] = useState(true);
   const draftRef = useRef(answer);
   useEffect(() => { draftRef.current = answer; });
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const fs = useFullscreen(rootRef);
 
   const range = task.word_range;
   const minWords = range[0];
@@ -1031,7 +1065,7 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
   const showResult = view === "result" && !!grade?.gradable;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: W_CANVAS, fontFamily: JAKARTA, color: W_BODY }}>
+    <div ref={rootRef} style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: W_CANVAS, fontFamily: JAKARTA, color: W_BODY }}>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" />
       {submitting ? <CefrGradingOverlay /> : null}
@@ -1064,6 +1098,9 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
           ) : null}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 36, height: 36, borderRadius: 9, border: `1px solid ${W_LINE}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: W_MUTED, flexShrink: 0 }}>
+            {fs.isFull ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
           {!showResult ? (
             <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${W_LINE}`, borderRadius: 9, background: W_SOFT }}>
               <ReadingTimer seconds={seconds} onExpire={onExpire}>
