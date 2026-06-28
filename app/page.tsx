@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
 import { getSession, roleHome } from "@/lib/auth";
@@ -45,9 +46,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Marketing front door for everyone; signed-in visitors get a shortcut, not a redirect.
+  // Marketing front door for anonymous visitors. A signed-in visitor is sent
+  // straight to their role home — landing on this page after logging in (e.g. if
+  // an OAuth round-trip resolves here) read as "sign-in didn't go anywhere".
   const session = await getSession();
-  const home = session ? roleHome(session.role) : null;
+  if (session) redirect(roleHome(session.role));
+  const home: string | null = null;
 
   return (
     <div
@@ -319,7 +323,7 @@ function SiteNav({ home }: { home: string | null }) {
               >
                 Sign in
               </Link>
-              <Link href="/start" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
+              <Link href="/sign-in" style={{ ...BTN_PRIMARY, padding: "10px 20px", fontSize: 15 }}>
                 Get started
               </Link>
             </>
@@ -569,11 +573,12 @@ function Hero() {
               flexWrap: "wrap",
             }}
           >
-            {/* Into the onboarding wizard (build a plan in a minute, account at the
-                end). Signed-in visitors are redirected to their role home by the
-                /start page itself. */}
+            {/* Both primary CTAs go to sign-in. New users authenticate first, then
+                the post-auth onboarding takeover builds their plan; returning users
+                land straight on their dashboard. (No pre-auth wizard, so a returning
+                Google user is never re-onboarded.) */}
             <Link
-              href="/start"
+              href="/sign-in"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -2729,7 +2734,7 @@ function FinalCta() {
             Grade an essay free
           </Link>
           <Link
-            href="/start"
+            href="/sign-in"
             style={{
               ...BTN_GHOST,
               background: "transparent",

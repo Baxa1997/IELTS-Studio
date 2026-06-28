@@ -158,6 +158,7 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     const draft = String(input.spec.draft ?? "").slice(0, 4000);
     const history = String(input.spec.history ?? "");
     const question = String(input.spec.question ?? "");
+    const learnerContext = String(input.spec.learner_context ?? "");
     const beforeSubmit = String(input.spec.phase ?? "writing") !== "results";
 
     const rules = [
@@ -170,10 +171,11 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       beforeSubmit
         ? "IMPORTANT: the student is still writing — coach, don't ghost-write. Do NOT write the essay, a paragraph, or even a full sentence of THEIR answer for them, and do NOT give a full or partial sample/model answer to their task. You may still be fully concrete by teaching the move on a DIFFERENT topic than theirs: show the exact sentence frame or a worked before/after on another subject, then tell them to apply that move to their own. If they ask you to write it or for a model answer, gently decline and point them to the bare outline or the unlocked-after-submit model answer."
         : "The student has already submitted and been graded, so you may now give example sentences, a model paragraph, a full sample answer, and targeted rewrites of their own lines when asked.",
-      "Never state or guess their band — the examiner owns scoring. Use only original examples; never reproduce copyrighted test material.",
+      "You're given the learner's target band and approximate level below (when known) — use it ONLY to pitch the sophistication of your advice and examples to where they are and where they're headed (e.g. push toward the vocabulary/grammar their target needs). Never state, guess, or quote them a band number — the examiner owns scoring. Use only original examples; never reproduce copyrighted test material.",
       "Keep it focused — usually a short paragraph (2–5 sentences); go a little longer only when a worked example genuinely needs it. Reply in the same language the student writes to you in.",
     ];
     const user = [
+      learnerContext ? `LEARNER (to pitch your help — never quote these numbers back as a band): ${learnerContext}\n` : "",
       "TASK PROMPT:",
       promptText || "(not provided)",
       "",
@@ -321,6 +323,7 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     const sectionQuestions = String(input.spec.questions ?? "").slice(0, 4000);
     const history = String(input.spec.history ?? "");
     const question = String(input.spec.question ?? "");
+    const learnerContext = String(input.spec.learner_context ?? "");
     const beforeSubmit = String(input.spec.phase ?? "reading") !== "results";
 
     const rules = [
@@ -331,10 +334,11 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       beforeSubmit
         ? "IMPORTANT: the student is still taking the test. Do NOT tell them, confirm, hint at, or work out the answer to ANY specific question, and do NOT say which option/heading is correct or whether a statement is True/False/Not Given. If they ask for an answer (e.g. 'is Q7 True?', 'which heading for paragraph B?'), gently decline and instead teach them HOW to find it themselves — where to look, what to compare, which trap to watch for. Answers unlock after they submit."
         : "The student has already submitted and been graded, so you may now fully explain any question: why the correct answer is right, why each distractor traps, where the proof is in the passage, and how to get better at that question type.",
-      "Never state or guess their band — scoring is objective and already handled. Use only the passage provided and original examples; never reproduce copyrighted test material.",
+      "You're given the learner's target band, approximate reading level and weakest question type below (when known) — use it ONLY to pitch your strategy help and to lean into the question types they struggle with most. Never state, guess, or quote them a band number — scoring is objective and already handled. Use only the passage provided and original examples; never reproduce copyrighted test material.",
       "Keep it focused — usually a short paragraph (2–5 sentences); a little longer only when a worked example needs it. Reply in the same language the student writes to you in.",
     ];
     const user = [
+      learnerContext ? `LEARNER (to pitch your help — never quote these numbers back as a band): ${learnerContext}\n` : "",
       `PASSAGE${passageTitle ? ` — ${passageTitle}` : ""}:`,
       passageBody || "(not provided)",
       sectionQuestions

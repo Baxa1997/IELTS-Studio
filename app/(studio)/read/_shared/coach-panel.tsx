@@ -28,6 +28,7 @@ export function CoachPanel({
   currentQuestion,
   questions,
   phase,
+  learnerContext = "",
 }: {
   passageTitle: string;
   passageBody: string;
@@ -36,6 +37,9 @@ export function CoachPanel({
    *  so the coach knows what "the first question", "Q5", etc. refer to. */
   questions?: string;
   phase: "reading" | "results";
+  /** Compact "who is this learner" line (target/level/weakest type) so the coach
+   *  pitches its strategy help to the right level. Context only — never a band. */
+  learnerContext?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -44,10 +48,10 @@ export function CoachPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Keep latest context in a ref so the in-flight send always uses current values.
-  const ctxRef = useRef({ passageTitle, passageBody, currentQuestion, questions, phase });
+  const ctxRef = useRef({ passageTitle, passageBody, currentQuestion, questions, phase, learnerContext });
   useEffect(() => {
-    ctxRef.current = { passageTitle, passageBody, currentQuestion, questions, phase };
-  }, [passageTitle, passageBody, currentQuestion, questions, phase]);
+    ctxRef.current = { passageTitle, passageBody, currentQuestion, questions, phase, learnerContext };
+  }, [passageTitle, passageBody, currentQuestion, questions, phase, learnerContext]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -78,6 +82,7 @@ export function CoachPanel({
           currentQuestion: ctx.currentQuestion ?? "",
           questions: ctx.questions ?? "",
           phase: ctx.phase,
+          learnerContext: ctx.learnerContext ?? "",
           history: messages.slice(-6),
         }),
       });

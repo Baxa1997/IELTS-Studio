@@ -79,7 +79,7 @@ export function WritingHero({ estimate, firstName }: { estimate: SkillEstimateVi
       </div>
 
       {/* right: CTAs */}
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10, flex: "none" }}>
+      <div className="dwh-cta" style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10, flex: "none" }}>
         <Link
           href="/write"
           style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 9, background: "#fff", color: INK, fontFamily: SANS, fontWeight: 700, fontSize: 15, padding: "13px 22px", borderRadius: 12, textDecoration: "none", boxShadow: "0 14px 30px -14px rgba(0,0,0,.55)", whiteSpace: "nowrap" }}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser, roleHome } from "@/lib/auth";
+import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import { createClient } from "@/lib/supabase/server";
 import { parseFigure } from "@/lib/writing/figure";
 
@@ -45,11 +46,15 @@ export default async function WriteStudioPage({ params }: PageProps) {
     difficulty: (p.difficulty as number | null) ?? null,
   };
 
+  // The coach gets a compact read on the learner (target/level/weakest area) so its
+  // help is pitched to the right level — context only, never quoted as a band.
+  const learnerContext = await buildCoachLearnerContext(profile.id, "writing");
+
   // Full-screen, no sidebar — a focused single detail page for the actual writing.
   // Always a clean, timed attempt: no draft is resumed.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
-      <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} />
+      <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} />
     </div>
   );
 }

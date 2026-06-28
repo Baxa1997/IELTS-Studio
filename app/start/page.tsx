@@ -1,34 +1,17 @@
-import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
 import { getSession, roleHome } from "@/lib/auth";
-
-import { StartWizard } from "./start-wizard";
-
-// Self-contained fonts so the wizard renders without the app shell.
-const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
-const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
-
-export const metadata: Metadata = {
-  title: "Get started | IELTS Studio",
-  description: "Build your personalised IELTS Writing & Reading plan in under a minute, then create your account.",
-};
 
 export const dynamic = "force-dynamic";
 
 /**
- * The pre-auth onboarding entry. Anyone already signed in skips it (they have a
- * session — and the post-auth takeover already guarantees a plan); everyone else
- * runs the wizard, which ends in account creation.
+ * Retired pre-auth onboarding entry. Onboarding now happens AFTER authentication
+ * (the post-auth takeover gates every plan-less student), so this route just
+ * forwards: signed-in users to their role home, everyone else to sign-in. Keeping
+ * the route alive means old links / bookmarks to /start still land somewhere sane.
+ * The wizard component itself lives on, reused by the post-auth OnboardingTakeover.
  */
 export default async function StartPage() {
   const session = await getSession();
-  if (session) redirect(roleHome(session.role));
-
-  return (
-    <div className={`${hanken.variable} ${newsreader.variable}`}>
-      <StartWizard />
-    </div>
-  );
+  redirect(session ? roleHome(session.role) : "/sign-in");
 }

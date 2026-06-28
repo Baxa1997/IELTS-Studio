@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -16,6 +16,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "IELTS Writing & Reading",
   description: "AI platform for IELTS Writing and Reading.",
+};
+
+// Without this, mobile browsers assume a ~980px layout viewport and render the
+// full desktop layout shrunk into the phone screen — the sidebar eats half the
+// width and every page's max-width media queries never fire. `device-width`
+// makes the layout viewport match the real screen so the responsive CSS works.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

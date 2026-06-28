@@ -45,7 +45,7 @@ const OPTION_LETTERS = "ABCDEFGH".split("");
 
 // ---- Runner ----------------------------------------------------------------
 
-export function ReadingTestRunner({ testId, passages }: { testId: string; passages: TestPassage[] }) {
+export function ReadingTestRunner({ testId, passages, learnerContext = "" }: { testId: string; passages: TestPassage[]; learnerContext?: string }) {
   const [phase, setPhase] = useState<Phase>("reading");
   const [active, setActive] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -181,7 +181,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
     return (
       <>
         <TestResultsView result={result} disclaimer={disclaimer} passages={passages} flags={flags} usedSeconds={usedSeconds} testId={testId} />
-        <CoachPanel passageTitle="Full test review" passageBody={joinedBodies} phase="results" />
+        <CoachPanel passageTitle="Full test review" passageBody={joinedBodies} phase="results" learnerContext={learnerContext} />
       </>
     );
   }
@@ -216,7 +216,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
           itself never does (the results phase below is a normal scrolling view). */}
       <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
         {/* Top bar: exit · timer · finish */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
+        <div className="rd-topbar" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
           <div style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: 10 }}>
             <Link href="/read" aria-label="Exit test" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, textDecoration: "none" }}>
               ←
@@ -239,7 +239,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
             </Timer>
           </div>
           <div style={{ justifySelf: "end" }}>
-            <button type="button" onClick={finish} disabled={submitting} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: submitting ? "#9a96d6" : INDIGO, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", fontFamily: SANS, boxShadow: "0 4px 14px rgba(79,70,229,.28)" }}>
+            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: submitting ? "#9a96d6" : INDIGO, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", fontFamily: SANS, boxShadow: "0 4px 14px rgba(79,70,229,.28)" }}>
               {submitting ? "Marking…" : "Finish Test"}
             </button>
           </div>
@@ -247,7 +247,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
 
         {/* Part strip + text size + progress */}
         <div style={{ flex: "none", background: "#FAFAFD", borderBottom: "1px solid #F0EFF5" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 28px", flexWrap: "wrap" }}>
+          <div className="rd-strip-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 28px", flexWrap: "wrap" }}>
             <div style={{ fontSize: 15, color: "#4A4660" }}>
               <span style={{ fontWeight: 700, color: INK }}>Part {active + 1}</span> — Read the text and answer questions {startN}–{endN}
             </div>
@@ -272,8 +272,8 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
         </div>
 
         {/* Split: passage | questions */}
-        <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <article ref={passageRef} onMouseUp={hl.onMouseUp} style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
+        <div className="rd-split" style={{ flex: 1, display: "flex", minHeight: 0 }}>
+          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
             <div style={{ maxWidth: 680 }}>
               <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#9a96a8", margin: 0 }}>
                 Passage {active + 1} of {passages.length} · Academic Reading{passage.topic ? ` · ${passage.topic}` : ""}
@@ -286,7 +286,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
             </div>
           </article>
 
-          <div ref={paneRef} style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "30px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
+          <div ref={paneRef} className="rd-questions" style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "30px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 22 }}>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: INDIGO, margin: 0 }}>Questions {startN}–{endN}</h2>
               <span style={{ fontSize: 14, fontWeight: 600, color: "#A6A2B8", fontVariantNumeric: "tabular-nums" }}>{partAnswered} of {partCount}</span>
@@ -304,7 +304,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
         </div>
 
         {/* Bottom nav: parts + per-part question circles */}
-        <div style={{ flex: "none", borderTop: "1px solid #F0EFF5", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #F0EFF5", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
           {passages.map((p, pi) => {
             const ans = p.questions.reduce((a, q) => a + (answers[q.id]?.trim() ? 1 : 0), 0);
             const on = pi === active;
@@ -362,7 +362,7 @@ export function ReadingTestRunner({ testId, passages }: { testId: string; passag
         />
       ) : null}
 
-      <CoachPanel passageTitle={passage.title} passageBody={passage.body} questions={coachQuestions} currentQuestion={coachCurrent} phase="reading" />
+      <CoachPanel passageTitle={passage.title} passageBody={passage.body} questions={coachQuestions} currentQuestion={coachCurrent} phase="reading" learnerContext={learnerContext} />
       {/* Word lookup is suppressed while a highlighter pen is active so a drag marks
           text instead of popping the dictionary. */}
       {hl.tool === null ? <WordLookup getContainer={() => passageRef.current} contextText={passage.body} /> : null}

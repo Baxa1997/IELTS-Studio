@@ -93,6 +93,7 @@ export function ReadingHub({
 
   return (
     <div
+      className="lp-hub-pad"
       style={{
         width: "100%",
         padding: "26px 24px 64px",

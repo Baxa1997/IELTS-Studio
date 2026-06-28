@@ -53,7 +53,7 @@ const MAX_FONT = 1.4;
  * the submit/results path is the single-passage one. The shared QuestionGroups
  * gives it the Cambridge instruction headers + inline gap-fills too.
  */
-export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; questions: DeliveredQuestion[] }) {
+export function ReadingRunner({ passage, questions, learnerContext = "" }: { passage: RunnerPassage; questions: DeliveredQuestion[]; learnerContext?: string }) {
   const accent = INDIGO;
   const exitHref = "/read";
   const [phase, setPhase] = useState<Phase>("reading");
@@ -181,7 +181,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
       <style>{HIGHLIGHT_CSS}</style>
       <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
         {/* Top bar: exit · timer · finish */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
+        <div className="rd-topbar" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
           <div style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: 10 }}>
             <Link href={exitHref} aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, textDecoration: "none" }}>
               ←
@@ -204,7 +204,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
             </Timer>
           </div>
           <div style={{ justifySelf: "end" }}>
-            <button type="button" onClick={finish} disabled={submitting} style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.7 : 1, fontFamily: SANS, boxShadow: `0 4px 14px ${accent}47` }}>
+            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.7 : 1, fontFamily: SANS, boxShadow: `0 4px 14px ${accent}47` }}>
               {submitting ? "Marking…" : "Submit answers"}
             </button>
           </div>
@@ -212,7 +212,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
 
         {/* Strip: instruction + text size + progress */}
         <div style={{ flex: "none", background: "#FAFAFD", borderBottom: "1px solid #F0EFF5" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 28px", flexWrap: "wrap" }}>
+          <div className="rd-strip-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 28px", flexWrap: "wrap" }}>
             <div style={{ fontSize: 15, color: "#4A4660" }}>
               <span style={{ fontWeight: 700, color: INK }}>Passage practice</span> — Read the text and answer questions 1–{total}
             </div>
@@ -237,8 +237,8 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
         </div>
 
         {/* Split: passage | questions */}
-        <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <article ref={passageRef} onMouseUp={hl.onMouseUp} style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
+        <div className="rd-split" style={{ flex: 1, display: "flex", minHeight: 0 }}>
+          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
             <div style={{ maxWidth: 680 }}>
               <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#9a96a8", margin: 0 }}>
                 {kindLabel} Reading{passage.topic ? ` · ${passage.topic}` : ""}
@@ -251,7 +251,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
             </div>
           </article>
 
-          <div ref={paneRef} style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "30px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
+          <div ref={paneRef} className="rd-questions" style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "30px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 22 }}>
               <h2 style={{ fontSize: 22, fontWeight: 700, color: INDIGO, margin: 0 }}>Questions 1–{total}</h2>
               <span style={{ fontSize: 14, fontWeight: 600, color: "#A6A2B8", fontVariantNumeric: "tabular-nums" }}>{answeredCount} of {total}</span>
@@ -269,7 +269,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
         </div>
 
         {/* Bottom nav: question circles */}
-        <div style={{ flex: "none", borderTop: "1px solid #F0EFF5", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, flexWrap: "wrap" }}>
+        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #F0EFF5", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, flexWrap: "wrap" }}>
           {questions.map((q) => {
             const n = numberById.get(q.id) ?? q.order_index;
             const answered = !!answers[q.id]?.trim();
@@ -296,7 +296,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
         />
       ) : null}
 
-      <CoachPanel passageTitle={passage.title} passageBody={passage.body} questions={coachQuestions} currentQuestion={coachCurrent} phase="reading" />
+      <CoachPanel passageTitle={passage.title} passageBody={passage.body} questions={coachQuestions} currentQuestion={coachCurrent} phase="reading" learnerContext={learnerContext} />
       {/* Word lookup is suppressed while a highlighter pen is active so a drag marks
           text instead of popping the dictionary. */}
       {hl.tool === null ? <WordLookup getContainer={() => passageRef.current} contextText={passage.body} /> : null}

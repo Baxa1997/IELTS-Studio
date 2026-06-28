@@ -44,6 +44,7 @@ export async function POST(req: Request): Promise<Response> {
   const currentQuestion = String(body.currentQuestion ?? "").slice(0, 1000);
   const questions = String(body.questions ?? "").slice(0, MAX_QUESTIONS_BLOCK);
   const phase = body.phase === "results" ? "results" : "reading";
+  const learnerContext = String(body.learnerContext ?? "").slice(0, 400);
   const history = Array.isArray(body.history)
     ? (body.history as ChatMessage[])
         .slice(-6)
@@ -62,6 +63,7 @@ export async function POST(req: Request): Promise<Response> {
         phase,
         history,
         question,
+        learner_context: learnerContext,
       },
       meta: { organizationId: session.profile.organization_id, userId: session.profile.id },
     });

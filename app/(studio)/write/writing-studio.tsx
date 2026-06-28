@@ -118,11 +118,15 @@ export function WritingStudio({
   essayId: initialEssayId = null,
   initialContent = "",
   resumed = false,
+  learnerContext = "",
 }: {
   prompt: ServedPrompt;
   essayId?: string | null;
   initialContent?: string;
   resumed?: boolean;
+  /** Compact "who is this learner" line (target/level/weakest area) so the coach
+   *  pitches its help to the right level. Context only — never quoted as a band. */
+  learnerContext?: string;
 }) {
   const router = useRouter();
   const taskKind = prompt.task_type;
@@ -145,6 +149,16 @@ export function WritingStudio({
   const [lastGraded, setLastGraded] = useState("");
 
   const [tutorOpen, setTutorOpen] = useState(true);
+  // On phones/tablets the coach opens as a floating modal over the editor (not an
+  // inline column that pushes the answer down), so start it CLOSED — the floating
+  // "Ask coach" button opens it. Desktop keeps it open as the side column. The
+  // viewport is unknown during SSR, so this one-time sync must run after mount.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1024px)").matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init from viewport, not a render loop
+      setTutorOpen(false);
+    }
+  }, []);
   const [spellOn, setSpellOn] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -345,6 +359,7 @@ export function WritingStudio({
             draft: contentRef.current,
             phase: lastGraded.trim() ? "results" : "writing",
             history: prior.slice(-6),
+            learnerContext,
           }),
         });
         const body = (await res.json().catch(() => ({}))) as { reply?: string; message?: string };
@@ -355,7 +370,7 @@ export function WritingStudio({
         setTutorPending(false);
       }
     },
-    [tutorInput, tutorPending, taskKind, prompt.prompt_text, lastGraded],
+    [tutorInput, tutorPending, taskKind, prompt.prompt_text, lastGraded, learnerContext],
   );
 
   // Once a coach reply has finished typing, clear its animate flag so reopening the
@@ -414,14 +429,14 @@ export function WritingStudio({
       {submitting ? <GradingOverlay theme={theme} /> : null}
 
       {/* header */}
-      <header style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: `1px solid ${theme.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
+      <header className="lp-write-hdr" style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: `1px solid ${theme.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <button type="button" onClick={() => void goLibrary()} style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${theme.line}`, background: theme.soft, borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             Library
           </button>
-          <div style={{ width: 1, height: 24, background: theme.line }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
+          <div className="lp-hide-sm" style={{ width: 1, height: 24, background: theme.line }} />
+          <div className="lp-hide-sm" style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
             <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: INK, color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flexShrink: 0 }}>{taskNo}</span>
             <span style={{ fontSize: 14, fontWeight: 500, color: "#41496A" }}>{taskKindLabel}</span>
             {prompt.topic_family && prompt.topic_family !== "custom" ? (<><span style={{ color: "#C7C3B4" }}>·</span><span style={{ fontSize: 14, color: "#767C90", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prompt.topic_family}</span></>) : null}

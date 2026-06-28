@@ -156,7 +156,10 @@ export function AppShell({
             display: "flex",
             flexDirection: "column",
             padding: "18px 16px",
-            position: "relative",
+            // NOTE: positioning is owned by CSS (.lp-shell-sidebar), not inline —
+            // an inline `position` would beat the class and stop the mobile drawer
+            // from going `position: fixed` (it'd stay in-flow and crush <main>).
+            // The desktop media query restores `position: relative` for the toggle.
           }}
         >
           {/* brand row — logo on the left, the collapse toggle opposite it (desktop);
@@ -247,7 +250,7 @@ export function AppShell({
               boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
             }}
           >
-            <div className={contentClassName ?? "w-full px-6 py-6"}>{children}</div>
+            <div className={contentClassName ?? "w-full px-4 py-5 sm:px-6 sm:py-6"}>{children}</div>
           </div>
         </main>
       </div>

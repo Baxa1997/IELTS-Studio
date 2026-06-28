@@ -61,9 +61,12 @@ export async function updateSession(request: NextRequest) {
     return redirectKeepingCookies(request, supabaseResponse, "/sign-in");
   }
 
-  // Authenticated landing on an auth page -> home (root routes by role).
+  // Authenticated landing on an auth page -> straight into the app. We send to
+  // /dashboard (the student home) rather than the marketing root `/`, which does
+  // NOT forward signed-in visitors and so reads as "sign-in went nowhere".
+  // super_admins are bounced on to /admin by the dashboard guard.
   if (user && (pathname === "/sign-in" || pathname === "/sign-up")) {
-    return redirectKeepingCookies(request, supabaseResponse, "/");
+    return redirectKeepingCookies(request, supabaseResponse, "/dashboard");
   }
 
   return supabaseResponse;

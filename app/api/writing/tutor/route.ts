@@ -42,6 +42,7 @@ export async function POST(req: Request): Promise<Response> {
   const promptText = String(body.promptText ?? "").slice(0, 4000);
   const draft = String(body.draft ?? "").slice(0, MAX_DRAFT);
   const phase = body.phase === "results" ? "results" : "writing";
+  const learnerContext = String(body.learnerContext ?? "").slice(0, 400);
   const history = Array.isArray(body.history)
     ? (body.history as ChatMessage[])
         .slice(-6)
@@ -52,7 +53,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const { content } = await generate({
       kind: "writing_tutor",
-      spec: { task_type: taskType, prompt: promptText, draft, phase, history, question },
+      spec: { task_type: taskType, prompt: promptText, draft, phase, history, question, learner_context: learnerContext },
       meta: { organizationId: session.profile.organization_id, userId: session.profile.id },
     });
     return NextResponse.json({ reply: content }, { status: 200 });

@@ -643,7 +643,7 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
       </div>
 
       {/* Content row: reading (left, full width) · coach panel (right) */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+      <div className="ml-rd-row" style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, position: "relative" }}>
         <div ref={scrollRef} onMouseUp={hl.onMouseUp} style={{ flex: 1, overflowY: "auto", padding: "14px clamp(12px,2vw,20px) 48px", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
           {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
           {paper.parts.map((part) => (
@@ -653,7 +653,7 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
         </div>
 
         {coachOpen ? (
-          <aside style={{ width: 360, flexShrink: 0, borderLeft: `1px solid ${D_LINE}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <aside className="ml-rd-coach" style={{ width: 360, flexShrink: 0, borderLeft: `1px solid ${D_LINE}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
             <CefrCoach passageBody={coach.body} questions={coach.questions} phase={graded ? "results" : "reading"} onClose={() => setCoachOpen(false)} />
           </aside>
         ) : null}
@@ -1140,11 +1140,11 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
       </header>
 
       {/* body: prompt | answer/result | coach */}
-      <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", gap: 14, padding: 14, overflow: "hidden" }}>
+      <div className="ml-wr-body" style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", gap: 14, padding: 14, overflow: "hidden" }}>
         <WritingPromptPanel task={task} words={words} wordPct={wordPct} lengthMet={lengthMet} graded={showResult} />
 
         {showResult && grade ? (
-          <main style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <main className="ml-wr-answer" style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ height: 58, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", borderBottom: `1px solid ${W_SOFTLINE}` }}>
               <h2 style={{ margin: 0, fontFamily: JAKARTA, fontSize: 16, fontWeight: 700, color: W_INK }}>Your result</h2>
             </div>
@@ -1153,7 +1153,7 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
             </div>
           </main>
         ) : (
-          <main style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <main className="ml-wr-answer" style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div style={{ height: 58, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${W_SOFTLINE}`, gap: 12 }}>
               <h2 style={{ margin: 0, fontFamily: JAKARTA, fontSize: 16, fontWeight: 700, color: W_INK }}>Your answer</h2>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -1186,7 +1186,7 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
         )}
 
         {coachOpen ? (
-          <aside style={{ width: 320, flexShrink: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", overflow: "hidden" }}>
+          <aside className="ml-wr-coach" style={{ width: 320, flexShrink: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", overflow: "hidden" }}>
             <WritingCoach promptText={`${task.prompt}\n\nCover: ${task.required_content_points.join("; ")}`} tutorType={tutorTypeForTask(task.task)} phase={showResult ? "results" : "writing"} draftRef={draftRef} onClose={() => setCoachOpen(false)} />
           </aside>
         ) : (
@@ -1213,7 +1213,7 @@ function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onA
 function WritingPromptPanel({ task, words, wordPct, lengthMet, graded }: { task: WritingTask; words: number; wordPct: number; lengthMet: boolean; graded: boolean }) {
   const context = task.situation || task.forum_context || task.problem;
   return (
-    <aside style={{ width: 348, flexShrink: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <aside className="ml-wr-prompt" style={{ width: 348, flexShrink: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
         <div style={{ padding: "18px 20px 16px", borderBottom: `1px solid ${W_SOFTLINE}` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 13 }}>

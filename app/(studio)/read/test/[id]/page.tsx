@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser, roleHome } from "@/lib/auth";
+import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import type { NoteMeta, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -80,10 +81,14 @@ export default async function ReadingTestPage({ params }: PageProps) {
 
   if (testPassages.length === 0) redirect("/read");
 
+  // The coach gets a compact read on the learner (target/level/weakest type) so its
+  // strategy help is pitched to the right level — context only, never a band.
+  const learnerContext = await buildCoachLearnerContext(profile.id, "reading");
+
   // Full-screen, no sidebar — the focused exam experience.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
-      <ReadingTestRunner testId={id} passages={testPassages} />
+      <ReadingTestRunner testId={id} passages={testPassages} learnerContext={learnerContext} />
     </div>
   );
 }

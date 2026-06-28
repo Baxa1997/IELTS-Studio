@@ -128,7 +128,7 @@ function Chip({ Icon, tone, label }: { Icon: typeof Flame; tone: "amber" | "indi
 function NextTask({ rec }: { rec: Recommendation }) {
   const [chipA, chipB] = chipsFor(rec.href);
   return (
-    <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#EEF0FB 0%,#F4F1FC 100%)", border: `1px solid ${TINT_BORDER}`, borderRadius: 16, padding: "22px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#EEF0FB 0%,#F4F1FC 100%)", border: `1px solid ${TINT_BORDER}`, borderRadius: 16, padding: "22px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
       <div aria-hidden style={{ position: "absolute", top: -60, right: 120, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle,rgba(59,67,181,.1),transparent 65%)" }} />
       <div style={{ position: "relative" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".1em", textTransform: "uppercase", color: INDIGO }}>
@@ -138,7 +138,7 @@ function NextTask({ rec }: { rec: Recommendation }) {
         <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: MUTED, margin: "6px 0 0", maxWidth: 520 }}>{rec.reason}</p>
         <Link href={rec.href} style={{ ...btnPrimary, marginTop: 16 }}>{rec.cta} <ArrowRight size={16} /></Link>
       </div>
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8, flex: "none" }}>
+      <div className="dash-next-chips" style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8, flex: "none" }}>
         {[{ Icon: CalendarClock, t: chipA }, { Icon: TrendingUp, t: chipB }].map(({ Icon, t }) => (
           <div key={t} style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, fontWeight: 500, fontSize: 13.5, color: MUTED, background: "#fff", border: `1px solid ${TINT_BORDER}`, borderRadius: 10, padding: "10px 13px" }}>
             <Icon size={16} color={INDIGO} strokeWidth={2} /> {t}
@@ -342,5 +342,14 @@ const DASH_CSS = `
 .dash-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .dash-focus:hover { background: #F6F6FA; }
 @media (max-width: 1040px) { .dash-grid { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .dash-2 { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .dash-2 { grid-template-columns: 1fr; }
+  /* Tighten the "Next task" hero and let its info chips span full width so they
+     don't squeeze the recommendation copy on a phone. */
+  .dash-next { padding: 18px 16px !important; gap: 16px !important; }
+  .dash-next-chips { width: 100%; }
+  /* Writing hero (writing-hero.tsx): once its CTAs wrap below the copy, let them
+     span the full width instead of sitting at their natural button width. */
+  .dwh-cta { width: 100%; flex: 1 1 100% !important; }
+}
 `;

@@ -278,6 +278,7 @@ export function WritingLibrary({
 
   return (
     <div
+      className="lp-hub-pad"
       style={{
         width: "100%",
         padding: "32px 24px 64px",

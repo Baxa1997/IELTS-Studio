@@ -428,6 +428,15 @@
     grid-template-columns: 1fr !important;
   }
 }
+/* The full-bleed Reading/Writing hubs own their padding (the shell runs them
+   contentClassName=""). Trim the side gutter on phones so cards get more width. */
+@media (max-width: 640px) {
+  .lp-hub-pad {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-top: 22px !important;
+  }
+}
 .lp-root .lp-link {
   transition: gap 0.2s ease, color 0.2s ease;
 }
@@ -501,7 +510,10 @@
 
 @media (min-width: 768px) {
   .lp-shell-sidebar {
-    position: static;
+    /* `relative` (not `static`) so the collapse toggle, absolutely positioned at
+       right:-15px, anchors to the rail's edge. On mobile the base rule keeps it
+       `fixed` so the off-canvas drawer works. */
+    position: relative;
     transform: none;
     z-index: auto;
     transition:
@@ -711,13 +723,45 @@
     flex-direction: column !important;
     overflow-y: auto !important;
   }
-  .lp-write-topic,
-  .lp-write-coach {
+  .lp-write-topic {
     width: 100% !important;
     flex-shrink: 0 !important;
   }
   .lp-write-answer {
     min-height: 62vh !important;
+  }
+  /* Coach opens as a floating modal card over the editor (matching the reading
+     coach) instead of stacking inline at the bottom. Pinned above the footer. */
+  .lp-write-coach {
+    position: fixed !important;
+    right: 14px !important;
+    bottom: 64px !important;
+    left: auto !important;
+    top: auto !important;
+    width: min(390px, calc(100vw - 28px)) !important;
+    height: min(72dvh, 600px) !important;
+    flex-shrink: 0 !important;
+    z-index: 60 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 60px -24px rgba(26, 33, 56, 0.5) !important;
+  }
+  /* The floating "Ask coach" button sits just above the status footer. */
+  .lp-fab {
+    position: fixed !important;
+    right: 14px !important;
+    bottom: 64px !important;
+  }
+}
+
+/* Writing studio header: on phones drop the verbose task meta (kind/topic/band)
+   so the timer + Submit button stop colliding, and tighten the side padding. */
+@media (max-width: 768px) {
+  .lp-write-hdr {
+    padding: 0 12px !important;
+    gap: 8px !important;
+  }
+  .lp-hide-sm {
+    display: none !important;
   }
 }
 
@@ -812,5 +856,72 @@
   .lp-root *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ── Reading exam runner: phone/tablet-portrait (≤860px) ──────────────────────
+   Desktop is a side-by-side split (passage | questions). On narrow screens it
+   stacks into ONE scrolling column — passage on top, questions below — and the
+   chrome tightens to fit. Desktop (>860px) is byte-for-byte unchanged. Shared by
+   the single-passage runner and the full-test runner. */
+@media (max-width: 860px) {
+  .rd-split {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .rd-passage,
+  .rd-questions {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    overflow: visible !important;
+  }
+  .rd-passage {
+    border-right: none !important;
+    border-bottom: 1px solid #f0eff5 !important;
+  }
+  .rd-topbar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  .rd-strip-row {
+    padding: 10px 14px !important;
+  }
+  .rd-submit {
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+  }
+  /* one swipeable row of question numbers instead of many tall wrapped rows */
+  .rd-qnav {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+  }
+}
+
+/* ── CEFR / Multilevel runner: phone/tablet-portrait (≤860px) ─────────────────
+   Reading is text | 360px coach; Writing is prompt | answer | coach. On narrow
+   screens the coach slides OVER the content (so the text/editor keeps full width)
+   and the writing prompt stacks above the answer. Desktop (>860px) is unchanged. */
+@media (max-width: 860px) {
+  .ml-rd-coach,
+  .ml-wr-coach {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    z-index: 20 !important;
+    border-left: none !important;
+  }
+  .ml-wr-body {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .ml-wr-prompt,
+  .ml-wr-answer {
+    width: 100% !important;
+    flex: none !important;
+  }
+  .ml-wr-answer {
+    min-height: 60vh !important;
   }
 }
