@@ -9,12 +9,9 @@ import { cleanAnnotations, type Annotation } from "@/components/writing/annotati
 import { EssayFeedback } from "@/components/writing/essay-feedback";
 import { FigureView } from "@/components/writing/figure";
 import type { Figure } from "@/lib/writing/figure";
-import { CefrFeedback } from "@/app/(app)/cefr/writing/cefr-feedback";
-import { CEFR, type CefrLevel } from "@/lib/cefr/levels";
-import { cefrTheme, IELTS_STUDIO_THEME, accentStrong, type StudioTheme } from "@/lib/cefr/theme";
-import type { CefrGradeResult } from "@/lib/cefr/schema";
 
 import { saveDraft } from "./actions";
+import { IELTS_STUDIO_THEME, accentStrong, type StudioTheme } from "./studio-theme";
 
 // ---- Types -----------------------------------------------------------------
 
@@ -36,21 +33,6 @@ export interface ServedPrompt {
 }
 
 export type LibraryPrompt = ServedPrompt;
-
-/** The studio runs in two modes: the default IELTS flow, and a CEFR flow that reuses
- *  the exact same UI but grades on the CEFR scale (A1–C2) via /api/cefr/grade. */
-export type StudioMode = "ielts" | "cefr";
-
-export interface CefrStudioTask {
-  id: string;
-  level: CefrLevel;
-  genre: string;
-  title: string;
-  promptText: string;
-  points: string[];
-  /** [min, max] word target for the level. */
-  words: [number, number];
-}
 
 interface CriterionScore {
   band: number;
@@ -95,14 +77,6 @@ function minWordsForTask(kind: string): number {
 function minutesForTask(kind: string): number {
   return kind === "task2" ? 40 : 20;
 }
-/** CEFR practice time, scaled to the level (higher levels write longer texts). */
-function cefrSecondsForLevel(level: CefrLevel): number {
-  const mins: Record<CefrLevel, number> = { A1: 15, A2: 15, B1: 20, B2: 30, C1: 40, C2: 40 };
-  return (mins[level] ?? 30) * 60;
-}
-function cap(s: string): string {
-  return s ? s[0].toUpperCase() + s.slice(1) : s;
-}
 function requirementChips(kind: string): string[] {
   if (kind === "task1_general") return ["Cover all three points", `At least ${minWordsForTask(kind)} words`, `~${minutesForTask(kind)} minutes`];
   if (kind === "task1_academic") return ["Describe the key data", `At least ${minWordsForTask(kind)} words`, `~${minutesForTask(kind)} minutes`];
@@ -140,44 +114,22 @@ const TUTOR_CHIPS = ["Plan an outline", "Useful vocabulary", "Check my idea"];
 // ---- Studio ----------------------------------------------------------------
 
 export function WritingStudio({
-  prompt: providedPrompt,
+  prompt,
   essayId: initialEssayId = null,
   initialContent = "",
   resumed = false,
-  mode = "ielts",
-  cefrTask,
-  onExit,
 }: {
-  prompt?: ServedPrompt;
+  prompt: ServedPrompt;
   essayId?: string | null;
   initialContent?: string;
   resumed?: boolean;
-  mode?: StudioMode;
-  cefrTask?: CefrStudioTask;
-  /** CEFR mode: called when the learner leaves the studio (back to the chooser). */
-  onExit?: () => void;
 }) {
   const router = useRouter();
-  const isCefr = mode === "cefr" && !!cefrTask;
-  // CEFR tasks reuse the IELTS studio shell via a synthetic prompt, so every existing
-  // `prompt.*` reference keeps working; CEFR-specific behaviour branches on `isCefr`.
-  const prompt: ServedPrompt =
-    providedPrompt ?? {
-      id: cefrTask!.id,
-      task_type: "task2",
-      prompt_text: cefrTask!.promptText,
-      figure: null,
-      category: null,
-      topic_family: null,
-      difficulty: null,
-    };
   const taskKind = prompt.task_type;
 
-  // CEFR theming: the studio chrome is driven by a theme so the CEFR track reads as
-  // its own product (cool canvas + the level's colour), while IELTS keeps today's look
-  // exactly (IELTS_STUDIO_THEME). Shadowing INDIGO/INK here reskins every accent/ink
-  // reference in this component at once; helper components below keep the module tokens.
-  const theme = isCefr ? cefrTheme(cefrTask!.level) : IELTS_STUDIO_THEME;
+  // The studio chrome is driven by a single theme object so every accent/ink/border
+  // reference reads from one place.
+  const theme = IELTS_STUDIO_THEME;
   const INDIGO = theme.accent;
   const INK = theme.ink;
 
@@ -186,7 +138,6 @@ export function WritingStudio({
   const [content, setContent] = useState(initialContent);
   const [timed, setTimed] = useState(!resumed);
   const [grading, setGrading] = useState<Grading | null>(null);
-  const [cefrGrade, setCefrGrade] = useState<CefrGradeResult | null>(null);
   const [disclaimer, setDisclaimer] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(initialContent ? "saved" : "idle");
@@ -218,8 +169,6 @@ export function WritingStudio({
   const words = useMemo(() => content.trim().split(/\s+/).filter(Boolean).length, [content]);
 
   const persist = useCallback(async (): Promise<string | null> => {
-    // CEFR grading is stateless (text posted directly to /api/cefr/grade) — no draft row.
-    if (isCefr) return essayIdRef.current;
     const c = contentRef.current;
     if (!c.trim()) return essayIdRef.current;
     setSaveState("saving");
@@ -236,33 +185,30 @@ export function WritingStudio({
   }, [prompt.id]);
 
   useEffect(() => {
-    if (isCefr) return;
     if (phase !== "writing") return;
     if (content.trim() === lastSavedRef.current.trim()) return;
     const t = setTimeout(() => void persist(), AUTOSAVE_MS);
     return () => clearTimeout(t);
-  }, [content, phase, persist, isCefr]);
+  }, [content, phase, persist]);
 
   useEffect(() => {
-    if (isCefr) return;
     const onHide = () => {
       if (document.visibilityState === "hidden" && contentRef.current.trim() !== lastSavedRef.current.trim()) void persist();
     };
     document.addEventListener("visibilitychange", onHide);
     return () => document.removeEventListener("visibilitychange", onHide);
-  }, [persist, isCefr]);
+  }, [persist]);
 
   // Full-page exit (refresh / close / non-SPA navigation) also resets the studio:
   // beacon the discard so the unsubmitted draft doesn't linger. Graded essays are
   // kept by the route's guard (status='draft' + zero gradings).
   useEffect(() => {
-    if (isCefr) return;
     const onPageHide = () => {
       navigator.sendBeacon?.(`/api/essays/discard?promptId=${prompt.id}`);
     };
     window.addEventListener("pagehide", onPageHide);
     return () => window.removeEventListener("pagehide", onPageHide);
-  }, [prompt.id, isCefr]);
+  }, [prompt.id]);
 
   const submit = useCallback(async () => {
     if (submittingRef.current) return;
@@ -273,42 +219,6 @@ export function WritingStudio({
     submittingRef.current = true;
     setSubmitting(true);
     setMessage(null);
-
-    // CEFR mode: grade statelessly through the CEFR examiner (4 subscales + level).
-    if (isCefr) {
-      try {
-        const res = await fetch("/api/cefr/grade", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            taskId: cefrTask!.id,
-            level: cefrTask!.level,
-            genre: cefrTask!.genre,
-            prompt: cefrTask!.promptText,
-            taskTitle: cefrTask!.title,
-            text: contentRef.current,
-          }),
-        });
-        const body = (await res.json().catch(() => ({}))) as { grade?: CefrGradeResult; message?: string };
-        if (res.ok && body.grade) {
-          setCefrGrade(body.grade);
-          setLastGraded(contentRef.current);
-          setTimed(false);
-          setPhase("results");
-          window.scrollTo({ top: 0 });
-        } else if (res.status === 429) {
-          setMessage("You’ve reached your monthly grading limit.");
-        } else {
-          setMessage(body.message ?? "Couldn’t grade your writing. Please try again.");
-        }
-      } catch {
-        setMessage("Network error while grading — please try again.");
-      } finally {
-        submittingRef.current = false;
-        setSubmitting(false);
-      }
-      return;
-    }
 
     const id = await persist();
     if (!id) {
@@ -346,7 +256,7 @@ export function WritingStudio({
       submittingRef.current = false;
       setSubmitting(false);
     }
-  }, [persist, isCefr, cefrTask]);
+  }, [persist]);
 
   const submitRef = useRef(submit);
   useEffect(() => void (submitRef.current = submit), [submit]);
@@ -354,7 +264,6 @@ export function WritingStudio({
 
   function revise() {
     setGrading(null);
-    setCefrGrade(null);
     setDisclaimer(null);
     setMessage(null);
     setTimed(false);
@@ -367,10 +276,6 @@ export function WritingStudio({
   // first so the discard (keyed by prompt) is sure to find and remove the row;
   // graded work has gradings and is kept by the route's guard. Best-effort.
   const goLibrary = useCallback(async () => {
-    if (isCefr) {
-      onExit?.();
-      return;
-    }
     await persist();
     try {
       await fetch(`/api/essays/discard?promptId=${prompt.id}`, { method: "POST", keepalive: true });
@@ -379,7 +284,7 @@ export function WritingStudio({
     }
     router.push("/write");
     router.refresh(); // re-fetch the library so a freshly generated prompt shows
-  }, [persist, prompt.id, router, isCefr, onExit]);
+  }, [persist, prompt.id, router]);
 
   // Upload/paste a photo or PDF of a written answer → transcribe to editable text.
   // Faithful transcription server-side; we append it (non-destructive) so a typed
@@ -436,7 +341,7 @@ export function WritingStudio({
           body: JSON.stringify({
             question: q,
             taskType: taskKind,
-            promptText: isCefr ? `This is a CEFR ${cefrTask!.level} ${cefrTask!.genre} writing task.\n${prompt.prompt_text}` : prompt.prompt_text,
+            promptText: prompt.prompt_text,
             draft: contentRef.current,
             phase: lastGraded.trim() ? "results" : "writing",
             history: prior.slice(-6),
@@ -450,7 +355,7 @@ export function WritingStudio({
         setTutorPending(false);
       }
     },
-    [tutorInput, tutorPending, taskKind, prompt.prompt_text, lastGraded, isCefr, cefrTask],
+    [tutorInput, tutorPending, taskKind, prompt.prompt_text, lastGraded],
   );
 
   // Once a coach reply has finished typing, clear its animate flag so reopening the
@@ -461,41 +366,6 @@ export function WritingStudio({
   }, []);
 
   // ---- Results -------------------------------------------------------------
-
-  // CEFR results: the four-subscale CEFR feedback (level estimate), wrapped in a
-  // scrollable page with its own back/revise actions.
-  if (phase === "results" && isCefr && cefrGrade) {
-    return (
-      <div style={{ height: "100dvh", overflowY: "auto", background: theme.canvas }}>
-        <div style={{ maxWidth: 880, margin: "0 auto", padding: "26px clamp(16px,4vw,28px) 64px" }}>
-          <button
-            type="button"
-            onClick={() => onExit?.()}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 14px 0 11px", border: `1px solid ${theme.line}`, background: "#fff", borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-            CEFR tasks
-          </button>
-          <div style={{ marginTop: 16 }}>
-            <CefrFeedback
-              grade={cefrGrade}
-              taskTitle={cefrTask!.title}
-              footer={
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button type="button" onClick={revise} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", border: "none", borderRadius: 11, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: "pointer", boxShadow: "0 10px 22px -10px rgba(59,67,181,.7)" }}>
-                    Revise this task
-                  </button>
-                  <button type="button" onClick={() => onExit?.()} style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 44, padding: "0 20px", border: `1px solid ${theme.line}`, borderRadius: 11, background: "#fff", color: INK, fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}>
-                    Try another task
-                  </button>
-                </div>
-              }
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (phase === "results" && grading) {
     return (
@@ -522,9 +392,9 @@ export function WritingStudio({
 
   const hasGraded = lastGraded.trim() !== "";
   const unchangedSinceGrade = hasGraded && content.trim() === lastGraded.trim();
-  const minWords = isCefr ? cefrTask!.words[0] : minWordsForTask(taskKind);
-  const taskSeconds = isCefr ? cefrSecondsForLevel(cefrTask!.level) : secondsForTask(taskKind);
-  const requirementList = isCefr ? cefrTask!.points : requirementChips(taskKind).filter((c) => !/\bwords\b/i.test(c));
+  const minWords = minWordsForTask(taskKind);
+  const taskSeconds = secondsForTask(taskKind);
+  const requirementList = requirementChips(taskKind).filter((c) => !/\bwords\b/i.test(c));
   const wordPct = Math.min(100, minWords ? Math.round((words / minWords) * 100) : 0);
   const lengthMet = words >= minWords;
   const wordsToTarget = Math.max(0, minWords - words);
@@ -532,10 +402,8 @@ export function WritingStudio({
   const paragraphs = content.trim() ? content.trim().split(/\n{2,}/).map((s) => s.trim()).filter(Boolean).length : 0;
   const RING_C = 2 * Math.PI * 19; // ≈ 119.38
   const ringOffset = RING_C * (1 - Math.min(1, minWords ? words / minWords : 0));
-  const taskNo = isCefr ? cefrTask!.level : taskKind === "task2" ? "TASK 2" : "TASK 1";
-  const taskKindLabel = isCefr
-    ? `${cap(cefrTask!.genre)} · ${CEFR[cefrTask!.level].name}`
-    : taskKind === "task2" ? "Academic · Essay" : taskKind === "task1_general" ? "General · Letter" : "Academic · Report";
+  const taskNo = taskKind === "task2" ? "TASK 2" : "TASK 1";
+  const taskKindLabel = taskKind === "task2" ? "Academic · Essay" : taskKind === "task1_general" ? "General · Letter" : "Academic · Report";
   const promptParts = parsePromptParts(prompt.prompt_text);
 
   const submitDisabled = submitting || !content.trim() || unchangedSinceGrade;
@@ -543,14 +411,14 @@ export function WritingStudio({
   return (
     <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.canvas }}>
       {/* grading modal — a calm, on-brand cover every time we mark a submission */}
-      {submitting ? <GradingOverlay mode={mode} theme={theme} /> : null}
+      {submitting ? <GradingOverlay theme={theme} /> : null}
 
       {/* header */}
       <header style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: `1px solid ${theme.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <button type="button" onClick={() => void goLibrary()} style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${theme.line}`, background: theme.soft, borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#41496A", cursor: "pointer" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-            {isCefr ? "CEFR tasks" : "Library"}
+            Library
           </button>
           <div style={{ width: 1, height: 24, background: theme.line }} />
           <div style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
@@ -564,7 +432,7 @@ export function WritingStudio({
           {timed ? (
             <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${theme.line}`, borderRadius: 9, background: theme.soft }}><Timer seconds={taskSeconds} onExpire={onExpire} /></div>
           ) : null}
-          {!isCefr ? <SaveBadge state={saveState} /> : null}
+          <SaveBadge state={saveState} />
           <div style={{ width: 1, height: 24, background: theme.line }} />
           <button type="button" onClick={() => void submit()} disabled={submitDisabled} style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: submitDisabled ? "default" : "pointer", opacity: submitDisabled ? 0.55 : 1, boxShadow: theme.accentShadow }}>
             {submitting ? "Grading…" : hasGraded ? "Resubmit for grading" : "Submit for grading"}
@@ -619,7 +487,7 @@ export function WritingStudio({
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#2C3247" }}>{isCefr ? `About ${cefrTask!.words[0]}–${cefrTask!.words[1]} words` : `At least ${minWords} words`}</span>
+                      <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: "#2C3247" }}>{`At least ${minWords} words`}</span>
                       <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{words}</span>
                     </div>
                     <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: theme.accentSoft, overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: INDIGO, transition: "width .3s ease" }} /></div>
@@ -630,7 +498,7 @@ export function WritingStudio({
           </div>
           <div style={{ flexShrink: 0, padding: "14px 20px", borderTop: `1px solid ${theme.softLine}`, display: "flex", alignItems: "center", gap: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9684" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16v-4M12 8h.01" /><circle cx="12" cy="12" r="9" /></svg>
-            <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{isCefr ? "Graded on the CEFR scale (A1–C2) — Content, Communication, Organisation, Language." : hasGraded ? "A model answer for this task is in your feedback." : "A model answer for this task unlocks after you submit."}</span>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, color: "#8A8FA0", lineHeight: 1.4 }}>{hasGraded ? "A model answer for this task is in your feedback." : "A model answer for this task unlocks after you submit."}</span>
           </div>
         </aside>
 
@@ -639,7 +507,7 @@ export function WritingStudio({
           <div style={{ height: 60, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${theme.softLine}`, gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
               <h2 style={{ margin: 0, fontFamily: SANS, fontSize: 16, fontWeight: 700, color: INK }}>Your answer</h2>
-              {!isCefr ? <AutosavePill state={saveState} /> : null}
+              <AutosavePill state={saveState} />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ fontFamily: SANS, fontSize: 13, color: "#8A8FA0", fontWeight: 500 }}>{lengthMet ? "Target reached" : `${wordsToTarget} words to target`}</div>
@@ -734,7 +602,7 @@ export function WritingStudio({
           )}
         </span>
         <span style={{ fontFamily: SANS, fontSize: 13, color: "#5A6076" }}>
-          {message ? <span style={{ color: "#c2410c" }}>{message}</span> : unchangedSinceGrade ? "Edit your response, then resubmit to see if it worked." : isCefr ? <><strong style={{ color: INK, fontWeight: 700 }}>Ready to grade.</strong> The AI estimates your CEFR level with feedback on Content, Communicative Achievement, Organisation and Language.</> : <><strong style={{ color: INK, fontWeight: 700 }}>Ready to grade.</strong> The AI marks every mistake and gives a band per criterion — Task, Coherence, Vocabulary, Grammar.</>}
+          {message ? <span style={{ color: "#c2410c" }}>{message}</span> : unchangedSinceGrade ? "Edit your response, then resubmit to see if it worked." : <><strong style={{ color: INK, fontWeight: 700 }}>Ready to grade.</strong> The AI marks every mistake and gives a band per criterion — Task, Coherence, Vocabulary, Grammar.</>}
         </span>
       </footer>
     </div>
@@ -889,12 +757,6 @@ const GRADING_STEPS_IELTS = [
   "Comparing with calibrated band examples…",
   "Calibrating a fair, exam-accurate band…",
 ];
-const GRADING_STEPS_CEFR = [
-  "Reading your response, line by line…",
-  "Checking range, accuracy & organisation…",
-  "Mapping it to the CEFR can-do levels…",
-  "Calibrating a fair, conservative level…",
-];
 
 /**
  * Full-screen modal shown every time the learner submits for grading. A calm,
@@ -903,9 +765,8 @@ const GRADING_STEPS_CEFR = [
  * as care (accuracy) rather than lag. Covers the editor so nothing can be edited
  * mid-grade. Mounts only while submitting, so its interval cleans up on its own.
  */
-function GradingOverlay({ mode, theme }: { mode: StudioMode; theme: StudioTheme }) {
-  const isCefr = mode === "cefr";
-  const steps = isCefr ? GRADING_STEPS_CEFR : GRADING_STEPS_IELTS;
+function GradingOverlay({ theme }: { theme: StudioTheme }) {
+  const steps = GRADING_STEPS_IELTS;
   const INDIGO = theme.accent;
   const INK = theme.ink;
   const [step, setStep] = useState(0);
@@ -917,23 +778,23 @@ function GradingOverlay({ mode, theme }: { mode: StudioMode; theme: StudioTheme 
   return (
     <div
       role="alertdialog"
-      aria-label={isCefr ? "Estimating your level" : "Grading your essay"}
+      aria-label="Grading your essay"
       aria-live="polite"
       style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(20,22,40,.46)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
     >
       <div style={{ width: "min(424px, 94vw)", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 40px 90px -30px rgba(20,22,40,.7)", animation: "lp-grade-in .4s cubic-bezier(.33,1,.68,1) both", "--grade-accent": theme.accent, "--ai-soft": theme.accentSoft, "--ai-strong": accentStrong(theme.accent) } as React.CSSProperties}>
-        {/* animated brand header with the spinning emblem (accent-tinted for CEFR) */}
-        <div className={isCefr ? "lp-ai-surface-accent" : "lp-ai-surface"} style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: `1px solid ${theme.accentLine}` }}>
+        {/* animated brand header with the spinning emblem */}
+        <div className="lp-ai-surface" style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: `1px solid ${theme.accentLine}` }}>
           <span style={{ position: "relative", width: 66, height: 66, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <span className="lp-grade-ring" style={{ position: "absolute", inset: 0, borderRadius: "50%" }} aria-hidden />
             <span style={{ position: "absolute", inset: 7, borderRadius: "50%", background: "#fff", boxShadow: "inset 0 0 0 1px rgba(59,67,181,.12)" }} aria-hidden />
             <svg className="lp-ai-spark" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ position: "relative" }}><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
           </span>
           <h2 style={{ margin: "18px 0 0", fontFamily: SANS, fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-.01em" }}>
-            {isCefr ? "Estimating your level" : "Grading your essay"}
+            Grading your essay
           </h2>
           <p style={{ margin: "8px 0 0", fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: "#46496A", maxWidth: 320 }}>
-            Hang tight — we read every line and weigh it against the {isCefr ? "CEFR can-do descriptors" : "official band descriptors"} so your result is as accurate as possible.
+            Hang tight — we read every line and weigh it against the official band descriptors so your result is as accurate as possible.
           </p>
         </div>
 

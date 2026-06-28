@@ -57,14 +57,6 @@ const WRITING_SAMPLES_CONTRACT = `Emit ONE JSON object and nothing else — no p
 }
 Emit exactly ONE sample. Do NOT write the band, a title, or any label inside the "essay" text itself — only the essay prose.`;
 
-const CEFR_WRITING_TASK_CONTRACT = `Emit ONE JSON object and nothing else — no prose, no code fence — of this exact shape:
-{
-  "genre": "<one of the allowed genres>",
-  "title": "<short card label, e.g. 'Email · invite a friend'>",
-  "prompt": "<the full task the learner reads: the situation in 1-2 sentences, then what to write>",
-  "points": ["<content point 1>", "<content point 2>", "<content point 3>"]
-}`;
-
 export function buildGradePrompt(
   input: GradeEssayInput,
   skill: GradingSkill,
@@ -258,33 +250,6 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     return { system: rules.join(" "), user };
   }
 
-  // cefr_writing_task — an ORIGINAL CEFR practice task generated on demand, pitched
-  // to a target level (A1–C2). The level + word target are fixed by the caller; the
-  // model invents a fresh situation, an appropriate genre, and the content points
-  // the writer must cover. Variety matters (every session is new), so this runs at
-  // generation temperature — but it must stay calibrated to the level and original.
-  if (input.kind === "cefr_writing_task") {
-    const level = String(input.spec.level ?? "B1");
-    const genres = String(input.spec.genres ?? "essay");
-    const words = String(input.spec.words ?? "");
-
-    const rules = [
-      "You are a CEFR writing-test author creating ONE original practice task for a language learner.",
-      common,
-      `Target CEFR level: ${level}. Pitch the topic, situation, register and the language it demands EXACTLY at ${level} — not easier, not harder. At low levels (A1/A2) keep the situation concrete, personal and simple; at high levels (C1/C2) make it abstract and intellectually demanding.`,
-      `Choose ONE genre suitable for this level from: ${genres}. Set a realistic, self-contained situation and tell the learner clearly what to write.`,
-      "Give exactly THREE content points the writer must cover — these drive the Content subscale, so make them specific and checkable.",
-      words ? `The task must be answerable in about ${words} words.` : "",
-      "Keep it globally accessible (no region-specific knowledge required) and write the prompt in clear, level-appropriate English the learner reads directly, like a real exam task.",
-      CEFR_WRITING_TASK_CONTRACT,
-    ].filter(Boolean);
-
-    return {
-      system: rules.join(" "),
-      user: `Write one original ${level} CEFR writing task.\nSpec:\n${specLines}`,
-    };
-  }
-
   // Academic Task 1 — describe a chart/graph/table. Returns JSON: the rubric the
   // candidate sees + the structured figure data (rendered for them AND fed to the
   // grader). v1 figure kinds: bar, grouped_bar, line, pie, table.
@@ -422,7 +387,6 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "sentence_completion / summary_completion: write the candidate-facing 'prompt' as the FULL sentence with the missing word(s) shown as a run of underscores '______' exactly where the answer goes (e.g. 'The research was funded by the ______ government.'). The answer is the exact word(s) copied verbatim from the passage, NO MORE THAN TWO WORDS (and/or a number). Put the gap mid-sentence where natural, not always at the end.",
       "multiple_choice: options are the choices and answer is the exact text of the correct option; make distractors plausible.",
       "Pitch vocabulary and abstraction at the target band in the spec.",
-      "CEFR mode: if the spec includes a 'cefr_level' and 'passage_words', this is a CEFR practice text — write a SHORTER original passage of approximately that many words pitched at that CEFR level (A1–C2): use high-frequency vocabulary, shorter and clearer sentences, and a simple linear structure, and write comprehension questions a learner AT that level can answer directly from the text. If no cefr_level is given, write a full-length Academic passage as usual.",
       READING_SET_CONTRACT,
     ].join(" ");
     return { system, user: `Write one IELTS Academic Reading set.\nSpec:\n${specLines}` };

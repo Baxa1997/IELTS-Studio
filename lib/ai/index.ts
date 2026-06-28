@@ -20,27 +20,10 @@ import {
   type EssayTaskType,
   type WritingSample,
   writingSamplesResultSchema,
-  cefrWritingTaskResultSchema,
 } from "./schema";
 import { loadGradingSkill, parseGradeOutput } from "./skill";
 import { logUsage } from "./usage";
-import { CEFR_GRADE_PROMPT_VERSION, GRADE_PROMPT_VERSION, GENERATE_PROMPT_VERSION } from "./version";
-import { buildCefrGradePrompt } from "@/lib/cefr/grade-prompt";
-import {
-  CEFR_GRADE_DISCLAIMER,
-  cefrGradeInputSchema,
-  cefrGradeSchema,
-  type CefrGrade,
-  type CefrGradeInput,
-  type CefrGradeResult,
-} from "@/lib/cefr/schema";
-import { CEFR_LEVELS, type CefrLevel } from "@/lib/cefr/levels";
-import {
-  CEFR_GENRES,
-  cefrWordTarget,
-  type CefrTaskGenre,
-  type CefrWritingTask,
-} from "@/lib/cefr/writing-tasks";
+import { GRADE_PROMPT_VERSION, GENERATE_PROMPT_VERSION } from "./version";
 
 /**
  * The single server-side entry point for ALL model access.
@@ -281,199 +264,6 @@ async function nonAttemptFloor(input: GradeEssayInput): Promise<EssayGrade | nul
   return { ...grade, model: FLOOR_MODEL, disclaimer: skill.disclaimer };
 }
 
-// ---- CEFR writing grader (distinct track) ----------------------------------
-
-/** Below this many words a CEFR submission can't show the level's demands — graded
- *  deterministically (no model call), like the IELTS non-attempt floor. */
-const CEFR_NON_ATTEMPT_WORDS: Record<CefrLevel, number> = {
-  A1: 8,
-  A2: 12,
-  B1: 25,
-  B2: 40,
-  C1: 60,
-  C2: 70,
-};
-
-const CEFR_FLOOR_MODEL = "rule:cefr-non-attempt";
-
-/**
- * Grade a CEFR writing task against the four Cambridge-aligned subscales and place
- * it on the CEFR ladder (A1–C2). Conservative — between two levels it returns the
- * lower one (CLAUDE.md §2). Goes through the same provider/resilience/usage plumbing
- * as IELTS grading; stateless (the caller decides whether to persist).
- */
-export async function gradeCefrWriting(rawInput: CefrGradeInput): Promise<CefrGradeResult> {
-  const input = cefrGradeInputSchema.parse(rawInput);
-
-  const floor = cefrNonAttemptFloor(input);
-  if (floor) {
-    await logUsage({
-      organizationId: input.meta.organizationId,
-      userId: input.meta.userId,
-      task: "grade",
-      provider: "rule",
-      model: CEFR_FLOOR_MODEL,
-      requestKind: "cefr_writing",
-      inputTokens: 0,
-      outputTokens: 0,
-      latencyMs: 0,
-      ok: true,
-      promptVersion: CEFR_GRADE_PROMPT_VERSION,
-      resultSummary: `cefr non-attempt (${wordCount(input.text)}w)`,
-      input: input.text,
-      output: floor,
-    });
-    return floor;
-  }
-
-  const provider = getProvider("grade");
-  const { system, user } = buildCefrGradePrompt(input);
-  const startedAt = Date.now();
-  const usage = { input: 0, output: 0 };
-  let model = provider.name;
-
-  try {
-    const first = await withResilience(
-      (signal) =>
-        provider.complete({
-          task: "grade",
-          system,
-          prompt: user,
-          temperature: GRADING_TEMPERATURE,
-          responseFormat: "json",
-          signal,
-        }),
-      GRADE_RESILIENCE,
-    );
-    model = first.model;
-    addUsage(usage, first);
-
-    let grade: CefrGrade;
-    try {
-      grade = parseCefrGrade(first.text);
-    } catch (err) {
-      // Malformed JSON isn't transient — re-ask once with the error echoed back.
-      const repair = await withResilience(
-        (signal) =>
-          provider.complete({
-            task: "grade",
-            system,
-            prompt: repairPrompt(user, first.text, errorMessage(err)),
-            temperature: GRADING_TEMPERATURE,
-            responseFormat: "json",
-            signal,
-          }),
-        GRADE_RESILIENCE,
-      );
-      model = repair.model;
-      addUsage(usage, repair);
-      grade = parseCefrGrade(repair.text); // still bad → throws, caught below
-    }
-
-    // Derive the relational fields server-side so the verdict is always internally
-    // consistent regardless of any model slip: the target is what we asked for,
-    // on_target is estimated≥target on the CEFR ladder, and next_level is the level
-    // immediately above the estimate (keep the model's "focus" advice).
-    grade = reconcileCefrGrade(grade, input.targetLevel);
-
-    await logUsage({
-      organizationId: input.meta.organizationId,
-      userId: input.meta.userId,
-      task: "grade",
-      provider: provider.name,
-      model,
-      requestKind: "cefr_writing",
-      inputTokens: usage.input,
-      outputTokens: usage.output,
-      latencyMs: Date.now() - startedAt,
-      ok: true,
-      promptVersion: CEFR_GRADE_PROMPT_VERSION,
-      resultSummary: `cefr ${grade.estimated_level} (target ${grade.target_level})`,
-      input: user,
-      output: grade,
-    });
-
-    return { ...grade, model, disclaimer: CEFR_GRADE_DISCLAIMER };
-  } catch (err) {
-    await logUsage({
-      organizationId: input.meta.organizationId,
-      userId: input.meta.userId,
-      task: "grade",
-      provider: provider.name,
-      model,
-      requestKind: "cefr_writing",
-      inputTokens: usage.input,
-      outputTokens: usage.output,
-      latencyMs: Date.now() - startedAt,
-      ok: false,
-      error: errorMessage(err),
-      promptVersion: CEFR_GRADE_PROMPT_VERSION,
-      resultSummary: "cefr grade failed",
-      input: user,
-    });
-    throw err;
-  }
-}
-
-/** Strip any code fence / prose and validate the model's CEFR JSON against the schema. */
-function parseCefrGrade(text: string): CefrGrade {
-  const trimmed = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  const json = start >= 0 && end > start ? trimmed.slice(start, end + 1) : trimmed;
-  let obj: unknown;
-  try {
-    obj = JSON.parse(json);
-  } catch {
-    throw new Error("CEFR grade reply was not valid JSON.");
-  }
-  const parsed = cefrGradeSchema.safeParse(obj);
-  if (!parsed.success) {
-    throw new Error(`CEFR grade JSON failed validation: ${parsed.error.issues.map((i) => i.path.join(".") + " " + i.message).join("; ")}`);
-  }
-  return parsed.data;
-}
-
-/** Force the relational fields to be consistent with the (trusted) estimated_level
- *  and the (authoritative) target. Keeps the model's prose advice intact. */
-function reconcileCefrGrade(grade: CefrGrade, targetLevel: CefrLevel): CefrGrade {
-  const ei = CEFR_LEVELS.indexOf(grade.estimated_level);
-  const ti = CEFR_LEVELS.indexOf(targetLevel);
-  const nextLevel = CEFR_LEVELS[Math.min(CEFR_LEVELS.length - 1, ei + 1)];
-  return {
-    ...grade,
-    target_level: targetLevel,
-    on_target: ei >= ti,
-    next_level: { level: nextLevel, focus: grade.next_level.focus },
-  };
-}
-
-/** Deterministic low result for a submission too short to assess at the target level. */
-function cefrNonAttemptFloor(input: CefrGradeInput): CefrGradeResult | null {
-  const words = wordCount(input.text);
-  if (words >= CEFR_NON_ATTEMPT_WORDS[input.targetLevel]) return null;
-
-  const note = `Only ${words} word${words === 1 ? "" : "s"} were written — too short to show ${input.targetLevel} writing.`;
-  const sub = (improve: string) => ({ mark: 0, comment: note, improve });
-
-  const grade: CefrGrade = {
-    estimated_level: "A1",
-    target_level: input.targetLevel,
-    on_target: false,
-    subscales: {
-      content: sub("Address every point the task asks for."),
-      communicative_achievement: sub("Write a complete message in the right format and tone."),
-      organisation: sub("Write in full, connected sentences."),
-      language: sub("Show a range of words and structures."),
-    },
-    summary: `This is too short to assess at ${input.targetLevel}. Write a full response that covers the whole task.`,
-    strengths: ["You made a start on the task."],
-    improvements: ["Write a complete answer that addresses every point in the task."],
-    next_level: { level: input.targetLevel, focus: "Write a full-length response so your level can be assessed." },
-  };
-  return { ...grade, model: CEFR_FLOOR_MODEL, disclaimer: CEFR_GRADE_DISCLAIMER };
-}
-
 export async function generate(rawInput: GenerateInput): Promise<GenerateResult> {
   const input = generateInputSchema.parse(rawInput);
   // A vocabulary lookup is a tiny, latency-sensitive call — run it on the fast
@@ -493,7 +283,6 @@ export async function generate(rawInput: GenerateInput): Promise<GenerateResult>
     input.kind === "reading_validation" ||
     input.kind === "writing_task1_academic" ||
     input.kind === "writing_samples" ||
-    input.kind === "cefr_writing_task" ||
     input.kind === "vocabulary_translate";
   // A dictionary lookup and the answer-key checker both want a stable, repeatable
   // answer; everything else wants variety.
@@ -596,57 +385,6 @@ export async function generateWritingSamples(input: WritingSamplesInput): Promis
     .replace(/\s*```$/, "");
   const parsed = writingSamplesResultSchema.parse(JSON.parse(stripped));
   return [...parsed.samples].sort((a, b) => a.band - b.band);
-}
-
-// ---- CEFR dynamic writing task (level-pitched, generated on demand) ---------
-
-export interface CefrWritingTaskInput {
-  level: CefrLevel;
-  /** Optionally force a genre; otherwise the model picks one suited to the level. */
-  genre?: CefrTaskGenre | null;
-  meta: { organizationId: string; userId: string | null };
-}
-
-/**
- * Generate ONE original CEFR writing task pitched to the target level — the dynamic
- * counterpart to the authored `CEFR_WRITING_TASKS`. The level and word target are
- * fixed here (calibrated, deterministic); the model supplies a fresh situation,
- * genre and content points. Returns a full CefrWritingTask the studio can render
- * and grade (via the grade route's level/genre/prompt fallback path).
- */
-export async function generateCefrWritingTask(input: CefrWritingTaskInput): Promise<CefrWritingTask> {
-  const [minW, maxW] = cefrWordTarget(input.level);
-  const allowed = input.genre ? [input.genre] : CEFR_GENRES[input.level];
-
-  const { content } = await generate({
-    kind: "cefr_writing_task",
-    spec: {
-      level: input.level,
-      genres: allowed.join(", "),
-      words: `${minW}–${maxW}`,
-    },
-    meta: input.meta,
-  });
-
-  const stripped = content
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "");
-  const parsed = cefrWritingTaskResultSchema.parse(JSON.parse(stripped));
-
-  // Keep the model's genre only if it is one we recognise; otherwise fall back to
-  // the first allowed genre for the level (the word target is always canonical).
-  const genre = (allowed as string[]).includes(parsed.genre) ? (parsed.genre as CefrTaskGenre) : allowed[0];
-
-  return {
-    id: `gen-${input.level.toLowerCase()}-${Date.now().toString(36)}`,
-    level: input.level,
-    genre,
-    title: parsed.title,
-    prompt: parsed.prompt,
-    points: parsed.points,
-    words: [minW, maxW],
-  };
 }
 
 // ---- Transcription (photo/PDF of a written answer → editable text) ---------

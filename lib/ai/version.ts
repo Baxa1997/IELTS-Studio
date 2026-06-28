@@ -11,6 +11,3 @@
 export const GRADE_PROMPT_VERSION = "grade-v3-2026.06";
 // v2: adds the Academic Task 1 generator (prompt + figure) and file transcription.
 export const GENERATE_PROMPT_VERSION = "generate-v2-2026.06";
-// CEFR writing grader (distinct track): four Cambridge-aligned subscales + CEFR
-// level estimate, conservative (round down between levels). v1.
-export const CEFR_GRADE_PROMPT_VERSION = "cefr-grade-v1-2026.06";
