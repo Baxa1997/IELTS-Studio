@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlignLeft, ArrowRight, BookOpen, FileText, Layers, ListChecks, ListOrdered, Loader2, PenLine, SquarePen } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Clock, FileText, Layers, ListChecks, ListOrdered, Loader2, MessageCircle, PenLine, Send, SquarePen, X } from "lucide-react";
 
+import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
@@ -324,46 +325,287 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
   const [grade, setGrade] = useState<ReadingGrade | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [coachOpen, setCoachOpen] = useState(true);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const set = (n: number | string, v: string) => setAnswers((a) => ({ ...a, [String(n)]: v }));
 
-  async function submit() {
+  const submit = async () => {
     setBusy(true); setError(null);
     try {
       const res = await callEngine<ReadingGrade>("reading/grade", { item_id: paper.id, answers });
       setGrade(res);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Grading failed.");
     } finally {
       setBusy(false);
     }
-  }
+  };
+
+  // Keep a stable onExpire so the timer interval is set once (mirrors the IELTS runner).
+  const submitRef = useRef(submit);
+  useEffect(() => { submitRef.current = submit; });
+  const onExpire = useCallback(() => void submitRef.current(), []);
+
+  const graded = !!grade;
+  const nums = useMemo(() => questionNumbers(paper.parts), [paper.parts]);
+  const coach = useMemo(() => coachContext(paper.parts), [paper.parts]);
+  const total = nums.length;
+  const answeredCount = nums.filter((n) => (answers[String(n)] ?? "").trim()).length;
+  const allowance = Math.max(600, total * 90);
+  const pct = total ? Math.round((answeredCount / total) * 100) : 0;
+  const label = paper.parts.length > 1 ? `Reading · ${paper.parts.length} parts` : `Reading · Part ${paper.parts[0]?.part}`;
 
   const correctByNum = new Map<number, QResult>();
   grade?.parts.forEach((p) => p.results.forEach((r) => correctByNum.set(r.number, r)));
-  const label = paper.parts.length > 1 ? `Reading · ${paper.parts.length} parts` : `Reading · Part ${paper.parts[0]?.part}`;
 
   return (
-    <div style={{ maxWidth: 940, margin: "0 auto", padding: "clamp(20px,3vw,32px) clamp(16px,3vw,24px) 80px" }}>
-      <RunnerHeader onExit={onExit} label={label} />
-      {grade ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
+      {/* Top bar: exit · timer · submit (mirrors the IELTS reading runner) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: `1px solid ${LINE}` }}>
+        <div style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
+          <button type="button" onClick={onExit} aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
+            <ArrowLeft size={18} />
+          </button>
+          <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INDIGO, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+        </div>
+        <div style={{ justifySelf: "center" }}>
+          {!graded ? (
+            <ReadingTimer seconds={allowance} onExpire={onExpire}>
+              {(text, left) => {
+                const warn = left <= 120;
+                return (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 20px", borderRadius: 999, background: warn ? "#FDECEC" : "#F4F3FC", border: `1.5px solid ${warn ? "#F3B4B4" : "#E4E2F4"}` }} aria-label="time remaining">
+                    <Clock size={15} style={{ color: warn ? "#B91C1C" : INDIGO }} />
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 18, letterSpacing: ".02em", color: warn ? "#B91C1C" : INDIGO }}>{text}</span>
+                  </span>
+                );
+              }}
+            </ReadingTimer>
+          ) : (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 18px", borderRadius: 999, background: "#ECEBFB", border: `1.5px solid ${TINT_BORDER}` }}>
+              <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{grade.score} / {grade.max_score}</span>
+              <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INDIGO }}>{grade.max_score ? Math.round((grade.score / grade.max_score) * 100) : 0}%</span>
+            </span>
+          )}
+        </div>
+        <div style={{ justifySelf: "end" }}>
+          {!graded ? (
+            <button type="button" onClick={() => void submit()} disabled={busy} style={topActionBtn(busy)}>{busy ? "Marking…" : "Submit answers"}</button>
+          ) : (
+            <button type="button" onClick={onNew} disabled={regenBusy} style={topActionBtn(regenBusy)}>{regenBusy ? "Generating…" : "New paper"}</button>
+          )}
+        </div>
+      </div>
 
-      {paper.parts.map((part) => (
-        <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={!!grade} />
-      ))}
+      {/* Strip: status + progress + coach toggle */}
+      <div style={{ flex: "none", background: "#FAFAFD", borderBottom: `1px solid ${LINE}` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "11px 28px", flexWrap: "wrap" }}>
+          <div style={{ fontSize: 14.5, color: "#4A4660" }}>
+            {graded ? (<><b style={{ color: INK }}>Marked.</b> Review each answer below — the coach can explain any of them.</>) : (<>Answer all {total} questions, then submit.</>)}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{answeredCount} of {total} answered</div>
+            {!coachOpen ? (
+              <button type="button" onClick={() => setCoachOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 13px", borderRadius: 9, border: `1.5px solid ${TINT_BORDER}`, background: "#fff", color: INDIGO, fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                <MessageCircle size={15} /> Coach
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <div style={{ height: 3, background: "#EEEDF6" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: INDIGO, transition: "width .3s ease" }} />
+        </div>
+      </div>
 
-      {error ? <Alert>{error}</Alert> : null}
-      <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-        {!grade ? (
-          <PrimaryButton onClick={submit} disabled={busy}>{busy ? "Grading…" : "Submit answers"}</PrimaryButton>
-        ) : (
-          <PrimaryButton onClick={onNew} disabled={regenBusy}>{regenBusy ? "Generating…" : "New paper"}</PrimaryButton>
-        )}
-        <GhostButton onClick={onExit}>Back to CEFR</GhostButton>
+      {/* Split: reading (70%) | coach (30%) */}
+      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+        <div ref={scrollRef} style={{ flex: 1, overflow: "auto", padding: "clamp(20px,3vw,30px) clamp(16px,3vw,30px) 90px", minHeight: 0, borderRight: coachOpen ? `1px solid ${LINE}` : "none" }}>
+          <div style={{ maxWidth: 760, margin: "0 auto" }}>
+            {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
+            {paper.parts.map((part) => (
+              <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
+            ))}
+            {error ? <Alert>{error}</Alert> : null}
+          </div>
+        </div>
+
+        {coachOpen ? (
+          <aside style={{ width: "30%", minWidth: 300, maxWidth: 460, flex: "none", minHeight: 0, display: "flex" }}>
+            <CefrCoach passageBody={coach.body} questions={coach.questions} phase={graded ? "results" : "reading"} onClose={() => setCoachOpen(false)} />
+          </aside>
+        ) : null}
       </div>
     </div>
   );
+}
+
+/** Countdown that fires `onExpire` once at zero; render-prop exposes raw seconds left. */
+function ReadingTimer({ seconds, onExpire, children }: { seconds: number; onExpire: () => void; children: (text: string, left: number) => React.ReactNode }) {
+  const [left, setLeft] = useState(seconds);
+  const firedRef = useRef(false);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setLeft((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          if (!firedRef.current) { firedRef.current = true; onExpire(); }
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [onExpire]);
+  const mm = Math.floor(left / 60);
+  const ss = left % 60;
+  return <>{children(`${mm}:${String(ss).padStart(2, "0")}`, left)}</>;
+}
+
+// ---- Reading coach (inline 30% column, collapsible) ------------------------
+
+type CoachMsg = { role: "student" | "assistant"; content: string; animate?: boolean };
+
+/** The in-test reading coach as a side column. Reuses the same-origin /api/reading/tutor
+ *  route (strategy-only while phase==="reading"; explanations after submit), fed the
+ *  CEFR paper's assembled text + answer-free questions. Closeable; reopened from the strip. */
+function CefrCoach({ passageBody, questions, phase, onClose }: { passageBody: string; questions: string; phase: "reading" | "results"; onClose: () => void }) {
+  const [messages, setMessages] = useState<CoachMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const ctxRef = useRef({ passageBody, questions, phase });
+  useEffect(() => { ctxRef.current = { passageBody, questions, phase }; }, [passageBody, questions, phase]);
+  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, sending]);
+
+  function markAnimated(idx: number) {
+    setMessages((m) => (m[idx]?.animate ? m.map((msg, j) => (j === idx ? { ...msg, animate: false } : msg)) : m));
+  }
+
+  async function send() {
+    const q = input.trim();
+    if (!q || sending) return;
+    setInput("");
+    const prior = messages;
+    setMessages([...prior, { role: "student", content: q }]);
+    setSending(true);
+    try {
+      const ctx = ctxRef.current;
+      const res = await fetch("/api/reading/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, passageTitle: "CEFR Multilevel Reading", passageBody: ctx.passageBody, currentQuestion: "", questions: ctx.questions, phase: ctx.phase, history: prior.slice(-6) }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { reply?: string; message?: string };
+      const reply = res.ok && body.reply ? body.reply : body.message ?? "The coach is busy — try again in a moment.";
+      setMessages((m) => [...m, { role: "assistant", content: reply, animate: true }]);
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "Network error — please try again.", animate: true }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const hint = phase === "reading" ? "Strategy help only — answers unlock after you submit." : "Ask about any question, trap, or how to improve.";
+  const empty = phase === "reading"
+    ? "Stuck on a question type or a word? Ask how to approach it — e.g. how to tell False from Not Given. I won’t give answers while the test is live."
+    : "Marked. Ask me to explain any question, why a trap worked, or how to get better at a question type.";
+
+  return (
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#FBFBFE", minWidth: 0 }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "13px 16px", borderBottom: `1px solid ${LINE}`, background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <MessageCircle size={16} />
+          </span>
+          <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>Reading coach</span>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close coach" style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, display: "flex", padding: 4 }}>
+          <X size={18} />
+        </button>
+      </header>
+
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+        {messages.length === 0 ? (
+          <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.6, color: MUTED, margin: 0 }}>{empty}</p>
+        ) : (
+          messages.map((m, i) => (
+            <div key={i} style={{ alignSelf: m.role === "student" ? "flex-end" : "flex-start", maxWidth: "88%", padding: "9px 12px", borderRadius: 12, fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, whiteSpace: "pre-wrap", background: m.role === "student" ? INDIGO : "#fff", color: m.role === "student" ? "#fff" : INK, border: m.role === "student" ? "none" : `1px solid ${LINE}` }}>
+              {m.role === "assistant" ? (
+                <Typewriter text={m.content} animate={!!m.animate} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => markAnimated(i)} caretColor={MUTED} />
+              ) : (
+                m.content
+              )}
+            </div>
+          ))
+        )}
+        {sending ? (
+          <span style={{ alignSelf: "flex-start", display: "inline-flex", gap: 5, padding: "9px 12px" }} aria-label="Coach is writing">
+            {[0, 1, 2].map((i) => (
+              <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: MUTED, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
+            ))}
+          </span>
+        ) : null}
+      </div>
+
+      <div style={{ borderTop: `1px solid ${LINE}`, padding: 10, background: "#fff" }}>
+        <p style={{ fontFamily: SANS, fontSize: 11, color: "#9a998c", margin: "0 0 8px" }}>{hint}</p>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
+            placeholder="Ask the coach…"
+            style={{ flex: 1, minWidth: 0, padding: "9px 11px", border: `1px solid ${TINT_BORDER}`, borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 13.5, color: INK }}
+          />
+          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, flex: "none", borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: INDIGO, color: "#fff", opacity: sending || !input.trim() ? 0.5 : 1 }}>
+            <Send size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function topActionBtn(busy: boolean): React.CSSProperties {
+  return { padding: "11px 22px", borderRadius: 12, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 15, cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1, boxShadow: "0 4px 14px rgba(59,67,181,.28)" };
+}
+
+/** All answerable question numbers across the paper's parts (for progress + timing). */
+function questionNumbers(parts: ReadingPart[]): number[] {
+  const out: number[] = [];
+  for (const p of parts) {
+    if (p.part === 1) out.push(...splitGaps(p.text_with_gaps).filter((s) => s.type === "gap").map((s) => (s as { number: number }).number));
+    else if (p.part === 2) out.push(...p.statements.map((s) => s.number));
+    else if (p.part === 3) out.push(...p.paragraphs.map((x) => x.question));
+    else if (p.part === 4) out.push(...p.mcq.map((q) => q.number), ...p.tfn.map((q) => q.number));
+    else if (p.part === 5) out.push(...p.gaps.map((g) => g.number), ...p.mcq.map((q) => q.number));
+  }
+  return out;
+}
+
+/** Assemble answer-free passage text + question list for the coach's context. */
+function coachContext(parts: ReadingPart[]): { body: string; questions: string } {
+  const body: string[] = [];
+  const qs: string[] = [];
+  for (const p of parts) {
+    if (p.part === 1) { body.push(`Part 1 — ${p.title}\n${p.text_with_gaps}`); }
+    else if (p.part === 2) {
+      body.push(`Part 2 — ${p.theme}\n` + p.texts.map((t) => `${t.letter}. ${t.title}: ${t.body}`).join("\n"));
+      qs.push(...p.statements.map((s) => `Q${s.number}: ${s.text}`));
+    } else if (p.part === 3) {
+      body.push("Part 3 — Headings\n" + p.paragraphs.map((x) => x.text).join("\n\n"));
+      qs.push(...p.paragraphs.map((x) => `Q${x.question}: choose the best heading for this paragraph`));
+    } else if (p.part === 4) {
+      body.push(`Part 4 — ${p.title}\n${p.text}`);
+      qs.push(...p.mcq.map((q) => `Q${q.number}: ${q.stem}`), ...p.tfn.map((q) => `Q${q.number}: ${q.statement}`));
+    } else if (p.part === 5) {
+      body.push(`Part 5 — ${p.title}\n${p.text}`);
+      qs.push(...p.gaps.map((g) => `Q${g.number}: ${g.sentence}`), ...p.mcq.map((q) => `Q${q.number}: ${q.stem}`));
+    }
+  }
+  return { body: body.join("\n\n"), questions: qs.join("\n") };
 }
 
 function PartBlock({ part, answers, set, results, graded }: {
