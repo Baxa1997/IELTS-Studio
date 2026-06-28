@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
 
 import type { GradedItem } from "@/lib/reading/grade";
 import type { ReadingModule } from "@/lib/reading/types";
 import { bandColor } from "@/lib/ui/band";
 
 import { CoachPanel } from "../_shared/coach-panel";
+import { HIGHLIGHT_CSS, MarkerToolbar, useFullscreen, useHighlighter } from "../_shared/highlighter";
 import { QuestionGroups } from "../_shared/question-groups";
 import { Timer, type DeliveredQuestion } from "../_shared/question-inputs";
 import { ReviewItem, WeakTypes, type TypeBreakdown } from "../_shared/review";
@@ -71,6 +72,9 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
   const submittingRef = useRef(false);
   const paneRef = useRef<HTMLDivElement | null>(null);
   const passageRef = useRef<HTMLElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const fs = useFullscreen(rootRef);
+  const hl = useHighlighter(passageRef);
   useEffect(() => void (startRef.current = Date.now()), []);
   useEffect(() => void (answersRef.current = answers), [answers]);
 
@@ -173,14 +177,18 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
   })();
 
   return (
-    <>
+    <div ref={rootRef}>
+      <style>{HIGHLIGHT_CSS}</style>
       <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
         {/* Top bar: exit · timer · finish */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
-          <div style={{ justifySelf: "start" }}>
+          <div style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: 10 }}>
             <Link href={exitHref} aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, textDecoration: "none" }}>
               ←
             </Link>
+            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              {fs.isFull ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+            </button>
           </div>
           <div style={{ justifySelf: "center" }}>
             <Timer seconds={allowance} onExpire={onExpire}>
@@ -214,6 +222,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
                 <button type="button" onClick={() => stepFont(-0.1)} disabled={fontScale <= MIN_FONT} aria-label="Decrease text size" style={fontBtn(fontScale <= MIN_FONT)}>A−</button>
                 <button type="button" onClick={() => stepFont(0.1)} disabled={fontScale >= MAX_FONT} aria-label="Increase text size" style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 15 }}>A+</button>
               </div>
+              <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
               <div style={{ fontSize: 14, fontWeight: 600, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{answeredCount} of {total} answered</div>
             </div>
           </div>
@@ -229,7 +238,7 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
 
         {/* Split: passage | questions */}
         <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <article ref={passageRef} style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5" }}>
+          <article ref={passageRef} onMouseUp={hl.onMouseUp} style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
             <div style={{ maxWidth: 680 }}>
               <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#9a96a8", margin: 0 }}>
                 {kindLabel} Reading{passage.topic ? ` · ${passage.topic}` : ""}
@@ -288,8 +297,10 @@ export function ReadingRunner({ passage, questions }: { passage: RunnerPassage; 
       ) : null}
 
       <CoachPanel passageTitle={passage.title} passageBody={passage.body} questions={coachQuestions} currentQuestion={coachCurrent} phase="reading" />
-      <WordLookup getContainer={() => passageRef.current} contextText={passage.body} />
-    </>
+      {/* Word lookup is suppressed while a highlighter pen is active so a drag marks
+          text instead of popping the dictionary. */}
+      {hl.tool === null ? <WordLookup getContainer={() => passageRef.current} contextText={passage.body} /> : null}
+    </div>
   );
 }
 

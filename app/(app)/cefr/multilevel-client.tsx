@@ -7,6 +7,7 @@ import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
+import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
 
 /**
  * Multilevel (DTM) runner. Generation + grading live on the AI engine; the browser
@@ -657,6 +658,13 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
           </aside>
         ) : null}
       </div>
+
+      {/* In-passage word lookup + translate. Mounted inside the runner root so it
+          survives OS fullscreen; suppressed while a highlighter pen is active so a
+          drag marks text instead of popping the dictionary. */}
+      {hl.tool === null ? (
+        <WordLookup getContainer={() => scrollRef.current} contextText={coach.body} />
+      ) : null}
     </div>
   );
 }
