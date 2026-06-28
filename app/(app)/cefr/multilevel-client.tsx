@@ -29,6 +29,23 @@ const TINT_BORDER = "#D8DAF3";
 const GOOD = "#15803d";
 const BAD = "#b91c1c";
 
+// ---- "Reading B" design tokens (Claude Design project) ---------------------
+const JAKARTA = "'Plus Jakarta Sans', var(--font-hanken), system-ui, sans-serif";
+const PLEX = "'IBM Plex Serif', var(--font-newsreader), Georgia, serif";
+const D_DARK = "#0f172a";       // header
+const D_VIOLET = "#7c3aed";     // accent
+const D_VTEXT = "#5b21b6";      // input text
+const D_VTINT = "#f3e8ff";      // chips / badges
+const D_VTINT2 = "#faf5ff";     // gap + instruction fill
+const D_VBORDER = "#c4b5fd";    // gap underline
+const D_VBORDER2 = "#ede9ff";   // instruction border
+const D_PAGE = "#f8fafc";       // canvas
+const D_LINE = "#e2e8f0";       // hairlines
+const D_SLATE = "#64748b";
+const D_SLATE2 = "#94a3b8";
+const D_SLATE3 = "#334155";
+const D_INK = "#1e293b";        // body text
+
 // ---- Engine call -----------------------------------------------------------
 
 async function callEngine<T>(path: string, body: unknown): Promise<T> {
@@ -355,85 +372,90 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
   const answeredCount = nums.filter((n) => (answers[String(n)] ?? "").trim()).length;
   const allowance = Math.max(600, total * 90);
   const pct = total ? Math.round((answeredCount / total) * 100) : 0;
-  const label = paper.parts.length > 1 ? `Reading · ${paper.parts.length} parts` : `Reading · Part ${paper.parts[0]?.part}`;
 
   const correctByNum = new Map<number, QResult>();
   grade?.parts.forEach((p) => p.results.forEach((r) => correctByNum.set(r.number, r)));
+  const partsLabel = paper.parts.length > 1 ? `${paper.parts.length} parts` : `Part ${paper.parts[0]?.part}`;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
-      {/* Top bar: exit · timer · submit (mirrors the IELTS reading runner) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: `1px solid ${LINE}` }}>
-        <div style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
-          <button type="button" onClick={onExit} aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
-            <ArrowLeft size={18} />
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", background: D_PAGE, fontFamily: JAKARTA, color: D_INK, overflow: "hidden" }}>
+      {/* The design's fonts, loaded only for this exam surface (not app-wide, so a
+          global next/font would be heavier than needed); falls back to the app fonts. */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" />
+
+      {/* Header (dark) */}
+      <div style={{ background: D_DARK, padding: "0 clamp(16px,3vw,32px)", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <button type="button" onClick={onExit} aria-label="Exit practice" style={{ width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "rgba(255,255,255,.75)" }}>
+            <ArrowLeft size={16} />
           </button>
-          <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INDIGO, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{label}</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+            <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 16, color: "#fff" }}>Reading</span>
+            <span style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 14, color: "rgba(255,255,255,.38)", whiteSpace: "nowrap" }}>· {partsLabel}</span>
+          </div>
         </div>
-        <div style={{ justifySelf: "center" }}>
+
+        <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
           {!graded ? (
             <ReadingTimer seconds={allowance} onExpire={onExpire}>
               {(text, left) => {
                 const warn = left <= 120;
                 return (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 20px", borderRadius: 999, background: warn ? "#FDECEC" : "#F4F3FC", border: `1.5px solid ${warn ? "#F3B4B4" : "#E4E2F4"}` }} aria-label="time remaining">
-                    <Clock size={15} style={{ color: warn ? "#B91C1C" : INDIGO }} />
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 18, letterSpacing: ".02em", color: warn ? "#B91C1C" : INDIGO }}>{text}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 22px", borderRadius: 100, background: warn ? "rgba(185,28,28,.3)" : "rgba(124,58,237,.28)", border: `1px solid ${warn ? "rgba(248,113,113,.5)" : "rgba(124,58,237,.45)"}` }} aria-label="time remaining">
+                    <Clock size={14} style={{ color: warn ? "#fecaca" : "#c4b5fd" }} />
+                    <span style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 17, letterSpacing: ".02em", color: warn ? "#fecaca" : "#e9d5ff", fontVariantNumeric: "tabular-nums" }}>{text}</span>
                   </span>
                 );
               }}
             </ReadingTimer>
           ) : (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 18px", borderRadius: 999, background: "#ECEBFB", border: `1.5px solid ${TINT_BORDER}` }}>
-              <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{grade.score} / {grade.max_score}</span>
-              <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INDIGO }}>{grade.max_score ? Math.round((grade.score / grade.max_score) * 100) : 0}%</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "9px 20px", borderRadius: 100, background: "rgba(124,58,237,.28)", border: "1px solid rgba(124,58,237,.45)" }}>
+              <span style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 17, color: "#e9d5ff", fontVariantNumeric: "tabular-nums" }}>{grade.score} / {grade.max_score}</span>
+              <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: "#c4b5fd" }}>{grade.max_score ? Math.round((grade.score / grade.max_score) * 100) : 0}%</span>
             </span>
           )}
         </div>
-        <div style={{ justifySelf: "end" }}>
-          {!graded ? (
-            <button type="button" onClick={() => void submit()} disabled={busy} style={topActionBtn(busy)}>{busy ? "Marking…" : "Submit answers"}</button>
-          ) : (
-            <button type="button" onClick={onNew} disabled={regenBusy} style={topActionBtn(regenBusy)}>{regenBusy ? "Generating…" : "New paper"}</button>
-          )}
+
+        {!graded ? (
+          <button type="button" onClick={() => void submit()} disabled={busy} style={dsSubmitBtn(busy)}>{busy ? "Marking…" : "Submit answers"}</button>
+        ) : (
+          <button type="button" onClick={onNew} disabled={regenBusy} style={dsSubmitBtn(regenBusy)}>{regenBusy ? "Generating…" : "New paper"}</button>
+        )}
+      </div>
+
+      {/* Info + progress bar */}
+      <div style={{ background: "#fff", padding: "10px clamp(16px,3vw,32px)", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${D_LINE}`, flexShrink: 0, gap: 12 }}>
+        <span style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 13, color: D_SLATE }}>
+          {graded ? "Marked — review each answer below; the coach can explain any of them." : `Answer all ${total} questions, then submit.`}
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          <div style={{ width: 100, height: 4, borderRadius: 2, background: D_LINE, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: D_VIOLET, borderRadius: 2, transition: "width .3s ease" }} />
+          </div>
+          <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: D_VIOLET, fontVariantNumeric: "tabular-nums" }}>{answeredCount} / {total}</span>
+          {!coachOpen ? (
+            <button type="button" onClick={() => setCoachOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${D_LINE}`, background: "#fff", color: D_VIOLET, fontFamily: JAKARTA, fontWeight: 600, fontSize: 12.5, cursor: "pointer" }}>
+              <MessageCircle size={14} /> Coach
+            </button>
+          ) : null}
         </div>
       </div>
 
-      {/* Strip: status + progress + coach toggle */}
-      <div style={{ flex: "none", background: "#FAFAFD", borderBottom: `1px solid ${LINE}` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "11px 28px", flexWrap: "wrap" }}>
-          <div style={{ fontSize: 14.5, color: "#4A4660" }}>
-            {graded ? (<><b style={{ color: INK }}>Marked.</b> Review each answer below — the coach can explain any of them.</>) : (<>Answer all {total} questions, then submit.</>)}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{answeredCount} of {total} answered</div>
-            {!coachOpen ? (
-              <button type="button" onClick={() => setCoachOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 13px", borderRadius: 9, border: `1.5px solid ${TINT_BORDER}`, background: "#fff", color: INDIGO, fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                <MessageCircle size={15} /> Coach
-              </button>
-            ) : null}
-          </div>
-        </div>
-        <div style={{ height: 3, background: "#EEEDF6" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: INDIGO, transition: "width .3s ease" }} />
-        </div>
-      </div>
-
-      {/* Split: reading text (left) | coach (right) — mirrors the IELTS reading runner,
-          with the coach in the panel the IELTS test uses for questions. */}
-      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <article ref={scrollRef} style={{ flex: 1, overflow: "auto", padding: "30px clamp(20px,4vw,52px) 90px", minHeight: 0, borderRight: coachOpen ? `1px solid ${LINE}` : "none" }}>
-          <div style={{ maxWidth: 720 }}>
+      {/* Content row: reading cards (left) · coach panel (right) */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "12px clamp(12px,2vw,16px)" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto" }}>
             {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
-            {paper.parts.map((part, i) => (
-              <PartBlock key={part.part} first={i === 0} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
+            {paper.parts.map((part) => (
+              <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
             ))}
             {error ? <Alert>{error}</Alert> : null}
           </div>
-        </article>
+        </div>
 
         {coachOpen ? (
-          <aside style={{ width: "38%", minWidth: 320, maxWidth: 560, flex: "none", minHeight: 0, display: "flex" }}>
+          <aside style={{ width: 360, flexShrink: 0, borderLeft: `1px solid ${D_LINE}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
             <CefrCoach passageBody={coach.body} questions={coach.questions} phase={graded ? "results" : "reading"} onClose={() => setCoachOpen(false)} />
           </aside>
         ) : null}
@@ -514,27 +536,27 @@ function CefrCoach({ passageBody, questions, phase, onClose }: { passageBody: st
     : "Marked. Ask me to explain any question, why a trap worked, or how to get better at a question type.";
 
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#FBFBFE", minWidth: 0 }}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "13px 16px", borderBottom: `1px solid ${LINE}`, background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <MessageCircle size={16} />
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#fff", minWidth: 0 }}>
+      <div style={{ padding: "20px 24px", borderBottom: `1px solid ${D_LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <MessageCircle size={15} />
           </span>
-          <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>Reading coach</span>
+          <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 15, color: D_DARK }}>Reading coach</span>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close coach" style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, display: "flex", padding: 4 }}>
-          <X size={18} />
+        <button type="button" onClick={onClose} aria-label="Close coach" style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${D_LINE}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: D_SLATE2 }}>
+          <X size={14} />
         </button>
-      </header>
+      </div>
 
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 12, minHeight: 0 }}>
         {messages.length === 0 ? (
-          <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.6, color: MUTED, margin: 0 }}>{empty}</p>
+          <p style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 14, lineHeight: 1.75, color: D_SLATE, margin: 0 }}>{empty}</p>
         ) : (
           messages.map((m, i) => (
-            <div key={i} style={{ alignSelf: m.role === "student" ? "flex-end" : "flex-start", maxWidth: "88%", padding: "9px 12px", borderRadius: 12, fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, whiteSpace: "pre-wrap", background: m.role === "student" ? INDIGO : "#fff", color: m.role === "student" ? "#fff" : INK, border: m.role === "student" ? "none" : `1px solid ${LINE}` }}>
+            <div key={i} style={{ alignSelf: m.role === "student" ? "flex-end" : "flex-start", maxWidth: "88%", padding: "9px 13px", borderRadius: 12, fontFamily: JAKARTA, fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-wrap", background: m.role === "student" ? D_VIOLET : D_PAGE, color: m.role === "student" ? "#fff" : D_INK, border: m.role === "student" ? "none" : `1px solid ${D_LINE}` }}>
               {m.role === "assistant" ? (
-                <Typewriter text={m.content} animate={!!m.animate} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => markAnimated(i)} caretColor={MUTED} />
+                <Typewriter text={m.content} animate={!!m.animate} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => markAnimated(i)} caretColor={D_SLATE2} />
               ) : (
                 m.content
               )}
@@ -542,26 +564,26 @@ function CefrCoach({ passageBody, questions, phase, onClose }: { passageBody: st
           ))
         )}
         {sending ? (
-          <span style={{ alignSelf: "flex-start", display: "inline-flex", gap: 5, padding: "9px 12px" }} aria-label="Coach is writing">
+          <span style={{ alignSelf: "flex-start", display: "inline-flex", gap: 5, padding: "9px 13px" }} aria-label="Coach is writing">
             {[0, 1, 2].map((i) => (
-              <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: MUTED, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
+              <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: D_SLATE2, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
             ))}
           </span>
         ) : null}
       </div>
 
-      <div style={{ borderTop: `1px solid ${LINE}`, padding: 10, background: "#fff" }}>
-        <p style={{ fontFamily: SANS, fontSize: 11, color: "#9a998c", margin: "0 0 8px" }}>{hint}</p>
-        <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ padding: "16px 20px", borderTop: `1px solid ${D_LINE}`, flexShrink: 0 }}>
+        <p style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 12, color: D_SLATE2, margin: "0 0 12px", textAlign: "center" }}>{hint}</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px solid ${D_LINE}`, borderRadius: 12, padding: "10px 10px 10px 14px", background: D_PAGE }}>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
             placeholder="Ask the coach…"
-            style={{ flex: 1, minWidth: 0, padding: "9px 11px", border: `1px solid ${TINT_BORDER}`, borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 13.5, color: INK }}
+            style={{ flex: 1, minWidth: 0, border: 0, background: "transparent", outline: "none", fontFamily: JAKARTA, fontSize: 14, color: D_DARK }}
           />
-          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, flex: "none", borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: INDIGO, color: "#fff", opacity: sending || !input.trim() ? 0.5 : 1 }}>
-            <Send size={16} />
+          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 8, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: D_VIOLET, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", opacity: sending || !input.trim() ? 0.5 : 1 }}>
+            <Send size={13} />
           </button>
         </div>
       </div>
@@ -569,8 +591,8 @@ function CefrCoach({ passageBody, questions, phase, onClose }: { passageBody: st
   );
 }
 
-function topActionBtn(busy: boolean): React.CSSProperties {
-  return { padding: "11px 22px", borderRadius: 12, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 15, cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1, boxShadow: "0 4px 14px rgba(59,67,181,.28)" };
+function dsSubmitBtn(busy: boolean): React.CSSProperties {
+  return { padding: "11px 22px", background: D_VIOLET, color: "#fff", border: "none", borderRadius: 8, fontFamily: JAKARTA, fontWeight: 600, fontSize: 15, cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1, flexShrink: 0 };
 }
 
 /** All answerable question numbers across the paper's parts (for progress + timing). */
@@ -609,13 +631,13 @@ function coachContext(parts: ReadingPart[]): { body: string; questions: string }
   return { body: body.join("\n\n"), questions: qs.join("\n") };
 }
 
-function PartBlock({ part, first, answers, set, results, graded }: {
-  part: ReadingPart; first: boolean; answers: Record<string, string>; set: (n: number | string, v: string) => void;
+function PartBlock({ part, answers, set, results, graded }: {
+  part: ReadingPart; answers: Record<string, string>; set: (n: number | string, v: string) => void;
   results: Map<number, QResult>; graded: boolean;
 }) {
   return (
-    <section style={{ padding: first ? "0 0 28px" : "28px 0", borderTop: first ? "none" : `1px solid ${LINE}` }}>
-      <PartHeading n={part.part} cefr={part.cefr} />
+    <section style={{ background: "#fff", borderRadius: 12, border: `1px solid ${D_LINE}`, padding: "clamp(24px,3vw,40px) clamp(20px,3.2vw,48px)", boxShadow: "0 1px 4px rgba(0,0,0,.05)", marginBottom: 16 }}>
+      <PartHeading n={part.part} cefr={part.cefr} count={partCountLabel(part)} />
       {part.part === 1 ? <Part1 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
       {part.part === 2 ? <Part2 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
       {part.part === 3 ? <Part3 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
@@ -630,17 +652,17 @@ function Part1({ p, answers, set, results, graded }: { p: P1; answers: Record<st
   return (
     <>
       <Instruction>{p.instruction}</Instruction>
-      <h3 style={{ fontFamily: SERIF, fontSize: 19, color: INK, margin: "0 0 10px" }}>{p.title}</h3>
-      <p style={{ fontFamily: SERIF, fontSize: 16, lineHeight: 2.1, color: "#2b3147", margin: 0 }}>
+      <h2 style={{ fontFamily: PLEX, fontWeight: 600, fontSize: 28, lineHeight: 1.3, color: D_DARK, margin: "0 0 22px" }}>{p.title}</h2>
+      <p style={{ fontFamily: PLEX, fontWeight: 400, fontSize: 18, lineHeight: 2.45, color: D_INK, margin: 0, textWrap: "pretty" } as React.CSSProperties}>
         {segments.map((s, i) =>
           s.type === "text" ? (
             <span key={i}>{s.value}</span>
           ) : (
-            <GapInput key={i} n={s.number} answers={answers} set={set} results={results} graded={graded} width={120} />
+            <GapInput key={i} n={s.number} answers={answers} set={set} results={results} graded={graded} width={108} />
           ),
         )}
       </p>
-      {graded ? <Feedback nums={[1, 2, 3, 4, 5, 6]} results={results} /> : null}
+      {graded ? <Feedback nums={segments.filter((s) => s.type === "gap").map((s) => (s as { number: number }).number)} results={results} /> : null}
     </>
   );
 }
@@ -652,9 +674,9 @@ function Part2({ p, answers, set, results, graded }: { p: P2; answers: Record<st
       <Instruction>{p.instruction}</Instruction>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10, marginBottom: 18 }}>
         {p.texts.map((t) => (
-          <div key={t.letter} style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "10px 12px", background: "#FBFBFE" }}>
-            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13, color: INK }}>{t.letter}. {t.title}</div>
-            <div style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, lineHeight: 1.55, marginTop: 3 }}>{t.body}</div>
+          <div key={t.letter} style={{ border: `1px solid ${D_LINE}`, borderRadius: 10, padding: "11px 13px", background: D_PAGE }}>
+            <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 13, color: D_DARK }}><span style={{ color: D_VIOLET }}>{t.letter}.</span> {t.title}</div>
+            <div style={{ fontFamily: JAKARTA, fontSize: 12.5, color: D_SLATE, lineHeight: 1.55, marginTop: 3 }}>{t.body}</div>
           </div>
         ))}
       </div>
@@ -672,18 +694,18 @@ function Part3({ p, answers, set, results, graded }: { p: P3; answers: Record<st
   return (
     <>
       <Instruction>{p.instruction}</Instruction>
-      <div style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "12px 14px", background: "#FBFBFE", marginBottom: 16 }}>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 12, color: FAINT, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>List of headings</div>
+      <div style={{ border: `1px solid ${D_LINE}`, borderRadius: 10, padding: "13px 15px", background: D_PAGE, marginBottom: 18 }}>
+        <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 12, color: D_SLATE2, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 7 }}>List of headings</div>
         {letters.map((l) => (
-          <div key={l} style={{ fontFamily: SANS, fontSize: 13.5, color: INK, lineHeight: 1.7 }}><b>{l}.</b> {p.headings[l]}</div>
+          <div key={l} style={{ fontFamily: JAKARTA, fontSize: 13.5, color: D_INK, lineHeight: 1.75 }}><b style={{ color: D_VIOLET }}>{l}.</b> {p.headings[l]}</div>
         ))}
       </div>
       {p.paragraphs.map((para, i) => (
-        <div key={para.question} style={{ marginBottom: 16 }}>
+        <div key={para.question} style={{ marginBottom: 18 }}>
           <Row n={para.question} text={`Paragraph ${roman(i + 1)}`} results={results} graded={graded}>
             <LetterSelect n={para.question} letters={letters} answers={answers} set={set} disabled={graded} />
           </Row>
-          <p style={{ fontFamily: SERIF, fontSize: 15, lineHeight: 1.75, color: "#2b3147", margin: "8px 0 0" }}>{para.text}</p>
+          <p style={{ fontFamily: PLEX, fontSize: 16, lineHeight: 1.9, color: D_INK, margin: "10px 0 0" } as React.CSSProperties}>{para.text}</p>
         </div>
       ))}
     </>
@@ -716,8 +738,8 @@ function Part5({ p, answers, set, results, graded }: { p: P5; answers: Record<st
       {p.gaps.map((g) => {
         const segs = splitGaps(g.sentence.includes("_") ? g.sentence.replace(/_+/, `(${g.number}) ______`) : `${g.sentence} (${g.number}) ______`);
         return (
-          <p key={g.number} style={{ fontFamily: SERIF, fontSize: 15.5, lineHeight: 2, color: "#2b3147", margin: "0 0 8px" }}>
-            {segs.map((s, i) => s.type === "text" ? <span key={i}>{s.value}</span> : <GapInput key={i} n={g.number} answers={answers} set={set} results={results} graded={graded} width={120} />)}
+          <p key={g.number} style={{ fontFamily: PLEX, fontSize: 17, lineHeight: 2.2, color: D_INK, margin: "0 0 10px" } as React.CSSProperties}>
+            {segs.map((s, i) => s.type === "text" ? <span key={i}>{s.value}</span> : <GapInput key={i} n={g.number} answers={answers} set={set} results={results} graded={graded} width={108} />)}
           </p>
         );
       })}
@@ -856,46 +878,63 @@ function RunnerHeader({ onExit, label }: { onExit: () => void; label: string }) 
 function ScoreBanner({ score, max }: { score: number; max: number }) {
   const pct = max ? Math.round((score / max) * 100) : 0;
   return (
-    <div style={{ background: INDIGO, color: "#fff", borderRadius: 16, padding: "18px 22px", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div style={{ background: `linear-gradient(135deg,${D_VIOLET} 0%,#4f46e5 100%)`, color: "#fff", borderRadius: 12, padding: "18px 24px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }}>
       <div>
-        <div style={{ fontFamily: SANS, fontSize: 12.5, opacity: 0.85, fontWeight: 600 }}>Your score</div>
-        <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700 }}>{score}<span style={{ opacity: 0.7, fontSize: 20 }}> / {max}</span></div>
+        <div style={{ fontFamily: JAKARTA, fontSize: 12.5, opacity: 0.85, fontWeight: 600 }}>Your score</div>
+        <div style={{ fontFamily: PLEX, fontSize: 32, fontWeight: 600 }}>{score}<span style={{ opacity: 0.7, fontSize: 20 }}> / {max}</span></div>
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 700 }}>{pct}%</div>
+      <div style={{ fontFamily: PLEX, fontSize: 28, fontWeight: 600 }}>{pct}%</div>
     </div>
   );
 }
 
-function PartHeading({ n, cefr }: { n: number; cefr: string }) {
+function PartHeading({ n, cefr, count }: { n: number; cefr: string; count: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-      <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: 13, color: "#fff", background: INK, borderRadius: 8, padding: "3px 10px" }}>Part {n}</span>
-      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 12, color: INDIGO }}>{cefr}</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 12, color: D_SLATE3, textTransform: "uppercase", letterSpacing: ".08em" }}>Part {n}</span>
+        <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#cbd5e1", display: "inline-block" }} />
+        <span style={{ padding: "4px 11px", borderRadius: 100, background: D_VTINT, color: D_VIOLET, fontFamily: JAKARTA, fontWeight: 600, fontSize: 11 }}>{cefr}</span>
+      </div>
+      <span style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 12, color: D_SLATE2 }}>{count}</span>
     </div>
   );
+}
+
+/** Short count label for a part's heading ("6 gaps", "9 questions"). */
+function partCountLabel(part: ReadingPart): string {
+  if (part.part === 1) return `${splitGaps(part.text_with_gaps).filter((s) => s.type === "gap").length} gaps`;
+  if (part.part === 2) return `${part.statements.length} questions`;
+  if (part.part === 3) return `${part.paragraphs.length} questions`;
+  if (part.part === 4) return `${part.mcq.length + part.tfn.length} questions`;
+  return `${part.gaps.length + part.mcq.length} questions`;
 }
 
 function Passage({ title, text }: { title: string; text: string }) {
   return (
-    <div style={{ marginBottom: 16 }}>
-      <h3 style={{ fontFamily: SERIF, fontSize: 19, color: INK, margin: "0 0 8px" }}>{title}</h3>
+    <div style={{ marginBottom: 18 }}>
+      <h2 style={{ fontFamily: PLEX, fontWeight: 600, fontSize: 24, lineHeight: 1.3, color: D_DARK, margin: "0 0 14px" }}>{title}</h2>
       {text.split(/\n+/).filter(Boolean).map((para, i) => (
-        <p key={i} style={{ fontFamily: SERIF, fontSize: 15.5, lineHeight: 1.8, color: "#2b3147", margin: "0 0 10px" }}>{para}</p>
+        <p key={i} style={{ fontFamily: PLEX, fontWeight: 400, fontSize: 17, lineHeight: 2, color: D_INK, margin: "0 0 12px", textWrap: "pretty" } as React.CSSProperties}>{para}</p>
       ))}
     </div>
   );
 }
 
 function Instruction({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontFamily: SANS, fontSize: 13, fontStyle: "italic", color: MUTED, lineHeight: 1.55, margin: "14px 0 12px", paddingLeft: 12, borderLeft: `3px solid ${TINT_BORDER}` }}>{children}</p>;
+  return (
+    <div style={{ padding: "12px 16px", background: D_VTINT2, borderRadius: 8, margin: "0 0 24px", border: `1px solid ${D_VBORDER2}` }}>
+      <p style={{ fontFamily: JAKARTA, fontStyle: "italic", fontWeight: 400, fontSize: 14, lineHeight: 1.6, color: "#6d28d9", margin: 0 }}>{children}</p>
+    </div>
+  );
 }
 
 function Row({ n, text, results, graded, children }: { n: number; text: string; results: Map<number, QResult>; graded: boolean; children: React.ReactNode }) {
   const r = graded ? results.get(n) : undefined;
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderTop: `1px solid ${LINE}` }}>
-      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13, color: INK, minWidth: 22 }}>{n}.</span>
-      <div style={{ flex: 1, fontFamily: SANS, fontSize: 14, color: INK, lineHeight: 1.5 }}>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 0", borderTop: `1px solid ${D_LINE}` }}>
+      <span style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 13, color: D_VIOLET, minWidth: 22 }}>{n}.</span>
+      <div style={{ flex: 1, fontFamily: JAKARTA, fontSize: 14, color: D_INK, lineHeight: 1.5 }}>
         {text}
         {r ? <Verdict r={r} /> : null}
       </div>
@@ -910,17 +949,17 @@ function McqRow({ number, stem, options, answers, set, results, graded }: {
   const r = graded ? results.get(number) : undefined;
   const chosen = answers[String(number)] ?? "";
   return (
-    <div style={{ padding: "10px 0", borderTop: `1px solid ${LINE}` }}>
-      <div style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: INK, marginBottom: 8 }}>{number}. {stem}</div>
+    <div style={{ padding: "14px 0", borderTop: `1px solid ${D_LINE}` }}>
+      <div style={{ fontFamily: JAKARTA, fontSize: 14, fontWeight: 600, color: D_DARK, marginBottom: 9, lineHeight: 1.5 }}>{number}. {stem}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {Object.entries(options).map(([letter, label]) => {
           const isChosen = chosen === letter;
           const isAnswer = r?.correct_answer === letter;
-          const border = graded && isAnswer ? GOOD : graded && isChosen ? BAD : isChosen ? INDIGO : LINE;
+          const border = graded && isAnswer ? GOOD : graded && isChosen ? BAD : isChosen ? D_VIOLET : D_LINE;
           return (
-            <label key={letter} style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, fontSize: 13.5, color: INK, padding: "7px 11px", borderRadius: 9, border: `1px solid ${border}`, background: isChosen ? TINT : "#fff", cursor: graded ? "default" : "pointer" }}>
-              <input type="radio" name={`q${number}`} value={letter} checked={isChosen} disabled={graded} onChange={() => set(number, letter)} />
-              <b>{letter})</b> {label}
+            <label key={letter} style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: JAKARTA, fontSize: 13.5, color: D_INK, padding: "8px 12px", borderRadius: 9, border: `1px solid ${border}`, background: graded && isAnswer ? "#f0fdf4" : isChosen ? D_VTINT2 : "#fff", cursor: graded ? "default" : "pointer" }}>
+              <input type="radio" name={`q${number}`} value={letter} checked={isChosen} disabled={graded} onChange={() => set(number, letter)} style={{ accentColor: D_VIOLET }} />
+              <b style={{ color: D_VIOLET }}>{letter})</b> {label}
             </label>
           );
         })}
@@ -932,18 +971,20 @@ function McqRow({ number, stem, options, answers, set, results, graded }: {
 
 function GapInput({ n, answers, set, results, graded, width }: { n: number; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean; width: number }) {
   const r = graded ? results.get(n) : undefined;
-  const border = r ? (r.is_correct ? GOOD : BAD) : TINT_BORDER;
+  const underline = r ? (r.is_correct ? GOOD : BAD) : D_VBORDER;
   return (
-    <span style={{ display: "inline-flex", flexDirection: "column", verticalAlign: "middle", margin: "0 3px" }}>
-      <input
-        value={answers[String(n)] ?? ""}
-        onChange={(e) => set(n, e.target.value)}
-        disabled={graded}
-        aria-label={`Gap ${n}`}
-        style={{ width, fontFamily: SANS, fontSize: 14, color: INK, textAlign: "center", border: "none", borderBottom: `2px solid ${border}`, background: "transparent", padding: "1px 4px" }}
-      />
-      <span style={{ fontFamily: SANS, fontSize: 10, color: FAINT, textAlign: "center" }}>{n}</span>
-      {r && !r.is_correct ? <span style={{ fontFamily: SANS, fontSize: 11, color: GOOD, textAlign: "center" }}>{r.correct_answer}</span> : null}
+    <span style={{ display: "inline-flex", alignItems: "center", verticalAlign: "middle", gap: 3, margin: "0 3px" }}>
+      <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch" }}>
+        <input
+          value={answers[String(n)] ?? ""}
+          onChange={(e) => set(n, e.target.value)}
+          disabled={graded}
+          aria-label={`Gap ${n}`}
+          style={{ height: 26, width, border: 0, borderBottom: `2px solid ${underline}`, background: D_VTINT2, fontFamily: PLEX, fontWeight: 400, fontSize: 17, padding: "0 8px 2px", borderRadius: "3px 3px 0 0", color: D_VTEXT, outline: "none" }}
+        />
+        {r && !r.is_correct ? <span style={{ fontFamily: JAKARTA, fontSize: 10.5, fontWeight: 600, color: GOOD, textAlign: "center", marginTop: 2 }}>{r.correct_answer}</span> : null}
+      </span>
+      <span style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 9, lineHeight: 1.4, color: D_VIOLET, padding: "2px 5px", background: D_VTINT, borderRadius: 100, flexShrink: 0, whiteSpace: "nowrap" }}>{n}</span>
     </span>
   );
 }
@@ -955,7 +996,7 @@ function LetterSelect({ n, letters, answers, set, disabled }: { n: number; lette
       onChange={(e) => set(n, e.target.value)}
       disabled={disabled}
       aria-label={`Answer ${n}`}
-      style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: "#F4F4FB", border: `1px solid ${TINT_BORDER}`, padding: "6px 10px", borderRadius: 8, cursor: disabled ? "default" : "pointer" }}
+      style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 14, color: D_VIOLET, background: D_VTINT2, border: `1px solid ${D_VBORDER}`, padding: "6px 10px", borderRadius: 8, cursor: disabled ? "default" : "pointer" }}
     >
       <option value="">—</option>
       {letters.map((l) => <option key={l} value={l}>{l}</option>)}
@@ -965,21 +1006,21 @@ function LetterSelect({ n, letters, answers, set, disabled }: { n: number; lette
 
 function Verdict({ r }: { r: QResult }) {
   return (
-    <div style={{ marginTop: 6, fontFamily: SANS, fontSize: 12.5, color: r.is_correct ? GOOD : BAD }}>
+    <div style={{ marginTop: 6, fontFamily: JAKARTA, fontSize: 12.5, color: r.is_correct ? GOOD : BAD }}>
       {r.is_correct ? "✓ Correct" : `✗ Your answer: ${r.user_answer || "—"} · Correct: ${r.correct_answer}`}
-      {!r.is_correct && r.evidence ? <span style={{ color: FAINT }}> — {r.evidence}</span> : null}
+      {!r.is_correct && r.evidence ? <span style={{ color: D_SLATE2 }}> — {r.evidence}</span> : null}
     </div>
   );
 }
 
 function Feedback({ nums, results }: { nums: number[]; results: Map<number, QResult> }) {
   return (
-    <div style={{ marginTop: 12, borderTop: `1px solid ${LINE}`, paddingTop: 10 }}>
+    <div style={{ marginTop: 16, borderTop: `1px solid ${D_LINE}`, paddingTop: 12 }}>
       {nums.map((n) => {
         const r = results.get(n);
         if (!r) return null;
         return (
-          <div key={n} style={{ fontFamily: SANS, fontSize: 12.5, color: r.is_correct ? GOOD : BAD, lineHeight: 1.7 }}>
+          <div key={n} style={{ fontFamily: JAKARTA, fontSize: 12.5, color: r.is_correct ? GOOD : BAD, lineHeight: 1.7 }}>
             <b>{n}.</b> {r.is_correct ? `✓ ${r.correct_answer}` : `✗ ${r.user_answer || "—"} → ${r.correct_answer}`}
           </div>
         );
