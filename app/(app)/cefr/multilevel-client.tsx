@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Clock, FileText, Layers, ListChecks, ListOrdered, Loader2, MessageCircle, PenLine, Send, SquarePen, X } from "lucide-react";
+import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Clock, FileText, History, Layers, ListChecks, ListOrdered, Loader2, Maximize2, MessageCircle, PenLine, Send, SquarePen, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
@@ -125,6 +125,7 @@ type WritingGrade = {
 type Tab = "reading" | "writing";
 type ReadingReq = { scope: "full" } | { scope: "part"; part: number };
 type WritingReq = { scope: "full" } | { scope: "task"; task: string };
+type ReadingItem = { id: string; scope: string; created_at: string; parts: number[] };
 type View =
   | { kind: "reading"; paper: ReadingPaper; req: ReadingReq }
   | { kind: "writing"; paper: WritingPaper; req: WritingReq };
@@ -163,6 +164,22 @@ export function MultilevelClient() {
     }
   }
 
+  // Re-open a previously generated paper (no regeneration) via the render endpoint.
+  async function openReadingItem(item: ReadingItem) {
+    if (busy) return;
+    setBusy(`item-${item.id}`); setError(null);
+    try {
+      const paper = await callEngine<ReadingPaper>("reading/render", { item_id: item.id });
+      const req: ReadingReq = item.scope === "part" && item.parts[0] ? { scope: "part", part: item.parts[0] } : { scope: "full" };
+      setView({ kind: "reading", paper, req });
+      window.scrollTo({ top: 0 });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn’t reopen this paper.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (view?.kind === "reading") {
     return (
       <ReadingRunner
@@ -194,6 +211,7 @@ export function MultilevelClient() {
       error={error}
       onReading={(req, key) => void startReading(req, key)}
       onWriting={(req, key) => void startWriting(req, key)}
+      onOpenItem={(item) => void openReadingItem(item)}
     />
   );
 }
@@ -214,11 +232,30 @@ const WRITING_TASKS_META = [
   { task: "2", title: "Forum opinion post", desc: "An argued response to an online discussion.", level: "C1", Icon: FileText },
 ];
 
-function Hub({ tab, onTab, busy, error, onReading, onWriting }: {
+function fmtWhen(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return "Saved";
+  }
+}
+
+function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
   tab: Tab; onTab: (t: Tab) => void; busy: string | null; error: string | null;
   onReading: (req: ReadingReq, key: string) => void;
   onWriting: (req: WritingReq, key: string) => void;
+  onOpenItem: (item: ReadingItem) => void;
 }) {
+  const [recent, setRecent] = useState<ReadingItem[]>([]);
+  // Load the learner's recent reading papers so they can reopen one instead of
+  // regenerating. Reloads whenever the hub remounts (i.e. after exiting a paper).
+  useEffect(() => {
+    let alive = true;
+    callEngine<{ items: ReadingItem[] }>("reading/list", {})
+      .then((r) => { if (alive) setRecent(r.items ?? []); })
+      .catch(() => { /* history is non-essential — the hub still generates fresh */ });
+    return () => { alive = false; };
+  }, []);
   return (
     <div style={{ width: "100%", padding: "26px clamp(16px,3vw,28px) 64px", fontFamily: SANS, color: INK }}>
       {/* Header */}
@@ -256,6 +293,34 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting }: {
               <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`)} />
             ))}
           </Grid>
+
+          {recent.length > 0 ? (
+            <div style={{ marginTop: 30 }}>
+              <SectionLabel>Your recent papers</SectionLabel>
+              <Grid>
+                {recent.map((it) => {
+                  const full = it.scope !== "part";
+                  const part = it.parts[0];
+                  return (
+                    <PracticeCard
+                      key={it.id}
+                      Icon={full ? History : FileText}
+                      eyebrow="Saved paper"
+                      title={full ? "Full reading paper" : `Part ${part ?? ""}`}
+                      desc={full ? "Reopen all five parts — retake or review your answers." : "Reopen this single-part practice."}
+                      level={fmtWhen(it.created_at)}
+                      meta={full ? "35 questions" : "single part"}
+                      cta="Reopen"
+                      busyLabel="Opening…"
+                      loading={busy === `item-${it.id}`}
+                      disabled={!!busy}
+                      onClick={() => onOpenItem(it)}
+                    />
+                  );
+                })}
+              </Grid>
+            </div>
+          ) : null}
         </>
       ) : (
         <>
@@ -309,9 +374,9 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>{children}</div>;
 }
 
-function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabled, onClick }: {
+function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabled, onClick, cta = "Start", busyLabel = "Generating…" }: {
   Icon: typeof BookOpen; eyebrow: string; title: string; desc: string; level: string; meta: string;
-  loading: boolean; disabled: boolean; onClick: () => void;
+  loading: boolean; disabled: boolean; onClick: () => void; cta?: string; busyLabel?: string;
 }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} className="lp-hover" style={{ position: "relative", background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: 18, display: "flex", flexDirection: "column", gap: 12, textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: disabled && !loading ? 0.55 : 1, boxShadow: "0 1px 3px rgba(28,27,46,.04)", width: "100%" }}>
@@ -328,7 +393,7 @@ function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabl
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <span style={{ fontSize: 13, color: "#8A899A" }}>{meta}</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14.5, fontWeight: 600 }}>
-          {loading ? (<><Loader2 className="animate-spin" size={15} /> Generating…</>) : (<>Start <ArrowRight size={15} strokeWidth={2.2} /></>)}
+          {loading ? (<><Loader2 className="animate-spin" size={15} /> {busyLabel}</>) : (<>{cta} <ArrowRight size={15} strokeWidth={2.2} /></>)}
         </span>
       </div>
     </button>
@@ -434,24 +499,20 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
             <div style={{ width: `${pct}%`, height: "100%", background: D_VIOLET, borderRadius: 2, transition: "width .3s ease" }} />
           </div>
           <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: D_VIOLET, fontVariantNumeric: "tabular-nums" }}>{answeredCount} / {total}</span>
-          {!coachOpen ? (
-            <button type="button" onClick={() => setCoachOpen(true)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${D_LINE}`, background: "#fff", color: D_VIOLET, fontFamily: JAKARTA, fontWeight: 600, fontSize: 12.5, cursor: "pointer" }}>
-              <MessageCircle size={14} /> Coach
-            </button>
-          ) : null}
+          <button type="button" onClick={() => setCoachOpen((o) => !o)} title={coachOpen ? "Full page (hide the coach)" : "Show the coach"} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${D_LINE}`, background: coachOpen ? "#fff" : D_VTINT2, color: D_VIOLET, fontFamily: JAKARTA, fontWeight: 600, fontSize: 12.5, cursor: "pointer" }}>
+            {coachOpen ? <><Maximize2 size={14} /> Full page</> : <><MessageCircle size={14} /> Coach</>}
+          </button>
         </div>
       </div>
 
-      {/* Content row: reading cards (left) · coach panel (right) */}
+      {/* Content row: reading (left, full width) · coach panel (right) */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "12px clamp(12px,2vw,16px)" }}>
-          <div style={{ maxWidth: 900, margin: "0 auto" }}>
-            {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
-            {paper.parts.map((part) => (
-              <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
-            ))}
-            {error ? <Alert>{error}</Alert> : null}
-          </div>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "14px clamp(12px,2vw,20px) 48px" }}>
+          {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
+          {paper.parts.map((part) => (
+            <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
+          ))}
+          {error ? <Alert>{error}</Alert> : null}
         </div>
 
         {coachOpen ? (
