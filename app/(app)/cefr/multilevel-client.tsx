@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Clock, FileText, History, Layers, ListChecks, ListOrdered, Loader2, Maximize2, MessageCircle, PenLine, Send, SquarePen, X } from "lucide-react";
+import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Check, Clock, Eraser, FileText, Highlighter, History, Layers, ListChecks, ListOrdered, Loader2, Maximize2, MessageCircle, PenLine, Send, Sparkles, SquarePen, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
@@ -23,7 +23,6 @@ const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
 const TINT = "#F4F4FE";
 const TINT_BORDER = "#D8DAF3";
 const GOOD = "#15803d";
@@ -400,6 +399,100 @@ function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabl
   );
 }
 
+// ---- Text highlighter (marker) ---------------------------------------------
+
+// A real-exam-style highlighter for the reading text: pick a transparent pen,
+// drag across words to mark them. Painted with the CSS Custom Highlight API
+// (CSS.highlights + ::highlight()) so nothing is written into React's DOM —
+// highlights survive scrolling and can't desync the rendered passage. Stored as
+// live Ranges; stale ones (after a re-render) are pruned on the next rebuild.
+type PenColor = "yellow" | "green" | "pink" | "blue";
+type MarkTool = PenColor | "eraser" | null;
+const PEN_NAMES: Record<PenColor, string> = { yellow: "cefr-hl-yellow", green: "cefr-hl-green", pink: "cefr-hl-pink", blue: "cefr-hl-blue" };
+const PENS: { key: PenColor; label: string; solid: string }[] = [
+  { key: "yellow", label: "Yellow", solid: "#fde047" },
+  { key: "green", label: "Green", solid: "#86efac" },
+  { key: "pink", label: "Pink", solid: "#f9a8d4" },
+  { key: "blue", label: "Blue", solid: "#93c5fd" },
+];
+
+function rangesOverlap(a: Range, b: Range): boolean {
+  try {
+    return a.compareBoundaryPoints(Range.START_TO_END, b) > 0 && a.compareBoundaryPoints(Range.END_TO_START, b) < 0;
+  } catch {
+    return false;
+  }
+}
+
+function useHighlighter(containerRef: React.RefObject<HTMLDivElement | null>) {
+  const [tool, setTool] = useState<MarkTool>(null);
+  const [marks, setMarks] = useState(0);
+  const storeRef = useRef<Map<PenColor, Range[]>>(new Map());
+
+  const rebuild = useCallback(() => {
+    const HL = typeof CSS !== "undefined" ? (CSS as unknown as { highlights?: Map<string, unknown> }).highlights : undefined;
+    const HC = typeof window !== "undefined" ? (window as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight : undefined;
+    if (!HL || !HC) return;
+    let count = 0;
+    (Object.keys(PEN_NAMES) as PenColor[]).forEach((c) => {
+      const ranges = (storeRef.current.get(c) ?? []).filter((r) => r.startContainer.isConnected && r.endContainer.isConnected);
+      storeRef.current.set(c, ranges);
+      if (ranges.length) { HL.set(PEN_NAMES[c], new HC(...ranges)); count += ranges.length; }
+      else HL.delete(PEN_NAMES[c]);
+    });
+    setMarks(count);
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    if (!tool) return;
+    const sel = window.getSelection();
+    const container = containerRef.current;
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0 || !container) return;
+    const range = sel.getRangeAt(0);
+    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return;
+    if (tool === "eraser") {
+      (Object.keys(PEN_NAMES) as PenColor[]).forEach((c) => {
+        storeRef.current.set(c, (storeRef.current.get(c) ?? []).filter((r) => !rangesOverlap(r, range)));
+      });
+    } else {
+      storeRef.current.set(tool, [...(storeRef.current.get(tool) ?? []), range.cloneRange()]);
+    }
+    sel.removeAllRanges();
+    rebuild();
+  }, [tool, containerRef, rebuild]);
+
+  const clearAll = useCallback(() => {
+    const HL = typeof CSS !== "undefined" ? (CSS as unknown as { highlights?: Map<string, unknown> }).highlights : undefined;
+    storeRef.current.clear();
+    if (HL) Object.values(PEN_NAMES).forEach((n) => HL.delete(n));
+    setMarks(0);
+  }, []);
+
+  useEffect(() => clearAll, [clearAll]); // drop our highlights when the runner unmounts
+  return { tool, setTool, onMouseUp, clearAll, marks };
+}
+
+function MarkerToolbar({ tool, setTool, onClear, marks }: { tool: MarkTool; setTool: (t: MarkTool) => void; onClear: () => void; marks: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 7, paddingLeft: 14, borderLeft: `1px solid ${D_LINE}` }}>
+      <Highlighter size={15} style={{ color: D_SLATE2, flexShrink: 0 }} />
+      {PENS.map((p) => {
+        const on = tool === p.key;
+        return (
+          <button key={p.key} type="button" onClick={() => setTool(on ? null : p.key)} title={`${p.label} highlighter`} aria-pressed={on}
+            style={{ width: 20, height: 20, borderRadius: 6, cursor: "pointer", background: p.solid, border: "1px solid rgba(0,0,0,.14)", outline: on ? `2px solid ${D_DARK}` : "none", outlineOffset: 1, flexShrink: 0 }} />
+        );
+      })}
+      <button type="button" onClick={() => setTool(tool === "eraser" ? null : "eraser")} title="Eraser" aria-pressed={tool === "eraser"}
+        style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: tool === "eraser" ? D_VTINT2 : "#fff", border: `1px solid ${tool === "eraser" ? D_VIOLET : D_LINE}`, color: tool === "eraser" ? D_VIOLET : D_SLATE2, flexShrink: 0 }}>
+        <Eraser size={13} />
+      </button>
+      <button type="button" onClick={onClear} disabled={!marks} title="Clear all highlights"
+        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: JAKARTA, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: "#fff", border: `1px solid ${D_LINE}`, color: marks ? D_SLATE3 : D_SLATE2, opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
+    </div>
+  );
+}
+
 // ---- Reading ---------------------------------------------------------------
 
 function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPaper; regenBusy: boolean; onNew: () => void; onExit: () => void }) {
@@ -409,6 +502,7 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
   const [error, setError] = useState<string | null>(null);
   const [coachOpen, setCoachOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const hl = useHighlighter(scrollRef);
 
   const set = (n: number | string, v: string) => setAnswers((a) => ({ ...a, [String(n)]: v }));
 
@@ -441,6 +535,13 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
   const correctByNum = new Map<number, QResult>();
   grade?.parts.forEach((p) => p.results.forEach((r) => correctByNum.set(r.number, r)));
   const partsLabel = paper.parts.length > 1 ? `${paper.parts.length} parts` : `Part ${paper.parts[0]?.part}`;
+  const statusText = graded
+    ? "Marked — review each answer below; the coach can explain any of them."
+    : hl.tool === "eraser"
+      ? "Drag across a highlight to erase it."
+      : hl.tool
+        ? "Drag across words to highlight them."
+        : `Answer all ${total} questions, then submit.`;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", background: D_PAGE, fontFamily: JAKARTA, color: D_INK, overflow: "hidden" }}>
@@ -448,6 +549,8 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
           global next/font would be heavier than needed); falls back to the app fonts. */}
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" />
+      {/* Highlighter pens — transparent fills painted by the CSS Custom Highlight API. */}
+      <style>{`::highlight(cefr-hl-yellow){background-color:rgba(253,224,71,.5)}::highlight(cefr-hl-green){background-color:rgba(134,239,172,.55)}::highlight(cefr-hl-pink){background-color:rgba(249,168,212,.55)}::highlight(cefr-hl-blue){background-color:rgba(147,197,253,.6)}`}</style>
 
       {/* Header (dark) */}
       <div style={{ background: D_DARK, padding: "0 clamp(16px,3vw,32px)", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 12 }}>
@@ -490,10 +593,11 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
       </div>
 
       {/* Info + progress bar */}
-      <div style={{ background: "#fff", padding: "10px clamp(16px,3vw,32px)", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${D_LINE}`, flexShrink: 0, gap: 12 }}>
-        <span style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 13, color: D_SLATE }}>
-          {graded ? "Marked — review each answer below; the coach can explain any of them." : `Answer all ${total} questions, then submit.`}
-        </span>
+      <div style={{ background: "#fff", padding: "10px clamp(16px,3vw,32px)", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${D_LINE}`, flexShrink: 0, gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <span style={{ fontFamily: JAKARTA, fontWeight: 400, fontSize: 13, color: D_SLATE, whiteSpace: "nowrap" }}>{statusText}</span>
+          <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
           <div style={{ width: 100, height: 4, borderRadius: 2, background: D_LINE, overflow: "hidden" }}>
             <div style={{ width: `${pct}%`, height: "100%", background: D_VIOLET, borderRadius: 2, transition: "width .3s ease" }} />
@@ -507,7 +611,7 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
 
       {/* Content row: reading (left, full width) · coach panel (right) */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "14px clamp(12px,2vw,20px) 48px" }}>
+        <div ref={scrollRef} onMouseUp={hl.onMouseUp} style={{ flex: 1, overflowY: "auto", padding: "14px clamp(12px,2vw,20px) 48px", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
           {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
           {paper.parts.map((part) => (
             <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
@@ -814,71 +918,417 @@ function Part5({ p, answers, set, results, graded }: { p: P5; answers: Record<st
   );
 }
 
-// ---- Writing ---------------------------------------------------------------
+// ---- Writing (full studio: prompt · answer · coach — mirrors the IELTS writing design) ----
+
+// The CEFR writing studio is the IELTS writing studio's twin (same three-column
+// layout + coach), tinted with the CEFR violet so it sits beside the "Reading B"
+// runner as one product. It talks to the engine (callEngine) instead of the
+// IELTS essays API, and handles a multi-task paper with an in-header switcher.
+const W_ACCENT = D_VIOLET;     // 7c3aed
+const W_SOFT = "#f5f3ff";      // violet-50 surface
+const W_SOFT2 = D_VTINT2;      // faf5ff
+const W_LINE = D_LINE;         // e2e8f0
+const W_SOFTLINE = "#eef1f5";  // faint inner divider
+const W_CANVAS = D_PAGE;       // f8fafc
+const W_INK = D_DARK;          // 0f172a
+const W_BODY = D_INK;          // 1e293b
+const W_MUTED = D_SLATE;       // 64748b
+const W_FAINT = D_SLATE2;      // 94a3b8
+
+const WRITING_KIND: Record<string, string> = {
+  "1.1": "Informal · Message",
+  "1.2": "Formal · Letter",
+  "2": "Forum · Opinion",
+};
+const WRITING_COACH_CHIPS = ["Plan an outline", "Useful vocabulary", "Check my idea"];
+
+// CEFR task → the IELTS tutor's task_type, so the coach tailors letter vs. essay advice.
+function tutorTypeForTask(task: string): string {
+  return task === "2" ? "task2" : "task1_general";
+}
+function secondsForWritingTask(task: string): number {
+  return task === "2" ? 30 * 60 : 20 * 60;
+}
+function wPrimaryBtn(disabled: boolean): React.CSSProperties {
+  return { display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: W_ACCENT, color: "#fff", fontFamily: JAKARTA, fontSize: 14, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: disabled ? "none" : "0 10px 22px -12px rgba(124,58,237,.7)" };
+}
+const wGhostBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", height: 40, padding: "0 16px", border: `1px solid ${W_LINE}`, borderRadius: 10, background: "#fff", color: W_MUTED, fontFamily: JAKARTA, fontSize: 14, fontWeight: 600, cursor: "pointer" };
 
 function WritingRunner({ paper, regenBusy, onNew, onExit }: { paper: WritingPaper; regenBusy: boolean; onNew: () => void; onExit: () => void }) {
-  const label = paper.tasks.length > 1 ? `Writing · ${paper.tasks.length} tasks` : `Writing · Task ${paper.tasks[0]?.task}`;
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [grades, setGrades] = useState<Record<string, WritingGrade>>({});
+  const task = paper.tasks[activeIdx];
+  const gradedIds = useMemo(() => new Set(Object.keys(grades).filter((k) => grades[k]?.gradable)), [grades]);
+
+  // One studio for the active task, remounted on switch (key) so the coach/timer
+  // reset cleanly; answers + grades are lifted here so switching never loses work.
   return (
-    <div style={{ maxWidth: 940, margin: "0 auto", padding: "clamp(20px,3vw,32px) clamp(16px,3vw,24px) 80px" }}>
-      <RunnerHeader onExit={onExit} label={label} />
-      {paper.tasks.map((t) => (
-        <WritingTaskCard key={t.task} itemId={paper.id} task={t} />
-      ))}
-      <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-        <PrimaryButton onClick={onNew} disabled={regenBusy}>{regenBusy ? "Generating…" : "New paper"}</PrimaryButton>
-        <GhostButton onClick={onExit}>Back to CEFR</GhostButton>
+    <TaskStudio
+      key={task.task}
+      itemId={paper.id}
+      tasks={paper.tasks}
+      activeIdx={activeIdx}
+      gradedIds={gradedIds}
+      onSwitch={setActiveIdx}
+      answer={answers[task.task] ?? ""}
+      onAnswer={(v) => setAnswers((a) => ({ ...a, [task.task]: v }))}
+      grade={grades[task.task] ?? null}
+      onGraded={(g) => setGrades((m) => ({ ...m, [task.task]: g }))}
+      regenBusy={regenBusy}
+      onNew={onNew}
+      onExit={onExit}
+    />
+  );
+}
+
+function TaskStudio({ itemId, tasks, activeIdx, gradedIds, onSwitch, answer, onAnswer, grade, onGraded, regenBusy, onNew, onExit }: {
+  itemId: string; tasks: WritingTask[]; activeIdx: number; gradedIds: Set<string>; onSwitch: (i: number) => void;
+  answer: string; onAnswer: (v: string) => void; grade: WritingGrade | null; onGraded: (g: WritingGrade) => void;
+  regenBusy: boolean; onNew: () => void; onExit: () => void;
+}) {
+  const task = tasks[activeIdx];
+  const [view, setView] = useState<"write" | "result">(grade?.gradable ? "result" : "write");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [coachOpen, setCoachOpen] = useState(true);
+  const draftRef = useRef(answer);
+  useEffect(() => { draftRef.current = answer; });
+
+  const range = task.word_range;
+  const minWords = range[0];
+  const words = answer.trim() ? answer.trim().split(/\s+/).filter(Boolean).length : 0;
+  const chars = answer.length;
+  const paragraphs = answer.trim() ? answer.trim().split(/\n{2,}/).map((s) => s.trim()).filter(Boolean).length : 0;
+  const wordPct = Math.min(100, minWords ? Math.round((words / minWords) * 100) : 0);
+  const RING_C = 2 * Math.PI * 19;
+  const ringOffset = RING_C * (1 - Math.min(1, minWords ? words / minWords : 0));
+  const lengthMet = words >= minWords;
+  const wordsToTarget = Math.max(0, minWords - words);
+  const kind = WRITING_KIND[task.task] ?? task.register;
+  const seconds = secondsForWritingTask(task.task);
+
+  const submit = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true); setMessage(null);
+    try {
+      const g = await callEngine<WritingGrade>("writing/grade", { item_id: itemId, task_id: task.task, answer: draftRef.current });
+      onGraded(g);
+      if (g.gradable) setView("result");
+      else setMessage(g.message ?? "That answer couldn’t be graded — make sure it addresses the task, then try again.");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Grading failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, itemId, task.task, onGraded]);
+
+  // Stable onExpire so the timer interval is set once (mirrors the reading runner).
+  const submitRef = useRef(submit);
+  useEffect(() => { submitRef.current = submit; });
+  const onExpire = useCallback(() => { if (!grade?.gradable) void submitRef.current(); }, [grade]);
+
+  const showResult = view === "result" && !!grade?.gradable;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", background: W_CANVAS, fontFamily: JAKARTA, color: W_BODY }}>
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap" />
+      {submitting ? <CefrGradingOverlay /> : null}
+
+      {/* header */}
+      <header style={{ flexShrink: 0, height: 62, background: "#fff", borderBottom: `1px solid ${W_LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 clamp(14px,2.5vw,22px)", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <button type="button" onClick={onExit} style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 13px 0 10px", border: `1px solid ${W_LINE}`, background: "#fff", borderRadius: 9, fontFamily: JAKARTA, fontSize: 14, fontWeight: 600, color: W_MUTED, cursor: "pointer", flexShrink: 0 }}>
+            <ArrowLeft size={15} /> CEFR
+          </button>
+          <div style={{ width: 1, height: 24, background: W_LINE, flexShrink: 0 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: W_INK, color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: ".05em", flexShrink: 0 }}>TASK {task.task}</span>
+            <span style={{ fontFamily: JAKARTA, fontSize: 14, fontWeight: 500, color: W_MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind}</span>
+            <span style={{ color: "#cbd5e1" }}>·</span>
+            <span style={{ fontFamily: JAKARTA, fontSize: 13, fontWeight: 700, color: W_ACCENT, flexShrink: 0 }}>{task.cefr}</span>
+          </div>
+          {tasks.length > 1 ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, paddingLeft: 12, borderLeft: `1px solid ${W_LINE}`, flexShrink: 0 }}>
+              {tasks.map((t, i) => {
+                const on = i === activeIdx;
+                const done = gradedIds.has(t.task);
+                return (
+                  <button key={t.task} type="button" onClick={() => onSwitch(i)} title={`Task ${t.task}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 28, padding: "0 10px", borderRadius: 8, border: `1px solid ${on ? W_ACCENT : W_LINE}`, background: on ? W_ACCENT : "#fff", color: on ? "#fff" : W_MUTED, fontFamily: JAKARTA, fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+                    {done ? <Check size={12} /> : null}{t.task}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          {!showResult ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${W_LINE}`, borderRadius: 9, background: W_SOFT }}>
+              <ReadingTimer seconds={seconds} onExpire={onExpire}>
+                {(text, left) => {
+                  const urgent = left <= 300;
+                  return (
+                    <span style={{ display: "flex", alignItems: "center", gap: 7, fontFamily: JAKARTA, fontWeight: 600, fontSize: 13.5, color: urgent ? "#c2410c" : "#4b4e63" }}>
+                      <Clock size={14} style={{ color: urgent ? "#c2410c" : W_FAINT }} />
+                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{text}</span> left
+                    </span>
+                  );
+                }}
+              </ReadingTimer>
+            </div>
+          ) : null}
+          <div style={{ width: 1, height: 24, background: W_LINE }} />
+          {showResult ? (
+            <>
+              <button type="button" onClick={() => setView("write")} style={wGhostBtn}>Revise answer</button>
+              <button type="button" onClick={onNew} disabled={regenBusy} style={wPrimaryBtn(regenBusy)}>{regenBusy ? "Generating…" : "New paper"}</button>
+            </>
+          ) : (
+            <button type="button" onClick={() => void submit()} disabled={submitting || words < 5} style={wPrimaryBtn(submitting || words < 5)}>
+              {submitting ? "Grading…" : grade ? "Re-grade" : "Grade task"}
+              <ArrowRight size={16} strokeWidth={2.3} />
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* body: prompt | answer/result | coach */}
+      <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", gap: 14, padding: 14, overflow: "hidden" }}>
+        <WritingPromptPanel task={task} words={words} wordPct={wordPct} lengthMet={lengthMet} graded={showResult} />
+
+        {showResult && grade ? (
+          <main style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ height: 58, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", borderBottom: `1px solid ${W_SOFTLINE}` }}>
+              <h2 style={{ margin: 0, fontFamily: JAKARTA, fontSize: 16, fontWeight: 700, color: W_INK }}>Your result</h2>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "clamp(20px,2.6vw,30px)" }}>
+              <WritingResult g={grade} />
+            </div>
+          </main>
+        ) : (
+          <main style={{ flex: 1, minWidth: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ height: 58, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${W_SOFTLINE}`, gap: 12 }}>
+              <h2 style={{ margin: 0, fontFamily: JAKARTA, fontSize: 16, fontWeight: 700, color: W_INK }}>Your answer</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <span style={{ fontFamily: JAKARTA, fontSize: 13, color: W_FAINT, fontWeight: 500 }}>{lengthMet ? "Target reached" : `${wordsToTarget} words to target`}</span>
+                <div style={{ position: "relative", width: 44, height: 44 }}>
+                  <svg width="44" height="44" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke={W_SOFT} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" stroke={W_ACCENT} strokeWidth="4.5" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={ringOffset} transform="rotate(-90 23 23)" style={{ transition: "stroke-dashoffset .35s ease" }} /></svg>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: JAKARTA, fontSize: 12.5, fontWeight: 800, color: W_INK, fontVariantNumeric: "tabular-nums" }}>{words}</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, padding: "24px clamp(20px,3vw,40px)", overflow: "auto", display: "flex", flexDirection: "column" }}>
+              <textarea
+                autoFocus
+                value={answer}
+                onChange={(e) => onAnswer(e.target.value)}
+                disabled={submitting}
+                placeholder="Start writing your response here…"
+                style={{ flex: 1, width: "100%", maxWidth: 720, minHeight: 240, resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: PLEX, fontSize: 16.5, lineHeight: 1.85, color: "#272C3E" }}
+              />
+            </div>
+            <div style={{ flexShrink: 0, minHeight: 46, padding: "0 22px", borderTop: `1px solid ${W_SOFTLINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: W_CANVAS, gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: JAKARTA }}>
+                <span style={{ fontSize: 13, color: W_MUTED, fontVariantNumeric: "tabular-nums" }}><strong style={{ color: W_INK, fontWeight: 700 }}>{words}</strong> words</span>
+                <span style={{ fontSize: 13, color: W_MUTED, fontVariantNumeric: "tabular-nums" }}>{chars.toLocaleString()} characters</span>
+                <span style={{ fontSize: 13, color: W_MUTED }}>{paragraphs} paragraph{paragraphs === 1 ? "" : "s"}</span>
+              </div>
+              <span style={{ fontFamily: JAKARTA, fontSize: 13, fontWeight: 600, color: lengthMet ? GOOD : W_FAINT }}>Target {range[0]}–{range[1]} words</span>
+            </div>
+          </main>
+        )}
+
+        {coachOpen ? (
+          <aside style={{ width: 320, flexShrink: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", overflow: "hidden" }}>
+            <WritingCoach promptText={`${task.prompt}\n\nCover: ${task.required_content_points.join("; ")}`} tutorType={tutorTypeForTask(task.task)} phase={showResult ? "results" : "writing"} draftRef={draftRef} onClose={() => setCoachOpen(false)} />
+          </aside>
+        ) : (
+          <button type="button" onClick={() => setCoachOpen(true)} aria-label="Open writing coach" style={{ position: "absolute", right: 26, bottom: 26, zIndex: 7, display: "inline-flex", alignItems: "center", gap: 9, padding: "12px 18px 12px 13px", borderRadius: 999, border: "none", background: W_ACCENT, color: "#fff", cursor: "pointer", fontFamily: JAKARTA, fontWeight: 700, fontSize: 14.5, boxShadow: "0 14px 30px -12px rgba(124,58,237,.6)" }}>
+            <span style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}><Sparkles size={15} /></span>
+            Ask coach
+          </button>
+        )}
+      </div>
+
+      {/* footer status */}
+      <footer style={{ flexShrink: 0, minHeight: 44, background: "#fff", borderTop: `1px solid ${W_LINE}`, display: "flex", alignItems: "center", gap: 10, padding: "8px 18px" }}>
+        <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: message ? "#FBE9DD" : "#E5F3EA", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {message ? <X size={12} style={{ color: "#c2410c" }} /> : <Check size={12} style={{ color: GOOD }} />}
+        </span>
+        <span style={{ fontFamily: JAKARTA, fontSize: 13, color: W_MUTED }}>
+          {message ? <span style={{ color: "#c2410c" }}>{message}</span> : showResult ? "Marked. Revise your answer and re-grade, or ask the coach to explain the feedback." : <><strong style={{ color: W_INK, fontWeight: 700 }}>Ready to grade.</strong> The AI marks your task on a calibrated CEFR rubric — task, coherence, vocabulary, grammar, register.</>}
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+function WritingPromptPanel({ task, words, wordPct, lengthMet, graded }: { task: WritingTask; words: number; wordPct: number; lengthMet: boolean; graded: boolean }) {
+  const context = task.situation || task.forum_context || task.problem;
+  return (
+    <aside style={{ width: 348, flexShrink: 0, background: "#fff", border: `1px solid ${W_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+        <div style={{ padding: "18px 20px 16px", borderBottom: `1px solid ${W_SOFTLINE}` }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 13 }}>
+            <span style={{ fontFamily: JAKARTA, fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: W_FAINT }}>THE TASK</span>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 11px", borderRadius: 7, background: W_SOFT, color: W_ACCENT, fontFamily: JAKARTA, fontSize: 12.5, fontWeight: 700, textTransform: "capitalize" }}>{task.register}</span>
+          </div>
+          {context ? (
+            <p style={{ margin: "0 0 12px", fontFamily: JAKARTA, fontSize: 13, lineHeight: 1.6, color: W_MUTED, padding: "10px 12px", background: W_CANVAS, border: `1px solid ${W_LINE}`, borderRadius: 10 }}>{context}</p>
+          ) : null}
+          <p style={{ margin: 0, fontFamily: PLEX, fontSize: 18.5, lineHeight: 1.5, fontWeight: 400, color: W_INK, whiteSpace: "pre-wrap" }}>{task.question || task.prompt}</p>
+        </div>
+        <div style={{ padding: "16px 20px" }}>
+          <p style={{ margin: "0 0 12px", fontFamily: JAKARTA, fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: W_MUTED }}>COVER ALL POINTS</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {task.required_content_points.map((c, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "10px 12px", background: W_CANVAS, border: `1px solid ${W_SOFTLINE}`, borderRadius: 10 }}>
+                <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 6, background: W_SOFT, color: W_ACCENT, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: JAKARTA, fontSize: 11, fontWeight: 800 }}>{i + 1}</span>
+                <span style={{ fontFamily: JAKARTA, fontSize: 13.5, fontWeight: 500, color: W_BODY, lineHeight: 1.5 }}>{c}</span>
+              </div>
+            ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 12px", background: W_SOFT2, border: `1px solid ${D_VBORDER2}`, borderRadius: 10 }}>
+              <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: lengthMet ? "#E5F3EA" : "#fff", border: lengthMet ? "none" : `2px solid ${D_VBORDER2}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {lengthMet ? <Check size={13} strokeWidth={3} style={{ color: GOOD }} /> : null}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: JAKARTA, fontSize: 13.5, fontWeight: 600, color: W_BODY }}>{task.word_range[0]}–{task.word_range[1]} words</span>
+                  <span style={{ fontFamily: JAKARTA, fontSize: 12.5, fontWeight: 700, color: W_ACCENT, fontVariantNumeric: "tabular-nums" }}>{words}</span>
+                </div>
+                <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: W_SOFT, overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: W_ACCENT, transition: "width .3s ease" }} /></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{ flexShrink: 0, padding: "13px 20px", borderTop: `1px solid ${W_SOFTLINE}`, display: "flex", alignItems: "center", gap: 9 }}>
+        <Sparkles size={15} style={{ color: W_FAINT, flexShrink: 0 }} />
+        <span style={{ fontFamily: JAKARTA, fontSize: 12.5, color: W_FAINT, lineHeight: 1.4 }}>{graded ? "A model answer is in your result." : "A model answer unlocks after you grade."}</span>
+      </div>
+    </aside>
+  );
+}
+
+function WritingCoach({ promptText, tutorType, phase, draftRef, onClose }: { promptText: string; tutorType: string; phase: "writing" | "results"; draftRef: React.MutableRefObject<string>; onClose: () => void }) {
+  const [messages, setMessages] = useState<CoachMsg[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const ctxRef = useRef({ promptText, tutorType, phase });
+  useEffect(() => { ctxRef.current = { promptText, tutorType, phase }; }, [promptText, tutorType, phase]);
+  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }); }, [messages, sending]);
+
+  function markAnimated(idx: number) {
+    setMessages((m) => (m[idx]?.animate ? m.map((msg, j) => (j === idx ? { ...msg, animate: false } : msg)) : m));
+  }
+
+  async function send(raw?: string) {
+    const q = (raw ?? input).trim();
+    if (!q || sending) return;
+    setInput("");
+    const prior = messages;
+    setMessages([...prior, { role: "student", content: q }]);
+    setSending(true);
+    try {
+      const ctx = ctxRef.current;
+      const res = await fetch("/api/writing/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q, taskType: ctx.tutorType, promptText: ctx.promptText, draft: draftRef.current, phase: ctx.phase === "results" ? "results" : "writing", history: prior.slice(-6) }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { reply?: string; message?: string };
+      const reply = res.ok && body.reply ? body.reply : body.message ?? "The coach is busy — try again in a moment.";
+      setMessages((m) => [...m, { role: "assistant", content: reply, animate: true }]);
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "Network error — please try again.", animate: true }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const empty = phase === "results"
+    ? "Marked. Ask me to explain any part of the feedback, or how to push this answer to the next level."
+    : "I can help you understand the task, plan ideas, and find sharper words — but you write the answer.";
+  const subtitle = phase === "results" ? "Feedback unlocked · ask anything" : "Ideas & vocabulary · not answers";
+
+  return (
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff", minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 16px", borderBottom: `1px solid ${W_SOFTLINE}` }}>
+        <span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Sparkles size={18} /></span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 14.5, color: W_INK }}>Writing coach</div>
+          <div style={{ fontFamily: JAKARTA, fontSize: 12, color: W_FAINT }}>{subtitle}</div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Collapse coach" style={{ flexShrink: 0, width: 30, height: 30, border: "none", background: "transparent", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: W_FAINT }}><X size={16} /></button>
+      </div>
+      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        {messages.length === 0 ? (
+          <div style={{ background: W_SOFT2, border: `1px solid ${D_VBORDER2}`, borderRadius: 13, borderTopLeftRadius: 4, padding: "13px 14px", fontFamily: JAKARTA, fontSize: 13.5, lineHeight: 1.55, color: "#3A3F58" }}>{empty}</div>
+        ) : (
+          messages.map((m, i) => (
+            <div key={i} style={{ alignSelf: m.role === "student" ? "flex-end" : "flex-start", maxWidth: "86%", padding: "10px 13px", borderRadius: 12, borderTopRightRadius: m.role === "student" ? 3 : 12, borderTopLeftRadius: m.role === "student" ? 12 : 3, fontFamily: JAKARTA, fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-wrap", background: m.role === "student" ? W_ACCENT : W_CANVAS, color: m.role === "student" ? "#fff" : W_BODY, border: m.role === "student" ? "none" : `1px solid ${W_LINE}` }}>
+              {m.role === "assistant" ? <Typewriter text={m.content} animate={!!m.animate} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => markAnimated(i)} caretColor={W_FAINT} /> : m.content}
+            </div>
+          ))
+        )}
+        {sending ? (
+          <span style={{ alignSelf: "flex-start", display: "inline-flex", gap: 5, padding: "10px 13px" }} aria-label="Coach is writing">
+            {[0, 1, 2].map((i) => <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: W_FAINT, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />)}
+          </span>
+        ) : null}
+      </div>
+      <div style={{ flexShrink: 0, padding: "0 14px 8px", display: "flex", flexWrap: "wrap", gap: 7 }}>
+        {WRITING_COACH_CHIPS.map((c) => (
+          <button key={c} type="button" onClick={() => void send(c)} disabled={sending} style={{ fontFamily: JAKARTA, fontSize: 12.5, fontWeight: 600, color: W_ACCENT, background: W_SOFT, border: `1px solid ${D_VBORDER2}`, borderRadius: 999, padding: "6px 12px", cursor: sending ? "default" : "pointer" }}>{c}</button>
+        ))}
+      </div>
+      <div style={{ flexShrink: 0, padding: "12px 14px", borderTop: `1px solid ${W_SOFTLINE}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: W_CANVAS, border: `1px solid ${W_LINE}`, borderRadius: 11, padding: "5px 6px 5px 13px" }}>
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder="Ask in any language…" style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none", fontFamily: JAKARTA, fontSize: 13.5, color: W_INK }} />
+          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ flexShrink: 0, width: 34, height: 34, border: "none", borderRadius: 9, background: W_ACCENT, cursor: sending || !input.trim() ? "default" : "pointer", opacity: sending || !input.trim() ? 0.5 : 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}><Send size={15} /></button>
+        </div>
       </div>
     </div>
   );
 }
 
-function WritingTaskCard({ itemId, task }: { itemId: string; task: WritingTask }) {
-  const [answer, setAnswer] = useState("");
-  const [grade, setGrade] = useState<WritingGrade | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const words = answer.trim() ? answer.trim().split(/\s+/).length : 0;
+const CEFR_GRADING_STEPS = [
+  "Reading your response, line by line…",
+  "Checking grammar, vocabulary & cohesion…",
+  "Weighing it against the CEFR descriptors…",
+  "Calibrating a fair, conservative level…",
+];
 
-  async function gradeIt() {
-    setBusy(true); setError(null);
-    try {
-      setGrade(await callEngine<WritingGrade>("writing/grade", { item_id: itemId, task_id: task.task, answer }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Grading failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
+function CefrGradingOverlay() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setStep((s) => (s + 1) % CEFR_GRADING_STEPS.length), 2200);
+    return () => window.clearInterval(id);
+  }, []);
   return (
-    <section style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(18px,2.2vw,26px)", marginBottom: 18 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontFamily: SANS, fontWeight: 800, fontSize: 13, color: "#fff", background: INDIGO, borderRadius: 8, padding: "3px 10px" }}>Task {task.task}</span>
-        <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 12, color: INDIGO }}>{task.cefr}</span>
-        <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT }}>{task.word_range[0]}–{task.word_range[1]} words · {task.register}</span>
-      </div>
-      <p style={{ fontFamily: SERIF, fontSize: 16, lineHeight: 1.7, color: INK, margin: "0 0 12px" }}>{task.prompt}</p>
-      {task.required_content_points.length ? (
-        <div style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, marginBottom: 12 }}>
-          <b style={{ color: FAINT }}>Cover:</b> {task.required_content_points.join(" · ")}
+    <div role="alertdialog" aria-label="Grading your writing" aria-live="polite" style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(15,23,42,.5)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}>
+      <div style={{ width: "min(420px,94vw)", background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: "0 40px 90px -30px rgba(15,23,42,.7)" }}>
+        <div style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: `1px solid ${D_VBORDER2}`, background: W_SOFT2 }}>
+          <span style={{ width: 60, height: 60, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)", color: "#fff" }}>
+            <Loader2 size={26} className="animate-spin" />
+          </span>
+          <h2 style={{ margin: "18px 0 0", fontFamily: JAKARTA, fontSize: 19, fontWeight: 800, color: W_INK }}>Grading your writing</h2>
+          <p style={{ margin: "8px 0 0", fontFamily: JAKARTA, fontSize: 13.5, lineHeight: 1.55, color: W_MUTED, maxWidth: 320 }}>Hang tight — we read every line and weigh it against the CEFR descriptors so your level is accurate.</p>
         </div>
-      ) : null}
-
-      <textarea
-        value={answer}
-        onChange={(e) => setAnswer(e.target.value)}
-        disabled={busy}
-        placeholder="Write your response here…"
-        rows={8}
-        style={{ width: "100%", fontFamily: SANS, fontSize: 14.5, lineHeight: 1.6, color: INK, padding: 14, borderRadius: 12, border: `1px solid ${TINT_BORDER}`, resize: "vertical", boxSizing: "border-box" }}
-      />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-        <span style={{ fontFamily: SANS, fontSize: 12.5, color: wordCountColor(words, task.word_range) }}>{words} words</span>
-        <PrimaryButton onClick={gradeIt} disabled={busy || words < 5}>{busy ? "Grading…" : grade ? "Re-grade" : "Grade this task"}</PrimaryButton>
+        <div style={{ padding: "20px 26px 24px" }}>
+          <div style={{ minHeight: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span key={step} style={{ fontFamily: JAKARTA, fontSize: 13.5, fontWeight: 600, color: W_ACCENT, textAlign: "center" }}>{CEFR_GRADING_STEPS[step]}</span>
+          </div>
+          <div style={{ marginTop: 16, height: 6, borderRadius: 999, background: W_SOFT, overflow: "hidden" }}>
+            <div className="lp-grade-bar" style={{ height: "100%", width: "100%", borderRadius: 999, background: W_ACCENT }} />
+          </div>
+          <p style={{ margin: "14px 0 0", fontFamily: JAKARTA, fontSize: 12, color: W_FAINT, textAlign: "center" }}>This usually takes about 20–30 seconds.</p>
+        </div>
       </div>
-      {error ? <Alert>{error}</Alert> : null}
-      {grade ? <WritingResult g={grade} /> : null}
-    </section>
+    </div>
   );
 }
 
@@ -886,55 +1336,67 @@ function WritingResult({ g }: { g: WritingGrade }) {
   if (!g.gradable) return <Alert>{g.message ?? "Not gradable yet."}</Alert>;
   const s = g.scores;
   return (
-    <div style={{ marginTop: 16, borderTop: `1px solid ${LINE}`, paddingTop: 16 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 12 }}>
-        <span style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700, color: INDIGO }}>{g.estimated_cefr}</span>
-        <span style={{ fontFamily: SANS, fontSize: 13, color: MUTED }}>overall {g.overall_0_100}/100 · {g.word_count} words {g.in_range ? "(in range)" : "(out of range)"}</span>
+    <div>
+      {/* level hero */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "18px 22px", borderRadius: 14, background: `linear-gradient(135deg,${D_VIOLET} 0%,#4f46e5 100%)`, color: "#fff", marginBottom: 18 }}>
+        <div style={{ fontFamily: PLEX, fontSize: 38, fontWeight: 600, lineHeight: 1 }}>{g.estimated_cefr}</div>
+        <div style={{ height: 38, width: 1, background: "rgba(255,255,255,.3)" }} />
+        <div>
+          <div style={{ fontFamily: JAKARTA, fontSize: 20, fontWeight: 700 }}>{g.overall_0_100}<span style={{ opacity: 0.7, fontSize: 14 }}>/100</span></div>
+          <div style={{ fontFamily: JAKARTA, fontSize: 12.5, opacity: 0.85 }}>{g.word_count} words · {g.in_range ? "in range" : "out of range"}</div>
+        </div>
       </div>
       {s ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 8, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(110px,1fr))", gap: 8, marginBottom: 16 }}>
           {([["Task", s.task_achievement], ["Coherence", s.coherence], ["Lexis", s.lexical], ["Grammar", s.grammar], ["Register", s.register]] as const).map(([k, v]) => (
-            <div key={k} style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "8px 10px", textAlign: "center" }}>
-              <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: INK }}>{v}<span style={{ fontSize: 12, color: FAINT }}>/5</span></div>
-              <div style={{ fontFamily: SANS, fontSize: 11, color: MUTED }}>{k}</div>
+            <div key={k} style={{ border: `1px solid ${W_LINE}`, borderRadius: 10, padding: "10px", textAlign: "center", background: W_CANVAS }}>
+              <div style={{ fontFamily: PLEX, fontSize: 22, fontWeight: 700, color: W_ACCENT }}>{v}<span style={{ fontSize: 12, color: W_FAINT }}>/5</span></div>
+              <div style={{ fontFamily: JAKARTA, fontSize: 11, color: W_MUTED, marginTop: 2 }}>{k}</div>
             </div>
           ))}
         </div>
       ) : null}
-      {g.examiner_comment ? <p style={{ fontFamily: SANS, fontSize: 13.5, color: INK, lineHeight: 1.6, margin: "0 0 12px" }}>{g.examiner_comment}</p> : null}
-      <BulletList title="Strengths" items={g.strengths} color={GOOD} />
-      <BulletList title="Improve" items={g.improvements} color="#b45309" />
+      {g.examiner_comment ? <p style={{ fontFamily: JAKARTA, fontSize: 14, color: W_BODY, lineHeight: 1.65, margin: "0 0 16px", padding: "12px 14px", background: W_SOFT2, border: `1px solid ${D_VBORDER2}`, borderRadius: 10 }}>{g.examiner_comment}</p> : null}
+      <ResultBullets title="Strengths" items={g.strengths} color={GOOD} />
+      <ResultBullets title="Improve" items={g.improvements} color="#b45309" />
       {g.corrected_sentences?.length ? (
-        <div style={{ marginTop: 10 }}>
-          <SmallTitle>Suggested fixes</SmallTitle>
+        <div style={{ marginTop: 14 }}>
+          <ResultLabel>Suggested fixes</ResultLabel>
           {g.corrected_sentences.map((c, i) => (
-            <div key={i} style={{ fontFamily: SANS, fontSize: 13, lineHeight: 1.55, marginBottom: 6 }}>
+            <div key={i} style={{ fontFamily: JAKARTA, fontSize: 13.5, lineHeight: 1.55, marginBottom: 9, padding: "10px 12px", border: `1px solid ${W_LINE}`, borderRadius: 10 }}>
               <div style={{ color: BAD, textDecoration: "line-through" }}>{c.original}</div>
-              <div style={{ color: GOOD }}>{c.improved}</div>
+              <div style={{ color: GOOD, marginTop: 3 }}>{c.improved}</div>
             </div>
           ))}
         </div>
       ) : null}
       {g.model_answer ? (
-        <details style={{ marginTop: 12 }}>
-          <summary style={{ fontFamily: SANS, fontSize: 13, fontWeight: 700, color: INDIGO, cursor: "pointer" }}>Show a model answer</summary>
-          <p style={{ fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.7, color: "#2b3147", margin: "8px 0 0", whiteSpace: "pre-wrap" }}>{g.model_answer}</p>
+        <details style={{ marginTop: 16 }}>
+          <summary style={{ fontFamily: JAKARTA, fontSize: 13.5, fontWeight: 700, color: W_ACCENT, cursor: "pointer" }}>Show a model answer</summary>
+          <p style={{ fontFamily: PLEX, fontSize: 15, lineHeight: 1.8, color: "#2b3147", margin: "10px 0 0", whiteSpace: "pre-wrap" }}>{g.model_answer}</p>
         </details>
       ) : null}
     </div>
   );
 }
 
-// ---- Shared UI -------------------------------------------------------------
-
-function RunnerHeader({ onExit, label }: { onExit: () => void; label: string }) {
+function ResultBullets({ title, items, color }: { title: string; items?: string[]; color: string }) {
+  if (!items?.length) return null;
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13, color: INDIGO }}>{label}</span>
-      <button onClick={onExit} style={{ fontFamily: SANS, fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }}>← CEFR</button>
+    <div style={{ marginBottom: 12 }}>
+      <ResultLabel>{title}</ResultLabel>
+      <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+        {items.map((it, i) => <li key={i} style={{ fontFamily: JAKARTA, fontSize: 13.5, color: W_BODY, lineHeight: 1.65 }}><span style={{ color }}>•</span> {it}</li>)}
+      </ul>
     </div>
   );
 }
+
+function ResultLabel({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 11, color: W_FAINT, textTransform: "uppercase", letterSpacing: ".06em" }}>{children}</div>;
+}
+
+// ---- Shared UI -------------------------------------------------------------
 
 function ScoreBanner({ score, max }: { score: number; max: number }) {
   const pct = max ? Math.round((score / max) * 100) : 0;
@@ -1090,40 +1552,8 @@ function Feedback({ nums, results }: { nums: number[]; results: Map<number, QRes
   );
 }
 
-function BulletList({ title, items, color }: { title: string; items?: string[]; color: string }) {
-  if (!items?.length) return null;
-  return (
-    <div style={{ marginBottom: 8 }}>
-      <SmallTitle>{title}</SmallTitle>
-      <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-        {items.map((it, i) => <li key={i} style={{ fontFamily: SANS, fontSize: 13, color: INK, lineHeight: 1.6 }}><span style={{ color }}>•</span> {it}</li>)}
-      </ul>
-    </div>
-  );
-}
-
-function SmallTitle({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, color: FAINT, textTransform: "uppercase", letterSpacing: ".06em" }}>{children}</div>;
-}
-
 function Alert({ children }: { children: React.ReactNode }) {
   return <p role="alert" style={{ fontFamily: SANS, fontSize: 13, color: BAD, background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 12px", margin: "14px 0 0" }}>{children}</p>;
-}
-
-function PrimaryButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button onClick={onClick} disabled={disabled} style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: "#fff", background: disabled ? "#A7ABBA" : INDIGO, border: "none", borderRadius: 11, padding: "11px 20px", cursor: disabled ? "default" : "pointer", boxShadow: disabled ? "none" : "0 8px 18px -8px rgba(59,67,181,.55)" }}>
-      {children}
-    </button>
-  );
-}
-
-function GhostButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button onClick={onClick} style={{ fontFamily: SANS, fontWeight: 600, fontSize: 14, color: MUTED, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 11, padding: "11px 18px", cursor: "pointer" }}>
-      {children}
-    </button>
-  );
 }
 
 // ---- helpers ---------------------------------------------------------------
@@ -1145,8 +1575,4 @@ function splitGaps(text: string): Seg[] {
 
 function roman(n: number): string {
   return ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"][n - 1] ?? String(n);
-}
-
-function wordCountColor(n: number, [lo, hi]: [number, number]): string {
-  return n === 0 ? FAINT : n < lo || n > hi ? "#b45309" : GOOD;
 }
