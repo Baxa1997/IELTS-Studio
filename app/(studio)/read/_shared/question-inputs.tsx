@@ -191,6 +191,88 @@ export function GapSentence({
   );
 }
 
+/** A compact INLINE dropdown for a word-bank gap (summary completion, list A–J).
+ *  Stores the option TEXT as the value so grading matches the answer-key text, and
+ *  shows "A — ending" so the student reads the letter the exam expects. */
+export function InlineSelect({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={label}
+      className="lp-input"
+      style={{
+        display: "inline-block",
+        maxWidth: "min(58vw, 260px)",
+        margin: "0 4px",
+        padding: "3px 8px",
+        border: `1.5px solid ${value.trim() ? INDIGO : "#C9C7D6"}`,
+        borderRadius: 8,
+        background: value.trim() ? "#F6F5FE" : "#fff",
+        fontFamily: SANS,
+        fontWeight: 600,
+        fontSize: "inherit",
+        lineHeight: "inherit",
+        color: INK,
+        verticalAlign: "baseline",
+        cursor: "pointer",
+      }}
+    >
+      <option value="">— choose —</option>
+      {options.map((opt, i) => (
+        <option key={i} value={opt}>
+          {LETTERS[i] ?? i + 1} — {opt}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/**
+ * A word-bank completion line: the summary sentence with an inline DROPDOWN at the
+ * gap instead of a typed blank (the answer is chosen from the A–J list, not typed).
+ * Splits the prompt at the underscore gap exactly like GapSentence.
+ */
+export function GapSelectSentence({
+  prompt,
+  options,
+  value,
+  onChange,
+  questionNumber,
+}: {
+  prompt: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  questionNumber: number;
+}) {
+  const label = `Answer for question ${questionNumber}`;
+  const match = prompt.match(READING_GAP_MARKER);
+  let before = prompt;
+  let after = "";
+  if (match && match.index != null) {
+    before = prompt.slice(0, match.index);
+    after = prompt.slice(match.index + match[0].length);
+  }
+  return (
+    <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.9, color: INK }}>
+      {before}
+      <InlineSelect options={options} value={value} onChange={onChange} label={label} />
+      {after}
+    </span>
+  );
+}
+
 const SR_ONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)" };
 
 function Pill({ name, value, label, checked, onChange }: { name: string; value: string; label: string; checked: boolean; onChange: (v: string) => void }) {

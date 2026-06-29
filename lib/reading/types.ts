@@ -79,20 +79,40 @@ const FIXED_INSTRUCTIONS: Partial<Record<ReadingQuestionType, string>> = {
   multiple_choice: "Choose the correct letter.",
 };
 
+/** Cambridge real-exam VARIANTS that ride on an existing type (no new enum):
+ *  a summary filled from a lettered list, and a notes box drawn as a flow-chart. */
+export interface ReadingGroupVariant {
+  /** summary_completion answered from an A–J word bank, not words from the passage. */
+  wordBank?: boolean;
+  /** note_completion rendered as a flow-chart of connected process stages. */
+  layout?: "flowchart";
+}
+
 /**
  * The Cambridge-style instruction line shown above each group of same-type
  * questions, exactly as the real exam frames them. For completion groups the
  * GROUP'S word limit is folded into the lead ("Complete the notes below. Choose
  * ONE WORD ONLY from the passage for each answer.") — the limit lives in the
- * heading, never inside a question. These are the standard public rubric phrasings,
- * NOT copied from any test book (CLAUDE.md §IP). The "Questions X–Y" range is
- * computed at render time, not stored here.
+ * heading, never inside a question. Two variants reword the lead: a word-bank
+ * summary points at the list (and carries no word limit, since you pick from it),
+ * and a flow-chart note block says "Complete the flow-chart below." These are the
+ * standard public rubric phrasings, NOT copied from any test book (CLAUDE.md §IP).
+ * The "Questions X–Y" range is computed at render time, not stored here.
  */
 export function readingGroupInstruction(
   type: ReadingQuestionType,
   wordLimit?: string | null,
+  variant?: ReadingGroupVariant,
 ): string {
-  const lead = COMPLETION_LEAD[type];
+  // A word-bank summary is filled from a lettered list, not from the passage, so it
+  // has no word limit — the rubric names the list instead of a limit.
+  if (type === "summary_completion" && variant?.wordBank) {
+    return "Complete the summary using the list of words, A–J, below.";
+  }
+  const lead =
+    type === "note_completion" && variant?.layout === "flowchart"
+      ? "Complete the flow-chart below."
+      : COMPLETION_LEAD[type];
   if (lead) {
     const limit = (wordLimit?.trim() || DEFAULT_WORD_LIMIT).toUpperCase();
     return `${lead} Choose ${limit} from the passage for each answer.`;
@@ -128,41 +148,88 @@ export const FULL_TEST_PASSAGE_COUNT = 3;
 /** 60 minutes for the whole test (the real allowance). */
 export const READING_TEST_DURATION_SECONDS = 60 * 60;
 
-/** One question-type block within a passage: the type and how many of it. */
-export interface ReadingGroupPlan {
+/** One question-type block within a passage: the type, how many, and (optionally)
+ *  which Cambridge variant it is. The flags ride on the existing type so no enum or
+ *  migration is needed — see ReadingGroupVariant. */
+export interface ReadingGroupPlan extends ReadingGroupVariant {
   type: ReadingQuestionType;
   count: number;
 }
 
 /**
- * The full-test blueprint, per passage POSITION (index 0→P1 … 2→P3), modelled on a
- * real Cambridge Academic Reading paper (e.g. C21): each passage is an ordered set
- * of typed blocks with exact counts, summing to 13/13/14 = 40. The BLOCK ORDER
- * within a passage is shuffled at generation time (the "position is dynamic" rule)
- * while the type inventory + counts stay fixed, so every test reads like the real
- * exam but never the same way twice. Content is always original (CLAUDE.md §IP).
+ * The full-test LAYOUTS — each models a real Cambridge Academic Reading paper as an
+ * ordered list of typed blocks per passage (summing to 13/13/14 = 40), difficulty
+ * rising P1→P3. ONE layout is chosen at random per generated test and the block
+ * ORDER within each passage is then shuffled, so two tests rarely share a shape and
+ * the question types rotate across the real Cambridge repertoire instead of being
+ * fixed. No two passages in a layout repeat the same type mix. Content is always
+ * original (CLAUDE.md §IP) — only the STRUCTURE mirrors the real exam.
  *
- * Each passage uses a DISTINCT type set (no passage repeats another's mix), so the
- * test reads like a real Cambridge paper instead of the same two types twice:
- *   P1: 7× note completion + 6× true/false/not given        (notes box + TFNG)
- *   P2: 6× matching headings + 7× summary completion          (skim + summarise)
- *   P3: 4× multiple choice + 4× matching sentence endings + 6× yes/no/not given
+ * Two Cambridge variants ride on existing types (no new enum / migration):
+ *   • summary_completion + `wordBank` → "choose from the list A–J" summary.
+ *   • note_completion + `layout:"flowchart"` → a flow-chart of process stages.
  */
-export const FULL_TEST_BLUEPRINT: ReadonlyArray<ReadingGroupPlan[]> = [
+export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>> = [
+  // Layout A — notes box · word-bank summary · verdict-heavy P3.
   [
-    { type: "note_completion", count: 7 },
-    { type: "true_false_not_given", count: 6 },
+    [
+      { type: "note_completion", count: 7 },
+      { type: "true_false_not_given", count: 6 },
+    ],
+    [
+      { type: "matching_headings", count: 6 },
+      { type: "summary_completion", count: 7, wordBank: true },
+    ],
+    [
+      { type: "multiple_choice", count: 4 },
+      { type: "matching_sentence_endings", count: 4 },
+      { type: "yes_no_not_given", count: 6 },
+    ],
   ],
+  // Layout B — sentence completion · matching information · a flow-chart process P3.
   [
-    { type: "matching_headings", count: 6 },
-    { type: "summary_completion", count: 7 },
+    [
+      { type: "true_false_not_given", count: 7 },
+      { type: "sentence_completion", count: 6 },
+    ],
+    [
+      { type: "matching_information", count: 7 },
+      { type: "summary_completion", count: 6 },
+    ],
+    [
+      { type: "yes_no_not_given", count: 5 },
+      { type: "note_completion", count: 5, layout: "flowchart" },
+      { type: "multiple_choice", count: 4 },
+    ],
   ],
+  // Layout C — headings-led · second word-bank summary · sentence endings.
   [
-    { type: "multiple_choice", count: 4 },
-    { type: "matching_sentence_endings", count: 4 },
-    { type: "yes_no_not_given", count: 6 },
+    [
+      { type: "matching_headings", count: 6 },
+      { type: "note_completion", count: 7 },
+    ],
+    [
+      { type: "true_false_not_given", count: 7 },
+      { type: "summary_completion", count: 6, wordBank: true },
+    ],
+    [
+      { type: "multiple_choice", count: 4 },
+      { type: "matching_sentence_endings", count: 4 },
+      { type: "sentence_completion", count: 6 },
+    ],
   ],
 ];
+
+/** Pick one full-test layout at random and return a deep copy of its 3 passage
+ *  plans (P1→P3), so the caller can shuffle block order without mutating the source. */
+export function pickFullTestLayout(): ReadingGroupPlan[][] {
+  const layout = FULL_TEST_LAYOUTS[Math.floor(Math.random() * FULL_TEST_LAYOUTS.length)];
+  return layout.map((groups) => groups.map((g) => ({ ...g })));
+}
+
+/** A representative single blueprint (Layout A), kept for the derived exports below
+ *  and any caller that only needs one canonical shape. */
+export const FULL_TEST_BLUEPRINT: ReadonlyArray<ReadingGroupPlan[]> = FULL_TEST_LAYOUTS[0];
 
 /** The distinct types per passage (derived from the blueprint), kept for callers
  *  that only need the type inventory. */
@@ -203,7 +270,16 @@ export const generateReadingInputSchema = z.object({
   // path uses it to match the Cambridge structure); single-passage practice omits
   // it and lets the model distribute `totalQuestions` across `questionTypes`.
   questionPlan: z
-    .array(z.object({ type: z.enum(READING_QUESTION_TYPES), count: z.number().int().min(1).max(15) }))
+    .array(
+      z.object({
+        type: z.enum(READING_QUESTION_TYPES),
+        count: z.number().int().min(1).max(15),
+        // summary_completion answered from an A–J word bank (not words-from-passage).
+        wordBank: z.boolean().optional(),
+        // note_completion drawn as a flow-chart of process stages.
+        layout: z.literal("flowchart").optional(),
+      }),
+    )
     .min(1)
     .max(6)
     .optional(),
@@ -237,6 +313,8 @@ export const noteMetaSchema = z.object({
   indent: z.coerce.number().int().min(0).max(2).default(0),
   /** Gap-less context lines shown immediately before this line. */
   before: z.array(noteContextLineSchema).nullish(),
+  /** "flowchart" draws the block as connected process stages; "notes"/absent = box. */
+  layout: z.enum(["notes", "flowchart"]).nullish(),
 });
 export type NoteMeta = z.infer<typeof noteMetaSchema>;
 

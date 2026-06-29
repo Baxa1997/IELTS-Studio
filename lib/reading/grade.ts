@@ -173,29 +173,43 @@ export function isCorrect(q: GradableQuestion, studentAnswer: string): boolean {
     case "multiple_choice":
     case "matching_headings":
     case "matching_information":
-    case "matching_sentence_endings": {
-      // Accept the option text, or the bare letter/roman the key may use.
-      const correctText = norm(resolveCorrectText(q.options, q.answer_key));
-      return student === correctText || student === norm(q.answer_key);
-    }
+    case "matching_sentence_endings":
+      return matchesOptionKey(q, student);
+
+    case "summary_completion":
+      // A WORD-BANK summary (options present) is a pick-from-the-list question — grade
+      // it like a matching question (option text or the bare letter). Without options
+      // it's the words-from-the-passage variant, graded as free text below.
+      if (q.options && q.options.length > 0) return matchesOptionKey(q, student);
+      return matchesCompletionKey(q.answer_key, student);
 
     case "sentence_completion":
-    case "summary_completion":
     case "note_completion":
-    default: {
-      // Typed free-text. Real IELTS marks an answer right regardless of a leading
-      // article or whether a number is written as a figure or a word, and accepts
-      // any alternative the key explicitly lists. We mirror that on BOTH sides:
-      // expand the key into every accepted form, then see if any equivalent form of
-      // the student's answer is among them. Plurals/spelling are NOT smoothed over —
-      // IELTS penalises those, and softening them would inflate (CLAUDE.md).
-      const accepted = acceptedKeyForms(q.answer_key);
-      for (const form of variants(student)) {
-        if (accepted.has(form)) return true;
-      }
-      return false;
-    }
+    default:
+      return matchesCompletionKey(q.answer_key, student);
   }
+}
+
+/** A choice/matching answer: accept the option text or the bare letter/roman key. */
+function matchesOptionKey(q: GradableQuestion, student: string): boolean {
+  const correctText = norm(resolveCorrectText(q.options, q.answer_key));
+  return student === correctText || student === norm(q.answer_key);
+}
+
+/**
+ * A typed free-text completion answer. Real IELTS marks it right regardless of a
+ * leading article or whether a number is written as a figure or a word, and accepts
+ * any alternative the key explicitly lists. We mirror that on BOTH sides: expand the
+ * key into every accepted form, then see if any equivalent form of the student's
+ * answer is among them. Plurals/spelling are NOT smoothed over — IELTS penalises
+ * those, and softening them would inflate (CLAUDE.md). `student` is already normed.
+ */
+function matchesCompletionKey(answerKey: string, student: string): boolean {
+  const accepted = acceptedKeyForms(answerKey);
+  for (const form of variants(student)) {
+    if (accepted.has(form)) return true;
+  }
+  return false;
 }
 
 // ---- Band conversion -------------------------------------------------------

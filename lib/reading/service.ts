@@ -10,8 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CONFIDENCE_THRESHOLD,
   DEFAULT_TARGET_BAND,
-  FULL_TEST_BLUEPRINT,
   FULL_TEST_PASSAGE_COUNT,
+  pickFullTestLayout,
   generateReadingInputSchema,
   MAX_TARGET_BAND,
   MIN_TARGET_BAND,
@@ -22,7 +22,6 @@ import {
   type GeneratedReadingTest,
   type GenerateReadingInput,
   type NoteMeta,
-  type ReadingGroupPlan,
   type ReadingModule,
   type ReadingQuestionType,
   type ReadingValidationItem,
@@ -111,10 +110,23 @@ async function composeReadingSet(
 ): Promise<ComposedReadingSet> {
   // 1) Generate the passage + questions. When the caller pins an exact block plan
   //    (the full test), pass it as an authoritative, human-readable line so the
-  //    model produces the precise Cambridge structure (counts + order).
+  //    model produces the precise Cambridge structure (counts + order), annotating
+  //    any block that is a word-bank summary or a flow-chart so the model shapes it.
   const questionPlanLine = input.questionPlan
-    ? input.questionPlan.map((g, i) => `${i + 1}) ${g.count}× ${g.type}`).join("; ")
+    ? input.questionPlan
+        .map((g, i) => {
+          const flags = [
+            g.wordBank ? "with a word bank A–J" : "",
+            g.layout === "flowchart" ? "as a flow-chart" : "",
+          ].filter(Boolean);
+          return `${i + 1}) ${g.count}× ${g.type}${flags.length ? ` [${flags.join(", ")}]` : ""}`;
+        })
+        .join("; ")
     : undefined;
+  // Flow-chart is a render-only flag with no content of its own, so we can force it
+  // onto the stored note_meta rather than trust the model to echo it back.
+  const flowchartNotes =
+    input.questionPlan?.some((g) => g.type === "note_completion" && g.layout === "flowchart") ?? false;
   let set;
   try {
     const res = await generate({
@@ -190,7 +202,12 @@ async function composeReadingSet(
       explanation: q.explanation,
       word_limit: q.word_limit ?? null,
       section: q.section ?? null,
-      note_meta: q.type === "note_completion" ? q.note_meta ?? null : null,
+      note_meta:
+        q.type === "note_completion"
+          ? flowchartNotes
+            ? { indent: 0, ...(q.note_meta ?? {}), layout: "flowchart" as const }
+            : q.note_meta ?? null
+          : null,
       confidence: item?.confidence ?? null,
       needs_review: needsReview,
       validation_verdict: item?.verdict ?? null,
@@ -360,12 +377,13 @@ interface BuildTestParams {
  */
 async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Promise<GeneratedReadingTest> {
   const topics = pickDistinct(READING_TOPICS, FULL_TEST_PASSAGE_COUNT);
+  // Pick ONE real-Cambridge layout for the whole test (so the 3 passages cohere),
+  // then shuffle each passage's block order — structure fixed, position dynamic.
+  const layout = pickFullTestLayout();
   const composedSets = await Promise.all(
     Array.from({ length: FULL_TEST_PASSAGE_COUNT }, (_, i) => {
       const band = clampBand(p.centerBand + (i - 1)); // P1 easier → P3 harder
-      // The Cambridge blueprint fixes the type inventory + counts; the BLOCK ORDER
-      // is shuffled so the position is dynamic but the structure is constant.
-      const plan = shuffle(FULL_TEST_BLUEPRINT[i] as ReadingGroupPlan[]);
+      const plan = shuffle(layout[i]);
       const input = parse(generateReadingInputSchema, {
         module: "academic",
         topic: topics[i],
