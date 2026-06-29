@@ -142,8 +142,10 @@ export interface ReadingGroupPlan {
  * while the type inventory + counts stay fixed, so every test reads like the real
  * exam but never the same way twice. Content is always original (CLAUDE.md §IP).
  *
- *   P1: 7× note completion  + 6× true/false/not given
- *   P2: 5× true/false/not given + 8× note completion
+ * Each passage uses a DISTINCT type set (no passage repeats another's mix), so the
+ * test reads like a real Cambridge paper instead of the same two types twice:
+ *   P1: 7× note completion + 6× true/false/not given        (notes box + TFNG)
+ *   P2: 6× matching headings + 7× summary completion          (skim + summarise)
  *   P3: 4× multiple choice + 4× matching sentence endings + 6× yes/no/not given
  */
 export const FULL_TEST_BLUEPRINT: ReadonlyArray<ReadingGroupPlan[]> = [
@@ -152,8 +154,8 @@ export const FULL_TEST_BLUEPRINT: ReadonlyArray<ReadingGroupPlan[]> = [
     { type: "true_false_not_given", count: 6 },
   ],
   [
-    { type: "true_false_not_given", count: 5 },
-    { type: "note_completion", count: 8 },
+    { type: "matching_headings", count: 6 },
+    { type: "summary_completion", count: 7 },
   ],
   [
     { type: "multiple_choice", count: 4 },
