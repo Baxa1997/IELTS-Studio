@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Fragment, useRef, useState } from "react";
 import {
   ArrowLeft, BookOpen, CalendarDays, Check, Gauge, GraduationCap, Headphones,
@@ -62,10 +61,9 @@ function fmtExam(iso: string): string {
  *  - "signup" (at /start): final step creates the account with Google, stashing
  *    the answers in a cookie that applies after the OAuth round-trip.
  *  - "authed" (the post-login first-run takeover): the learner already has a
- *    session, so the final step just saves the plan and starts the diagnostic.
+ *    session, so the final step just saves the plan and lands on the dashboard.
  */
 export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" }) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [target, setTarget] = useState(7);
   const [self, setSelf] = useState<number | null>(null);
@@ -114,17 +112,18 @@ export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" })
     }
   }
 
-  // Authed mode: the session already exists, so persist the plan and navigate to
-  // the dashboard client-side. The save action returns (no server redirect), so
-  // navigation is reliable from this onClick handler.
+  // Authed mode: the session already exists, so persist the plan, then navigate to
+  // the dashboard. The onboarding takeover is gated in the (app) LAYOUT, so it sits
+  // at the /dashboard URL already — a client router.replace to the same URL is a
+  // no-op and router.refresh() doesn't reliably re-run the layout gate. Force a full
+  // document load so the server re-evaluates the gate, sees the new plan, and drops
+  // the takeover, landing on the real dashboard.
   async function completeAuthed() {
     setError(null);
     setBusy(true);
     try {
       await savePlanForCurrentUser(buildPlan());
-      router.replace("/dashboard");
-      router.refresh(); // re-run the (app) layout so it sees the new plan and
-      // drops the takeover (it often sits at the /dashboard URL already).
+      window.location.replace("/dashboard");
     } catch {
       setError("Couldn't save your plan — please try again."); setBusy(false);
     }
