@@ -539,7 +539,7 @@ function PrimaryButton({ children, onClick, disabled, style }: { children: React
 }
 
 function Logo() {
-  return <BrandLogo tone="dark" size={32} fontSize={19} />;
+  return <BrandLogo tone="dark" size={32} fontSize={24} />;
 }
 
 function GoogleMark() {

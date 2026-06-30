@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Menu } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
-import { BrandLogo } from "@/components/brand/logo";
+import { EngaideLogo, EngaideMark } from "@/components/brand/engaide-logo";
 
 import { SidebarNav } from "./sidebar-nav";
 
@@ -421,7 +421,14 @@ function Avatar({ name, size }: { name: string; size: number }) {
 }
 
 function Logo() {
-  return <BrandLogo tone="dark" size={34} fontSize={20} wordmarkClassName="lp-sb-wordmark" />;
+  // The sidebar sits on a light surface (navy ink). Expanded shows the full
+  // wordmark; the collapsed rail swaps to the boxed-"a" logomark (CSS in globals).
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center" }}>
+      <EngaideLogo tone="light" fontSize={26} showTagline={false} className="lp-sb-logo-full" />
+      <EngaideMark size={36} className="lp-sb-logo-mark" />
+    </span>
+  );
 }
 
 function initials(name: string): string {

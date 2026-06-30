@@ -223,7 +223,7 @@ function Check({
 }
 
 function Logo({ light = false }: { light?: boolean }) {
-  return <BrandLogo tone={light ? "light" : "dark"} size={32} fontSize={20} />;
+  return <BrandLogo tone={light ? "light" : "dark"} size={32} fontSize={24} />;
 }
 
 // ---- nav -------------------------------------------------------------------
@@ -3502,7 +3502,7 @@ function SiteFooter() {
           }}
         >
           <div style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#7d80ad" }}>
-            © 2026 EnglAI. All rights reserved.
+            © 2026 Engaide. All rights reserved.
           </div>
           <p
             style={{

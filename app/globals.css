@@ -499,6 +499,11 @@
   border-top: 1px solid transparent;
   transition: border-color 0.24s ease, padding 0.28s ease, margin 0.28s ease;
 }
+/* The Engaide lockup: full wordmark when expanded, boxed-"a" logomark when the rail
+   collapses. The mark is hidden until the desktop media query swaps them. */
+.lp-sb-logo-mark {
+  display: none;
+}
 /* The glyph must never shrink. In the slim collapsed rail the flex gaps overflow the
    narrow link box, and with the label collapsed the icon is the only item left to
    give — flexbox would squeeze it down to a sliver (the active item became an empty
@@ -536,6 +541,13 @@
     max-width: 0 !important;
     opacity: 0 !important;
     margin-left: 0 !important;
+  }
+  /* Swap the full wordmark for the compact boxed-"a" mark in the slim rail. */
+  .lp-shell-sidebar--collapsed .lp-sb-logo-full {
+    display: none;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-logo-mark {
+    display: inline-flex;
   }
   /* Block text (section titles, the target card) collapses its height. */
   .lp-shell-sidebar--collapsed .lp-sb-section-title,
