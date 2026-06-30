@@ -5,12 +5,11 @@ import { useState } from "react";
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Menu } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
+import { BrandLogo } from "@/components/brand/logo";
 
 import { SidebarNav } from "./sidebar-nav";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const BORDER = "#3333";
 /** Light app canvas behind the floating content card (and the sidebar). */
@@ -422,41 +421,7 @@ function Avatar({ name, size }: { name: string; size: number }) {
 }
 
 function Logo() {
-  return (
-    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-      <span
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: SANS,
-          fontWeight: 800,
-          fontSize: 13,
-          boxShadow: "0 4px 12px -4px rgba(59,67,181,.6)",
-          flex: "none",
-        }}
-      >
-        IS
-      </span>
-      <span
-        className="lp-sb-wordmark"
-        style={{
-          fontFamily: SERIF,
-          fontWeight: 700,
-          fontSize: 19,
-          color: INK,
-          letterSpacing: "-.01em",
-        }}
-      >
-        IELTS <span style={{ color: INDIGO }}>Studio</span>
-      </span>
-    </span>
-  );
+  return <BrandLogo tone="dark" size={34} fontSize={20} wordmarkClassName="lp-sb-wordmark" />;
 }
 
 function initials(name: string): string {

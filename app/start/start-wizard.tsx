@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
+import { BrandLogo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 import { pitchDifficulty, SELF_REPORT_BANDS, type StudyPlanInput } from "@/lib/plan/types";
 
@@ -538,12 +539,7 @@ function PrimaryButton({ children, onClick, disabled, style }: { children: React
 }
 
 function Logo() {
-  return (
-    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ width: 34, height: 34, borderRadius: 9, background: INDIGO, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 800, fontSize: 14 }}>IS</span>
-      <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 19, color: INK }}>IELTS <span style={{ color: INDIGO }}>Studio</span></span>
-    </span>
-  );
+  return <BrandLogo tone="dark" size={32} fontSize={19} />;
 }
 
 function GoogleMark() {

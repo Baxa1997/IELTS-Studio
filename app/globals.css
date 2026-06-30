@@ -925,3 +925,78 @@
     min-height: 60vh !important;
   }
 }
+
+/* ---- Reveal-on-scroll (marketing page) --------------------------------------
+   Elements tagged `.reveal` fade + rise into place as they enter the viewport;
+   the ScrollReveal controller adds `.is-visible`. A <noscript> style on the page
+   un-hides them when JS is off, and reduced-motion shows them instantly. */
+.reveal {
+  opacity: 0;
+  transform: translateY(36px);
+  filter: blur(8px);
+  transition:
+    opacity 0.85s cubic-bezier(0.22, 0.68, 0.18, 1),
+    transform 0.85s cubic-bezier(0.22, 0.68, 0.18, 1),
+    filter 0.85s cubic-bezier(0.22, 0.68, 0.18, 1);
+  will-change: opacity, transform, filter;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Staggered variant: the container itself stays put while its direct children
+   "dive in" one after another, so every section gets a layered entrance
+   (eyebrow → heading → body → cards) instead of one flat fade. Pair with
+   `reveal` so the ScrollReveal observer still toggles `is-visible`. */
+.reveal-stagger {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(32px);
+  filter: blur(5px);
+  transition:
+    opacity 0.72s cubic-bezier(0.22, 0.68, 0.18, 1),
+    transform 0.72s cubic-bezier(0.22, 0.68, 0.18, 1),
+    filter 0.72s cubic-bezier(0.22, 0.68, 0.18, 1);
+  will-change: opacity, transform, filter;
+}
+.reveal-stagger.is-visible > * {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.reveal-stagger.is-visible > *:nth-child(1) {
+  transition-delay: 0.04s;
+}
+.reveal-stagger.is-visible > *:nth-child(2) {
+  transition-delay: 0.14s;
+}
+.reveal-stagger.is-visible > *:nth-child(3) {
+  transition-delay: 0.24s;
+}
+.reveal-stagger.is-visible > *:nth-child(4) {
+  transition-delay: 0.34s;
+}
+.reveal-stagger.is-visible > *:nth-child(5) {
+  transition-delay: 0.44s;
+}
+.reveal-stagger.is-visible > *:nth-child(6) {
+  transition-delay: 0.54s;
+}
+.reveal-stagger.is-visible > *:nth-child(n + 7) {
+  transition-delay: 0.62s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-stagger > * {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+}

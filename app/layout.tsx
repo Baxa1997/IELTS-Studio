@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IELTS Writing & Reading",
-  description: "AI platform for IELTS Writing and Reading.",
+  title: "EnglAI — IELTS Writing & Reading",
+  description: "EnglAI — AI platform for IELTS Writing and Reading.",
 };
 
 // Without this, mobile browsers assume a ~980px layout viewport and render the

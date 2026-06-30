@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
+import { BrandLogo } from "@/components/brand/logo";
+import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 
@@ -63,6 +65,11 @@ export default async function Home() {
         minHeight: "100%",
       }}
     >
+      {/* Reveal sections as they scroll into view (no-JS keeps them visible). */}
+      <noscript>
+        <style>{".reveal,.reveal-stagger>*{opacity:1;transform:none;filter:none}"}</style>
+      </noscript>
+      <ScrollReveal />
       <SiteNav home={home} />
       <Hero />
       <ExamCoachBriefing />
@@ -86,7 +93,7 @@ export default async function Home() {
 // ---- shared bits -----------------------------------------------------------
 
 const SHELL: React.CSSProperties = {
-  maxWidth: 1340,
+  maxWidth: 1480,
   margin: "0 auto",
   padding: "0 clamp(20px,5vw,64px)",
 };
@@ -135,7 +142,7 @@ function Band({
 }) {
   return (
     <section id={id} style={{ background: bg, borderTop: "1px solid #ECEAF2" }}>
-      <div style={{ ...SHELL, paddingTop: pad, paddingBottom: pad }}>{children}</div>
+      <div className="reveal reveal-stagger" style={{ ...SHELL, paddingTop: pad, paddingBottom: pad }}>{children}</div>
     </section>
   );
 }
@@ -210,32 +217,7 @@ function Check({
 }
 
 function Logo({ light = false }: { light?: boolean }) {
-  return (
-    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-      <span
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 9,
-          background: INDIGO,
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: SANS,
-          fontWeight: 800,
-          fontSize: 14,
-        }}
-      >
-        IS
-      </span>
-      <span
-        style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 19, color: light ? "#fff" : INK }}
-      >
-        IELTS <span style={{ color: light ? "#aeb2f0" : INDIGO }}>Studio</span>
-      </span>
-    </span>
-  );
+  return <BrandLogo tone={light ? "light" : "dark"} size={32} fontSize={20} />;
 }
 
 // ---- nav -------------------------------------------------------------------
@@ -258,7 +240,7 @@ function SiteNav({ home }: { home: string | null }) {
         className="lp-nav-island"
         style={{
           pointerEvents: "auto",
-          maxWidth: 1180,
+          maxWidth: 1440,
           margin: "0 auto",
           display: "flex",
           alignItems: "center",
@@ -372,294 +354,281 @@ function Hero() {
         style={{
           position: "relative",
           zIndex: 1,
-          maxWidth: 1160,
+          maxWidth: 1480,
           margin: "0 auto",
-          padding: "24px clamp(20px,5vw,40px) 40px",
+          padding: "26px clamp(20px,5vw,64px) 48px",
         }}
       >
-        {/* live status row */}
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 9,
-              fontFamily: MONO,
-              fontSize: 11.5,
-              letterSpacing: ".1em",
-              color: "#4b4e63",
-              background: "#fff",
-              border: "1px solid #E4E2F0",
-              borderRadius: 999,
-              padding: "7px 18px",
-              boxShadow: "0 2px 10px rgba(0,0,0,.07)",
-            }}
-          >
+        {/* Two-column banner: left pitch · right Band-9 examiner result */}
+        <div
+          className="lp-hero-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.02fr .98fr",
+            gap: "clamp(32px,4.5vw,68px)",
+            alignItems: "center",
+            marginTop: 10,
+          }}
+        >
+          {/* LEFT — the pitch */}
+          <div className="lp-hero-left hb-rise hb-d1">
             <span
               style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "#1F8A5B",
-                animation: "hb-pulse 1.8s infinite",
-              }}
-            />
-            AI EXAMINER · CALIBRATED ±0.5
-          </div>
-        </div>
-
-        {/* centered hero */}
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          {/* Score scene: "9.0" + grad cap centered, university logos scattered */}
-          <div
-            className="lp-score-scene hb-rise hb-d1"
-            style={{
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: 12,
-              height: "clamp(260px,34vw,380px)",
-            }}
-          >
-            {/* Soft indigo glow */}
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                width: "min(560px,90vw)",
-                height: "min(560px,90vw)",
-                borderRadius: "50%",
-                background: "radial-gradient(ellipse,rgba(59,67,181,.09) 0%,transparent 65%)",
-                pointerEvents: "none",
-              }}
-            />
-
-            {/* Score + graduation cap */}
-            <div style={{ textAlign: "center", position: "relative", zIndex: 2 }}>
-              {/* Mortarboard — rocks gently on the score */}
-              <svg
-                aria-hidden
-                width="120"
-                height="78"
-                viewBox="0 0 60 40"
-                fill="none"
-                style={{
-                  position: "absolute",
-                  bottom: "92%",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  filter: "drop-shadow(0 5px 12px rgba(0,0,0,.22))",
-                  animation: "hb-cap-bob 4s ease-in-out infinite",
-                  zIndex: 3,
-                }}
-              >
-                {/* cap body */}
-                <path d="M19 22v7c0 3.5 5 6 11 6s11-2.5 11-6v-7" fill={INK} />
-                {/* board diamond */}
-                <polygon points="30,4 54,17 30,30 6,17" fill={INK} />
-                {/* board top-face highlight */}
-                <polygon points="30,4 54,17 30,17" fill="rgba(255,255,255,.13)" />
-                {/* tassel cord */}
-                <line x1="53" y1="17" x2="53" y2="32" stroke="#CC1111" strokeWidth="2.5" strokeLinecap="round" />
-                {/* tassel knot */}
-                <circle cx="53" cy="32" r="1.6" fill="#CC1111" />
-                {/* tassel fringe */}
-                <line x1="51" y1="32" x2="49" y2="39" stroke="#CC1111" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="53" y1="33" x2="53" y2="40" stroke="#CC1111" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="55" y1="32" x2="57" y2="39" stroke="#CC1111" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-
-              <div
-                style={{
-                  fontFamily: SANS,
-                  fontWeight: 800,
-                  fontSize: "clamp(86px,12vw,155px)",
-                  lineHeight: 0.88,
-                  color: INK,
-                  letterSpacing: "-.04em",
-                  animation: "hb-glow 3.6s ease-in-out infinite",
-                }}
-              >
-                9.0
-              </div>
-              <div
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 10.5,
-                  letterSpacing: ".22em",
-                  color: "#9e9b90",
-                  marginTop: 18,
-                  textTransform: "uppercase",
-                }}
-              >
-                Your target band. Your destination.
-              </div>
-            </div>
-
-            {/* MIT — top-left */}
-            <div className="lp-fbadge" style={{ position: "absolute", top: "14%", left: "2%", animation: "hb-rise .68s cubic-bezier(.22,.68,.18,1) .16s both" }}>
-              <div className="fb-j-1">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/mit34.png" alt="MIT" style={{ height: "clamp(52px,6.5vw,76px)", width: "auto", objectFit: "contain", filter: "drop-shadow(0 6px 18px rgba(0,0,0,.24))", display: "block" }} />
-              </div>
-            </div>
-
-            {/* Stanford — bottom-left */}
-            <div className="lp-fbadge" style={{ position: "absolute", bottom: "14%", left: "2%", animation: "hb-rise .68s cubic-bezier(.22,.68,.18,1) .28s both" }}>
-              <div className="fb-j-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/stanford.png" alt="Stanford" style={{ height: "clamp(52px,6.5vw,76px)", width: "auto", objectFit: "contain", filter: "drop-shadow(0 6px 18px rgba(0,0,0,.24))", display: "block" }} />
-              </div>
-            </div>
-
-            {/* Harvard — top-right */}
-            <div className="lp-fbadge" style={{ position: "absolute", top: "14%", right: "2%", animation: "hb-rise .68s cubic-bezier(.22,.68,.18,1) .22s both" }}>
-              <div className="fb-j-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/harvard.png" alt="Harvard" style={{ height: "clamp(52px,6.5vw,76px)", width: "auto", objectFit: "contain", filter: "drop-shadow(0 6px 18px rgba(0,0,0,.24))", display: "block" }} />
-              </div>
-            </div>
-
-            {/* Columbia — bottom-right */}
-            <div className="lp-fbadge" style={{ position: "absolute", bottom: "14%", right: "2%", animation: "hb-rise .68s cubic-bezier(.22,.68,.18,1) .34s both" }}>
-              <div className="fb-j-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/columb.png" alt="Columbia" style={{ height: "clamp(52px,6.5vw,76px)", width: "auto", objectFit: "contain", filter: "drop-shadow(0 6px 18px rgba(0,0,0,.24))", display: "block" }} />
-              </div>
-            </div>
-          </div>
-
-          <h1
-            className="hb-rise hb-d3"
-            style={{
-              fontFamily: SERIF,
-              fontWeight: 500,
-              fontSize: "clamp(30px,4.6vw,46px)",
-              lineHeight: 1.16,
-              color: INK,
-              maxWidth: 780,
-              margin: "16px auto 0",
-              letterSpacing: "-.01em",
-              textWrap: "balance",
-            }}
-          >
-            See the band you&rsquo;d{" "}
-            <span style={{ fontStyle: "italic", color: INDIGO }}>actually </span> get &mdash; then
-            close the gap.
-          </h1>
-          <p
-            className="hb-rise hb-d3"
-            style={{
-              fontSize: 17,
-              lineHeight: 1.6,
-              color: "#57564d",
-              maxWidth: 610,
-              margin: "16px auto 0",
-            }}
-          >
-            Most tools round you up to keep you happy. Our examiner reasons through every criterion
-            &mdash; calibrated to within half a band of human raters &mdash; then shows the one fix
-            that moves you up.
-          </p>
-
-          <div
-            className="hb-rise hb-d4"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 14,
-              marginTop: 28,
-              flexWrap: "wrap",
-            }}
-          >
-            {/* Both primary CTAs go to sign-in. New users authenticate first, then
-                the post-auth onboarding takeover builds their plan; returning users
-                land straight on their dashboard. (No pre-auth wizard, so a returning
-                Google user is never re-onboarded.) */}
-            <Link
-              href="/sign-in"
-              style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 10,
-                background: INDIGO,
-                color: "#fff",
-                fontFamily: SANS,
-                fontWeight: 600,
-                fontSize: 16,
-                padding: "15px 28px",
-                borderRadius: 999,
-                textDecoration: "none",
-                boxShadow: "0 12px 26px rgba(59,67,181,.26)",
-              }}
-            >
-              Start Free Assessment <span aria-hidden>→</span>
-            </Link>
-            <Link
-              href="/dashboard"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
+                gap: 9,
+                fontFamily: MONO,
+                fontSize: 11.5,
+                letterSpacing: ".1em",
+                color: "#4b4e63",
                 background: "#fff",
-                color: INK,
-                border: "1.5px solid #E4E0D0",
-                fontFamily: SANS,
-                fontWeight: 600,
-                fontSize: 16,
-                padding: "15px 28px",
+                border: "1px solid #E4E2F0",
                 borderRadius: 999,
-                textDecoration: "none",
+                padding: "7px 16px",
+                boxShadow: "0 2px 10px rgba(0,0,0,.06)",
               }}
             >
-              Platform
-            </Link>
-          </div>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#1F8A5B", animation: "hb-pulse 1.8s infinite" }} />
+              NEW · AGENTIC IELTS PLATFORM
+            </span>
 
-          {/* adaptive-practice proof — practice is generated for YOUR level, not a fixed test */}
-          <div
-            className="hb-rise hb-d5"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              flexWrap: "wrap",
-              gap: 9,
-              marginTop: 22,
-            }}
-          >
-            {[
-              "Generated for your level",
-              "Fresh topic every session",
-              "CEFR A1–C2 + IELTS bands",
-            ].map((t) => (
-              <span
-                key={t}
+            <h1
+              style={{
+                fontFamily: SANS,
+                fontWeight: 800,
+                fontSize: "clamp(40px,5.2vw,66px)",
+                lineHeight: 1.04,
+                letterSpacing: "-.03em",
+                color: INK,
+                margin: "22px 0 0",
+                textWrap: "balance",
+              }}
+            >
+              The World&rsquo;s Smartest
+              <br />
+              <span style={{ color: INDIGO }}>Agentic IELTS Platform</span>
+            </h1>
+
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: "clamp(16px,1.4vw,19px)",
+                lineHeight: 1.6,
+                color: "#57564d",
+                margin: "20px 0 0",
+                maxWidth: 520,
+              }}
+            >
+              AI agents generate fresh Writing &amp; Reading practice on demand &mdash; and the most
+              powerful trained models follow your exact level and context, so every task meets you
+              right where you are.
+            </p>
+
+            <div style={{ display: "flex", gap: 14, marginTop: 30, flexWrap: "wrap" }}>
+              {/* Primary CTA → sign-in; new users hit the post-auth onboarding takeover. */}
+              <Link
+                href="/sign-in"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 7,
+                  gap: 10,
+                  background: INDIGO,
+                  color: "#fff",
                   fontFamily: SANS,
                   fontWeight: 600,
-                  fontSize: 13,
-                  color: "#4b4e63",
-                  background: "#fff",
-                  border: "1px solid #E7E3D5",
+                  fontSize: 16,
+                  padding: "15px 26px",
                   borderRadius: 999,
-                  padding: "7px 14px",
+                  textDecoration: "none",
+                  boxShadow: "0 12px 26px rgba(59,67,181,.26)",
+                }}
+              >
+                Start Free Assessment <span aria-hidden>&rarr;</span>
+              </Link>
+              <Link
+                href="#how"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: "#fff",
+                  color: INK,
+                  border: "1.5px solid #E4E0D0",
+                  fontFamily: SANS,
+                  fontWeight: 600,
+                  fontSize: 16,
+                  padding: "15px 24px",
+                  borderRadius: 999,
+                  textDecoration: "none",
                 }}
               >
                 <span
+                  aria-hidden
                   style={{
-                    width: 6,
-                    height: 6,
+                    width: 22,
+                    height: 22,
                     borderRadius: "50%",
-                    background: INDIGO,
-                    flex: "none",
+                    background: "#F1F0FB",
+                    color: INDIGO,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 9,
                   }}
-                />
-                {t}
+                >
+                  &#9654;
+                </span>
+                See how it works
+              </Link>
+            </div>
+
+            <div style={{ fontFamily: SANS, fontSize: 13.5, color: "#8a897c", marginTop: 16 }}>
+              On-demand practice &middot; Always at your level &middot; CEFR A1&ndash;C2 + IELTS bands
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 22 }}>
+              {[
+                { label: "Writing", soon: false },
+                { label: "Reading", soon: false },
+                { label: "Speaking", soon: true },
+                { label: "Listening", soon: true },
+              ].map((c) => (
+                <span
+                  key={c.label}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    fontFamily: SANS,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: c.soon ? "#9a998c" : "#4b4e63",
+                    background: "#fff",
+                    border: "1px solid #E7E3D5",
+                    borderRadius: 999,
+                    padding: "7px 14px",
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.soon ? "#C9C7B8" : INDIGO, flex: "none" }} />
+                  {c.label}
+                  {c.soon ? <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: ".08em", color: "#b3b1a2", textTransform: "uppercase" }}>soon</span> : null}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT — the solid Band-9 examiner result card */}
+          <div className="lp-hero-rightcol hb-rise hb-d3" style={{ position: "relative" }}>
+            {/* one intentional floating accent, anchored to the card's top edge */}
+            <div className="lp-fbadge fb-j-5" style={{ position: "absolute", top: -16, right: -10, zIndex: 5 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 13, color: "#147a4f", background: "#fff", border: "1px solid #cfe7da", borderRadius: 999, padding: "8px 14px", boxShadow: "0 16px 30px -14px rgba(20,40,30,.45)" }}>
+                <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "#1F8A5B" }} /> Band 9 achievable
               </span>
-            ))}
+            </div>
+
+            {/* the result card */}
+            <div
+              style={{
+                position: "relative",
+                zIndex: 2,
+                background: "linear-gradient(180deg,#FFFFFF 0%,#FCFBFF 100%)",
+                border: "1px solid #E9E6F3",
+                borderRadius: 28,
+                boxShadow: "0 40px 80px -34px rgba(26,28,51,.34), 0 12px 30px -18px rgba(26,28,51,.16)",
+                padding: "24px clamp(22px,3vw,34px) 22px",
+                overflow: "hidden",
+              }}
+            >
+              <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(130% 80% at 50% -14%, rgba(59,67,181,.13), transparent 58%)", pointerEvents: "none" }} />
+
+              {/* header */}
+              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                  <span style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(150deg,#4B52CE,#2E3488)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", boxShadow: "0 6px 14px -6px rgba(59,67,181,.7)" }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16">
+                      <path d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z" fill="#fff" />
+                    </svg>
+                  </span>
+                  <div>
+                    <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, color: INK }}>Examiner Result</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: SANS, fontSize: 12, color: "#1F8A5B", marginTop: 2 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1F8A5B", animation: "hb-pulse 1.8s infinite" }} />
+                      Verified &middot; calibrated
+                    </div>
+                  </div>
+                </div>
+                <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".1em", color: INDIGO, background: "#ECEDFB", border: "1px solid #DADCF4", borderRadius: 8, padding: "5px 10px" }}>AI</span>
+              </div>
+
+              {/* the band — a realistic mortarboard + a Cambridge-style 9 */}
+              <div style={{ position: "relative", textAlign: "center", padding: "14px 0 2px" }}>
+                <div style={{ width: 118, margin: "0 auto", animation: "hb-cap-float 4.2s ease-in-out infinite" }}>
+                  <svg aria-hidden width="118" height="96" viewBox="0 0 128 104" fill="none" style={{ display: "block", margin: "0 auto", filter: "drop-shadow(0 12px 18px rgba(20,20,48,.24))" }}>
+                    <defs>
+                      <linearGradient id="cap-board" x1="20" y1="28" x2="112" y2="74" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#3A4090" />
+                        <stop offset="1" stopColor="#14173A" />
+                      </linearGradient>
+                      <linearGradient id="cap-crown" x1="44" y1="48" x2="86" y2="80" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#262C5C" />
+                        <stop offset="1" stopColor="#0E1130" />
+                      </linearGradient>
+                      <linearGradient id="cap-tassel" x1="110" y1="50" x2="120" y2="90" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#F2CB60" />
+                        <stop offset="1" stopColor="#C68F2A" />
+                      </linearGradient>
+                    </defs>
+                    {/* soft ground shadow */}
+                    <ellipse cx="62" cy="96" rx="30" ry="5" fill="rgba(20,20,48,.10)" />
+                    {/* crown (cap on the head), behind the board */}
+                    <path d="M40 48 L40 64 Q40 78 64 78 Q88 78 88 64 L88 48 Z" fill="url(#cap-crown)" />
+                    {/* the mortarboard */}
+                    <polygon points="64,26 120,50 64,72 8,50" fill="url(#cap-board)" />
+                    {/* facets for dimension */}
+                    <polygon points="64,26 8,50 64,50" fill="rgba(255,255,255,.15)" />
+                    <polygon points="64,26 120,50 64,50" fill="rgba(255,255,255,.06)" />
+                    {/* centre button */}
+                    <circle cx="64" cy="50" r="4" fill="url(#cap-tassel)" />
+                    <circle cx="64" cy="50" r="1.7" fill="#9A6E1E" />
+                    {/* tassel — cord, knot, fringe */}
+                    <path d="M64 50 Q104 49 117 53 L117 66" stroke="url(#cap-tassel)" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+                    <circle cx="117" cy="67" r="3.4" fill="url(#cap-tassel)" />
+                    <path d="M113 68 L112 87 M116 70 L115 89 M118 69 L120 88 M120 67 L122 85" stroke="url(#cap-tassel)" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".3em", color: "#9e9b90", textTransform: "uppercase", marginTop: 10 }}>Overall Band</div>
+                <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(120px,14vw,160px)", lineHeight: 0.9, color: INK, letterSpacing: "-.02em", animation: "hb-glow 3.6s ease-in-out infinite" }}>9</div>
+                <div style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: "#57564d", margin: "10px auto 0", maxWidth: 320 }}>
+                  The band a Cambridge-trained examiner would award &mdash; and the path to reach it.
+                </div>
+              </div>
+
+              {/* per-skill result chips */}
+              <div style={{ position: "relative", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+                {["Writing 9", "Reading 9", "CEFR C2"].map((t) => (
+                  <span key={t} style={{ fontFamily: SANS, fontWeight: 600, fontSize: 13, color: INDIGO, background: "#ECEDFB", border: "1px solid #DADCF4", borderRadius: 999, padding: "6px 13px" }}>{t}</span>
+                ))}
+              </div>
+
+              {/* anchored university row — solid, not floating */}
+              <div style={{ position: "relative", marginTop: 18, paddingTop: 16, borderTop: "1px solid #EFEDE3" }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".22em", color: "#a8a596", textTransform: "uppercase", textAlign: "center" }}>
+                  Recognised for admission at
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", columnGap: 16, rowGap: 8, marginTop: 11 }}>
+                  {[{ name: "MIT", sans: true }, { name: "Harvard", sans: false }, { name: "Stanford", sans: false }, { name: "Columbia", sans: false }].flatMap((u, i) => {
+                    const mark = (
+                      <span key={u.name} style={{ fontFamily: u.sans ? SANS : SERIF, fontWeight: u.sans ? 800 : 600, fontSize: 16, letterSpacing: u.sans ? ".02em" : "-.01em", color: "#3a3c52" }}>
+                        {u.name}
+                      </span>
+                    );
+                    return i === 0
+                      ? [mark]
+                      : [<span key={`${u.name}-sep`} aria-hidden style={{ width: 4, height: 4, borderRadius: "50%", background: "#D9D6C8", flex: "none" }} />, mark];
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -667,7 +636,7 @@ function Hero() {
         <div
           className="hb-rise hb-d6"
           style={{
-            maxWidth: 1000,
+            maxWidth: 1280,
             margin: "46px auto 0",
             background: "#fff",
             border: "1px solid #EAE7DE",
@@ -839,10 +808,14 @@ const HERO_STYLES = `
 .fb-j-4{animation:fb-jump 2.0s ease-in-out 1.05s infinite}
 .fb-j-5{animation:fb-jump 2.3s ease-in-out .2s infinite}
 .fb-j-6{animation:fb-jump 1.8s ease-in-out .55s infinite}
-@keyframes hb-cap-bob{0%,100%{transform:translateX(-50%) rotate(-4deg)}50%{transform:translateX(-50%) rotate(3deg)}}
 @keyframes hb-bar{from{width:0}to{width:100%}}
 .hb-bar-fill{animation:hb-bar 1.25s cubic-bezier(.4,.7,.2,1) .42s both}
 .lp-fbadge{z-index:3}
+@keyframes hb-cap-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media (max-width:900px){
+  .lp-hero-grid{grid-template-columns:1fr!important;gap:34px!important}
+  .lp-hero-rightcol{max-width:440px;margin:8px auto 0}
+}
 @media (max-width:680px){
   .lp-fbadge{display:none}
   .lp-score-scene{height:200px!important}
@@ -862,7 +835,6 @@ const HERO_STYLES = `
   .hb-rise,.hb-bar-fill{animation:none!important}
   .hb-bar-fill{width:100%!important}
   .fb-j-1,.fb-j-2,.fb-j-3,.fb-j-4,.fb-j-5,.fb-j-6{animation:none!important;transform:none}
-  [style*="hb-cap-bob"]{animation:none!important;transform:translateX(-50%)!important}
 }
 `;
 
@@ -936,7 +908,7 @@ function ExamCoachBriefing() {
         @media(max-width:680px){.ecb-flow{flex-direction:column!important;gap:20px!important}.ecb-flow-line{display:none!important}}
         @media(max-width:580px){.ecb-note-indent{margin-left:0!important}}
       `}</style>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "clamp(48px,6vw,72px) clamp(20px,5vw,48px)" }}>
+      <div className="reveal reveal-stagger" style={{ maxWidth: 1280, margin: "0 auto", padding: "clamp(48px,6vw,72px) clamp(20px,5vw,48px)" }}>
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 44 }}>
@@ -2921,7 +2893,7 @@ function SiteFooter() {
           }}
         >
           <div style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#7d80ad" }}>
-            © 2026 IELTS Studio. All rights reserved.
+            © 2026 EnglAI. All rights reserved.
           </div>
           <p
             style={{

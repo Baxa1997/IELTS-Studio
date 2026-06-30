@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
+import { BrandLogo } from "@/components/brand/logo";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 
 import { SignInForm } from "./sign-in-form";
@@ -16,8 +17,8 @@ const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 
 export const metadata: Metadata = {
-  title: "Sign in | IELTS Studio",
-  description: "Sign in to your IELTS Studio account — calibrated Writing & Reading practice.",
+  title: "Sign in | EnglAI",
+  description: "Sign in to your EnglAI account — calibrated Writing & Reading practice.",
 };
 
 export const dynamic = "force-dynamic";
@@ -48,16 +49,7 @@ export default async function SignInPage({
 // ---- left brand panel ------------------------------------------------------
 
 function LogoLight() {
-  return (
-    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-      <span style={{ width: 34, height: 34, borderRadius: 9, background: "#fff", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 800, fontSize: 14 }}>
-        IS
-      </span>
-      <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 19, color: "#fff" }}>
-        IELTS <span style={{ color: "#aeb2f0" }}>Studio</span>
-      </span>
-    </span>
-  );
+  return <BrandLogo tone="light" size={32} fontSize={20} />;
 }
 
 function BrandAside() {
@@ -135,10 +127,7 @@ function FormSide({ next }: { next: string | null }) {
       <div style={{ width: "100%", maxWidth: 408 }}>
         {/* compact logo (mobile, where the brand aside is hidden) */}
         <Link href="/" className="lp-auth-mobile-logo" style={{ textDecoration: "none", alignItems: "center", marginBottom: 28 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 32, height: 32, borderRadius: 9, background: INDIGO, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 800, fontSize: 13 }}>IS</span>
-            <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, color: INK }}>IELTS <span style={{ color: INDIGO }}>Studio</span></span>
-          </span>
+          <BrandLogo tone="dark" size={30} fontSize={18} />
         </Link>
 
         <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 13, letterSpacing: ".04em", textTransform: "uppercase", color: INDIGO }}>Welcome back</div>
