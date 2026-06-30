@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, FileText, Layers, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, FileText, Layers, Loader2, Sparkles } from "lucide-react";
 
 import { AiGenerateSection } from "@/components/ai-generate-section";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
@@ -15,12 +15,17 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 const INDIGO = "#4338CA";
 const INK = "#1C1B2E";
 const MUTED = "#56556A";
+const EMERALD = "#1F8A53";
 
 /** The learner's own freshly-generated test (opens directly). */
 export interface TestCard {
   id: string;
   targetBand: number | null;
   createdAt: string;
+  /** 1-based number ("Reading test 3") in the order the learner generated them. */
+  seq: number;
+  /** True once the learner has a graded attempt on this test. */
+  practised: boolean;
 }
 
 /** A shared, ready-to-start sample test (cloned into the learner's org on Start). */
@@ -37,6 +42,8 @@ export interface PassageCard {
   difficulty: number | null;
   questionCount: number;
   types: ReadingQuestionType[];
+  /** True for the learner's own passages they've already practised (graded). */
+  practised?: boolean;
 }
 
 type Tab = "test" | "passage";
@@ -194,9 +201,10 @@ export function ReadingHub({
                 {ownTests.map((t) => (
                   <TestTile
                     key={t.id}
-                    title="Full reading test"
+                    title={`Reading test ${t.seq}`}
                     footerLeft={fmtDate(t.createdAt)}
                     isNew
+                    practised={t.practised}
                     href={`/read/test/${t.id}`}
                   />
                 ))}
@@ -297,6 +305,7 @@ function TestTile({
   onStart,
   loading,
   isNew,
+  practised,
 }: {
   title: string;
   footerLeft: string;
@@ -304,12 +313,16 @@ function TestTile({
   onStart?: () => void;
   loading?: boolean;
   isNew?: boolean;
+  practised?: boolean;
 }) {
   const body = (
     <>
-      {isNew ? <AiCorner /> : null}
+      {/* Freshly generated & not yet done → AI mark; once practised it's swapped for
+          the standard "Practised" badge below (and the card is tinted). */}
+      {isNew && !practised ? <AiCorner /> : null}
       <div style={rowBetween}>
         <RisingBars />
+        {practised ? <DoneBadge /> : null}
       </div>
       <div>
         <h4 style={cardTitle}>{title}</h4>
@@ -318,12 +331,12 @@ function TestTile({
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{footerLeft}</span>
-        <StartAction loading={loading} />
+        <StartAction loading={loading} practised={practised} />
       </div>
     </>
   );
   return href ? (
-    <Link href={href} className="lp-hover" style={cardStyle}>
+    <Link href={href} className="lp-hover" style={tileStyle(practised)}>
       {body}
     </Link>
   ) : (
@@ -332,7 +345,7 @@ function TestTile({
       onClick={onStart}
       disabled={loading}
       className="lp-hover"
-      style={cardAsButton(loading)}
+      style={cardAsButton(loading, practised)}
     >
       {body}
     </button>
@@ -354,14 +367,17 @@ function PassageTile({
   isNew?: boolean;
 }) {
   const tier = bandTier(p.difficulty);
+  const practised = p.practised === true;
   const body = (
     <>
-      {isNew ? <AiCorner /> : null}
+      {isNew && !practised ? <AiCorner /> : null}
       <div style={rowBetween}>
         <span style={iconTile}>
           <FileText size={19} />
         </span>
-        {!isNew && tier ? (
+        {practised ? (
+          <DoneBadge />
+        ) : !isNew && tier ? (
           <span
             style={{
               padding: "4px 10px",
@@ -401,12 +417,12 @@ function PassageTile({
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{p.questionCount} questions</span>
-        <StartAction loading={loading} />
+        <StartAction loading={loading} practised={practised} />
       </div>
     </>
   );
   return href ? (
-    <Link href={href} className="lp-hover" style={cardStyle}>
+    <Link href={href} className="lp-hover" style={tileStyle(practised)}>
       {body}
     </Link>
   ) : (
@@ -415,7 +431,7 @@ function PassageTile({
       onClick={onStart}
       disabled={loading}
       className="lp-hover"
-      style={cardAsButton(loading)}
+      style={cardAsButton(loading, practised)}
     >
       {body}
     </button>
@@ -564,8 +580,34 @@ function AiCorner() {
   );
 }
 
-/** Footer action: "Start" → arrow, or a spinner while the clone is in flight. */
-function StartAction({ loading }: { loading?: boolean }) {
+/** Standard "you've done this" marker — replaces the AI sparkle once a generated
+ *  test/passage has a graded attempt. Calm emerald, not the brand indigo. */
+function DoneBadge() {
+  return (
+    <span
+      title="You've practised this"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "4px 10px",
+        borderRadius: 8,
+        fontSize: 12.5,
+        fontWeight: 700,
+        background: "#E9F5EE",
+        color: EMERALD,
+        border: "1px solid #CDE9D8",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <Check size={13} strokeWidth={3} /> Practised
+    </span>
+  );
+}
+
+/** Footer action: "Start" → arrow, or a spinner while the clone is in flight.
+ *  Once practised it reads "Retake" — a small nudge that this one's been done. */
+function StartAction({ loading, practised }: { loading?: boolean; practised?: boolean }) {
   return (
     <span
       style={{
@@ -583,7 +625,7 @@ function StartAction({ loading }: { loading?: boolean }) {
         </>
       ) : (
         <>
-          Start <ArrowRight size={15} strokeWidth={2.2} />
+          {practised ? "Retake" : "Start"} <ArrowRight size={15} strokeWidth={2.2} />
         </>
       )}
     </span>
@@ -637,10 +679,16 @@ const cardStyle: React.CSSProperties = {
   boxShadow: "0 1px 3px rgba(28,27,46,.04)",
 };
 
+/** The card surface, tinted with a soft emerald wash once practised so a finished
+ *  test reads as "done" at a glance — not just by its badge. */
+function tileStyle(practised?: boolean): React.CSSProperties {
+  return practised ? { ...cardStyle, borderColor: "#CFE9D9", background: "#FAFEFB" } : cardStyle;
+}
+
 /** cardStyle as an accessible <button> (sample cards clone on click). */
-function cardAsButton(loading?: boolean): React.CSSProperties {
+function cardAsButton(loading?: boolean, practised?: boolean): React.CSSProperties {
   return {
-    ...cardStyle,
+    ...tileStyle(practised),
     width: "100%",
     textAlign: "left",
     fontFamily: SANS,

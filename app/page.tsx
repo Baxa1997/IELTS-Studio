@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
 import { BrandLogo } from "@/components/brand/logo";
+import { BandCountUp } from "@/components/landing/band-countup";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
@@ -142,7 +143,12 @@ function Band({
 }) {
   return (
     <section id={id} style={{ background: bg, borderTop: "1px solid #ECEAF2" }}>
-      <div className="reveal reveal-stagger" style={{ ...SHELL, paddingTop: pad, paddingBottom: pad }}>{children}</div>
+      <div
+        className="reveal reveal-stagger"
+        style={{ ...SHELL, paddingTop: pad, paddingBottom: pad }}
+      >
+        {children}
+      </div>
     </section>
   );
 }
@@ -364,8 +370,8 @@ function Hero() {
           className="lp-hero-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "1.02fr .98fr",
-            gap: "clamp(32px,4.5vw,68px)",
+            gridTemplateColumns: "1.02fr .58fr",
+            gap: "clamp(32px,4.5vw,48px)",
             alignItems: "center",
             marginTop: 10,
           }}
@@ -388,14 +394,22 @@ function Hero() {
                 boxShadow: "0 2px 10px rgba(0,0,0,.06)",
               }}
             >
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#1F8A5B", animation: "hb-pulse 1.8s infinite" }} />
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "#1F8A5B",
+                  animation: "hb-pulse 1.8s infinite",
+                }}
+              />
               NEW · AGENTIC IELTS PLATFORM
             </span>
 
             <h1
               style={{
                 fontFamily: SANS,
-                fontWeight: 800,
+                fontWeight: 600,
                 fontSize: "clamp(40px,5.2vw,66px)",
                 lineHeight: 1.04,
                 letterSpacing: "-.03em",
@@ -468,8 +482,8 @@ function Hero() {
                     width: 22,
                     height: 22,
                     borderRadius: "50%",
-                    background: "#F1F0FB",
-                    color: INDIGO,
+                    background: INDIGO,
+                    color: "#fff",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -483,7 +497,8 @@ function Hero() {
             </div>
 
             <div style={{ fontFamily: SANS, fontSize: 13.5, color: "#8a897c", marginTop: 16 }}>
-              On-demand practice &middot; Always at your level &middot; CEFR A1&ndash;C2 + IELTS bands
+              On-demand practice &middot; Always at your level &middot; CEFR A1&ndash;C2 + IELTS
+              bands
             </div>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 9, marginTop: 22 }}>
@@ -509,9 +524,29 @@ function Hero() {
                     padding: "7px 14px",
                   }}
                 >
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.soon ? "#C9C7B8" : INDIGO, flex: "none" }} />
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: c.soon ? "#C9C7B8" : INDIGO,
+                      flex: "none",
+                    }}
+                  />
                   {c.label}
-                  {c.soon ? <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: ".08em", color: "#b3b1a2", textTransform: "uppercase" }}>soon</span> : null}
+                  {c.soon ? (
+                    <span
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 9.5,
+                        letterSpacing: ".08em",
+                        color: "#b3b1a2",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      soon
+                    </span>
+                  ) : null}
                 </span>
               ))}
             </div>
@@ -520,9 +555,31 @@ function Hero() {
           {/* RIGHT — the solid Band-9 examiner result card */}
           <div className="lp-hero-rightcol hb-rise hb-d3" style={{ position: "relative" }}>
             {/* one intentional floating accent, anchored to the card's top edge */}
-            <div className="lp-fbadge fb-j-5" style={{ position: "absolute", top: -16, right: -10, zIndex: 5 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 13, color: "#147a4f", background: "#fff", border: "1px solid #cfe7da", borderRadius: 999, padding: "8px 14px", boxShadow: "0 16px 30px -14px rgba(20,40,30,.45)" }}>
-                <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "#1F8A5B" }} /> Band 9 achievable
+            <div
+              className="lp-fbadge fb-j-5"
+              style={{ position: "absolute", top: -16, right: -10, zIndex: 5 }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  fontFamily: SANS,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: "#147a4f",
+                  background: "#fff",
+                  border: "1px solid #cfe7da",
+                  borderRadius: 999,
+                  padding: "8px 14px",
+                  boxShadow: "0 16px 30px -14px rgba(20,40,30,.45)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{ width: 7, height: 7, borderRadius: "50%", background: "#1F8A5B" }}
+                />{" "}
+                Band 9 achievable
               </span>
             </div>
 
@@ -534,46 +591,150 @@ function Hero() {
                 background: "linear-gradient(180deg,#FFFFFF 0%,#FCFBFF 100%)",
                 border: "1px solid #E9E6F3",
                 borderRadius: 28,
-                boxShadow: "0 40px 80px -34px rgba(26,28,51,.34), 0 12px 30px -18px rgba(26,28,51,.16)",
+                boxShadow:
+                  "0 40px 80px -34px rgba(26,28,51,.34), 0 12px 30px -18px rgba(26,28,51,.16)",
                 padding: "24px clamp(22px,3vw,34px) 22px",
                 overflow: "hidden",
               }}
             >
-              <div aria-hidden style={{ position: "absolute", inset: 0, background: "radial-gradient(130% 80% at 50% -14%, rgba(59,67,181,.13), transparent 58%)", pointerEvents: "none" }} />
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "radial-gradient(130% 80% at 50% -14%, rgba(59,67,181,.13), transparent 58%)",
+                  pointerEvents: "none",
+                }}
+              />
 
               {/* header */}
-              <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                  <span style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(150deg,#4B52CE,#2E3488)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", boxShadow: "0 6px 14px -6px rgba(59,67,181,.7)" }}>
+                  <span
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      background: "linear-gradient(150deg,#4B52CE,#2E3488)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flex: "none",
+                      boxShadow: "0 6px 14px -6px rgba(59,67,181,.7)",
+                    }}
+                  >
                     <svg width="16" height="16" viewBox="0 0 16 16">
-                      <path d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z" fill="#fff" />
+                      <path
+                        d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z"
+                        fill="#fff"
+                      />
                     </svg>
                   </span>
                   <div>
-                    <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, color: INK }}>Examiner Result</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: SANS, fontSize: 12, color: "#1F8A5B", marginTop: 2 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1F8A5B", animation: "hb-pulse 1.8s infinite" }} />
+                    <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, color: INK }}>
+                      Examiner Result
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontFamily: SANS,
+                        fontSize: 12,
+                        color: "#1F8A5B",
+                        marginTop: 2,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: "#1F8A5B",
+                          animation: "hb-pulse 1.8s infinite",
+                        }}
+                      />
                       Verified &middot; calibrated
                     </div>
                   </div>
                 </div>
-                <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".1em", color: INDIGO, background: "#ECEDFB", border: "1px solid #DADCF4", borderRadius: 8, padding: "5px 10px" }}>AI</span>
+                <span
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 11,
+                    letterSpacing: ".1em",
+                    color: INDIGO,
+                    background: "#ECEDFB",
+                    border: "1px solid #DADCF4",
+                    borderRadius: 8,
+                    padding: "5px 10px",
+                  }}
+                >
+                  AI
+                </span>
               </div>
 
               {/* the band — a realistic mortarboard + a Cambridge-style 9 */}
               <div style={{ position: "relative", textAlign: "center", padding: "14px 0 2px" }}>
-                <div style={{ width: 118, margin: "0 auto", animation: "hb-cap-float 4.2s ease-in-out infinite" }}>
-                  <svg aria-hidden width="118" height="96" viewBox="0 0 128 104" fill="none" style={{ display: "block", margin: "0 auto", filter: "drop-shadow(0 12px 18px rgba(20,20,48,.24))" }}>
+                <div
+                  style={{
+                    width: 98,
+                    margin: "0 auto",
+                    animation: "hb-cap-float 4.2s ease-in-out infinite",
+                  }}
+                >
+                  <svg
+                    aria-hidden
+                    width="118"
+                    height="96"
+                    viewBox="0 0 128 104"
+                    fill="none"
+                    style={{
+                      display: "block",
+                      margin: "0 auto",
+                      filter: "drop-shadow(0 12px 18px rgba(20,20,48,.24))",
+                    }}
+                  >
                     <defs>
-                      <linearGradient id="cap-board" x1="20" y1="28" x2="112" y2="74" gradientUnits="userSpaceOnUse">
+                      <linearGradient
+                        id="cap-board"
+                        x1="20"
+                        y1="28"
+                        x2="112"
+                        y2="74"
+                        gradientUnits="userSpaceOnUse"
+                      >
                         <stop stopColor="#3A4090" />
                         <stop offset="1" stopColor="#14173A" />
                       </linearGradient>
-                      <linearGradient id="cap-crown" x1="44" y1="48" x2="86" y2="80" gradientUnits="userSpaceOnUse">
+                      <linearGradient
+                        id="cap-crown"
+                        x1="44"
+                        y1="48"
+                        x2="86"
+                        y2="80"
+                        gradientUnits="userSpaceOnUse"
+                      >
                         <stop stopColor="#262C5C" />
                         <stop offset="1" stopColor="#0E1130" />
                       </linearGradient>
-                      <linearGradient id="cap-tassel" x1="110" y1="50" x2="120" y2="90" gradientUnits="userSpaceOnUse">
+                      <linearGradient
+                        id="cap-tassel"
+                        x1="110"
+                        y1="50"
+                        x2="120"
+                        y2="90"
+                        gradientUnits="userSpaceOnUse"
+                      >
                         <stop stopColor="#F2CB60" />
                         <stop offset="1" stopColor="#C68F2A" />
                       </linearGradient>
@@ -581,7 +742,10 @@ function Hero() {
                     {/* soft ground shadow */}
                     <ellipse cx="62" cy="96" rx="30" ry="5" fill="rgba(20,20,48,.10)" />
                     {/* crown (cap on the head), behind the board */}
-                    <path d="M40 48 L40 64 Q40 78 64 78 Q88 78 88 64 L88 48 Z" fill="url(#cap-crown)" />
+                    <path
+                      d="M40 48 L40 64 Q40 78 64 78 Q88 78 88 64 L88 48 Z"
+                      fill="url(#cap-crown)"
+                    />
                     {/* the mortarboard */}
                     <polygon points="64,26 120,50 64,72 8,50" fill="url(#cap-board)" />
                     {/* facets for dimension */}
@@ -591,41 +755,126 @@ function Hero() {
                     <circle cx="64" cy="50" r="4" fill="url(#cap-tassel)" />
                     <circle cx="64" cy="50" r="1.7" fill="#9A6E1E" />
                     {/* tassel — cord, knot, fringe */}
-                    <path d="M64 50 Q104 49 117 53 L117 66" stroke="url(#cap-tassel)" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+                    <path
+                      d="M64 50 Q104 49 117 53 L117 66"
+                      stroke="url(#cap-tassel)"
+                      strokeWidth="2.6"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
                     <circle cx="117" cy="67" r="3.4" fill="url(#cap-tassel)" />
-                    <path d="M113 68 L112 87 M116 70 L115 89 M118 69 L120 88 M120 67 L122 85" stroke="url(#cap-tassel)" strokeWidth="2.2" strokeLinecap="round" />
+                    <path
+                      d="M113 68 L112 87 M116 70 L115 89 M118 69 L120 88 M120 67 L122 85"
+                      stroke="url(#cap-tassel)"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".3em", color: "#9e9b90", textTransform: "uppercase", marginTop: 10 }}>Overall Band</div>
-                <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(120px,14vw,160px)", lineHeight: 0.9, color: INK, letterSpacing: "-.02em", animation: "hb-glow 3.6s ease-in-out infinite" }}>9</div>
-                <div style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: "#57564d", margin: "10px auto 0", maxWidth: 320 }}>
-                  The band a Cambridge-trained examiner would award &mdash; and the path to reach it.
+                <div
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 10.5,
+                    letterSpacing: ".3em",
+                    color: "#9e9b90",
+                    textTransform: "uppercase",
+                    marginTop: 10,
+                  }}
+                >
+                  Overall Band
+                </div>
+                <BandCountUp />
+                <div
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 14.5,
+                    lineHeight: 1.5,
+                    color: "#57564d",
+                    margin: "10px auto 0",
+                    maxWidth: 320,
+                  }}
+                >
+                  The band a Cambridge-trained examiner would award &mdash; and the path to reach
+                  it.
                 </div>
               </div>
 
               {/* per-skill result chips */}
-              <div style={{ position: "relative", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+              <div
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 16,
+                }}
+              >
                 {["Writing 9", "Reading 9", "CEFR C2"].map((t) => (
-                  <span key={t} style={{ fontFamily: SANS, fontWeight: 600, fontSize: 13, color: INDIGO, background: "#ECEDFB", border: "1px solid #DADCF4", borderRadius: 999, padding: "6px 13px" }}>{t}</span>
+                  <span
+                    key={t}
+                    style={{
+                      fontFamily: SANS,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      color: INDIGO,
+                      background: "#ECEDFB",
+                      border: "1px solid #DADCF4",
+                      borderRadius: 999,
+                      padding: "6px 13px",
+                    }}
+                  >
+                    {t}
+                  </span>
                 ))}
               </div>
 
-              {/* anchored university row — solid, not floating */}
-              <div style={{ position: "relative", marginTop: 18, paddingTop: 16, borderTop: "1px solid #EFEDE3" }}>
-                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".22em", color: "#a8a596", textTransform: "uppercase", textAlign: "center" }}>
+              {/* anchored university row — the actual marks, scaled small to fit */}
+              <div
+                style={{
+                  position: "relative",
+                  marginTop: 18,
+                  paddingTop: 16,
+                  borderTop: "1px solid #EFEDE3",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 10,
+                    letterSpacing: ".22em",
+                    color: "#a8a596",
+                    textTransform: "uppercase",
+                    textAlign: "center",
+                  }}
+                >
                   Recognised for admission at
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", columnGap: 16, rowGap: 8, marginTop: 11 }}>
-                  {[{ name: "MIT", sans: true }, { name: "Harvard", sans: false }, { name: "Stanford", sans: false }, { name: "Columbia", sans: false }].flatMap((u, i) => {
-                    const mark = (
-                      <span key={u.name} style={{ fontFamily: u.sans ? SANS : SERIF, fontWeight: u.sans ? 800 : 600, fontSize: 16, letterSpacing: u.sans ? ".02em" : "-.01em", color: "#3a3c52" }}>
-                        {u.name}
-                      </span>
-                    );
-                    return i === 0
-                      ? [mark]
-                      : [<span key={`${u.name}-sep`} aria-hidden style={{ width: 4, height: 4, borderRadius: "50%", background: "#D9D6C8", flex: "none" }} />, mark];
-                  })}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexWrap: "wrap",
+                    columnGap: 18,
+                    rowGap: 10,
+                    marginTop: 12,
+                  }}
+                >
+                  {[
+                    { src: "/mit34.png", alt: "MIT" },
+                    { src: "/harvard.png", alt: "Harvard" },
+                    { src: "/stanford.png", alt: "Stanford" },
+                    { src: "/columb.png", alt: "Columbia" },
+                  ].map((u) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={u.alt}
+                      src={u.src}
+                      alt={u.alt}
+                      style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -902,88 +1151,218 @@ function CritBar({
 
 function ExamCoachBriefing() {
   return (
-    <section style={{ background: "#fff", borderTop: "1px solid #ECEAF2", borderBottom: "1px solid #ECEAF2" }}>
+    <section
+      style={{
+        background: "#fff",
+        borderTop: "1px solid #ECEAF2",
+        borderBottom: "1px solid #ECEAF2",
+      }}
+    >
       <style>{`
         @media(max-width:860px){.ecb-grid{grid-template-columns:1fr!important}}
         @media(max-width:680px){.ecb-flow{flex-direction:column!important;gap:20px!important}.ecb-flow-line{display:none!important}}
         @media(max-width:580px){.ecb-note-indent{margin-left:0!important}}
       `}</style>
-      <div className="reveal reveal-stagger" style={{ maxWidth: 1280, margin: "0 auto", padding: "clamp(48px,6vw,72px) clamp(20px,5vw,48px)" }}>
-
+      <div
+        className="reveal reveal-stagger"
+        style={{
+          maxWidth: 1280,
+          margin: "0 auto",
+          padding: "clamp(48px,6vw,72px) clamp(20px,5vw,48px)",
+        }}
+      >
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 44 }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 7,
-            fontFamily: MONO, fontSize: 10.5, letterSpacing: ".14em",
-            color: INDIGO, background: "#ECEAFB", border: "1px solid #D4D1F5",
-            borderRadius: 999, padding: "5px 14px", marginBottom: 16,
-          }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              fontFamily: MONO,
+              fontSize: 10.5,
+              letterSpacing: ".14em",
+              color: INDIGO,
+              background: "#ECEAFB",
+              border: "1px solid #D4D1F5",
+              borderRadius: 999,
+              padding: "5px 14px",
+              marginBottom: 16,
+            }}
+          >
             PRE-EXAM BRIEFING
           </div>
-          <h2 style={{
-            fontFamily: SERIF, fontWeight: 600,
-            fontSize: "clamp(26px,3.8vw,38px)",
-            lineHeight: 1.18, color: INK, letterSpacing: "-.015em",
-            margin: "0 auto", maxWidth: 680,
-          }}>
+          <h2
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 600,
+              fontSize: "clamp(26px,3.8vw,38px)",
+              lineHeight: 1.18,
+              color: INK,
+              letterSpacing: "-.015em",
+              margin: "0 auto",
+              maxWidth: 680,
+            }}
+          >
             Your coach reads the task first — then you write
           </h2>
-          <p style={{
-            fontFamily: SANS, fontSize: 16.5, lineHeight: 1.65,
-            color: MUTED, margin: "12px auto 0", maxWidth: 560,
-          }}>
-            Before the timer starts the coach annotates the question: task type, the traps,
-            and what a Band 7+ opener looks like.
+          <p
+            style={{
+              fontFamily: SANS,
+              fontSize: 16.5,
+              lineHeight: 1.65,
+              color: MUTED,
+              margin: "12px auto 0",
+              maxWidth: 560,
+            }}
+          >
+            Before the timer starts the coach annotates the question: task type, the traps, and what
+            a Band 7+ opener looks like.
           </p>
         </div>
 
         {/* Main canvas: exam paper left, coach annotations right */}
-        <div className="ecb-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr .95fr", gap: "clamp(20px,3.5vw,44px)", alignItems: "start" }}>
-
+        <div
+          className="ecb-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr .95fr",
+            gap: "clamp(20px,3.5vw,44px)",
+            alignItems: "start",
+          }}
+        >
           {/* ── Exam paper ── */}
-          <div style={{
-            background: "#fff", border: "1px solid #DDD9F0", borderRadius: 20,
-            boxShadow: "0 20px 52px -18px rgba(59,67,181,.16), 0 4px 14px -6px rgba(59,67,181,.08)",
-            padding: "clamp(20px,3vw,32px)",
-          }}>
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #DDD9F0",
+              borderRadius: 20,
+              boxShadow:
+                "0 20px 52px -18px rgba(59,67,181,.16), 0 4px 14px -6px rgba(59,67,181,.08)",
+              padding: "clamp(20px,3vw,32px)",
+            }}
+          >
             {/* Paper top bar */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, paddingBottom: 14, borderBottom: "1px solid #EDEAF8" }}>
-              <span style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".12em", color: "#9893C8", textTransform: "uppercase" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 18,
+                paddingBottom: 14,
+                borderBottom: "1px solid #EDEAF8",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 10.5,
+                  letterSpacing: ".12em",
+                  color: "#9893C8",
+                  textTransform: "uppercase",
+                }}
+              >
                 IELTS Writing · Task 2
               </span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: "#C04000", background: "#FFF0EC", border: "1px solid #FFDED2", borderRadius: 6, padding: "3px 10px" }}>
+              <span
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  color: "#C04000",
+                  background: "#FFF0EC",
+                  border: "1px solid #FFDED2",
+                  borderRadius: 6,
+                  padding: "3px 10px",
+                }}
+              >
                 40 min
               </span>
             </div>
 
             {/* Instructions */}
-            <p style={{ fontFamily: SANS, fontSize: 13, color: "#9994BB", lineHeight: 1.6, margin: "0 0 14px", fontStyle: "italic" }}>
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: 13,
+                color: "#9994BB",
+                lineHeight: 1.6,
+                margin: "0 0 14px",
+                fontStyle: "italic",
+              }}
+            >
               You should spend about 40 minutes on this task. Write about the following topic:
             </p>
 
             {/* Prompt with colour-coded highlights */}
-            <p style={{ fontFamily: SANS, fontSize: 15.5, lineHeight: 1.85, color: INK, margin: "0 0 18px" }}>
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: 15.5,
+                lineHeight: 1.85,
+                color: INK,
+                margin: "0 0 18px",
+              }}
+            >
               In many countries, people are spending more time working than ever before.{" "}
-              <span style={{ background: "#FFE8DF", borderRadius: 3, padding: "1px 3px", fontWeight: 600 }}>
+              <span
+                style={{
+                  background: "#FFE8DF",
+                  borderRadius: 3,
+                  padding: "1px 3px",
+                  fontWeight: 600,
+                }}
+              >
                 What are the reasons for this trend?
               </span>{" "}
-              <span style={{ background: "#D9F0E5", borderRadius: 3, padding: "1px 3px", fontWeight: 600 }}>
+              <span
+                style={{
+                  background: "#D9F0E5",
+                  borderRadius: 3,
+                  padding: "1px 3px",
+                  fontWeight: 600,
+                }}
+              >
                 Do you think this is a positive or negative development?
               </span>
             </p>
 
-            <p style={{ fontFamily: SANS, fontSize: 13, color: "#9994BB", fontStyle: "italic", margin: 0 }}>
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: 13,
+                color: "#9994BB",
+                fontStyle: "italic",
+                margin: 0,
+              }}
+            >
               Write at least <strong style={{ color: "#6b6e84" }}>250 words</strong>.
             </p>
 
             {/* Colour legend */}
-            <div style={{ display: "flex", gap: 18, marginTop: 16, paddingTop: 12, borderTop: "1px solid #F0EDF8", flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 18,
+                marginTop: 16,
+                paddingTop: 12,
+                borderTop: "1px solid #F0EDF8",
+                flexWrap: "wrap",
+              }}
+            >
               {[
                 { bg: "#FFE8DF", label: "Task structure" },
                 { bg: "#D9F0E5", label: "Opinion anchor" },
               ].map(({ bg, label }) => (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 11, height: 11, borderRadius: 3, background: bg, display: "inline-block", border: "1px solid rgba(0,0,0,.06)" }} />
+                  <span
+                    style={{
+                      width: 11,
+                      height: 11,
+                      borderRadius: 3,
+                      background: bg,
+                      display: "inline-block",
+                      border: "1px solid rgba(0,0,0,.06)",
+                    }}
+                  />
                   <span style={{ fontFamily: SANS, fontSize: 12, color: "#9994BB" }}>{label}</span>
                 </div>
               ))}
@@ -994,92 +1373,259 @@ function ExamCoachBriefing() {
           <div>
             {/* Coach identity row */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 26 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 6px 18px rgba(59,67,181,.3)",
-              }}>
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  flexShrink: 0,
+                  background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 6px 18px rgba(59,67,181,.3)",
+                }}
+              >
+                <svg
+                  width="19"
+                  height="19"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" />
                 </svg>
               </div>
               <div>
-                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>AI Examiner Coach</div>
-                <div style={{ fontFamily: SANS, fontSize: 12, color: "#8A8FA0" }}>Reading this task with you</div>
+                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>
+                  AI Examiner Coach
+                </div>
+                <div style={{ fontFamily: SANS, fontSize: 12, color: "#8A8FA0" }}>
+                  Reading this task with you
+                </div>
               </div>
             </div>
 
             {/* Staggered timeline notes */}
             <div style={{ position: "relative", paddingLeft: 28 }}>
               {/* Vertical line */}
-              <div style={{
-                position: "absolute", left: 9, top: 6, bottom: 56, width: 2,
-                background: "linear-gradient(to bottom,#5B55D6 0%,#A09CF4 55%,transparent 100%)",
-                borderRadius: 2,
-              }} />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 9,
+                  top: 6,
+                  bottom: 56,
+                  width: 2,
+                  background: "linear-gradient(to bottom,#5B55D6 0%,#A09CF4 55%,transparent 100%)",
+                  borderRadius: 2,
+                }}
+              />
 
               {/* Note 1 */}
               <div style={{ position: "relative", marginBottom: 18 }}>
-                <span style={{
-                  position: "absolute", left: -22, top: 6,
-                  width: 14, height: 14, borderRadius: "50%",
-                  background: "#E84420", border: "2.5px solid #fff",
-                  boxShadow: "0 0 0 2px #E84420",
-                  display: "block",
-                }} />
-                <div style={{ background: "#fff", border: "1px solid #E8DDF8", borderRadius: 14, padding: "13px 15px", boxShadow: "0 3px 14px -6px rgba(59,67,181,.12)" }}>
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".12em", color: "#E84420", marginBottom: 6 }}>TASK STRUCTURE</div>
-                  <div style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 5 }}>Two-part question — answer both</div>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: -22,
+                    top: 6,
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: "#E84420",
+                    border: "2.5px solid #fff",
+                    boxShadow: "0 0 0 2px #E84420",
+                    display: "block",
+                  }}
+                />
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #E8DDF8",
+                    borderRadius: 14,
+                    padding: "13px 15px",
+                    boxShadow: "0 3px 14px -6px rgba(59,67,181,.12)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      letterSpacing: ".12em",
+                      color: "#E84420",
+                      marginBottom: 6,
+                    }}
+                  >
+                    TASK STRUCTURE
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      color: INK,
+                      marginBottom: 5,
+                    }}
+                  >
+                    Two-part question — answer both
+                  </div>
                   <div style={{ fontFamily: SANS, fontSize: 13, lineHeight: 1.6, color: MUTED }}>
-                    Paragraph 2 = causes. Paragraph 3 = your opinion. Missing either caps Task Response at Band 5.
+                    Paragraph 2 = causes. Paragraph 3 = your opinion. Missing either caps Task
+                    Response at Band 5.
                   </div>
                 </div>
               </div>
 
               {/* Note 2 — indented for stagger */}
-              <div className="ecb-note-indent" style={{ position: "relative", marginBottom: 18, marginLeft: 12 }}>
-                <span style={{
-                  position: "absolute", left: -34, top: 6,
-                  width: 14, height: 14, borderRadius: "50%",
-                  background: "#1A7F4A", border: "2.5px solid #fff",
-                  boxShadow: "0 0 0 2px #1A7F4A",
-                  display: "block",
-                }} />
-                <div style={{ background: "#fff", border: "1px solid #C8EDD9", borderRadius: 14, padding: "13px 15px", boxShadow: "0 3px 14px -6px rgba(27,127,74,.10)" }}>
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".12em", color: "#1A7F4A", marginBottom: 6 }}>OPINION ANCHOR</div>
-                  <div style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 5 }}>Pick one side — don&rsquo;t hedge</div>
+              <div
+                className="ecb-note-indent"
+                style={{ position: "relative", marginBottom: 18, marginLeft: 12 }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: -34,
+                    top: 6,
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: "#1A7F4A",
+                    border: "2.5px solid #fff",
+                    boxShadow: "0 0 0 2px #1A7F4A",
+                    display: "block",
+                  }}
+                />
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #C8EDD9",
+                    borderRadius: 14,
+                    padding: "13px 15px",
+                    boxShadow: "0 3px 14px -6px rgba(27,127,74,.10)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      letterSpacing: ".12em",
+                      color: "#1A7F4A",
+                      marginBottom: 6,
+                    }}
+                  >
+                    OPINION ANCHOR
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      color: INK,
+                      marginBottom: 5,
+                    }}
+                  >
+                    Pick one side — don&rsquo;t hedge
+                  </div>
                   <div style={{ fontFamily: SANS, fontSize: 13, lineHeight: 1.6, color: MUTED }}>
-                    &ldquo;Both sides have merit&rdquo; reads as evasion. State your view in the intro and reinforce it in the conclusion.
+                    &ldquo;Both sides have merit&rdquo; reads as evasion. State your view in the
+                    intro and reinforce it in the conclusion.
                   </div>
                 </div>
               </div>
 
               {/* Note 3 */}
               <div style={{ position: "relative", marginBottom: 20 }}>
-                <span style={{
-                  position: "absolute", left: -22, top: 6,
-                  width: 14, height: 14, borderRadius: "50%",
-                  background: INDIGO, border: "2.5px solid #fff",
-                  boxShadow: "0 0 0 2px " + INDIGO,
-                  display: "block",
-                }} />
-                <div style={{ background: "#fff", border: "1px solid #D6D3F5", borderRadius: 14, padding: "13px 15px", boxShadow: "0 3px 14px -6px rgba(59,67,181,.12)" }}>
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: ".12em", color: INDIGO, marginBottom: 6 }}>OPENER TEMPLATE</div>
-                  <div style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 700, color: INK, marginBottom: 7 }}>Try this sentence structure</div>
-                  <div style={{
-                    fontFamily: MONO, fontSize: 12, lineHeight: 1.75,
-                    background: "#F5F4FF", border: "1px solid #E2DFFA",
-                    borderRadius: 8, padding: "10px 12px", color: INDIGO,
-                  }}>
-                    &ldquo;The prevalence of overwork has become a global concern. While [reason 1] and [reason 2] fuel this trend, I believe the consequences are largely detrimental.&rdquo;
+                <span
+                  style={{
+                    position: "absolute",
+                    left: -22,
+                    top: 6,
+                    width: 14,
+                    height: 14,
+                    borderRadius: "50%",
+                    background: INDIGO,
+                    border: "2.5px solid #fff",
+                    boxShadow: "0 0 0 2px " + INDIGO,
+                    display: "block",
+                  }}
+                />
+                <div
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #D6D3F5",
+                    borderRadius: 14,
+                    padding: "13px 15px",
+                    boxShadow: "0 3px 14px -6px rgba(59,67,181,.12)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      letterSpacing: ".12em",
+                      color: INDIGO,
+                      marginBottom: 6,
+                    }}
+                  >
+                    OPENER TEMPLATE
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 13.5,
+                      fontWeight: 700,
+                      color: INK,
+                      marginBottom: 7,
+                    }}
+                  >
+                    Try this sentence structure
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 12,
+                      lineHeight: 1.75,
+                      background: "#F5F4FF",
+                      border: "1px solid #E2DFFA",
+                      borderRadius: 8,
+                      padding: "10px 12px",
+                      color: INDIGO,
+                    }}
+                  >
+                    &ldquo;The prevalence of overwork has become a global concern. While [reason 1]
+                    and [reason 2] fuel this trend, I believe the consequences are largely
+                    detrimental.&rdquo;
                   </div>
                 </div>
               </div>
 
               {/* Ready pill */}
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: SANS, fontSize: 13, color: INDIGO, background: "#ECEAFB", border: "1px solid #D4D1F5", borderRadius: 999, padding: "8px 16px" }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: INDIGO, animation: "hb-pulse 1.8s infinite", flexShrink: 0 }} />
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontFamily: SANS,
+                  fontSize: 13,
+                  color: INDIGO,
+                  background: "#ECEAFB",
+                  border: "1px solid #D4D1F5",
+                  borderRadius: 999,
+                  padding: "8px 16px",
+                }}
+              >
+                <span
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: INDIGO,
+                    animation: "hb-pulse 1.8s infinite",
+                    flexShrink: 0,
+                  }}
+                />
                 Ready when you are — start writing.
               </div>
             </div>
@@ -1087,35 +1633,86 @@ function ExamCoachBriefing() {
         </div>
 
         {/* Bottom horizontal flow strip */}
-        <div className="ecb-flow" style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: 52, maxWidth: 780, margin: "52px auto 0" }}>
+        <div
+          className="ecb-flow"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: 52,
+            maxWidth: 780,
+            margin: "52px auto 0",
+          }}
+        >
           {[
-            { n: "1", head: "Task read", body: "Coach identifies type, scope, and the key instruction word instantly." },
-            { n: "2", head: "Traps named", body: "Every common mistake for this task type is flagged before you start." },
-            { n: "3", head: "You write", body: "Your opener and outline are clear. The timer starts. You write with a plan." },
+            {
+              n: "1",
+              head: "Task read",
+              body: "Coach identifies type, scope, and the key instruction word instantly.",
+            },
+            {
+              n: "2",
+              head: "Traps named",
+              body: "Every common mistake for this task type is flagged before you start.",
+            },
+            {
+              n: "3",
+              head: "You write",
+              body: "Your opener and outline are clear. The timer starts. You write with a plan.",
+            },
           ].map((item, i) => (
             <>
               <div key={item.n} style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: i === 2 ? INDIGO : "#fff",
-                  border: `2px solid ${i === 2 ? INDIGO : "#C8C4F4"}`,
-                  color: i === 2 ? "#fff" : INDIGO,
-                  fontFamily: SANS, fontWeight: 700, fontSize: 15,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  margin: "0 auto 10px",
-                }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    background: i === 2 ? INDIGO : "#fff",
+                    border: `2px solid ${i === 2 ? INDIGO : "#C8C4F4"}`,
+                    color: i === 2 ? "#fff" : INDIGO,
+                    fontFamily: SANS,
+                    fontWeight: 700,
+                    fontSize: 15,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 10px",
+                  }}
+                >
                   {item.n}
                 </div>
-                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK, marginBottom: 5 }}>{item.head}</div>
-                <div style={{ fontFamily: SANS, fontSize: 13, lineHeight: 1.6, color: MUTED }}>{item.body}</div>
+                <div
+                  style={{
+                    fontFamily: SANS,
+                    fontWeight: 700,
+                    fontSize: 14.5,
+                    color: INK,
+                    marginBottom: 5,
+                  }}
+                >
+                  {item.head}
+                </div>
+                <div style={{ fontFamily: SANS, fontSize: 13, lineHeight: 1.6, color: MUTED }}>
+                  {item.body}
+                </div>
               </div>
               {i < 2 && (
-                <div className="ecb-flow-line" key={`line-${i}`} style={{ width: 48, height: 2, flexShrink: 0, background: "linear-gradient(to right,#C8C4F4,#8B84DF)", borderRadius: 1 }} />
+                <div
+                  className="ecb-flow-line"
+                  key={`line-${i}`}
+                  style={{
+                    width: 48,
+                    height: 2,
+                    flexShrink: 0,
+                    background: "linear-gradient(to right,#C8C4F4,#8B84DF)",
+                    borderRadius: 1,
+                  }}
+                />
               )}
             </>
           ))}
         </div>
-
       </div>
     </section>
   );
@@ -1331,14 +1928,26 @@ function RevisionLoop() {
 
 // ---- personalised practice: text + a "tuned to you" mockup -----------------
 
-function FeaturePoint({ head, body, light = false }: { head: string; body: string; light?: boolean }) {
+function FeaturePoint({
+  head,
+  body,
+  light = false,
+}: {
+  head: string;
+  body: string;
+  light?: boolean;
+}) {
   return (
     <div style={{ display: "flex", gap: 13 }}>
       <span style={{ marginTop: 3, flex: "none" }}>
         <Check size={20} sw={2.6} color={light ? "#C7F25B" : INDIGO} />
       </span>
       <div>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16.5, color: light ? "#fff" : INK }}>{head}</div>
+        <div
+          style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16.5, color: light ? "#fff" : INK }}
+        >
+          {head}
+        </div>
         <p
           style={{
             fontFamily: SANS,

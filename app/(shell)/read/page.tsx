@@ -33,41 +33,56 @@ export default async function ReadingHubPage() {
   const supabase = await createClient();
   const admin = createAdminClient();
 
-  const [estimates, libTestsRes, libPassagesRes, ownTestsRes, ownPassagesRes] = await Promise.all([
-    loadStudentEstimates(profile.id),
-    // Shared library (one org, read via service-role).
-    admin
-      .from("reading_tests")
-      .select("id, target_band")
-      .eq("organization_id", READING_LIBRARY_ORG_ID)
-      .eq("is_library", true)
-      .order("target_band", { ascending: true })
-      .limit(12),
-    admin
-      .from("reading_passages")
-      .select("id, title, topic, difficulty")
-      .eq("organization_id", READING_LIBRARY_ORG_ID)
-      .eq("is_library", true)
-      .is("test_id", null)
-      .order("difficulty", { ascending: true })
-      .limit(12),
-    // The learner's own freshly-generated content (clones carry library_key, so
-    // they're excluded — a started library item stays under its library card).
-    supabase
-      .from("reading_tests")
-      .select("id, target_band, created_at")
-      .eq("created_by", profile.id)
-      .is("library_key", null)
-      .order("created_at", { ascending: false })
-      .limit(6),
-    supabase
-      .from("reading_passages")
-      .select("id, title, topic, difficulty")
-      .is("test_id", null)
-      .is("library_key", null)
-      .order("created_at", { ascending: false })
-      .limit(9),
-  ]);
+  const [estimates, libTestsRes, libPassagesRes, ownTestsRes, ownPassagesRes, attemptsRes] =
+    await Promise.all([
+      loadStudentEstimates(profile.id),
+      // Shared library (one org, read via service-role).
+      admin
+        .from("reading_tests")
+        .select("id, target_band")
+        .eq("organization_id", READING_LIBRARY_ORG_ID)
+        .eq("is_library", true)
+        .order("target_band", { ascending: true })
+        .limit(12),
+      admin
+        .from("reading_passages")
+        .select("id, title, topic, difficulty")
+        .eq("organization_id", READING_LIBRARY_ORG_ID)
+        .eq("is_library", true)
+        .is("test_id", null)
+        .order("difficulty", { ascending: true })
+        .limit(12),
+      // The learner's own freshly-generated content (clones carry library_key, so
+      // they're excluded — a started library item stays under its library card).
+      supabase
+        .from("reading_tests")
+        .select("id, target_band, created_at", { count: "exact" })
+        .eq("created_by", profile.id)
+        .is("library_key", null)
+        .order("created_at", { ascending: false })
+        .limit(6),
+      supabase
+        .from("reading_passages")
+        .select("id, title, topic, difficulty")
+        .is("test_id", null)
+        .is("library_key", null)
+        .order("created_at", { ascending: false })
+        .limit(9),
+      // Which of the learner's OWN tests/passages they've already practised (a graded
+      // attempt exists) — so the hub can badge them "Practised" instead of "new".
+      supabase
+        .from("reading_attempts")
+        .select("test_id, passage_id")
+        .eq("student_id", profile.id)
+        .eq("status", "graded"),
+    ]);
+
+  const practisedTests = new Set<string>();
+  const practisedPassages = new Set<string>();
+  for (const a of attemptsRes.data ?? []) {
+    if (a.test_id) practisedTests.add(a.test_id as string);
+    if (a.passage_id) practisedPassages.add(a.passage_id as string);
+  }
 
   const reading = estimates.bySkill.reading;
   const levelBand = reading.currentBand ?? reading.targetBand ?? null;
@@ -78,10 +93,15 @@ export default async function ReadingHubPage() {
     targetBand: (t.target_band as number | null) ?? null,
   }));
 
-  const ownTests: TestCard[] = (ownTestsRes.data ?? []).map((t) => ({
+  // Number generated tests "Reading test 1, 2, …" in the order they were created.
+  // The list arrives newest-first, so the newest gets the highest number (= total).
+  const totalOwnTests = ownTestsRes.count ?? ownTestsRes.data?.length ?? 0;
+  const ownTests: TestCard[] = (ownTestsRes.data ?? []).map((t, i) => ({
     id: t.id as string,
     targetBand: (t.target_band as number | null) ?? null,
     createdAt: t.created_at as string,
+    seq: totalOwnTests - i,
+    practised: practisedTests.has(t.id as string),
   }));
 
   // Question count + distinct types per passage (answer-key table is teacher/admin-
@@ -119,7 +139,8 @@ export default async function ReadingHubPage() {
     .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS);
   const ownPassages = (ownPassagesRes.data ?? [])
     .map(toPassageCard)
-    .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS);
+    .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS)
+    .map((c) => ({ ...c, practised: practisedPassages.has(c.id) }));
 
   // The shell (sidebar + header) is owned by the (shell) layout; this page only
   // paints its own full-bleed surface inside it.
