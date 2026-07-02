@@ -11,7 +11,9 @@ import {
   Loader2,
   Lock,
   MessagesSquare,
-  Users,
+  Pause,
+  Play,
+  RotateCcw,
   Volume2,
   X,
 } from "lucide-react";
@@ -21,14 +23,13 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Listening hub + runner. Generation (script + exam-style TTS audio) and
- * grading live on the AI engine; the browser calls them directly (with the
- * user's Supabase token) so the ~2 min generate+synthesize runs off Vercel's
- * serverless cap. Generate returns an answer-STRIPPED view — questions plus a
- * segment playlist of signed audio URLs and timed reading pauses (the player
- * renders pauses as countdowns, exactly like the real exam's narrator flow).
- * Audio plays ONCE until submitted; grading is by id server-side; the review
- * reveals the transcript + which trap mechanism each question used.
+ * Listening hub + runner, backed by the SHARED practice library: practices are
+ * pre-generated on the engine (script + narrator-framed TTS audio, difficulty
+ * 1–5) and open instantly for every learner. Free plan unlocks 5 practices;
+ * paid plans get the whole library (enforced server-side — the engine returns
+ * 429 with an upgrade message past the limit). The runner plays the audio once
+ * with countdown reading pauses (pause allowed for practice, no seeking),
+ * grades by id server-side, and reveals the transcript + trap mechanisms.
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -85,6 +86,7 @@ type RenderView = {
   part: number;
   topic: string;
   narrator_intro: string;
+  difficulty?: number;
   audio: Segment[];
   form?: { title: string; word_limit: string; rows: FormRow[] };
   notes?: { title: string; word_limit: string; sections: NoteSection[] };
@@ -98,7 +100,12 @@ type Grade = {
   part: number; score: number; max_score: number;
   results: QResult[]; transcript: { speaker: string; text: string }[];
 };
-type RecentItem = { id: string; part: number | null; topic: string; created_at: string };
+
+type LibraryItem = {
+  id: string; part: number; topic: string; difficulty: number;
+  unlocked: boolean; locked: boolean; best_score: number | null;
+};
+type Catalogue = { items: LibraryItem[]; plan_paid: boolean; free_used: number; free_limit: number };
 
 /** Why each trap works, in the learner's language (ids from the engine's
  *  listening spec — P1 audio traps + P4 note-paraphrase mechanisms). */
@@ -115,46 +122,44 @@ const TRAP_EXPLAIN: Record<string, string> = {
   nominalisation: "The notes turn the lecturer's verb phrase into a noun phrase around the same gap word.",
 };
 
-const PART_META = [
-  { part: 1, live: true, Icon: MessagesSquare, title: "Everyday conversation", desc: "Two speakers in a transactional call — a booking, an enquiry, a registration.", type: "Form completion · 10 questions" },
-  { part: 2, live: false, Icon: Volume2, title: "Everyday monologue", desc: "One speaker giving public information — a talk, a tour, an announcement.", type: "Multiple choice · matching" },
-  { part: 3, live: false, Icon: Users, title: "Academic conversation", desc: "Students discussing coursework — fast turns, opinions, agreement and pushback.", type: "Multiple choice · matching" },
-  { part: 4, live: true, Icon: GraduationCap, title: "Academic lecture", desc: "A university-style lecture with completion notes that paraphrase what you hear.", type: "Note completion · 10 questions" },
-];
+const PART_INFO: Record<number, { Icon: typeof MessagesSquare; title: string; desc: string }> = {
+  1: { Icon: MessagesSquare, title: "Part 1 — Everyday conversation", desc: "Two speakers, form completion. The classic spelled names, numbers and correction traps." },
+  4: { Icon: GraduationCap, title: "Part 4 — Academic lecture", desc: "One lecturer, note completion. The notes paraphrase what you hear — only the answer word is verbatim." },
+};
+
+const LEVEL_STYLE: Record<number, { bg: string; fg: string }> = {
+  1: { bg: "#f0fdf4", fg: "#15803d" },
+  2: { bg: "#ecfeff", fg: "#0e7490" },
+  3: { bg: "#efeefc", fg: "#4338CA" },
+  4: { bg: "#fffbeb", fg: "#b45309" },
+  5: { bg: "#fef2f2", fg: "#b91c1c" },
+};
 
 // ---- Top-level ---------------------------------------------------------------
 
 export function ListeningClient() {
+  const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
   const [view, setView] = useState<RenderView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [recent, setRecent] = useState<RecentItem[]>([]);
 
   useEffect(() => {
     let alive = true;
-    callEngine<{ items: RecentItem[] }>("list", {})
-      .then((r) => { if (alive) setRecent(r.items ?? []); })
-      .catch(() => { /* history is non-essential — the hub still generates fresh */ });
+    callEngine<Catalogue>("library", {})
+      .then((c) => { if (alive) setCatalogue(c); })
+      .catch((e) => { if (alive) setError(e instanceof Error ? e.message : "Could not load the library."); });
     return () => { alive = false; };
-  }, [view]); // reload after exiting a paper
+  }, [view]); // refresh progress after exiting a practice
 
-  const generate = useCallback(async (part: number) => {
-    setBusy(`p${part}`);
-    setError(null);
-    try {
-      setView(await callEngine<RenderView>("generate", { part }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Generation failed — please try again.");
-    } finally {
-      setBusy(null);
+  const open = useCallback(async (item: LibraryItem) => {
+    if (item.locked) {
+      setError("You’ve used all 5 free practice unlocks for Listening — upgrade to Pro to open the full library.");
+      return;
     }
-  }, []);
-
-  const openItem = useCallback(async (id: string) => {
-    setBusy(`item-${id}`);
+    setBusy(item.id);
     setError(null);
     try {
-      setView(await callEngine<RenderView>("render", { item_id: id }));
+      setView(await callEngine<RenderView>("library/render", { library_id: item.id }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not open this practice.");
     } finally {
@@ -163,17 +168,23 @@ export function ListeningClient() {
   }, []);
 
   if (view) return <Runner view={view} onExit={() => setView(null)} />;
-  return (
-    <Hub busy={busy} error={error} recent={recent} onGenerate={generate} onOpen={openItem} />
-  );
+  return <Hub catalogue={catalogue} busy={busy} error={error} onOpen={open} />;
 }
 
 // ---- Hub ---------------------------------------------------------------------
 
-function Hub({ busy, error, recent, onGenerate, onOpen }: {
-  busy: string | null; error: string | null; recent: RecentItem[];
-  onGenerate: (part: number) => void; onOpen: (id: string) => void;
+function Hub({ catalogue, busy, error, onOpen }: {
+  catalogue: Catalogue | null; busy: string | null; error: string | null;
+  onOpen: (item: LibraryItem) => void;
 }) {
+  const byPart = useMemo(() => {
+    const m = new Map<number, LibraryItem[]>();
+    for (const it of catalogue?.items ?? []) {
+      m.set(it.part, [...(m.get(it.part) ?? []), it]);
+    }
+    return m;
+  }, [catalogue]);
+
   return (
     <div className="lp-hub-pad" style={{ width: "100%", padding: "26px 24px 64px", fontFamily: SANS, color: INK }}>
       {/* Header */}
@@ -181,110 +192,90 @@ function Hub({ busy, error, recent, onGenerate, onOpen }: {
         <div>
           <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(28px,3.6vw,38px)", lineHeight: 1.05, letterSpacing: "-.4px", margin: 0, color: INK }}>Listening</h1>
           <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0", maxWidth: 660 }}>
-            Real exam flow: the announcer introduces the recording, you get timed reading
-            pauses, the audio plays once — then instant grading with the transcript and
-            every trap explained.
+            A library of exam-style practices, easiest to hardest. The announcer introduces the
+            recording, you get timed reading pauses, the audio plays once — then instant grading
+            with the transcript and every trap explained.
           </p>
         </div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 9, background: TINT, border: "1px solid rgba(67,56,202,.16)", color: INDIGO, padding: "8px 14px", borderRadius: 999, fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>
-          <Headphones size={15} /> Parts 1 &amp; 4 live
-        </span>
+        {catalogue ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 9, background: TINT, border: "1px solid rgba(67,56,202,.16)", color: INDIGO, padding: "8px 14px", borderRadius: 999, fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>
+            <Headphones size={15} />
+            {catalogue.plan_paid ? "Full library" : `Free: ${Math.min(catalogue.free_used, catalogue.free_limit)}/${catalogue.free_limit} used`}
+          </span>
+        ) : null}
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        <SectionLabel>Practise a part</SectionLabel>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>
-        {PART_META.map((p) => (
-          <PartCard key={p.part} meta={p} loading={busy === `p${p.part}`} disabled={!!busy} onClick={() => onGenerate(p.part)} />
-        ))}
-      </div>
-      {busy && busy.startsWith("p") ? (
-        <p style={{ margin: "14px 2px 0", fontSize: 13.5, color: MUTED, display: "flex", alignItems: "center", gap: 8 }}>
-          <Loader2 className="animate-spin" size={14} />
-          Writing an original script and recording the studio audio — this takes about two minutes.
+      {error ? <div style={{ marginTop: 18 }}><UpgradeNotice message={error} /></div> : null}
+
+      {!catalogue ? (
+        <p style={{ marginTop: 40, fontSize: 14.5, color: MUTED, display: "flex", alignItems: "center", gap: 9 }}>
+          <Loader2 className="animate-spin" size={16} /> Loading the practice library…
         </p>
-      ) : null}
+      ) : catalogue.items.length === 0 ? (
+        <p style={{ marginTop: 40, fontSize: 14.5, color: MUTED }}>
+          The practice library is being stocked with new recordings — check back in a little while.
+        </p>
+      ) : (
+        [1, 4].map((part) => {
+          const items = byPart.get(part) ?? [];
+          if (items.length === 0) return null;
+          const info = PART_INFO[part];
+          return (
+            <div key={part} style={{ marginTop: 30 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 6px" }}>
+                <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>{info.title}</span>
+                <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+              </div>
+              <p style={{ fontSize: 13, color: "#8A899A", margin: "0 0 12px" }}>{info.desc}</p>
+              <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
+                {items.map((it, i) => (
+                  <PracticeRow key={it.id} it={it} index={i} first={i === 0} loading={busy === it.id} disabled={!!busy} onOpen={() => onOpen(it)} />
+                ))}
+              </div>
+            </div>
+          );
+        })
+      )}
 
-      {recent.length > 0 ? (
-        <div style={{ marginTop: 28 }}>
-          <SectionLabel>Your recent practices</SectionLabel>
-          <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
-            {recent.map((it, i) => (
-              <button key={it.id} type="button" onClick={() => onOpen(it.id)} disabled={!!busy} className="lp-row" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "transparent", border: "none", borderTop: i === 0 ? "none" : "1px solid rgba(28,27,46,.07)", cursor: busy ? "default" : "pointer", textAlign: "left", fontFamily: SANS, opacity: busy && busy !== `item-${it.id}` ? 0.6 : 1 }}>
-                <span style={{ width: 34, height: 34, borderRadius: 9, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-                  <Headphones size={16} />
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    Part {it.part ?? "?"} · {it.topic || "Listening practice"}
-                  </span>
-                  <span style={{ display: "block", fontSize: 12.5, color: "#8A899A", marginTop: 1 }}>
-                    10 questions · {fmtWhen(it.created_at)}
-                  </span>
-                </span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 13.5, fontWeight: 600, flex: "none" }}>
-                  {busy === `item-${it.id}` ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>) : (<>Open <ArrowRight size={14} /></>)}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {error ? <UpgradeNotice message={error} /> : null}
-
-      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
-        Original audio and questions in the IELTS Listening format. Not affiliated with or endorsed by IELTS®.
+      <p style={{ margin: "30px 0 0", fontSize: 13, color: "#9A99A8" }}>
+        Parts 2 &amp; 3 and the full 4-part test are coming next. Original audio and questions in
+        the IELTS Listening format — not affiliated with or endorsed by IELTS®.
       </p>
     </div>
   );
 }
 
-function PartCard({ meta, loading, disabled, onClick }: {
-  meta: (typeof PART_META)[number]; loading: boolean; disabled: boolean; onClick: () => void;
+function PracticeRow({ it, index, first, loading, disabled, onOpen }: {
+  it: LibraryItem; index: number; first: boolean; loading: boolean; disabled: boolean; onOpen: () => void;
 }) {
-  const { live, Icon } = meta;
+  const lvl = LEVEL_STYLE[it.difficulty] ?? LEVEL_STYLE[3];
+  const done = it.best_score != null;
   return (
-    <button type="button" onClick={live ? onClick : undefined} disabled={disabled || !live} className={live ? "lp-hover" : undefined} style={{ position: "relative", background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 10, textAlign: "left", fontFamily: SANS, cursor: live && !disabled ? "pointer" : "default", opacity: live ? (disabled && !loading ? 0.55 : 1) : 0.65, boxShadow: "0 1px 3px rgba(28,27,46,.04)", width: "100%" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <span style={{ width: 34, height: 34, borderRadius: 9, background: live ? TINT : "#F1F1F8", color: live ? INDIGO : "#8A899A", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon size={17} /></span>
-          <span style={{ fontWeight: 700, fontSize: 15, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meta.title}</span>
+    <button type="button" onClick={onOpen} disabled={disabled} className="lp-row" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "transparent", border: "none", borderTop: first ? "none" : "1px solid rgba(28,27,46,.07)", cursor: disabled ? "default" : "pointer", textAlign: "left", fontFamily: SANS, opacity: it.locked ? 0.62 : disabled && !loading ? 0.6 : 1 }}>
+      <span style={{ padding: "4px 9px", borderRadius: 7, fontSize: 12, fontWeight: 700, background: lvl.bg, color: lvl.fg, flex: "none", whiteSpace: "nowrap" }}>
+        Level {it.difficulty}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {`Practice ${index + 1}`} · {it.topic || "Listening practice"}
         </span>
-        {live ? (
-          <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 12, fontWeight: 700, background: TINT, color: INDIGO, flex: "none" }}>Part {meta.part}</span>
-        ) : (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 7, fontSize: 12, fontWeight: 700, background: "#F1F1F8", color: "#8A899A", flex: "none" }}><Lock size={11} /> Soon</span>
-        )}
-      </div>
-      <span style={{ fontSize: 13, color: "#7A7989", lineHeight: 1.45 }}>{meta.desc}</span>
-      <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderTop: "1px solid rgba(28,27,46,.07)", paddingTop: 10 }}>
-        <span style={{ fontSize: 12.5, color: "#8A899A" }}>{meta.type}</span>
-        {live ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14, fontWeight: 600 }}>
-            {loading ? (<><Loader2 className="animate-spin" size={15} /> Recording…</>) : (<>Start <ArrowRight size={15} strokeWidth={2.2} /></>)}
-          </span>
-        ) : null}
-      </div>
+        <span style={{ display: "block", fontSize: 12.5, color: "#8A899A", marginTop: 1 }}>
+          10 questions · audio plays once
+        </span>
+      </span>
+      {done ? (
+        <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, background: (it.best_score ?? 0) >= 7 ? "#f0fdf4" : "#fffbeb", color: (it.best_score ?? 0) >= 7 ? GOOD : "#b45309", flex: "none" }}>
+          Best {it.best_score}/10
+        </span>
+      ) : null}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: it.locked ? "#8A899A" : INDIGO, fontSize: 13.5, fontWeight: 600, flex: "none" }}>
+        {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>)
+          : it.locked ? (<><Lock size={13} /> Pro</>)
+          : done ? (<>Retry <RotateCcw size={13} /></>)
+          : (<>Start <ArrowRight size={14} /></>)}
+      </span>
     </button>
   );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0 16px" }}>
-      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>{children}</span>
-      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
-    </div>
-  );
-}
-
-function fmtWhen(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ""
-    : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 // ---- Runner --------------------------------------------------------------------
@@ -292,6 +283,7 @@ function fmtWhen(iso: string): string {
 type PlayerPhase = "idle" | "running" | "finished";
 
 function Runner({ view, onExit }: { view: RenderView; onExit: () => void }) {
+  const [attempt, setAttempt] = useState(1); // bump to reset player + answers
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [grade, setGrade] = useState<Grade | null>(null);
   const [grading, setGrading] = useState(false);
@@ -312,7 +304,7 @@ function Runner({ view, onExit }: { view: RenderView; onExit: () => void }) {
     try {
       const body: Record<string, string> = {};
       for (const [k, v] of Object.entries(answers)) body[k] = v;
-      setGrade(await callEngine<Grade>("grade", { item_id: view.id, answers: body }));
+      setGrade(await callEngine<Grade>("library/grade", { library_id: view.id, answers: body }));
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Grading failed — please try again.");
@@ -321,11 +313,22 @@ function Runner({ view, onExit }: { view: RenderView; onExit: () => void }) {
     }
   }, [answers, view.id]);
 
+  const practiceAgain = useCallback(() => {
+    setAnswers({});
+    setGrade(null);
+    setPhase("idle");
+    setError(null);
+    setAttempt((a) => a + 1);
+    window.scrollTo({ top: 0 });
+  }, []);
+
   const resultByQ = useMemo(() => {
     const map = new Map<number, QResult>();
     for (const r of grade?.results ?? []) map.set(r.q, r);
     return map;
   }, [grade]);
+
+  const lvl = LEVEL_STYLE[view.difficulty ?? 3] ?? LEVEL_STYLE[3];
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#F7F7FB", overflowY: "auto", fontFamily: SANS, color: INK }}>
@@ -340,17 +343,13 @@ function Runner({ view, onExit }: { view: RenderView; onExit: () => void }) {
           </div>
           <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{view.topic}</div>
         </div>
-        {grade ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, background: grade.score >= 7 ? "rgba(34,197,94,.2)" : "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 999, padding: "7px 14px", fontSize: 14, fontWeight: 700 }}>
-            {grade.score} / {grade.max_score}
-          </span>
-        ) : (
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,.65)", whiteSpace: "nowrap" }}>{answered}/{questionNums.length} answered</span>
-        )}
+        <span style={{ padding: "4px 10px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, flex: "none" }}>
+          Level {view.difficulty ?? 3}
+        </span>
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "20px clamp(14px,3vw,24px) 80px" }}>
-        <Player segments={view.audio} phase={phase} setPhase={setPhase} replayUnlocked={!!grade} />
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "20px clamp(14px,3vw,24px) 120px" }}>
+        <Player key={attempt} segments={view.audio} phase={phase} setPhase={setPhase} replayUnlocked={!!grade} />
 
         {/* Questions */}
         <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: "22px clamp(16px,3vw,26px)", marginTop: 16, boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
@@ -361,21 +360,37 @@ function Runner({ view, onExit }: { view: RenderView; onExit: () => void }) {
           ) : null}
         </div>
 
-        {/* Submit / results */}
-        {!grade ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
-            <button type="button" onClick={submit} disabled={grading} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: INDIGO, color: "#fff", border: "none", borderRadius: 11, padding: "12px 22px", fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: grading ? "default" : "pointer", opacity: grading ? 0.7 : 1 }}>
-              {grading ? (<><Loader2 className="animate-spin" size={16} /> Checking…</>) : (<>Submit answers <ArrowRight size={15} /></>)}
-            </button>
-            <span style={{ fontSize: 13, color: MUTED }}>
-              {phase === "finished" ? "The recording has ended — check your answers, then submit." : "You can submit any time; unanswered gaps count as wrong."}
-            </span>
-          </div>
-        ) : (
-          <ReviewPanel grade={grade} />
-        )}
-
+        {grade ? <ReviewPanel grade={grade} /> : null}
         {error ? <UpgradeNotice message={error} /> : null}
+      </div>
+
+      {/* Sticky action bar — submit is always reachable, no scrolling hunt */}
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 6, background: "#fff", borderTop: "1px solid rgba(28,27,46,.1)", boxShadow: "0 -4px 16px rgba(28,27,46,.06)", padding: "12px clamp(16px,3vw,28px)" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto", display: "flex", alignItems: "center", gap: 14 }}>
+          {!grade ? (
+            <>
+              <span style={{ fontSize: 13.5, color: MUTED, flex: 1 }}>
+                <strong style={{ color: INK }}>{answered}/{questionNums.length}</strong> answered
+                {phase === "finished" ? " — the recording has ended." : ""}
+              </span>
+              <button type="button" onClick={submit} disabled={grading} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: INDIGO, color: "#fff", border: "none", borderRadius: 11, padding: "11px 22px", fontFamily: SANS, fontSize: 14.5, fontWeight: 700, cursor: grading ? "default" : "pointer", opacity: grading ? 0.7 : 1 }}>
+                {grading ? (<><Loader2 className="animate-spin" size={16} /> Checking…</>) : (<>Submit answers <ArrowRight size={15} /></>)}
+              </button>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: 15, fontWeight: 700, color: grade.score >= 7 ? GOOD : INK, flex: 1 }}>
+                {grade.score}/{grade.max_score} correct
+              </span>
+              <button type="button" onClick={practiceAgain} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: INK, border: "1px solid rgba(28,27,46,.14)", borderRadius: 11, padding: "10px 18px", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                <RotateCcw size={15} /> Practice again
+              </button>
+              <button type="button" onClick={onExit} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: INDIGO, color: "#fff", border: "none", borderRadius: 11, padding: "10px 18px", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                Back to library <ArrowRight size={15} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -384,21 +399,24 @@ function Runner({ view, onExit }: { view: RenderView; onExit: () => void }) {
 // ---- Player ---------------------------------------------------------------------
 
 /** Sequential exam player: audio segments play once, in order, with the timed
- *  reading pauses rendered as countdowns (the narrator flow of the real test).
- *  No seeking or replay until the attempt is graded. */
+ *  reading pauses rendered as countdowns. Pause/resume is allowed (practice
+ *  convenience — the real exam has no pause), but there is no seeking and no
+ *  replay until the attempt is graded. */
 function Player({ segments, phase, setPhase, replayUnlocked }: {
   segments: Segment[]; phase: PlayerPhase; setPhase: (p: PlayerPhase) => void;
   replayUnlocked: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [idx, setIdx] = useState(-1);
-  // Elapsed seconds within the CURRENT pause, keyed by segment index so a new
-  // pause never briefly shows the previous one's clock.
-  const [tick, setTick] = useState<{ idx: number; gone: number }>({ idx: -1, gone: 0 });
+  const [paused, setPaused] = useState(false);
+  // Remaining seconds of the CURRENT pause segment, keyed by segment index so a
+  // new pause never briefly shows the previous one's clock.
+  const [remain, setRemain] = useState<{ idx: number; seconds: number }>({ idx: -1, seconds: 0 });
   const [audioError, setAudioError] = useState<string | null>(null);
   const seg: Segment | null = idx >= 0 && idx < segments.length ? segments[idx] : null;
 
   const advance = useCallback(() => {
+    setPaused(false);
     setIdx((cur) => {
       const next = cur + 1;
       if (next >= segments.length) {
@@ -409,33 +427,44 @@ function Player({ segments, phase, setPhase, replayUnlocked }: {
     });
   }, [segments.length, setPhase]);
 
-  // Drive the current segment: play audio (same unlocked element every time)
-  // or run a countdown for a pause marker.
+  // Load + play the current audio segment (same unlocked element every time).
   useEffect(() => {
-    if (!seg || phase !== "running") return;
-    if (seg.kind === "audio") {
-      const el = audioRef.current;
-      if (!el) return;
-      setAudioError(null);
-      el.src = seg.url;
-      el.play().catch(() => setAudioError("Playback was blocked — press play to continue."));
-      return;
-    }
-    const started = Date.now();
+    if (!seg || phase !== "running" || seg.kind !== "audio") return;
+    const el = audioRef.current;
+    if (!el) return;
+    setAudioError(null);
+    el.src = seg.url;
+    el.play().catch(() => setAudioError("Playback was blocked — press play to continue."));
+  }, [seg, phase]);
+
+  // Pause/resume toggling for the audio element.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el || seg?.kind !== "audio" || phase !== "running") return;
+    if (paused) el.pause();
+    else if (el.paused && el.src) el.play().catch(() => {});
+  }, [paused, seg, phase]);
+
+  // Countdown ticking for pause segments (freezes while paused; advances at 0).
+  const remainRef = useRef<{ idx: number; seconds: number }>({ idx: -1, seconds: 0 });
+  useEffect(() => {
+    if (!seg || phase !== "running" || seg.kind !== "pause" || paused) return;
     const at = idx;
     const t = setInterval(() => {
-      const gone = Math.floor((Date.now() - started) / 1000);
-      setTick({ idx: at, gone });
-      if (gone >= seg.seconds) {
+      const cur = remainRef.current.idx === at ? remainRef.current.seconds : seg.seconds;
+      const next = Math.max(cur - 1, 0);
+      remainRef.current = { idx: at, seconds: next };
+      setRemain(remainRef.current);
+      if (next === 0) {
         clearInterval(t);
         advance();
       }
-    }, 250);
+    }, 1000);
     return () => clearInterval(t);
-  }, [seg, idx, phase, advance]);
+  }, [seg, idx, phase, paused, advance]);
 
   const countdown = seg?.kind === "pause"
-    ? Math.max(seg.seconds - (tick.idx === idx ? tick.gone : 0), 0)
+    ? (remain.idx === idx ? remain.seconds : seg.seconds)
     : 0;
 
   const start = () => {
@@ -448,7 +477,6 @@ function Player({ segments, phase, setPhase, replayUnlocked }: {
 
   return (
     <div style={{ background: "#1C1B2E", color: "#fff", borderRadius: 16, padding: "18px 20px" }}>
-      {/* Hidden element — one instance so the user's first gesture unlocks all segments */}
       <audio ref={audioRef} onEnded={advance} style={{ display: "none" }} />
 
       {phase === "idle" ? (
@@ -457,14 +485,14 @@ function Player({ segments, phase, setPhase, replayUnlocked }: {
             <Volume2 size={17} /> Start the recording
           </button>
           <span style={{ fontSize: 13.5, color: "rgba(255,255,255,.7)", lineHeight: 1.5, flex: 1, minWidth: 220 }}>
-            Exam conditions: the audio plays <strong>once</strong> — no pausing, no going back.
-            The announcer gives you timed pauses to read the questions.
+            The audio plays <strong>once</strong> — no going back. You can pause if you need to
+            (the real exam doesn’t allow it). The announcer gives you timed reading pauses.
           </span>
         </div>
       ) : (
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           <span style={{ width: 40, height: 40, borderRadius: 11, background: "rgba(255,255,255,.1)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-            {finished ? <Check size={19} color="#4ade80" /> : seg?.kind === "pause" ? <Clock size={19} /> : <Volume2 size={19} className="animate-pulse" />}
+            {finished ? <Check size={19} color="#4ade80" /> : seg?.kind === "pause" ? <Clock size={19} /> : <Volume2 size={19} className={paused ? undefined : "animate-pulse"} />}
           </span>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ fontSize: 14.5, fontWeight: 700 }}>
@@ -473,11 +501,18 @@ function Player({ segments, phase, setPhase, replayUnlocked }: {
             <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.6)", marginTop: 2 }}>
               {finished
                 ? "Review your answers, then submit."
-                : seg?.kind === "pause"
-                  ? `Reading time — ${countdown}s`
-                  : audioError ?? "Playing — answer as you listen."}
+                : paused
+                  ? "Paused — the real exam doesn’t allow this."
+                  : seg?.kind === "pause"
+                    ? `Reading time — ${countdown}s`
+                    : audioError ?? "Playing — answer as you listen."}
             </div>
           </div>
+          {!finished ? (
+            <button type="button" onClick={() => setPaused((p) => !p)} style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", borderRadius: 9, padding: "8px 14px", fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {paused ? (<><Play size={13} /> Resume</>) : (<><Pause size={13} /> Pause</>)}
+            </button>
+          ) : null}
           {!finished && seg?.kind === "pause" ? (
             <button type="button" onClick={advance} style={{ background: "rgba(255,255,255,.12)", color: "#fff", border: "1px solid rgba(255,255,255,.2)", borderRadius: 9, padding: "8px 14px", fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               Skip wait
@@ -501,7 +536,7 @@ function Player({ segments, phase, setPhase, replayUnlocked }: {
           {segments.filter((s): s is AudioSeg => s.kind === "audio").map((s) => (
             <div key={s.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", width: 200, flex: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
-                      <audio src={s.url} controls preload="none" style={{ flex: 1, height: 32 }} />
+              <audio src={s.url} controls preload="none" style={{ flex: 1, height: 32 }} />
             </div>
           ))}
         </div>
@@ -655,7 +690,7 @@ function ReviewPanel({ grade }: { grade: Grade }) {
         </div>
       </div>
 
-      {/* Trap explanations for missed questions */}
+      {/* Trap explanations */}
       {trapped.length > 0 ? (
         <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
           <h3 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, margin: "0 0 12px", color: INK }}>Why the traps worked</h3>
