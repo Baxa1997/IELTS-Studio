@@ -35,6 +35,8 @@ type Item = {
   href: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
   soon?: boolean;
+  /** Small pill shown beside an otherwise-live link, e.g. "PREVIEW" for a UI-only page. */
+  badge?: string;
 };
 type Section = { title?: string; items: Item[] };
 
@@ -59,7 +61,7 @@ const STUDENT: Section[] = [
     title: "Coming soon",
     items: [
       { label: "Speaking", href: "#", icon: Mic, soon: true },
-      { label: "Listening", href: "#", icon: Headphones, soon: true },
+      { label: "Listening", href: "/listen", icon: Headphones, badge: "PREVIEW" },
     ],
   },
 ];
@@ -132,7 +134,7 @@ export function SidebarNav({ role }: { role: string }) {
             </div>
           ) : null}
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {section.items.map(({ label, href, icon: Icon, soon }) => {
+            {section.items.map(({ label, href, icon: Icon, soon, badge }) => {
               if (soon) {
                 return (
                   <span key={label} data-label={label} aria-label={label} aria-disabled="true" className="lp-sb-link" style={{ ...itemBase, justifyContent: "space-between", color: "#A7ABBA", fontWeight: 600, cursor: "default" }}>
@@ -153,11 +155,16 @@ export function SidebarNav({ role }: { role: string }) {
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
                   className={active ? "lp-sb-link" : "lp-sb-link lp-sb-item"}
-                  style={{ ...itemBase, fontWeight: active ? 700 : 600, color: active ? "#fff" : "#5A6076", background: active ? INDIGO : "transparent", border: active ? `1px solid ${INDIGO}` : "1px solid transparent", boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none" }}
+                  style={{ ...itemBase, justifyContent: "space-between", fontWeight: active ? 700 : 600, color: active ? "#fff" : "#5A6076", background: active ? INDIGO : "transparent", border: active ? `1px solid ${INDIGO}` : "1px solid transparent", boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none" }}
                 >
-                  <Icon size={20} strokeWidth={2.25} />
-                  <span className="lp-sb-label">{label}</span>
-                  <span className="lp-sb-trail" style={{ marginLeft: "auto", display: "flex" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <Icon size={20} strokeWidth={2.25} />
+                    <span className="lp-sb-label">{label}</span>
+                  </span>
+                  <span className="lp-sb-trail" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {badge ? (
+                      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10, letterSpacing: ".05em", color: active ? "rgba(255,255,255,.85)" : INDIGO, background: active ? "rgba(255,255,255,.18)" : "#EEF0FE", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>{badge}</span>
+                    ) : null}
                     <PendingDot />
                   </span>
                 </Link>

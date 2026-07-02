@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Check, Clock, Eraser, FileText, Highlighter, History, Layers, ListChecks, ListOrdered, Loader2, Maximize2, MessageCircle, Minimize2, PanelRightClose, PenLine, Send, Sparkles, SquarePen, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
@@ -103,7 +103,11 @@ type ReadingPart = P1 | P2 | P3 | P4 | P5;
 type ReadingPaper = { id: string; paper: "reading"; parts: ReadingPart[] };
 
 type QResult = { number: number; user_answer: string; correct_answer: string; is_correct: boolean; evidence: string };
-type ReadingGrade = { score: number; max_score: number; parts: { part: number; results: QResult[] }[] };
+type ReadingGrade = {
+  score: number; max_score: number; parts: { part: number; results: QResult[] }[];
+  /** Conservative indicative CEFR from the raw score — only sent for a full-length paper. */
+  indicative_cefr?: string | null;
+};
 
 type WritingTask = {
   task: string; cefr: string; register: string; target_words: number; word_range: [number, number];
@@ -126,8 +130,12 @@ type Tab = "reading" | "writing";
 type ReadingReq = { scope: "full" } | { scope: "part"; part: number };
 type WritingReq = { scope: "full" } | { scope: "task"; task: string };
 type ReadingItem = { id: string; scope: string; created_at: string; parts: number[] };
+/** How this reading run was started — drives the timer allowance: "full" = the
+ *  whole 5-part paper (60 min, like the real DTM exam), "part" = one part on its
+ *  own (a 20-minute focused session). */
+type ReadingMode = "full" | "part";
 type View =
-  | { kind: "reading"; paper: ReadingPaper; req: ReadingReq }
+  | { kind: "reading"; paper: ReadingPaper; req: ReadingReq; mode: ReadingMode }
   | { kind: "writing"; paper: WritingPaper; req: WritingReq };
 
 export function MultilevelClient() {
@@ -136,12 +144,12 @@ export function MultilevelClient() {
   const [busy, setBusy] = useState<string | null>(null); // the card key currently generating
   const [error, setError] = useState<string | null>(null);
 
-  async function startReading(req: ReadingReq, key: string) {
+  async function startReading(req: ReadingReq, key: string, mode: ReadingMode) {
     if (busy) return;
     setBusy(key); setError(null);
     try {
       const paper = await callEngine<ReadingPaper>("reading/generate", req);
-      setView({ kind: "reading", paper, req });
+      setView({ kind: "reading", paper, req, mode });
       window.scrollTo({ top: 0 });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Generation failed.");
@@ -171,7 +179,7 @@ export function MultilevelClient() {
     try {
       const paper = await callEngine<ReadingPaper>("reading/render", { item_id: item.id });
       const req: ReadingReq = item.scope === "part" && item.parts[0] ? { scope: "part", part: item.parts[0] } : { scope: "full" };
-      setView({ kind: "reading", paper, req });
+      setView({ kind: "reading", paper, req, mode: req.scope === "part" ? "part" : "full" });
       window.scrollTo({ top: 0 });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn’t reopen this paper.");
@@ -185,8 +193,9 @@ export function MultilevelClient() {
       <ReadingRunner
         key={view.paper.id}
         paper={view.paper}
+        mode={view.mode}
         regenBusy={!!busy}
-        onNew={() => void startReading(view.req, "new")}
+        onNew={() => void startReading(view.req, "new", view.mode)}
         onExit={() => setView(null)}
       />
     );
@@ -209,7 +218,7 @@ export function MultilevelClient() {
       onTab={setTab}
       busy={busy}
       error={error}
-      onReading={(req, key) => void startReading(req, key)}
+      onReading={(req, key, mode) => void startReading(req, key, mode)}
       onWriting={(req, key) => void startWriting(req, key)}
       onOpenItem={(item) => void openReadingItem(item)}
     />
@@ -242,11 +251,12 @@ function fmtWhen(iso: string): string {
 
 function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
   tab: Tab; onTab: (t: Tab) => void; busy: string | null; error: string | null;
-  onReading: (req: ReadingReq, key: string) => void;
+  onReading: (req: ReadingReq, key: string, mode: ReadingMode) => void;
   onWriting: (req: WritingReq, key: string) => void;
   onOpenItem: (item: ReadingItem) => void;
 }) {
   const [recent, setRecent] = useState<ReadingItem[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   // Load the learner's recent reading papers so they can reopen one instead of
   // regenerating. Reloads whenever the hub remounts (i.e. after exiting a paper).
   useEffect(() => {
@@ -282,11 +292,19 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
         <>
           <div style={{ marginTop: 18, marginBottom: 28 }}>
             <AiGenerateSection
-              title="Full reading paper"
-              description="Five original passages in the exact DTM format — 35 questions, rising B1 → C1, auto-graded with the evidence behind every answer."
-              cta={<AiGenerateButton label="Generate full paper" busyLabel="Writing your paper…" generating={busy === "r-full"} busy={!!busy} minWidth={200} onClick={() => onReading({ scope: "full" }, "r-full")} />}
+              title="AI Generate Reading"
+              description="Generate the full 5-part DTM paper, or a single part on its own — fresh every time."
+              cta={<AiGenerateButton label="AI Generate Reading" busyLabel="Writing your paper…" generating={busy === "r-full"} busy={!!busy} minWidth={220} onClick={() => setPickerOpen(true)} />}
             />
           </div>
+
+          {pickerOpen ? (
+            <ReadingGenerateModal
+              onClose={() => setPickerOpen(false)}
+              onFull={() => { setPickerOpen(false); onReading({ scope: "full" }, "r-full", "full"); }}
+              onPart={(part) => { setPickerOpen(false); onReading({ scope: "part", part }, `r-${part}`, "part"); }}
+            />
+          ) : null}
 
           {recent.length > 0 ? (
             <div style={{ marginBottom: 28 }}>
@@ -318,7 +336,7 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
           <SectionLabel>Or practise a single part</SectionLabel>
           <Grid>
             {READING_PARTS.map((p) => (
-              <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`)} />
+              <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`, "part")} />
             ))}
           </Grid>
         </>
@@ -399,6 +417,95 @@ function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabl
     </button>
   );
 }
+
+// ---- Reading generate picker (Full CEFR reading / Single part) -------------
+
+type ModalStep = "choose" | "passage";
+
+/** Opened from the single "AI Generate Reading" CTA. Two choices only: the full
+ *  5-part DTM paper, or a single-part practice — the latter drills into a second
+ *  step to pick which of the 5 parts (same list as the standalone grid below it). */
+function ReadingGenerateModal({ onClose, onFull, onPart }: {
+  onClose: () => void;
+  onFull: () => void;
+  onPart: (part: number) => void;
+}) {
+  const [step, setStep] = useState<ModalStep>("choose");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rd-gen-title"
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 70, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(20,20,40,.5)", backdropFilter: "blur(3px)" }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "min(640px, 100%)", maxHeight: "88vh", overflowY: "auto", background: "#fff", borderRadius: 20, padding: "26px 26px 22px", boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)", fontFamily: SANS, color: INK }}
+      >
+        {step === "choose" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <h2 id="rd-gen-title" style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 22, margin: 0, color: INK }}>AI Generate Reading</h2>
+                <p style={{ fontSize: 14, color: MUTED, margin: "6px 0 0" }}>Choose how you want to practise.</p>
+              </div>
+              <button type="button" onClick={onClose} aria-label="Close" style={modalCloseBtn}><X size={16} /></button>
+            </div>
+
+            <div style={{ display: "grid", gap: 12, marginTop: 20 }}>
+              <ModalOption Icon={Layers} title="Full CEFR reading" desc="All 5 parts, 35 questions — the complete DTM paper, timed like the real exam." meta="60 min · 35 Qs" onClick={onFull} />
+              <ModalOption Icon={FileText} title="Single part practice" desc="Pick one part on its own — a shorter, focused session with a 20-minute limit." meta="1 part · 20 min" onClick={() => setStep("passage")} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <button type="button" onClick={() => setStep("choose")} style={modalBackBtn}><ArrowLeft size={13} /> Back</button>
+                <h2 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 22, margin: "10px 0 0", color: INK }}>Choose a part</h2>
+                <p style={{ fontSize: 14, color: MUTED, margin: "6px 0 0" }}>Each part is a self-contained passage — pick one to practise.</p>
+              </div>
+              <button type="button" onClick={onClose} aria-label="Close" style={modalCloseBtn}><X size={16} /></button>
+            </div>
+
+            <div style={{ display: "grid", gap: 10, marginTop: 20 }}>
+              {READING_PARTS.map((p) => (
+                <ModalOption key={p.part} Icon={p.Icon} title={`Part ${p.part} · ${p.title}`} desc={p.desc} meta={`${p.level} · ${p.count} questions`} onClick={() => onPart(p.part)} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModalOption({ Icon, title, desc, meta, onClick }: { Icon: typeof BookOpen; title: string; desc: string; meta: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="lp-hover" style={{ display: "flex", alignItems: "center", gap: 14, textAlign: "left", width: "100%", background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, padding: 14, cursor: "pointer" }}>
+      <span style={{ width: 42, height: 42, borderRadius: 11, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={19} /></span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: SANS, fontWeight: 700, fontSize: 15, color: INK }}>{title}</span>
+        <span style={{ display: "block", fontFamily: SANS, fontSize: 13, color: "#7A7989", marginTop: 2, lineHeight: 1.45 }}>{desc}</span>
+      </span>
+      <span style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 12, color: FAINT, whiteSpace: "nowrap" }}>{meta}</span>
+        <ArrowRight size={15} strokeWidth={2.2} color={INDIGO} />
+      </span>
+    </button>
+  );
+}
+
+const modalCloseBtn: React.CSSProperties = { width: 30, height: 30, borderRadius: 9, border: "1px solid rgba(28,27,46,.09)", background: "#fff", color: MUTED, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 };
+const modalBackBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "transparent", color: INDIGO, fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: "pointer", padding: 0 };
 
 // ---- Fullscreen ------------------------------------------------------------
 
@@ -523,25 +630,41 @@ function MarkerToolbar({ tool, setTool, onClear, marks }: { tool: MarkTool; setT
 
 // ---- Reading ---------------------------------------------------------------
 
-function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPaper; regenBusy: boolean; onNew: () => void; onExit: () => void }) {
+function ReadingRunner({ paper, mode, regenBusy, onNew, onExit }: { paper: ReadingPaper; mode: ReadingMode; regenBusy: boolean; onNew: () => void; onExit: () => void }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [grade, setGrade] = useState<ReadingGrade | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [coachOpen, setCoachOpen] = useState(true);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const hl = useHighlighter(scrollRef);
+  const [active, setActive] = useState(0); // index into paper.parts — which part is showing
+  const [cur, setCur] = useState<number | null>(null); // currently focused question number
+  const passageRef = useRef<HTMLDivElement | null>(null);
+  const hl = useHighlighter(passageRef);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const fs = useFullscreen(rootRef);
 
-  const set = (n: number | string, v: string) => setAnswers((a) => ({ ...a, [String(n)]: v }));
+  const set = useCallback((n: number | string, v: string) => {
+    setAnswers((a) => ({ ...a, [String(n)]: v }));
+    const num = typeof n === "number" ? n : Number(n);
+    if (!Number.isNaN(num)) setCur(num);
+  }, []);
+
+  // Jump to any question's rendered element, wherever it lives (passage pane for
+  // Part 1's inline gaps, questions pane for everything else) — scrollIntoView
+  // works across either ancestor scroll container without pane-specific math.
+  const jumpTo = useCallback((n: number) => {
+    setCur(n);
+    requestAnimationFrame(() => {
+      document.getElementById(`cefr-q-${n}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
 
   const submit = async () => {
     setBusy(true); setError(null);
     try {
       const res = await callEngine<ReadingGrade>("reading/grade", { item_id: paper.id, answers });
       setGrade(res);
-      scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      passageRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Grading failed.");
     } finally {
@@ -554,12 +677,18 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
   useEffect(() => { submitRef.current = submit; });
   const onExpire = useCallback(() => void submitRef.current(), []);
 
+  // Switching parts resets the passage pane's scroll (mirrors the main IELTS
+  // multi-passage test runner switching passages).
+  useEffect(() => { passageRef.current?.scrollTo?.({ top: 0 }); }, [active]);
+
   const graded = !!grade;
   const nums = useMemo(() => questionNumbers(paper.parts), [paper.parts]);
   const coach = useMemo(() => coachContext(paper.parts), [paper.parts]);
   const total = nums.length;
   const answeredCount = nums.filter((n) => (answers[String(n)] ?? "").trim()).length;
-  const allowance = Math.max(600, total * 90);
+  // Full paper = 60 min (the real DTM reading allowance); a single part = a
+  // 20-minute focused session (matches "spend about 20 minutes" pacing).
+  const allowance = mode === "part" ? 20 * 60 : 60 * 60;
   const pct = total ? Math.round((answeredCount / total) * 100) : 0;
 
   const correctByNum = new Map<number, QResult>();
@@ -572,6 +701,15 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
       : hl.tool
         ? "Drag across words to highlight them."
         : `Answer all ${total} questions, then submit.`;
+
+  const activePart = paper.parts[active] ?? paper.parts[0];
+  const activeNums = useMemo(() => (activePart ? questionNumbers([activePart]) : []), [activePart]);
+  const activeAnswered = activeNums.filter((n) => (answers[String(n)] ?? "").trim()).length;
+  const rangeLabel = activeNums.length
+    ? activeNums.length === 1
+      ? `Question ${activeNums[0]}`
+      : `Questions ${Math.min(...activeNums)}–${Math.max(...activeNums)}`
+    : "";
 
   return (
     <div ref={rootRef} style={{ position: "fixed", inset: 0, zIndex: 50, height: "100vh", display: "flex", flexDirection: "column", background: D_PAGE, fontFamily: JAKARTA, color: D_INK, overflow: "hidden" }}>
@@ -642,31 +780,105 @@ function ReadingRunner({ paper, regenBusy, onNew, onExit }: { paper: ReadingPape
         </div>
       </div>
 
-      {/* Content row: reading (left, full width) · coach panel (right) */}
+      {graded ? (
+        <div style={{ padding: "14px clamp(16px,3vw,32px) 0", flexShrink: 0 }}>
+          <ScoreBanner score={grade.score} max={grade.max_score} level={grade.indicative_cefr} />
+        </div>
+      ) : null}
+
+      {/* Content row: passage/reference pane (left) · questions pane (right).
+          The coach is a floating overlay (below), not a column here. */}
       <div className="ml-rd-row" style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0, position: "relative" }}>
-        <div ref={scrollRef} onMouseUp={hl.onMouseUp} style={{ flex: 1, overflowY: "auto", padding: "14px clamp(12px,2vw,20px) 48px", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
-          {graded ? <ScoreBanner score={grade.score} max={grade.max_score} /> : null}
-          {paper.parts.map((part) => (
-            <PartBlock key={part.part} part={part} answers={answers} set={set} results={correctByNum} graded={graded} />
-          ))}
+        <div ref={passageRef} onMouseUp={hl.onMouseUp} className="ml-rd-passage" style={{ flex: 1, overflowY: "auto", padding: "20px clamp(14px,2.4vw,36px) 48px", minHeight: 0, borderRight: `1px solid ${D_LINE}`, cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
+          <div style={{ maxWidth: 680 }}>
+            {activePart ? <PartPassage part={activePart} answers={answers} set={set} results={correctByNum} graded={graded} /> : null}
+          </div>
+        </div>
+
+        <div className="ml-rd-questions" style={{ width: "42%", maxWidth: 600, flex: "none", overflowY: "auto", padding: "20px clamp(14px,2.2vw,28px) 90px", minHeight: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+            <h2 style={{ fontFamily: JAKARTA, fontSize: 18, fontWeight: 700, color: D_VIOLET, margin: 0 }}>{rangeLabel}</h2>
+            <span style={{ fontFamily: JAKARTA, fontSize: 13, fontWeight: 600, color: D_SLATE2, fontVariantNumeric: "tabular-nums" }}>{activeAnswered} of {activeNums.length}</span>
+          </div>
+          {activePart ? <PartQuestions part={activePart} answers={answers} set={set} results={correctByNum} graded={graded} onJump={jumpTo} /> : null}
           {error ? <Alert>{error}</Alert> : null}
         </div>
 
-        {coachOpen ? (
-          <aside className="ml-rd-coach" style={{ width: 360, flexShrink: 0, borderLeft: `1px solid ${D_LINE}`, background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
-            <CefrCoach passageBody={coach.body} questions={coach.questions} phase={graded ? "results" : "reading"} onClose={() => setCoachOpen(false)} />
-          </aside>
-        ) : null}
+      </div>
+
+      {/* Reading coach — a floating chat menu that OVERLAYS the content (it no longer
+          takes a column of the main area), opened/closed from the info-bar toggle.
+          position:absolute is relative to the fixed runner root, so it survives OS
+          fullscreen and floats above the passage/questions + the bottom nav. */}
+      {coachOpen ? (
+        <div className="ml-rd-coach-float" style={{ position: "absolute", right: 20, bottom: 72, zIndex: 30, width: 380, maxWidth: "calc(100vw - 40px)", height: "min(72vh, 600px)", background: "#fff", border: `1px solid ${D_LINE}`, borderRadius: 16, boxShadow: "0 24px 60px -20px rgba(15,23,42,.45)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <CefrCoach passageBody={coach.body} questions={coach.questions} phase={graded ? "results" : "reading"} onClose={() => setCoachOpen(false)} />
+        </div>
+      ) : null}
+
+      {/* Bottom nav: part switcher + the ACTIVE part's question circles rendered
+          right after that part's pill (not all at the end) — mirrors the main IELTS
+          multi-passage runner. */}
+      <div className="ml-rd-qnav" style={{ flex: "none", borderTop: `1px solid ${D_LINE}`, background: "#fff", padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+        {paper.parts.length > 1 ? (
+          paper.parts.map((p, pi) => {
+            const pNums = questionNumbers([p]);
+            const ans = pNums.filter((n) => (answers[String(n)] ?? "").trim()).length;
+            const on = pi === active;
+            return (
+              <Fragment key={p.part}>
+                <button type="button" onClick={() => setActive(pi)} aria-current={on ? "true" : undefined} style={cefrPartPill(on)}>
+                  <span style={{ fontWeight: on ? 700 : 600, fontSize: 13.5, color: on ? D_VIOLET : D_SLATE3 }}>Part {p.part}</span>
+                  {!on ? <span style={{ fontSize: 12, color: D_SLATE2, fontVariantNumeric: "tabular-nums" }}>{ans} of {pNums.length}</span> : null}
+                </button>
+                {on ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    {activeNums.map((n) => {
+                      const answered = !!(answers[String(n)] ?? "").trim();
+                      return (
+                        <button key={n} type="button" onClick={() => jumpTo(n)} aria-label={`Question ${n}${answered ? " (answered)" : ""}`} style={cefrNavCircle(answered, cur === n)}>
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </Fragment>
+            );
+          })
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {activeNums.map((n) => {
+              const answered = !!(answers[String(n)] ?? "").trim();
+              return (
+                <button key={n} type="button" onClick={() => jumpTo(n)} aria-label={`Question ${n}${answered ? " (answered)" : ""}`} style={cefrNavCircle(answered, cur === n)}>
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* In-passage word lookup + translate. Mounted inside the runner root so it
           survives OS fullscreen; suppressed while a highlighter pen is active so a
           drag marks text instead of popping the dictionary. */}
       {hl.tool === null ? (
-        <WordLookup getContainer={() => scrollRef.current} contextText={coach.body} />
+        <WordLookup getContainer={() => passageRef.current} contextText={coach.body} />
       ) : null}
     </div>
   );
+}
+
+function cefrPartPill(active: boolean): React.CSSProperties {
+  return { display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 14px", borderRadius: 999, cursor: "pointer", flex: "none", background: "#fff", fontFamily: JAKARTA, border: `1.5px solid ${active ? D_VIOLET : D_LINE}` };
+}
+
+function cefrNavCircle(answered: boolean, current: boolean): React.CSSProperties {
+  const base: React.CSSProperties = { width: 27, height: 27, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1.5px solid", fontFamily: JAKARTA, fontVariantNumeric: "tabular-nums" };
+  if (current) return { ...base, borderColor: D_VIOLET, background: "#fff", color: D_VIOLET, boxShadow: `0 0 0 3px ${D_VTINT}` };
+  if (answered) return { ...base, borderColor: D_VIOLET, background: D_VIOLET, color: "#fff" };
+  return { ...base, borderColor: D_LINE, background: "#fff", color: D_SLATE2 };
 }
 
 /** Countdown that fires `onExpire` once at zero; render-prop exposes raw seconds left. */
@@ -836,55 +1048,115 @@ function coachContext(parts: ReadingPart[]): { body: string; questions: string }
   return { body: body.join("\n\n"), questions: qs.join("\n") };
 }
 
-function PartBlock({ part, answers, set, results, graded }: {
+// ---- Passage/reference pane · Questions pane, dispatched per part shape ----
+//
+// Each of the 5 DTM part types is split into a read/reference half (passage
+// text, notices, or the headings list) and an answer half (the actual inputs
+// + their instructions) so the runner can show them side by side — Part 1 is
+// the exception: its gaps are inline in the passage, so its "questions" pane
+// is a jump-to navigator instead of a separate answer list.
+
+function PartPassage({ part, answers, set, results, graded }: {
   part: ReadingPart; answers: Record<string, string>; set: (n: number | string, v: string) => void;
   results: Map<number, QResult>; graded: boolean;
 }) {
-  return (
-    <section style={{ background: "#fff", borderRadius: 12, border: `1px solid ${D_LINE}`, padding: "clamp(24px,3vw,40px) clamp(20px,3.2vw,48px)", boxShadow: "0 1px 4px rgba(0,0,0,.05)", marginBottom: 16 }}>
-      <PartHeading n={part.part} cefr={part.cefr} count={partCountLabel(part)} />
-      {part.part === 1 ? <Part1 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
-      {part.part === 2 ? <Part2 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
-      {part.part === 3 ? <Part3 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
-      {part.part === 4 ? <Part4 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
-      {part.part === 5 ? <Part5 p={part} answers={answers} set={set} results={results} graded={graded} /> : null}
-    </section>
-  );
+  if (part.part === 1) return <Part1Passage p={part} answers={answers} set={set} results={results} graded={graded} />;
+  if (part.part === 2) return <Part2Passage p={part} />;
+  if (part.part === 3) return <Part3Passage p={part} />;
+  if (part.part === 4) return <Part4Passage p={part} />;
+  return <Part5Passage p={part} />;
 }
 
-function Part1({ p, answers, set, results, graded }: { p: P1; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+function PartQuestions({ part, answers, set, results, graded, onJump }: {
+  part: ReadingPart; answers: Record<string, string>; set: (n: number | string, v: string) => void;
+  results: Map<number, QResult>; graded: boolean; onJump: (n: number) => void;
+}) {
+  if (part.part === 1) return <Part1Questions p={part} answers={answers} results={results} graded={graded} onJump={onJump} />;
+  if (part.part === 2) return <Part2Questions p={part} answers={answers} set={set} results={results} graded={graded} />;
+  if (part.part === 3) return <Part3Questions p={part} answers={answers} set={set} results={results} graded={graded} />;
+  if (part.part === 4) return <Part4Questions p={part} answers={answers} set={set} results={results} graded={graded} />;
+  return <Part5Questions p={part} answers={answers} set={set} results={results} graded={graded} />;
+}
+
+// ---- Part 1 — sentence gap-fill (answers are inline in the passage) -------
+
+function Part1Passage({ p, answers, set, results, graded }: { p: P1; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
   const segments = useMemo(() => splitGaps(p.text_with_gaps), [p.text_with_gaps]);
   return (
     <>
+      <PartHeading n={p.part} cefr={p.cefr} count={partCountLabel(p)} />
       <Instruction>{p.instruction}</Instruction>
-      <h2 style={{ fontFamily: PLEX, fontWeight: 600, fontSize: 28, lineHeight: 1.3, color: D_DARK, margin: "0 0 22px" }}>{p.title}</h2>
-      <p style={{ fontFamily: PLEX, fontWeight: 400, fontSize: 18, lineHeight: 2.45, color: D_INK, margin: 0, textWrap: "pretty" } as React.CSSProperties}>
+      <h2 style={{ fontFamily: PLEX, fontWeight: 600, fontSize: 26, lineHeight: 1.3, color: D_DARK, margin: "0 0 20px" }}>{p.title}</h2>
+      <p style={{ fontFamily: PLEX, fontWeight: 400, fontSize: 17, lineHeight: 2.4, color: D_INK, margin: 0, textWrap: "pretty" } as React.CSSProperties}>
         {segments.map((s, i) =>
           s.type === "text" ? (
             <span key={i}>{s.value}</span>
           ) : (
-            <GapInput key={i} n={s.number} answers={answers} set={set} results={results} graded={graded} width={108} />
+            <GapInput key={i} n={s.number} answers={answers} set={set} results={results} graded={graded} width={100} />
           ),
         )}
       </p>
-      {graded ? <Feedback nums={segments.filter((s) => s.type === "gap").map((s) => (s as { number: number }).number)} results={results} /> : null}
     </>
   );
 }
 
-function Part2({ p, answers, set, results, graded }: { p: P2; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
-  const letters = p.texts.map((t) => t.letter);
+function Part1Questions({ p, answers, results, graded, onJump }: { p: P1; answers: Record<string, string>; results: Map<number, QResult>; graded: boolean; onJump: (n: number) => void }) {
+  const nums = useMemo(
+    () => splitGaps(p.text_with_gaps).filter((s) => s.type === "gap").map((s) => (s as { number: number }).number),
+    [p.text_with_gaps],
+  );
   return (
     <>
+      <p style={{ fontFamily: JAKARTA, fontSize: 13, color: D_SLATE, margin: "0 0 16px", lineHeight: 1.6 }}>
+        {graded ? "Tap a gap to jump back to it in the passage." : "Fill in the blanks in the passage on the left — tap a gap here to jump to it."}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {nums.map((n) => {
+          const filled = !!(answers[String(n)] ?? "").trim();
+          const r = graded ? results.get(n) : undefined;
+          const border = r ? (r.is_correct ? GOOD : BAD) : filled ? D_VIOLET : D_LINE;
+          return (
+            <button key={n} type="button" onClick={() => onJump(n)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, width: "100%", textAlign: "left", padding: "9px 12px", borderRadius: 9, border: `1px solid ${border}`, background: r ? (r.is_correct ? "#f0fdf4" : "#fef2f2") : filled ? D_VTINT2 : "#fff", cursor: "pointer", fontFamily: JAKARTA }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: D_VIOLET }}>Gap {n}</span>
+              {r ? (
+                <span style={{ fontSize: 12.5, fontWeight: 600, color: r.is_correct ? GOOD : BAD }}>
+                  {r.is_correct ? "Correct" : `${r.user_answer || "—"} → ${r.correct_answer}`}
+                </span>
+              ) : (
+                <span style={{ fontSize: 12.5, color: filled ? D_VIOLET : D_SLATE2 }}>{filled ? "Filled" : "Empty"}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// ---- Part 2 — text matching (notices left, statements right) --------------
+
+function Part2Passage({ p }: { p: P2 }) {
+  return (
+    <>
+      <PartHeading n={p.part} cefr={p.cefr} count={partCountLabel(p)} />
       <Instruction>{p.instruction}</Instruction>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10, marginBottom: 18 }}>
+      <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 15, color: D_DARK, margin: "0 0 12px" }}>{p.theme}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {p.texts.map((t) => (
-          <div key={t.letter} style={{ border: `1px solid ${D_LINE}`, borderRadius: 10, padding: "11px 13px", background: D_PAGE }}>
-            <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 13, color: D_DARK }}><span style={{ color: D_VIOLET }}>{t.letter}.</span> {t.title}</div>
-            <div style={{ fontFamily: JAKARTA, fontSize: 12.5, color: D_SLATE, lineHeight: 1.55, marginTop: 3 }}>{t.body}</div>
+          <div key={t.letter} style={{ border: `1px solid ${D_LINE}`, borderRadius: 10, padding: "12px 14px", background: D_PAGE }}>
+            <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 13.5, color: D_DARK }}><span style={{ color: D_VIOLET }}>{t.letter}.</span> {t.title}</div>
+            <div style={{ fontFamily: JAKARTA, fontSize: 13, color: D_SLATE, lineHeight: 1.6, marginTop: 4 }}>{t.body}</div>
           </div>
         ))}
       </div>
+    </>
+  );
+}
+
+function Part2Questions({ p, answers, set, results, graded }: { p: P2; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+  const letters = p.texts.map((t) => t.letter);
+  return (
+    <>
       {p.statements.map((s) => (
         <Row key={s.number} n={s.number} text={s.text} results={results} graded={graded}>
           <LetterSelect n={s.number} letters={letters} answers={answers} set={set} disabled={graded} />
@@ -894,33 +1166,54 @@ function Part2({ p, answers, set, results, graded }: { p: P2; answers: Record<st
   );
 }
 
-function Part3({ p, answers, set, results, graded }: { p: P3; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+// ---- Part 3 — heading matching (headings list left, paragraphs right) -----
+
+function Part3Passage({ p }: { p: P3 }) {
   const letters = Object.keys(p.headings);
   return (
     <>
+      <PartHeading n={p.part} cefr={p.cefr} count={partCountLabel(p)} />
       <Instruction>{p.instruction}</Instruction>
-      <div style={{ border: `1px solid ${D_LINE}`, borderRadius: 10, padding: "13px 15px", background: D_PAGE, marginBottom: 18 }}>
-        <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 12, color: D_SLATE2, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 7 }}>List of headings</div>
+      <div style={{ border: `1px solid ${D_LINE}`, borderRadius: 10, padding: "14px 16px", background: D_PAGE }}>
+        <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 12, color: D_SLATE2, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>List of headings</div>
         {letters.map((l) => (
           <div key={l} style={{ fontFamily: JAKARTA, fontSize: 13.5, color: D_INK, lineHeight: 1.75 }}><b style={{ color: D_VIOLET }}>{l}.</b> {p.headings[l]}</div>
         ))}
       </div>
+    </>
+  );
+}
+
+function Part3Questions({ p, answers, set, results, graded }: { p: P3; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+  const letters = Object.keys(p.headings);
+  return (
+    <>
       {p.paragraphs.map((para, i) => (
         <div key={para.question} style={{ marginBottom: 18 }}>
           <Row n={para.question} text={`Paragraph ${roman(i + 1)}`} results={results} graded={graded}>
             <LetterSelect n={para.question} letters={letters} answers={answers} set={set} disabled={graded} />
           </Row>
-          <p style={{ fontFamily: PLEX, fontSize: 16, lineHeight: 1.9, color: D_INK, margin: "10px 0 0" } as React.CSSProperties}>{para.text}</p>
+          <p style={{ fontFamily: PLEX, fontSize: 15, lineHeight: 1.85, color: D_INK, margin: "10px 0 0" } as React.CSSProperties}>{para.text}</p>
         </div>
       ))}
     </>
   );
 }
 
-function Part4({ p, answers, set, results, graded }: { p: P4; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+// ---- Part 4 — passage + MCQ/T-F-NI (passage left, questions right) --------
+
+function Part4Passage({ p }: { p: P4 }) {
   return (
     <>
+      <PartHeading n={p.part} cefr={p.cefr} count={partCountLabel(p)} />
       <Passage title={p.title} text={p.text} />
+    </>
+  );
+}
+
+function Part4Questions({ p, answers, set, results, graded }: { p: P4; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+  return (
+    <>
       <Instruction>{p.instruction_mcq}</Instruction>
       {p.mcq.map((q) => (
         <McqRow key={q.number} number={q.number} stem={q.stem} options={q.options} answers={answers} set={set} results={results} graded={graded} />
@@ -935,16 +1228,26 @@ function Part4({ p, answers, set, results, graded }: { p: P4; answers: Record<st
   );
 }
 
-function Part5({ p, answers, set, results, graded }: { p: P5; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+// ---- Part 5 — summary gap-fill + MCQ (passage left, questions right) ------
+
+function Part5Passage({ p }: { p: P5 }) {
   return (
     <>
+      <PartHeading n={p.part} cefr={p.cefr} count={partCountLabel(p)} />
       <Passage title={p.title} text={p.text} />
+    </>
+  );
+}
+
+function Part5Questions({ p, answers, set, results, graded }: { p: P5; answers: Record<string, string>; set: (n: number | string, v: string) => void; results: Map<number, QResult>; graded: boolean }) {
+  return (
+    <>
       <Instruction>{p.instruction_gap}</Instruction>
       {p.gaps.map((g) => {
         const segs = splitGaps(g.sentence.includes("_") ? g.sentence.replace(/_+/, `(${g.number}) ______`) : `${g.sentence} (${g.number}) ______`);
         return (
-          <p key={g.number} style={{ fontFamily: PLEX, fontSize: 17, lineHeight: 2.2, color: D_INK, margin: "0 0 10px" } as React.CSSProperties}>
-            {segs.map((s, i) => s.type === "text" ? <span key={i}>{s.value}</span> : <GapInput key={i} n={g.number} answers={answers} set={set} results={results} graded={graded} width={108} />)}
+          <p key={g.number} style={{ fontFamily: PLEX, fontSize: 16, lineHeight: 2.1, color: D_INK, margin: "0 0 10px" } as React.CSSProperties}>
+            {segs.map((s, i) => s.type === "text" ? <span key={i}>{s.value}</span> : <GapInput key={i} n={g.number} answers={answers} set={set} results={results} graded={graded} width={100} />)}
           </p>
         );
       })}
@@ -1443,15 +1746,23 @@ function ResultLabel({ children }: { children: React.ReactNode }) {
 
 // ---- Shared UI -------------------------------------------------------------
 
-function ScoreBanner({ score, max }: { score: number; max: number }) {
+function ScoreBanner({ score, max, level }: { score: number; max: number; level?: string | null }) {
   const pct = max ? Math.round((score / max) * 100) : 0;
   return (
-    <div style={{ background: `linear-gradient(135deg,${D_VIOLET} 0%,#4f46e5 100%)`, color: "#fff", borderRadius: 12, padding: "18px 24px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }}>
+    <div style={{ background: `linear-gradient(135deg,${D_VIOLET} 0%,#4f46e5 100%)`, color: "#fff", borderRadius: 12, padding: "18px 24px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }}>
       <div>
         <div style={{ fontFamily: JAKARTA, fontSize: 12.5, opacity: 0.85, fontWeight: 600 }}>Your score</div>
         <div style={{ fontFamily: PLEX, fontSize: 32, fontWeight: 600 }}>{score}<span style={{ opacity: 0.7, fontSize: 20 }}> / {max}</span></div>
       </div>
-      <div style={{ fontFamily: PLEX, fontSize: 28, fontWeight: 600 }}>{pct}%</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        {level ? (
+          <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 16px", borderRadius: 12, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.25)" }}>
+            <span style={{ fontFamily: PLEX, fontSize: 22, fontWeight: 600, lineHeight: 1 }}>≈ {level}</span>
+            <span style={{ fontFamily: JAKARTA, fontSize: 10.5, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", opacity: 0.8 }}>indicative</span>
+          </span>
+        ) : null}
+        <div style={{ fontFamily: PLEX, fontSize: 28, fontWeight: 600 }}>{pct}%</div>
+      </div>
     </div>
   );
 }
@@ -1500,7 +1811,7 @@ function Instruction({ children }: { children: React.ReactNode }) {
 function Row({ n, text, results, graded, children }: { n: number; text: string; results: Map<number, QResult>; graded: boolean; children: React.ReactNode }) {
   const r = graded ? results.get(n) : undefined;
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 0", borderTop: `1px solid ${D_LINE}` }}>
+    <div id={`cefr-q-${n}`} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 0", borderTop: `1px solid ${D_LINE}` }}>
       <span style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 13, color: D_VIOLET, minWidth: 22 }}>{n}.</span>
       <div style={{ flex: 1, fontFamily: JAKARTA, fontSize: 14, color: D_INK, lineHeight: 1.5 }}>
         {text}
@@ -1517,7 +1828,7 @@ function McqRow({ number, stem, options, answers, set, results, graded }: {
   const r = graded ? results.get(number) : undefined;
   const chosen = answers[String(number)] ?? "";
   return (
-    <div style={{ padding: "14px 0", borderTop: `1px solid ${D_LINE}` }}>
+    <div id={`cefr-q-${number}`} style={{ padding: "14px 0", borderTop: `1px solid ${D_LINE}` }}>
       <div style={{ fontFamily: JAKARTA, fontSize: 14, fontWeight: 600, color: D_DARK, marginBottom: 9, lineHeight: 1.5 }}>{number}. {stem}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {Object.entries(options).map(([letter, label]) => {
@@ -1541,7 +1852,7 @@ function GapInput({ n, answers, set, results, graded, width }: { n: number; answ
   const r = graded ? results.get(n) : undefined;
   const underline = r ? (r.is_correct ? GOOD : BAD) : D_VBORDER;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", verticalAlign: "middle", gap: 3, margin: "0 3px" }}>
+    <span id={`cefr-q-${n}`} style={{ display: "inline-flex", alignItems: "center", verticalAlign: "middle", gap: 3, margin: "0 3px" }}>
       <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch" }}>
         <input
           value={answers[String(n)] ?? ""}

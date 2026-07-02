@@ -165,19 +165,23 @@ export interface ReadingGroupPlan extends ReadingGroupVariant {
  * fixed. No two passages in a layout repeat the same type mix. Content is always
  * original (CLAUDE.md §IP) — only the STRUCTURE mirrors the real exam.
  *
- * Two Cambridge variants ride on existing types (no new enum / migration):
+ * Three Cambridge variants ride on existing types (no new enum / migration):
  *   • summary_completion + `wordBank` → "choose from the list A–J" summary.
  *   • note_completion + `layout:"flowchart"` → a flow-chart of process stages.
+ *   • matching_information → the "which paragraph contains X" (A–G) task, the ONLY
+ *     type whose passage is printed with LETTERED paragraphs. Exactly one passage
+ *     per layout carries it, in a different position across A/B/C (P1/P2/P3), so
+ *     every full test has one lettered passage and the other two are plain prose.
  */
 export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>> = [
-  // Layout A — notes box · word-bank summary · verdict-heavy P3.
+  // Layout A — lettered passage = P1 (matching information) · word-bank summary · verdict P3.
   [
     [
-      { type: "note_completion", count: 7 },
-      { type: "true_false_not_given", count: 6 },
+      { type: "matching_information", count: 6 },
+      { type: "true_false_not_given", count: 7 },
     ],
     [
-      { type: "matching_headings", count: 6 },
+      { type: "sentence_completion", count: 6 },
       { type: "summary_completion", count: 7, wordBank: true },
     ],
     [
@@ -186,7 +190,7 @@ export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>>
       { type: "yes_no_not_given", count: 6 },
     ],
   ],
-  // Layout B — sentence completion · matching information · a flow-chart process P3.
+  // Layout B — sentence completion P1 · lettered passage = P2 (matching information) · flow-chart P3.
   [
     [
       { type: "true_false_not_given", count: 7 },
@@ -202,10 +206,10 @@ export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>>
       { type: "multiple_choice", count: 4 },
     ],
   ],
-  // Layout C — headings-led · second word-bank summary · sentence endings.
+  // Layout C — verdicts-led P1 · word-bank summary P2 · lettered passage = P3 (matching information).
   [
     [
-      { type: "matching_headings", count: 6 },
+      { type: "yes_no_not_given", count: 6 },
       { type: "note_completion", count: 7 },
     ],
     [
@@ -213,9 +217,9 @@ export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>>
       { type: "summary_completion", count: 6, wordBank: true },
     ],
     [
+      { type: "matching_information", count: 6 },
       { type: "multiple_choice", count: 4 },
-      { type: "matching_sentence_endings", count: 4 },
-      { type: "sentence_completion", count: 6 },
+      { type: "sentence_completion", count: 4 },
     ],
   ],
 ];
@@ -254,6 +258,10 @@ export const READING_DISCLAIMER =
 export const generateReadingInputSchema = z.object({
   module: z.enum(READING_MODULES).default("academic"),
   topic: z.string().trim().min(2).max(80),
+  // Optional lens the passage is framed through (from the topic taxonomy's angles) —
+  // a mechanism explainer vs a history vs a debate vs a single study. Steers the
+  // prompt so the same topic yields unrelated passages; omitted for author specs.
+  angle: z.string().trim().min(2).max(160).optional(),
   targetBand: z
     .number()
     .int()

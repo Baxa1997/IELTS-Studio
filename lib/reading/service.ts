@@ -7,6 +7,7 @@ import { generate } from "@/lib/ai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+import { expandOptionalParens, norm, splitAlternatives } from "./grade";
 import {
   CONFIDENCE_THRESHOLD,
   DEFAULT_TARGET_BAND,
@@ -15,6 +16,7 @@ import {
   generateReadingInputSchema,
   MAX_TARGET_BAND,
   MIN_TARGET_BAND,
+  READING_GAP_MARKER,
   readingSetOutputSchema,
   readingValidationOutputSchema,
   reviewDecisionSchema,
@@ -23,6 +25,7 @@ import {
   type GenerateReadingInput,
   type NoteMeta,
   type ReadingModule,
+  type ReadingQuestionOut,
   type ReadingQuestionType,
   type ReadingValidationItem,
   type ReadingValidationOutput,
@@ -137,6 +140,7 @@ async function composeReadingSet(
         target_band: input.targetBand,
         question_types: input.questionTypes,
         total_questions: input.totalQuestions,
+        ...(input.angle ? { angle: input.angle } : {}),
         ...(questionPlanLine ? { question_plan: questionPlanLine } : {}),
       },
       meta,
@@ -178,7 +182,12 @@ async function composeReadingSet(
   let flaggedCount = 0;
   const prepared: PreparedQuestion[] = set.questions.map((q, i) => {
     const item = byNumber.get(q.number);
+    // Objective code checks first — the LLM validator never sees the word limit
+    // and can't be trusted on verbatim containment, so these are authoritative
+    // and flag the question regardless of its verdict.
+    const problem = codeCheckProblem(q, set.body);
     const needsReview =
+      problem !== null ||
       !item ||
       item.verdict !== "correct" ||
       item.confidence < CONFIDENCE_THRESHOLD ||
@@ -191,6 +200,7 @@ async function composeReadingSet(
     }
     if (validationFailed) note = "validation pass unavailable — review manually";
     else if (!item) note = "no validator verdict for this item";
+    if (problem) note = `code check: ${problem}`;
 
     return {
       question_type: q.type,
@@ -321,11 +331,10 @@ export async function generateReadingSet(
 export async function generateReadingForStudent(actor: ReadingActor): Promise<GeneratedReadingSet> {
   const targetBand = await resolveReadingTargetBand(actor);
   const input = parse(generateReadingInputSchema, defaultReadingSpec(targetBand));
-  const composed = await composeReadingSet(input, {
+  const { composed, kept } = await composeValidated(input, {
     organizationId: actor.organizationId,
     userId: actor.userId,
   });
-  const kept = keepValidated(composed.prepared);
   const admin = createAdminClient();
   return storeReadingSet(
     admin,
@@ -376,23 +385,29 @@ interface BuildTestParams {
  * test is never served. Shared by the learner path and the library seed.
  */
 async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Promise<GeneratedReadingTest> {
-  const topics = pickDistinct(READING_TOPICS, FULL_TEST_PASSAGE_COUNT);
+  // One brief per passage: a DISTINCT domain + topic + angle drawn for each
+  // difficulty slot (P1 easiest → P3 hardest), so the three passages span three
+  // subjects and lenses rather than repeating a theme.
+  const briefs = pickFullTestTopics();
   // Pick ONE real-Cambridge layout for the whole test (so the 3 passages cohere),
   // then shuffle each passage's block order — structure fixed, position dynamic.
   const layout = pickFullTestLayout();
+  // Each passage composes-and-validates independently (with its own single
+  // regenerate), still in parallel — wall-clock stays ≈ one passage.
   const composedSets = await Promise.all(
     Array.from({ length: FULL_TEST_PASSAGE_COUNT }, (_, i) => {
       const band = clampBand(p.centerBand + (i - 1)); // P1 easier → P3 harder
       const plan = shuffle(layout[i]);
       const input = parse(generateReadingInputSchema, {
         module: "academic",
-        topic: topics[i],
+        topic: briefs[i].topic,
+        angle: briefs[i].angle,
         targetBand: band,
         questionTypes: [...new Set(plan.map((g) => g.type))],
         totalQuestions: plan.reduce((n, g) => n + g.count, 0),
         questionPlan: plan,
       });
-      return composeReadingSet(input, p.meta);
+      return composeValidated(input, p.meta);
     }),
   );
 
@@ -417,12 +432,12 @@ async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Pro
   const passages: GeneratedReadingSet[] = [];
   try {
     for (let i = 0; i < composedSets.length; i++) {
-      const kept = keepValidated(composedSets[i].prepared);
+      const { composed, kept } = composedSets[i];
       passages.push(
         await storeReadingSet(
           admin,
           { organizationId: p.storageOrgId, createdBy: p.createdBy },
-          composedSets[i],
+          composed,
           kept,
           "approved",
           { testId: test.id as string, orderInTest: i + 1, isLibrary: p.isLibrary },
@@ -482,8 +497,7 @@ export async function generateLibraryReadingTest(centerBand: number): Promise<Ge
 /** Seed: generate one shared standalone practice passage at an explicit band. */
 export async function generateLibraryReadingPassage(band: number): Promise<GeneratedReadingSet> {
   const input = parse(generateReadingInputSchema, defaultReadingSpec(clampBand(Math.round(band))));
-  const composed = await composeReadingSet(input, LIBRARY_SEED_META);
-  const kept = keepValidated(composed.prepared);
+  const { composed, kept } = await composeValidated(input, LIBRARY_SEED_META);
   return storeReadingSet(
     createAdminClient(),
     { organizationId: READING_LIBRARY_ORG_ID, createdBy: null },
@@ -664,17 +678,149 @@ async function clonePassageInto(
   return newPassage.id as string;
 }
 
-/** Keep validator-confirmed questions; fall back to all if too few survive (a short
- *  quiz beats an empty one). Renumber so order_index stays contiguous from 1. */
 /** Single passage is served at the exam-realistic ceiling; over-generation above
  *  this only exists to survive validator drops, never to inflate the count. */
 const MAX_PASSAGE_QUESTIONS = 15;
+/** Below this many confirmed questions a set isn't worth serving — regenerate. */
+const MIN_KEPT_QUESTIONS = 4;
 
+/** Keep ONLY validator-confirmed questions — a student is never graded on an
+ *  unchecked key (the caller regenerates when too few survive; there is no
+ *  fall-back-to-all). Capped at the exam-realistic 15, renumbered from 1. */
 function keepValidated(prepared: PreparedQuestion[]): PreparedQuestion[] {
-  let kept = prepared.filter((q) => !q.needs_review);
-  if (kept.length < 4) kept = prepared;
-  if (kept.length > MAX_PASSAGE_QUESTIONS) kept = kept.slice(0, MAX_PASSAGE_QUESTIONS);
+  const kept = prepared.filter((q) => !q.needs_review).slice(0, MAX_PASSAGE_QUESTIONS);
   return kept.map((q, i) => ({ ...q, order_index: i + 1 }));
+}
+
+/**
+ * Compose a set and keep only confirmed questions. If too few survive (the
+ * checker was down, or it rejected most keys), REGENERATE once rather than serve
+ * unchecked answer keys; if the retry is also thin, fail the request — grading
+ * accuracy is the product (CLAUDE.md), a broken quiz is worse than none.
+ */
+async function composeValidated(
+  input: GenerateReadingInput,
+  meta: { organizationId: string; userId: string },
+): Promise<{ composed: ComposedReadingSet; kept: PreparedQuestion[] }> {
+  let lastKept = 0;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const composed = await composeReadingSet(input, meta);
+    const kept = keepValidated(composed.prepared);
+    if (kept.length >= MIN_KEPT_QUESTIONS) return { composed, kept };
+    lastKept = kept.length;
+    console.warn(
+      `[reading.compose] only ${kept.length}/${composed.prepared.length} questions passed validation (attempt ${attempt + 1}/2) — ${attempt === 0 ? "regenerating" : "giving up"}`,
+    );
+  }
+  throw new ReadingServiceError(
+    `Reading generation failed: only ${lastKept} questions passed the answer-key check. Please try again.`,
+    "generation_failed",
+  );
+}
+
+// ---- Deterministic code checks (no model call) ------------------------------
+// Objective properties of a generated question that code can verify outright —
+// the classic AI-generation failures the LLM checker misses: an answer that
+// breaks the block's word limit, a "verbatim" proof sentence that isn't in the
+// passage, a completion line with no gap to fill, or a key that can't match any
+// option. A failed check flags the question exactly like a validator rejection.
+
+const GAP_TYPES: ReadonlySet<ReadingQuestionType> = new Set([
+  "sentence_completion",
+  "summary_completion",
+  "note_completion",
+]);
+/** The group's exact rubric phrase → the most tokens any accepted answer may
+ *  have ("AND/OR A NUMBER" allows one extra token for the number). */
+const LIMIT_MAX_TOKENS: Record<string, number> = {
+  "ONE WORD ONLY": 1,
+  "ONE WORD AND/OR A NUMBER": 2,
+  "NO MORE THAN TWO WORDS": 2,
+  "NO MORE THAN TWO WORDS AND/OR A NUMBER": 3,
+  "NO MORE THAN THREE WORDS": 3,
+  "NO MORE THAN THREE WORDS AND/OR A NUMBER": 4,
+};
+const TF_VERDICTS = new Set(["true", "false", "not given", "ng"]);
+const YN_VERDICTS = new Set(["yes", "no", "not given", "ng"]);
+const ROMAN_INDEX: Record<string, number> = {
+  i: 0, ii: 1, iii: 2, iv: 3, v: 4, vi: 5, vii: 6, viii: 7, ix: 8, x: 9,
+  xi: 10, xii: 11, xiii: 12, xiv: 13, xv: 14,
+};
+
+/** Every accepted form of a completion key: alternatives the author listed
+ *  ("colour/color", "x or y", "a; b"), each with every optional "(...)" group
+ *  both included and dropped — the same folding acceptedKeyForms applies. */
+function keyAlternatives(key: string): string[] {
+  const out: string[] = [];
+  for (const alt of splitAlternatives(key)) {
+    for (const expanded of expandOptionalParens(alt)) {
+      const s = expanded.replace(/\s+/g, " ").trim();
+      if (s) out.push(s);
+    }
+  }
+  return out.length ? out : [key];
+}
+
+/** Return the first objective defect found in a generated question, or null. */
+function codeCheckProblem(q: ReadingQuestionOut, body: string): string | null {
+  const answer = (q.answer ?? "").trim();
+  if (!answer) return "empty answer key";
+  const options = q.options ?? [];
+
+  // Completion-from-the-passage: the prompt must carry a gap, and at least one
+  // accepted form of the key must fit the block's stated word limit.
+  if (GAP_TYPES.has(q.type) && !(q.type === "summary_completion" && options.length > 0)) {
+    if (!READING_GAP_MARKER.test(q.prompt ?? "")) {
+      return "completion prompt has no '______' gap marker";
+    }
+    const maxTokens = LIMIT_MAX_TOKENS[(q.word_limit ?? "").trim().toUpperCase()];
+    if (maxTokens !== undefined) {
+      const shortest = Math.min(
+        ...keyAlternatives(answer).map((a) => norm(a).split(" ").filter(Boolean).length),
+      );
+      if (shortest > maxTokens) return `answer '${answer}' exceeds the word limit (${q.word_limit})`;
+    }
+  }
+
+  if (q.type === "true_false_not_given" && !TF_VERDICTS.has(norm(answer))) {
+    return `answer '${answer}' is not TRUE/FALSE/NOT GIVEN`;
+  }
+  if (q.type === "yes_no_not_given" && !YN_VERDICTS.has(norm(answer))) {
+    return `answer '${answer}' is not YES/NO/NOT GIVEN`;
+  }
+
+  // Matching information: the key is a paragraph letter that must exist as a label.
+  if (q.type === "matching_information") {
+    const letter = norm(answer);
+    if (!/^[a-z]$/.test(letter)) return `answer '${answer}' is not a single paragraph letter`;
+    if (!body.includes(`${letter.toUpperCase()})`)) {
+      return `paragraph '${letter.toUpperCase()})' is not labelled in the passage`;
+    }
+  }
+
+  // Option-bank types: the key must resolve to an option (its text, a letter, or
+  // a roman numeral index) or the grader can never mark anything correct.
+  const optionBankTypes: ReadingQuestionType[] = [
+    "multiple_choice",
+    "matching_sentence_endings",
+    "matching_headings",
+    "summary_completion",
+  ];
+  if (options.length > 0 && optionBankTypes.includes(q.type)) {
+    const key = norm(answer);
+    let resolvable = options.some((o) => norm(o) === key);
+    if (!resolvable && /^[a-z]$/.test(key)) resolvable = key.charCodeAt(0) - 97 < options.length;
+    if (!resolvable && key in ROMAN_INDEX) resolvable = ROMAN_INDEX[key] < options.length;
+    if (!resolvable) return `answer '${answer}' does not match any option in the bank`;
+  }
+
+  // The cited proof must actually be in the passage (punctuation-insensitive).
+  const support = (q.supporting_sentence ?? "").trim();
+  if (support && !norm(body).includes(norm(support))) {
+    return "supporting sentence is not found verbatim in the passage";
+  }
+
+  return null;
 }
 
 /**
@@ -705,11 +851,6 @@ function clampBand(b: number): number {
   return Math.max(MIN_TARGET_BAND, Math.min(MAX_TARGET_BAND, b));
 }
 
-/** Distinct random pick (no repeated topic within one test). */
-function pickDistinct<T>(xs: readonly T[], n: number): T[] {
-  return shuffle(xs).slice(0, Math.min(n, xs.length));
-}
-
 /** A shuffled copy (Fisher–Yates) — used to randomise the block order within a
  *  passage so the position is dynamic while the type inventory stays fixed. */
 function shuffle<T>(xs: readonly T[]): T[] {
@@ -723,37 +864,359 @@ function shuffle<T>(xs: readonly T[]): T[] {
 
 // ---- B2C generation defaults ----------------------------------------------
 
-/** Original, non-copyrighted passage topics for on-demand generation. */
-const READING_TOPICS = [
-  "urban beekeeping",
-  "the history of cartography",
-  "coral-reef restoration",
-  "the science of sleep",
-  "ancient Roman concrete",
-  "how migratory birds navigate",
-  "vertical farming",
-  "deep-sea bioluminescence",
-  "the invention of the printing press",
-  "storing renewable energy",
-  "the domestication of wild plants",
-  "the ecology of mangroves",
-  "how vaccines are developed",
-  "the engineering of long-span bridges",
-] as const;
+/** Original, non-copyrighted passage material for on-demand generation, organised as
+ *  a TAXONOMY (Cambridge-competitive breadth). Effective variety is not the topic
+ *  count — it's domains × topics × angles, which turns the same seed into a dozen
+ *  distinct passages and stops an active student seeing repeats within weeks. Each
+ *  DOMAIN carries the difficulty SLOT(S) it best fits (1 = P1 accessible/concrete,
+ *  2 = P2 intermediate, 3 = P3 advanced/abstract), so a full test draws P1/P2/P3
+ *  from slot-appropriate, DISTINCT domains with difficulty rising P1→P3. Content is
+ *  always original (CLAUDE.md §IP) — this only steers the subject and the lens. */
+type ReadingDomain = { label: string; slots: number[]; topics: string[] };
+const READING_DOMAINS: Record<string, ReadingDomain> = {
+  history_civilisation: {
+    label: "History & Civilisation",
+    slots: [1, 2],
+    topics: [
+      "the decipherment of ancient writing systems",
+      "the rise and fall of the Hanseatic trading league",
+      "the archaeology of the world's earliest cities",
+      "how ancient civilisations engineered water and irrigation",
+      "the Silk Road and the exchange of goods and ideas",
+      "the history of mapmaking and cartography",
+      "the domestication of the horse and its impact",
+      "the lost libraries of the ancient world",
+      "the invention and spread of the calendar",
+    ],
+  },
+  archaeology_anthropology: {
+    label: "Archaeology & Anthropology",
+    slots: [2, 3],
+    topics: [
+      "dating methods used to age archaeological finds",
+      "underwater and marine archaeology",
+      "what ancient teeth and bones reveal about past diets",
+      "the peopling of the Pacific islands",
+      "prehistoric rock art and its possible meanings",
+      "how the study of ancient DNA is rewriting prehistory",
+      "why some past societies collapsed while others endured",
+    ],
+  },
+  life_sciences_biology: {
+    label: "Life Sciences & Biology",
+    slots: [1, 2],
+    topics: [
+      "whether animals experience emotions",
+      "the biology of human ageing",
+      "the science of sleep and why we need it",
+      "regeneration and healing in the animal kingdom",
+      "the human microbiome and its influence on health",
+      "how cells communicate with one another",
+      "symbiotic partnerships in the natural world",
+    ],
+  },
+  animal_behaviour_wildlife: {
+    label: "Animal Behaviour & Wildlife",
+    slots: [1],
+    topics: [
+      "why zebras have stripes",
+      "how honeybees make collective decisions",
+      "animal migration and the science of navigation",
+      "the intelligence of octopuses",
+      "birdsong and the functions it serves",
+      "the complex social lives of elephants",
+      "insect architecture, from termite mounds to nests",
+      "tool use among animals",
+    ],
+  },
+  plants_botany: {
+    label: "Plants & Botany",
+    slots: [1, 2],
+    topics: [
+      "how plants communicate and defend themselves",
+      "the hidden underground world of fungi",
+      "the strategies plants use to disperse their seeds",
+      "the domestication of wheat and other crops",
+      "carnivorous plants and how they trap prey",
+      "what ancient trees record about the past",
+      "the partnership between flowers and pollinators",
+    ],
+  },
+  physical_sciences: {
+    label: "Physical Sciences",
+    slots: [2, 3],
+    topics: [
+      "the surprising physics of bubbles and foams",
+      "the materials science and history of glass",
+      "the science of colour and how we see it",
+      "the physics of sound and acoustics",
+      "nanotechnology and its applications",
+      "the unusual properties of water",
+      "how new materials are designed and tested",
+    ],
+  },
+  earth_sciences_geology: {
+    label: "Earth Sciences & Geology",
+    slots: [2],
+    topics: [
+      "how volcanoes form and how they are monitored",
+      "what ice cores reveal about ancient climates",
+      "the movement of tectonic plates",
+      "the slow formation of caves",
+      "the exploration of the deep ocean floor",
+      "earthquakes and the challenge of prediction",
+      "underground aquifers and the water cycle",
+    ],
+  },
+  space_astronomy: {
+    label: "Space & Astronomy",
+    slots: [2, 3],
+    topics: [
+      "the search for planets beyond our solar system",
+      "asteroids, and plans to mine and deflect them",
+      "the history and evolution of the telescope",
+      "how astronomers map the universe",
+      "the growing problem of space debris",
+      "the science behind eclipses",
+      "the search for life beyond Earth",
+    ],
+  },
+  climate_environment: {
+    label: "Climate & Environment",
+    slots: [2],
+    topics: [
+      "the debate over rewilding wild landscapes",
+      "the environmental cost of fast fashion",
+      "how growing cities secure their water supply",
+      "the race to develop alternatives to plastic",
+      "capturing and storing carbon",
+      "the restoration of damaged coral reefs",
+      "the ecology and value of wetlands",
+      "the causes and spread of desertification",
+    ],
+  },
+  psychology_cognition: {
+    label: "Psychology & Cognition",
+    slots: [2, 3],
+    topics: [
+      "the psychology of everyday decision-making",
+      "the science of memory and why we forget",
+      "how habits form and how they can be broken",
+      "why people procrastinate",
+      "the psychology of queuing and waiting",
+      "how creativity works in the brain",
+      "the bystander effect and helping behaviour",
+      "how children's thinking develops",
+    ],
+  },
+  language_linguistics: {
+    label: "Language & Linguistics",
+    slots: [2, 3],
+    topics: [
+      "how and why languages change over time",
+      "the loss of the world's endangered languages",
+      "how children acquire their first language",
+      "the origins of writing systems",
+      "the structure of sign languages",
+      "the progress and limits of machine translation",
+      "how bilingualism affects the brain",
+    ],
+  },
+  society_culture: {
+    label: "Society & Culture",
+    slots: [2],
+    topics: [
+      "why some cities flourish while others decline",
+      "the cultural history of the colour blue",
+      "the anthropology of food taboos",
+      "the history of leisure and the holiday",
+      "ageing populations and demographic change",
+      "the history and purpose of public parks",
+      "the origins of festivals and celebrations",
+    ],
+  },
+  technology_engineering: {
+    label: "Technology & Engineering",
+    slots: [2, 3],
+    topics: [
+      "how the shipping container transformed global trade",
+      "the surprisingly complex history of the bicycle",
+      "the engineering behind long-span bridges",
+      "the design of the London Underground map",
+      "the humble pencil and how it is made",
+      "robotics on the factory floor",
+      "the engineering challenges of skyscrapers",
+      "the history and impact of refrigeration",
+    ],
+  },
+  computing_ai: {
+    label: "Computing & AI",
+    slots: [3],
+    topics: [
+      "the ethics of facial-recognition technology",
+      "how algorithms shape what we read online",
+      "the early history of computing",
+      "how machine learning actually works",
+      "data privacy in a connected world",
+      "the promise and risks of artificial intelligence",
+      "the digital divide between and within nations",
+    ],
+  },
+  economics_business: {
+    label: "Economics & Business",
+    slots: [2, 3],
+    topics: [
+      "the economics of the global coffee trade",
+      "the gig economy and the future of work",
+      "insights from behavioural economics",
+      "whether wealth actually makes people happier",
+      "globalisation and modern supply chains",
+      "the history and future of money",
+      "why some companies keep innovating",
+      "the rise of the sharing economy",
+    ],
+  },
+  health_medicine: {
+    label: "Health & Medicine",
+    slots: [2],
+    topics: [
+      "what nutrition science really knows about diet",
+      "the global rise of short-sightedness",
+      "vaccines and the history of public health",
+      "the placebo effect and the mind's role in healing",
+      "the growing threat of antibiotic resistance",
+      "the history of surgery",
+      "how sleep shapes physical and mental health",
+    ],
+  },
+  education_learning: {
+    label: "Education & Learning",
+    slots: [2],
+    topics: [
+      "the debate over how children best learn to read",
+      "what makes learning a second language easier or harder",
+      "the science of acquiring a complex skill",
+      "the history and role of the university",
+      "the importance of play in childhood development",
+      "memory techniques and how they work",
+      "the uses and limits of testing",
+    ],
+  },
+  arts_design_music: {
+    label: "Arts, Design & Music",
+    slots: [1, 2],
+    topics: [
+      "why humans across all cultures make art",
+      "the science and history of musical tuning",
+      "how architectural styles rise and fade",
+      "the psychology of colour in design",
+      "the invention and spread of photography",
+      "typography and the science of readability",
+      "the delicate work of restoring old paintings",
+      "the history of animation",
+    ],
+  },
+  food_agriculture: {
+    label: "Food & Agriculture",
+    slots: [1, 2],
+    topics: [
+      "how a single crop like the potato reshaped the world",
+      "the science of fermentation",
+      "vertical farming and the future of food",
+      "the history of the global spice trade",
+      "how food was preserved before refrigeration",
+      "the domestication of the chicken",
+      "the journey of chocolate from bean to bar",
+    ],
+  },
+  exploration_geography: {
+    label: "Exploration & Geography",
+    slots: [1],
+    topics: [
+      "the lost art of navigating by the stars",
+      "the history of polar exploration",
+      "the centuries-long effort to map the oceans",
+      "how the height of mountains is measured",
+      "the search for a way to measure longitude",
+      "the exploration of the world's deepest caves",
+      "how places get their names",
+    ],
+  },
+};
+
+/** The ANGLE is the main multiplier: the same topic seen through two different lenses
+ *  yields two unrelated passages. One angle is drawn per passage and handed to the
+ *  generator as the REQUIRED framing (a mechanism explainer vs a history vs a debate
+ *  vs a single study…), so repeats of a subject still read as brand-new passages. */
+const READING_ANGLES: string[] = [
+  "trace how it developed over time, as a chronological account",
+  "explain the underlying mechanism — how it actually works",
+  "weigh the competing viewpoints and the debate around it",
+  "examine its economic dimension — costs, trade, industry, incentives",
+  "tell it through a key figure, discovery, or turning point",
+  "build it around one specific research study — its method and findings",
+  "foreground its environmental or sustainability dimension",
+  "compare how different societies or cultures approach it",
+  "look at where it is heading — emerging methods, technology, trends",
+  "set two approaches or eras against each other (old versus new)",
+];
+
+/** A brief for one passage: the subject and the lens to frame it through. */
+type PassageBrief = { domain: string; topic: string; angle: string };
+
+/** Domain keys whose difficulty slots include this passage position (1/2/3). */
+function domainsForSlot(slot: number): string[] {
+  return Object.keys(READING_DOMAINS).filter((k) => READING_DOMAINS[k].slots.includes(slot));
+}
+
+/** One brief per passage P1→P3, each from a DISTINCT domain eligible for that
+ *  difficulty slot — so the three passages span three subjects and rise in
+ *  difficulty. Falls back to any unused domain if a slot's pool is exhausted. */
+function pickFullTestTopics(): PassageBrief[] {
+  const used = new Set<string>();
+  const briefs: PassageBrief[] = [];
+  for (const slot of [1, 2, 3]) {
+    let pool = domainsForSlot(slot).filter((d) => !used.has(d));
+    if (pool.length === 0) pool = Object.keys(READING_DOMAINS).filter((d) => !used.has(d));
+    if (pool.length === 0) pool = Object.keys(READING_DOMAINS);
+    const domain = pickRandom(pool);
+    used.add(domain);
+    briefs.push({
+      domain,
+      topic: pickRandom(READING_DOMAINS[domain].topics),
+      angle: pickRandom(READING_ANGLES),
+    });
+  }
+  return briefs;
+}
+
+/** One brief (domain, topic, angle) for a single quick-practice passage. */
+function pickSingleTopic(): PassageBrief {
+  const domain = pickRandom(Object.keys(READING_DOMAINS));
+  return {
+    domain,
+    topic: pickRandom(READING_DOMAINS[domain].topics),
+    angle: pickRandom(READING_ANGLES),
+  };
+}
 
 /** Reliable question-type mixes (one is chosen at random for variety). Each mirrors
  *  a real Cambridge part: a completion/notes block + a verdict block + one more. */
+// One set carries matching_information (the lettered-paragraph A–G task), so a
+// single practice draws it ~1 in 4 — "sometimes, not always", like the full test.
 const READING_TYPE_SETS: ReadingQuestionType[][] = [
-  ["note_completion", "true_false_not_given", "multiple_choice"],
-  ["true_false_not_given", "matching_information", "summary_completion"],
+  ["matching_information", "true_false_not_given", "multiple_choice"],
+  ["true_false_not_given", "sentence_completion", "summary_completion"],
   ["yes_no_not_given", "multiple_choice", "matching_sentence_endings"],
-  ["matching_headings", "true_false_not_given", "sentence_completion"],
+  ["yes_no_not_given", "sentence_completion", "note_completion"],
 ];
 
 function defaultReadingSpec(targetBand: number = DEFAULT_TARGET_BAND) {
+  const brief = pickSingleTopic();
   return {
     module: "academic" as const,
-    topic: pickRandom(READING_TOPICS),
+    topic: brief.topic,
+    angle: brief.angle,
     targetBand,
     questionTypes: pickRandom(READING_TYPE_SETS),
     // A real IELTS passage section runs 13–14 questions; we serve 13–15. Request a

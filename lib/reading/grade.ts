@@ -254,8 +254,10 @@ export function rawScoreToBand(correct: number, total: number): number {
 
 /** Lowercase, unify quotes, fold the dash family to spaces (so "well-being" and
  *  "well being" match), drop punctuation, collapse whitespace. Applied to both
- *  sides of every comparison so formatting never decides correctness. */
-function norm(s: string): string {
+ *  sides of every comparison so formatting never decides correctness. Exported
+ *  for the generation-time code checks in service.ts, which must fold text the
+ *  same way the grader will. */
+export function norm(s: string): string {
   return s
     .normalize("NFKC")
     .toLowerCase()
@@ -314,13 +316,13 @@ function variants(phrase: string): Set<string> {
 }
 
 /** Split a key on author-written alternative separators: "/", " or ", ";". */
-function splitAlternatives(key: string): string[] {
+export function splitAlternatives(key: string): string[] {
   return key.split(/\s*\/\s*|\s+or\s+|\s*;\s*/i).map((s) => s.trim()).filter(Boolean);
 }
 
 /** Treat each "(...)" group as optional, returning every include/exclude combo.
  *  "(the) Roman (concrete)" → ["the Roman concrete","the Roman","Roman concrete","Roman"]. */
-function expandOptionalParens(s: string): string[] {
+export function expandOptionalParens(s: string): string[] {
   const m = s.match(/\(([^)]*)\)/);
   if (!m) return [s];
   const before = s.slice(0, m.index);

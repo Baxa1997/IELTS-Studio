@@ -912,11 +912,11 @@
 }
 
 /* ── CEFR / Multilevel runner: phone/tablet-portrait (≤860px) ─────────────────
-   Reading is text | 360px coach; Writing is prompt | answer | coach. On narrow
-   screens the coach slides OVER the content (so the text/editor keeps full width)
-   and the writing prompt stacks above the answer. Desktop (>860px) is unchanged. */
+   Writing is prompt | answer | coach; on narrow screens the coach slides OVER the
+   content (so the editor keeps full width) and the prompt stacks above the answer.
+   (The reading coach is already a floating overlay at every size — see
+   .ml-rd-coach-float — so it needs no rule here.) Desktop (>860px) is unchanged. */
 @media (max-width: 860px) {
-  .ml-rd-coach,
   .ml-wr-coach {
     position: absolute !important;
     inset: 0 !important;

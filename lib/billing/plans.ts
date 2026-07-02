@@ -37,7 +37,9 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: 20,
     generateLimit: 30,
     seatLimit: 10,
-    features: ["Calibrated AI grading", "Reading + Writing practice", "Up to 10 students"],
+    // Feature copy is learner-facing (B2C — CLAUDE.md); seatLimit stays in the
+    // schema for the dormant B2B path but is never sold as a feature.
+    features: ["Calibrated, conservative AI grading", "IELTS + CEFR practice, generated fresh", "20 gradings · 30 practice sets / month"],
   },
   starter: {
     id: "starter",
@@ -49,7 +51,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: 200,
     generateLimit: 300,
     seatLimit: 50,
-    features: ["Everything in Trial", "Up to 50 students", "Cohort analytics", "Teacher overrides"],
+    features: ["Everything in Trial", "200 gradings / month", "300 practice sets / month", "Full mock reading tests"],
   },
   pro: {
     id: "pro",
@@ -60,7 +62,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: 2000,
     generateLimit: 3000,
     seatLimit: 250,
-    features: ["Everything in Starter", "Up to 250 students", "Priority grading queue", "Export & API"],
+    features: ["Everything in Starter", "2,000 gradings / month", "3,000 practice sets / month", "Priority grading queue"],
   },
   enterprise: {
     id: "enterprise",
@@ -71,7 +73,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,
-    features: ["Unlimited students", "Unlimited grading", "White-label", "SSO & SLA"],
+    features: ["Unlimited grading & practice", "Priority support", "White-label", "SSO & SLA"],
   },
 };
 
