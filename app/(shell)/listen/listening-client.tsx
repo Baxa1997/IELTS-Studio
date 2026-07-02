@@ -6,12 +6,9 @@ import {
   ArrowRight,
   Check,
   Clock,
-  GraduationCap,
   Headphones,
-  Hourglass,
   Loader2,
   Lock,
-  MessagesSquare,
   Pause,
   Play,
   RotateCcw,
@@ -20,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 
+import { AiGenerateButton, AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
@@ -129,17 +127,17 @@ const TRAP_EXPLAIN: Record<string, string> = {
   nominalisation: "The notes turn the lecturer's verb phrase into a noun phrase around the same gap word.",
 };
 
-const PART_INFO: Record<number, { Icon: typeof MessagesSquare; title: string; desc: string }> = {
-  1: { Icon: MessagesSquare, title: "Part 1 — Everyday conversation", desc: "Two speakers, form completion. The classic spelled names, numbers and correction traps." },
-  4: { Icon: GraduationCap, title: "Part 4 — Academic lecture", desc: "One lecturer, note completion. The notes paraphrase what you hear — only the answer word is verbatim." },
+const PART_LABEL: Record<number, string> = {
+  1: "Part 1 · Conversation",
+  2: "Part 2 · Monologue",
+  3: "Part 3 · Discussion",
+  4: "Part 4 · Lecture",
 };
 
-const TABS: { part: number; label: string; live: boolean }[] = [
-  { part: 1, label: "Part 1 · Conversation", live: true },
-  { part: 2, label: "Part 2 · Monologue", live: false },
-  { part: 3, label: "Part 3 · Discussion", live: false },
-  { part: 4, label: "Part 4 · Lecture", live: true },
-];
+/** Parts the generator can produce today (2 & 3 join when they ship). */
+const LIVE_PARTS = [1, 4];
+
+type HubTab = "tests" | "parts";
 
 const LEVEL_STYLE: Record<number, { bg: string; fg: string }> = {
   1: { bg: "#f0fdf4", fg: "#15803d" },
@@ -152,7 +150,7 @@ const LEVEL_STYLE: Record<number, { bg: string; fg: string }> = {
 // ---- Top-level ---------------------------------------------------------------
 
 export function ListeningClient() {
-  const [tab, setTab] = useState(1);
+  const [tab, setTab] = useState<HubTab>("tests");
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
   const [mine, setMine] = useState<MineItem[] | null>(null);
   const [view, setView] = useState<RenderView | null>(null);
@@ -221,24 +219,31 @@ export function ListeningClient() {
   );
 }
 
-// ---- Hub ---------------------------------------------------------------------
+// ---- Hub (mirrors the Reading hub: two tabs, numbered cards) -------------------
 
 function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, onGenerate }: {
-  tab: number; setTab: (p: number) => void;
+  tab: HubTab; setTab: (t: HubTab) => void;
   catalogue: Catalogue | null; mine: MineItem[] | null; busy: string | null; error: string | null;
   onOpen: (item: LibraryItem) => void; onOpenMine: (id: string) => void;
   onGenerate: (part: number, difficulty: number) => void;
 }) {
-  const items = useMemo(
-    () => (catalogue?.items ?? []).filter((it) => it.part === tab),
-    [catalogue, tab],
+  const [partFilter, setPartFilter] = useState<number | null>(null);
+
+  // "Practice test N" — stable global numbering, easiest first (the stable sort
+  // keeps the engine's created_at order within a level).
+  const numbered = useMemo(
+    () => [...(catalogue?.items ?? [])]
+      .sort((a, b) => a.difficulty - b.difficulty)
+      .map((it, i) => ({ ...it, seq: i + 1 })),
+    [catalogue],
   );
-  const myItems = useMemo(
-    () => (mine ?? []).filter((it) => it.part === tab),
-    [mine, tab],
-  );
-  const live = TABS.find((t) => t.part === tab)?.live ?? false;
-  const info = PART_INFO[tab];
+  const shown = partFilter == null ? numbered : numbered.filter((it) => it.part === partFilter);
+
+  // "My practice N" — 1 = the first one the learner ever generated.
+  const mineSeq = useMemo(() => {
+    const list = mine ?? [];
+    return list.map((it, i) => ({ ...it, seq: list.length - i }));
+  }, [mine]);
 
   return (
     <div className="lp-hub-pad" style={{ width: "100%", padding: "26px 24px 64px", fontFamily: SANS, color: INK }}>
@@ -247,9 +252,8 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
         <div>
           <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(28px,3.6vw,38px)", lineHeight: 1.05, letterSpacing: "-.4px", margin: 0, color: INK }}>Listening</h1>
           <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0", maxWidth: 660 }}>
-            Exam-style practices, easiest to hardest. The announcer introduces the recording, you
-            get timed reading pauses, the audio plays once — then instant grading with the
-            transcript and every trap explained.
+            Start a ready-made practice test in one click, or generate a fresh part — the announcer
+            frames the recording, the audio plays once, and every trap is explained after grading.
           </p>
         </div>
         {catalogue ? (
@@ -260,87 +264,78 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
         ) : null}
       </div>
 
-      {/* Part tabs */}
-      <div style={{ display: "flex", gap: 8, marginTop: 22, flexWrap: "wrap" }}>
-        {TABS.map((t) => {
-          const active = t.part === tab;
-          return (
-            <button
-              key={t.part}
-              type="button"
-              onClick={() => setTab(t.part)}
-              style={{ padding: "9px 16px", borderRadius: 999, border: active ? "1px solid #1C1B2E" : "1px solid rgba(28,27,46,.14)", background: active ? INK : "#fff", color: active ? "#fff" : t.live ? INK : "#9A99A8", fontFamily: SANS, fontSize: 13.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
-            >
-              {t.label}{t.live ? "" : " · soon"}
-            </button>
-          );
-        })}
+      {/* Tabs — the same chooser as the Reading hub */}
+      <div style={{ display: "flex", gap: 6, background: "#F1F1F8", border: "1px solid #ECEAF2", borderRadius: 14, padding: 5, marginTop: 22, maxWidth: 520 }}>
+        <TabButton active={tab === "tests"} onClick={() => setTab("tests")} icon={<Headphones size={17} />} label="Practice tests" sub="Ready-made library" />
+        <TabButton active={tab === "parts"} onClick={() => setTab("parts")} icon={<Sparkles size={17} />} label="Part practice" sub="AI · surprise part" />
       </div>
 
       {error ? <div style={{ marginTop: 18 }}><UpgradeNotice message={error} /></div> : null}
 
-      {!live ? (
-        <div style={{ marginTop: 26, background: "#fff", border: "1px dashed rgba(28,27,46,.2)", borderRadius: 16, padding: "38px 28px", textAlign: "center" }}>
-          <Hourglass size={26} color="#9A99A8" style={{ margin: "0 auto" }} />
-          <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, marginTop: 12, color: INK }}>
-            Part {tab} is coming next
+      {tab === "tests" ? (
+        <>
+          {/* Viewing filter only — starting a test never asks for a part */}
+          <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
+            {[null, ...LIVE_PARTS].map((p) => {
+              const active = partFilter === p;
+              return (
+                <button key={p ?? 0} type="button" onClick={() => setPartFilter(p)}
+                  style={{ padding: "7px 14px", borderRadius: 999, border: active ? "1px solid #1C1B2E" : "1px solid rgba(28,27,46,.14)", background: active ? INK : "#fff", color: active ? "#fff" : MUTED, fontFamily: SANS, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  {p == null ? "All parts" : PART_LABEL[p]}
+                </button>
+              );
+            })}
           </div>
-          <p style={{ fontSize: 14, color: MUTED, margin: "8px auto 0", maxWidth: 480, lineHeight: 1.55 }}>
-            {tab === 2
-              ? "A monologue about a public place or event — multiple choice and matching questions."
-              : "A study discussion between two students — multiple choice and matching questions."}{" "}
-            Parts 1 and 4 are live now, and the full 4-part test follows.
-          </p>
-        </div>
+
+          {!catalogue ? (
+            <p style={{ marginTop: 30, fontSize: 14.5, color: MUTED, display: "flex", alignItems: "center", gap: 9 }}>
+              <Loader2 className="animate-spin" size={16} /> Loading the practice library…
+            </p>
+          ) : shown.length === 0 ? (
+            <EmptyHint>New recordings are being added to the library right now — check back in a little while.</EmptyHint>
+          ) : (
+            <div style={{ marginTop: 18 }}>
+              <Grid>
+                {shown.map((it) => (
+                  <TestCard key={it.id} it={it} loading={busy === it.id} disabled={!!busy} onOpen={() => onOpen(it)} />
+                ))}
+              </Grid>
+            </div>
+          )}
+        </>
       ) : (
         <>
-          {/* Shared practice library for this part */}
-          <div style={{ marginTop: 26 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 6px" }}>
-              <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>{info.title}</span>
-              <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
-            </div>
-            <p style={{ fontSize: 13, color: "#8A899A", margin: "0 0 12px" }}>{info.desc}</p>
-            {!catalogue ? (
-              <p style={{ fontSize: 14.5, color: MUTED, display: "flex", alignItems: "center", gap: 9 }}>
-                <Loader2 className="animate-spin" size={16} /> Loading the practice library…
-              </p>
-            ) : items.length === 0 ? (
-              <p style={{ fontSize: 14.5, color: MUTED }}>
-                New Part {tab} recordings are being added to the library — check back in a little while.
-              </p>
-            ) : (
-              <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
-                {items.map((it, i) => (
-                  <PracticeRow key={it.id} it={it} index={i} first={i === 0} loading={busy === it.id} disabled={!!busy} onOpen={() => onOpen(it)} />
-                ))}
-              </div>
-            )}
+          <div style={{ marginTop: 18 }}>
+            <AiGenerateSection
+              title="Generate a part practice"
+              badge="AI Studio"
+              description="A surprise part — conversation or lecture, you won't know until the announcer speaks. An original script recorded as studio audio at your chosen level, ready in about two minutes and saved to your account."
+              cta={
+                <GenerateCta
+                  generating={busy === "generate"}
+                  disabled={!!busy}
+                  onGo={(difficulty) => onGenerate(LIVE_PARTS[Math.floor(Math.random() * LIVE_PARTS.length)], difficulty)}
+                />
+              }
+            />
           </div>
 
-          <GeneratorCard part={tab} generating={busy === "generate"} disabled={!!busy} onGenerate={onGenerate} />
-
-          {/* This learner's own generated practices — stored in their account */}
-          {myItems.length > 0 ? (
-            <div style={{ marginTop: 26 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 6px" }}>
-                <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>My generated practices</span>
-                <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
-              </div>
-              <p style={{ fontSize: 13, color: "#8A899A", margin: "0 0 12px" }}>
-                Saved to your account — reopen any of them whenever you like.
-              </p>
-              <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
-                {myItems.map((it, i) => (
-                  <MineRow key={it.id} it={it} first={i === 0} loading={busy === `mine:${it.id}`} disabled={!!busy} onOpen={() => onOpenMine(it.id)} />
+          {mineSeq.length > 0 ? (
+            <>
+              <SectionLabel>Your practices</SectionLabel>
+              <Grid>
+                {mineSeq.map((it) => (
+                  <MineCard key={it.id} it={it} loading={busy === `mine:${it.id}`} disabled={!!busy} onOpen={() => onOpenMine(it.id)} />
                 ))}
-              </div>
-            </div>
+              </Grid>
+            </>
+          ) : mine != null ? (
+            <EmptyHint>Nothing here yet — generate your first practice above. Every one you make is saved to your account and stays reopenable.</EmptyHint>
           ) : null}
         </>
       )}
 
-      <p style={{ margin: "30px 0 0", fontSize: 13, color: "#9A99A8" }}>
+      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
         Original audio and questions in the IELTS Listening format — not affiliated with or
         endorsed by IELTS®.
       </p>
@@ -348,119 +343,171 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
   );
 }
 
-/** The live "make me a fresh one" card — generation is quota-gated server-side
- *  and the result lands in the learner's own saved list (listening_items). */
-function GeneratorCard({ part, generating, disabled, onGenerate }: {
-  part: number; generating: boolean; disabled: boolean;
-  onGenerate: (part: number, difficulty: number) => void;
+/** Level picker + shimmer CTA for the aurora banner. The part is never chosen —
+ *  the generator picks one at random, like walking into the real exam. */
+function GenerateCta({ generating, disabled, onGo }: {
+  generating: boolean; disabled: boolean; onGo: (difficulty: number) => void;
 }) {
   const [difficulty, setDifficulty] = useState(3);
   return (
-    <div style={{ marginTop: 26, background: "#fff", border: "1px solid rgba(67,56,202,.22)", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ width: 34, height: 34, borderRadius: 10, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-          <Sparkles size={17} />
-        </span>
-        <div style={{ fontWeight: 700, fontSize: 15.5, color: INK }}>Generate your own practice</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: 5 }}>
+        {[1, 2, 3, 4, 5].map((lv) => {
+          const on = lv === difficulty;
+          return (
+            <button key={lv} type="button" onClick={() => setDifficulty(lv)} disabled={generating} aria-pressed={on}
+              style={{ padding: "5px 10px", borderRadius: 8, border: on ? "1px solid rgba(255,255,255,.9)" : "1px solid rgba(255,255,255,.28)", background: on ? "#fff" : "rgba(255,255,255,.12)", color: on ? INDIGO : "rgba(255,255,255,.85)", fontFamily: SANS, fontSize: 12, fontWeight: 700, cursor: generating ? "default" : "pointer" }}>
+              L{lv}
+            </button>
+          );
+        })}
       </div>
-      <p style={{ fontSize: 13.5, color: MUTED, margin: "10px 0 14px", lineHeight: 1.55, maxWidth: 640 }}>
-        The AI writes an original Part {part} script at your chosen level and records the studio
-        audio just for you — it takes about two minutes. Every practice you generate is saved to
-        your account, so you can retake it any time from the list below.
-      </p>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 6 }}>
-          {[1, 2, 3, 4, 5].map((lv) => {
-            const on = lv === difficulty;
-            const style = LEVEL_STYLE[lv];
-            return (
-              <button
-                key={lv}
-                type="button"
-                onClick={() => setDifficulty(lv)}
-                disabled={generating}
-                aria-pressed={on}
-                style={{ padding: "6px 11px", borderRadius: 8, border: on ? `1.5px solid ${style.fg}` : "1px solid rgba(28,27,46,.14)", background: on ? style.bg : "#fff", color: on ? style.fg : MUTED, fontFamily: SANS, fontSize: 12.5, fontWeight: 700, cursor: generating ? "default" : "pointer" }}
-              >
-                L{lv}
-              </button>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={() => onGenerate(part, difficulty)}
-          disabled={disabled}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: INDIGO, color: "#fff", border: "none", borderRadius: 11, padding: "11px 20px", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled && !generating ? 0.6 : 1 }}
-        >
-          {generating
-            ? (<><Loader2 className="animate-spin" size={16} /> Writing the script and recording the audio… ~2 min</>)
-            : (<><Sparkles size={15} /> Generate a Part {part} practice</>)}
-        </button>
-      </div>
+      <AiGenerateButton label="Generate practice" busyLabel="Recording audio… ~2 min" busy={disabled} generating={generating} onClick={() => onGo(difficulty)} minWidth={230} />
     </div>
   );
 }
 
-function MineRow({ it, first, loading, disabled, onOpen }: {
-  it: MineItem; first: boolean; loading: boolean; disabled: boolean; onOpen: () => void;
+/** A ready-made library practice as a numbered card ("Practice test N"). */
+function TestCard({ it, loading, disabled, onOpen }: {
+  it: LibraryItem & { seq: number }; loading: boolean; disabled: boolean; onOpen: () => void;
+}) {
+  const lvl = LEVEL_STYLE[it.difficulty] ?? LEVEL_STYLE[3];
+  const done = it.best_score != null;
+  return (
+    <button type="button" onClick={onOpen} disabled={disabled} className="lp-hover"
+      style={{ ...cardStyle, width: "100%", textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1 }}>
+      <div style={rowBetween}>
+        <span style={iconTile}><Headphones size={19} /></span>
+        <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {done ? (
+            <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: (it.best_score ?? 0) >= 7 ? "#E9F5EE" : "#FFF7E8", color: (it.best_score ?? 0) >= 7 ? GOOD : "#B45309", whiteSpace: "nowrap" }}>
+              Best {it.best_score}/10
+            </span>
+          ) : null}
+          <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, whiteSpace: "nowrap" }}>Level {it.difficulty}</span>
+        </span>
+      </div>
+      <div>
+        <h4 style={cardTitle}>Practice test {it.seq}</h4>
+        <span style={{ ...cardSub, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{PART_LABEL[it.part] ?? `Part ${it.part}`}</span>
+      </div>
+      <Divider />
+      <div style={rowBetween}>
+        <span style={metaText}>10 questions · plays once</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: it.locked ? "#8A899A" : INDIGO, fontSize: 14, fontWeight: 600 }}>
+          {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>)
+            : it.locked ? (<><Lock size={13} /> Pro</>)
+            : done ? (<>Retake <RotateCcw size={13} /></>)
+            : (<>Start <ArrowRight size={14} /></>)}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+/** One of the learner's own AI-generated practices ("My practice N"). */
+function MineCard({ it, loading, disabled, onOpen }: {
+  it: MineItem & { seq: number }; loading: boolean; disabled: boolean; onOpen: () => void;
 }) {
   const lvl = LEVEL_STYLE[it.difficulty] ?? LEVEL_STYLE[3];
   const when = it.created_at
-    ? new Date(it.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short" })
-    : null;
+    ? new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    : "";
   return (
-    <button type="button" onClick={onOpen} disabled={disabled} className="lp-row" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "transparent", border: "none", borderTop: first ? "none" : "1px solid rgba(28,27,46,.07)", cursor: disabled ? "default" : "pointer", textAlign: "left", fontFamily: SANS, opacity: disabled && !loading ? 0.6 : 1 }}>
-      <span style={{ padding: "4px 9px", borderRadius: 7, fontSize: 12, fontWeight: 700, background: lvl.bg, color: lvl.fg, flex: "none", whiteSpace: "nowrap" }}>
-        Level {it.difficulty}
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {it.topic || "My listening practice"}
+    <button type="button" onClick={onOpen} disabled={disabled} className="lp-hover"
+      style={{ ...cardStyle, width: "100%", textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: disabled && !loading ? 0.7 : 1 }}>
+      <AiCorner />
+      <div style={rowBetween}>
+        <span style={iconTile}><Sparkles size={19} /></span>
+        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, marginRight: 34, whiteSpace: "nowrap" }}>Level {it.difficulty}</span>
+      </div>
+      <div>
+        <h4 style={cardTitle}>My practice {it.seq}</h4>
+        <span style={{ ...cardSub, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {PART_LABEL[it.part] ?? `Part ${it.part}`} · {it.topic || "Listening"}
         </span>
-        <span style={{ display: "block", fontSize: 12.5, color: "#8A899A", marginTop: 1 }}>
-          {when ? `Generated ${when} · ` : ""}10 questions · saved to your account
+      </div>
+      <Divider />
+      <div style={rowBetween}>
+        <span style={metaText}>{when ? `Generated ${when}` : "Saved to your account"}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14, fontWeight: 600 }}>
+          {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>) : (<>Open <ArrowRight size={14} /></>)}
         </span>
-      </span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 13.5, fontWeight: 600, flex: "none" }}>
-        {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>) : (<>Open <ArrowRight size={14} /></>)}
+      </div>
+    </button>
+  );
+}
+
+// ---- Hub pieces (visual language shared with the Reading hub) ------------------
+
+function TabButton({ active, onClick, icon, label, sub }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string; sub: string;
+}) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={active}
+      style={{ flex: 1, display: "flex", alignItems: "center", gap: 11, padding: "10px 14px", borderRadius: 10, border: "none", cursor: "pointer", textAlign: "left", background: active ? "#fff" : "transparent", color: active ? INDIGO : MUTED, boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none", transition: "background .15s ease" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>{icon}</span>
+      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+        <span style={{ fontFamily: SANS, fontWeight: active ? 700 : 600, fontSize: 14.5 }}>{label}</span>
+        <span style={{ fontFamily: SANS, fontSize: 12, color: active ? "#7C78C9" : "#9A99A8", marginTop: 2 }}>{sub}</span>
       </span>
     </button>
   );
 }
 
-function PracticeRow({ it, index, first, loading, disabled, onOpen }: {
-  it: LibraryItem; index: number; first: boolean; loading: boolean; disabled: boolean; onOpen: () => void;
-}) {
-  const lvl = LEVEL_STYLE[it.difficulty] ?? LEVEL_STYLE[3];
-  const done = it.best_score != null;
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onOpen} disabled={disabled} className="lp-row" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "transparent", border: "none", borderTop: first ? "none" : "1px solid rgba(28,27,46,.07)", cursor: disabled ? "default" : "pointer", textAlign: "left", fontFamily: SANS, opacity: it.locked ? 0.62 : disabled && !loading ? 0.6 : 1 }}>
-      <span style={{ padding: "4px 9px", borderRadius: 7, fontSize: 12, fontWeight: 700, background: lvl.bg, color: lvl.fg, flex: "none", whiteSpace: "nowrap" }}>
-        Level {it.difficulty}
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {`Practice ${index + 1}`} · {it.topic || "Listening practice"}
-        </span>
-        <span style={{ display: "block", fontSize: 12.5, color: "#8A899A", marginTop: 1 }}>
-          10 questions · audio plays once
-        </span>
-      </span>
-      {done ? (
-        <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, background: (it.best_score ?? 0) >= 7 ? "#f0fdf4" : "#fffbeb", color: (it.best_score ?? 0) >= 7 ? GOOD : "#b45309", flex: "none" }}>
-          Best {it.best_score}/10
-        </span>
-      ) : null}
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: it.locked ? "#8A899A" : INDIGO, fontSize: 13.5, fontWeight: 600, flex: "none" }}>
-        {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>)
-          : it.locked ? (<><Lock size={13} /> Pro</>)
-          : done ? (<>Retry <RotateCcw size={13} /></>)
-          : (<>Start <ArrowRight size={14} /></>)}
-      </span>
-    </button>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "26px 0 14px" }}>
+      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>{children}</span>
+      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+    </div>
   );
 }
+
+function Grid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>
+      {children}
+    </div>
+  );
+}
+
+function EmptyHint({ children }: { children: React.ReactNode }) {
+  return <p style={{ marginTop: 18, fontSize: 13.5, color: "#8A899A", fontFamily: SANS }}>{children}</p>;
+}
+
+function Divider() {
+  return <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />;
+}
+
+/** Top-right corner marker for the learner's own AI-generated cards. */
+function AiCorner() {
+  return (
+    <span title="AI-generated" aria-label="AI-generated"
+      style={{ position: "absolute", top: 14, right: 14, zIndex: 2, width: 26, height: 26, borderRadius: 8, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
+      <Sparkles size={14} strokeWidth={2.4} />
+    </span>
+  );
+}
+
+const cardStyle: React.CSSProperties = {
+  position: "relative",
+  background: "#fff",
+  border: "1px solid rgba(28,27,46,.09)",
+  borderRadius: 14,
+  padding: 16,
+  display: "flex",
+  flexDirection: "column",
+  gap: 11,
+  color: INK,
+  boxShadow: "0 1px 3px rgba(28,27,46,.04)",
+};
+const rowBetween: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 };
+const cardTitle: React.CSSProperties = { fontFamily: SANS, fontWeight: 700, fontSize: 15.5, lineHeight: 1.3, margin: "0 0 3px", color: INK };
+const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#7A7989", fontWeight: 500 };
+const metaText: React.CSSProperties = { fontSize: 13, color: "#8A899A" };
+const iconTile: React.CSSProperties = { width: 40, height: 40, borderRadius: 11, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" };
+
 
 // ---- Runner --------------------------------------------------------------------
 
