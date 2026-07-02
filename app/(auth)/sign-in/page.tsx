@@ -28,8 +28,8 @@ const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 
 export const metadata: Metadata = {
-  title: "Sign in | Engaide",
-  description: "Sign in to your Engaide account — calibrated Writing & Reading practice.",
+  title: "Sign in | EngProgress",
+  description: "Sign in to your EngProgress account — calibrated Writing & Reading practice.",
 };
 
 export const dynamic = "force-dynamic";

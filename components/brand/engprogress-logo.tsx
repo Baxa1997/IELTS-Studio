@@ -1,11 +1,11 @@
 /**
- * The "Engaide — English, AI" wordmark, rebuilt in code from the brand card.
+ * The "EngProgress — English, AI" wordmark.
  *
- * Anatomy (matches the source art):
- *  - bold, rounded geometric wordmark "Engaide" in deep navy,
- *  - the single "a" reversed out in cream on a tan square block,
- *  - a letter-spaced "ENGLISH, AI" tagline flanked by thin rule lines,
- *    closed by a small solid navy square on the right.
+ * Anatomy:
+ *  - a plain bold, rounded geometric wordmark "EngProgress" in deep navy
+ *    (no block behind any letter — the boxed-letter treatment lives only in
+ *    the square logomark/favicon below),
+ *  - a letter-spaced "ENGLISH, AI" tagline flanked by thin rule lines.
  *
  * Scales off one number (`fontSize`, the wordmark height in px); everything else
  * is derived in `em` so the lockup stays proportional at any size. No "use
@@ -16,19 +16,19 @@
  */
 import { Poppins } from "next/font/google";
 
-const engaide = Poppins({
+const engprogress = Poppins({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
-  variable: "--font-engaide",
+  variable: "--font-engprogress",
   display: "swap",
 });
 
 const NAVY = "#182B49"; // wordmark + tagline ink
-const TAN = "#D89A5C"; // the "a" block
-const WHITE = "#FFFFFF"; // the reversed-out "a"
+const TAN = "#D89A5C"; // the "P" block
+const WHITE = "#FFFFFF"; // the reversed-out "P"
 const CREAM = "#F4EEE1"; // on-dark ink variant
 
-export function EngaideLogo({
+export function EngProgressLogo({
   fontSize = 48,
   tone = "light",
   showTagline = true,
@@ -48,18 +48,18 @@ export function EngaideLogo({
 
   return (
     <span
-      className={`${engaide.variable} ${className ?? ""}`}
+      className={`${engprogress.variable} ${className ?? ""}`}
       role="img"
-      aria-label="Engaide — English, AI"
+      aria-label="EngProgress — English, AI"
       style={{
         display: "inline-flex",
         flexDirection: "column",
         alignItems: "stretch",
         lineHeight: 1,
-        fontFamily: "var(--font-engaide), 'Baloo 2', 'Nunito', system-ui, sans-serif",
+        fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
       }}
     >
-      {/* Wordmark: Eng + [a] + ide */}
+      {/* Wordmark — plain text, one ink */}
       <span
         aria-hidden
         style={{
@@ -71,32 +71,7 @@ export function EngaideLogo({
           color: ink,
         }}
       >
-        <span>Eng</span>
-        <span
-          style={{
-            position: "relative",
-            display: "inline-block",
-            margin: "0 .04em",
-            padding: "0 .08em",
-            color: WHITE,
-          }}
-        >
-          {/* the tan block sitting behind the "a", squared up past the baseline */}
-          <span
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: "-.1em",
-              right: 0,
-              bottom: "-.16em",
-              left: 0,
-              background: TAN,
-              borderRadius: ".1em",
-            }}
-          />
-          <span style={{ position: "relative" }}>a</span>
-        </span>
-        <span>ide</span>
+        EngProgress
       </span>
 
       {/* Tagline rule:  ────────  ENGLISH, AI  ──────── (symmetric, centered) */}
@@ -131,17 +106,17 @@ export function EngaideLogo({
 }
 
 /**
- * The logomark on its own — the cream "a" on the tan square, the most distinctive
+ * The logomark on its own — the white "P" on the tan square, the most distinctive
  * fragment of the wordmark. Used where the full lockup doesn't fit (the collapsed
  * sidebar rail, favicons). Square; `size` is its side in px. The tile is tan on any
  * background, so there's no `tone`.
  */
-export function EngaideMark({ size = 32, className }: { size?: number; className?: string }) {
+export function EngProgressMark({ size = 32, className }: { size?: number; className?: string }) {
   return (
     <span
-      className={`${engaide.variable} ${className ?? ""}`}
+      className={`${engprogress.variable} ${className ?? ""}`}
       role="img"
-      aria-label="Engaide"
+      aria-label="EngProgress"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -151,13 +126,13 @@ export function EngaideMark({ size = 32, className }: { size?: number; className
         flex: "none",
         background: TAN,
         borderRadius: Math.round(size * 0.16),
-        fontFamily: "var(--font-engaide), 'Baloo 2', 'Nunito', system-ui, sans-serif",
+        fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
       }}
     >
       <span
-        style={{ fontWeight: 700, fontSize: Math.round(size * 0.66), lineHeight: 1, color: WHITE }}
+        style={{ fontWeight: 700, fontSize: Math.round(size * 0.6), lineHeight: 1, color: WHITE }}
       >
-        a
+        P
       </span>
     </span>
   );

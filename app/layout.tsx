@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Engaide — IELTS Writing & Reading",
-  description: "Engaide — AI platform for IELTS Writing and Reading.",
+  title: "EngProgress — IELTS Writing & Reading",
+  description: "EngProgress — AI platform for IELTS Writing and Reading.",
 };
 
 // Without this, mobile browsers assume a ~980px layout viewport and render the

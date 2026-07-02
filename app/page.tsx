@@ -3502,7 +3502,7 @@ function SiteFooter() {
           }}
         >
           <div style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#7d80ad" }}>
-            © 2026 Engaide. All rights reserved.
+            © 2026 EngProgress. All rights reserved.
           </div>
           <p
             style={{

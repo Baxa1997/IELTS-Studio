@@ -5,6 +5,7 @@ import { AlignLeft, ArrowLeft, ArrowRight, BookOpen, Check, Clock, Eraser, FileT
 
 import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
+import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
@@ -267,7 +268,7 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
     return () => { alive = false; };
   }, []);
   return (
-    <div style={{ width: "100%", padding: "26px clamp(16px,3vw,28px) 64px", fontFamily: SANS, color: INK }}>
+    <div className="lp-hub-pad" style={{ width: "100%", padding: "26px 24px 64px", fontFamily: SANS, color: INK }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <div>
@@ -306,39 +307,27 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
             />
           ) : null}
 
-          {recent.length > 0 ? (
-            <div style={{ marginBottom: 28 }}>
-              <SectionLabel>Your recent papers</SectionLabel>
-              <Grid>
-                {recent.map((it) => {
-                  const full = it.scope !== "part";
-                  const part = it.parts[0];
-                  return (
-                    <PracticeCard
-                      key={it.id}
-                      Icon={full ? History : FileText}
-                      eyebrow="Saved paper"
-                      title={full ? "Full reading paper" : `Part ${part ?? ""}`}
-                      desc={full ? "Open all five parts — retake or review your answers." : "Open this single-part practice."}
-                      level={fmtWhen(it.created_at)}
-                      meta={full ? "35 questions" : "single part"}
-                      busyLabel="Opening…"
-                      loading={busy === `item-${it.id}`}
-                      disabled={!!busy}
-                      onClick={() => onOpenItem(it)}
-                    />
-                  );
-                })}
-              </Grid>
-            </div>
-          ) : null}
-
-          <SectionLabel>Or practise a single part</SectionLabel>
+          <SectionLabel>Practise a single part</SectionLabel>
           <Grid>
             {READING_PARTS.map((p) => (
               <PracticeCard key={p.part} Icon={p.Icon} eyebrow={`Part ${p.part}`} title={p.title} desc={p.desc} level={p.level} meta={`${p.count} questions`} loading={busy === `r-${p.part}`} disabled={!!busy} onClick={() => onReading({ scope: "part", part: p.part }, `r-${p.part}`, "part")} />
             ))}
           </Grid>
+
+          {/* Recent papers load async from the engine AFTER the hub mounts, so they
+              sit BELOW the static content — arriving late they append instead of
+              pushing the practice grid down (the "content jump"). Compact rows, not
+              cards: every entry says the same thing, so one line each is enough. */}
+          {recent.length > 0 ? (
+            <div style={{ marginTop: 28 }}>
+              <SectionLabel>Your recent papers</SectionLabel>
+              <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
+                {recent.map((it, i) => (
+                  <RecentRow key={it.id} it={it} first={i === 0} loading={busy === `item-${it.id}`} disabled={!!busy} onOpen={() => onOpenItem(it)} />
+                ))}
+              </div>
+            </div>
+          ) : null}
         </>
       ) : (
         <>
@@ -358,7 +347,7 @@ function Hub({ tab, onTab, busy, error, onReading, onWriting, onOpenItem }: {
         </>
       )}
 
-      {error ? <Alert>{error}</Alert> : null}
+      {error ? <UpgradeNotice message={error} /> : null}
 
       <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
         Original content in the Uzbekistan Multilevel (DTM) format. Not affiliated with or endorsed by the State Testing Centre.
@@ -392,28 +381,54 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>{children}</div>;
 }
 
+/** One practice option — kept deliberately plain: icon + title + level up top, a
+ *  single line of description, and a meta/Start footer. No eyebrow/serif layers. */
 function PracticeCard({ Icon, eyebrow, title, desc, level, meta, loading, disabled, onClick, cta = "Start", busyLabel = "Generating…" }: {
   Icon: typeof BookOpen; eyebrow: string; title: string; desc: string; level: string; meta: string;
   loading: boolean; disabled: boolean; onClick: () => void; cta?: string; busyLabel?: string;
 }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="lp-hover" style={{ position: "relative", background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: 18, display: "flex", flexDirection: "column", gap: 12, textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: disabled && !loading ? 0.55 : 1, boxShadow: "0 1px 3px rgba(28,27,46,.04)", width: "100%" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-        <span style={{ width: 40, height: 40, borderRadius: 11, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon size={19} /></span>
-        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: TINT, color: INDIGO }}>{level}</span>
+    <button type="button" onClick={onClick} disabled={disabled} className="lp-hover" style={{ position: "relative", background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 10, textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: disabled && !loading ? 0.55 : 1, boxShadow: "0 1px 3px rgba(28,27,46,.04)", width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <span style={{ width: 34, height: 34, borderRadius: 9, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Icon size={17} /></span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</span>
+        </span>
+        <span style={{ padding: "3px 9px", borderRadius: 7, fontSize: 12, fontWeight: 700, background: TINT, color: INDIGO, flex: "none" }}>{level}</span>
       </div>
-      <div>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11.5, color: FAINT, letterSpacing: ".05em", textTransform: "uppercase", marginBottom: 3 }}>{eyebrow}</div>
-        <h4 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 18, lineHeight: 1.25, margin: "0 0 4px", color: INK }}>{title}</h4>
-        <span style={{ fontSize: 13.5, color: "#7A7989", fontWeight: 500, lineHeight: 1.5 }}>{desc}</span>
-      </div>
-      <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 13, color: "#8A899A" }}>{meta}</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14.5, fontWeight: 600 }}>
+      <span style={{ fontSize: 13, color: "#7A7989", lineHeight: 1.45 }}>{desc}</span>
+      <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderTop: "1px solid rgba(28,27,46,.07)", paddingTop: 10 }}>
+        <span style={{ fontSize: 12.5, color: "#8A899A" }}>{eyebrow} · {meta}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 14, fontWeight: 600 }}>
           {loading ? (<><Loader2 className="animate-spin" size={15} /> {busyLabel}</>) : (<>{cta} <ArrowRight size={15} strokeWidth={2.2} /></>)}
         </span>
       </div>
+    </button>
+  );
+}
+
+/** A previously generated paper as a one-line row (reopen, no regeneration). */
+function RecentRow({ it, first, loading, disabled, onOpen }: {
+  it: ReadingItem; first: boolean; loading: boolean; disabled: boolean; onOpen: () => void;
+}) {
+  const full = it.scope !== "part";
+  const part = it.parts[0];
+  return (
+    <button type="button" onClick={onOpen} disabled={disabled} className="lp-row" style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "transparent", border: "none", borderTop: first ? "none" : "1px solid rgba(28,27,46,.07)", cursor: disabled ? "default" : "pointer", textAlign: "left", fontFamily: SANS, opacity: disabled && !loading ? 0.6 : 1 }}>
+      <span style={{ width: 34, height: 34, borderRadius: 9, background: "#EFEEFC", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+        {full ? <History size={16} /> : <FileText size={16} />}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {full ? "Full reading paper" : `Part ${part ?? ""} practice`}
+        </span>
+        <span style={{ display: "block", fontSize: 12.5, color: "#8A899A", marginTop: 1 }}>
+          {full ? "35 questions" : "single part"} · {fmtWhen(it.created_at)}
+        </span>
+      </span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: INDIGO, fontSize: 13.5, fontWeight: 600, flex: "none" }}>
+        {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>) : (<>Open <ArrowRight size={14} /></>)}
+      </span>
     </button>
   );
 }

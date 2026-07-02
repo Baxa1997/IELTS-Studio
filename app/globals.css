@@ -499,7 +499,7 @@
   border-top: 1px solid transparent;
   transition: border-color 0.24s ease, padding 0.28s ease, margin 0.28s ease;
 }
-/* The Engaide lockup: full wordmark when expanded, boxed-"a" logomark when the rail
+/* The EngProgress lockup: full wordmark when expanded, boxed-"P" logomark when the rail
    collapses. The mark is hidden until the desktop media query swaps them. */
 .lp-sb-logo-mark {
   display: none;

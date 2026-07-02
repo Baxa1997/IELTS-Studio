@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Menu } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
-import { EngaideLogo, EngaideMark } from "@/components/brand/engaide-logo";
+import { EngProgressLogo, EngProgressMark } from "@/components/brand/engprogress-logo";
 
 import { SidebarNav } from "./sidebar-nav";
 
@@ -426,18 +426,18 @@ function Avatar({ name, size }: { name: string; size: number }) {
 
 function Logo() {
   // The sidebar sits on a light surface (navy ink). Expanded shows the full
-  // wordmark; the collapsed rail swaps to the boxed-"a" logomark (CSS in globals).
+  // wordmark; the collapsed rail swaps to the boxed-"P" logomark (CSS in globals).
   // The swap classes go on plain wrapper spans, not the brand components
-  // themselves — EngaideLogo/EngaideMark set their own inline `display`, which
+  // themselves — EngProgressLogo/EngProgressMark set their own inline `display`, which
   // (being inline style) always wins over the external .lp-sb-logo-full/-mark
   // rules trying to show/hide them, so both rendered at once either way.
   return (
     <span style={{ display: "inline-flex", alignItems: "center" }}>
       <span className="lp-sb-logo-full">
-        <EngaideLogo tone="light" fontSize={26} showTagline={false} />
+        <EngProgressLogo tone="light" fontSize={24} showTagline={false} />
       </span>
       <span className="lp-sb-logo-mark">
-        <EngaideMark size={36} />
+        <EngProgressMark size={36} />
       </span>
     </span>
   );
