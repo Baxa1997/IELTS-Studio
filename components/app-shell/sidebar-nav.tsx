@@ -53,16 +53,14 @@ const STUDENT: Section[] = [
     items: [
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
+      { label: "Listening", href: "/listen", icon: Headphones, badge: "BETA" },
       { label: "CEFR practice", href: "/cefr", icon: GraduationCap },
       { label: "Vocabulary", href: "/vocabulary", icon: BookA },
     ],
   },
   {
     title: "Coming soon",
-    items: [
-      { label: "Speaking", href: "#", icon: Mic, soon: true },
-      { label: "Listening", href: "/listen", icon: Headphones, badge: "PREVIEW" },
-    ],
+    items: [{ label: "Speaking", href: "#", icon: Mic, soon: true }],
   },
 ];
 
@@ -105,12 +103,12 @@ function PendingDot() {
 const itemBase: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 11,
+  gap: 12,
   height: 42,
-  padding: "0 12px",
-  borderRadius: 10,
+  padding: "0 13px",
+  borderRadius: 11,
   fontFamily: SANS,
-  fontSize: 14,
+  fontSize: 15,
   textDecoration: "none",
   whiteSpace: "nowrap",
 };
@@ -127,9 +125,24 @@ export function SidebarNav({ role }: { role: string }) {
   return (
     <nav style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {sections.map((section, si) => (
-        <div key={section.title ?? si} className={section.title ? "lp-sb-section lp-sb-section--titled" : "lp-sb-section"}>
+        <div
+          key={section.title ?? si}
+          className={section.title ? "lp-sb-section lp-sb-section--titled" : "lp-sb-section"}
+        >
           {section.title ? (
-            <div className="lp-sb-section-title" style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10.5, letterSpacing: ".09em", textTransform: "uppercase", color: "#A7ABBA", padding: "0 12px", margin: "0 0 6px" }}>
+            <div
+              className="lp-sb-section-title"
+              style={{
+                fontFamily: SANS,
+                fontWeight: 700,
+                fontSize: 11.5,
+                letterSpacing: ".09em",
+                textTransform: "uppercase",
+                color: "#A7ABBA",
+                padding: "0 13px",
+                margin: "0 0 7px",
+              }}
+            >
               {section.title}
             </div>
           ) : null}
@@ -137,12 +150,39 @@ export function SidebarNav({ role }: { role: string }) {
             {section.items.map(({ label, href, icon: Icon, soon, badge }) => {
               if (soon) {
                 return (
-                  <span key={label} data-label={label} aria-label={label} aria-disabled="true" className="lp-sb-link" style={{ ...itemBase, justifyContent: "space-between", color: "#A7ABBA", fontWeight: 600, cursor: "default" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                      <Icon size={20} strokeWidth={2.25} />
+                  <span
+                    key={label}
+                    data-label={label}
+                    aria-label={label}
+                    aria-disabled="true"
+                    className="lp-sb-link"
+                    style={{
+                      ...itemBase,
+                      justifyContent: "space-between",
+                      color: "#A7ABBA",
+                      fontWeight: 600,
+                      cursor: "default",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <Icon size={21} strokeWidth={2.25} />
                       <span className="lp-sb-label">{label}</span>
                     </span>
-                    <span className="lp-sb-soon-badge" style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10, letterSpacing: ".05em", color: "#9097A8", background: "#EEF0F4", padding: "2px 7px", borderRadius: 6 }}>SOON</span>
+                    <span
+                      className="lp-sb-soon-badge"
+                      style={{
+                        fontFamily: SANS,
+                        fontWeight: 700,
+                        fontSize: 10,
+                        letterSpacing: ".05em",
+                        color: "#9097A8",
+                        background: "#EEF0F4",
+                        padding: "2px 7px",
+                        borderRadius: 6,
+                      }}
+                    >
+                      SOON
+                    </span>
                   </span>
                 );
               }
@@ -155,15 +195,40 @@ export function SidebarNav({ role }: { role: string }) {
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
                   className={active ? "lp-sb-link" : "lp-sb-link lp-sb-item"}
-                  style={{ ...itemBase, justifyContent: "space-between", fontWeight: active ? 700 : 600, color: active ? "#fff" : "#5A6076", background: active ? INDIGO : "transparent", border: active ? `1px solid ${INDIGO}` : "1px solid transparent", boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none" }}
+                  style={{
+                    ...itemBase,
+                    justifyContent: "space-between",
+                    fontWeight: active ? 700 : 600,
+                    color: active ? "#fff" : "#5A6076",
+                    background: active ? INDIGO : "transparent",
+                    border: active ? `1px solid ${INDIGO}` : "1px solid transparent",
+                    boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none",
+                  }}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                    <Icon size={20} strokeWidth={2.25} />
+                  <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <Icon size={21} strokeWidth={2.25} />
                     <span className="lp-sb-label">{label}</span>
                   </span>
-                  <span className="lp-sb-trail" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    className="lp-sb-trail"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
                     {badge ? (
-                      <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10, letterSpacing: ".05em", color: active ? "rgba(255,255,255,.85)" : INDIGO, background: active ? "rgba(255,255,255,.18)" : "#EEF0FE", padding: "2px 7px", borderRadius: 6, flexShrink: 0 }}>{badge}</span>
+                      <span
+                        style={{
+                          fontFamily: SANS,
+                          fontWeight: 700,
+                          fontSize: 10,
+                          letterSpacing: ".05em",
+                          color: active ? "rgba(255,255,255,.85)" : INDIGO,
+                          background: active ? "rgba(255,255,255,.18)" : "#EEF0FE",
+                          padding: "2px 7px",
+                          borderRadius: 6,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {badge}
+                      </span>
                     ) : null}
                     <PendingDot />
                   </span>
