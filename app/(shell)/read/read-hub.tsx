@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ArrowRight, Check, FileText, Layers, Loader2, Sparkles } from "lucide-react";
 
 import { AiGenerateSection } from "@/components/ai-generate-section";
+import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
 
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
@@ -277,14 +278,7 @@ export function ReadingHub({
         </Panel>
       )}
 
-      {error ? (
-        <p
-          style={{ margin: "16px 0 0", fontSize: 13.5, color: "#c2410c", fontFamily: SANS }}
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
+      {error ? <UpgradeNotice message={error} /> : null}
 
       <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
         Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by
@@ -669,11 +663,11 @@ const cardStyle: React.CSSProperties = {
   position: "relative",
   background: "#fff",
   border: "1px solid rgba(28,27,46,.09)",
-  borderRadius: 16,
-  padding: 18,
+  borderRadius: 14,
+  padding: 16,
   display: "flex",
   flexDirection: "column",
-  gap: 13,
+  gap: 11,
   textDecoration: "none",
   color: INK,
   boxShadow: "0 1px 3px rgba(28,27,46,.04)",
@@ -703,12 +697,14 @@ const rowBetween: React.CSSProperties = {
   alignItems: "center",
   gap: 12,
 };
+// Sans, not serif — the serif titles read as headings and made the card wall feel
+// heavy; plain bold sans keeps the grid scannable.
 const cardTitle: React.CSSProperties = {
-  fontFamily: SERIF,
-  fontWeight: 600,
-  fontSize: 18,
-  lineHeight: 1.25,
-  margin: "0 0 4px",
+  fontFamily: SANS,
+  fontWeight: 700,
+  fontSize: 15.5,
+  lineHeight: 1.3,
+  margin: "0 0 3px",
 };
 const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#7A7989", fontWeight: 500 };
 const metaText: React.CSSProperties = { fontSize: 13, color: "#8A899A" };

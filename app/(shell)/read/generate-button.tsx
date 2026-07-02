@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AiGenerateButton } from "@/components/ai-generate-section";
+import { isQuotaMessage, UpgradeProButton } from "@/components/billing/upgrade-notice";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
@@ -94,6 +95,7 @@ export function GeneratePassageButton({
           {error}
         </p>
       ) : null}
+      {error && isQuotaMessage(error) ? <UpgradeProButton onDark /> : null}
     </div>
   );
 }
@@ -145,6 +147,7 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
           {error}
         </p>
       ) : null}
+      {error && isQuotaMessage(error) ? <UpgradeProButton onDark /> : null}
     </div>
   );
 }

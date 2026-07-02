@@ -33,9 +33,15 @@ const card: React.CSSProperties = { background: "#fff", border: `1px solid ${LIN
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ billing?: string }>;
+}) {
   const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect("/console");
+  // Stripe Checkout bounces back here (?billing=success|cancel from /api/billing/checkout).
+  const billing = (await searchParams)?.billing;
 
   const plan = await loadStudyPlan(profile.id);
   if (!plan) return null;
@@ -63,6 +69,16 @@ export default async function DashboardPage() {
   return (
     <div style={{ fontFamily: SANS, color: INK }}>
       <style>{DASH_CSS}</style>
+
+      {billing === "success" ? (
+        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: "#147A4F", background: "#E9F5EE", border: "1px solid #CDE9D8", borderRadius: 10, padding: "10px 14px" }}>
+          Payment received — your Pro plan is activating now. Enjoy the extra practice!
+        </p>
+      ) : billing === "cancel" ? (
+        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, color: "#8A5B12", background: "#FDF6E7", border: "1px solid #F0E1BE", borderRadius: 10, padding: "10px 14px" }}>
+          Checkout cancelled — you&apos;re still on the free plan.
+        </p>
+      ) : null}
 
       <Header name={profile.full_name} plan={plan} days={days} streakDays={streakDays} tasksThisWeek={tasksThisWeek} />
 

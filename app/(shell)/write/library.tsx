@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
+import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 // These live with the full-screen runner in the (studio) group; the hub library
 // only needs the prompt type and the save-draft action from them.
 import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
@@ -235,7 +236,7 @@ export function WritingLibrary({
         setMessage(
           gb.message ?? "Grading is busy — your essay is saved; try again from Activities shortly.",
         );
-      else if (gr.status === 429) setMessage("You’ve reached your monthly grading limit.");
+      else if (gr.status === 429) setMessage("You’ve used this month’s free gradings (your monthly grading limit).");
       else setMessage(gb.message ?? "Grading failed. Please try again.");
       setBusy(false);
       setGradingModal(false);
@@ -420,21 +421,9 @@ export function WritingLibrary({
       </div>
 
       {message ? (
-        <p
-          role="alert"
-          style={{
-            fontFamily: SANS,
-            fontSize: 13.5,
-            color: "#c2410c",
-            background: "#FEF2E8",
-            border: "1px solid #F6D7BE",
-            borderRadius: 10,
-            padding: "10px 12px",
-            marginBottom: 20,
-          }}
-        >
-          {message}
-        </p>
+        <div style={{ marginBottom: 20 }}>
+          <UpgradeNotice message={message} />
+        </div>
       ) : null}
 
       {tab === "check_own" ? (

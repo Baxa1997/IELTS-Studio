@@ -10,28 +10,34 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/billing/checkout  — center_admin starts an upgrade.
+ * POST /api/billing/checkout  — start an upgrade for the caller's org.
  * Body: { plan: "starter"|"pro", provider: "stripe"|"payme"|"click" }
  *
- * Returns { url } to redirect the admin to the provider's payment page, and marks
- * the subscription 'incomplete' until the webhook/callback confirms payment.
+ * B2C: students upgrade their own personal org (the shipping path). The dormant
+ * B2B center_admin path stays valid and returns to the console instead.
+ *
+ * Returns { url } to redirect to the provider's payment page, and marks the
+ * subscription 'incomplete' until the webhook/callback confirms payment.
  */
 export async function POST(req: Request): Promise<Response> {
   const session = await getSession();
   if (!session?.profile) return fail(401, "unauthorized");
-  if (session.profile.role !== "center_admin") return fail(403, "forbidden");
+  const role = session.profile.role;
+  if (role !== "student" && role !== "center_admin") return fail(403, "forbidden");
   const organizationId = session.profile.organization_id;
 
   const body = (await req.json().catch(() => ({}))) as { plan?: string; provider?: string };
   const plan = body.plan ?? "";
   const provider = body.provider ?? "";
-  if (!isValidPlan(plan) || plan === "trial" || plan === "enterprise") {
+  // Every paid tier is self-serve now (Enterprise has a fixed price, not sales-led).
+  if (!isValidPlan(plan) || plan === "trial") {
     return fail(400, "invalid_plan");
   }
 
   const base = serverEnv.siteUrl;
-  const successUrl = `${base}/console/billing?status=success`;
-  const cancelUrl = `${base}/console/billing?status=cancel`;
+  const returnPath = role === "student" ? "/dashboard" : "/console/billing";
+  const successUrl = `${base}${returnPath}?billing=success`;
+  const cancelUrl = `${base}${returnPath}?billing=cancel`;
 
   try {
     if (provider === "stripe") {

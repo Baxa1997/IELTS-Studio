@@ -10,9 +10,11 @@ import type { CheckoutRequest, CheckoutResult, PlanChange, SubscriptionStatus } 
 
 /**
  * Stripe adapter — Checkout + webhooks via the REST API (no SDK dependency).
- * Subscriptions are created with inline price_data so no pre-provisioned Stripe
- * Price is required; org + plan ride in metadata so the webhook can attribute the
- * payment. Live use needs STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET.
+ * Subscriptions charge the tier's dashboard Price (`stripePriceId` in plans.ts,
+ * overridable per-env via STRIPE_PRICE_<PLAN> — e.g. test-mode price IDs), and
+ * fall back to inline price_data when no Price is configured; org + plan ride in
+ * metadata so the webhook can attribute the payment. Live use needs
+ * STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET.
  */
 
 const API = "https://api.stripe.com/v1";
@@ -34,10 +36,16 @@ export async function stripeCreateCheckout(req: CheckoutRequest): Promise<Checko
   form.set("subscription_data[metadata][plan]", req.plan);
   if (req.customerEmail) form.set("customer_email", req.customerEmail);
   form.set("line_items[0][quantity]", "1");
-  form.set("line_items[0][price_data][currency]", tier.currency);
-  form.set("line_items[0][price_data][product_data][name]", `IELTS W&R — ${tier.name}`);
-  form.set("line_items[0][price_data][recurring][interval]", "month");
-  form.set("line_items[0][price_data][unit_amount]", String(Math.round(tier.price * 100)));
+  const priceId =
+    process.env[`STRIPE_PRICE_${req.plan.toUpperCase()}`] ?? tier.stripePriceId;
+  if (priceId) {
+    form.set("line_items[0][price]", priceId);
+  } else {
+    form.set("line_items[0][price_data][currency]", tier.currency);
+    form.set("line_items[0][price_data][product_data][name]", `IELTS W&R — ${tier.name}`);
+    form.set("line_items[0][price_data][recurring][interval]", "month");
+    form.set("line_items[0][price_data][unit_amount]", String(Math.round(tier.price * 100)));
+  }
 
   const res = await fetch(`${API}/checkout/sessions`, {
     method: "POST",

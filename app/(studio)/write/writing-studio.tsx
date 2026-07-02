@@ -260,7 +260,7 @@ export function WritingStudio({
       } else if (res.status === 202) {
         setMessage(body.message ?? "Grading is busy right now — your essay is queued. Try again shortly.");
       } else if (res.status === 429) {
-        setMessage("You’ve reached your monthly grading limit.");
+        setMessage("You’ve used this month’s free gradings (your monthly grading limit) — upgrade from the Writing page for more.");
       } else {
         setMessage(body.message ?? body.error ?? "Grading failed. Please try again.");
       }
