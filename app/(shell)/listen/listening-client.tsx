@@ -81,15 +81,29 @@ type FormRow = { label: string; template: string; section: string | null };
 type NoteLine = { template: string; sub: boolean };
 type NoteSection = { heading: string; lines: NoteLine[] };
 
-type RenderView = {
-  id: string;
+type ClusterView = { questions: number[]; stem: string; options: Record<string, string> };
+type MatchingView = { heading: string; items: { q: number; label: string }[]; options: Record<string, string> };
+type McqView = { q: number; stem: string; options: Record<string, string> };
+
+/** One part's question material (also the shape of a single-part practice). */
+type PartView = {
   part: number;
   topic: string;
   narrator_intro: string;
-  difficulty?: number;
-  audio: Segment[];
   form?: { title: string; word_limit: string; rows: FormRow[] };
   notes?: { title: string; word_limit: string; sections: NoteSection[] };
+  clusters?: ClusterView[];
+  matching?: MatchingView;
+  mcqs?: McqView[];
+  context?: string;
+};
+
+type RenderView = PartView & {
+  id: string;
+  difficulty?: number;
+  audio: Segment[];
+  kind?: "test";
+  parts?: PartView[]; // full test: all four parts' questions
 };
 
 type QResult = {
@@ -99,6 +113,9 @@ type QResult = {
 type Grade = {
   part: number; score: number; max_score: number;
   results: QResult[]; transcript: { speaker: string; text: string }[];
+  kind?: "test";
+  band?: number;
+  parts?: { part: number; score: number; max_score: number }[];
 };
 
 type LibraryItem = {
@@ -125,6 +142,11 @@ const TRAP_EXPLAIN: Record<string, string> = {
   "negation-compression": "The notes compress a negative statement from the lecture into a short positive phrase.",
   comparative: "The notes shorten a comparison the lecturer made — the wording differs, the gap word doesn't.",
   nominalisation: "The notes turn the lecturer's verb phrase into a noun phrase around the same gap word.",
+  "plausible-not-stated": "The wrong option sounded likely from the context — but it was never actually said.",
+  "different-subject": "The wrong option's words WERE heard — attached to a different subject.",
+  "refute-then-state": "The first suggestion was knocked down; the real point came straight after it.",
+  "return-to-first": "Other options were rejected and the speakers came back to the first one.",
+  "counter-then-agree": "A late counter-proposal was confirmed by the other speaker — agreement seals the answer.",
 };
 
 const PART_LABEL: Record<number, string> = {
@@ -134,8 +156,14 @@ const PART_LABEL: Record<number, string> = {
   4: "Part 4 · Lecture",
 };
 
-/** Parts the generator can produce today (2 & 3 join when they ship). */
-const LIVE_PARTS = [1, 4];
+/** Question-type tags per part format (the quick-practice cards show these
+ *  instead of part numbers — a practice is just "a practice"). */
+const QTYPE_TAGS: Record<number, string[]> = {
+  1: ["Form completion"],
+  2: ["Multiple choice", "Matching"],
+  3: ["Multiple choice", "Matching"],
+  4: ["Note completion"],
+};
 
 type HubTab = "tests" | "parts";
 
@@ -199,12 +227,13 @@ export function ListeningClient() {
     }
   }, []);
 
-  const generate = useCallback(async (part: number, difficulty: number) => {
+  const generate = useCallback(async (difficulty: number) => {
     setBusy("generate");
     setError(null);
     try {
       setSource("mine");
-      setView(await callEngine<RenderView>("generate", { part, difficulty }));
+      // No part is sent — the engine draws a random format, like the real exam.
+      setView(await callEngine<RenderView>("generate", { difficulty }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Generation failed — please try again.");
     } finally {
@@ -225,19 +254,23 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
   tab: HubTab; setTab: (t: HubTab) => void;
   catalogue: Catalogue | null; mine: MineItem[] | null; busy: string | null; error: string | null;
   onOpen: (item: LibraryItem) => void; onOpenMine: (id: string) => void;
-  onGenerate: (part: number, difficulty: number) => void;
+  onGenerate: (difficulty: number) => void;
 }) {
-  const [partFilter, setPartFilter] = useState<number | null>(null);
-
-  // "Practice test N" — stable global numbering, easiest first (the stable sort
-  // keeps the engine's created_at order within a level).
-  const numbered = useMemo(
-    () => [...(catalogue?.items ?? [])]
+  // Tab 1: FULL tests only (part 0). Tab 2: single-recording quick practices.
+  const tests = useMemo(
+    () => (catalogue?.items ?? [])
+      .filter((it) => it.part === 0)
       .sort((a, b) => a.difficulty - b.difficulty)
       .map((it, i) => ({ ...it, seq: i + 1 })),
     [catalogue],
   );
-  const shown = partFilter == null ? numbered : numbered.filter((it) => it.part === partFilter);
+  const quick = useMemo(
+    () => (catalogue?.items ?? [])
+      .filter((it) => it.part > 0)
+      .sort((a, b) => a.difficulty - b.difficulty)
+      .map((it, i) => ({ ...it, seq: i + 1 })),
+    [catalogue],
+  );
 
   // "My practice N" — 1 = the first one the learner ever generated.
   const mineSeq = useMemo(() => {
@@ -252,8 +285,8 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
         <div>
           <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(28px,3.6vw,38px)", lineHeight: 1.05, letterSpacing: "-.4px", margin: 0, color: INK }}>Listening</h1>
           <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0", maxWidth: 660 }}>
-            Start a ready-made practice test in one click, or generate a fresh part — the announcer
-            frames the recording, the audio plays once, and every trap is explained after grading.
+            Full 4-part practice tests with the real exam&rsquo;s framing — the announcer introduces
+            each part, the audio plays once, and every answer is explained after grading.
           </p>
         </div>
         {catalogue ? (
@@ -266,55 +299,43 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
 
       {/* Tabs — the same chooser as the Reading hub */}
       <div style={{ display: "flex", gap: 6, background: "#F1F1F8", border: "1px solid #ECEAF2", borderRadius: 14, padding: 5, marginTop: 22, maxWidth: 520 }}>
-        <TabButton active={tab === "tests"} onClick={() => setTab("tests")} icon={<Headphones size={17} />} label="Practice tests" sub="Ready-made library" />
-        <TabButton active={tab === "parts"} onClick={() => setTab("parts")} icon={<Sparkles size={17} />} label="Part practice" sub="AI · surprise part" />
+        <TabButton active={tab === "tests"} onClick={() => setTab("tests")} icon={<Headphones size={17} />} label="Practice tests" sub="4 parts · 40 questions" />
+        <TabButton active={tab === "parts"} onClick={() => setTab("parts")} icon={<Sparkles size={17} />} label="Quick practice" sub="1 recording · ~8 min" />
       </div>
 
       {error ? <div style={{ marginTop: 18 }}><UpgradeNotice message={error} /></div> : null}
 
       {tab === "tests" ? (
-        <>
-          {/* Viewing filter only — starting a test never asks for a part */}
-          <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
-            {[null, ...LIVE_PARTS].map((p) => {
-              const active = partFilter === p;
-              return (
-                <button key={p ?? 0} type="button" onClick={() => setPartFilter(p)}
-                  style={{ padding: "7px 14px", borderRadius: 999, border: active ? "1px solid #1C1B2E" : "1px solid rgba(28,27,46,.14)", background: active ? INK : "#fff", color: active ? "#fff" : MUTED, fontFamily: SANS, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  {p == null ? "All parts" : PART_LABEL[p]}
-                </button>
-              );
-            })}
+        !catalogue ? (
+          <p style={{ marginTop: 30, fontSize: 14.5, color: MUTED, display: "flex", alignItems: "center", gap: 9 }}>
+            <Loader2 className="animate-spin" size={16} /> Loading the practice tests…
+          </p>
+        ) : tests.length === 0 ? (
+          <EmptyHint>
+            The full practice tests are being recorded right now — each one is four parts and
+            forty questions. Check back shortly, or try a quick practice meanwhile.
+          </EmptyHint>
+        ) : (
+          <div style={{ marginTop: 20 }}>
+            <Grid>
+              {tests.map((it) => (
+                <TestCard key={it.id} it={it} loading={busy === it.id} disabled={!!busy} onOpen={() => onOpen(it)} />
+              ))}
+            </Grid>
           </div>
-
-          {!catalogue ? (
-            <p style={{ marginTop: 30, fontSize: 14.5, color: MUTED, display: "flex", alignItems: "center", gap: 9 }}>
-              <Loader2 className="animate-spin" size={16} /> Loading the practice library…
-            </p>
-          ) : shown.length === 0 ? (
-            <EmptyHint>New recordings are being added to the library right now — check back in a little while.</EmptyHint>
-          ) : (
-            <div style={{ marginTop: 18 }}>
-              <Grid>
-                {shown.map((it) => (
-                  <TestCard key={it.id} it={it} loading={busy === it.id} disabled={!!busy} onOpen={() => onOpen(it)} />
-                ))}
-              </Grid>
-            </div>
-          )}
-        </>
+        )
       ) : (
         <>
           <div style={{ marginTop: 18 }}>
             <AiGenerateSection
-              title="Generate a part practice"
+              title="Generate a quick practice"
               badge="AI Studio"
-              description="A surprise part — conversation or lecture, you won't know until the announcer speaks. An original script recorded as studio audio at your chosen level, ready in about two minutes and saved to your account."
+              description="One recording, ten questions — the format is a surprise until the announcer speaks, so every practice trains a different listening question type. Recorded as studio audio at your chosen level in about two minutes, and saved to your account."
               cta={
                 <GenerateCta
                   generating={busy === "generate"}
                   disabled={!!busy}
-                  onGo={(difficulty) => onGenerate(LIVE_PARTS[Math.floor(Math.random() * LIVE_PARTS.length)], difficulty)}
+                  onGo={onGenerate}
                 />
               }
             />
@@ -331,6 +352,17 @@ function Hub({ tab, setTab, catalogue, mine, busy, error, onOpen, onOpenMine, on
             </>
           ) : mine != null ? (
             <EmptyHint>Nothing here yet — generate your first practice above. Every one you make is saved to your account and stays reopenable.</EmptyHint>
+          ) : null}
+
+          {quick.length > 0 ? (
+            <>
+              <SectionLabel>Ready-made quick practices</SectionLabel>
+              <Grid>
+                {quick.map((it) => (
+                  <QuickCard key={it.id} it={it} loading={busy === it.id} disabled={!!busy} onOpen={() => onOpen(it)} />
+                ))}
+              </Grid>
+            </>
           ) : null}
         </>
       )}
@@ -367,11 +399,51 @@ function GenerateCta({ generating, disabled, onGo }: {
   );
 }
 
-/** A ready-made library practice as a numbered card ("Practice test N"). */
+function LevelChip({ level, mr }: { level: number; mr?: number }) {
+  const lvl = LEVEL_STYLE[level] ?? LEVEL_STYLE[3];
+  return (
+    <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, whiteSpace: "nowrap", marginRight: mr }}>
+      Level {level}
+    </span>
+  );
+}
+
+function BestChip({ score, max }: { score: number; max: number }) {
+  const good = score / max >= 0.7;
+  return (
+    <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: good ? "#E9F5EE" : "#FFF7E8", color: good ? GOOD : "#B45309", whiteSpace: "nowrap" }}>
+      Best {score}/{max}
+    </span>
+  );
+}
+
+function StartAction({ loading, locked, done }: { loading: boolean; locked: boolean; done: boolean }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: locked ? "#8A899A" : INDIGO, fontSize: 14, fontWeight: 600 }}>
+      {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>)
+        : locked ? (<><Lock size={13} /> Pro</>)
+        : done ? (<>Retake <RotateCcw size={13} /></>)
+        : (<>Start <ArrowRight size={14} /></>)}
+    </span>
+  );
+}
+
+function TypeTags({ part }: { part: number }) {
+  const tags = QTYPE_TAGS[part] ?? [];
+  if (tags.length === 0) return null;
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {tags.map((t) => (
+        <span key={t} style={{ background: "#F4F4FB", border: "1px solid #ECEAF2", color: "#5A596B", fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 7 }}>{t}</span>
+      ))}
+    </div>
+  );
+}
+
+/** A FULL 4-part test card ("Practice test N" — 40 questions). */
 function TestCard({ it, loading, disabled, onOpen }: {
   it: LibraryItem & { seq: number }; loading: boolean; disabled: boolean; onOpen: () => void;
 }) {
-  const lvl = LEVEL_STYLE[it.difficulty] ?? LEVEL_STYLE[3];
   const done = it.best_score != null;
   return (
     <button type="button" onClick={onOpen} disabled={disabled} className="lp-hover"
@@ -379,27 +451,47 @@ function TestCard({ it, loading, disabled, onOpen }: {
       <div style={rowBetween}>
         <span style={iconTile}><Headphones size={19} /></span>
         <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {done ? (
-            <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: (it.best_score ?? 0) >= 7 ? "#E9F5EE" : "#FFF7E8", color: (it.best_score ?? 0) >= 7 ? GOOD : "#B45309", whiteSpace: "nowrap" }}>
-              Best {it.best_score}/10
-            </span>
-          ) : null}
-          <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, whiteSpace: "nowrap" }}>Level {it.difficulty}</span>
+          {done ? <BestChip score={it.best_score ?? 0} max={40} /> : null}
+          <LevelChip level={it.difficulty} />
         </span>
       </div>
       <div>
         <h4 style={cardTitle}>Practice test {it.seq}</h4>
-        <span style={{ ...cardSub, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{PART_LABEL[it.part] ?? `Part ${it.part}`}</span>
+        <span style={{ ...cardSub, display: "block" }}>4 parts · 40 questions · band score</span>
       </div>
       <Divider />
       <div style={rowBetween}>
-        <span style={metaText}>10 questions · plays once</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: it.locked ? "#8A899A" : INDIGO, fontSize: 14, fontWeight: 600 }}>
-          {loading ? (<><Loader2 className="animate-spin" size={14} /> Opening…</>)
-            : it.locked ? (<><Lock size={13} /> Pro</>)
-            : done ? (<>Retake <RotateCcw size={13} /></>)
-            : (<>Start <ArrowRight size={14} /></>)}
+        <span style={metaText}>≈ 35 min · plays once</span>
+        <StartAction loading={loading} locked={it.locked} done={done} />
+      </div>
+    </button>
+  );
+}
+
+/** A ready-made single-recording practice ("Quick practice N"). */
+function QuickCard({ it, loading, disabled, onOpen }: {
+  it: LibraryItem & { seq: number }; loading: boolean; disabled: boolean; onOpen: () => void;
+}) {
+  const done = it.best_score != null;
+  return (
+    <button type="button" onClick={onOpen} disabled={disabled} className="lp-hover"
+      style={{ ...cardStyle, width: "100%", textAlign: "left", fontFamily: SANS, cursor: disabled ? "default" : "pointer", opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1 }}>
+      <div style={rowBetween}>
+        <span style={iconTile}><Headphones size={19} /></span>
+        <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {done ? <BestChip score={it.best_score ?? 0} max={10} /> : null}
+          <LevelChip level={it.difficulty} />
         </span>
+      </div>
+      <div>
+        <h4 style={cardTitle}>Quick practice {it.seq}</h4>
+        <span style={{ ...cardSub, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.topic || "Listening practice"}</span>
+      </div>
+      <TypeTags part={it.part} />
+      <Divider />
+      <div style={rowBetween}>
+        <span style={metaText}>10 questions · plays once</span>
+        <StartAction loading={loading} locked={it.locked} done={done} />
       </div>
     </button>
   );
@@ -409,7 +501,6 @@ function TestCard({ it, loading, disabled, onOpen }: {
 function MineCard({ it, loading, disabled, onOpen }: {
   it: MineItem & { seq: number }; loading: boolean; disabled: boolean; onOpen: () => void;
 }) {
-  const lvl = LEVEL_STYLE[it.difficulty] ?? LEVEL_STYLE[3];
   const when = it.created_at
     ? new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
     : "";
@@ -419,14 +510,15 @@ function MineCard({ it, loading, disabled, onOpen }: {
       <AiCorner />
       <div style={rowBetween}>
         <span style={iconTile}><Sparkles size={19} /></span>
-        <span style={{ padding: "4px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, marginRight: 34, whiteSpace: "nowrap" }}>Level {it.difficulty}</span>
+        <LevelChip level={it.difficulty} mr={34} />
       </div>
       <div>
         <h4 style={cardTitle}>My practice {it.seq}</h4>
         <span style={{ ...cardSub, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {PART_LABEL[it.part] ?? `Part ${it.part}`} · {it.topic || "Listening"}
+          {it.topic || "Listening practice"}
         </span>
       </div>
+      <TypeTags part={it.part} />
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{when ? `Generated ${when}` : "Saved to your account"}</span>
@@ -513,6 +605,18 @@ const iconTile: React.CSSProperties = { width: 40, height: 40, borderRadius: 11,
 
 type PlayerPhase = "idle" | "running" | "finished";
 
+/** Every question number a part view carries (gaps, clusters, MCQs, matching). */
+function partQuestionNums(p: PartView): number[] {
+  const templates = p.form
+    ? p.form.rows.map((r) => r.template)
+    : (p.notes?.sections ?? []).flatMap((s) => s.lines.map((l) => l.template));
+  const nums = templates.flatMap((t) => [...t.matchAll(/\{(\d+)\}/g)].map((m) => Number(m[1])));
+  for (const c of p.clusters ?? []) nums.push(...c.questions);
+  for (const m of p.mcqs ?? []) nums.push(m.q);
+  for (const it of p.matching?.items ?? []) nums.push(it.q);
+  return nums.sort((a, b) => a - b);
+}
+
 function Runner({ view, source, onExit }: { view: RenderView; source: Source; onExit: () => void }) {
   const [attempt, setAttempt] = useState(1); // bump to reset player + answers
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -521,12 +625,12 @@ function Runner({ view, source, onExit }: { view: RenderView; source: Source; on
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<PlayerPhase>("idle");
 
-  const questionNums = useMemo(() => {
-    const templates = view.form
-      ? view.form.rows.map((r) => r.template)
-      : (view.notes?.sections ?? []).flatMap((s) => s.lines.map((l) => l.template));
-    return templates.flatMap((t) => [...t.matchAll(/\{(\d+)\}/g)].map((m) => Number(m[1]))).sort((a, b) => a - b);
-  }, [view]);
+  const isTest = view.kind === "test";
+  const partViews = useMemo(() => (isTest ? view.parts ?? [] : [view]), [view, isTest]);
+  const questionNums = useMemo(
+    () => partViews.flatMap(partQuestionNums).sort((a, b) => a - b),
+    [partViews],
+  );
   const answered = questionNums.filter((n) => (answers[n] ?? "").trim()).length;
 
   const submit = useCallback(async () => {
@@ -573,28 +677,43 @@ function Runner({ view, source, onExit }: { view: RenderView; source: Source; on
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            Listening · Part {view.part}
+            {isTest ? "Listening · Practice test" : "Listening · Quick practice"}
           </div>
-          <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{view.topic}</div>
+          <div style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {isTest ? "4 parts · 40 questions" : view.topic}
+          </div>
         </div>
         <span style={{ padding: "4px 10px", borderRadius: 7, fontSize: 12.5, fontWeight: 700, background: lvl.bg, color: lvl.fg, flex: "none" }}>
           Level {view.difficulty ?? 3}
         </span>
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "20px clamp(14px,3vw,24px) 120px" }}>
-        <Player key={attempt} segments={view.audio} phase={phase} setPhase={setPhase} replayUnlocked={!!grade} />
-
-        {/* Questions */}
-        <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: "22px clamp(16px,3vw,26px)", marginTop: 16, boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
-          {view.form ? (
-            <FormPanel form={view.form} answers={answers} setAnswers={setAnswers} results={grade ? resultByQ : null} />
-          ) : view.notes ? (
-            <NotesPanel notes={view.notes} answers={answers} setAnswers={setAnswers} results={grade ? resultByQ : null} />
-          ) : null}
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "14px clamp(14px,3vw,24px) 120px" }}>
+        {/* The player sticks below the header — scrolling the questions never
+            hides the countdowns or the pause control. */}
+        <div style={{ position: "sticky", top: 62, zIndex: 4 }}>
+          <Player key={attempt} segments={view.audio} phase={phase} setPhase={setPhase} />
         </div>
 
+        {/* Questions — one panel per part (a quick practice is a single part) */}
+        {partViews.map((p) => (
+          <div key={p.part}>
+            {isTest ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 0" }}>
+                <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>
+                  {PART_LABEL[p.part] ?? `Part ${p.part}`}
+                </span>
+                <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+              </div>
+            ) : null}
+            <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: "22px clamp(16px,3vw,26px)", marginTop: isTest ? 10 : 16, boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
+              <PartPanels p={p} answers={answers} setAnswers={setAnswers} results={grade ? resultByQ : null} />
+            </div>
+          </div>
+        ))}
+
         {grade ? <ReviewPanel grade={grade} /> : null}
+        {grade ? <ReplayList segments={view.audio} /> : null}
         {error ? <UpgradeNotice message={error} /> : null}
       </div>
 
@@ -613,8 +732,13 @@ function Runner({ view, source, onExit }: { view: RenderView; source: Source; on
             </>
           ) : (
             <>
-              <span style={{ fontSize: 15, fontWeight: 700, color: grade.score >= 7 ? GOOD : INK, flex: 1 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: grade.score / grade.max_score >= 0.7 ? GOOD : INK, flex: 1 }}>
                 {grade.score}/{grade.max_score} correct
+                {grade.band != null ? (
+                  <span style={{ marginLeft: 10, padding: "3px 10px", borderRadius: 8, background: TINT, color: INDIGO, fontSize: 13.5 }}>
+                    Band {grade.band.toFixed(1)}
+                  </span>
+                ) : null}
               </span>
               <button type="button" onClick={practiceAgain} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: INK, border: "1px solid rgba(28,27,46,.14)", borderRadius: 11, padding: "10px 18px", fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                 <RotateCcw size={15} /> Practice again
@@ -636,9 +760,8 @@ function Runner({ view, source, onExit }: { view: RenderView; source: Source; on
  *  reading pauses rendered as countdowns. Pause/resume is allowed (practice
  *  convenience — the real exam has no pause), but there is no seeking and no
  *  replay until the attempt is graded. */
-function Player({ segments, phase, setPhase, replayUnlocked }: {
+function Player({ segments, phase, setPhase }: {
   segments: Segment[]; phase: PlayerPhase; setPhase: (p: PlayerPhase) => void;
-  replayUnlocked: boolean;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [idx, setIdx] = useState(-1);
@@ -763,18 +886,22 @@ function Player({ segments, phase, setPhase, replayUnlocked }: {
         </div>
       )}
 
-      {/* Post-grade free replay (practice review, no exam rules anymore) */}
-      {replayUnlocked ? (
-        <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,.12)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,.7)", letterSpacing: ".04em", textTransform: "uppercase" }}>Listen again</span>
-          {segments.filter((s): s is AudioSeg => s.kind === "audio").map((s) => (
-            <div key={s.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", width: 200, flex: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
-              <audio src={s.url} controls preload="none" style={{ flex: 1, height: 32 }} />
-            </div>
-          ))}
+    </div>
+  );
+}
+
+/** Post-grade free replay (practice review, no exam rules anymore) — rendered
+ *  below the review so the sticky player stays compact. */
+function ReplayList({ segments }: { segments: Segment[] }) {
+  return (
+    <div style={{ marginTop: 16, background: "#1C1B2E", color: "#fff", borderRadius: 16, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,.7)", letterSpacing: ".04em", textTransform: "uppercase" }}>Listen again</span>
+      {segments.filter((s): s is AudioSeg => s.kind === "audio").map((s) => (
+        <div key={s.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 12.5, color: "rgba(255,255,255,.65)", width: 200, flex: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</span>
+          <audio src={s.url} controls preload="none" style={{ flex: 1, height: 32 }} />
         </div>
-      ) : null}
+      ))}
     </div>
   );
 }
@@ -902,6 +1029,206 @@ function NotesPanel({ notes, answers, setAnswers, results }: {
   );
 }
 
+// ---- Letter-answer panels (Parts 2 & 3) -----------------------------------------
+
+function QuestionsHeading({ text, instruction }: { text: string; instruction: string }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "#8A8FA0", letterSpacing: ".05em", textTransform: "uppercase", marginBottom: 6 }}>{text}</div>
+      <div style={{ display: "inline-flex", background: TINT, color: INDIGO, border: "1px solid rgba(67,56,202,.14)", borderRadius: 8, padding: "4px 10px", fontSize: 12.5, fontWeight: 700 }}>{instruction}</div>
+    </div>
+  );
+}
+
+/** Renders whichever question material a part carries. */
+function PartPanels({ p, answers, setAnswers, results }: {
+  p: PartView;
+  answers: Record<number, string>;
+  setAnswers: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  results: Map<number, QResult> | null;
+}) {
+  if (p.form) return <FormPanel form={p.form} answers={answers} setAnswers={setAnswers} results={results} />;
+  if (p.notes) return <NotesPanel notes={p.notes} answers={answers} setAnswers={setAnswers} results={results} />;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
+      {(p.clusters ?? []).map((c) => (
+        <ChooseTwoPanel key={c.questions[0]} cluster={c} answers={answers} setAnswers={setAnswers} results={results} />
+      ))}
+      {(p.mcqs ?? []).length > 0 ? (
+        <McqPanel mcqs={p.mcqs ?? []} context={p.context} answers={answers} setAnswers={setAnswers} results={results} />
+      ) : null}
+      {p.matching && (p.matching.items ?? []).length > 0 ? (
+        <MatchingPanel matching={p.matching} answers={answers} setAnswers={setAnswers} results={results} />
+      ) : null}
+    </div>
+  );
+}
+
+/** "Choose TWO letters" — a pair of questions answered by one 5-option set. */
+function ChooseTwoPanel({ cluster, answers, setAnswers, results }: {
+  cluster: ClusterView;
+  answers: Record<number, string>;
+  setAnswers: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  results: Map<number, QResult> | null;
+}) {
+  const [qa, qb] = cluster.questions;
+  const graded = results != null;
+  const selected = [answers[qa], answers[qb]].filter(Boolean) as string[];
+  const correctLetters = graded
+    ? (results.get(qa)?.correct_answer ?? "").split(" or ").filter(Boolean)
+    : [];
+
+  const toggle = (letter: string) => {
+    if (graded) return;
+    setAnswers((prev) => {
+      const cur = [prev[qa], prev[qb]].filter(Boolean) as string[];
+      let next: string[];
+      if (cur.includes(letter)) next = cur.filter((l) => l !== letter);
+      else if (cur.length >= 2) return prev; // already two picked — deselect one first
+      else next = [...cur, letter];
+      next.sort();
+      return { ...prev, [qa]: next[0] ?? "", [qb]: next[1] ?? "" };
+    });
+  };
+
+  return (
+    <div>
+      <QuestionsHeading text={`Questions ${qa} and ${qb}`} instruction="Choose TWO letters." />
+      <div style={{ fontWeight: 600, fontSize: 15, color: INK, margin: "4px 0 10px" }}>{cluster.stem}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {Object.entries(cluster.options).sort(([a], [b]) => a.localeCompare(b)).map(([letter, text]) => {
+          const on = selected.includes(letter);
+          const isCorrect = correctLetters.includes(letter);
+          const border = graded ? (isCorrect ? GOOD : on ? BAD : "rgba(28,27,46,.12)") : on ? INDIGO : "rgba(28,27,46,.12)";
+          const bg = graded ? (isCorrect ? "#f0fdf4" : on ? "#fef2f2" : "#fff") : on ? TINT : "#fff";
+          return (
+            <button key={letter} type="button" onClick={() => toggle(letter)} disabled={graded} aria-pressed={on}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 10, border: `1.5px solid ${border}`, background: bg, fontFamily: SANS, fontSize: 14, color: INK, cursor: graded ? "default" : "pointer", textAlign: "left" }}>
+              <span style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${on || (graded && isCorrect) ? border : "#C9C7E2"}`, background: on && !graded ? INDIGO : "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                {on && !graded ? <Check size={14} /> : graded && isCorrect ? <Check size={14} color={GOOD} /> : graded && on ? <X size={14} color={BAD} /> : null}
+              </span>
+              <strong style={{ width: 16, flex: "none" }}>{letter}</strong>
+              <span style={{ flex: 1 }}>{text}</span>
+            </button>
+          );
+        })}
+      </div>
+      {graded && selected.length < 2 ? (
+        <div style={{ marginTop: 8, fontSize: 13, color: BAD }}>You needed to choose two letters.</div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Single-answer multiple choice (Part 3, Q21–23). */
+function McqPanel({ mcqs, context, answers, setAnswers, results }: {
+  mcqs: McqView[]; context?: string;
+  answers: Record<number, string>;
+  setAnswers: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  results: Map<number, QResult> | null;
+}) {
+  const graded = results != null;
+  return (
+    <div>
+      <QuestionsHeading
+        text={`Questions ${mcqs[0].q}–${mcqs[mcqs.length - 1].q}`}
+        instruction="Choose the correct letter, A, B or C."
+      />
+      {context ? <div style={{ fontStyle: "italic", fontWeight: 600, fontSize: 14.5, color: INK, margin: "4px 0 6px" }}>{context}</div> : null}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {mcqs.map((m) => {
+          const r = results?.get(m.q) ?? null;
+          return (
+            <div key={m.q}>
+              <div style={{ fontWeight: 600, fontSize: 14.5, color: INK, marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: INDIGO, background: TINT, borderRadius: 6, padding: "1px 6px", marginRight: 8 }}>{m.q}</span>
+                {m.stem}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {Object.entries(m.options).sort(([a], [b]) => a.localeCompare(b)).map(([letter, text]) => {
+                  const on = answers[m.q] === letter;
+                  const isCorrect = graded && r?.correct_answer === letter;
+                  const border = graded ? (isCorrect ? GOOD : on ? BAD : "rgba(28,27,46,.12)") : on ? INDIGO : "rgba(28,27,46,.12)";
+                  const bg = graded ? (isCorrect ? "#f0fdf4" : on ? "#fef2f2" : "#fff") : on ? TINT : "#fff";
+                  return (
+                    <button key={letter} type="button" disabled={graded} aria-pressed={on}
+                      onClick={() => setAnswers((prev) => ({ ...prev, [m.q]: prev[m.q] === letter ? "" : letter }))}
+                      style={{ display: "flex", alignItems: "center", gap: 11, padding: "9px 13px", borderRadius: 10, border: `1.5px solid ${border}`, background: bg, fontFamily: SANS, fontSize: 14, color: INK, cursor: graded ? "default" : "pointer", textAlign: "left" }}>
+                      <span style={{ width: 20, height: 20, borderRadius: "50%", border: `1.5px solid ${on || isCorrect ? border : "#C9C7E2"}`, background: on && !graded ? INDIGO : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                        {on && !graded ? <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} /> : isCorrect ? <Check size={12} color={GOOD} /> : graded && on ? <X size={12} color={BAD} /> : null}
+                      </span>
+                      <strong style={{ width: 16, flex: "none" }}>{letter}</strong>
+                      <span style={{ flex: 1 }}>{text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Matching run — items matched to a boxed option list by letter. */
+function MatchingPanel({ matching, answers, setAnswers, results }: {
+  matching: MatchingView;
+  answers: Record<number, string>;
+  setAnswers: React.Dispatch<React.SetStateAction<Record<number, string>>>;
+  results: Map<number, QResult> | null;
+}) {
+  const graded = results != null;
+  const qs = matching.items.map((it) => it.q);
+  const letters = Object.keys(matching.options).sort();
+  return (
+    <div>
+      <QuestionsHeading
+        text={`Questions ${qs[0]}–${qs[qs.length - 1]}`}
+        instruction={`Choose your answers from the box — write the correct letter, ${letters[0]}–${letters[letters.length - 1]}.`}
+      />
+      {matching.heading ? <div style={{ fontWeight: 600, fontSize: 15, color: INK, margin: "4px 0 10px" }}>{matching.heading}</div> : null}
+
+      {/* The option box */}
+      <div style={{ border: "1.5px solid rgba(28,27,46,.16)", borderRadius: 12, padding: "12px 16px", marginBottom: 14, display: "flex", flexDirection: "column", gap: 5, background: "#FBFBFE" }}>
+        {letters.map((letter) => (
+          <div key={letter} style={{ fontSize: 14, color: INK, display: "flex", gap: 10 }}>
+            <strong style={{ width: 16, flex: "none" }}>{letter}</strong>
+            <span>{matching.options[letter]}</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {matching.items.map((it) => {
+          const r = results?.get(it.q) ?? null;
+          const border = r ? (r.is_correct ? GOOD : BAD) : "#C9C7E2";
+          return (
+            <div key={it.q} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: "1px solid rgba(28,27,46,.06)", fontSize: 14.5 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: INDIGO, background: TINT, borderRadius: 6, padding: "1px 6px", flex: "none" }}>{it.q}</span>
+              <span style={{ flex: 1, color: INK, fontWeight: 500 }}>{it.label}</span>
+              <select
+                value={answers[it.q] ?? ""}
+                disabled={graded}
+                aria-label={`Answer ${it.q}`}
+                onChange={(e) => setAnswers((prev) => ({ ...prev, [it.q]: e.target.value }))}
+                style={{ width: 64, padding: "6px 8px", borderRadius: 8, border: `1.5px solid ${border}`, background: r ? (r.is_correct ? "#f0fdf4" : "#fef2f2") : "#fff", fontFamily: SANS, fontSize: 14, fontWeight: 700, color: INK }}
+              >
+                <option value="">–</option>
+                {letters.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              {r ? (r.is_correct
+                ? <Check size={15} color={GOOD} />
+                : (<span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><X size={15} color={BAD} /><span style={{ fontSize: 13, fontWeight: 700, color: GOOD }}>→ {r.correct_answer}</span></span>)
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ---- Review -------------------------------------------------------------------
 
 function ReviewPanel({ grade }: { grade: Grade }) {
@@ -911,17 +1238,31 @@ function ReviewPanel({ grade }: { grade: Grade }) {
     <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Score summary */}
       <div style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 16, padding: "20px 22px", display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", boxShadow: "0 1px 3px rgba(28,27,46,.04)" }}>
-        <span style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 600, color: grade.score >= 7 ? GOOD : grade.score >= 4 ? INK : BAD, lineHeight: 1 }}>
+        <span style={{ fontFamily: SERIF, fontSize: 38, fontWeight: 600, color: grade.score / grade.max_score >= 0.7 ? GOOD : grade.score / grade.max_score >= 0.4 ? INK : BAD, lineHeight: 1 }}>
           {grade.score}<span style={{ fontSize: 20, color: "#9A99A8" }}>/{grade.max_score}</span>
         </span>
+        {grade.band != null ? (
+          <span style={{ padding: "8px 16px", borderRadius: 12, background: TINT, border: "1px solid rgba(67,56,202,.16)", color: INDIGO, fontWeight: 700, fontSize: 17, whiteSpace: "nowrap" }}>
+            Band {grade.band.toFixed(1)}
+          </span>
+        ) : null}
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontWeight: 700, fontSize: 15.5, color: INK }}>
             {grade.score === grade.max_score ? "Perfect — every answer caught." : wrong.length <= 3 ? "Strong listening — review the ones that got away." : "Good practice — the traps below are where the marks went."}
           </div>
           <div style={{ fontSize: 13.5, color: MUTED, marginTop: 3 }}>
-            Corrections are marked next to each gap above. The transcript below shows exactly where each answer was said.
+            Corrections are marked next to each question above. The transcript below shows exactly where each answer was said.
           </div>
         </div>
+        {(grade.parts ?? []).length > 0 ? (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: "100%" }}>
+            {(grade.parts ?? []).map((p) => (
+              <span key={p.part} style={{ padding: "5px 12px", borderRadius: 8, background: "#F4F4FB", border: "1px solid #ECEAF2", fontSize: 13, fontWeight: 700, color: p.score / p.max_score >= 0.7 ? GOOD : "#5A596B" }}>
+                Part {p.part}: {p.score}/{p.max_score}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {/* Trap explanations */}
