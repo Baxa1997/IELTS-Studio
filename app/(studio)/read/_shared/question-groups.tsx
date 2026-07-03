@@ -7,8 +7,8 @@ import { isReadingGapType, READING_GAP_MARKER, readingGroupInstruction } from "@
 import { GapSelectSentence, GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { INDIGO, INK, MUTED, SANS } from "./tokens";
 
-/** Each question sits in its own card; the border is brand-indigo (not faint grey)
- *  so the box around the question + its options is clearly visible. */
+/** Indigo-tinted border for the boxes that stay boxed (flow-chart gap stages);
+ *  ordinary questions render as flat rows with an indigo number, no card. */
 const QUESTION_BORDER = "#C5C9F1";
 
 const ENDING_LETTERS = "ABCDEFGHIJ".split("");
@@ -67,11 +67,11 @@ export function QuestionGroups({
         const isNote = type === "note_completion";
         let lastSection: string | null = null;
         return (
-          <section key={gi} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {/* Cambridge instruction header */}
-            <div style={{ borderLeft: `3px solid ${INDIGO}`, paddingLeft: 14 }}>
-              <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 15, color: INK, margin: 0, fontVariantNumeric: "tabular-nums" }}>{range}</p>
-              <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "5px 0 0" }}>
+          <section key={gi} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* Cambridge instruction header — a quiet grey box, like the exam paper */}
+            <div style={{ background: "#F6F7FA", border: "1px solid #EEEFF4", borderRadius: 12, padding: "13px 16px" }}>
+              <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 14.5, color: INK, margin: 0, fontVariantNumeric: "tabular-nums" }}>{range}</p>
+              <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "4px 0 0" }}>
                 {instruction}
               </p>
             </div>
@@ -123,9 +123,10 @@ export function QuestionGroups({
                   {sectionHeading ? (
                     <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 14.5, color: INK, margin: "4px 0 -4px" }}>{sectionHeading}</p>
                   ) : null}
-                  <div id={`q-${q.id}`} role="group" style={{ border: `1.5px solid ${QUESTION_BORDER}`, borderRadius: 14, padding: "16px 18px", background: "#fff", scrollMarginTop: 16 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 11, width: "100%" }}>
-                      <span style={{ flex: "none", fontWeight: 700, color: INK, fontSize: 16.5, lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
+                  {/* Flat exam row — indigo number, no card border */}
+                  <div id={`q-${q.id}`} role="group" style={{ scrollMarginTop: 16 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%" }}>
+                      <span style={{ flex: "none", minWidth: 22, fontWeight: 700, color: INDIGO, fontSize: 15.5, lineHeight: 1.55, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
                       <span style={{ flex: 1, minWidth: 0 }}>
                         {gap ? (
                           wordBank ? (
@@ -145,7 +146,7 @@ export function QuestionGroups({
                             />
                           )
                         ) : (
-                          <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.5, color: INK, whiteSpace: "pre-wrap" }}>{q.prompt}</span>
+                          <span style={{ display: "block", fontFamily: SANS, fontSize: 15.5, lineHeight: 1.55, color: INK, whiteSpace: "pre-wrap" }}>{q.prompt}</span>
                         )}
                       </span>
                       {onToggleFlag ? (
@@ -154,7 +155,7 @@ export function QuestionGroups({
                     </div>
 
                     {gap ? null : (
-                      <div style={{ paddingLeft: 26, marginTop: 12 }}>
+                      <div style={{ paddingLeft: 34, marginTop: 10 }}>
                         <QuestionInput question={q} value={answers[q.id] ?? ""} onChange={(v) => onAnswer(q.id, v)} />
                       </div>
                     )}

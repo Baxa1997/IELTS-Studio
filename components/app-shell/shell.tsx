@@ -12,8 +12,15 @@ import { SidebarNav } from "./sidebar-nav";
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#1A2138";
 const BORDER = "#3333";
-/** Light app canvas behind the floating content card (and the sidebar). */
+/** Light app canvas behind the floating content card. */
 const CANVAS = "#F1F1F6";
+/** The rail: the brand indigo (#3B43B5) taken down to the same calm darkness as
+ *  the green reference — a whisper of a gradient so it doesn't read as a flat slab. */
+const RAIL_BG = "linear-gradient(180deg, #1E2242 0%, #181B36 52%, #12142A 100%)";
+const RAIL_LINE = "rgba(255,255,255,.07)"; // hairlines/borders on the rail
+const RAIL_TEXT = "#CDD1DF"; // on-rail text
+const RAIL_FAINT = "#9096B0"; // secondary on-rail text (email, chevrons)
+const ACCENT = "#5BDD9B"; // soft mint accent (role chip, highlights)
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -44,6 +51,7 @@ export function AppShell({
   home,
   name,
   roleLabel,
+  email,
   contentClassName,
   sidebarFooter,
   initialCollapsed = false,
@@ -53,6 +61,8 @@ export function AppShell({
   home: string;
   name: string;
   roleLabel: string;
+  /** Shown under the name in the profile card (falls back to the role label). */
+  email?: string;
   /** Override the default content wrapper. Pass "" for a full-bleed surface
    *  (e.g. the writing library owns its own layout). */
   contentClassName?: string;
@@ -150,8 +160,7 @@ export function AppShell({
           className={asideClass}
           style={{
             flex: "none",
-            background: "#FAFAFC",
-            borderRight: "1px solid #E5E3F0",
+            background: RAIL_BG,
             display: "flex",
             flexDirection: "column",
             padding: "18px 16px",
@@ -161,8 +170,10 @@ export function AppShell({
             // The desktop media query restores `position: relative` for the toggle.
           }}
         >
-          {/* brand row — logo on the left, the collapse toggle opposite it (desktop);
-              the mobile drawer shows a close button there instead. */}
+          {/* brand row — logo on the left, the collapse toggle opposite it (desktop).
+              Margin/padding/divider live in .lp-sb-brandrow (globals.css): the row
+              stretches edge-to-edge past the rail padding for a full-bleed hairline,
+              and the collapsed media query re-tunes the offsets. */}
           <div
             className="lp-sb-brandrow"
             style={{
@@ -170,16 +181,39 @@ export function AppShell({
               alignItems: "center",
               justifyContent: "space-between",
               gap: 8,
-              padding: "0 2px 14px",
             }}
           >
             <Link
               href={home}
               onClick={close}
               className="lp-sb-logo"
-              style={{ textDecoration: "none" }}
+              style={{
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 9,
+                minWidth: 0,
+              }}
             >
-              <Logo />
+              <Logo tone="dark" />
+              {/* Role chip beside the logo (reference design); lp-sb-trail makes it
+                  collapse away with the rest of the rail text. */}
+              <span
+                className="lp-sb-trail"
+                style={{
+                  flex: "none",
+                  fontFamily: SANS,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: ACCENT,
+                  background: "rgba(91,221,155,.08)",
+                  border: "1px solid rgba(91,221,155,.30)",
+                  padding: "2.5px 10px",
+                  borderRadius: 8,
+                }}
+              >
+                {roleLabel}
+              </span>
             </Link>
             <button
               type="button"
@@ -194,19 +228,19 @@ export function AppShell({
                 width: 30,
                 height: 30,
                 flex: "none",
-                border: `1px solid #888`,
-                background: "#fff",
+                border: `1px solid rgba(255,255,255,.12)`,
+                background: "#23274A",
                 borderRadius: 8,
                 cursor: "pointer",
-                color: "#8A8FA0",
+                color: RAIL_FAINT,
                 position: "absolute",
                 right: "-15px",
               }}
             >
               {collapsed ? (
-                <ChevronsRight size={16} color="#888" />
+                <ChevronsRight size={16} color={RAIL_TEXT} />
               ) : (
-                <ChevronsLeft size={16} color="#888" />
+                <ChevronsLeft size={16} color={RAIL_TEXT} />
               )}
             </button>
           </div>
@@ -216,23 +250,24 @@ export function AppShell({
           <div
             onClick={close}
             className="lp-sb-scroll"
-            style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto" }}
+            style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", paddingTop: 12 }}
           >
             <SidebarNav role={role} />
           </div>
 
-          {/* footer: optional target card (hidden when collapsed), then profile menu */}
+          {/* footer: optional target card (hidden when collapsed), then profile menu.
+              Separated from the nav by a full-bleed hairline (.lp-sb-footer). */}
           <div
+            className="lp-sb-footer"
             style={{
               flex: "none",
-              marginTop: 14,
               display: "flex",
               flexDirection: "column",
               gap: 12,
             }}
           >
             {sidebarFooter ? <div className="lp-sb-target">{sidebarFooter}</div> : null}
-            <ProfileMenu name={name} roleLabel={roleLabel} />
+            <ProfileMenu name={name} roleLabel={roleLabel} email={email} />
           </div>
         </aside>
 
@@ -266,7 +301,15 @@ export function AppShell({
  * account menu (opening upward) with Sign out. A transparent full-screen backdrop
  * closes it on any outside click. When the rail is collapsed only the avatar shows.
  */
-function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
+function ProfileMenu({
+  name,
+  roleLabel,
+  email,
+}: {
+  name: string;
+  roleLabel: string;
+  email?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -296,10 +339,10 @@ function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
             right: "auto",
             minWidth: 210,
             zIndex: 21,
-            background: "#fff",
-            border: `1px solid ${BORDER}`,
+            background: "#212545",
+            border: `1px solid rgba(255,255,255,.10)`,
             borderRadius: 14,
-            boxShadow: "0 22px 48px -22px rgba(20,20,48,.45)",
+            boxShadow: "0 22px 48px -18px rgba(6,8,22,.75)",
             padding: 7,
           }}
         >
@@ -310,7 +353,7 @@ function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
                 style={{
                   fontSize: 13.5,
                   fontWeight: 700,
-                  color: INK,
+                  color: "#F2F3FA",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -318,11 +361,23 @@ function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
               >
                 {name}
               </div>
-              <div style={{ fontSize: 12, color: "#9097A8" }}>{roleLabel}</div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: RAIL_FAINT,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {email ?? roleLabel}
+              </div>
             </div>
           </div>
-          <div style={{ height: 1, background: BORDER, margin: "2px 4px 6px" }} />
+          <div style={{ height: 1, background: RAIL_LINE, margin: "2px 4px 6px" }} />
           <form action={signOut}>
+            {/* No inline background — the .lp-menu-item:hover wash (globals.css)
+                can't beat an inline value. */}
             <button
               type="submit"
               role="menuitem"
@@ -335,12 +390,11 @@ function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
                 height: 40,
                 padding: "0 10px",
                 border: "none",
-                background: "transparent",
                 borderRadius: 9,
                 fontFamily: SANS,
                 fontSize: 14,
                 fontWeight: 600,
-                color: "#C0392B",
+                color: "#F0857A",
                 cursor: "pointer",
               }}
             >
@@ -364,8 +418,10 @@ function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
           alignItems: "center",
           gap: 11,
           padding: "9px 10px",
-          border: `1px solid ${open ? "#DDDCF0" : BORDER}`,
-          background: open ? "#F1F1FA" : "#fff",
+          border: `1px solid ${open ? "rgba(255,255,255,.16)" : RAIL_LINE}`,
+          // Resting background lives in .lp-sb-profile-btn (globals.css) so the
+          // hover wash works; inline only when open (inline beats the class).
+          background: open ? "rgba(255,255,255,.10)" : undefined,
           borderRadius: 13,
           cursor: "pointer",
           textAlign: "left",
@@ -373,24 +429,52 @@ function ProfileMenu({ name, roleLabel }: { name: string; roleLabel: string }) {
       >
         <Avatar name={name} size={36} />
         <div className="lp-sb-profile-text" style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+            <span
+              style={{
+                fontSize: 13.5,
+                fontWeight: 700,
+                color: "#F2F3FA",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {name}
+            </span>
+            <span
+              style={{
+                flex: "none",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: ".04em",
+                color: "#C3C8E9",
+                background: "rgba(255,255,255,.09)",
+                border: `1px solid ${RAIL_LINE}`,
+                padding: "1.5px 7px",
+                borderRadius: 6,
+              }}
+            >
+              {roleLabel}
+            </span>
+          </div>
           <div
             style={{
-              fontSize: 13.5,
-              fontWeight: 700,
-              color: INK,
+              fontSize: 11.5,
+              color: RAIL_FAINT,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              marginTop: 1,
             }}
           >
-            {name}
+            {email ?? roleLabel}
           </div>
-          <div style={{ fontSize: 12, color: "#9097A8" }}>{roleLabel}</div>
         </div>
         <ChevronUp
           className="lp-sb-profile-chev"
           size={16}
-          color="#9097A8"
+          color={RAIL_FAINT}
           style={{
             flex: "none",
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
@@ -409,7 +493,7 @@ function Avatar({ name, size }: { name: string; size: number }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+        background: "linear-gradient(135deg,#4ECF95,#2E9D6C)",
         color: "#fff",
         fontSize: Math.round(size * 0.36),
         fontWeight: 700,
@@ -424,9 +508,10 @@ function Avatar({ name, size }: { name: string; size: number }) {
   );
 }
 
-function Logo() {
-  // The sidebar sits on a light surface (navy ink). Expanded shows the full
-  // wordmark; the collapsed rail swaps to the boxed-"P" logomark (CSS in globals).
+function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
+  // tone: "light" for the white mobile topbar, "dark" for the dark sidebar rail.
+  // Expanded shows the full wordmark; the collapsed rail swaps to the boxed-"P"
+  // logomark (CSS in globals).
   // The swap classes go on plain wrapper spans, not the brand components
   // themselves — EngProgressLogo/EngProgressMark set their own inline `display`, which
   // (being inline style) always wins over the external .lp-sb-logo-full/-mark
@@ -434,7 +519,7 @@ function Logo() {
   return (
     <span style={{ display: "inline-flex", alignItems: "center" }}>
       <span className="lp-sb-logo-full">
-        <EngProgressLogo tone="light" fontSize={24} showTagline={false} />
+        <EngProgressLogo tone={tone} fontSize={19} showTagline={false} />
       </span>
       <span className="lp-sb-logo-mark">
         <EngProgressMark size={36} />

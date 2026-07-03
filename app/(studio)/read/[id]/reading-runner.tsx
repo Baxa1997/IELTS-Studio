@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Maximize2, Minimize2 } from "lucide-react";
+import { AlertTriangle, Highlighter as HighlighterIcon, Maximize2, Minimize2 } from "lucide-react";
 
 import type { GradedItem } from "@/lib/reading/grade";
 import type { ReadingModule } from "@/lib/reading/types";
@@ -165,7 +165,6 @@ export function ReadingRunner({ passage, questions, learnerContext = "" }: { pas
 
   // ---- Reading phase (mirrors the full-test split-pane) --------------------
   const fontPx = Math.round(16 * fontScale);
-  const pct = total ? Math.round((answeredCount / total) * 100) : 0;
   const kindLabel = passage.module === "general" ? "General Training" : "Academic";
 
   const coachQuestions = questions
@@ -180,70 +179,65 @@ export function ReadingRunner({ passage, questions, learnerContext = "" }: { pas
     <div ref={rootRef}>
       <style>{HIGHLIGHT_CSS}</style>
       <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
-        {/* Top bar: exit · timer · finish */}
-        <div className="rd-topbar" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "12px 24px", flex: "none", borderBottom: "1px solid #F0EFF5" }}>
-          <div style={{ justifySelf: "start", display: "flex", alignItems: "center", gap: 10 }}>
-            <Link href={exitHref} aria-label="Exit practice" style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, textDecoration: "none" }}>
-              ←
+        {/* One flat header row: exit · title | text size · pens · fullscreen · timer · progress · submit */}
+        <div className="rd-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 18px", flexWrap: "wrap", padding: "10px 20px", flex: "none", borderBottom: "1px solid #EEEDF4" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <Link href={exitHref} aria-label="Exit practice" className="rd-exit" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", margin: "-7px 0 -7px -10px", borderRadius: 9, color: "#5A5670", fontSize: 14.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>‹</span> Exit
             </Link>
-            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 42, height: 42, borderRadius: 999, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              {fs.isFull ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
-            </button>
+            <span aria-hidden style={{ width: 1, height: 22, background: "#ECEBF2", flex: "none" }} />
+            <span style={{ fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {kindLabel} Reading · Passage practice
+            </span>
           </div>
-          <div style={{ justifySelf: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 12.5, color: "#8C88A0", fontWeight: 500 }}>Text size</span>
+              <button type="button" onClick={() => stepFont(-0.1)} disabled={fontScale <= MIN_FONT} aria-label="Decrease text size" style={fontBtn(fontScale <= MIN_FONT)}>A−</button>
+              <button type="button" onClick={() => stepFont(0.1)} disabled={fontScale >= MAX_FONT} aria-label="Increase text size" style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 14 }}>A+</button>
+            </div>
+            <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
+            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
+              {fs.isFull ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
             <Timer seconds={allowance} onExpire={onExpire}>
               {(text, left) => {
                 const warn = left <= 120;
                 return (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 20px", borderRadius: 999, background: warn ? "#FDECEC" : "#F4F3FC", border: `1.5px solid ${warn ? "#F3B4B4" : "#E4E2F4"}` }} aria-label="time remaining">
-                    <span aria-hidden style={{ fontSize: 15, color: warn ? "#B91C1C" : INDIGO }}>◷</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 19, letterSpacing: ".02em", color: warn ? "#B91C1C" : INDIGO }}>{text}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: warn ? "#FDECEC" : "#F4F3FC", border: `1px solid ${warn ? "#F3B4B4" : "#E4E2F4"}` }} aria-label="time remaining">
+                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : INDIGO }}>◷</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, letterSpacing: ".02em", color: warn ? "#B91C1C" : INDIGO }}>{text}</span>
                   </span>
                 );
               }}
             </Timer>
-          </div>
-          <div style={{ justifySelf: "end" }}>
-            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "11px 24px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontWeight: 600, fontSize: 15, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.7 : 1, fontFamily: SANS, boxShadow: `0 4px 14px ${accent}47` }}>
+            <span title={`${answeredCount} of ${total} answered`} style={{ padding: "6px 12px", borderRadius: 10, border: "1.5px solid #EAE8F2", fontSize: 13.5, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+              {answeredCount} / {total}
+            </span>
+            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontWeight: 600, fontSize: 14, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.7 : 1, fontFamily: SANS, boxShadow: `0 4px 14px ${accent}47` }}>
               {submitting ? "Marking…" : "Submit answers"}
             </button>
           </div>
         </div>
-
-        {/* Strip: instruction + text size + progress */}
-        <div style={{ flex: "none", background: "#FAFAFD", borderBottom: "1px solid #F0EFF5" }}>
-          <div className="rd-strip-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "12px 28px", flexWrap: "wrap" }}>
-            <div style={{ fontSize: 15, color: "#4A4660" }}>
-              <span style={{ fontWeight: 700, color: INK }}>Passage practice</span> — Read the text and answer questions 1–{total}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 13, color: "#8C88A0", fontWeight: 500 }}>Text size</span>
-                <button type="button" onClick={() => stepFont(-0.1)} disabled={fontScale <= MIN_FONT} aria-label="Decrease text size" style={fontBtn(fontScale <= MIN_FONT)}>A−</button>
-                <button type="button" onClick={() => stepFont(0.1)} disabled={fontScale >= MAX_FONT} aria-label="Increase text size" style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 15 }}>A+</button>
-              </div>
-              <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
-              <div style={{ fontSize: 14, fontWeight: 600, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{answeredCount} of {total} answered</div>
-            </div>
+        {message ? (
+          <div style={{ flex: "none", padding: "8px 20px", background: "#FDECEC", borderBottom: "1px solid #F3B4B4" }}>
+            <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">{message}</span>
           </div>
-          <div style={{ height: 3, background: "#EEEDF6" }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: accent, transition: "width .3s ease" }} />
-          </div>
-          {message ? (
-            <div style={{ padding: "8px 28px", background: "#FDECEC", borderTop: "1px solid #F3B4B4" }}>
-              <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">{message}</span>
-            </div>
-          ) : null}
-        </div>
+        ) : null}
 
         {/* Split: passage | questions */}
         <div className="rd-split" style={{ flex: 1, display: "flex", minHeight: 0 }}>
           <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
             <div style={{ maxWidth: 680 }}>
-              <p style={{ fontWeight: 600, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "#9a96a8", margin: 0 }}>
-                {kindLabel} Reading{passage.topic ? ` · ${passage.topic}` : ""}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ background: "#EEF0FC", color: INDIGO, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage</span>
+                {passage.topic ? <span style={{ fontSize: 12.5, fontWeight: 500, color: "#9a96a8" }}>{passage.topic}</span> : null}
+              </div>
+              <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#8C88A0", margin: "12px 0 0" }}>
+                <HighlighterIcon size={13} aria-hidden style={{ flex: "none" }} />
+                Select a word to see its meaning — or pick a pen above to highlight.
               </p>
-              <p style={{ fontSize: 14, fontStyle: "italic", color: MUTED, margin: "10px 0 0", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 14, fontStyle: "italic", color: MUTED, margin: "14px 0 0", lineHeight: 1.5 }}>
                 You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions 1–{total}</strong>, which are based on the reading passage below.
               </p>
               <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>{passage.title}</h1>
@@ -251,12 +245,7 @@ export function ReadingRunner({ passage, questions, learnerContext = "" }: { pas
             </div>
           </article>
 
-          <div ref={paneRef} className="rd-questions" style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "30px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 22 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: INDIGO, margin: 0 }}>Questions 1–{total}</h2>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#A6A2B8", fontVariantNumeric: "tabular-nums" }}>{answeredCount} of {total}</span>
-            </div>
-
+          <div ref={paneRef} className="rd-questions" style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "28px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
             <QuestionGroups
               questions={questions}
               number={(q) => numberById.get(q.id) ?? q.order_index}
@@ -308,14 +297,14 @@ export function ReadingRunner({ passage, questions, learnerContext = "" }: { pas
 
 function fontBtn(disabled: boolean): React.CSSProperties {
   return {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     border: "1.5px solid #EAE8F2",
     background: "#fff",
     color: disabled ? "#C7C4D4" : "#5A5670",
     fontWeight: 700,
-    fontSize: 13,
+    fontSize: 12.5,
     cursor: disabled ? "default" : "pointer",
     fontFamily: SANS,
   };

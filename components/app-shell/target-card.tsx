@@ -8,10 +8,13 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
  * the same everywhere.
  */
 export function TargetCard({ target, done }: { target: number; done: boolean }) {
+  // Sits on the dark green rail (see shell.tsx) — a quiet translucent tile
+  // rather than a loud gradient card.
   return (
     <div
       style={{
-        background: "linear-gradient(150deg,#3B43B5,#2A2F86)",
+        background: "rgba(255,255,255,.05)",
+        border: "1px solid rgba(255,255,255,.08)",
         borderRadius: 14,
         padding: 16,
         color: "#fff",
@@ -24,7 +27,7 @@ export function TargetCard({ target, done }: { target: number; done: boolean }) 
           fontSize: 11,
           letterSpacing: ".1em",
           textTransform: "uppercase",
-          color: "#cdcffb",
+          color: "#9096B0",
         }}
       >
         Your target
@@ -33,7 +36,7 @@ export function TargetCard({ target, done }: { target: number; done: boolean }) 
         <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 30 }}>
           {target.toFixed(1)}
         </span>
-        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#C7F25B" }}>
+        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#5BDD9B" }}>
           overall
         </span>
       </div>

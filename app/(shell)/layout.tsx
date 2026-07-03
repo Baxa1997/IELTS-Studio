@@ -48,6 +48,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         home={roleHome(profile.role)}
         name={profile.full_name ?? user.email ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
+        email={user.email}
         contentClassName=""
         sidebarFooter={sidebarFooter}
         initialCollapsed={collapsed}

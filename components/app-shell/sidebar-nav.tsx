@@ -28,7 +28,12 @@ import {
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#3B43B5";
+/* On-rail palette — the rail is the brand indigo taken down to a calm dark shade
+   (see shell.tsx), so everything here is light-on-dark. */
+const RAIL_TEXT = "#CDD1DF"; // resting item text — near-white, calm
+const RAIL_MUTED = "#6F7599"; // section titles / disabled
+const RAIL_ACTIVE_BG = "rgba(255,255,255,.07)"; // active tile — a calm lighter panel
+const RAIL_ACTIVE_LINE = "rgba(255,255,255,.09)";
 
 type Item = {
   label: string;
@@ -103,12 +108,12 @@ function PendingDot() {
 const itemBase: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 12,
-  height: 42,
-  padding: "0 13px",
-  borderRadius: 11,
+  gap: 11,
+  height: 36,
+  padding: "0 11px",
+  borderRadius: 9,
   fontFamily: SANS,
-  fontSize: 15,
+  fontSize: 14,
   textDecoration: "none",
   whiteSpace: "nowrap",
 };
@@ -123,7 +128,7 @@ export function SidebarNav({ role }: { role: string }) {
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <nav style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <nav style={{ display: "flex", flexDirection: "column", gap: 11 }}>
       {sections.map((section, si) => (
         <div
           key={section.title ?? si}
@@ -135,18 +140,18 @@ export function SidebarNav({ role }: { role: string }) {
               style={{
                 fontFamily: SANS,
                 fontWeight: 700,
-                fontSize: 11.5,
+                fontSize: 11,
                 letterSpacing: ".09em",
                 textTransform: "uppercase",
-                color: "#A7ABBA",
-                padding: "0 13px",
-                margin: "0 0 7px",
+                color: RAIL_MUTED,
+                padding: "0 11px",
+                margin: "0 0 5px",
               }}
             >
               {section.title}
             </div>
           ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {section.items.map(({ label, href, icon: Icon, soon, badge }) => {
               if (soon) {
                 return (
@@ -159,13 +164,13 @@ export function SidebarNav({ role }: { role: string }) {
                     style={{
                       ...itemBase,
                       justifyContent: "space-between",
-                      color: "#A7ABBA",
-                      fontWeight: 600,
+                      color: RAIL_MUTED,
+                      fontWeight: 400,
                       cursor: "default",
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <Icon size={21} strokeWidth={2.25} />
+                    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                      <Icon size={18} strokeWidth={1.8} />
                       <span className="lp-sb-label">{label}</span>
                     </span>
                     <span
@@ -175,8 +180,8 @@ export function SidebarNav({ role }: { role: string }) {
                         fontWeight: 700,
                         fontSize: 10,
                         letterSpacing: ".05em",
-                        color: "#9097A8",
-                        background: "#EEF0F4",
+                        color: "#9096B0",
+                        background: "rgba(255,255,255,.07)",
                         padding: "2px 7px",
                         borderRadius: 6,
                       }}
@@ -198,15 +203,16 @@ export function SidebarNav({ role }: { role: string }) {
                   style={{
                     ...itemBase,
                     justifyContent: "space-between",
-                    fontWeight: active ? 700 : 600,
-                    color: active ? "#fff" : "#5A6076",
-                    background: active ? INDIGO : "transparent",
-                    border: active ? `1px solid ${INDIGO}` : "1px solid transparent",
-                    boxShadow: active ? "0 8px 18px -8px rgba(59,67,181,.55)" : "none",
+                    fontWeight: active ? 500 : 400,
+                    color: active ? "#fff" : RAIL_TEXT,
+                    // No inline background when inactive — the .lp-sb-item:hover wash
+                    // (globals.css) can't beat an inline value, even "transparent".
+                    background: active ? RAIL_ACTIVE_BG : undefined,
+                    border: `1px solid ${active ? RAIL_ACTIVE_LINE : "transparent"}`,
                   }}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Icon size={21} strokeWidth={2.25} />
+                  <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <Icon size={18} strokeWidth={1.8} />
                     <span className="lp-sb-label">{label}</span>
                   </span>
                   <span
@@ -220,8 +226,8 @@ export function SidebarNav({ role }: { role: string }) {
                           fontWeight: 700,
                           fontSize: 10,
                           letterSpacing: ".05em",
-                          color: active ? "rgba(255,255,255,.85)" : INDIGO,
-                          background: active ? "rgba(255,255,255,.18)" : "#EEF0FE",
+                          color: active ? "rgba(255,255,255,.85)" : "#7CE3AE",
+                          background: active ? "rgba(255,255,255,.16)" : "rgba(91,221,155,.13)",
                           padding: "2px 7px",
                           borderRadius: 6,
                           flexShrink: 0,

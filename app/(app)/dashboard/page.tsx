@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  AlertTriangle, ArrowRight, BookOpen, CalendarClock, CalendarPlus, Flame,
-  PenLine, Sparkles, Target, TrendingDown, TrendingUp,
+  AlertTriangle, ArrowRight, BookOpen, CalendarClock, Flame,
+  PenLine, Sparkles, TrendingDown, TrendingUp,
 } from "lucide-react";
 
 import { requireOrgUser } from "@/lib/auth";
@@ -14,7 +14,6 @@ import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
 import { BandCard } from "./band-card";
 import { DashboardCoach } from "./dashboard-coach";
-import { WritingHero } from "./writing-hero";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -25,7 +24,6 @@ const FAINT = "#8A8FA0";
 const LINE = "#ECEAF2";
 const SURF = "#F6F6FA";
 const TINT = "#F4F4FE";
-const TINT_BORDER = "#E0E1F4";
 const EMERALD = "#2f8f5b";
 const AMBER = "#B9791A";
 
@@ -80,11 +78,9 @@ export default async function DashboardPage({
         </p>
       ) : null}
 
-      <Header name={profile.full_name} plan={plan} days={days} streakDays={streakDays} tasksThisWeek={tasksThisWeek} />
+      <Header name={profile.full_name} plan={plan} days={days} />
 
-      <WritingHero estimate={estimates.bySkill.writing} firstName={firstNameOf(profile.full_name)} />
-
-      <div className="dash-grid" style={{ marginTop: 16 }}>
+      <div className="dash-grid" style={{ marginTop: 18 }}>
         {/* main column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <NextTask rec={recommendation} />
@@ -95,11 +91,9 @@ export default async function DashboardPage({
           <RecentResults history={history} />
         </div>
 
-        {/* right rail of widgets */}
+        {/* right rail: just the two things worth glancing at */}
         <aside style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <StreakCard streakDays={streakDays} />
-          <WeekProgressCard done={tasksThisWeek} goal={plan.weeklyGoal} />
-          <CountdownCard plan={plan} days={days} />
+          <WeekCard streakDays={streakDays} done={tasksThisWeek} goal={plan.weeklyGoal} />
           <FocusCard writing={weakestCriterion} reading={weakestReadingType} />
         </aside>
       </div>
@@ -111,53 +105,45 @@ export default async function DashboardPage({
 
 // ---- header ----------------------------------------------------------------
 
-function Header({ name, plan, days, streakDays, tasksThisWeek }: { name: string | null; plan: StudyPlan; days: number | null; streakDays: number; tasksThisWeek: number }) {
-  const countdown = plan.examDate != null && days != null && days >= 0 ? `${days} ${days === 1 ? "day" : "days"} to your test` : "No exam date set";
+function Header({ name, plan, days }: { name: string | null; plan: StudyPlan; days: number | null }) {
+  const hasDate = plan.examDate != null && days != null && days >= 0;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-      <div>
-        <Eyebrow>Your dashboard</Eyebrow>
-        <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(24px,2.6vw,32px)", lineHeight: 1.08, letterSpacing: "-.015em", margin: "6px 0 0", color: INK }}>{greeting(name)}</h1>
-        <p style={{ fontFamily: SANS, fontSize: 15, color: MUTED, margin: "6px 0 0" }}>
-          Target Band {plan.targetBand.toFixed(1)} · {countdown}
-        </p>
-      </div>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <Chip Icon={Flame} tone="amber" label={streakDays > 0 ? `${streakDays}-day streak` : "No streak yet"} />
-        <Chip Icon={Target} tone="indigo" label={`${tasksThisWeek}/${plan.weeklyGoal} this week`} />
-      </div>
+    <div>
+      <Eyebrow>Your dashboard</Eyebrow>
+      <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(24px,2.6vw,32px)", lineHeight: 1.08, letterSpacing: "-.015em", margin: "6px 0 0", color: INK }}>{greeting(name)}</h1>
+      <p style={{ fontFamily: SANS, fontSize: 15, color: MUTED, margin: "6px 0 0" }}>
+        Target Band {plan.targetBand.toFixed(1)} ·{" "}
+        {hasDate ? (
+          `${days} ${days === 1 ? "day" : "days"} to your test`
+        ) : (
+          <Link href="/plan" style={{ color: INDIGO, fontWeight: 600, textDecoration: "none" }}>set your exam date</Link>
+        )}
+      </p>
     </div>
   );
 }
 
-function Chip({ Icon, tone, label }: { Icon: typeof Flame; tone: "amber" | "indigo"; label: string }) {
-  const c = tone === "amber" ? { bg: "#FFF3E0", bd: "#F6E0B8", fg: AMBER } : { bg: TINT, bd: TINT_BORDER, fg: INDIGO };
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, background: c.bg, border: `1px solid ${c.bd}`, color: c.fg, fontFamily: SANS, fontWeight: 700, fontSize: 13.5, padding: "9px 14px", borderRadius: 999, whiteSpace: "nowrap" }}>
-      <Icon size={15} strokeWidth={2.2} /> {label}
-    </span>
-  );
-}
-
-// ---- next task -------------------------------------------------------------
+// ---- next task (the single hero) --------------------------------------------
 
 function NextTask({ rec }: { rec: Recommendation }) {
   const [chipA, chipB] = chipsFor(rec.href);
   return (
-    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#EEF0FB 0%,#F4F1FC 100%)", border: `1px solid ${TINT_BORDER}`, borderRadius: 16, padding: "22px 24px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
-      <div aria-hidden style={{ position: "absolute", top: -60, right: 120, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle,rgba(59,67,181,.1),transparent 65%)" }} />
-      <div style={{ position: "relative" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".1em", textTransform: "uppercase", color: INDIGO }}>
-          <Sparkles size={14} strokeWidth={2.4} /> Next task · AI recommended
+    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#23264D 0%,#3B43B5 62%,#5158C8 100%)", borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+      <div aria-hidden style={{ position: "absolute", top: -90, right: -40, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)" }} />
+      <div style={{ position: "relative", minWidth: 0, flex: "1 1 380px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".11em", textTransform: "uppercase", color: "rgba(255,255,255,.72)" }}>
+          <Sparkles size={13} strokeWidth={2.4} /> Next task · picked for you
         </div>
-        <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(19px,2.1vw,22px)", color: INK, marginTop: 8 }}>{rec.title}</div>
-        <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: MUTED, margin: "6px 0 0", maxWidth: 520 }}>{rec.reason}</p>
-        <Link href={rec.href} style={{ ...btnPrimary, marginTop: 16 }}>{rec.cta} <ArrowRight size={16} /></Link>
+        <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(20px,2.3vw,25px)", lineHeight: 1.15, letterSpacing: "-.01em", color: "#fff", marginTop: 9 }}>{rec.title}</div>
+        <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.55, color: "rgba(255,255,255,.84)", margin: "7px 0 0", maxWidth: 540 }}>{rec.reason}</p>
+        <Link href={rec.href} style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "#fff", color: INK, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, padding: "12px 22px", borderRadius: 11, textDecoration: "none", boxShadow: "0 14px 30px -14px rgba(0,0,0,.55)", marginTop: 18 }}>
+          {rec.cta} <ArrowRight size={16} />
+        </Link>
       </div>
       <div className="dash-next-chips" style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8, flex: "none" }}>
         {[{ Icon: CalendarClock, t: chipA }, { Icon: TrendingUp, t: chipB }].map(({ Icon, t }) => (
-          <div key={t} style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, fontWeight: 500, fontSize: 13.5, color: MUTED, background: "#fff", border: `1px solid ${TINT_BORDER}`, borderRadius: 10, padding: "10px 13px" }}>
-            <Icon size={16} color={INDIGO} strokeWidth={2} /> {t}
+          <div key={t} style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "rgba(255,255,255,.88)", background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 10, padding: "9px 13px" }}>
+            <Icon size={15} color="#fff" strokeWidth={2} /> {t}
           </div>
         ))}
       </div>
@@ -167,18 +153,21 @@ function NextTask({ rec }: { rec: Recommendation }) {
 
 // ---- right-rail widgets ----------------------------------------------------
 
-function StreakCard({ streakDays }: { streakDays: number }) {
+/** Streak + weekly goal in ONE card — the week at a glance, no duplicate chips. */
+function WeekCard({ streakDays, done, goal }: { streakDays: number; done: number; goal: number }) {
   const dots = weekDots(streakDays);
+  const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0;
+  const met = done >= goal;
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Eyebrow>Streak</Eyebrow>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: AMBER }}>
-          <Flame size={18} fill="#FBE3C0" strokeWidth={2} />
-          <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 22, color: INK }}>{streakDays}</span>
+        <Eyebrow>This week</Eyebrow>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: AMBER }} title={`${streakDays}-day streak`}>
+          <Flame size={17} fill="#FBE3C0" strokeWidth={2} />
+          <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 20, color: INK, fontVariantNumeric: "tabular-nums" }}>{streakDays}</span>
         </span>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginTop: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginTop: 13 }}>
         {dots.map((d) => (
           <div key={d.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
             <span style={{ width: "100%", maxWidth: 30, height: 30, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: d.filled ? INDIGO : SURF, border: `1.5px solid ${d.today ? INDIGO : d.filled ? INDIGO : LINE}` }}>
@@ -188,58 +177,17 @@ function StreakCard({ streakDays }: { streakDays: number }) {
           </div>
         ))}
       </div>
-      <p style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, margin: "13px 0 0" }}>
-        {streakDays > 0 ? "Keep it going — practice today." : "Practice today to start a streak."}
-      </p>
-    </div>
-  );
-}
-
-function WeekProgressCard({ done, goal }: { done: number; goal: number }) {
-  const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0;
-  const met = done >= goal;
-  return (
-    <div style={card}>
-      <Eyebrow>This week</Eyebrow>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 7, marginTop: 9 }}>
-        <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 30, lineHeight: 1, color: met ? EMERALD : INK, fontVariantNumeric: "tabular-nums" }}>{done}</span>
-        <span style={{ fontFamily: SANS, fontSize: 14, color: MUTED }}>/ {goal} tasks</span>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
+        <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: MUTED }}>Weekly goal</span>
+        <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: met ? EMERALD : INK, fontVariantNumeric: "tabular-nums" }}>{done} / {goal} tasks</span>
       </div>
-      <div style={{ height: 7, background: "#E7E7F2", borderRadius: 999, overflow: "hidden", marginTop: 12 }} aria-hidden>
+      <div style={{ height: 7, background: "#E7E7F2", borderRadius: 999, overflow: "hidden", marginTop: 8 }} aria-hidden>
         <div style={{ width: `${pct}%`, height: "100%", background: met ? EMERALD : INDIGO, borderRadius: 999 }} />
       </div>
       <p style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, margin: "10px 0 0" }}>
-        {met ? "Weekly goal reached — nice work." : `${goal - done} more to hit your weekly goal.`}
+        {met ? "Goal reached — nice work." : streakDays > 0 ? `${goal - done} more to go — keep the streak alive.` : `${goal - done} more to go — practice today to start a streak.`}
       </p>
       <Link href="/plan" style={{ ...miniLink, marginTop: 10 }}>Adjust plan <ArrowRight size={14} /></Link>
-    </div>
-  );
-}
-
-function CountdownCard({ plan, days }: { plan: StudyPlan; days: number | null }) {
-  const has = plan.examDate != null && days != null && days >= 0;
-  return (
-    <div style={card}>
-      <Eyebrow>Exam countdown</Eyebrow>
-      {has ? (
-        <>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 9 }}>
-            <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 30, lineHeight: 1, color: INK, fontVariantNumeric: "tabular-nums" }}>{days}</span>
-            <span style={{ fontFamily: SANS, fontSize: 14, color: MUTED }}>{days === 1 ? "day" : "days"} to go</span>
-          </div>
-          <p style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, margin: "8px 0 0" }}>{fmtFullDate(plan.examDate!)}</p>
-        </>
-      ) : (
-        <>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <span style={{ flex: "none", width: 36, height: 36, borderRadius: 10, background: TINT, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <CalendarPlus size={18} color={INDIGO} strokeWidth={2} />
-            </span>
-            <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.45, color: MUTED, margin: 0 }}>Add your exam date to unlock a paced countdown.</p>
-          </div>
-          <Link href="/plan" style={{ ...miniLink, marginTop: 12 }}>Set exam date <ArrowRight size={14} /></Link>
-        </>
-      )}
     </div>
   );
 }
@@ -324,7 +272,6 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>{children}</div>;
 }
 
-const btnPrimary: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 9, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(59,67,181,.7)" };
 const miniLink: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 5, fontFamily: SANS, fontWeight: 600, fontSize: 13.5, color: INDIGO, textDecoration: "none" };
 
 function greeting(name: string | null): string {
@@ -340,9 +287,6 @@ function chipsFor(href: string): [string, string] {
 }
 function fmtDate(iso: string): string {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(iso));
-}
-function fmtFullDate(iso: string): string {
-  return new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", year: "numeric" }).format(new Date(`${iso}T00:00:00`));
 }
 
 /** A Mon–Sun week with today marked and the trailing `streakDays` filled. */
@@ -364,8 +308,5 @@ const DASH_CSS = `
      don't squeeze the recommendation copy on a phone. */
   .dash-next { padding: 18px 16px !important; gap: 16px !important; }
   .dash-next-chips { width: 100%; }
-  /* Writing hero (writing-hero.tsx): once its CTAs wrap below the copy, let them
-     span the full width instead of sitting at their natural button width. */
-  .dwh-cta { width: 100%; flex: 1 1 100% !important; }
 }
 `;

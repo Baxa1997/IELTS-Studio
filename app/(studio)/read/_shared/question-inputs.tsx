@@ -275,41 +275,29 @@ export function GapSelectSentence({
 
 const SR_ONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)" };
 
+/** Flat uppercase verdict chip (TRUE / FALSE / NOT GIVEN), exam-paper style.
+ *  Resting border+background live in the .rd-vpill CSS class so :hover can work;
+ *  inline styles carry only the checked state (inline always wins over the class). */
 function Pill({ name, value, label, checked, onChange }: { name: string; value: string; label: string; checked: boolean; onChange: (v: string) => void }) {
   return (
     <label
+      className="rd-vpill"
       style={{
         position: "relative", // contain the visually-hidden radio so focusing it
         // (on click) can't scroll the pane to the runner's top-left origin.
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
-        gap: 10,
-        width: "fit-content",
+        justifyContent: "center",
         cursor: "pointer",
-        borderRadius: 10,
-        padding: "8px 14px 8px 10px",
-        background: checked ? "#F2F1FC" : "#fff",
-        border: `1.5px solid ${checked ? INDIGO : "#E5E3EF"}`,
+        borderRadius: 9,
+        padding: "8px 16px",
+        border: checked ? `1.5px solid ${INDIGO}` : undefined,
+        background: checked ? INDIGO : undefined,
         transition: "background .14s ease, border-color .14s ease",
       }}
     >
       <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={SR_ONLY} />
-      <span
-        style={{
-          flex: "none",
-          width: 22,
-          height: 22,
-          borderRadius: 999,
-          border: `2px solid ${checked ? INDIGO : "#C9C7D6"}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "border-color .14s ease",
-        }}
-      >
-        <span style={{ width: 11, height: 11, borderRadius: 999, background: INDIGO, transform: `scale(${checked ? 1 : 0})`, transition: "transform .14s ease" }} />
-      </span>
-      <span style={{ fontFamily: SANS, fontSize: 15.5, color: checked ? INK : "#46435C", fontWeight: checked ? 600 : 400 }}>{label}</span>
+      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: checked ? "#fff" : "#494663", transition: "color .14s ease" }}>{label}</span>
     </label>
   );
 }

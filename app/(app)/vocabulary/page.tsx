@@ -25,16 +25,7 @@ export default async function VocabularyPage() {
 
   const items = (data ?? []) as VocabItem[];
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Vocabulary</h1>
-        <p className="text-muted-foreground">
-          Words you saved while practicing — with their translation, meaning, and an example.
-        </p>
-      </div>
-
-      <VocabularyList initial={items} />
-    </div>
-  );
+  // Header, review hero, filters, and the grid all render in the client
+  // component — filtering/review/deletes are browser-side.
+  return <VocabularyList initial={items} />;
 }

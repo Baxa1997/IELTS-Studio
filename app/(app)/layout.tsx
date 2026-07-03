@@ -47,6 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         home={roleHome(profile.role)}
         name={profile.full_name ?? user.email ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
+        email={user.email}
         sidebarFooter={sidebarFooter}
         initialCollapsed={collapsed}
       >
