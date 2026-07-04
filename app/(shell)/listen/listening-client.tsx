@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } from "lucide-react";
 
 import { AiGenerateButton, AiGenerateSection } from "@/components/ai-generate-section";
@@ -135,6 +135,10 @@ type Segment = AudioSeg | PauseSeg;
 type FormRow = { label: string; template: string; section: string | null };
 type NoteLine = { template: string; sub: boolean };
 type NoteSection = { heading: string; lines: NoteLine[] };
+/** Completion grid (P1/P4 table variant): rows carry `{n}` gaps in cells. */
+type TableView = { title: string; word_limit: string; columns: string[]; rows: string[][] };
+/** P3 flow-chart variant: ordered steps with `{n}` gaps filled from a letter bank. */
+type FlowChartView = { title: string; steps: string[]; options: Record<string, string> };
 
 type ClusterView = { questions: number[]; stem: string; options: Record<string, string> };
 type MatchingView = {
@@ -149,8 +153,11 @@ type PartView = {
   part: number;
   topic: string;
   narrator_intro: string;
+  variant?: string;
   form?: { title: string; word_limit: string; rows: FormRow[] };
   notes?: { title: string; word_limit: string; sections: NoteSection[] };
+  table?: TableView;
+  flow_chart?: FlowChartView;
   clusters?: ClusterView[];
   matching?: MatchingView;
   mcqs?: McqView[];
@@ -189,6 +196,7 @@ type LibraryItem = {
   part: number;
   topic: string;
   difficulty: number;
+  variant?: string;
   unlocked: boolean;
   locked: boolean;
   best_score: number | null;
@@ -205,6 +213,7 @@ type MineItem = {
   part: number;
   topic: string;
   difficulty: number;
+  variant?: string;
   created_at: string | null;
 };
 
@@ -256,13 +265,21 @@ const TRAP_EXPLAIN: Record<string, string> = {
 };
 
 /** Question-type tags per part format (the quick-practice cards show these
- *  instead of part numbers — a practice is just "a practice"). */
+ *  instead of part numbers — a practice is just "a practice"). A part rotates
+ *  through variant layouts, so the tags follow the item's stored `variant`. */
 const QTYPE_TAGS: Record<number, string[]> = {
   1: ["Form completion"],
   2: ["Multiple choice", "Matching"],
   3: ["Multiple choice", "Matching"],
   4: ["Note completion"],
 };
+const QTYPE_TAGS_BY_VARIANT: Record<string, string[]> = {
+  table: ["Table completion"],
+  flowchart: ["Multiple choice", "Flow-chart completion"],
+};
+function typeTagsFor(part: number, variant?: string): string[] {
+  return (variant && QTYPE_TAGS_BY_VARIANT[variant]) || QTYPE_TAGS[part] || [];
+}
 
 type HubTab = "tests" | "parts";
 
@@ -737,8 +754,8 @@ function StartAction({
   );
 }
 
-function TypeTags({ part }: { part: number }) {
-  const tags = QTYPE_TAGS[part] ?? [];
+function TypeTags({ part, variant }: { part: number; variant?: string }) {
+  const tags = typeTagsFor(part, variant);
   if (tags.length === 0) return null;
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -863,7 +880,7 @@ function QuickCard({
           {it.topic || "Listening practice"}
         </span>
       </div>
-      <TypeTags part={it.part} />
+      <TypeTags part={it.part} variant={it.variant} />
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>10 questions · replay anytime</span>
@@ -924,7 +941,7 @@ function MineCard({
           {it.topic || "Listening practice"}
         </span>
       </div>
-      <TypeTags part={it.part} />
+      <TypeTags part={it.part} variant={it.variant} />
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{when ? `Generated ${when}` : "Saved to your account"}</span>
@@ -1121,7 +1138,11 @@ type PlayerPhase = "idle" | "running" | "finished";
 function partQuestionNums(p: PartView): number[] {
   const templates = p.form
     ? p.form.rows.map((r) => r.template)
-    : (p.notes?.sections ?? []).flatMap((s) => s.lines.map((l) => l.template));
+    : p.table
+      ? p.table.rows.flat()
+      : p.flow_chart
+        ? p.flow_chart.steps
+        : (p.notes?.sections ?? []).flatMap((s) => s.lines.map((l) => l.template));
   const nums = templates.flatMap((t) => [...t.matchAll(/\{(\d+)\}/g)].map((m) => Number(m[1])));
   for (const c of p.clusters ?? []) nums.push(...c.questions);
   for (const m of p.mcqs ?? []) nums.push(m.q);
@@ -3033,6 +3054,88 @@ function NotesPanel({ notes, ctx }: { notes: NonNullable<RenderView["notes"]>; c
   );
 }
 
+/** Table completion (P1/P4 table variant) — a grid whose cells carry `{n}` gaps.
+ *  Same word-answer machinery as the form/notes panels, laid out in columns. */
+function TablePanel({ table, ctx }: { table: TableView; ctx: QCtx }) {
+  const range = rangeLabel(table.rows.flat().flatMap(gapNums));
+  const cell: React.CSSProperties = {
+    border: `1px solid ${RUN.bField}`,
+    padding: "10px 14px",
+    fontFamily: RUN.sans,
+    fontSize: 15,
+    color: RUN.t1,
+    verticalAlign: "middle",
+    textAlign: "left",
+  };
+  return (
+    <>
+      <CardHeader
+        range={range}
+        title={table.title}
+        instruction={`Write ${table.word_limit} for each answer`}
+      />
+      <div style={{ overflowX: "auto", paddingBottom: 6 }}>
+        <table
+          style={{
+            borderCollapse: "collapse",
+            width: "100%",
+            minWidth: Math.max(420, table.columns.length * 180),
+          }}
+        >
+          <thead>
+            <tr>
+              {table.columns.map((c, i) => (
+                <th
+                  key={i}
+                  style={{
+                    ...cell,
+                    background: RUN.vSoft,
+                    color: "#5a4ec4",
+                    fontWeight: 700,
+                    fontSize: 13.5,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row, ri) => (
+              <tr key={ri}>
+                {row.map((c, ci) => (
+                  <td
+                    key={ci}
+                    style={{
+                      ...cell,
+                      fontWeight: ci === 0 ? 700 : 400,
+                      background: ci === 0 ? RUN.strip : "#fff",
+                      whiteSpace: ci === 0 ? "nowrap" : "normal",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 4,
+                        lineHeight: 2,
+                      }}
+                    >
+                      <Gapped template={c} ctx={ctx} />
+                    </span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 // ---- Letter-answer panels (Parts 2 & 3) -----------------------------------------
 
 function QuestionsHeading({ text, instruction }: { text: string; instruction: string }) {
@@ -3074,6 +3177,7 @@ function QuestionsHeading({ text, instruction }: { text: string; instruction: st
 function PartPanels({ p, ctx }: { p: PartView; ctx: QCtx }) {
   if (p.form) return <FormPanel form={p.form} ctx={ctx} />;
   if (p.notes) return <NotesPanel notes={p.notes} ctx={ctx} />;
+  if (p.table) return <TablePanel table={p.table} ctx={ctx} />;
   return (
     <>
       <CardHeader range={rangeLabel(partQuestionNums(p))} title={p.topic || "Listening"} />
@@ -3094,6 +3198,7 @@ function PartPanels({ p, ctx }: { p: PartView; ctx: QCtx }) {
         {p.matching && (p.matching.items ?? []).length > 0 ? (
           <MatchingPanel matching={p.matching} ctx={ctx} />
         ) : null}
+        {p.flow_chart ? <FlowChartPanel flow={p.flow_chart} ctx={ctx} /> : null}
       </div>
     </>
   );
@@ -3492,6 +3597,189 @@ function MatchingPanel({ matching, ctx }: { matching: MatchingView; ctx: QCtx })
               ) : null}
               <FlagButton flagged={ctx.flags.has(it.q)} onClick={() => ctx.toggleFlag(it.q)} />
             </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** One flow-chart gap — a letter `<select>` drawn from the shared word bank,
+ *  with the same graded border / correct-letter reveal as the matching run. */
+function FlowGapSelect({ n, letters, ctx }: { n: number; letters: string[]; ctx: QCtx }) {
+  const r = ctx.results?.get(n) ?? null;
+  const graded = ctx.results != null;
+  const border = r ? (r.is_correct ? RUN.ok : BAD) : ctx.focusedQ === n ? RUN.v : RUN.bField;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, verticalAlign: "middle" }}>
+      <select
+        value={ctx.answers[n] ?? ""}
+        disabled={graded}
+        aria-label={`Answer ${n}`}
+        onChange={(e) => {
+          ctx.setFocus(n);
+          ctx.setAnswers((prev) => ({ ...prev, [n]: e.target.value }));
+        }}
+        style={{
+          width: 70,
+          height: 36,
+          padding: "0 10px",
+          borderRadius: 9,
+          border: `1.5px solid ${border}`,
+          background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
+          fontFamily: RUN.sans,
+          fontSize: 14,
+          fontWeight: 700,
+          color: RUN.t1,
+        }}
+      >
+        <option value="">–</option>
+        {letters.map((l) => (
+          <option key={l} value={l}>
+            {l}
+          </option>
+        ))}
+      </select>
+      {r ? (
+        r.is_correct ? (
+          <Check size={16} color={RUN.ok} />
+        ) : (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <X size={16} color={BAD} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: RUN.ok, whiteSpace: "nowrap" }}>
+              → {r.correct_answer}
+            </span>
+          </span>
+        )
+      ) : null}
+    </span>
+  );
+}
+
+/** Flow-chart completion (P3 flow variant) — an ordered process whose gaps are
+ *  filled from a shared A–H word bank (letter answers, like the matching run). */
+function FlowChartPanel({ flow, ctx }: { flow: FlowChartView; ctx: QCtx }) {
+  const letters = Object.keys(flow.options).sort();
+  const range = rangeLabel(flow.steps.flatMap(gapNums));
+  return (
+    <div>
+      <QuestionsHeading
+        text={`Questions ${range}`}
+        instruction={`Choose your answers from the box — write the correct letter, ${letters[0]}–${letters[letters.length - 1]}.`}
+      />
+      {flow.title ? (
+        <div
+          style={{
+            fontFamily: RUN.sans,
+            fontWeight: 600,
+            fontSize: 15,
+            color: RUN.t1,
+            margin: "2px 0 12px",
+          }}
+        >
+          {flow.title}
+        </div>
+      ) : null}
+
+      {/* The word bank */}
+      <div
+        style={{
+          border: `1.5px solid ${RUN.bField}`,
+          borderRadius: 12,
+          padding: "12px 16px",
+          marginBottom: 16,
+          background: RUN.field,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+          gap: "7px 18px",
+        }}
+      >
+        {letters.map((letter) => (
+          <div
+            key={letter}
+            style={{ fontFamily: RUN.sans, fontSize: 14, color: RUN.t1, display: "flex", gap: 10 }}
+          >
+            <strong style={{ width: 16, flex: "none", color: RUN.vHover }}>{letter}</strong>
+            <span>{flow.options[letter]}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* The ordered steps, top to bottom */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {flow.steps.map((step, si) => {
+          const n = gapNums(step)[0] ?? null;
+          const r = n != null ? (ctx.results?.get(n) ?? null) : null;
+          const last = si === flow.steps.length - 1;
+          return (
+            <Fragment key={si}>
+              <div
+                id={n != null ? `q-${n}` : undefined}
+                style={{
+                  border: `1.5px solid ${r ? (r.is_correct ? RUN.ok : BAD) : RUN.bField}`,
+                  borderRadius: 12,
+                  background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
+                  padding: "13px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  fontFamily: RUN.sans,
+                  fontSize: 15,
+                  color: RUN.t1,
+                  lineHeight: 1.9,
+                }}
+              >
+                {n != null ? (
+                  <NumChip n={n} answered={(ctx.answers[n] ?? "").trim() !== ""} />
+                ) : null}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  {templateParts(step).map((part, i) =>
+                    "text" in part ? (
+                      part.text.trim() ? <span key={i}>{part.text}</span> : null
+                    ) : (
+                      <FlowGapSelect key={i} n={part.gap} letters={letters} ctx={ctx} />
+                    ),
+                  )}
+                </span>
+                {n != null ? (
+                  <FlagButton flagged={ctx.flags.has(n)} onClick={() => ctx.toggleFlag(n)} />
+                ) : null}
+              </div>
+              {!last ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    color: RUN.t4,
+                    padding: "5px 0",
+                  }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <polyline points="6 13 12 19 18 13" />
+                  </svg>
+                </div>
+              ) : null}
+            </Fragment>
           );
         })}
       </div>
