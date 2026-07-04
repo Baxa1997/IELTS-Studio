@@ -132,10 +132,10 @@ export function ReadingHub({
           >
             Reading
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0" }}>
+          {/* <p style={{ fontSize: 15, lineHeight: 1.5, color: MUTED, margin: "6px 0 0" }}>
             Start a ready-made test in one click, or generate a fresh one — marked instantly, with
             the evidence behind every answer.
-          </p>
+          </p> */}
         </div>
         <span
           style={{
@@ -168,7 +168,7 @@ export function ReadingHub({
           border: "1px solid #ECEAF2",
           borderRadius: 14,
           padding: 5,
-          marginTop: 22,
+          marginTop: 18,
           maxWidth: 520,
         }}
       >

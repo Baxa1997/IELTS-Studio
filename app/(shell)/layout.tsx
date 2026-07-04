@@ -1,5 +1,9 @@
 import { cookies } from "next/headers";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import {
+  DM_Sans,
+  Hanken_Grotesk,
+  Newsreader,
+} from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { AppShell } from "@/components/app-shell/shell";
@@ -10,6 +14,9 @@ import { loadStudyPlan } from "@/lib/plan/service";
 
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
 const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
+// Listening Practice runner surface (IELTS Listening handoff): a single DM Sans
+// family across the whole exam screen (titles, UI, tabular times).
+const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-dmsans", display: "swap" });
 
 const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
 
@@ -42,7 +49,9 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
-    <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
+    <div
+      className={`${hanken.variable} ${newsreader.variable} ${dmSans.variable} lp-root`}
+    >
       <AppShell
         role={profile.role}
         home={roleHome(profile.role)}
