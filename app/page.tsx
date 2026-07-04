@@ -3418,7 +3418,7 @@ function SiteFooter() {
               band — then close the gap.
             </p>
             <a
-              href="mailto:hello@ieltsstudio.app"
+              href="mailto:bahridnurullav@gmail.com"
               className="lp-foot-link"
               style={{
                 display: "inline-block",
@@ -3430,7 +3430,7 @@ function SiteFooter() {
                 marginTop: 16,
               }}
             >
-              hello@ieltsstudio.app
+              bahridnurullav@gmail.com
             </a>
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <SocialIcon label="Instagram">
