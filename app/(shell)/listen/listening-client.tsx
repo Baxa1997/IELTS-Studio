@@ -128,8 +128,15 @@ async function callEngine<T>(path: string, body: unknown): Promise<T> {
 
 // ---- Types (mirror the engine render views) --------------------------------
 
-type AudioSeg = { kind: "audio"; url: string; path: string; label: string; seconds?: number };
-type PauseSeg = { kind: "pause"; seconds: number; label: string };
+type AudioSeg = {
+  kind: "audio";
+  url: string;
+  path: string;
+  label: string;
+  seconds?: number;
+  part?: number;
+};
+type PauseSeg = { kind: "pause"; seconds: number; label: string; part?: number };
 type Segment = AudioSeg | PauseSeg;
 
 type FormRow = { label: string; template: string; section: string | null };
@@ -1182,14 +1189,42 @@ function Runner({
 
   const isTest = view.kind === "test";
   const partViews = useMemo(() => (isTest ? (view.parts ?? []) : [view]), [view, isTest]);
-  const [manualPart, setManualPart] = useState<number | null>(null);
 
-  const player = useSegmentPlayer(view.audio);
+  // Each part is its own audio stream: switching tabs loads that part's
+  // segments and plays them from the top (its intro announces the questions),
+  // exactly like the separate per-part recordings of a real test.
+  const audioParts = useMemo(() => splitAudioByPart(view.audio), [view.audio]);
+  const [apIdx, setApIdx] = useState(0);
+  const pendingAutoStart = useRef(false);
 
-  // The visible part follows the audio as it crosses part boundaries (a test's
-  // recording plays 1→4); tabbing to a played part overrides that (derived, so
-  // there is no effect syncing state back and forth).
-  const currentPart = manualPart ?? (isTest ? player.audioPart : (partViews[0]?.part ?? 1));
+  // A finished part flows straight into the next one (pre-grade). The player
+  // fires this from the stream's `ended` event.
+  const onPartEnd = useCallback(() => {
+    if (!isTest || grade || apIdx >= audioParts.length - 1) return;
+    const next = audioParts[apIdx + 1];
+    pendingAutoStart.current = true;
+    setApIdx(apIdx + 1);
+    setCurrentQ(partQuestionNums(partViews.find((p) => p.part === next.part) ?? partViews[0])[0] ?? 0);
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [isTest, grade, apIdx, audioParts, partViews]);
+
+  const player = useSegmentPlayer(audioParts[apIdx]?.segments ?? view.audio, onPartEnd);
+
+  // The visible part is the part whose stream is loaded — questions and audio
+  // can never disagree.
+  const currentPart = audioParts[apIdx]?.part ?? partViews[0]?.part ?? 1;
+
+  // Start a freshly loaded part when the switch asked for it (tab click while
+  // the audio was rolling, or the end-of-part auto-advance). The hook resets
+  // to idle on a segment swap, so this fires once the new stream is in place.
+  const playerPhase = player.phase;
+  const playerStart = player.start;
+  useEffect(() => {
+    if (pendingAutoStart.current && playerPhase === "idle") {
+      pendingAutoStart.current = false;
+      playerStart();
+    }
+  }, [playerPhase, playerStart]);
 
   const questionNums = useMemo(
     () => partViews.flatMap(partQuestionNums).sort((a, b) => a - b),
@@ -1250,7 +1285,8 @@ function Runner({
     setFlags(new Set());
     setGrade(null);
     setError(null);
-    setManualPart(null);
+    pendingAutoStart.current = false;
+    setApIdx(0);
     setCurrentQ(0);
     player.reset();
     scrollRef.current?.scrollTo({ top: 0 });
@@ -1272,18 +1308,35 @@ function Runner({
     setFocus,
   };
 
-  // Tab unlocks progressively as the audio reaches each part; all open in review.
-  const partUnlocked = useCallback(
-    (n: number) => !!grade || player.finished || player.partReached >= n,
-    [grade, player.finished, player.partReached],
+  // Exam clock spans the whole recording: manifest totals for the parts not
+  // loaded plus the live player for the one that is.
+  const partTotals = useMemo(
+    () => audioParts.map((p) => p.segments.reduce((a, s) => a + segSecs(s), 0)),
+    [audioParts],
   );
-
-  const total = player.duration > 0 ? player.duration : isTest ? 1800 : 480;
-  const examLeft = Math.max(0, total - player.elapsed);
+  const beforeSecs = partTotals.slice(0, apIdx).reduce((a, b) => a + b, 0);
+  const grandTotal = partTotals.reduce((a, b) => a + b, 0);
+  const total = isTest
+    ? grandTotal > 0
+      ? grandTotal
+      : 1800
+    : player.duration > 0
+      ? player.duration
+      : 480;
+  const examLeft = Math.max(0, total - (isTest ? beforeSecs + player.elapsed : player.elapsed));
 
   const partIdx = partViews.findIndex((p) => p.part === currentPart);
+  // Parts are freely navigable: a tab click mid-test loads that part's own
+  // stream and restarts it from the beginning (its "look at the questions"
+  // intro included); in review it just swaps the visible questions.
   const goPart = (n: number) => {
-    setManualPart(n);
+    if (n !== currentPart) {
+      const i = audioParts.findIndex((p) => p.part === n);
+      if (i >= 0 && i !== apIdx) {
+        pendingAutoStart.current = !grade && player.phase !== "idle";
+        setApIdx(i);
+      }
+    }
     setCurrentQ(partQuestionNums(partViews.find((p) => p.part === n) ?? partViews[0])[0] ?? 0);
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -1379,8 +1432,8 @@ function Runner({
                   key={n}
                   n={n}
                   active={currentPart === n}
-                  unlocked={partUnlocked(n)}
-                  onClick={() => partUnlocked(n) && goPart(n)}
+                  unlocked
+                  onClick={() => goPart(n)}
                 />
               ))}
             </div>
@@ -1881,6 +1934,30 @@ function segPart(label: string, prev: number): number {
   return m ? Number(m[1]) : prev;
 }
 
+/** Split a manifest into per-part streams — a full test plays each part as its
+ *  own recording, so switching parts restarts audio at that part's intro. New
+ *  manifests tag segments with `part`; older ones fall back to the narrator
+ *  labels. A single-part practice comes back as one stream. */
+function splitAudioByPart(segments: Segment[]): { part: number; segments: Segment[] }[] {
+  const by = new Map<number, Segment[]>();
+  let prev = 1;
+  for (const s of segments) {
+    const p = s.part ?? segPart(s.label, prev);
+    prev = p;
+    const bucket = by.get(p);
+    if (bucket) bucket.push(s);
+    else by.set(p, [s]);
+  }
+  return [...by.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([part, segs]) => ({ part, segments: segs }));
+}
+
+/** Declared/estimated seconds of one segment (narrator clips may lack it). */
+function segSecs(s: Segment): number {
+  return s.kind === "pause" ? s.seconds : (s.seconds ?? 0);
+}
+
 type PlayerApi = {
   phase: PlayerPhase;
   paused: boolean;
@@ -1913,10 +1990,15 @@ type PlayerApi = {
 /** Segment player: the recording is a sequence of audio clips + timed reading
  *  pauses. Playback runs in order, but the scrubber is freely seekable (click or
  *  drag anywhere) — practice mode, not locked exam rules. Exposed as a hook so
- *  the top bar (part tabs + exam timer) and the audio strip share one source. */
-function useSegmentPlayer(segments: Segment[]): PlayerApi {
+ *  the top bar (part tabs + exam timer) and the audio strip share one source.
+ *  `onFinished` fires when the last segment ends (from the `ended` event). */
+function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerApi {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadedIdxRef = useRef(-1); // which segment's src is currently loaded
+  const onFinishedRef = useRef(onFinished);
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  }, [onFinished]);
   const [phase, setPhase] = useState<PlayerPhase>("idle");
   const [idx, setIdx] = useState(-1);
   const [paused, setPaused] = useState(false);
@@ -1932,6 +2014,27 @@ function useSegmentPlayer(segments: Segment[]): PlayerApi {
 
   const seg: Segment | null = idx >= 0 && idx < segments.length ? segments[idx] : null;
   const speed = SPEEDS[speedIdx];
+
+  // A new segment list (the per-part player switching parts) is a new stream:
+  // drop the element's src and return to idle so the runner can start it fresh.
+  const segsRef = useRef(segments);
+  useEffect(() => {
+    if (segsRef.current === segments) return;
+    segsRef.current = segments;
+    const el = audioRef.current;
+    if (el) {
+      el.pause();
+      el.removeAttribute("src");
+    }
+    loadedIdxRef.current = -1;
+    setPhase("idle");
+    setIdx(-1);
+    setPaused(false);
+    setCurTime(0);
+    setPauseLeft(0);
+    setAudioError(null);
+    setDurs(segments.map((s) => (s.kind === "pause" ? s.seconds : (s.seconds ?? 0))));
+  }, [segments]);
 
   // Part boundaries derived once from the narrator labels.
   const partByIdx = useMemo(() => {
@@ -1969,15 +2072,13 @@ function useSegmentPlayer(segments: Segment[]): PlayerApi {
     setPaused(false);
     setCurTime(0);
     setPauseLeft(0);
-    setIdx((cur) => {
-      const next = cur + 1;
-      if (next >= segments.length) {
-        setPhase("finished");
-        return cur;
-      }
-      return next;
-    });
-  }, [segments.length]);
+    if (idx + 1 >= segments.length) {
+      setPhase("finished");
+      onFinishedRef.current?.();
+    } else {
+      setIdx(idx + 1);
+    }
+  }, [idx, segments.length]);
 
   // Own a detached <audio> element (created on the client, never rendered) so
   // the hook's public API carries no refs and playback survives re-renders.
