@@ -1,12 +1,15 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } from "lucide-react";
 
 import { AiGenerateButton, AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
+
+import { TRAP_EXPLAIN } from "./trap-explain";
 
 /**
  * Listening hub + runner, backed by the SHARED practice library: practices are
@@ -196,6 +199,9 @@ type Grade = {
   kind?: "test";
   band?: number;
   parts?: { part: number; score: number; max_score: number }[];
+  /** Stored attempt id — links to the full feedback page /listen/results/[id]. */
+  attempt_id?: string | null;
+  topic?: string;
 };
 
 type LibraryItem = {
@@ -227,49 +233,7 @@ type MineItem = {
 /** Which grade endpoint an open practice belongs to. */
 type Source = "library" | "mine";
 
-/** Why each trap works, in the learner's language (ids from the engine's
- *  listening spec — P1 audio traps + P4 note-paraphrase mechanisms). */
-const TRAP_EXPLAIN: Record<string, string> = {
-  "wrong-spelling-offer":
-    "A plausible spelling was offered first — the correct one was then spelled out letter by letter.",
-  "habitual-vs-today":
-    "The speaker first described what usually happens; the answer is what applies this time.",
-  "condition-before-answer":
-    "A vague general statement came first — the specific value followed it.",
-  "self-correction": "A value was given, then corrected. Only the amended one counts.",
-  "implied-positive-actual-negative":
-    "The question implied agreement, but the speaker disagreed — the answer sat in the contrast.",
-  "enough-of-x-want-y": "A near-alternative was rejected just before the real answer.",
-  "impressive-x-favourite-y":
-    "Several options were mentioned — a superlative singled out the right one.",
-  "negation-compression":
-    "The notes compress a negative statement from the lecture into a short positive phrase.",
-  comparative:
-    "The notes shorten a comparison the lecturer made — the wording differs, the gap word doesn't.",
-  nominalisation:
-    "The notes turn the lecturer's verb phrase into a noun phrase around the same gap word.",
-  "plausible-not-stated":
-    "The wrong option sounded likely from the context — but it was never actually said.",
-  "different-subject": "The wrong option's words WERE heard — attached to a different subject.",
-  "refute-then-state":
-    "The first suggestion was knocked down; the real point came straight after it.",
-  "return-to-first": "Other options were rejected and the speakers came back to the first one.",
-  "counter-then-agree":
-    "A late counter-proposal was confirmed by the other speaker — agreement seals the answer.",
-  "answer-in-other-mouth":
-    "The answer word was suggested by the OTHER speaker and only confirmed — track who says what.",
-  "decoy-number": "A competing wrong figure was spoken nearby — the correct one superseded it.",
-  "tier-decoy":
-    "An attractive feature of the REJECTED alternative was mentioned just before the real answer.",
-  contrast:
-    "The answer sat inside a correction or contrast — the first half of the sentence pointed the wrong way.",
-  "decoy-figure":
-    "Other numbers were spoken in the same breath — the notes ask about a different one.",
-  "answer-before-cue":
-    "The answer was spoken BEFORE the words the notes use as a cue — waiting for the cue means missing it.",
-  "false-lead":
-    "A plausible alternative was floated first, then corrected — only the correction counts.",
-};
+// TRAP_EXPLAIN lives in ./trap-explain — shared with the results pages.
 
 /** Question-type tags per part format (the quick-practice cards show these
  *  instead of part numbers — a practice is just "a practice"). A part rotates
@@ -473,28 +437,50 @@ function Hub({
             each part, the audio plays once, and every answer is explained after grading.
           </p> */}
         </div>
-        {catalogue ? (
-          <span
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <Link
+            href="/listen/results"
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 9,
-              background: TINT,
-              border: "1px solid rgba(67,56,202,.16)",
-              color: INDIGO,
+              gap: 8,
+              background: "#fff",
+              border: "1px solid rgba(28,27,46,.14)",
+              color: INK,
               padding: "8px 14px",
               borderRadius: 999,
               fontSize: 14,
               fontWeight: 700,
               whiteSpace: "nowrap",
+              textDecoration: "none",
             }}
           >
-            <Headphones size={15} />
-            {catalogue.plan_paid
-              ? "Full library"
-              : `Free: ${Math.min(catalogue.free_used, catalogue.free_limit)}/${catalogue.free_limit} used`}
-          </span>
-        ) : null}
+            My results
+            <ArrowRight size={14} />
+          </Link>
+          {catalogue ? (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 9,
+                background: TINT,
+                border: "1px solid rgba(67,56,202,.16)",
+                color: INDIGO,
+                padding: "8px 14px",
+                borderRadius: 999,
+                fontSize: 14,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <Headphones size={15} />
+              {catalogue.plan_paid
+                ? "Full library"
+                : `Free: ${Math.min(catalogue.free_used, catalogue.free_limit)}/${catalogue.free_limit} used`}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* Tabs — the same chooser as the Reading hub */}
@@ -1547,6 +1533,23 @@ function Runner({
               </div>
             </div>
 
+            {/* the announcer's scenario line, kept on screen so the setting and
+                purpose of the recording survive the one-shot audio intro */}
+            {visiblePart?.narrator_intro ? (
+              <p
+                style={{
+                  margin: "-4px 0 18px",
+                  fontFamily: RUN.sans,
+                  fontSize: 13.5,
+                  fontStyle: "italic",
+                  lineHeight: 1.5,
+                  color: RUN.t2,
+                }}
+              >
+                {visiblePart.narrator_intro}
+              </p>
+            ) : null}
+
             {/* questions — flat, full-bleed, no card chrome (matches handoff) */}
             <section>{visiblePart ? <PartPanels p={visiblePart} ctx={qctx} /> : null}</section>
 
@@ -1806,6 +1809,15 @@ function RunnerFooter({
             </span>
           ) : null}
           <div style={{ flex: 1 }} />
+          {grade.attempt_id ? (
+            <a
+              href={`/listen/results/${grade.attempt_id}`}
+              style={{ ...ghost, textDecoration: "none" }}
+            >
+              Full report
+              <ArrowRight size={15} />
+            </a>
+          ) : null}
           <button type="button" onClick={onPracticeAgain} style={ghost}>
             <RotateCcw size={15} /> Practice again
           </button>
