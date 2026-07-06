@@ -158,12 +158,54 @@ type MatchingView = {
 };
 type McqView = { q: number; stem: string; options: Record<string, string> };
 
+/** P2 map/plan labelling: an abstract map drawn from geometry + a list of
+ *  places to locate (each answered with a site letter). Answer-free by design —
+ *  the walk/answers never reach the client. */
+type MapFeature =
+  | { kind: "compass"; at: [number, number] }
+  | { kind: "marker"; at: [number, number]; label?: string }
+  | { kind: "landmark"; at: [number, number]; w?: number; h?: number; label: string }
+  | { kind: "site"; at: [number, number]; w?: number; h?: number; letter: string }
+  | { kind: "road" | "river" | "path"; points: [number, number][]; label?: string };
+type MapView = {
+  title: string;
+  grid: { w: number; h: number };
+  features: MapFeature[];
+  letters: string[];
+  items: { q: number; label: string }[];
+};
+
+/** v2 group: one question block within a part. The payload shape depends on
+ *  `type` (reshaped into the existing panel views by GroupPanels). */
+type GroupType =
+  | "form"
+  | "notes"
+  | "table"
+  | "sentence"
+  | "mc_single"
+  | "mc_two"
+  | "matching"
+  | "flow_chart"
+  | "map";
+type GroupView = {
+  type: GroupType;
+  questions: number[];
+  instruction: string;
+  word_limit?: string;
+  payload: Record<string, unknown>;
+};
+
 /** One part's question material (also the shape of a single-part practice). */
 type PartView = {
   part: number;
   topic: string;
   narrator_intro: string;
   variant?: string;
+  /** v2 (content.version >= 2): question material as ordered groups. When
+   *  present, GroupPanels renders it; the flat v1 fields below are absent. */
+  version?: number;
+  layout?: string;
+  groups?: GroupView[];
   form?: { title: string; word_limit: string; rows: FormRow[] };
   notes?: { title: string; word_limit: string; sections: NoteSection[] };
   table?: TableView;
@@ -210,6 +252,8 @@ type LibraryItem = {
   topic: string;
   difficulty: number;
   variant?: string;
+  /** content schema version — v1 items omit it; v2 (group-based) items send >= 2. */
+  version?: number;
   unlocked: boolean;
   locked: boolean;
   best_score: number | null;
@@ -227,6 +271,7 @@ type MineItem = {
   topic: string;
   difficulty: number;
   variant?: string;
+  version?: number;
   created_at: string | null;
 };
 
@@ -1129,6 +1174,8 @@ type PlayerPhase = "idle" | "running" | "finished";
 
 /** Every question number a part view carries (gaps, clusters, MCQs, matching). */
 function partQuestionNums(p: PartView): number[] {
+  // v2: every group states its own question numbers.
+  if (p.groups) return p.groups.flatMap((g) => g.questions).sort((a, b) => a - b);
   const templates = p.form
     ? p.form.rows.map((r) => r.template)
     : p.table
@@ -3285,9 +3332,447 @@ function QuestionsHeading({ text, instruction }: { text: string; instruction: st
   );
 }
 
+// ---- v2 group rendering ------------------------------------------------------
+
+const COMPLETION_TYPES = new Set<GroupType>(["form", "notes", "table", "sentence"]);
+
+/** Sentence completion (P1/P4 sentence layout) — ten standalone gapped
+ *  sentences, one `{n}` gap each, filled with the same word-answer machinery. */
+function SentencePanel({
+  sentences,
+  title,
+  wordLimit,
+  range,
+  ctx,
+}: {
+  sentences: string[];
+  title?: string;
+  wordLimit: string;
+  range: string;
+  ctx: QCtx;
+}) {
+  return (
+    <>
+      <CardHeader
+        range={range}
+        title={title || "Complete the sentences"}
+        instruction={`Write ${wordLimit} for each answer`}
+      />
+      <div style={{ padding: "2px 0 8px" }}>
+        {sentences.map((s, i) => (
+          <div
+            key={i}
+            style={{
+              padding: "9px 0",
+              borderBottom: `1px solid ${RUN.bRow}`,
+              fontFamily: RUN.sans,
+              fontSize: 15,
+              lineHeight: 2,
+              color: RUN.t1,
+              display: "flex",
+              gap: 10,
+            }}
+          >
+            <span style={{ color: RUN.t5, flex: "none", lineHeight: 2 }}>•</span>
+            <span>
+              <Gapped template={s} ctx={ctx} />
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** P2 map/plan labelling — draws the abstract map from geometry (roads, named
+ *  landmarks, lettered sites, the 'You are here' marker + a compass), then a
+ *  place list where each location is answered with a site letter. Origin is
+ *  top-left and y grows SOUTH, matching the engine's coordinates, so points map
+ *  straight onto the SVG. */
+function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
+  const graded = ctx.results != null;
+  const { w, h } = map.grid;
+  const pad = 5;
+  const letters = map.letters.slice().sort();
+  const lineColor = (k: string) => (k === "river" ? "#5b9bd5" : "#8a8f9c");
+  return (
+    <div>
+      <div style={{ overflowX: "auto", marginBottom: 18 }}>
+        <svg
+          viewBox={`${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`}
+          style={{
+            width: "100%",
+            maxWidth: 580,
+            height: "auto",
+            border: `1px solid ${RUN.bField}`,
+            borderRadius: 12,
+            background: "#fbfbfe",
+            display: "block",
+          }}
+          role="img"
+          aria-label={map.title || "Map to label"}
+        >
+          {/* roads / rivers / paths (drawn first, under the boxes) */}
+          {map.features.map((f, i) => {
+            if (f.kind !== "road" && f.kind !== "river" && f.kind !== "path") return null;
+            // Label at the polyline's true midpoint (the middle of the central
+            // segment) — never an endpoint, or it clips at the grid edge.
+            const n = f.points.length;
+            const a = f.points[Math.floor((n - 1) / 2)];
+            const b = f.points[Math.floor(n / 2)];
+            const mx = (a[0] + b[0]) / 2;
+            const my = (a[1] + b[1]) / 2;
+            return (
+              <g key={`ln-${i}`}>
+                <polyline
+                  points={f.points.map((p) => p.join(",")).join(" ")}
+                  fill="none"
+                  stroke={lineColor(f.kind)}
+                  strokeWidth={f.kind === "river" ? 3 : 2.2}
+                  strokeDasharray={f.kind === "path" ? "3 2" : undefined}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {f.label ? (
+                  <text
+                    x={mx}
+                    y={my - 1.6}
+                    fontSize={3}
+                    fill="#8a8f9c"
+                    fontFamily={RUN.sans}
+                    textAnchor="middle"
+                  >
+                    {f.label}
+                  </text>
+                ) : null}
+              </g>
+            );
+          })}
+          {/* named landmarks (non-answerable anchors) */}
+          {map.features.map((f, i) =>
+            f.kind === "landmark" ? (
+              <g key={`lm-${i}`}>
+                <rect
+                  x={f.at[0]}
+                  y={f.at[1]}
+                  width={f.w ?? 12}
+                  height={f.h ?? 8}
+                  rx={1.5}
+                  fill="#eef0f4"
+                  stroke="#c9cdd8"
+                  strokeWidth={0.6}
+                />
+                {/* name sits BELOW the box — multi-word landmark names would
+                    overflow a 12-unit box if centred inside it */}
+                <text
+                  x={f.at[0] + (f.w ?? 12) / 2}
+                  y={f.at[1] + (f.h ?? 8) + 3.2}
+                  fontSize={2.9}
+                  fill="#5b6070"
+                  fontFamily={RUN.sans}
+                  textAnchor="middle"
+                >
+                  {f.label}
+                </text>
+              </g>
+            ) : null,
+          )}
+          {/* lettered sites (the answer options) */}
+          {map.features.map((f, i) =>
+            f.kind === "site" ? (
+              <g key={`st-${i}`}>
+                <rect
+                  x={f.at[0]}
+                  y={f.at[1]}
+                  width={f.w ?? 10}
+                  height={f.h ?? 7}
+                  rx={1.5}
+                  fill="#f3f0ff"
+                  stroke={RUN.v}
+                  strokeWidth={0.9}
+                />
+                <text
+                  x={f.at[0] + (f.w ?? 10) / 2}
+                  y={f.at[1] + (f.h ?? 7) / 2}
+                  fontSize={5}
+                  fontWeight={700}
+                  fill={RUN.vHover}
+                  fontFamily={RUN.sans}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                >
+                  {f.letter}
+                </text>
+              </g>
+            ) : null,
+          )}
+          {/* 'You are here' marker + compass (points, drawn on top) */}
+          {map.features.map((f, i) => {
+            if (f.kind === "marker")
+              return (
+                <g key={`mk-${i}`}>
+                  <circle
+                    cx={f.at[0]}
+                    cy={f.at[1]}
+                    r={2}
+                    fill="#e0952f"
+                    stroke="#fff"
+                    strokeWidth={0.7}
+                  />
+                  {/* label BELOW the dot — the start marker sits by the first
+                      site, so a label above it would overlap that box */}
+                  <text
+                    x={f.at[0]}
+                    y={f.at[1] + 5}
+                    fontSize={3}
+                    fill="#b9772a"
+                    fontWeight={700}
+                    fontFamily={RUN.sans}
+                    textAnchor="middle"
+                  >
+                    You are here
+                  </text>
+                </g>
+              );
+            if (f.kind === "compass")
+              return (
+                <g key={`cp-${i}`}>
+                  <line
+                    x1={f.at[0]}
+                    y1={f.at[1] + 3}
+                    x2={f.at[0]}
+                    y2={f.at[1] - 3}
+                    stroke="#6b6f7e"
+                    strokeWidth={0.8}
+                  />
+                  <polygon
+                    points={`${f.at[0]},${f.at[1] - 4.6} ${f.at[0] - 1.4},${f.at[1] - 2.4} ${f.at[0] + 1.4},${f.at[1] - 2.4}`}
+                    fill="#6b6f7e"
+                  />
+                  <text
+                    x={f.at[0]}
+                    y={f.at[1] - 5.6}
+                    fontSize={3}
+                    fill="#6b6f7e"
+                    fontWeight={700}
+                    fontFamily={RUN.sans}
+                    textAnchor="middle"
+                  >
+                    N
+                  </text>
+                </g>
+              );
+            return null;
+          })}
+        </svg>
+      </div>
+
+      {/* the places to locate — each answered with a site letter */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {map.items.map((it) => {
+          const r = ctx.results?.get(it.q) ?? null;
+          const border = r ? (r.is_correct ? RUN.ok : BAD) : RUN.bField;
+          return (
+            <div
+              key={it.q}
+              id={`q-${it.q}`}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "11px 0",
+                borderTop: `1px solid ${RUN.bRow}`,
+                fontFamily: RUN.sans,
+                fontSize: 14.5,
+              }}
+            >
+              <NumChip n={it.q} answered={(ctx.answers[it.q] ?? "").trim() !== ""} />
+              <span style={{ flex: 1, color: RUN.t2, fontWeight: 600 }}>{it.label}</span>
+              <select
+                value={ctx.answers[it.q] ?? ""}
+                disabled={graded}
+                aria-label={`Answer ${it.q}`}
+                onChange={(e) => {
+                  ctx.setFocus(it.q);
+                  ctx.setAnswers((prev) => ({ ...prev, [it.q]: e.target.value }));
+                }}
+                style={{
+                  width: 70,
+                  height: 38,
+                  padding: "0 10px",
+                  borderRadius: 9,
+                  border: `1.5px solid ${border}`,
+                  background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
+                  fontFamily: RUN.sans,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: RUN.t1,
+                }}
+              >
+                <option value="">–</option>
+                {letters.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+              {r ? (
+                r.is_correct ? (
+                  <Check size={16} color={RUN.ok} />
+                ) : (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <X size={16} color={BAD} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: RUN.ok }}>
+                      → {r.correct_answer}
+                    </span>
+                  </span>
+                )
+              ) : null}
+              <FlagButton flagged={ctx.flags.has(it.q)} onClick={() => ctx.toggleFlag(it.q)} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** One v2 group's material, reshaped into the existing panel views. When `bare`
+ *  the panel skips its own heading (GroupPanels prints the engine instruction). */
+function GroupBody({
+  g,
+  ctx,
+  bare,
+  context,
+}: {
+  g: GroupView;
+  ctx: QCtx;
+  bare?: boolean;
+  context?: string;
+}) {
+  switch (g.type) {
+    case "form": {
+      const pl = g.payload as { title?: string; rows?: FormRow[] };
+      return (
+        <FormPanel
+          form={{ title: pl.title ?? "", word_limit: g.word_limit ?? "ONE WORD ONLY", rows: pl.rows ?? [] }}
+          ctx={ctx}
+        />
+      );
+    }
+    case "notes": {
+      const pl = g.payload as { title?: string; sections?: NoteSection[] };
+      return (
+        <NotesPanel
+          notes={{ title: pl.title ?? "", word_limit: g.word_limit ?? "ONE WORD ONLY", sections: pl.sections ?? [] }}
+          ctx={ctx}
+        />
+      );
+    }
+    case "table": {
+      const pl = g.payload as { title?: string; columns?: string[]; rows?: string[][] };
+      return (
+        <TablePanel
+          table={{
+            title: pl.title ?? "",
+            word_limit: g.word_limit ?? "ONE WORD ONLY",
+            columns: pl.columns ?? [],
+            rows: pl.rows ?? [],
+          }}
+          ctx={ctx}
+        />
+      );
+    }
+    case "sentence": {
+      const pl = g.payload as { sentences?: string[]; title?: string };
+      return (
+        <SentencePanel
+          sentences={pl.sentences ?? []}
+          title={pl.title}
+          wordLimit={g.word_limit ?? "ONE WORD ONLY"}
+          range={rangeLabel(g.questions)}
+          ctx={ctx}
+        />
+      );
+    }
+    case "mc_single": {
+      const pl = g.payload as { items?: McqView[] };
+      return <McqPanel mcqs={pl.items ?? []} context={context} ctx={ctx} bare={bare} />;
+    }
+    case "mc_two": {
+      const pl = g.payload as { clusters?: ClusterView[] };
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+          {(pl.clusters ?? []).map((c) => (
+            <ChooseTwoPanel key={c.questions[0]} cluster={c} ctx={ctx} />
+          ))}
+        </div>
+      );
+    }
+    case "matching": {
+      const pl = g.payload as {
+        heading?: string;
+        items?: { q: number; label: string }[];
+        options?: Record<string, string>;
+      };
+      return (
+        <MatchingPanel
+          matching={{ heading: pl.heading ?? "", items: pl.items ?? [], options: pl.options ?? {} }}
+          ctx={ctx}
+          bare={bare}
+        />
+      );
+    }
+    case "flow_chart": {
+      const pl = g.payload as { title?: string; steps?: string[]; options?: Record<string, string> };
+      return (
+        <FlowChartPanel
+          flow={{ title: pl.title ?? "", steps: pl.steps ?? [], options: pl.options ?? {} }}
+          ctx={ctx}
+          bare={bare}
+        />
+      );
+    }
+    case "map": {
+      const pl = g.payload as unknown as MapView;
+      return <MapPanel map={pl} ctx={ctx} />;
+    }
+    default:
+      return null;
+  }
+}
+
+/** v2 renderer: a part is an ordered list of question groups. A single
+ *  completion group (P1/P4) uses its panel's own header; the two-group
+ *  letter parts (P2/P3) get a topic header plus each group's printed
+ *  instruction. */
+function GroupPanels({ p, ctx }: { p: PartView; ctx: QCtx }) {
+  const groups = p.groups ?? [];
+  if (groups.length === 1 && COMPLETION_TYPES.has(groups[0].type)) {
+    return <GroupBody g={groups[0]} ctx={ctx} />;
+  }
+  return (
+    <>
+      <CardHeader range={rangeLabel(partQuestionNums(p))} title={p.topic || "Listening"} />
+      <div style={{ padding: "8px 0 16px", display: "flex", flexDirection: "column", gap: 34 }}>
+        {groups.map((g, i) => (
+          <div key={i}>
+            <QuestionsHeading
+              text={`Questions ${g.questions[0]}–${g.questions[g.questions.length - 1]}`}
+              instruction={g.instruction}
+            />
+            <GroupBody g={g} ctx={ctx} bare context={p.context} />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 /** Renders whichever question material a part carries. Form/notes bring their
  *  own card header; the letter-answer parts (2 & 3) get one here. */
 function PartPanels({ p, ctx }: { p: PartView; ctx: QCtx }) {
+  if (p.groups) return <GroupPanels p={p} ctx={ctx} />;
   if (p.form) return <FormPanel form={p.form} ctx={ctx} />;
   if (p.notes) return <NotesPanel notes={p.notes} ctx={ctx} />;
   if (p.table) return <TablePanel table={p.table} ctx={ctx} />;
@@ -3449,14 +3934,26 @@ function ChooseTwoPanel({ cluster, ctx }: { cluster: ClusterView; ctx: QCtx }) {
 }
 
 /** Single-answer multiple choice (Part 3, Q21–23). */
-function McqPanel({ mcqs, context, ctx }: { mcqs: McqView[]; context?: string; ctx: QCtx }) {
+function McqPanel({
+  mcqs,
+  context,
+  ctx,
+  bare,
+}: {
+  mcqs: McqView[];
+  context?: string;
+  ctx: QCtx;
+  bare?: boolean;
+}) {
   const graded = ctx.results != null;
   return (
     <div>
-      <QuestionsHeading
-        text={`Questions ${mcqs[0].q}–${mcqs[mcqs.length - 1].q}`}
-        instruction="Choose the correct letter, A, B or C."
-      />
+      {bare ? null : (
+        <QuestionsHeading
+          text={`Questions ${mcqs[0].q}–${mcqs[mcqs.length - 1].q}`}
+          instruction="Choose the correct letter, A, B or C."
+        />
+      )}
       {context ? (
         <div
           style={{
@@ -3600,16 +4097,26 @@ function McqPanel({ mcqs, context, ctx }: { mcqs: McqView[]; context?: string; c
 }
 
 /** Matching run — items matched to a boxed option list by letter. */
-function MatchingPanel({ matching, ctx }: { matching: MatchingView; ctx: QCtx }) {
+function MatchingPanel({
+  matching,
+  ctx,
+  bare,
+}: {
+  matching: MatchingView;
+  ctx: QCtx;
+  bare?: boolean;
+}) {
   const graded = ctx.results != null;
   const qs = matching.items.map((it) => it.q);
   const letters = Object.keys(matching.options).sort();
   return (
     <div>
-      <QuestionsHeading
-        text={`Questions ${qs[0]}–${qs[qs.length - 1]}`}
-        instruction={`Choose your answers from the box — write the correct letter, ${letters[0]}–${letters[letters.length - 1]}.`}
-      />
+      {bare ? null : (
+        <QuestionsHeading
+          text={`Questions ${qs[0]}–${qs[qs.length - 1]}`}
+          instruction={`Choose your answers from the box — write the correct letter, ${letters[0]}–${letters[letters.length - 1]}.`}
+        />
+      )}
       {matching.heading ? (
         <div
           style={{
@@ -3771,15 +4278,17 @@ function FlowGapSelect({ n, letters, ctx }: { n: number; letters: string[]; ctx:
 
 /** Flow-chart completion (P3 flow variant) — an ordered process whose gaps are
  *  filled from a shared A–H word bank (letter answers, like the matching run). */
-function FlowChartPanel({ flow, ctx }: { flow: FlowChartView; ctx: QCtx }) {
+function FlowChartPanel({ flow, ctx, bare }: { flow: FlowChartView; ctx: QCtx; bare?: boolean }) {
   const letters = Object.keys(flow.options).sort();
   const range = rangeLabel(flow.steps.flatMap(gapNums));
   return (
     <div>
-      <QuestionsHeading
-        text={`Questions ${range}`}
-        instruction={`Choose your answers from the box — write the correct letter, ${letters[0]}–${letters[letters.length - 1]}.`}
-      />
+      {bare ? null : (
+        <QuestionsHeading
+          text={`Questions ${range}`}
+          instruction={`Choose your answers from the box — write the correct letter, ${letters[0]}–${letters[letters.length - 1]}.`}
+        />
+      )}
       {flow.title ? (
         <div
           style={{
