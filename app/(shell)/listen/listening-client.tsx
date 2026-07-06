@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } from "lucide-react";
 
@@ -164,9 +164,18 @@ type McqView = { q: number; stem: string; options: Record<string, string> };
 type MapFeature =
   | { kind: "compass"; at: [number, number] }
   | { kind: "marker"; at: [number, number]; label?: string }
-  | { kind: "landmark"; at: [number, number]; w?: number; h?: number; label: string }
+  | {
+      kind: "landmark";
+      at: [number, number];
+      w?: number;
+      h?: number;
+      label: string;
+      shape?: "building" | "board";
+    }
+  | { kind: "trees"; at: [number, number]; w?: number; h?: number }
   | { kind: "site"; at: [number, number]; w?: number; h?: number; letter: string }
-  | { kind: "road" | "river" | "path"; points: [number, number][]; label?: string };
+  | { kind: "wall"; points: [number, number][]; label?: string }
+  | { kind: "road" | "river" | "path"; points: [number, number][]; label?: string; width?: number };
 type MapView = {
   title: string;
   grid: { w: number; h: number };
@@ -3389,12 +3398,244 @@ function SentencePanel({
  *  place list where each location is answered with a site letter. Origin is
  *  top-left and y grows SOUTH, matching the engine's coordinates, so points map
  *  straight onto the SVG. */
+// ---- hand-drawn map rendering (softly-illustrated Cambridge style) -----------
+
+const MAP_INK = "#241f18";
+const MAP_PAPER = "#fbf7ec";
+
+/** Catmull-Rom → cubic-bezier path through points (organic, drawn curves). */
+function smoothPath(pts: [number, number][], closed = false): string {
+  let p: [number, number][] = pts;
+  if (closed && pts.length >= 3) p = [pts[pts.length - 1], ...pts, pts[0], pts[1]];
+  if (p.length < 3) return "M " + p.map(([x, y]) => `${x},${y}`).join(" L ");
+  let d = closed ? `M ${p[1][0]},${p[1][1]} ` : `M ${p[0][0]},${p[0][1]} `;
+  const lo = closed ? 1 : 0;
+  const hi = closed ? p.length - 2 : p.length - 1;
+  for (let i = lo; i < hi; i++) {
+    const p0 = p[i - 1] ?? p[i];
+    const p1 = p[i];
+    const p2 = p[i + 1];
+    const p3 = p[i + 2] ?? p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]} `;
+  }
+  return closed ? d + "Z" : d;
+}
+
+function MapTree({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  const canopy: [number, number, number][] = [
+    [-1.7, -1.1, 2.2],
+    [1.7, -1.1, 2.2],
+    [0, -3.1, 2.5],
+    [0, -0.7, 2.4],
+  ];
+  return (
+    <>
+      <rect x={x - 0.5 * s} y={y} width={s} height={3.2 * s} fill="#8a774f" />
+      {canopy.map(([dx, dy, r], k) => (
+        <circle key={k} cx={x + dx * s} cy={y + dy * s} r={r * s} fill="#e7eed2" stroke={MAP_INK} strokeWidth={0.45} />
+      ))}
+    </>
+  );
+}
+
+function MapWood({ x, y }: { x: number; y: number }) {
+  const spots: [number, number, number][] = [
+    [0, 0, 1],
+    [3.6, 1.4, 0.9],
+    [-3.4, 1.6, 0.85],
+    [1.8, -2.8, 0.82],
+    [-2, -2.4, 0.8],
+    [5.2, -0.6, 0.78],
+  ];
+  return (
+    <>
+      {spots.map(([dx, dy, s], k) => (
+        <MapTree key={k} x={x + dx} y={y + dy} s={s} />
+      ))}
+    </>
+  );
+}
+
+function MapBoard({ x, y }: { x: number; y: number }) {
+  return (
+    <>
+      <line x1={x - 2.1} y1={y + 2.6} x2={x + 2.1} y2={y - 1.4} stroke={MAP_INK} strokeWidth={0.55} />
+      <line x1={x + 2.1} y1={y + 2.6} x2={x - 2.1} y2={y - 1.4} stroke={MAP_INK} strokeWidth={0.55} />
+      <rect x={x - 2.7} y={y - 2.8} width={5.4} height={2.4} rx={0.4} fill="#fff" stroke={MAP_INK} strokeWidth={0.7} />
+    </>
+  );
+}
+
+function MapCompass({ x, y }: { x: number; y: number }) {
+  const arm = 5.5;
+  const dirs: [number, number][] = [
+    [0, -arm],
+    [0, arm],
+    [-arm, 0],
+    [arm, 0],
+  ];
+  return (
+    <>
+      {dirs.map(([dx, dy], k) => (
+        <line key={k} x1={x} y1={y} x2={x + dx} y2={y + dy} stroke={MAP_INK} strokeWidth={0.7} />
+      ))}
+      <polygon points={`${x},${y - arm - 1.6} ${x - 1.2},${y - arm + 1} ${x + 1.2},${y - arm + 1}`} fill={MAP_INK} />
+    </>
+  );
+}
+
+/** midpoint of a polyline's central segment (for a label that never clips). */
+function polyMid(points: [number, number][]): [number, number] {
+  const n = points.length;
+  const a = points[Math.floor((n - 1) / 2)];
+  const b = points[Math.floor(n / 2)];
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+}
+
 function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
   const graded = ctx.results != null;
   const { w, h } = map.grid;
-  const pad = 5;
+  const pad = 4;
   const letters = map.letters.slice().sort();
-  const lineColor = (k: string) => (k === "river" ? "#5b9bd5" : "#8a8f9c");
+  const fid = useId().replace(/:/g, "");
+  const feats = map.features;
+  const art: React.ReactNode[] = [];
+  const txt: React.ReactNode[] = [];
+
+  feats.forEach((f, i) => {
+    if (f.kind === "river") {
+      const d = smoothPath(f.points);
+      const rw = f.width ?? 5;
+      art.push(
+        <g key={`rv-${i}`}>
+          <path d={d} fill="none" stroke="#cfe3ec" strokeWidth={rw} strokeLinecap="round" />
+          <path d={d} fill="none" stroke="#8fb4c6" strokeWidth={0.6} strokeLinecap="round" transform={`translate(0,-${rw / 2})`} />
+          <path d={d} fill="none" stroke="#8fb4c6" strokeWidth={0.6} strokeLinecap="round" transform={`translate(0,${rw / 2})`} />
+        </g>,
+      );
+      if (f.label) {
+        const [mx, my] = polyMid(f.points);
+        txt.push(
+          <text key={`rvt-${i}`} x={mx} y={my - rw / 2 - 1} fontSize={3.2} fontStyle="italic" fill={MAP_INK} textAnchor="middle">
+            {f.label}
+          </text>,
+        );
+      }
+    } else if (f.kind === "wall") {
+      art.push(<path key={`wl-${i}`} d={smoothPath(f.points)} fill="none" stroke={MAP_INK} strokeWidth={2.6} strokeLinejoin="round" />);
+      if (f.label) {
+        const a = f.points[0];
+        txt.push(
+          <text key={`wlt-${i}`} x={a[0] + 1.5} y={a[1] - 1.5} fontSize={3} fill={MAP_INK}>
+            {f.label}
+          </text>,
+        );
+      }
+    } else if (f.kind === "road" || f.kind === "path") {
+      const d = smoothPath(f.points);
+      art.push(
+        <g key={`pt-${i}`}>
+          <path d={d} fill="none" stroke={MAP_INK} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={d} fill="none" stroke={MAP_PAPER} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+        </g>,
+      );
+      if (f.label) {
+        const [mx, my] = polyMid(f.points);
+        txt.push(
+          <text key={`ptt-${i}`} x={mx} y={my - 1.6} fontSize={3} fill="#6b6357" textAnchor="middle">
+            {f.label}
+          </text>,
+        );
+      }
+    }
+  });
+
+  feats.forEach((f, i) => {
+    if (f.kind !== "landmark") return;
+    const bw = f.w ?? 12;
+    const bh = f.h ?? 8;
+    if (f.shape === "board") {
+      art.push(
+        <g key={`lm-${i}`}>
+          <MapBoard x={f.at[0] + bw / 2} y={f.at[1] + bh / 2} />
+        </g>,
+      );
+    } else {
+      art.push(<rect key={`lm-${i}`} x={f.at[0]} y={f.at[1]} width={bw} height={bh} fill="#f1ebda" stroke={MAP_INK} strokeWidth={1} />);
+    }
+    txt.push(
+      <text key={`lmt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fill="#4a4237" textAnchor="middle">
+        {f.label}
+      </text>,
+    );
+  });
+
+  feats.forEach((f, i) => {
+    if (f.kind !== "trees") return;
+    art.push(
+      <g key={`tr-${i}`}>
+        <MapWood x={f.at[0] + (f.w ?? 8) / 2} y={f.at[1] + (f.h ?? 6) / 2} />
+      </g>,
+    );
+  });
+
+  feats.forEach((f, i) => {
+    if (f.kind !== "site") return;
+    const bw = f.w ?? 8;
+    const bh = f.h ?? 6;
+    const s = Math.min(bw, bh, 5.4);
+    const cx = f.at[0] + bw / 2;
+    const cy = f.at[1] + bh / 2;
+    art.push(<rect key={`si-${i}`} x={cx - s / 2} y={cy - s / 2} width={s} height={s} rx={0.6} fill="#fff" stroke={MAP_INK} strokeWidth={0.9} />);
+    txt.push(
+      <text key={`sit-${i}`} x={cx} y={cy} fontSize={3.8} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={MAP_INK}>
+        {f.letter}
+      </text>,
+    );
+  });
+
+  feats.forEach((f, i) => {
+    if (f.kind === "marker") {
+      const [x, y] = f.at;
+      art.push(
+        <g key={`mk-${i}`}>
+          <rect x={x - 2} y={y - 2} width={4} height={4} fill={MAP_INK} />
+          <line x1={x} y1={y - 2.2} x2={x} y2={y - 6.6} stroke={MAP_INK} strokeWidth={1} />
+          <polygon points={`${x},${y - 8} ${x - 1.4},${y - 5.6} ${x + 1.4},${y - 5.6}`} fill={MAP_INK} />
+        </g>,
+      );
+      txt.push(
+        <text key={`mkt-${i}`} x={x} y={y + 5} fontSize={3.2} fill={MAP_INK} textAnchor="middle">
+          You are here
+        </text>,
+      );
+    } else if (f.kind === "compass") {
+      const [x, y] = f.at;
+      art.push(
+        <g key={`cp-${i}`}>
+          <MapCompass x={x} y={y} />
+        </g>,
+      );
+      const cardinals: [string, number, number][] = [
+        ["N", 0, -7.4],
+        ["S", 0, 8.4],
+        ["W", -8.2, 1.4],
+        ["E", 8.2, 1.4],
+      ];
+      cardinals.forEach(([nm, dx, dy], k) =>
+        txt.push(
+          <text key={`cpt-${i}-${k}`} x={x + dx} y={y + dy} fontSize={2.9} fontWeight={700} textAnchor="middle" fill={MAP_INK}>
+            {nm}
+          </text>,
+        ),
+      );
+    }
+  });
+
   return (
     <div>
       <div style={{ overflowX: "auto", marginBottom: 18 }}>
@@ -3402,168 +3643,27 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
           viewBox={`${-pad} ${-pad} ${w + pad * 2} ${h + pad * 2}`}
           style={{
             width: "100%",
-            maxWidth: 580,
+            maxWidth: 600,
             height: "auto",
             border: `1px solid ${RUN.bField}`,
-            borderRadius: 12,
-            background: "#fbfbfe",
+            borderRadius: 10,
+            background: MAP_PAPER,
             display: "block",
           }}
           role="img"
           aria-label={map.title || "Map to label"}
         >
-          {/* roads / rivers / paths (drawn first, under the boxes) */}
-          {map.features.map((f, i) => {
-            if (f.kind !== "road" && f.kind !== "river" && f.kind !== "path") return null;
-            // Label at the polyline's true midpoint (the middle of the central
-            // segment) — never an endpoint, or it clips at the grid edge.
-            const n = f.points.length;
-            const a = f.points[Math.floor((n - 1) / 2)];
-            const b = f.points[Math.floor(n / 2)];
-            const mx = (a[0] + b[0]) / 2;
-            const my = (a[1] + b[1]) / 2;
-            return (
-              <g key={`ln-${i}`}>
-                <polyline
-                  points={f.points.map((p) => p.join(",")).join(" ")}
-                  fill="none"
-                  stroke={lineColor(f.kind)}
-                  strokeWidth={f.kind === "river" ? 3 : 2.2}
-                  strokeDasharray={f.kind === "path" ? "3 2" : undefined}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                {f.label ? (
-                  <text
-                    x={mx}
-                    y={my - 1.6}
-                    fontSize={3}
-                    fill="#8a8f9c"
-                    fontFamily={RUN.sans}
-                    textAnchor="middle"
-                  >
-                    {f.label}
-                  </text>
-                ) : null}
-              </g>
-            );
-          })}
-          {/* named landmarks (non-answerable anchors) */}
-          {map.features.map((f, i) =>
-            f.kind === "landmark" ? (
-              <g key={`lm-${i}`}>
-                <rect
-                  x={f.at[0]}
-                  y={f.at[1]}
-                  width={f.w ?? 12}
-                  height={f.h ?? 8}
-                  rx={1.5}
-                  fill="#eef0f4"
-                  stroke="#c9cdd8"
-                  strokeWidth={0.6}
-                />
-                {/* name sits BELOW the box — multi-word landmark names would
-                    overflow a 12-unit box if centred inside it */}
-                <text
-                  x={f.at[0] + (f.w ?? 12) / 2}
-                  y={f.at[1] + (f.h ?? 8) + 3.2}
-                  fontSize={2.9}
-                  fill="#5b6070"
-                  fontFamily={RUN.sans}
-                  textAnchor="middle"
-                >
-                  {f.label}
-                </text>
-              </g>
-            ) : null,
-          )}
-          {/* lettered sites (the answer options) */}
-          {map.features.map((f, i) =>
-            f.kind === "site" ? (
-              <g key={`st-${i}`}>
-                <rect
-                  x={f.at[0]}
-                  y={f.at[1]}
-                  width={f.w ?? 10}
-                  height={f.h ?? 7}
-                  rx={1.5}
-                  fill="#f3f0ff"
-                  stroke={RUN.v}
-                  strokeWidth={0.9}
-                />
-                <text
-                  x={f.at[0] + (f.w ?? 10) / 2}
-                  y={f.at[1] + (f.h ?? 7) / 2}
-                  fontSize={5}
-                  fontWeight={700}
-                  fill={RUN.vHover}
-                  fontFamily={RUN.sans}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                >
-                  {f.letter}
-                </text>
-              </g>
-            ) : null,
-          )}
-          {/* 'You are here' marker + compass (points, drawn on top) */}
-          {map.features.map((f, i) => {
-            if (f.kind === "marker")
-              return (
-                <g key={`mk-${i}`}>
-                  <circle
-                    cx={f.at[0]}
-                    cy={f.at[1]}
-                    r={2}
-                    fill="#e0952f"
-                    stroke="#fff"
-                    strokeWidth={0.7}
-                  />
-                  {/* label BELOW the dot — the start marker sits by the first
-                      site, so a label above it would overlap that box */}
-                  <text
-                    x={f.at[0]}
-                    y={f.at[1] + 5}
-                    fontSize={3}
-                    fill="#b9772a"
-                    fontWeight={700}
-                    fontFamily={RUN.sans}
-                    textAnchor="middle"
-                  >
-                    You are here
-                  </text>
-                </g>
-              );
-            if (f.kind === "compass")
-              return (
-                <g key={`cp-${i}`}>
-                  <line
-                    x1={f.at[0]}
-                    y1={f.at[1] + 3}
-                    x2={f.at[0]}
-                    y2={f.at[1] - 3}
-                    stroke="#6b6f7e"
-                    strokeWidth={0.8}
-                  />
-                  <polygon
-                    points={`${f.at[0]},${f.at[1] - 4.6} ${f.at[0] - 1.4},${f.at[1] - 2.4} ${f.at[0] + 1.4},${f.at[1] - 2.4}`}
-                    fill="#6b6f7e"
-                  />
-                  <text
-                    x={f.at[0]}
-                    y={f.at[1] - 5.6}
-                    fontSize={3}
-                    fill="#6b6f7e"
-                    fontWeight={700}
-                    fontFamily={RUN.sans}
-                    textAnchor="middle"
-                  >
-                    N
-                  </text>
-                </g>
-              );
-            return null;
-          })}
+          <defs>
+            <filter id={`rough-${fid}`} x="-5%" y="-5%" width="110%" height="110%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves={2} seed={7} result="n" />
+              <feDisplacementMap in="SourceGraphic" in2="n" scale={1.2} xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+          <rect x={0} y={0} width={w} height={h} fill="none" stroke={MAP_INK} strokeWidth={0.8} />
+          <g filter={`url(#rough-${fid})`} strokeLinejoin="round">
+            {art}
+          </g>
+          <g fontFamily="Georgia, 'Times New Roman', serif">{txt}</g>
         </svg>
       </div>
 
