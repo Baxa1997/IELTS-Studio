@@ -172,7 +172,7 @@ type MapFeature =
       label: string;
       shape?: "building" | "board";
     }
-  | { kind: "trees"; at: [number, number]; w?: number; h?: number }
+  | { kind: "trees"; at: [number, number]; w?: number; h?: number; label?: string }
   | { kind: "site"; at: [number, number]; w?: number; h?: number; letter: string }
   | { kind: "wall"; points: [number, number][]; label?: string }
   | { kind: "road" | "river" | "path"; points: [number, number][]; label?: string; width?: number };
@@ -3576,11 +3576,20 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
 
   feats.forEach((f, i) => {
     if (f.kind !== "trees") return;
+    const bw = f.w ?? 8;
+    const bh = f.h ?? 6;
     art.push(
       <g key={`tr-${i}`}>
-        <MapWood x={f.at[0] + (f.w ?? 8) / 2} y={f.at[1] + (f.h ?? 6) / 2} />
+        <MapWood x={f.at[0] + bw / 2} y={f.at[1] + bh / 2} />
       </g>,
     );
+    if (f.label) {
+      txt.push(
+        <text key={`trt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fontStyle="italic" fill="#4a4237" textAnchor="middle">
+          {f.label}
+        </text>,
+      );
+    }
   });
 
   feats.forEach((f, i) => {
