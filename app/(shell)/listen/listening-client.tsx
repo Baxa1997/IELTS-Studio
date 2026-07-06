@@ -3403,6 +3403,48 @@ function SentencePanel({
 const MAP_INK = "#241f18";
 const MAP_PAPER = "#fbf7ec";
 
+/** A paper-coloured outline painted BEHIND each label's fill (paint-order:stroke)
+ *  so text stays readable wherever it crosses a road, river or another label. */
+const HALO = {
+  stroke: MAP_PAPER,
+  strokeWidth: 1.1,
+  strokeLinejoin: "round" as const,
+  style: { paintOrder: "stroke" as const },
+};
+
+/** Turn a river polyline into a naturally winding one: resample it and push each
+ *  sample sideways by a tapered sine so even a 2-point river meanders instead of
+ *  reading as a rigid ruled band. Ends taper to 0 so it still meets the edges. */
+function meander(pts: [number, number][], amp = 3.2, waves = 3): [number, number][] {
+  if (pts.length < 2) return pts;
+  let total = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    total += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+  }
+  if (total === 0) return pts;
+  const out: [number, number][] = [];
+  const per = 12;
+  let run = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i];
+    const [bx, by] = pts[i + 1];
+    const dx = bx - ax;
+    const dy = by - ay;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len; // unit normal
+    for (let k = 0; k < per; k++) {
+      const lt = k / per;
+      const gt = (run + lt * len) / total; // global 0..1 along the whole river
+      const off = amp * Math.sin(Math.PI * gt) * Math.sin(gt * waves * 2 * Math.PI);
+      out.push([ax + dx * lt + nx * off, ay + dy * lt + ny * off]);
+    }
+    run += len;
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+
 /** Catmull-Rom → cubic-bezier path through points (organic, drawn curves). */
 function smoothPath(pts: [number, number][], closed = false): string {
   let p: [number, number][] = pts;
@@ -3508,19 +3550,18 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
 
   feats.forEach((f, i) => {
     if (f.kind === "river") {
-      const d = smoothPath(f.points);
       const rw = f.width ?? 5;
+      const d = smoothPath(meander(f.points, Math.min(rw * 0.8, 3.4)));
       art.push(
         <g key={`rv-${i}`}>
-          <path d={d} fill="none" stroke="#cfe3ec" strokeWidth={rw} strokeLinecap="round" />
-          <path d={d} fill="none" stroke="#8fb4c6" strokeWidth={0.6} strokeLinecap="round" transform={`translate(0,-${rw / 2})`} />
-          <path d={d} fill="none" stroke="#8fb4c6" strokeWidth={0.6} strokeLinecap="round" transform={`translate(0,${rw / 2})`} />
+          <path d={d} fill="none" stroke="#bcd7e6" strokeWidth={rw} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={d} fill="none" stroke="#e8f2f7" strokeWidth={rw * 0.38} strokeLinecap="round" strokeLinejoin="round" opacity={0.7} />
         </g>,
       );
       if (f.label) {
         const [mx, my] = polyMid(f.points);
         txt.push(
-          <text key={`rvt-${i}`} x={mx} y={my - rw / 2 - 1} fontSize={3.2} fontStyle="italic" fill={MAP_INK} textAnchor="middle">
+          <text key={`rvt-${i}`} x={mx} y={my - rw / 2 - 1.4} fontSize={3.2} fontStyle="italic" fill="#4a6b7a" textAnchor="middle" {...HALO}>
             {f.label}
           </text>,
         );
@@ -3530,7 +3571,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       if (f.label) {
         const a = f.points[0];
         txt.push(
-          <text key={`wlt-${i}`} x={a[0] + 1.5} y={a[1] - 1.5} fontSize={3} fill={MAP_INK}>
+          <text key={`wlt-${i}`} x={a[0] + 1.5} y={a[1] - 1.5} fontSize={3} fill={MAP_INK} {...HALO}>
             {f.label}
           </text>,
         );
@@ -3546,7 +3587,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       if (f.label) {
         const [mx, my] = polyMid(f.points);
         txt.push(
-          <text key={`ptt-${i}`} x={mx} y={my - 1.6} fontSize={3} fill="#6b6357" textAnchor="middle">
+          <text key={`ptt-${i}`} x={mx} y={my - 1.6} fontSize={3} fill="#6b6357" textAnchor="middle" {...HALO}>
             {f.label}
           </text>,
         );
@@ -3568,7 +3609,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       art.push(<rect key={`lm-${i}`} x={f.at[0]} y={f.at[1]} width={bw} height={bh} fill="#f1ebda" stroke={MAP_INK} strokeWidth={1} />);
     }
     txt.push(
-      <text key={`lmt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fill="#4a4237" textAnchor="middle">
+      <text key={`lmt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fill="#4a4237" textAnchor="middle" {...HALO}>
         {f.label}
       </text>,
     );
@@ -3585,7 +3626,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
     );
     if (f.label) {
       txt.push(
-        <text key={`trt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fontStyle="italic" fill="#4a4237" textAnchor="middle">
+        <text key={`trt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fontStyle="italic" fill="#4a4237" textAnchor="middle" {...HALO}>
           {f.label}
         </text>,
       );
@@ -3618,7 +3659,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
         </g>,
       );
       txt.push(
-        <text key={`mkt-${i}`} x={x} y={y + 5} fontSize={3.2} fill={MAP_INK} textAnchor="middle">
+        <text key={`mkt-${i}`} x={x} y={y + 5} fontSize={3.2} fill={MAP_INK} textAnchor="middle" {...HALO} strokeWidth={1.4}>
           You are here
         </text>,
       );
@@ -3626,6 +3667,9 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       const [x, y] = f.at;
       art.push(
         <g key={`cp-${i}`}>
+          {/* paper disc so the rose reads cleanly wherever it sits (e.g. over a road) */}
+          <circle cx={x} cy={y} r={8.4} fill={MAP_PAPER} opacity={0.94} />
+          <circle cx={x} cy={y} r={7} fill="none" stroke={MAP_INK} strokeWidth={0.4} opacity={0.45} />
           <MapCompass x={x} y={y} />
         </g>,
       );
@@ -3637,7 +3681,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       ];
       cardinals.forEach(([nm, dx, dy], k) =>
         txt.push(
-          <text key={`cpt-${i}-${k}`} x={x + dx} y={y + dy} fontSize={2.9} fontWeight={700} textAnchor="middle" fill={MAP_INK}>
+          <text key={`cpt-${i}-${k}`} x={x + dx} y={y + dy} fontSize={2.9} fontWeight={700} textAnchor="middle" fill={MAP_INK} {...HALO}>
             {nm}
           </text>,
         ),
