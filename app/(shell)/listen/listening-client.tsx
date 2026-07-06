@@ -261,6 +261,8 @@ type LibraryItem = {
   topic: string;
   difficulty: number;
   variant?: string;
+  /** v2 (group-based) items carry a layout id (drives the type tags). */
+  layout?: string;
   /** content schema version — v1 items omit it; v2 (group-based) items send >= 2. */
   version?: number;
   unlocked: boolean;
@@ -280,6 +282,7 @@ type MineItem = {
   topic: string;
   difficulty: number;
   variant?: string;
+  layout?: string;
   version?: number;
   created_at: string | null;
 };
@@ -302,7 +305,23 @@ const QTYPE_TAGS_BY_VARIANT: Record<string, string[]> = {
   table: ["Table completion"],
   flowchart: ["Multiple choice", "Flow-chart completion"],
 };
-function typeTagsFor(part: number, variant?: string): string[] {
+/** v2 (group-based) items carry a `layout` id instead of a `variant`; map it to
+ *  the question-type tags so a map / flow-chart / sentence item is identifiable. */
+const QTYPE_TAGS_BY_LAYOUT: Record<string, string[]> = {
+  form10: ["Form completion"],
+  notes10: ["Note completion"],
+  table10: ["Table completion"],
+  sentence10: ["Sentence completion"],
+  "mcq6-map4": ["Multiple choice", "Map labelling"],
+  "match5-map5": ["Matching", "Map labelling"],
+  "mcq4-match6": ["Multiple choice", "Matching"],
+  "two4-match6": ["Multiple choice", "Matching"],
+  "mcq6-match4": ["Multiple choice", "Matching"],
+  "mcq5-flow5": ["Multiple choice", "Flow-chart completion"],
+  "two4-mcq6": ["Multiple choice"],
+};
+function typeTagsFor(part: number, variant?: string, layout?: string): string[] {
+  if (layout && QTYPE_TAGS_BY_LAYOUT[layout]) return QTYPE_TAGS_BY_LAYOUT[layout];
   return (variant && QTYPE_TAGS_BY_VARIANT[variant]) || QTYPE_TAGS[part] || [];
 }
 
@@ -438,7 +457,7 @@ function Hub({
     () =>
       (catalogue?.items ?? [])
         .filter((it) => it.part === 0)
-        .sort((a, b) => a.difficulty - b.difficulty)
+        .sort((a, b) => (b.version ?? 1) - (a.version ?? 1) || a.difficulty - b.difficulty)
         .map((it, i) => ({ ...it, seq: i + 1 })),
     [catalogue],
   );
@@ -446,7 +465,7 @@ function Hub({
     () =>
       (catalogue?.items ?? [])
         .filter((it) => it.part > 0)
-        .sort((a, b) => a.difficulty - b.difficulty)
+        .sort((a, b) => (b.version ?? 1) - (a.version ?? 1) || a.difficulty - b.difficulty)
         .map((it, i) => ({ ...it, seq: i + 1 })),
     [catalogue],
   );
@@ -801,8 +820,8 @@ function StartAction({
   );
 }
 
-function TypeTags({ part, variant }: { part: number; variant?: string }) {
-  const tags = typeTagsFor(part, variant);
+function TypeTags({ part, variant, layout }: { part: number; variant?: string; layout?: string }) {
+  const tags = typeTagsFor(part, variant, layout);
   if (tags.length === 0) return null;
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -927,7 +946,7 @@ function QuickCard({
           {it.topic || "Listening practice"}
         </span>
       </div>
-      <TypeTags part={it.part} variant={it.variant} />
+      <TypeTags part={it.part} variant={it.variant} layout={it.layout} />
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>10 questions · replay anytime</span>
@@ -988,7 +1007,7 @@ function MineCard({
           {it.topic || "Listening practice"}
         </span>
       </div>
-      <TypeTags part={it.part} variant={it.variant} />
+      <TypeTags part={it.part} variant={it.variant} layout={it.layout} />
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{when ? `Generated ${when}` : "Saved to your account"}</span>
