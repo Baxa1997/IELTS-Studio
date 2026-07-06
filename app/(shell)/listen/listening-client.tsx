@@ -3400,13 +3400,30 @@ function SentencePanel({
  *  straight onto the SVG. */
 // ---- hand-drawn map rendering (softly-illustrated Cambridge style) -----------
 
-const MAP_INK = "#241f18";
-const MAP_PAPER = "#fbf7ec";
+/** Clean flat-map palette — shares the runner's neutral + violet tokens so the
+ *  map reads as part of the same UI: solid rounded cards, soft shadows, no texture. */
+const MAP = {
+  ground: "#f7f8fb",
+  ink: "#1a1a24",
+  label: "#6b6f7e",
+  water: "#d3e7f3",
+  waterEdge: "#a7cfe2",
+  road: "#dde0e7",
+  roadEdge: "#c6cad3",
+  green: "#c8e3ae",
+  greenEdge: "#93c176",
+  card: "#eef0f4",
+  cardEdge: "#d6dae2",
+  site: "#ffffff",
+  siteEdge: "#aeb2c0",
+  accent: "#7c5cfc",
+  frame: "#e6e6ed",
+};
 
-/** A paper-coloured outline painted BEHIND each label's fill (paint-order:stroke)
+/** A ground-coloured outline painted BEHIND each label's fill (paint-order:stroke)
  *  so text stays readable wherever it crosses a road, river or another label. */
 const HALO = {
-  stroke: MAP_PAPER,
+  stroke: MAP.ground,
   strokeWidth: 1.1,
   strokeLinejoin: "round" as const,
   style: { paintOrder: "stroke" as const },
@@ -3467,66 +3484,45 @@ function smoothPath(pts: [number, number][], closed = false): string {
   return closed ? d + "Z" : d;
 }
 
-function MapTree({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
-  const canopy: [number, number, number][] = [
-    [-1.7, -1.1, 2.2],
-    [1.7, -1.1, 2.2],
-    [0, -3.1, 2.5],
-    [0, -0.7, 2.4],
-  ];
-  return (
-    <>
-      <rect x={x - 0.5 * s} y={y} width={s} height={3.2 * s} fill="#8a774f" />
-      {canopy.map(([dx, dy, r], k) => (
-        <circle key={k} cx={x + dx * s} cy={y + dy * s} r={r * s} fill="#e7eed2" stroke={MAP_INK} strokeWidth={0.45} />
-      ))}
-    </>
-  );
-}
-
+/** A wood: a clean cluster of soft flat-green discs (no texture). */
 function MapWood({ x, y }: { x: number; y: number }) {
   const spots: [number, number, number][] = [
-    [0, 0, 1],
-    [3.6, 1.4, 0.9],
-    [-3.4, 1.6, 0.85],
-    [1.8, -2.8, 0.82],
-    [-2, -2.4, 0.8],
-    [5.2, -0.6, 0.78],
+    [0, 0, 3],
+    [3.6, 1.3, 2.5],
+    [-3.5, 1.5, 2.3],
+    [1.7, -2.7, 2.3],
+    [-1.9, -2.4, 2.1],
+    [4.9, -0.5, 2],
   ];
   return (
-    <>
-      {spots.map(([dx, dy, s], k) => (
-        <MapTree key={k} x={x + dx} y={y + dy} s={s} />
+    <g>
+      {spots.map(([dx, dy, r], k) => (
+        <circle key={k} cx={x + dx} cy={y + dy} r={r} fill={MAP.green} stroke={MAP.greenEdge} strokeWidth={0.4} />
       ))}
-    </>
+    </g>
   );
 }
 
+/** An information board: a small clean card on a stand. */
 function MapBoard({ x, y }: { x: number; y: number }) {
   return (
-    <>
-      <line x1={x - 2.1} y1={y + 2.6} x2={x + 2.1} y2={y - 1.4} stroke={MAP_INK} strokeWidth={0.55} />
-      <line x1={x + 2.1} y1={y + 2.6} x2={x - 2.1} y2={y - 1.4} stroke={MAP_INK} strokeWidth={0.55} />
-      <rect x={x - 2.7} y={y - 2.8} width={5.4} height={2.4} rx={0.4} fill="#fff" stroke={MAP_INK} strokeWidth={0.7} />
-    </>
+    <g>
+      <rect x={x - 2.8} y={y - 2.6} width={5.6} height={3.6} rx={0.9} fill={MAP.card} stroke={MAP.cardEdge} strokeWidth={0.6} />
+      <line x1={x - 1.7} y1={y - 1.4} x2={x + 1.7} y2={y - 1.4} stroke={MAP.label} strokeWidth={0.4} />
+      <line x1={x - 1.7} y1={y - 0.3} x2={x + 0.9} y2={y - 0.3} stroke={MAP.label} strokeWidth={0.4} />
+      <line x1={x} y1={y + 1} x2={x} y2={y + 2.6} stroke={MAP.cardEdge} strokeWidth={0.6} />
+    </g>
   );
 }
 
+/** A clean compass: a white disc with a violet north needle. */
 function MapCompass({ x, y }: { x: number; y: number }) {
-  const arm = 5.5;
-  const dirs: [number, number][] = [
-    [0, -arm],
-    [0, arm],
-    [-arm, 0],
-    [arm, 0],
-  ];
   return (
-    <>
-      {dirs.map(([dx, dy], k) => (
-        <line key={k} x1={x} y1={y} x2={x + dx} y2={y + dy} stroke={MAP_INK} strokeWidth={0.7} />
-      ))}
-      <polygon points={`${x},${y - arm - 1.6} ${x - 1.2},${y - arm + 1} ${x + 1.2},${y - arm + 1}`} fill={MAP_INK} />
-    </>
+    <g>
+      <circle cx={x} cy={y} r={7.4} fill="#ffffff" stroke={MAP.frame} strokeWidth={0.7} />
+      <polygon points={`${x},${y - 5.2} ${x - 1.7},${y + 0.4} ${x + 1.7},${y + 0.4}`} fill={MAP.accent} />
+      <polygon points={`${x},${y + 5.2} ${x - 1.7},${y - 0.4} ${x + 1.7},${y - 0.4}`} fill="#c7cad6" />
+    </g>
   );
 }
 
@@ -3551,27 +3547,26 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
   feats.forEach((f, i) => {
     if (f.kind === "river") {
       const rw = f.width ?? 5;
-      const d = smoothPath(meander(f.points, Math.min(rw * 0.8, 3.4)));
+      const d = smoothPath(meander(f.points, Math.min(rw * 0.8, 3.2)));
       art.push(
-        <g key={`rv-${i}`}>
-          <path d={d} fill="none" stroke="#bcd7e6" strokeWidth={rw} strokeLinecap="round" strokeLinejoin="round" />
-          <path d={d} fill="none" stroke="#e8f2f7" strokeWidth={rw * 0.38} strokeLinecap="round" strokeLinejoin="round" opacity={0.7} />
-        </g>,
+        <path key={`rv-${i}`} d={d} fill="none" stroke={MAP.water} strokeWidth={rw} strokeLinecap="round" strokeLinejoin="round" />,
       );
       if (f.label) {
         const [mx, my] = polyMid(f.points);
         txt.push(
-          <text key={`rvt-${i}`} x={mx} y={my - rw / 2 - 1.4} fontSize={3.2} fontStyle="italic" fill="#4a6b7a" textAnchor="middle" {...HALO}>
+          <text key={`rvt-${i}`} x={mx} y={my - rw / 2 - 1.4} fontSize={3.1} fontStyle="italic" fill="#5b8199" textAnchor="middle" {...HALO}>
             {f.label}
           </text>,
         );
       }
     } else if (f.kind === "wall") {
-      art.push(<path key={`wl-${i}`} d={smoothPath(f.points)} fill="none" stroke={MAP_INK} strokeWidth={2.6} strokeLinejoin="round" />);
+      art.push(
+        <path key={`wl-${i}`} d={smoothPath(f.points)} fill="none" stroke={MAP.label} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2.2 1.6" />,
+      );
       if (f.label) {
         const a = f.points[0];
         txt.push(
-          <text key={`wlt-${i}`} x={a[0] + 1.5} y={a[1] - 1.5} fontSize={3} fill={MAP_INK} {...HALO}>
+          <text key={`wlt-${i}`} x={a[0] + 1.5} y={a[1] - 1.5} fontSize={2.9} fill={MAP.label} {...HALO}>
             {f.label}
           </text>,
         );
@@ -3580,14 +3575,14 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       const d = smoothPath(f.points);
       art.push(
         <g key={`pt-${i}`}>
-          <path d={d} fill="none" stroke={MAP_INK} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-          <path d={d} fill="none" stroke={MAP_PAPER} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={d} fill="none" stroke={MAP.roadEdge} strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={d} fill="none" stroke={MAP.road} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
         </g>,
       );
       if (f.label) {
         const [mx, my] = polyMid(f.points);
         txt.push(
-          <text key={`ptt-${i}`} x={mx} y={my - 1.6} fontSize={3} fill="#6b6357" textAnchor="middle" {...HALO}>
+          <text key={`ptt-${i}`} x={mx} y={my - 1.8} fontSize={2.9} fill={MAP.label} textAnchor="middle" {...HALO}>
             {f.label}
           </text>,
         );
@@ -3606,10 +3601,12 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
         </g>,
       );
     } else {
-      art.push(<rect key={`lm-${i}`} x={f.at[0]} y={f.at[1]} width={bw} height={bh} fill="#f1ebda" stroke={MAP_INK} strokeWidth={1} />);
+      art.push(
+        <rect key={`lm-${i}`} x={f.at[0]} y={f.at[1]} width={bw} height={bh} rx={2} fill={MAP.card} stroke={MAP.cardEdge} strokeWidth={0.8} filter={`url(#mapShadow-${fid})`} />,
+      );
     }
     txt.push(
-      <text key={`lmt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fill="#4a4237" textAnchor="middle" {...HALO}>
+      <text key={`lmt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fontWeight={600} fill={MAP.label} textAnchor="middle" {...HALO}>
         {f.label}
       </text>,
     );
@@ -3626,7 +3623,7 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
     );
     if (f.label) {
       txt.push(
-        <text key={`trt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fontStyle="italic" fill="#4a4237" textAnchor="middle" {...HALO}>
+        <text key={`trt-${i}`} x={f.at[0] + bw / 2} y={f.at[1] + bh + 3.2} fontSize={2.9} fontStyle="italic" fill="#5e7a4e" textAnchor="middle" {...HALO}>
           {f.label}
         </text>,
       );
@@ -3637,12 +3634,14 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
     if (f.kind !== "site") return;
     const bw = f.w ?? 8;
     const bh = f.h ?? 6;
-    const s = Math.min(bw, bh, 5.4);
+    const s = Math.min(Math.max(bw, bh), 7);
     const cx = f.at[0] + bw / 2;
     const cy = f.at[1] + bh / 2;
-    art.push(<rect key={`si-${i}`} x={cx - s / 2} y={cy - s / 2} width={s} height={s} rx={0.6} fill="#fff" stroke={MAP_INK} strokeWidth={0.9} />);
+    art.push(
+      <rect key={`si-${i}`} x={cx - s / 2} y={cy - s / 2} width={s} height={s} rx={1.8} fill={MAP.site} stroke={MAP.siteEdge} strokeWidth={0.9} filter={`url(#mapShadow-${fid})`} />,
+    );
     txt.push(
-      <text key={`sit-${i}`} x={cx} y={cy} fontSize={3.8} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={MAP_INK}>
+      <text key={`sit-${i}`} x={cx} y={cy + 0.2} fontSize={4} fontWeight={700} textAnchor="middle" dominantBaseline="central" fill={MAP.ink}>
         {f.letter}
       </text>,
     );
@@ -3651,15 +3650,18 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
   feats.forEach((f, i) => {
     if (f.kind === "marker") {
       const [x, y] = f.at;
+      // a clean location pin (teardrop) whose tip sits at the entrance point
       art.push(
-        <g key={`mk-${i}`}>
-          <rect x={x - 2} y={y - 2} width={4} height={4} fill={MAP_INK} />
-          <line x1={x} y1={y - 2.2} x2={x} y2={y - 6.6} stroke={MAP_INK} strokeWidth={1} />
-          <polygon points={`${x},${y - 8} ${x - 1.4},${y - 5.6} ${x + 1.4},${y - 5.6}`} fill={MAP_INK} />
+        <g key={`mk-${i}`} filter={`url(#mapShadow-${fid})`}>
+          <path
+            d={`M ${x} ${y} C ${x - 3.1} ${y - 4.2}, ${x - 3.1} ${y - 8.6}, ${x} ${y - 8.6} C ${x + 3.1} ${y - 8.6}, ${x + 3.1} ${y - 4.2}, ${x} ${y} Z`}
+            fill={MAP.accent}
+          />
+          <circle cx={x} cy={y - 5.6} r={1.4} fill="#fff" />
         </g>,
       );
       txt.push(
-        <text key={`mkt-${i}`} x={x} y={y + 5} fontSize={3.2} fill={MAP_INK} textAnchor="middle" {...HALO} strokeWidth={1.4}>
+        <text key={`mkt-${i}`} x={x} y={y + 4} fontSize={3.1} fontWeight={600} fill={MAP.accent} textAnchor="middle" {...HALO} strokeWidth={1.4}>
           You are here
         </text>,
       );
@@ -3667,21 +3669,18 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       const [x, y] = f.at;
       art.push(
         <g key={`cp-${i}`}>
-          {/* paper disc so the rose reads cleanly wherever it sits (e.g. over a road) */}
-          <circle cx={x} cy={y} r={8.4} fill={MAP_PAPER} opacity={0.94} />
-          <circle cx={x} cy={y} r={7} fill="none" stroke={MAP_INK} strokeWidth={0.4} opacity={0.45} />
           <MapCompass x={x} y={y} />
         </g>,
       );
       const cardinals: [string, number, number][] = [
-        ["N", 0, -7.4],
-        ["S", 0, 8.4],
-        ["W", -8.2, 1.4],
-        ["E", 8.2, 1.4],
+        ["N", 0, -8.8],
+        ["S", 0, 10],
+        ["W", -9.4, 1],
+        ["E", 9.4, 1],
       ];
       cardinals.forEach(([nm, dx, dy], k) =>
         txt.push(
-          <text key={`cpt-${i}-${k}`} x={x + dx} y={y + dy} fontSize={2.9} fontWeight={700} textAnchor="middle" fill={MAP_INK} {...HALO}>
+          <text key={`cpt-${i}-${k}`} x={x + dx} y={y + dy} fontSize={2.7} fontWeight={700} textAnchor="middle" fill={MAP.label} {...HALO}>
             {nm}
           </text>,
         ),
@@ -3699,24 +3698,20 @@ function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
             maxWidth: 600,
             height: "auto",
             border: `1px solid ${RUN.bField}`,
-            borderRadius: 10,
-            background: MAP_PAPER,
+            borderRadius: 14,
+            background: MAP.ground,
             display: "block",
           }}
           role="img"
           aria-label={map.title || "Map to label"}
         >
           <defs>
-            <filter id={`rough-${fid}`} x="-5%" y="-5%" width="110%" height="110%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves={2} seed={7} result="n" />
-              <feDisplacementMap in="SourceGraphic" in2="n" scale={1.2} xChannelSelector="R" yChannelSelector="G" />
+            <filter id={`mapShadow-${fid}`} x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="0.55" stdDeviation="0.7" floodColor="#1a1a24" floodOpacity="0.16" />
             </filter>
           </defs>
-          <rect x={0} y={0} width={w} height={h} fill="none" stroke={MAP_INK} strokeWidth={0.8} />
-          <g filter={`url(#rough-${fid})`} strokeLinejoin="round">
-            {art}
-          </g>
-          <g fontFamily="Georgia, 'Times New Roman', serif">{txt}</g>
+          <g>{art}</g>
+          <g fontFamily={RUN.sans}>{txt}</g>
         </svg>
       </div>
 
