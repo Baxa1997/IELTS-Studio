@@ -74,10 +74,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     currency: "usd",
     priceUzs: 160_000,
     stripePriceId: null, // pending new dashboard Price for $12.99
-    gradeLimit: 35,
-    generateLimit: 35,
+    gradeLimit: 50,
+    generateLimit: 50,
     seatLimit: 250,
-    features: ["Everything in Standard", "35 gradings / month", "35 practice sets / month", "Priority grading queue"],
+    features: ["Everything in Standard", "50 gradings / month", "50 practice sets / month", "Priority grading queue"],
   },
   enterprise: {
     id: "enterprise",
