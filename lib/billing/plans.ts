@@ -57,10 +57,13 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   starter: {
     id: "starter",
     name: "Standard",
-    price: 6.0,
+    price: 5.99,
     currency: "usd",
     priceUzs: 75_000,
-    stripePriceId: "price_1TodTCAbAzJriIHUxzsOKT52", // live "Standard" $6.00
+    // The dashboard "Standard" Price is $6.00 and Stripe Prices are immutable;
+    // the user wants $5.99, so checkout uses inline price_data (charges exactly
+    // `price`). Pin a new dashboard Price ID here if one is created at $5.99.
+    stripePriceId: null,
     gradeLimit: 15,
     generateLimit: 15,
     seatLimit: 50,
