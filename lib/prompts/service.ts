@@ -2,6 +2,7 @@ import "server-only";
 
 import type { AppRole } from "@/lib/auth";
 import { generate } from "@/lib/ai";
+import { getGenerationQuota, recordPracticeUse } from "@/lib/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { figureSchema, type Figure } from "@/lib/writing/figure";
@@ -55,6 +56,7 @@ export class PromptServiceError extends Error {
       | "invalid_input"
       | "not_found"
       | "no_prompt_available"
+      | "quota_exceeded"
       | "store_failed",
   ) {
     super(message);
@@ -322,6 +324,16 @@ async function generateOnDemand(
   taskType: EssayTaskKind,
   filters: PromptFilters,
 ): Promise<StoredPrompt> {
+  // One fresh prompt = one practice count (the quota's unit). Re-served
+  // existing prompts never reach this function and stay free.
+  const quota = await getGenerationQuota(actor.organizationId);
+  if (quota.exceeded) {
+    throw new PromptServiceError(
+      "You've reached your monthly practice limit — upgrade to keep generating fresh topics.",
+      "quota_exceeded",
+    );
+  }
+
   const topicFamily = filters.topicFamily ?? pickRandom(TOPIC_FAMILIES);
   const difficulty = filters.difficulty ?? DEFAULT_DIFFICULTY;
 
@@ -369,6 +381,11 @@ async function generateOnDemand(
   if (claimErr && claimErr.code !== "23505") {
     throw new PromptServiceError(`Failed to assign prompt: ${claimErr.message}`, "store_failed");
   }
+  await recordPracticeUse({
+    organizationId: actor.organizationId,
+    userId: actor.userId,
+    kind: `writing_prompt_${taskType}`,
+  });
   return data as StoredPrompt;
 }
 

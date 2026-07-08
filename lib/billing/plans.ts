@@ -49,16 +49,19 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // schema for the dormant B2B path but is never sold as a feature.
     features: ["Calibrated, conservative AI grading", "IELTS + CEFR practice, generated fresh", "5 gradings · 5 practice sets / month"],
   },
-  // Prices match the Stripe dashboard products (2026-07-02): Standard $4.99,
-  // Pro $8.49, Enterprise $19.99. Checkout charges the dashboard Price
-  // (stripePriceId); `price` here is what the UI displays — keep them in sync.
+  // Prices repriced 2026-07-08: Standard $5.99, Pro $12.99, Enterprise $24.99.
+  // stripePriceId is null until the user creates matching dashboard Prices —
+  // checkout then falls back to inline price_data, which charges exactly the
+  // `price` below in BOTH test and live mode, so the new amounts are already
+  // correct. When the dashboard Price IDs arrive, paste them here (or set
+  // STRIPE_PRICE_<PLAN> per environment).
   starter: {
     id: "starter",
     name: "Standard",
-    price: 4.99,
+    price: 5.99,
     currency: "usd",
-    priceUzs: 60_000,
-    stripePriceId: "price_1TodUiAbAzJriIHUNaDHj6bk", // "Ielts Standard"
+    priceUzs: 75_000,
+    stripePriceId: null, // pending new dashboard Price for $5.99
     gradeLimit: 200,
     generateLimit: 300,
     seatLimit: 50,
@@ -67,10 +70,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   pro: {
     id: "pro",
     name: "Pro",
-    price: 8.49,
+    price: 12.99,
     currency: "usd",
-    priceUzs: 105_000,
-    stripePriceId: "price_1TodUwAbAzJriIHUvkEjfIol", // "Ielts Pro"
+    priceUzs: 160_000,
+    stripePriceId: null, // pending new dashboard Price for $12.99
     gradeLimit: 2000,
     generateLimit: 3000,
     seatLimit: 250,
@@ -79,10 +82,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   enterprise: {
     id: "enterprise",
     name: "Enterprise",
-    price: 19.99,
+    price: 24.99,
     currency: "usd",
-    priceUzs: 250_000,
-    stripePriceId: "price_1TodVGAbAzJriIHUbPglq2Pb", // "Ielts Enterprice" (sic, dashboard typo)
+    priceUzs: 310_000,
+    stripePriceId: null, // pending new dashboard Price for $24.99
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,

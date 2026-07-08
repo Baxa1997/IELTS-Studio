@@ -6,11 +6,11 @@ import {
 } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
+import { PlanCard } from "@/components/app-shell/plan-card";
 import { AppShell } from "@/components/app-shell/shell";
-import { TargetCard } from "@/components/app-shell/target-card";
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
+import { getUsageSummary } from "@/lib/quota";
 
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
 const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
@@ -41,9 +41,8 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   let sidebarFooter: React.ReactNode = null;
   if (profile.role === "student") {
-    const est = await loadStudentEstimates(profile.id);
-    const target = Math.max(est.bySkill.reading.targetBand, est.bySkill.writing.targetBand);
-    sidebarFooter = <TargetCard target={target} done={est.diagnosticComplete} />;
+    const usage = await getUsageSummary(profile.organization_id);
+    sidebarFooter = <PlanCard usage={usage} />;
   }
 
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";

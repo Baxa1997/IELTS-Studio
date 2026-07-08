@@ -1,11 +1,11 @@
 import { cookies } from "next/headers";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
+import { PlanCard } from "@/components/app-shell/plan-card";
 import { AppShell } from "@/components/app-shell/shell";
-import { TargetCard } from "@/components/app-shell/target-card";
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
+import { getUsageSummary } from "@/lib/quota";
 
 import { OnboardingTakeover } from "./onboarding/onboarding-takeover";
 
@@ -33,9 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let sidebarFooter: React.ReactNode = null;
   if (profile.role === "student") {
-    const est = await loadStudentEstimates(profile.id);
-    const target = Math.max(est.bySkill.reading.targetBand, est.bySkill.writing.targetBand);
-    sidebarFooter = <TargetCard target={target} done={est.diagnosticComplete} />;
+    const usage = await getUsageSummary(profile.organization_id);
+    sidebarFooter = <PlanCard usage={usage} />;
   }
 
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";

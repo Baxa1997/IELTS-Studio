@@ -49,7 +49,7 @@ const STUDENT: Section[] = [
   {
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Plan", href: "/plan", icon: Target },
+      { label: "Study plan", href: "/plan", icon: Target },
       { label: "Activities", href: "/activities", icon: History },
     ],
   },

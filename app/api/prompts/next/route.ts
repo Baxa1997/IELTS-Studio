@@ -65,6 +65,7 @@ const STATUS_FOR: Record<PromptServiceError["code"], number> = {
   invalid_input: 422,
   not_found: 404,
   no_prompt_available: 404,
+  quota_exceeded: 429,
   store_failed: 500,
 };
 
