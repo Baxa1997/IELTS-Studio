@@ -7,6 +7,7 @@ import {
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { PlanCard } from "@/components/app-shell/plan-card";
+import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -40,9 +41,11 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   }
 
   let sidebarFooter: React.ReactNode = null;
+  let quotaBar: React.ReactNode = null;
   if (profile.role === "student") {
     const usage = await getUsageSummary(profile.organization_id);
     sidebarFooter = <PlanCard usage={usage} />;
+    quotaBar = <QuotaBar usage={usage} />;
   }
 
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
@@ -59,6 +62,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         email={user.email}
         contentClassName=""
         sidebarFooter={sidebarFooter}
+        quotaBar={quotaBar}
         initialCollapsed={collapsed}
       >
         {children}

@@ -54,6 +54,7 @@ export function AppShell({
   email,
   contentClassName,
   sidebarFooter,
+  quotaBar,
   initialCollapsed = false,
   children,
 }: {
@@ -68,6 +69,9 @@ export function AppShell({
   contentClassName?: string;
   /** Optional node pinned to the bottom of the sidebar rail (above the profile menu). */
   sidebarFooter?: React.ReactNode;
+  /** Optional slim limits strip shown at the top of the content surface while the
+   *  rail is collapsed (the expanded rail's PlanCard covers the open state). */
+  quotaBar?: React.ReactNode;
   /** Desktop rail starts collapsed — read from a cookie by the layout so the choice
    *  survives navigation across route groups (which remounts this component). */
   initialCollapsed?: boolean;
@@ -288,6 +292,7 @@ export function AppShell({
               boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
             }}
           >
+            {collapsed ? quotaBar : null}
             <div className={contentClassName ?? "w-full px-4 py-5 sm:px-6 sm:py-6"}>{children}</div>
           </div>
         </main>
