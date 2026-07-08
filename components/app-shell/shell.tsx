@@ -266,7 +266,7 @@ export function AppShell({
               gap: 12,
             }}
           >
-            {sidebarFooter ? <div className="lp-sb-target">{sidebarFooter}</div> : null}
+            {sidebarFooter}
             <ProfileMenu name={name} roleLabel={roleLabel} email={email} />
           </div>
         </aside>

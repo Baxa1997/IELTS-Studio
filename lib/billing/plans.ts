@@ -62,10 +62,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     currency: "usd",
     priceUzs: 75_000,
     stripePriceId: null, // pending new dashboard Price for $5.99
-    gradeLimit: 200,
-    generateLimit: 300,
+    gradeLimit: 15,
+    generateLimit: 15,
     seatLimit: 50,
-    features: ["Everything in Free", "200 gradings / month", "300 practice sets / month", "Full mock reading tests"],
+    features: ["Everything in Free", "15 gradings / month", "15 practice sets / month", "Full mock reading tests"],
   },
   pro: {
     id: "pro",
@@ -74,10 +74,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     currency: "usd",
     priceUzs: 160_000,
     stripePriceId: null, // pending new dashboard Price for $12.99
-    gradeLimit: 2000,
-    generateLimit: 3000,
+    gradeLimit: 35,
+    generateLimit: 35,
     seatLimit: 250,
-    features: ["Everything in Standard", "2,000 gradings / month", "3,000 practice sets / month", "Priority grading queue"],
+    features: ["Everything in Standard", "35 gradings / month", "35 practice sets / month", "Priority grading queue"],
   },
   enterprise: {
     id: "enterprise",
@@ -89,7 +89,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,
-    features: ["Unlimited grading & practice", "Priority support", "White-label", "SSO & SLA"],
+    features: ["Unlimited grading & practice", "Priority support", "Best for exam-week intensives"],
   },
 };
 
