@@ -36,8 +36,14 @@ export async function stripeCreateCheckout(req: CheckoutRequest): Promise<Checko
   form.set("subscription_data[metadata][plan]", req.plan);
   if (req.customerEmail) form.set("customer_email", req.customerEmail);
   form.set("line_items[0][quantity]", "1");
+  // Prefer an explicit per-env Price override, else the tier's dashboard Price.
+  // The hard-coded stripePriceId (plans.ts) is a LIVE Price, so a test-mode key
+  // (sk_test_) would 404 on it — in test mode fall back to inline price_data so
+  // local checkout works with no test Price IDs to create.
+  const testMode = cfg.secretKey.startsWith("sk_test_");
   const priceId =
-    process.env[`STRIPE_PRICE_${req.plan.toUpperCase()}`] ?? tier.stripePriceId;
+    process.env[`STRIPE_PRICE_${req.plan.toUpperCase()}`] ??
+    (testMode ? null : tier.stripePriceId);
   if (priceId) {
     form.set("line_items[0][price]", priceId);
   } else {
