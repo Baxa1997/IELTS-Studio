@@ -49,19 +49,18 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // schema for the dormant B2B path but is never sold as a feature.
     features: ["Calibrated, conservative AI grading", "IELTS + CEFR practice, generated fresh", "5 gradings · 5 practice sets / month"],
   },
-  // Prices repriced 2026-07-08: Standard $5.99, Pro $12.99, Enterprise $24.99.
-  // stripePriceId is null until the user creates matching dashboard Prices —
-  // checkout then falls back to inline price_data, which charges exactly the
-  // `price` below in BOTH test and live mode, so the new amounts are already
-  // correct. When the dashboard Price IDs arrive, paste them here (or set
-  // STRIPE_PRICE_<PLAN> per environment).
+  // Prices match the LIVE Stripe dashboard products (user, 2026-07-08):
+  // Standard $6.00, Pro $14.49, Enterprise $25.99. Live checkout charges the
+  // dashboard Price (stripePriceId); `price` here is display-only — keep them
+  // matching. Test-mode keys skip these IDs and use inline price_data
+  // (lib/billing/stripe.ts), so local dev needs no test Prices.
   starter: {
     id: "starter",
     name: "Standard",
-    price: 5.99,
+    price: 6.0,
     currency: "usd",
     priceUzs: 75_000,
-    stripePriceId: null, // pending new dashboard Price for $5.99
+    stripePriceId: "price_1TodTCAbAzJriIHUxzsOKT52", // live "Standard" $6.00
     gradeLimit: 15,
     generateLimit: 15,
     seatLimit: 50,
@@ -70,10 +69,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   pro: {
     id: "pro",
     name: "Pro",
-    price: 12.99,
+    price: 14.49,
     currency: "usd",
-    priceUzs: 160_000,
-    stripePriceId: null, // pending new dashboard Price for $12.99
+    priceUzs: 180_000,
+    stripePriceId: "price_1TodTaAbAzJriIHUYFQOiHi0", // live "Pro" $14.49
     gradeLimit: 50,
     generateLimit: 50,
     seatLimit: 250,
@@ -82,10 +81,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   enterprise: {
     id: "enterprise",
     name: "Enterprise",
-    price: 24.99,
+    price: 25.99,
     currency: "usd",
-    priceUzs: 310_000,
-    stripePriceId: null, // pending new dashboard Price for $24.99
+    priceUzs: 325_000,
+    stripePriceId: "price_1TodTzAbAzJriIHUmxtroK31", // live "Enterprise" $25.99
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,
