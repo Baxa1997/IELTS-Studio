@@ -5,17 +5,20 @@ import type { UsageSummary } from "@/lib/quota";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 
+/** Show the warning once any limited counter has this many (or fewer) left. */
+const LOW_THRESHOLD = 10;
+
 /**
- * Slim limits strip across the top of the content surface. The shell renders
- * it ONLY while the sidebar rail is collapsed — when the rail is open the
- * PlanCard already shows the same numbers, so the two never double up.
- * Normal document flow (not floating), so it can never overlap a hub's own
- * header buttons.
+ * Low-quota warning strip across the top of the content surface. Renders on
+ * every shell page, but ONLY once gradings or practice sets are running low
+ * (≤ LOW_THRESHOLD left) — plenty of quota means no strip at all. Normal
+ * document flow (not floating), so it can never overlap a hub's own header.
  */
 export function QuotaBar({ usage }: { usage: UsageSummary }) {
   if (usage.generate.limit == null && usage.grade.limit == null) return null; // enterprise
-  const practices = usage.generate.remaining ?? 0;
-  const gradings = usage.grade.remaining ?? 0;
+  const practices = usage.generate.remaining ?? Number.POSITIVE_INFINITY;
+  const gradings = usage.grade.remaining ?? Number.POSITIVE_INFINITY;
+  if (practices > LOW_THRESHOLD && gradings > LOW_THRESHOLD) return null;
   const empty = practices === 0 || gradings === 0;
   return (
     <div
@@ -36,15 +39,25 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
         <Zap size={14} style={{ color: empty ? "#DC2626" : "#7C5CFC", flex: "none" }} />
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           <strong style={{ color: "#1C1B2E" }}>{usage.planName}</strong>
-          {" — "}
-          <strong style={{ color: empty && practices === 0 ? "#DC2626" : "#1C1B2E" }}>
-            {practices}
-          </strong>{" "}
-          practice sets ·{" "}
-          <strong style={{ color: empty && gradings === 0 ? "#DC2626" : "#1C1B2E" }}>
-            {gradings}
-          </strong>{" "}
-          gradings left this month
+          {empty ? " — you're out of " : " — running low: "}
+          {empty ? (
+            <strong style={{ color: "#DC2626" }}>
+              {practices === 0 ? "practice sets" : "gradings"}
+            </strong>
+          ) : null}
+          {empty ? " for this month" : null}
+          {!empty ? (
+            <>
+              <strong style={{ color: "#1C1B2E" }}>
+                {Number.isFinite(practices) ? practices : "unlimited"}
+              </strong>{" "}
+              practice sets ·{" "}
+              <strong style={{ color: "#1C1B2E" }}>
+                {Number.isFinite(gradings) ? gradings : "unlimited"}
+              </strong>{" "}
+              gradings left this month
+            </>
+          ) : null}
         </span>
       </span>
       <Link

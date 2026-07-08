@@ -14,43 +14,9 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
  */
 export function PlanCard({ usage }: { usage: UsageSummary }) {
   const upgradable = usage.plan !== "enterprise";
-  const practicesLeft = usage.generate.remaining;
-  const tooltip =
-    usage.generate.limit == null
-      ? `${usage.planName} — unlimited practice and grading`
-      : `${usage.planName} — ${usage.generate.remaining} practice sets, ` +
-        `${usage.grade.remaining} gradings left this month`;
   return (
-    <>
-      {/* Collapsed rail: a compact pill with the practices-left number (the full
-          card collapses via the .lp-sb-target rules; this shows instead). */}
-      <Link
-        href="/pricing"
-        className="lp-plan-mini"
-        title={tooltip}
-        aria-label={tooltip}
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          width: 40,
-          height: 40,
-          margin: "0 auto",
-          borderRadius: 12,
-          background: "rgba(255,255,255,.07)",
-          border: "1px solid rgba(255,255,255,.1)",
-          textDecoration: "none",
-          fontFamily: SANS,
-          fontSize: practicesLeft != null && practicesLeft > 99 ? 11 : 14,
-          fontWeight: 800,
-          color:
-            practicesLeft == null ? "#7CE3AE" : practicesLeft === 0 ? "#FCA5A5" : "#7CE3AE",
-        }}
-      >
-        {practicesLeft == null ? "∞" : practicesLeft}
-      </Link>
-
-      <div
-        className="lp-sb-target"
+    <div
+      className="lp-sb-target"
         style={{
           background: "rgba(255,255,255,.05)",
           border: "1px solid rgba(255,255,255,.08)",
@@ -116,8 +82,7 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
           Upgrade <ArrowUpRight size={14} />
         </Link>
       ) : null}
-      </div>
-    </>
+    </div>
   );
 }
 

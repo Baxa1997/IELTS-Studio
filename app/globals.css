@@ -496,12 +496,6 @@
     opacity 0.18s ease,
     margin 0.3s ease;
 }
-
-/* Compact plan pill: hidden on the wide rail, shown when collapsed (the full
-   plan card collapses away via the .lp-sb-target rules above). */
-.lp-plan-mini {
-  display: none;
-}
 .lp-sb-section--titled {
   border-top: 1px solid transparent;
   transition: border-color 0.24s ease, padding 0.28s ease, margin 0.28s ease;
@@ -563,9 +557,6 @@
     opacity: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-  }
-  .lp-shell-sidebar--collapsed .lp-plan-mini {
-    display: flex;
   }
   /* Profile collapses to a clean, centred avatar — drop the frame (fades out via the
      .lp-sb-item transition) and trim the padding so the 36px avatar sits dead-centre
