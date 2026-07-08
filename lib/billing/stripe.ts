@@ -50,6 +50,8 @@ export async function stripeCreateCheckout(req: CheckoutRequest): Promise<Checko
     form.set("line_items[0][price_data][currency]", tier.currency);
     form.set("line_items[0][price_data][product_data][name]", `IELTS W&R — ${tier.name}`);
     form.set("line_items[0][price_data][recurring][interval]", "month");
+    // The 3-month pass bills once per quarter (months=3 in plans.ts).
+    form.set("line_items[0][price_data][recurring][interval_count]", String(tier.months));
     form.set("line_items[0][price_data][unit_amount]", String(Math.round(tier.price * 100)));
   }
 

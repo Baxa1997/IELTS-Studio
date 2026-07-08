@@ -10,8 +10,10 @@ export type OrgPlan = "trial" | "starter" | "pro" | "enterprise";
 export interface PlanTier {
   id: OrgPlan;
   name: string;
-  /** Monthly price in major USD units (Stripe). null = custom. */
+  /** Price in major USD units (Stripe) per billing period. null = custom. */
   price: number | null;
+  /** Billing period length in months (1 = monthly; enterprise is a 3-month pass). */
+  months: number;
   currency: "usd";
   /** Monthly price in UZS (Payme/Click settle in UZS; tiyin = priceUzs × 100).
    *  null = not sold via the UZ gateways (trial/enterprise). */
@@ -36,6 +38,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     id: "trial",
     name: "Free",
     price: 0,
+    months: 1,
     currency: "usd",
     priceUzs: null,
     // 5 free gradings + 5 free generations, then upgrade. generateLimit MUST stay
@@ -49,49 +52,56 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // schema for the dormant B2B path but is never sold as a feature.
     features: ["Calibrated, conservative AI grading", "IELTS + CEFR practice, generated fresh", "5 gradings · 5 practice sets / month"],
   },
-  // Prices match the LIVE Stripe dashboard products (user, 2026-07-08):
-  // Standard $6.00, Pro $14.49, Enterprise $25.99. Live checkout charges the
-  // dashboard Price (stripePriceId); `price` here is display-only — keep them
-  // matching. Test-mode keys skip these IDs and use inline price_data
-  // (lib/billing/stripe.ts), so local dev needs no test Prices.
+  // Pricing strategy 2026-07-08 (user): Free 5/5 · Standard $5.99 20/20 ·
+  // Pro $14.99 unlimited monthly · Enterprise $29.99 for THREE months
+  // (unlimited, prepaid quarter). All paid tiers currently bill via inline
+  // price_data at exactly `price` per `months` — the old dashboard Prices
+  // carry stale amounts/intervals. Pin new dashboard Price IDs when created.
   starter: {
     id: "starter",
     name: "Standard",
     price: 5.99,
+    months: 1,
     currency: "usd",
     priceUzs: 75_000,
-    // The dashboard "Standard" Price is $6.00 and Stripe Prices are immutable;
-    // the user wants $5.99, so checkout uses inline price_data (charges exactly
-    // `price`). Pin a new dashboard Price ID here if one is created at $5.99.
+    // No dashboard Price at $5.99 — checkout uses inline price_data (charges
+    // exactly `price`). Pin a new dashboard Price ID here if one is created.
     stripePriceId: null,
-    gradeLimit: 15,
-    generateLimit: 15,
+    gradeLimit: 20,
+    generateLimit: 20,
     seatLimit: 50,
-    features: ["Everything in Free", "15 gradings / month", "15 practice sets / month", "Full mock reading tests"],
+    features: ["Everything in Free", "20 gradings / month", "20 practice sets / month", "Full mock reading tests"],
   },
   pro: {
     id: "pro",
     name: "Pro",
-    price: 14.49,
+    price: 14.99,
+    months: 1,
     currency: "usd",
-    priceUzs: 180_000,
-    stripePriceId: "price_1TodTaAbAzJriIHUYFQOiHi0", // live "Pro" $14.49
-    gradeLimit: 50,
-    generateLimit: 50,
+    priceUzs: 185_000,
+    // The old dashboard Pro Price is $14.49 (immutable) — inline price_data
+    // charges the new $14.99. Pin a fresh dashboard Price when created.
+    stripePriceId: null,
+    gradeLimit: null,
+    generateLimit: null,
     seatLimit: 250,
-    features: ["Everything in Standard", "50 gradings / month", "50 practice sets / month", "Priority grading queue"],
+    features: ["Everything in Standard", "Unlimited gradings", "Unlimited practice sets", "Priority grading queue"],
   },
   enterprise: {
     id: "enterprise",
     name: "Enterprise",
-    price: 25.99,
+    price: 29.99,
+    months: 3, // one payment covers 3 months (≈ $10/month)
     currency: "usd",
-    priceUzs: 325_000,
-    stripePriceId: "price_1TodTzAbAzJriIHUmxtroK31", // live "Enterprise" $25.99
+    priceUzs: 375_000,
+    // The old dashboard Price is $25.99 MONTHLY (immutable, wrong interval) —
+    // inline price_data bills $29.99 every 3 months. Pin a fresh quarterly
+    // dashboard Price when created.
+    stripePriceId: null,
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,
-    features: ["Unlimited grading & practice", "Priority support", "Best for exam-week intensives"],
+    features: ["Everything in Pro, for 3 months", "One payment — $29.99 per quarter", "Best value: under $10 / month"],
   },
 };
 

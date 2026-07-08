@@ -155,8 +155,7 @@ export function UpgradeNotice({ message }: { message: string }) {
           <Sparkles size={16} style={{ color: INDIGO }} /> Free practice used up
         </div>
         <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: "#56556A" }}>
-          {message} Pro gives you {pro.gradeLimit?.toLocaleString()} gradings and{" "}
-          {pro.generateLimit?.toLocaleString()} practice sets every month.
+          {message} Pro gives you unlimited gradings and practice sets every month.
         </p>
         {checkoutError ? (
           <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "#B4231F" }}>{checkoutError}</p>

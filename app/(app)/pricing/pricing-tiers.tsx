@@ -148,7 +148,9 @@ export function PricingTiers({
                   <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 600, color: "#1C1B2E" }}>
                     {tier.price === 0 ? "$0" : `$${tier.price}`}
                   </span>
-                  <span style={{ fontSize: 13, color: "#8A88A0" }}>/ month</span>
+                  <span style={{ fontSize: 13, color: "#8A88A0" }}>
+                    {tier.months === 1 ? "/ month" : `/ ${tier.months} months`}
+                  </span>
                 </div>
               </div>
 
@@ -227,7 +229,7 @@ export function PricingTiers({
       </div>
 
       <p style={{ margin: "18px 0 0", fontSize: 12.5, color: "#8A88A0" }}>
-        Plans renew monthly and can be cancelled anytime. Prices in USD; local payment
+        Plans renew automatically (Enterprise every 3 months) and can be cancelled anytime. Prices in USD; local payment
         options (Payme / Click) are available at checkout equivalents.
       </p>
     </div>
