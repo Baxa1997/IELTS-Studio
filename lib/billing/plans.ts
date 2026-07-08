@@ -54,9 +54,12 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
   },
   // Pricing strategy 2026-07-08 (user): Free 5/5 · Standard $5.99 20/20 ·
   // Pro $14.99 unlimited monthly · Enterprise $29.99 for THREE months
-  // (unlimited, prepaid quarter). All paid tiers currently bill via inline
-  // price_data at exactly `price` per `months` — the old dashboard Prices
-  // carry stale amounts/intervals. Pin new dashboard Price IDs when created.
+  // (unlimited, prepaid quarter). Live checkout charges the pinned dashboard
+  // Prices below (user confirmed the dashboard shows these exact amounts and
+  // the 3-month interval; the old 6.00/14.49/25.99 Prices are archived) —
+  // FIRST LIVE CHECKOUT of each tier must confirm the displayed amount. A
+  // "price is archived" checkout error means the wrong ID is pinned: set it
+  // back to null and inline price_data takes over at exactly `price`.
   starter: {
     id: "starter",
     name: "Standard",
@@ -64,9 +67,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     months: 1,
     currency: "usd",
     priceUzs: 75_000,
-    // No dashboard Price at $5.99 — checkout uses inline price_data (charges
-    // exactly `price`). Pin a new dashboard Price ID here if one is created.
-    stripePriceId: null,
+    stripePriceId: "price_1TodTCAbAzJriIHUxzsOKT52", // live "Ielts Standard" $5.99/mo
     gradeLimit: 20,
     generateLimit: 20,
     seatLimit: 50,
@@ -79,9 +80,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     months: 1,
     currency: "usd",
     priceUzs: 185_000,
-    // The old dashboard Pro Price is $14.49 (immutable) — inline price_data
-    // charges the new $14.99. Pin a fresh dashboard Price when created.
-    stripePriceId: null,
+    stripePriceId: "price_1TodTaAbAzJriIHUYFQOiHi0", // live "Ielts Pro" $14.99/mo
     gradeLimit: null,
     generateLimit: null,
     seatLimit: 250,
@@ -94,10 +93,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     months: 3, // one payment covers 3 months (≈ $10/month)
     currency: "usd",
     priceUzs: 375_000,
-    // The old dashboard Price is $25.99 MONTHLY (immutable, wrong interval) —
-    // inline price_data bills $29.99 every 3 months. Pin a fresh quarterly
-    // dashboard Price when created.
-    stripePriceId: null,
+    stripePriceId: "price_1TodTzAbAzJriIHUmxtroK31", // live "Ielts Enterprice" $29.99 / 3 months
     gradeLimit: null,
     generateLimit: null,
     seatLimit: null,
