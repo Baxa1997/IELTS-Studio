@@ -327,12 +327,12 @@ function typeTagsFor(part: number, variant?: string, layout?: string): string[] 
 
 type HubTab = "tests" | "parts";
 
-const LEVEL_STYLE: Record<number, { bg: string; fg: string }> = {
-  1: { bg: "#f0fdf4", fg: "#15803d" },
-  2: { bg: "#ecfeff", fg: "#0e7490" },
-  3: { bg: "#efeefc", fg: "#4338CA" },
-  4: { bg: "#fffbeb", fg: "#b45309" },
-  5: { bg: "#fef2f2", fg: "#b91c1c" },
+const LEVEL_STYLE: Record<number, { bg: string; fg: string; ring: string }> = {
+  1: { bg: "#16a34a", fg: "#ffffff", ring: "rgba(22,163,74,.30)" },
+  2: { bg: "#0891b2", fg: "#ffffff", ring: "rgba(8,145,178,.30)" },
+  3: { bg: "#4f46e5", fg: "#ffffff", ring: "rgba(79,70,229,.30)" },
+  4: { bg: "#d97706", fg: "#ffffff", ring: "rgba(217,119,6,.30)" },
+  5: { bg: "#dc2626", fg: "#ffffff", ring: "rgba(220,38,38,.30)" },
 };
 
 // ---- Top-level ---------------------------------------------------------------
@@ -745,12 +745,16 @@ function LevelChip({ level, mr }: { level: number; mr?: number }) {
   return (
     <span
       style={{
-        padding: "4px 10px",
-        borderRadius: 8,
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "5px 11px",
+        borderRadius: 999,
         fontSize: 12.5,
-        fontWeight: 700,
+        fontWeight: 800,
+        letterSpacing: 0.2,
         background: lvl.bg,
         color: lvl.fg,
+        boxShadow: `0 1px 2px ${lvl.ring}, 0 0 0 3px ${lvl.ring}`,
         whiteSpace: "nowrap",
         marginRight: mr,
       }}
