@@ -16,6 +16,8 @@ const PUBLIC_PATHS = [
   "/accept-invite",
   "/auth",
   "/grade",
+  "/privacy",
+  "/terms",
   "/robots.txt",
   "/sitemap.xml",
 ];

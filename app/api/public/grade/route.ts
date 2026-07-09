@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { gradeEssay } from "@/lib/ai";
 import {
   countWords,
-  getPublicPrompt,
   MAX_WORDS,
   MIN_WORDS,
   PUBLIC_ORG_ID,
+  resolveGradeTask,
 } from "@/lib/public-grader/prompts";
 import { checkAndRecord, clientIp, hashIp } from "@/lib/public-grader/rate-limit";
 import { toPublicTeaser } from "@/lib/public-grader/teaser";
@@ -29,10 +29,15 @@ export const maxDuration = 60;
  * the full grade.
  */
 export async function POST(req: Request): Promise<Response> {
-  const body = (await req.json().catch(() => ({}))) as { promptId?: unknown; essay?: unknown };
+  const body = (await req.json().catch(() => ({}))) as {
+    promptId?: unknown;
+    customPrompt?: unknown;
+    essay?: unknown;
+  };
 
-  const prompt = typeof body.promptId === "string" ? getPublicPrompt(body.promptId) : undefined;
-  if (!prompt) return fail(400, "invalid_prompt");
+  // Sample question, the visitor's own pasted question, or no question at all.
+  const task = resolveGradeTask(body);
+  if (!task) return fail(422, "prompt_too_long");
 
   const essay = typeof body.essay === "string" ? body.essay.trim() : "";
   const words = countWords(essay);
@@ -59,8 +64,8 @@ export async function POST(req: Request): Promise<Response> {
   // --- Grade through the single AI service ---------------------------------
   try {
     const grade = await gradeEssay({
-      taskType: prompt.taskType,
-      promptText: prompt.prompt,
+      taskType: task.taskType,
+      promptText: task.promptText,
       essayText: essay,
       meta: { organizationId: PUBLIC_ORG_ID, userId: null },
     });

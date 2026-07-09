@@ -78,6 +78,50 @@ export function getPublicPrompt(id: string): PublicPrompt | undefined {
   return PUBLIC_PROMPTS.find((p) => p.id === id);
 }
 
+// ---- Flexible task resolution ----------------------------------------------
+// The public grader can grade against (a) one of the sample questions above, (b)
+// the user's OWN pasted question, or (c) no question at all — the visitor just
+// wants their writing graded. All three resolve to a { taskType, promptText } the
+// grader understands; Task 2 is the only public task.
+
+/** Upper bound on a pasted custom question — bounds cost / abuse. */
+export const MAX_PROMPT_CHARS = 1200;
+
+/** Fallback task text when the visitor supplies no question. Keeps grading honest:
+ *  the grader is told the specific prompt is unknown and to judge the response on
+ *  its own argumentative merits, marking the other three criteria normally. */
+const NO_QUESTION_PROMPT_TEXT =
+  "(The candidate did not provide the specific Task 2 question.) Grade this as a general IELTS " +
+  "Academic Writing Task 2 argumentative essay. Judge Task Response on how clearly it presents and " +
+  "develops a position with relevant, extended and well-supported ideas; grade Coherence & " +
+  "Cohesion, Lexical Resource and Grammatical Range & Accuracy exactly as normal.";
+
+export interface ResolvedTask {
+  taskType: EssayTaskType;
+  promptText: string;
+}
+
+/**
+ * Resolve the task to grade against from the request. Precedence: a non-empty
+ * custom question wins; else a valid sample id; else the no-question fallback.
+ * Returns null only if a custom question is present but over the length bound.
+ */
+export function resolveGradeTask(input: {
+  promptId?: unknown;
+  customPrompt?: unknown;
+}): ResolvedTask | null {
+  const custom = typeof input.customPrompt === "string" ? input.customPrompt.trim() : "";
+  if (custom) {
+    if (custom.length > MAX_PROMPT_CHARS) return null;
+    return { taskType: "task2", promptText: custom };
+  }
+  if (typeof input.promptId === "string") {
+    const sample = getPublicPrompt(input.promptId);
+    if (sample) return { taskType: sample.taskType, promptText: sample.prompt };
+  }
+  return { taskType: "task2", promptText: NO_QUESTION_PROMPT_TEXT };
+}
+
 // ---- Free-preview input bounds ---------------------------------------------
 // Floor: too short to grade meaningfully (and a cheap abuse vector). Ceiling: caps
 // model cost and nudges full-length writers into the app — both are anti-abuse and

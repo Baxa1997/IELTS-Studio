@@ -481,9 +481,9 @@ function Hero() {
             </p>
 
             <div style={{ display: "flex", gap: 14, marginTop: 30, flexWrap: "wrap" }}>
-              {/* Primary CTA → sign-in; new users hit the post-auth onboarding takeover. */}
+              {/* Primary CTA → the free, no-login essay grader (the marketing funnel). */}
               <Link
-                href="/sign-in"
+                href="/grade"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -547,8 +547,8 @@ function Hero() {
               {[
                 { label: "Writing", soon: false },
                 { label: "Reading", soon: false },
+                { label: "Listening", soon: false },
                 { label: "Speaking", soon: true },
-                { label: "Listening", soon: true },
               ].map((c) => (
                 <span
                   key={c.label}
@@ -2502,7 +2502,7 @@ function Skills() {
     <Band id="skills" bg="#fff">
       <SectionHead
         title="Deep on the skills that decide Band 8"
-        sub="We go deepest on Writing and Reading — where most scores are won or lost — with Speaking and Listening on the way."
+        sub="We go deepest on Writing and Reading — where most scores are won or lost — with full Listening tests live and Speaking on the way."
       />
       <div
         className="lp-cols-2"
@@ -2619,8 +2619,9 @@ function Skills() {
             minWidth: 240,
           }}
         >
-          <b style={{ color: INK }}>Speaking &amp; Listening are in development</b> — AI mock
-          interviews and section-timed practice, included free for members when they launch.
+          <b style={{ color: INK }}>Listening is live</b> — full four-section practice tests with
+          auto-marking, at every level. <b style={{ color: INK }}>Speaking is in development</b> —
+          AI mock interviews, included free for members when it launches.
         </div>
       </div>
     </Band>
@@ -3090,7 +3091,7 @@ function Faq() {
     },
     {
       q: "What about Speaking and Listening?",
-      a: "In development. Writing and Reading are live today and where most scores are won or lost; Speaking and Listening are on the roadmap and will be included free for members when they launch.",
+      a: "Listening is live — full four-section practice tests with auto-marking at every level. Speaking is in development and will be included free for members when it launches.",
     },
   ];
   return (
@@ -3232,7 +3233,7 @@ function Pricing() {
                   <span
                     style={{ fontFamily: SANS, fontWeight: 500, fontSize: 15, color: "#8a897c" }}
                   >
-                    /mo
+                    {t.months === 1 ? "/mo" : ` / ${t.months} months`}
                   </span>
                 ) : null}
               </div>
@@ -3246,7 +3247,9 @@ function Pricing() {
                   minHeight: 18,
                 }}
               >
-                {t.priceUzs != null ? `≈ ${t.priceUzs.toLocaleString()} UZS/mo` : " "}
+                {t.priceUzs != null
+                  ? `≈ ${t.priceUzs.toLocaleString()} UZS${t.months === 1 ? "/mo" : ` / ${t.months} months`}`
+                  : " "}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18 }}>
                 {planFeatures(id).map((f) => (
@@ -3543,8 +3546,16 @@ function SiteFooter() {
             justifyContent: "space-between",
           }}
         >
-          <div style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#7d80ad" }}>
-            © 2026 EngProgress. All rights reserved.
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 14 }}>
+            <span style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#7d80ad" }}>
+              © 2026 EngProgress. All rights reserved.
+            </span>
+            <Link href="/privacy" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
+              Terms of Service
+            </Link>
           </div>
           <p
             style={{

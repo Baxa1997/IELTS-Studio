@@ -8,6 +8,7 @@ import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "l
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
+import { LegalFooter } from "@/components/legal-footer";
 // These live with the full-screen runner in the (studio) group; the hub library
 // only needs the prompt type and the save-draft action from them.
 import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
@@ -882,6 +883,8 @@ export function WritingLibrary({
       )}
 
       {gradingModal ? <GradingModal /> : null}
+
+      <LegalFooter note="AI-generated prompts in the IELTS Writing format. Not affiliated with or endorsed by IELTS®." />
     </div>
   );
 }

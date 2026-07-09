@@ -1,15 +1,12 @@
 /**
- * Depth-cap for the public grader — turns the FULL internal grade into the slim
- * preview the anonymous visitor is allowed to see.
- *
- * The free preview deliberately gives the WHAT, not the WHY:
- *   - shows  → overall band, each criterion's band, and the top 3 fixes
- *   - hides  → per-criterion `evidence` (the proving quotes), `what_caps_it` (the
- *              gap analysis), `band_with_fixes` (the achievable target), the
- *              revision loop, history and Reading.
- *
- * That withheld depth is exactly the coaching loop you sign up for. Pure module —
- * no I/O — so it's trivially testable.
+ * Shapes the FULL internal grade into the public result the anonymous visitor
+ * sees. The public grader now shows the SAME per-criterion feedback as the internal
+ * writing studio — overall band, band-with-fixes, the score blocker, and for each
+ * criterion the band, the evidence, what caps it, and the fix. What still requires a
+ * free account is the DEEPER coaching loop: sentence-level marked-up fixes on the
+ * essay, the "Write it better" model answer, the revision loop (rewrite + re-grade),
+ * progress history, and Reading/Listening. Pure module — no I/O — so it's trivially
+ * testable.
  */
 
 import type { Criterion, EssayGrade } from "@/lib/ai/schema";
@@ -18,20 +15,17 @@ export interface TeaserCriterion {
   key: Criterion;
   label: string;
   band: number;
-}
-
-export interface TeaserFix {
-  criterion: Criterion;
-  label: string;
-  /** The single highest-value next move for this criterion (the `fix` field). */
+  evidence: string;
+  whatCapsIt: string;
   fix: string;
 }
 
 export interface PublicTeaser {
   overallBand: number;
+  bandWithFixes: number;
+  /** The one criterion holding the band back (matches the internal "Fix this first"). */
+  blocker: { criterion: Criterion; why: string };
   criteria: TeaserCriterion[];
-  /** At most 3 — the weakest criteria first. */
-  topFixes: TeaserFix[];
   model: string;
   disclaimer: string;
 }
@@ -45,26 +39,21 @@ const CRITERION_LABEL: Record<Criterion, string> = {
   GRA: "Grammar Range & Accuracy",
 };
 
-const MAX_FIXES = 3;
-
 export function toPublicTeaser(grade: EssayGrade): PublicTeaser {
   const criteria: TeaserCriterion[] = CRITERION_ORDER.map((key) => ({
     key,
     label: CRITERION_LABEL[key],
     band: grade.criteria[key].band,
+    evidence: grade.criteria[key].evidence,
+    whatCapsIt: grade.criteria[key].what_caps_it,
+    fix: grade.criteria[key].fix,
   }));
-
-  // Top 3 fixes = the weakest criteria first, so the highest-value moves surface.
-  // Stable sort keeps the canonical order on ties.
-  const topFixes: TeaserFix[] = [...criteria]
-    .sort((a, b) => a.band - b.band)
-    .slice(0, MAX_FIXES)
-    .map(({ key, label }) => ({ criterion: key, label, fix: grade.criteria[key].fix }));
 
   return {
     overallBand: grade.overall_band,
+    bandWithFixes: grade.band_with_fixes,
+    blocker: grade.score_blocker,
     criteria,
-    topFixes,
     model: grade.model,
     disclaimer: grade.disclaimer,
   };

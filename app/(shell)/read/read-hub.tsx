@@ -7,6 +7,7 @@ import { ArrowRight, Check, FileText, Layers, Loader2, Sparkles } from "lucide-r
 
 import { AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
+import { LegalFooter } from "@/components/legal-footer";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
 
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
@@ -296,10 +297,7 @@ export function ReadingHub({
 
       {error ? <UpgradeNotice message={error} /> : null}
 
-      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
-        Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by
-        IELTS®.
-      </p>
+      <LegalFooter note="Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by IELTS®." />
     </div>
   );
 }

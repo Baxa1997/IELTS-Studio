@@ -9,6 +9,8 @@ const publicRoutes = [
   { path: "/start", priority: 0.65, changeFrequency: "monthly" },
   { path: "/sign-in", priority: 0.3, changeFrequency: "yearly" },
   { path: "/sign-up", priority: 0.3, changeFrequency: "yearly" },
+  { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
+  { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
 ] satisfies Array<{
   path: string;
   priority: number;

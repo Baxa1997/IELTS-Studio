@@ -26,6 +26,17 @@ export default async function SignUpPage({
             <span className="bg-border h-px flex-1" />
           </div>
           <SignUpForm defaultEmail={email} />
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            By creating an account you agree to our{" "}
+            <Link href="/terms" className="underline underline-offset-4">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-4">
+              Privacy Policy
+            </Link>
+            .
+          </p>
           <p className="text-muted-foreground text-sm">
             Already have an account?{" "}
             <Link href="/sign-in" className="underline underline-offset-4">
