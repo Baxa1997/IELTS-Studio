@@ -407,22 +407,6 @@
   box-shadow: 0 24px 48px -30px rgba(26, 28, 51, 0.45);
   border-color: #c8cbf0;
 }
-/* Writing library cards: turn the CTA indigo on card hover, and step the grid down
-   on narrower viewports. (The prompt is clamped inline so the vendor line-clamp
-   props survive the CSS pipeline.) */
-.lp-root .lp-hover:hover .lp-card-cta {
-  background: #3b43b5;
-}
-@media (max-width: 1024px) {
-  .lp-write-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-}
-@media (max-width: 680px) {
-  .lp-write-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
 /* "Check own writing" two-pane (question | essay) collapses to one column. */
 @media (max-width: 900px) {
   .lp-check-grid {

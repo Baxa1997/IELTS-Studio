@@ -95,9 +95,7 @@ export function ReadingHub({
       // Carry the card's "Practice test N" number into the runner so the header
       // shows the same number the learner clicked.
       const suffix = num != null ? `?n=${num}` : "";
-      router.push(
-        kind === "test" ? `/read/test/${body.id}${suffix}` : `/read/${body.id}${suffix}`,
-      );
+      router.push(kind === "test" ? `/read/test/${body.id}${suffix}` : `/read/${body.id}${suffix}`);
     } catch {
       setError("Network error — please try again.");
       setLoadingId(null);
@@ -333,12 +331,14 @@ function TestTile({
           the standard "Practised" badge below (and the card is tinted). */}
       {isNew && !practised ? <AiCorner /> : null}
       <div style={rowBetween}>
-        <RisingBars />
+        <span style={iconTile}>
+          <Layers size={19} />
+        </span>
         {practised ? <DoneBadge /> : null}
       </div>
       <div>
         <h4 style={cardTitle}>{title}</h4>
-        <span style={cardSub}>3 passages · ~40 questions</span>
+        <span style={cardSub}>3 passages · 40 questions · band score</span>
       </div>
       <Divider />
       <div style={rowBetween}>
@@ -630,35 +630,20 @@ function StartAction({ loading, practised }: { loading?: boolean; practised?: bo
         alignItems: "center",
         gap: 6,
         color: INDIGO,
-        fontSize: 14.5,
+        fontSize: 14,
         fontWeight: 600,
       }}
     >
       {loading ? (
         <>
-          <Loader2 className="animate-spin" size={15} /> Opening…
+          <Loader2 className="animate-spin" size={14} /> Opening…
         </>
       ) : (
         <>
-          {practised ? "Retake" : "Start"} <ArrowRight size={15} strokeWidth={2.2} />
+          {practised ? "Retake" : "Start"} <ArrowRight size={14} strokeWidth={2.2} />
         </>
       )}
     </span>
-  );
-}
-
-function RisingBars() {
-  const bars = [
-    { h: 15, c: "#C2C5F0" },
-    { h: 22, c: "#9196E8" },
-    { h: 31, c: INDIGO },
-  ];
-  return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 31 }} aria-hidden>
-      {bars.map((b, i) => (
-        <span key={i} style={{ width: 12, height: b.h, borderRadius: 3, background: b.c }} />
-      ))}
-    </div>
   );
 }
 

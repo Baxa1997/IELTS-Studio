@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
+import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
@@ -25,9 +25,12 @@ const MUTED = "#5A6076";
 const EMERALD = "#1F8A53";
 
 const cardStyle: React.CSSProperties = {
+  position: "relative",
   background: "#fff",
-  border: "1px solid #E7E3D5",
-  borderRadius: 16,
+  border: "1px solid rgba(28,27,46,.09)",
+  borderRadius: 14,
+  color: INK,
+  boxShadow: "0 1px 3px rgba(28,27,46,.04)",
 };
 
 const TABS: { key: string; label: string; soon?: boolean }[] = [
@@ -62,7 +65,7 @@ const ARROW = (
 
 /** Estimated time + word target shown on every topic card. */
 function estMeta(taskType: string): string {
-  return taskType === "task2" ? "~40 min · 250 words" : "~20 min · 150 words";
+  return taskType === "task2" ? "≈ 40 min · 250 words" : "≈ 20 min · 150 words";
 }
 
 export function WritingLibrary({
@@ -135,10 +138,7 @@ export function WritingLibrary({
   }, [library, tab]);
   // Stable "Practice test N" number per card — indexed off the full tab list (not the
   // filtered view) so a card keeps its number when searches/filters are applied.
-  const numById = useMemo(
-    () => new Map(cards.map((p, i) => [p.id, i + 1])),
-    [cards],
-  );
+  const numById = useMemo(() => new Map(cards.map((p, i) => [p.id, i + 1])), [cards]);
   const visible = cards.filter((p) => {
     if (
       query.trim() &&
@@ -243,7 +243,8 @@ export function WritingLibrary({
         setMessage(
           gb.message ?? "Grading is busy — your essay is saved; try again from Activities shortly.",
         );
-      else if (gr.status === 429) setMessage("You’ve used this month’s free gradings (your monthly grading limit).");
+      else if (gr.status === 429)
+        setMessage("You’ve used this month’s free gradings (your monthly grading limit).");
       else setMessage(gb.message ?? "Grading failed. Please try again.");
       setBusy(false);
       setGradingModal(false);
@@ -861,9 +862,8 @@ export function WritingLibrary({
               className="lp-write-grid"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3,1fr)",
-                gridAutoRows: "1fr",
-                gap: 18,
+                gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+                gap: 14,
               }}
             >
               {visible.map((p) => (
@@ -1050,8 +1050,8 @@ function AiCorner() {
       aria-label="AI-generated"
       style={{
         position: "absolute",
-        top: 12,
-        right: 12,
+        top: 14,
+        right: 14,
         zIndex: 2,
         width: 26,
         height: 26,
@@ -1069,6 +1069,138 @@ function AiCorner() {
   );
 }
 
+function DoneBadge() {
+  return (
+    <span
+      title="You've practised this"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "4px 10px",
+        borderRadius: 8,
+        fontSize: 12.5,
+        fontWeight: 700,
+        background: "#E9F5EE",
+        color: EMERALD,
+        border: "1px solid #CDE9D8",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <Check size={13} strokeWidth={3} /> Practised
+    </span>
+  );
+}
+
+function NotPractisedBadge() {
+  return (
+    <span
+      style={{
+        padding: "4px 10px",
+        borderRadius: 8,
+        fontSize: 12.5,
+        fontWeight: 700,
+        background: "#F4F4FB",
+        color: "#5A596B",
+        border: "1px solid #ECEAF2",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Not practised
+    </span>
+  );
+}
+
+function BandChip({ band }: { band: number }) {
+  return (
+    <span
+      style={{
+        padding: "4px 10px",
+        borderRadius: 8,
+        fontSize: 12.5,
+        fontWeight: 700,
+        background: "#ECEBFB",
+        color: INDIGO,
+        border: "1px solid #D6D3EF",
+        whiteSpace: "nowrap",
+      }}
+    >
+      Band {band}
+    </span>
+  );
+}
+
+function StartAction({ practised }: { practised: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        color: INDIGO,
+        fontSize: 14,
+        fontWeight: 600,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {practised ? "Retake" : "Start"} <ArrowRight size={14} strokeWidth={2.2} />
+    </span>
+  );
+}
+
+function Divider() {
+  return <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />;
+}
+
+const rowBetween: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+};
+
+const cardTitle: React.CSSProperties = {
+  fontFamily: SANS,
+  fontWeight: 700,
+  fontSize: 15.5,
+  lineHeight: 1.3,
+  margin: "0 0 3px",
+  color: INK,
+};
+
+const cardSub: React.CSSProperties = {
+  fontSize: 13.5,
+  color: "#7A7989",
+  fontWeight: 500,
+};
+
+const metaText: React.CSSProperties = {
+  fontSize: 13,
+  color: "#8A899A",
+};
+
+const iconTile: React.CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: 11,
+  background: "#EFEEFC",
+  color: INDIGO,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flex: "none",
+};
+
+const typeTag: React.CSSProperties = {
+  background: "#F4F4FB",
+  border: "1px solid #ECEAF2",
+  color: "#5A596B",
+  fontSize: 12,
+  fontWeight: 600,
+  padding: "3px 9px",
+  borderRadius: 7,
+};
+
 function PromptCard({
   p,
   num,
@@ -1082,134 +1214,72 @@ function PromptCard({
   busy: boolean;
   onOpen: () => void;
 }) {
-  const status = done
-    ? { label: "✓ Practised", color: EMERALD, bg: "#E9F5EE", bd: "#CDE9D8" }
-    : { label: "Not practised", color: "#9A8F77", bg: "#F1EEE3", bd: "#E4E0D1" };
   const meta = estMeta(p.task_type);
+  const topic = p.topic_family && p.topic_family !== "custom" ? p.topic_family : null;
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-disabled={busy}
+    <button
+      type="button"
+      disabled={busy}
       onClick={() => {
         if (!busy) onOpen();
-      }}
-      onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && !busy) {
-          e.preventDefault();
-          onOpen();
-        }
       }}
       className="lp-hover"
       style={{
         ...cardStyle,
-        position: "relative",
-        height: "100%",
-        padding: "18px 18px 16px",
+        width: "100%",
+        minHeight: 166,
+        padding: 16,
         display: "flex",
         flexDirection: "column",
-        gap: 14,
+        gap: 11,
+        textAlign: "left",
+        fontFamily: SANS,
         cursor: busy ? "default" : "pointer",
+        opacity: busy ? 0.7 : 1,
       }}
     >
       {p.generated ? <AiCorner /> : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", paddingRight: p.generated ? 40 : 0 }}>
-        {p.topic_family && p.topic_family !== "custom" ? (
-          <span
-            style={{
-              fontFamily: SANS,
-              fontSize: 12.5,
-              fontWeight: 600,
-              color: "#6E7388",
-              background: "#F1EFE5",
-              border: "1px solid #E7E3D5",
-              padding: "3px 10px",
-              borderRadius: 7,
-            }}
-          >
-            {p.topic_family}
-          </span>
-        ) : null}
-        {!p.generated && p.difficulty ? (
-          <span
-            style={{
-              fontFamily: SANS,
-              fontSize: 12.5,
-              fontWeight: 700,
-              color: INDIGO,
-              background: "#ECEBFB",
-              border: "1px solid #E1DFF7",
-              padding: "3px 10px",
-              borderRadius: 7,
-            }}
-          >
-            band {p.difficulty}
-          </span>
-        ) : null}
+      <div style={rowBetween}>
+        <span style={iconTile}>
+          <PenLine size={19} />
+        </span>
         <span
           style={{
-            fontFamily: SANS,
-            fontSize: 12.5,
-            fontWeight: 600,
-            color: status.color,
-            background: status.bg,
-            border: `1px solid ${status.bd}`,
-            padding: "3px 10px",
-            borderRadius: 7,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 6,
+            flexWrap: "wrap",
+            paddingRight: p.generated ? 34 : 0,
           }}
         >
-          {status.label}
+          {done ? <DoneBadge /> : <NotPractisedBadge />}
+          {!p.generated && p.difficulty ? <BandChip band={p.difficulty} /> : null}
         </span>
       </div>
 
       {/* The actual question is hidden until the card is opened — every card reads as
           a numbered "Practice test N", matching Reading & Listening. */}
-      <div style={{ height: 78, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <h4
-          style={{
-            margin: 0,
-            fontFamily: SERIF,
-            fontSize: 22,
-            fontWeight: 600,
-            letterSpacing: "-.01em",
-            color: INK,
-          }}
-        >
-          Practice test {num}
-        </h4>
-        <span style={{ marginTop: 4, fontFamily: SANS, fontSize: 13.5, color: "#9097A8" }}>
-          Question revealed when you start
-        </span>
+      <div>
+        <h4 style={cardTitle}>Practice test {num}</h4>
+        <span style={{ ...cardSub, display: "block" }}>Question revealed when you start</span>
       </div>
 
-      <div style={{ height: 1, background: "#F0EDE1", marginTop: "auto" }} />
+      {topic ? (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span style={typeTag}>{topic}</span>
+        </div>
+      ) : null}
+
+      <Divider />
 
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
       >
-        <span style={{ fontFamily: SANS, fontSize: 13, color: "#9097A8" }}>{meta}</span>
-        <span
-          className="lp-card-cta"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            height: 38,
-            padding: "0 16px",
-            borderRadius: 10,
-            background: "#1A2138",
-            color: "#fff",
-            fontFamily: SANS,
-            fontSize: 14,
-            fontWeight: 700,
-            pointerEvents: "none",
-          }}
-        >
-          Start writing
-          {ARROW}
-        </span>
+        <span style={metaText}>{meta}</span>
+        <StartAction practised={done} />
       </div>
-    </div>
+    </button>
   );
 }
