@@ -8,7 +8,17 @@ import { clientEnv, isSupabaseConfigured } from "@/lib/env";
 // `/grade` is the public, no-login essay grader (the marketing funnel); `/` lets
 // the root page route anonymous visitors there instead of a login wall.
 // `/start` is the pre-auth onboarding wizard (account creation is its last step).
-const PUBLIC_PATHS = ["/", "/start", "/sign-in", "/sign-up", "/accept-invite", "/auth", "/grade"];
+const PUBLIC_PATHS = [
+  "/",
+  "/start",
+  "/sign-in",
+  "/sign-up",
+  "/accept-invite",
+  "/auth",
+  "/grade",
+  "/robots.txt",
+  "/sitemap.xml",
+];
 
 function isPublicPath(pathname: string): boolean {
   // APIs authenticate themselves; redirecting them to /sign-in would be wrong.

@@ -8,6 +8,7 @@ import { BandCountUp } from "@/components/landing/band-countup";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
+import { getSiteUrl, LANDING_DESCRIPTION, PREVIEW_IMAGE, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
 
 // Marketing fonts — scoped to this page via CSS variables, so the rest of the
 // app keeps Geist. Newsreader (serif display) + Hanken Grotesk (UI sans) +
@@ -40,10 +41,32 @@ const INK = "#1A1C33";
 const MUTED = "#565a72";
 
 export const metadata: Metadata = {
-  title: "Know your real IELTS band — then close the gap | Writing & Reading coach",
-  description:
-    "Watch a calibrated, conservative AI examiner grade your IELTS essay criterion by criterion, " +
-    "show the one fix that moves you up, and track every band as you improve. Original content, no past papers.",
+  title: "IELTS Practice with AI Band Feedback — Writing, Reading, Listening & CEFR",
+  description: LANDING_DESCRIPTION,
+  keywords: SEO_KEYWORDS,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "IELTS Practice with AI Band Feedback — EngProgress",
+    description: LANDING_DESCRIPTION,
+    images: [
+      {
+        url: PREVIEW_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "EngProgress IELTS practice dashboard and AI feedback",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "IELTS Practice with AI Band Feedback — EngProgress",
+    description: LANDING_DESCRIPTION,
+    images: [PREVIEW_IMAGE],
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -55,6 +78,21 @@ export default async function Home() {
   const session = await getSession();
   if (session) redirect(roleHome(session.role));
   const home: string | null = null;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: SITE_NAME,
+    url: getSiteUrl(),
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web",
+    description: LANDING_DESCRIPTION,
+    keywords: SEO_KEYWORDS.join(", "),
+    offers: {
+      "@type": "Offer",
+      category: "IELTS practice platform",
+    },
+    educationalUse: ["IELTS practice", "CEFR practice", "IELTS band improvement"],
+  };
 
   return (
     <div
@@ -66,6 +104,10 @@ export default async function Home() {
         minHeight: "100%",
       }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* Reveal sections as they scroll into view (no-JS keeps them visible). */}
       <noscript>
         <style>{".reveal,.reveal-stagger>*{opacity:1;transform:none;filter:none}"}</style>

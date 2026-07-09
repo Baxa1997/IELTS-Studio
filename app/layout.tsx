@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
+import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,54 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EngProgress — IELTS Writing & Reading",
-  description: "EngProgress — AI platform for IELTS Writing and Reading.",
+  metadataBase: new URL(getSiteUrl()),
+  applicationName: SITE_NAME,
+  title: {
+    default: "EngProgress — IELTS Practice with AI Band Feedback",
+    template: "%s | EngProgress",
+  },
+  description: SEO_DESCRIPTION,
+  keywords: SEO_KEYWORDS,
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "education",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "EngProgress",
+    title: "EngProgress — IELTS Practice with AI Band Feedback",
+    description: SEO_DESCRIPTION,
+    images: [
+      {
+        url: PREVIEW_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "EngProgress IELTS practice with AI band feedback",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EngProgress — IELTS Practice with AI Band Feedback",
+    description: SEO_DESCRIPTION,
+    images: [PREVIEW_IMAGE],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 // Without this, mobile browsers assume a ~980px layout viewport and render the
