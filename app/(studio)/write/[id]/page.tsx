@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ n?: string }>;
 }
 
 /**
@@ -23,10 +24,12 @@ interface PageProps {
  * the studio discards the unsubmitted draft (see the discard route), so coming
  * back always starts from a blank page. Past graded work lives in Activities.
  */
-export default async function WriteStudioPage({ params }: PageProps) {
+export default async function WriteStudioPage({ params, searchParams }: PageProps) {
   const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect(roleHome(profile.role));
   const { id } = await params;
+  const { n } = await searchParams;
+  const practiceNo = n && /^\d+$/.test(n) ? Number(n) : null;
 
   const supabase = await createClient();
   const { data: p } = await supabase
@@ -54,7 +57,7 @@ export default async function WriteStudioPage({ params }: PageProps) {
   // Always a clean, timed attempt: no draft is resumed.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
-      <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} />
+      <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} practiceNo={practiceNo} />
     </div>
   );
 }

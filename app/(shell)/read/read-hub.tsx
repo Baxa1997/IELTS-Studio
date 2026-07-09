@@ -76,7 +76,7 @@ export function ReadingHub({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function startLibrary(kind: Tab, id: string) {
+  async function startLibrary(kind: Tab, id: string, num?: number) {
     if (loadingId) return;
     setLoadingId(id);
     setError(null);
@@ -92,7 +92,12 @@ export function ReadingHub({
         setLoadingId(null);
         return;
       }
-      router.push(kind === "test" ? `/read/test/${body.id}` : `/read/${body.id}`);
+      // Carry the card's "Practice test N" number into the runner so the header
+      // shows the same number the learner clicked.
+      const suffix = num != null ? `?n=${num}` : "";
+      router.push(
+        kind === "test" ? `/read/test/${body.id}${suffix}` : `/read/${body.id}${suffix}`,
+      );
     } catch {
       setError("Network error — please try again.");
       setLoadingId(null);
@@ -199,14 +204,14 @@ export function ReadingHub({
             <>
               <SectionLabel>Your tests</SectionLabel>
               <Grid>
-                {ownTests.map((t) => (
+                {ownTests.map((t, i) => (
                   <TestTile
                     key={t.id}
-                    title={`Reading test ${t.seq}`}
+                    title={`Practice test ${i + 1}`}
                     footerLeft={fmtDate(t.createdAt)}
                     isNew
                     practised={t.practised}
-                    href={`/read/test/${t.id}`}
+                    href={`/read/test/${t.id}?n=${i + 1}`}
                   />
                 ))}
               </Grid>
@@ -217,17 +222,20 @@ export function ReadingHub({
             <>
               <SectionLabel>Ready to start</SectionLabel>
               <Grid>
-                {libraryTests.map((t) => (
-                  <TestTile
-                    key={t.id}
-                    title="Sample reading test"
-                    footerLeft={
-                      t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
-                    }
-                    onStart={() => void startLibrary("test", t.id)}
-                    loading={loadingId === t.id}
-                  />
-                ))}
+                {libraryTests.map((t, i) => {
+                  const num = ownTests.length + i + 1;
+                  return (
+                    <TestTile
+                      key={t.id}
+                      title={`Practice test ${num}`}
+                      footerLeft={
+                        t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
+                      }
+                      onStart={() => void startLibrary("test", t.id, num)}
+                      loading={loadingId === t.id}
+                    />
+                  );
+                })}
               </Grid>
             </>
           ) : null}
@@ -249,8 +257,14 @@ export function ReadingHub({
             <>
               <SectionLabel>Your passages</SectionLabel>
               <Grid>
-                {ownPassages.map((p) => (
-                  <PassageTile key={p.id} p={p} isNew href={`/read/${p.id}`} />
+                {ownPassages.map((p, i) => (
+                  <PassageTile
+                    key={p.id}
+                    p={p}
+                    num={i + 1}
+                    isNew
+                    href={`/read/${p.id}?n=${i + 1}`}
+                  />
                 ))}
               </Grid>
             </>
@@ -260,14 +274,18 @@ export function ReadingHub({
             <>
               <SectionLabel>Ready to start</SectionLabel>
               <Grid>
-                {libraryPassages.map((p) => (
-                  <PassageTile
-                    key={p.id}
-                    p={p}
-                    onStart={() => void startLibrary("passage", p.id)}
-                    loading={loadingId === p.id}
-                  />
-                ))}
+                {libraryPassages.map((p, i) => {
+                  const num = ownPassages.length + i + 1;
+                  return (
+                    <PassageTile
+                      key={p.id}
+                      p={p}
+                      num={num}
+                      onStart={() => void startLibrary("passage", p.id, num)}
+                      loading={loadingId === p.id}
+                    />
+                  );
+                })}
               </Grid>
             </>
           ) : null}
@@ -349,12 +367,15 @@ function TestTile({
 /** A passage card. Link (own) or button (library sample → clones on click). */
 function PassageTile({
   p,
+  num,
   href,
   onStart,
   loading,
   isNew,
 }: {
   p: PassageCard;
+  /** Display number — the card shows "Practice test N"; the real topic drops to the subtitle. */
+  num?: number;
   href?: string;
   onStart?: () => void;
   loading?: boolean;
@@ -395,9 +416,9 @@ function PassageTile({
             whiteSpace: "nowrap",
           }}
         >
-          {p.title}
+          {num != null ? `Practice test ${num}` : p.title}
         </h4>
-        <span style={cardSub}>{p.topic ?? "Academic Reading"}</span>
+        <span style={cardSub}>{p.topic ?? p.title ?? "Academic Reading"}</span>
       </div>
       {p.types.length ? (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

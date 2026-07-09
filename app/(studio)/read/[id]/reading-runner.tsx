@@ -53,7 +53,7 @@ const MAX_FONT = 1.4;
  * the submit/results path is the single-passage one. The shared QuestionGroups
  * gives it the Cambridge instruction headers + inline gap-fills too.
  */
-export function ReadingRunner({ passage, questions, learnerContext = "" }: { passage: RunnerPassage; questions: DeliveredQuestion[]; learnerContext?: string }) {
+export function ReadingRunner({ passage, questions, learnerContext = "", practiceNo = null }: { passage: RunnerPassage; questions: DeliveredQuestion[]; learnerContext?: string; practiceNo?: number | null }) {
   const accent = INDIGO;
   const exitHref = "/read";
   const [phase, setPhase] = useState<Phase>("reading");
@@ -187,7 +187,7 @@ export function ReadingRunner({ passage, questions, learnerContext = "" }: { pas
             </Link>
             <span aria-hidden style={{ width: 1, height: 22, background: "#ECEBF2", flex: "none" }} />
             <span style={{ fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {kindLabel} Reading · Passage practice
+              {practiceNo != null ? `Practice test ${practiceNo} · ${kindLabel} Reading` : `${kindLabel} Reading · Passage practice`}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>

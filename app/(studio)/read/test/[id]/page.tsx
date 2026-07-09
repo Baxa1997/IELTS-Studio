@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ n?: string }>;
 }
 
 /**
@@ -23,10 +24,12 @@ interface PageProps {
  * the answer keys), so we load them with the service-role client and project an
  * ANSWER-FREE shape — no key/proof/explanation reaches the browser until submit.
  */
-export default async function ReadingTestPage({ params }: PageProps) {
+export default async function ReadingTestPage({ params, searchParams }: PageProps) {
   const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect(roleHome(profile.role));
   const { id } = await params;
+  const { n } = await searchParams;
+  const practiceNo = n && /^\d+$/.test(n) ? Number(n) : null;
 
   const supabase = await createClient();
   const { data: test } = await supabase
@@ -88,7 +91,7 @@ export default async function ReadingTestPage({ params }: PageProps) {
   // Full-screen, no sidebar — the focused exam experience.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
-      <ReadingTestRunner testId={id} passages={testPassages} learnerContext={learnerContext} />
+      <ReadingTestRunner testId={id} passages={testPassages} learnerContext={learnerContext} practiceNo={practiceNo} />
     </div>
   );
 }

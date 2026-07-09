@@ -119,11 +119,14 @@ export function WritingStudio({
   initialContent = "",
   resumed = false,
   learnerContext = "",
+  practiceNo = null,
 }: {
   prompt: ServedPrompt;
   essayId?: string | null;
   initialContent?: string;
   resumed?: boolean;
+  /** "Practice test N" — shown in the header when opened from a numbered library card. */
+  practiceNo?: number | null;
   /** Compact "who is this learner" line (target/level/weakest area) so the coach
    *  pitches its help to the right level. Context only — never quoted as a band. */
   learnerContext?: string;
@@ -438,6 +441,7 @@ export function WritingStudio({
           <div className="lp-hide-sm" style={{ width: 1, height: 24, background: theme.line }} />
           <div className="lp-hide-sm" style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
             <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: INK, color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flexShrink: 0 }}>{taskNo}</span>
+            {practiceNo != null ? (<span style={{ fontSize: 14, fontWeight: 700, color: INK, flexShrink: 0 }}>Practice test {practiceNo}</span>) : null}
             <span style={{ fontSize: 14, fontWeight: 500, color: "#41496A" }}>{taskKindLabel}</span>
             {prompt.topic_family && prompt.topic_family !== "custom" ? (<><span style={{ color: "#C7C3B4" }}>·</span><span style={{ fontSize: 14, color: "#767C90", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prompt.topic_family}</span></>) : null}
             {prompt.difficulty ? (<><span style={{ color: "#C7C3B4" }}>·</span><span style={{ fontSize: 14, color: "#767C90", flexShrink: 0 }}>Band {prompt.difficulty}</span></>) : null}

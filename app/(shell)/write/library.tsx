@@ -133,6 +133,12 @@ export function WritingLibrary({
       .sort((a, b) => (a.difficulty ?? 99) - (b.difficulty ?? 99));
     return [...generated, ...curated];
   }, [library, tab]);
+  // Stable "Practice test N" number per card — indexed off the full tab list (not the
+  // filtered view) so a card keeps its number when searches/filters are applied.
+  const numById = useMemo(
+    () => new Map(cards.map((p, i) => [p.id, i + 1])),
+    [cards],
+  );
   const visible = cards.filter((p) => {
     if (
       query.trim() &&
@@ -146,9 +152,10 @@ export function WritingLibrary({
     return true;
   });
 
-  function open(id: string) {
+  function open(id: string, num?: number) {
     setBusy(true);
-    router.push(`/write/${id}`);
+    // Carry the card's "Practice test N" number into the studio header.
+    router.push(num != null ? `/write/${id}?n=${num}` : `/write/${id}`);
   }
 
   async function generate(kind: string) {
@@ -863,9 +870,10 @@ export function WritingLibrary({
                 <PromptCard
                   key={p.id}
                   p={p}
+                  num={numById.get(p.id) ?? 0}
                   done={done.has(p.id)}
                   busy={busy}
-                  onOpen={() => open(p.id)}
+                  onOpen={() => open(p.id, numById.get(p.id))}
                 />
               ))}
             </div>
@@ -1063,11 +1071,13 @@ function AiCorner() {
 
 function PromptCard({
   p,
+  num,
   done,
   busy,
   onOpen,
 }: {
   p: LibraryPrompt;
+  num: number;
   done: boolean;
   busy: boolean;
   onOpen: () => void;
@@ -1153,22 +1163,25 @@ function PromptCard({
         </span>
       </div>
 
-      <p
-        style={{
-          margin: 0,
-          height: 78,
-          fontFamily: SERIF,
-          fontSize: 17,
-          lineHeight: 1.5,
-          color: "#2B3145",
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        }}
-      >
-        {p.prompt_text}
-      </p>
+      {/* The actual question is hidden until the card is opened — every card reads as
+          a numbered "Practice test N", matching Reading & Listening. */}
+      <div style={{ height: 78, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <h4
+          style={{
+            margin: 0,
+            fontFamily: SERIF,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: "-.01em",
+            color: INK,
+          }}
+        >
+          Practice test {num}
+        </h4>
+        <span style={{ marginTop: 4, fontFamily: SANS, fontSize: 13.5, color: "#9097A8" }}>
+          Question revealed when you start
+        </span>
+      </div>
 
       <div style={{ height: 1, background: "#F0EDE1", marginTop: "auto" }} />
 

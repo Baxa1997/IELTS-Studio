@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ n?: string }>;
 }
 
 /**
@@ -24,10 +25,12 @@ interface PageProps {
  * shape — no answer_key, supporting_sentence, or explanation reaches the browser
  * until they submit.
  */
-export default async function ReadingRunnerPage({ params }: PageProps) {
+export default async function ReadingRunnerPage({ params, searchParams }: PageProps) {
   const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect(roleHome(profile.role));
   const { id } = await params;
+  const { n } = await searchParams;
+  const practiceNo = n && /^\d+$/.test(n) ? Number(n) : null;
 
   const supabase = await createClient();
   const { data: passage } = await supabase
@@ -74,7 +77,7 @@ export default async function ReadingRunnerPage({ params }: PageProps) {
   // Full-screen, no sidebar — a focused single detail page for the actual reading.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
-      <ReadingRunner passage={runnerPassage} questions={delivered} learnerContext={learnerContext} />
+      <ReadingRunner passage={runnerPassage} questions={delivered} learnerContext={learnerContext} practiceNo={practiceNo} />
     </div>
   );
 }

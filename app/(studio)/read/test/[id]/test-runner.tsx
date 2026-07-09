@@ -45,7 +45,7 @@ const OPTION_LETTERS = "ABCDEFGH".split("");
 
 // ---- Runner ----------------------------------------------------------------
 
-export function ReadingTestRunner({ testId, passages, learnerContext = "" }: { testId: string; passages: TestPassage[]; learnerContext?: string }) {
+export function ReadingTestRunner({ testId, passages, learnerContext = "", practiceNo = null }: { testId: string; passages: TestPassage[]; learnerContext?: string; practiceNo?: number | null }) {
   const [phase, setPhase] = useState<Phase>("reading");
   const [active, setActive] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -220,7 +220,7 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "" }: { t
             </Link>
             <span aria-hidden style={{ width: 1, height: 22, background: "#ECEBF2", flex: "none" }} />
             <span style={{ fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              Academic Reading · Full Test
+              {practiceNo != null ? `Practice test ${practiceNo} · Academic Reading` : "Academic Reading · Full Test"}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
