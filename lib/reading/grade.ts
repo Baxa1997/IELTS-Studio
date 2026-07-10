@@ -216,7 +216,14 @@ export function isCorrect(q: GradableQuestion, studentAnswer: string): boolean {
 /** A choice/matching answer: accept the option text or the bare letter/roman key. */
 function matchesOptionKey(q: GradableQuestion, student: string): boolean {
   const correctText = norm(resolveCorrectText(q.options, q.answer_key));
-  return student === correctText || student === norm(q.answer_key);
+  if (student === correctText || student === norm(q.answer_key)) return true;
+  // A bare letter/roman indexing the correct option is the same answer — the UI
+  // stores full option text, but grading mustn't depend on which form arrived.
+  if (q.options?.length) {
+    const i = letterToIndex(student) ?? romanToIndex(student);
+    if (i != null && i < q.options.length) return norm(q.options[i]) === correctText;
+  }
+  return false;
 }
 
 // ---- "Choose TWO letters" pairs ---------------------------------------------
