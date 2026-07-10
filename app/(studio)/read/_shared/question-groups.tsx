@@ -39,17 +39,19 @@ export function QuestionGroups({
   flags?: Record<string, boolean>;
   onToggleFlag?: (id: string) => void;
 }) {
-  const groups = groupByType(questions);
+  const groups = toRenderGroups(questions);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
-      {groups.map((group, gi) => {
+      {groups.map((rg, gi) => {
+        const group = rg.questions;
         const first = number(group[0]);
         const last = number(group[group.length - 1]);
         const range = first === last ? `Question ${first}` : `Questions ${first}–${last}`;
         const type = group[0].question_type;
         // Cambridge variants that ride on a base type: a summary answered from an
-        // A–J word bank (options present), and a notes box drawn as a flow-chart.
+        // A–J word bank (options present), a notes box drawn as a flow-chart, and
+        // a "Choose TWO letters" multiple-choice pair (one stem, one option set).
         const wordBank =
           type === "summary_completion" && group[0].options?.length ? group[0].options : null;
         const flowchart =
@@ -57,11 +59,16 @@ export function QuestionGroups({
         const instruction = readingGroupInstruction(type, group[0].word_limit, {
           wordBank: !!wordBank,
           layout: flowchart ? "flowchart" : undefined,
+          pickTwo: rg.pickTwo,
         });
-        // The shared lettered bank (A–J) shown once under the instruction — sentence
-        // endings, or a word-bank summary's list — same on every question.
+        // The shared lettered bank shown once under the instruction — sentence
+        // endings, the people of a matching-features block, or a word-bank
+        // summary's A–J list — same on every question.
         const letteredBank =
-          type === "matching_sentence_endings" ? group[0].options ?? null : wordBank;
+          type === "matching_sentence_endings" || type === "matching_features"
+            ? group[0].options ?? null
+            : wordBank;
+        const bankTitle = type === "matching_features" && letteredBank ? "List of People" : null;
         // Note completion renders as the structured Cambridge notes box (or, when the
         // block is flagged, a flow-chart) — not one card per line like other types.
         const isNote = type === "note_completion";
@@ -77,17 +84,33 @@ export function QuestionGroups({
             </div>
 
             {letteredBank ? (
-              <ul style={{ listStyle: "none", margin: 0, padding: "14px 18px", border: "1px solid #E5E3EF", borderRadius: 12, background: "#FAFAFD", display: "flex", flexDirection: "column", gap: 7 }}>
-                {letteredBank.map((opt, i) => (
-                  <li key={i} style={{ display: "flex", gap: 9, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: INK }}>
-                    <span style={{ flex: "none", fontWeight: 700, color: INDIGO }}>{ENDING_LETTERS[i] ?? i + 1}</span>
-                    <span>{opt}</span>
-                  </li>
-                ))}
-              </ul>
+              <div style={{ border: "1px solid #E5E3EF", borderRadius: 12, background: "#FAFAFD", padding: "14px 18px" }}>
+                {bankTitle ? (
+                  <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 13.5, color: INK, margin: "0 0 9px" }}>{bankTitle}</p>
+                ) : null}
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 7 }}>
+                  {letteredBank.map((opt, i) => (
+                    <li key={i} style={{ display: "flex", gap: 9, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: INK }}>
+                      <span style={{ flex: "none", fontWeight: 700, color: INDIGO }}>{ENDING_LETTERS[i] ?? i + 1}</span>
+                      <span>{opt}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
 
-            {isNote ? (
+            {rg.pickTwo ? (
+              <PickTwoPanel
+                qa={group[0]}
+                qb={group[1]}
+                answers={answers}
+                onAnswer={onAnswer}
+                flags={flags}
+                onToggleFlag={onToggleFlag}
+              />
+            ) : null}
+
+            {!rg.pickTwo && isNote ? (
               flowchart ? (
                 <FlowChartBlock
                   group={group}
@@ -109,7 +132,7 @@ export function QuestionGroups({
               )
             ) : null}
 
-            {!isNote && group.map((q) => {
+            {!rg.pickTwo && !isNote && group.map((q) => {
               const n = number(q);
               const gap = isReadingGapType(q.question_type);
               const flagged = !!flags?.[q.id];
@@ -179,6 +202,128 @@ function groupByType(questions: DeliveredQuestion[]): DeliveredQuestion[][] {
     else out.push([q]);
   }
   return out;
+}
+
+/** One renderable group: a run of same-type questions, or a "Choose TWO letters"
+ *  pair pulled out of a multiple-choice run into its own headed block. */
+interface RenderGroup {
+  questions: DeliveredQuestion[];
+  pickTwo: boolean;
+}
+
+/** Two consecutive multiple-choice questions sharing one stem AND one option set
+ *  are a choose-two pair — the generator forces that shape server-side, so the
+ *  match is deterministic (ordinary MCQs always have distinct stems). */
+function isPickTwoPair(a?: DeliveredQuestion, b?: DeliveredQuestion): boolean {
+  return (
+    !!a &&
+    !!b &&
+    a.question_type === "multiple_choice" &&
+    b.question_type === "multiple_choice" &&
+    !!a.options?.length &&
+    a.prompt === b.prompt &&
+    JSON.stringify(a.options) === JSON.stringify(b.options)
+  );
+}
+
+/** Type-grouping plus pair extraction, so a pick-two pair gets its own Cambridge
+ *  header ("Questions 20–21 · Choose TWO letters.") instead of melting into a
+ *  neighbouring single-answer MCQ block. */
+function toRenderGroups(questions: DeliveredQuestion[]): RenderGroup[] {
+  const out: RenderGroup[] = [];
+  for (const typeGroup of groupByType(questions)) {
+    if (typeGroup[0].question_type !== "multiple_choice") {
+      out.push({ questions: typeGroup, pickTwo: false });
+      continue;
+    }
+    let buf: DeliveredQuestion[] = [];
+    const flush = () => {
+      if (buf.length) {
+        out.push({ questions: buf, pickTwo: false });
+        buf = [];
+      }
+    };
+    for (let i = 0; i < typeGroup.length; i++) {
+      if (isPickTwoPair(typeGroup[i], typeGroup[i + 1])) {
+        flush();
+        out.push({ questions: [typeGroup[i], typeGroup[i + 1]], pickTwo: true });
+        i++;
+      } else {
+        buf.push(typeGroup[i]);
+      }
+    }
+    flush();
+  }
+  return out;
+}
+
+/**
+ * "Choose TWO letters" — one stem and one shared option set answered by exactly
+ * two picks. The two selections are stored (sorted by letter) into the pair's two
+ * answer slots, so the existing answers map, autosave, progress count, and grading
+ * all work unchanged; the grader credits each correct letter once.
+ */
+function PickTwoPanel({
+  qa,
+  qb,
+  answers,
+  onAnswer,
+  flags,
+  onToggleFlag,
+}: {
+  qa: DeliveredQuestion;
+  qb: DeliveredQuestion;
+  answers: Record<string, string>;
+  onAnswer: (id: string, value: string) => void;
+  flags?: Record<string, boolean>;
+  onToggleFlag?: (id: string) => void;
+}) {
+  const options = qa.options ?? [];
+  const selected = [answers[qa.id], answers[qb.id]].filter(Boolean) as string[];
+  const flagged = !!flags?.[qa.id];
+
+  const toggle = (letter: string) => {
+    let next: string[];
+    if (selected.includes(letter)) next = selected.filter((l) => l !== letter);
+    else if (selected.length >= 2) return; // two picked — deselect one first
+    else next = [...selected, letter].sort();
+    onAnswer(qa.id, next[0] ?? "");
+    onAnswer(qb.id, next[1] ?? "");
+  };
+
+  return (
+    <div id={`q-${qa.id}`} role="group" style={{ scrollMarginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: SANS, fontSize: 15.5, lineHeight: 1.55, color: INK, whiteSpace: "pre-wrap" }}>
+          {qa.prompt}
+        </span>
+        {onToggleFlag ? (
+          <button type="button" onClick={() => onToggleFlag(qa.id)} aria-pressed={flagged} title="Flag for review" style={flagStyle(flagged)}>⚑</button>
+        ) : null}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 10 }}>
+        {options.map((opt, i) => {
+          const letter = ENDING_LETTERS[i] ?? String(i + 1);
+          const on = selected.includes(letter);
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => toggle(letter)}
+              aria-pressed={on}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? INDIGO : "#EAE8F2"}`, background: on ? "#F6F5FE" : "#fff", fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
+            >
+              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? INDIGO : "#C9C7D6"}`, background: on ? INDIGO : "#fff", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
+                {on ? "✓" : ""}
+              </span>
+              <strong style={{ width: 16, flex: "none", color: INDIGO }}>{letter}</strong>
+              <span style={{ flex: 1 }}>{opt}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function flagStyle(on: boolean): React.CSSProperties {

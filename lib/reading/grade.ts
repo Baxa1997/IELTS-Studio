@@ -80,9 +80,22 @@ export function gradeReadingAttempt(
   const breakdown: TypeBreakdown = {};
   let correctCount = 0;
 
+  // "Choose TWO letters" pairs: each correct letter may only be credited ONCE per
+  // pair — the runner's shared panel already enforces two distinct picks, but the
+  // grader must not double-count if both rows somehow carry the same letter.
+  const pairUsed = new Map<string, Set<string>>();
+
   const items: GradedItem[] = ordered.map((q) => {
     const raw = (answers[q.id] ?? "").trim();
-    const correct = isCorrect(q, raw);
+    let correct = isCorrect(q, raw);
+    if (correct && isPickTwoQuestion(q)) {
+      const pairId = `${q.passage_order ?? 0}|${q.prompt}|${q.answer_key}`;
+      const used = pairUsed.get(pairId) ?? new Set<string>();
+      pairUsed.set(pairId, used);
+      const letter = pickTwoStudentLetter(q, norm(raw));
+      if (letter === null || used.has(letter)) correct = false;
+      else used.add(letter);
+    }
     if (correct) correctCount += 1;
 
     const tally = (breakdown[q.question_type] ??= { attempted: 0, correct: 0 });
@@ -171,8 +184,18 @@ export function isCorrect(q: GradableQuestion, studentAnswer: string): boolean {
       return canonVerdict(student) === canonVerdict(q.answer_key) && canonVerdict(student) !== "";
 
     case "multiple_choice":
+      // A "Choose TWO letters" pair stores "A or C" on both rows: the student's
+      // pick (a letter, or the option's text) is right if it is EITHER correct
+      // letter — gradeReadingAttempt then stops the same letter counting twice.
+      if (isPickTwoQuestion(q)) {
+        const letter = pickTwoStudentLetter(q, student);
+        return letter !== null && pickTwoKeyLetters(q.answer_key).includes(letter);
+      }
+      return matchesOptionKey(q, student);
+
     case "matching_headings":
     case "matching_information":
+    case "matching_features":
     case "matching_sentence_endings":
       return matchesOptionKey(q, student);
 
@@ -194,6 +217,36 @@ export function isCorrect(q: GradableQuestion, studentAnswer: string): boolean {
 function matchesOptionKey(q: GradableQuestion, student: string): boolean {
   const correctText = norm(resolveCorrectText(q.options, q.answer_key));
   return student === correctText || student === norm(q.answer_key);
+}
+
+// ---- "Choose TWO letters" pairs ---------------------------------------------
+
+/** The combined key both rows of a choose-two pair store ("A or C"). Unambiguous
+ *  against option text and single-letter keys, so it doubles as the pair marker.
+ *  Kept in lockstep with the generation side (service.ts forcePickTwoPairs). */
+export const PICK_TWO_KEY_RE = /^[A-J]\s+or\s+[A-J]$/i;
+
+export function isPickTwoQuestion(
+  q: Pick<GradableQuestion, "question_type" | "answer_key">,
+): boolean {
+  return q.question_type === "multiple_choice" && PICK_TWO_KEY_RE.test(q.answer_key.trim());
+}
+
+/** The pair's two correct letters, lowercase (["a","c"] from "A or C"). */
+function pickTwoKeyLetters(answerKey: string): string[] {
+  return answerKey
+    .trim()
+    .toLowerCase()
+    .split(/\s+or\s+/)
+    .filter((s) => /^[a-j]$/.test(s));
+}
+
+/** Canonicalize a (normed) student answer to its option letter: a bare letter
+ *  passes through; option text resolves to its index. Null if neither. */
+function pickTwoStudentLetter(q: GradableQuestion, student: string): string | null {
+  if (/^[a-j]$/.test(student)) return student;
+  const idx = (q.options ?? []).findIndex((o) => norm(o) === student);
+  return idx >= 0 ? String.fromCharCode(97 + idx) : null;
 }
 
 /**
@@ -378,6 +431,17 @@ function wordsToNumber(phrase: string): number | null {
 export function resolveCorrectText(options: string[] | null, answerKey: string): string {
   const key = answerKey.trim();
   if (!options || options.length === 0) return key;
+
+  // A choose-two pair's combined key ("A or C") resolves both letters, so the
+  // review shows the two full option texts, not two bare letters.
+  if (PICK_TWO_KEY_RE.test(key)) {
+    const parts = key.toLowerCase().split(/\s+or\s+/);
+    const texts = parts.map((p) => {
+      const i = letterToIndex(p);
+      return i != null && i < options.length ? options[i] : p.toUpperCase();
+    });
+    return texts.join("  ·  ");
+  }
 
   const keyNorm = norm(key);
   const direct = options.find((o) => norm(o) === keyNorm);

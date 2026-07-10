@@ -11,8 +11,16 @@ import { z } from "zod";
 
 import type { Figure } from "@/lib/writing/figure";
 
-/** The four IELTS Writing Task 2 question shapes we generate. */
-export const TASK2_CATEGORIES = ["opinion", "discussion", "problem_solution", "two_part"] as const;
+/** The six IELTS Writing Task 2 question shapes we generate — the full rotation
+ *  the real exam draws from (Cambridge 19–21 use all six across their 12 tests). */
+export const TASK2_CATEGORIES = [
+  "opinion",
+  "discussion",
+  "problem_solution",
+  "two_part",
+  "advantages_disadvantages",
+  "positive_negative",
+] as const;
 export type Task2Category = (typeof TASK2_CATEGORIES)[number];
 
 /** Human labels for UI / logging. */
@@ -21,6 +29,8 @@ export const TASK2_CATEGORY_LABELS: Record<Task2Category, string> = {
   discussion: "Discussion (both views + opinion)",
   problem_solution: "Problem–solution (causes/effects)",
   two_part: "Two-part question",
+  advantages_disadvantages: "Advantages vs disadvantages",
+  positive_negative: "Positive or negative development",
 };
 
 export const PROMPT_STATUSES = ["pending", "approved", "rejected"] as const;

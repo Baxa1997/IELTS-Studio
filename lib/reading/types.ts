@@ -16,6 +16,7 @@ export const READING_QUESTION_TYPES = [
   "yes_no_not_given",
   "matching_headings",
   "matching_information",
+  "matching_features",
   "matching_sentence_endings",
   "sentence_completion",
   "summary_completion",
@@ -29,6 +30,7 @@ export const READING_QUESTION_LABELS: Record<ReadingQuestionType, string> = {
   yes_no_not_given: "Yes / No / Not Given",
   matching_headings: "Matching headings",
   matching_information: "Matching information",
+  matching_features: "Matching features",
   matching_sentence_endings: "Matching sentence endings",
   sentence_completion: "Sentence completion",
   summary_completion: "Summary completion",
@@ -74,18 +76,23 @@ const FIXED_INSTRUCTIONS: Partial<Record<ReadingQuestionType, string>> = {
     "Choose the correct heading for each paragraph from the list of headings below.",
   matching_information:
     "Which paragraph contains the following information? Write the correct letter. You may use any letter more than once.",
+  matching_features:
+    "Look at the following statements and the list of people below. Match each statement with the correct person. You may use any letter more than once.",
   matching_sentence_endings:
     "Complete each sentence with the correct ending from the list below.",
   multiple_choice: "Choose the correct letter.",
 };
 
 /** Cambridge real-exam VARIANTS that ride on an existing type (no new enum):
- *  a summary filled from a lettered list, and a notes box drawn as a flow-chart. */
+ *  a summary filled from a lettered list, a notes box drawn as a flow-chart, and
+ *  a multiple-choice PAIR answered by two letters from one shared option set. */
 export interface ReadingGroupVariant {
   /** summary_completion answered from an A–J word bank, not words from the passage. */
   wordBank?: boolean;
   /** note_completion rendered as a flow-chart of connected process stages. */
   layout?: "flowchart";
+  /** multiple_choice "Choose TWO letters" pair: 2 questions, one stem + option set. */
+  pickTwo?: boolean;
 }
 
 /**
@@ -108,6 +115,10 @@ export function readingGroupInstruction(
   // has no word limit — the rubric names the list instead of a limit.
   if (type === "summary_completion" && variant?.wordBank) {
     return "Complete the summary using the list of words, A–J, below.";
+  }
+  // A "Choose TWO letters" pair: one stem, one shared option set, two answers.
+  if (type === "multiple_choice" && variant?.pickTwo) {
+    return "Choose TWO letters.";
   }
   const lead =
     type === "note_completion" && variant?.layout === "flowchart"
@@ -165,24 +176,54 @@ export interface ReadingGroupPlan extends ReadingGroupVariant {
  * fixed. No two passages in a layout repeat the same type mix. Content is always
  * original (CLAUDE.md §IP) — only the STRUCTURE mirrors the real exam.
  *
- * Three Cambridge variants ride on existing types (no new enum / migration):
+ * PLACEMENT RULES (verified against all 12 tests in Cambridge 19–21): P1 is always
+ * TRUE/FALSE/NOT GIVEN plus a completion block (notes/sentences/flow-chart);
+ * YES/NO/NOT GIVEN appears only in P3 (it asks about the WRITER'S views, which
+ * needs the argumentative P3 passage — some real tests have none at all); and
+ * matching_information sits in P2 or P3, never P1.
+ *
+ * Four Cambridge variants ride on existing types (no new enum / migration):
  *   • summary_completion + `wordBank` → "choose from the list A–J" summary.
  *   • note_completion + `layout:"flowchart"` → a flow-chart of process stages.
+ *   • multiple_choice + `pickTwo` → a "Choose TWO letters" pair: exactly 2
+ *     questions sharing one stem and one 5-option set, each worth one mark.
  *   • matching_information → the "which paragraph contains X" (A–G) task, the ONLY
  *     type whose passage is printed with LETTERED paragraphs. Exactly one passage
- *     per layout carries it, in a different position across A/B/C (P1/P2/P3), so
- *     every full test has one lettered passage and the other two are plain prose.
+ *     per layout carries it (P2 or P3), so every full test has one lettered
+ *     passage and the other two are plain prose.
+ * matching_features (statements ↔ the people who made them, a shared A–E list) is
+ * a full type of its own — it appears in half of all recent Cambridge tests.
  */
 export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>> = [
-  // Layout A — lettered passage = P1 (matching information) · word-bank summary · verdict P3.
+  // Layout A — the Cambridge-21-Test-1 shape: notes-led P1 · lettered P2 with
+  // people-matching · MCQ + word-bank summary + writer's-views P3.
   [
     [
-      { type: "matching_information", count: 6 },
-      { type: "true_false_not_given", count: 7 },
+      { type: "note_completion", count: 7 },
+      { type: "true_false_not_given", count: 6 },
     ],
     [
+      { type: "matching_information", count: 4 },
+      { type: "summary_completion", count: 4 },
+      { type: "matching_features", count: 5 },
+    ],
+    [
+      { type: "multiple_choice", count: 4 },
+      { type: "summary_completion", count: 6, wordBank: true },
+      { type: "yes_no_not_given", count: 4 },
+    ],
+  ],
+  // Layout B — the Cambridge-19 shape: sentences P1 · lettered P2 with a
+  // choose-TWO pair · sentence-endings + writer's-views P3.
+  [
+    [
+      { type: "true_false_not_given", count: 7 },
       { type: "sentence_completion", count: 6 },
-      { type: "summary_completion", count: 7, wordBank: true },
+    ],
+    [
+      { type: "matching_information", count: 5 },
+      { type: "multiple_choice", count: 2, pickTwo: true },
+      { type: "summary_completion", count: 6 },
     ],
     [
       { type: "multiple_choice", count: 4 },
@@ -190,36 +231,24 @@ export const FULL_TEST_LAYOUTS: ReadonlyArray<ReadonlyArray<ReadingGroupPlan[]>>
       { type: "yes_no_not_given", count: 6 },
     ],
   ],
-  // Layout B — sentence completion P1 · lettered passage = P2 (matching information) · flow-chart P3.
+  // Layout C — the Cambridge-20/21-Test-4 shape: flow-chart P1 · people-matching +
+  // word-bank + choose-TWO P2 · lettered P3 that pairs matching types (no YNNG,
+  // like real C20 T3/T4).
   [
     [
       { type: "true_false_not_given", count: 7 },
-      { type: "sentence_completion", count: 6 },
+      { type: "note_completion", count: 3, layout: "flowchart" },
+      { type: "sentence_completion", count: 3 },
     ],
     [
-      { type: "matching_information", count: 7 },
-      { type: "summary_completion", count: 6 },
-    ],
-    [
-      { type: "yes_no_not_given", count: 5 },
-      { type: "note_completion", count: 5, layout: "flowchart" },
-      { type: "multiple_choice", count: 4 },
-    ],
-  ],
-  // Layout C — verdicts-led P1 · word-bank summary P2 · lettered passage = P3 (matching information).
-  [
-    [
-      { type: "yes_no_not_given", count: 6 },
-      { type: "note_completion", count: 7 },
-    ],
-    [
-      { type: "true_false_not_given", count: 7 },
+      { type: "matching_features", count: 5 },
       { type: "summary_completion", count: 6, wordBank: true },
+      { type: "multiple_choice", count: 2, pickTwo: true },
     ],
     [
-      { type: "matching_information", count: 6 },
-      { type: "multiple_choice", count: 4 },
-      { type: "sentence_completion", count: 4 },
+      { type: "matching_information", count: 5 },
+      { type: "matching_features", count: 5 },
+      { type: "summary_completion", count: 4 },
     ],
   ],
 ];
@@ -286,6 +315,8 @@ export const generateReadingInputSchema = z.object({
         wordBank: z.boolean().optional(),
         // note_completion drawn as a flow-chart of process stages.
         layout: z.literal("flowchart").optional(),
+        // multiple_choice "Choose TWO letters" pair (count is always 2).
+        pickTwo: z.boolean().optional(),
       }),
     )
     .min(1)

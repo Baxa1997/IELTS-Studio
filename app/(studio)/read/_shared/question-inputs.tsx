@@ -79,14 +79,16 @@ export function QuestionInput({
 
     case "matching_headings":
     case "matching_information":
+    case "matching_features":
     case "matching_sentence_endings": {
       if (!options?.length) return <TextAnswer value={value} onChange={onChange} />;
-      // Headings are labelled with roman numerals, sentence endings with letters
-      // (A–F), and matching-information answers carry the bare option text.
+      // Headings are labelled with roman numerals, sentence endings and the
+      // matching-features people with letters (A–F), and matching-information
+      // answers carry the bare option text (paragraph letters).
       const label = (i: number) =>
         question_type === "matching_headings"
           ? `${roman(i)}. ${options[i]}`
-          : question_type === "matching_sentence_endings"
+          : question_type === "matching_sentence_endings" || question_type === "matching_features"
             ? `${LETTERS[i] ?? i + 1}. ${options[i]}`
             : options[i];
       return (

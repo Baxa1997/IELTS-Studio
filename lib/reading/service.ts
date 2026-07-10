@@ -7,7 +7,7 @@ import { generate } from "@/lib/ai";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { expandOptionalParens, norm, splitAlternatives } from "./grade";
+import { expandOptionalParens, norm, PICK_TWO_KEY_RE, splitAlternatives } from "./grade";
 import {
   CONFIDENCE_THRESHOLD,
   DEFAULT_TARGET_BAND,
@@ -121,6 +121,7 @@ async function composeReadingSet(
           const flags = [
             g.wordBank ? "with a word bank A–J" : "",
             g.layout === "flowchart" ? "as a flow-chart" : "",
+            g.pickTwo ? "choose TWO letters" : "",
           ].filter(Boolean);
           return `${i + 1}) ${g.count}× ${g.type}${flags.length ? ` [${flags.join(", ")}]` : ""}`;
         })
@@ -150,6 +151,12 @@ async function composeReadingSet(
     console.error("[reading.compose] generate failed:", err);
     throw new ReadingServiceError(`Reading generation failed: ${msg(err)}`, "generation_failed");
   }
+
+  // "Choose TWO letters" pairs are plan-driven structure, so normalise them from
+  // the plan (shared stem/options, one combined two-letter key) rather than trust
+  // the model to keep the pair coherent. Runs BEFORE validation so the checker
+  // sees the pair exactly as it will be stored (still one answer per row).
+  const pickTwo = forcePickTwoPairs(set.questions, input.questionPlan);
 
   // 2) Second pass: check each answer key against the passage (separate call).
   let validation: ReadingValidationOutput | null = null;
@@ -185,7 +192,10 @@ async function composeReadingSet(
     // Objective code checks first — the LLM validator never sees the word limit
     // and can't be trusted on verbatim containment, so these are authoritative
     // and flag the question regardless of its verdict.
-    const problem = codeCheckProblem(q, set.body);
+    const pairProblem = pickTwo.malformed.has(q.number)
+      ? "malformed choose-two pair (missing twin, shared stem, or two distinct answers)"
+      : null;
+    const problem = pairProblem ?? codeCheckProblem(q, set.body);
     const needsReview =
       problem !== null ||
       !item ||
@@ -207,7 +217,9 @@ async function composeReadingSet(
       order_index: q.number ?? i + 1,
       prompt: q.prompt,
       options: q.options ?? null,
-      answer_key: q.answer,
+      // A choose-two pair stores the SAME combined "A or C" key on both rows —
+      // grading accepts either letter once per pair (like the listening pairs).
+      answer_key: pickTwo.combinedKey.get(q.number) ?? q.answer,
       supporting_sentence: q.supporting_sentence,
       explanation: q.explanation,
       word_limit: q.word_limit ?? null,
@@ -684,11 +696,41 @@ const MAX_PASSAGE_QUESTIONS = 15;
 /** Below this many confirmed questions a set isn't worth serving — regenerate. */
 const MIN_KEPT_QUESTIONS = 4;
 
+function isPickTwoRow(q: Pick<PreparedQuestion, "question_type" | "answer_key">): boolean {
+  return q.question_type === "multiple_choice" && PICK_TWO_KEY_RE.test(q.answer_key.trim());
+}
+
+/** A choose-two pair lives or dies TOGETHER: if either row failed a check, flag
+ *  both — half a "Which TWO…?" question is not servable. Pairs sit adjacent
+ *  (consecutive numbers, same stem + combined key), so one forward pass suffices. */
+function propagatePairFlags(prepared: PreparedQuestion[]): void {
+  for (let i = 0; i + 1 < prepared.length; i++) {
+    const a = prepared[i];
+    const b = prepared[i + 1];
+    if (isPickTwoRow(a) && isPickTwoRow(b) && a.answer_key === b.answer_key && a.prompt === b.prompt) {
+      if (a.needs_review || b.needs_review) {
+        a.needs_review = true;
+        b.needs_review = true;
+      }
+      i++; // consume the pair
+    }
+  }
+}
+
 /** Keep ONLY validator-confirmed questions — a student is never graded on an
  *  unchecked key (the caller regenerates when too few survive; there is no
  *  fall-back-to-all). Capped at the exam-realistic 15, renumbered from 1. */
 function keepValidated(prepared: PreparedQuestion[]): PreparedQuestion[] {
+  propagatePairFlags(prepared);
   const kept = prepared.filter((q) => !q.needs_review).slice(0, MAX_PASSAGE_QUESTIONS);
+  // The cap must not orphan the second half of a choose-two pair at the tail.
+  const last = kept[kept.length - 1];
+  if (last && isPickTwoRow(last)) {
+    const prev = kept[kept.length - 2];
+    const paired =
+      prev && isPickTwoRow(prev) && prev.answer_key === last.answer_key && prev.prompt === last.prompt;
+    if (!paired) kept.pop();
+  }
   return kept.map((q, i) => ({ ...q, order_index: i + 1 }));
 }
 
@@ -716,6 +758,68 @@ async function composeValidated(
     `Reading generation failed: only ${lastKept} questions passed the answer-key check. Please try again.`,
     "generation_failed",
   );
+}
+
+/**
+ * Normalise the plan's "Choose TWO letters" pairs IN PLACE, before validation:
+ * the twin row inherits the first row's stem + options (one shared panel in the
+ * UI), and the pair's two answers fold into one combined key ("A or C") stored on
+ * both rows — the grader then credits each correct letter once. A pair the model
+ * broke (twin missing, wrong type, or the answers not two DIFFERENT options) is
+ * reported as malformed so both rows get flagged and dropped together. Positions
+ * come from the authoritative question_plan (cumulative block counts).
+ */
+function forcePickTwoPairs(
+  questions: ReadingQuestionOut[],
+  plan: GenerateReadingInput["questionPlan"],
+): { combinedKey: Map<number, string>; malformed: Set<number> } {
+  const combinedKey = new Map<number, string>();
+  const malformed = new Set<number>();
+  if (!plan?.some((g) => g.pickTwo)) return { combinedKey, malformed };
+
+  const byNumber = new Map(questions.map((q) => [q.number, q]));
+  let next = 1;
+  for (const block of plan) {
+    const start = next;
+    next += block.count;
+    if (!block.pickTwo || block.type !== "multiple_choice") continue;
+
+    const numbers = Array.from({ length: block.count }, (_, k) => start + k);
+    const a = byNumber.get(numbers[0]);
+    const b = byNumber.get(numbers[1]);
+    if (
+      block.count !== 2 ||
+      !a ||
+      !b ||
+      a.type !== "multiple_choice" ||
+      b.type !== "multiple_choice" ||
+      (a.options ?? []).length < 3
+    ) {
+      for (const n of numbers) malformed.add(n);
+      continue;
+    }
+    // One shared stem + option set — the model sometimes drifts on the twin.
+    b.prompt = a.prompt;
+    b.options = a.options;
+
+    const options = a.options ?? [];
+    const letterOf = (answer: string): string | null => {
+      const key = norm(answer);
+      let idx = options.findIndex((o) => norm(o) === key);
+      if (idx < 0 && /^[a-z]$/.test(key)) idx = key.charCodeAt(0) - 97;
+      return idx >= 0 && idx < options.length ? String.fromCharCode(65 + idx) : null;
+    };
+    const la = letterOf(a.answer);
+    const lb = letterOf(b.answer);
+    if (!la || !lb || la === lb) {
+      for (const n of numbers) malformed.add(n);
+      continue;
+    }
+    const key = [la, lb].sort().join(" or ");
+    combinedKey.set(a.number, key);
+    combinedKey.set(b.number, key);
+  }
+  return { combinedKey, malformed };
 }
 
 // ---- Deterministic code checks (no model call) ------------------------------
@@ -804,6 +908,7 @@ function codeCheckProblem(q: ReadingQuestionOut, body: string): string | null {
     "multiple_choice",
     "matching_sentence_endings",
     "matching_headings",
+    "matching_features",
     "summary_completion",
   ];
   if (options.length > 0 && optionBankTypes.includes(q.type)) {
@@ -1208,7 +1313,7 @@ const READING_TYPE_SETS: ReadingQuestionType[][] = [
   ["matching_information", "true_false_not_given", "multiple_choice"],
   ["true_false_not_given", "sentence_completion", "summary_completion"],
   ["yes_no_not_given", "multiple_choice", "matching_sentence_endings"],
-  ["yes_no_not_given", "sentence_completion", "note_completion"],
+  ["matching_features", "multiple_choice", "summary_completion"],
 ];
 
 function defaultReadingSpec(targetBand: number = DEFAULT_TARGET_BAND) {
