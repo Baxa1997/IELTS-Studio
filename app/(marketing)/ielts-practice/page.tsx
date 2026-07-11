@@ -15,7 +15,7 @@ export default function IeltsPracticePage() {
     <article>
       <PageTitle
         title="IELTS practice that tells you your real band"
-        lead="Most IELTS apps hand out generous scores to keep you happy. EngProgress does the opposite: calibrated, examiner-strict feedback on Writing, Reading and Listening — so the band you see in practice is the band you can expect on exam day."
+        lead="Most IELTS apps hand out generous scores to keep you happy. EngProgress — an AI-based platform for IELTS Writing, Reading and Listening — does the opposite: calibrated, examiner-strict feedback, so the band you see in practice is the band you can expect on exam day."
       />
 
       <Sec title="Practice all three skills in one place">
@@ -64,7 +64,9 @@ export default function IeltsPracticePage() {
         </UL>
         <P>
           An inflated 7.0 feels good for a week and costs you on results day. An honest 6.5 with a named
-          gap is something you can act on.
+          gap is something you can act on. That is what accurate should mean: the closest practice band to
+          what a real examiner would give you on the day — try it on the free{" "}
+          <A href="/grade">IELTS writing checker</A>, no account needed.
         </P>
       </Sec>
 

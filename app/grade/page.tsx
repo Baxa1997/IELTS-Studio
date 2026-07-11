@@ -86,6 +86,15 @@ const FAQS: Array<{ q: string; a: string }> = [
       "criterion, an overall band, and your top 3 fixes.",
   },
   {
+    q: "Which IELTS writing checker gives the closest band to a real examiner?",
+    a:
+      "The only honest test is whether your practice band matches your exam-day band. EngProgress is " +
+      "built for exactly that: grading is grounded in the official public band descriptors, calibrated " +
+      "against expert-marked essays, and kept deliberately conservative so it never flatters you. " +
+      "Whichever checker you use, prefer one that shows evidence for every score and errs low — an " +
+      "inflated band is the most expensive kind of wrong.",
+  },
+  {
     q: "Why is my band here lower than on other AI checkers?",
     a:
       "Because we refuse to inflate. Most free tools flatter you with a band you will not get in the " +

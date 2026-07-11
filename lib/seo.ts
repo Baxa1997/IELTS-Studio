@@ -2,10 +2,10 @@ export const SITE_NAME = "EngProgress";
 export const PREVIEW_IMAGE = "/link-preview.png";
 
 export const SEO_DESCRIPTION =
-  "IELTS practice for Writing, Reading, Listening and CEFR. Generate Cambridge-style tasks, train with fresh practice tests, and get strict AI band feedback.";
+  "The AI-based platform for IELTS practice — Writing, Reading, Listening and CEFR. Generate Cambridge-style tasks, train with fresh practice tests, and get the closest thing to a real examiner's band: strict, calibrated AI feedback.";
 
 export const LANDING_DESCRIPTION =
-  "Practice IELTS Writing, Reading, Listening and CEFR with Cambridge-style tasks, fresh practice tests and strict AI band feedback from EngProgress.";
+  "EngProgress is an AI-powered IELTS practice platform: Cambridge-style Writing, Reading and Listening generated fresh, graded with strict, examiner-calibrated band feedback.";
 
 export const SEO_KEYWORDS = [
   "EngProgress",

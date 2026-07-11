@@ -153,6 +153,7 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
 
 const RELATED = [
   { href: "/ielts-practice", label: "IELTS practice online" },
+  { href: "/grade", label: "Free IELTS writing checker" },
   { href: "/cambridge-ielts-practice", label: "Cambridge-style IELTS tests" },
   { href: "/vs/engnovate", label: "EngProgress vs Engnovate" },
   { href: "/vs/ielts-gg", label: "EngProgress vs ielts.gg" },
