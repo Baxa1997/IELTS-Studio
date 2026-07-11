@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
+import { HeroProcessDemo } from "@/app/_landing/hero-process-demo";
 import { BrandLogo } from "@/components/brand/logo";
 import { BandCountUp } from "@/components/landing/band-countup";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
@@ -923,144 +924,8 @@ function Hero() {
           </div>
         </div>
 
-        {/* AI examiner reasoning card */}
-        <div
-          className="hb-rise hb-d6"
-          style={{
-            maxWidth: 1280,
-            margin: "46px auto 0",
-            background: "#fff",
-            border: "1px solid #EAE7DE",
-            borderRadius: 22,
-            boxShadow: "0 18px 46px rgba(20,20,48,.08)",
-            padding: "22px clamp(18px,3vw,26px)",
-          }}
-        >
-          <div
-            className="lp-hero-cardhead"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap" }}>
-              <span
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 9,
-                  background: INDIGO,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: "none",
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16">
-                  <path
-                    d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z"
-                    fill="#fff"
-                  />
-                </svg>
-              </span>
-              <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>AI Examiner</span>
-              <span style={{ fontSize: 14, color: "#908d80" }}>reasoning through your essay</span>
-              <span style={{ display: "inline-flex", gap: 4, marginLeft: 2, alignItems: "center" }}>
-                {[0, 0.2, 0.4].map((d) => (
-                  <span
-                    key={d}
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: INDIGO,
-                      animation: `hb-dots 1.2s infinite ${d}s`,
-                    }}
-                  />
-                ))}
-              </span>
-            </div>
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 10.5,
-                letterSpacing: ".1em",
-                color: "#a8a596",
-                whiteSpace: "nowrap",
-              }}
-            >
-              14,000+ RATED ESSAYS · ±0.5 OF HUMAN RATERS
-            </span>
-          </div>
-
-          <div style={{ marginTop: 16, fontSize: 16, lineHeight: 1.75, color: "#3f3e37" }}>
-            Read <strong style={{ color: INK, fontWeight: 600 }}>248 words</strong> across 18
-            sentences and weighed all four criteria. Found{" "}
-            <Chip tone="amber">subject–verb agreement ×2</Chip>,{" "}
-            <Chip tone="amber">repetitive lexical range</Chip>, and{" "}
-            <Chip tone="indigo">under-developed ideas</Chip>.{" "}
-            <strong style={{ color: INK, fontWeight: 600 }}>
-              The single fix that moves you most:
-            </strong>{" "}
-            correct the agreement and add two complex sentences with subordinate clauses
-            <span
-              aria-hidden
-              style={{
-                display: "inline-block",
-                width: 2,
-                height: 17,
-                background: INDIGO,
-                verticalAlign: -2,
-                marginLeft: 3,
-                animation: "hb-blink 1.1s steps(1) infinite",
-              }}
-            />
-          </div>
-
-          <div className="lp-hero-bars" style={{ display: "flex", gap: 18, marginTop: 20 }}>
-            <CritBar label="LEXICAL" band="5.5" pct={61} color="#E0A82E" />
-            <CritBar label="GRAMMAR" band="6.0" pct={66} color={INDIGO} />
-            <CritBar label="COHERENCE" band="6.0" pct={66} color={INDIGO} />
-            <CritBar label="TASK RESPONSE" band="6.5" pct={72} color={INDIGO} />
-          </div>
-
-          <div
-            className="lp-hero-cardfoot"
-            style={{
-              marginTop: 18,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
-              borderTop: "1px dashed #EAE7DE",
-              paddingTop: 15,
-            }}
-          >
-            <span style={{ fontSize: 15, color: "#57564d" }}>
-              <strong style={{ color: INK, fontWeight: 600 }}>Overall 6.0 today.</strong> Apply the
-              highlighted fixes and your next draft is projected at{" "}
-              <strong style={{ color: INDIGO, fontWeight: 700 }}>7.0</strong> &mdash; on the way to
-              your target.
-            </span>
-            <span
-              style={{
-                fontFamily: SANS,
-                fontSize: 13,
-                fontWeight: 600,
-                color: "#1F8A5B",
-                background: "#e9f5ef",
-                border: "1px solid #cfe7da",
-                borderRadius: 999,
-                padding: "5px 13px",
-                whiteSpace: "nowrap",
-              }}
-            >
-              +1.0 next draft
-            </span>
-          </div>
-        </div>
+        {/* animated product demo: grading + practice generation */}
+        <HeroProcessDemo />
 
         <p
           style={{
@@ -1129,65 +994,6 @@ const HERO_STYLES = `
 }
 `;
 
-/** An inline highlight chip in the examiner's reasoning (a flagged fault). */
-function Chip({ tone, children }: { tone: "amber" | "indigo"; children: React.ReactNode }) {
-  const s =
-    tone === "amber"
-      ? { background: "#FBF1DA", color: "#9a6a10", border: "1px solid #F0E1BB" }
-      : { background: "#ECEDFB", color: INDIGO, border: "1px solid #DADCF4" };
-  return (
-    <span
-      style={{ ...s, borderRadius: 7, padding: "1px 7px", fontWeight: 600, whiteSpace: "nowrap" }}
-    >
-      {children}
-    </span>
-  );
-}
-
-/** One criterion meter in the reasoning card. */
-function CritBar({
-  label,
-  band,
-  pct,
-  color,
-}: {
-  label: string;
-  band: string;
-  pct: number;
-  color: string;
-}) {
-  return (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}
-      >
-        <span
-          style={{
-            fontFamily: MONO,
-            fontSize: 10.5,
-            letterSpacing: ".06em",
-            color: "#908d80",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {label}
-        </span>
-        <span style={{ fontFamily: SERIF, fontSize: 18, color: INK }}>{band}</span>
-      </div>
-      <div
-        style={{
-          height: 4,
-          borderRadius: 3,
-          background: "#ECEAE2",
-          marginTop: 7,
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3 }} />
-      </div>
-    </div>
-  );
-}
 
 // ---- exam coach briefing ---------------------------------------------------
 
