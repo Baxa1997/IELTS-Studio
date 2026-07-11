@@ -18,6 +18,9 @@ const PUBLIC_PATHS = [
   "/grade",
   "/privacy",
   "/terms",
+  "/ielts-practice",
+  "/cambridge-ielts-practice",
+  "/vs",
   "/robots.txt",
   "/sitemap.xml",
 ];
