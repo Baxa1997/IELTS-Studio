@@ -3403,6 +3403,15 @@ const FOOTER_COLS: { head: string; links: { label: string; href: string }[] }[] 
       { label: "Sign in", href: "/sign-in" },
     ],
   },
+  {
+    head: "Learn & compare",
+    links: [
+      { label: "IELTS practice online", href: "/ielts-practice" },
+      { label: "Cambridge-style tests", href: "/cambridge-ielts-practice" },
+      { label: "vs Engnovate", href: "/vs/engnovate" },
+      { label: "vs ielts.gg", href: "/vs/ielts-gg" },
+    ],
+  },
 ];
 
 function SocialIcon({ label, children }: { label: string; children: React.ReactNode }) {
@@ -3443,7 +3452,7 @@ function SiteFooter() {
       <div style={{ ...SHELL, paddingTop: "clamp(48px,7vw,72px)", paddingBottom: 28 }}>
         <div
           className="lp-cols-4"
-          style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr", gap: 40 }}
+          style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr 1fr", gap: 36 }}
         >
           {/* brand */}
           <div>
