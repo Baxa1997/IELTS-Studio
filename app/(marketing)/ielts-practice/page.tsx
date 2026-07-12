@@ -42,11 +42,8 @@ export default function IeltsPracticePage() {
           forty.
         </P>
         <P>
-          <B>Speaking (beta).</B> Part 2 cue-card practice: one minute to prepare, up to two minutes to
-          speak, straight from your browser. Your answer is recorded, transcribed verbatim and graded per
-          criterion — Fluency &amp; Coherence, Lexical Resource, Grammar — with the same conservative
-          calibration as writing, plus delivery metrics like speaking rate and filler count. A full
-          live-examiner mock (Parts 1–3) is next on the roadmap.
+          Speaking practice is on the roadmap and marked &ldquo;coming soon&rdquo; in the product — we
+          would rather ship it properly than ship it first.
         </P>
       </Sec>
 
@@ -103,7 +100,7 @@ export default function IeltsPracticePage() {
           },
           {
             q: "Which IELTS skills can I practice?",
-            a: "Writing (Task 1 and Task 2 with per-criterion feedback and a revision loop), Reading (all real question types with trap explanations), Listening (full 4-part tests with multi-voice audio and band scores), and Speaking in beta (Part 2 cue-card practice, recorded and graded per criterion). A full live speaking mock is on the roadmap.",
+            a: "Writing (Task 1 and Task 2 with per-criterion feedback and a revision loop), Reading (all real question types with trap explanations), and Listening (full 4-part tests with multi-voice audio and band scores). Speaking is on the roadmap.",
           },
           {
             q: "Is the practice material real IELTS content?",
