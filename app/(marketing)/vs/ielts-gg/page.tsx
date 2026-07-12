@@ -52,8 +52,10 @@ export default function VsIeltsGgPage() {
           </LI>
         </UL>
         <P>
-          The honest gap on our side: <B>speaking is not live yet</B> — it is on the roadmap, and we would
-          rather ship it calibrated than ship it first.
+          The honest picture on speaking: <B>our speaking practice is live in beta</B> — Part 2 cue-card
+          answers, recorded and graded per criterion with the same conservative calibration as writing.
+          A full live-examiner mock (Parts 1–3) is still on the roadmap, and ielts.gg remains broader on
+          conversational speaking today.
         </P>
       </Sec>
 
@@ -74,7 +76,7 @@ export default function VsIeltsGgPage() {
             },
             {
               label: "Speaking",
-              a: "On the roadmap (coming soon)",
+              a: "Part 2 cue-card practice live (beta) — recorded, transcribed, graded per criterion; full live mock on the roadmap",
               b: "Strong — fast AI speaking feedback, daily practice",
             },
             {
@@ -119,7 +121,7 @@ export default function VsIeltsGgPage() {
         items={[
           {
             q: "Is EngProgress a free ielts.gg alternative?",
-            a: "For Writing, Reading and Listening, yes: EngProgress has a permanent free plan with 5 AI-graded practices per month and no card required, while ielts.gg is subscription-based. For speaking practice, ielts.gg currently offers more — EngProgress's speaking module is on the roadmap.",
+            a: "For Writing, Reading and Listening, yes: EngProgress has a permanent free plan with 5 AI-graded practices per month and no card required, while ielts.gg is subscription-based. Speaking on EngProgress is live in beta (Part 2 cue-card practice with per-criterion grading); ielts.gg still offers broader conversational speaking practice today.",
           },
           {
             q: "Which has more accurate band scores?",

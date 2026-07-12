@@ -57,8 +57,10 @@ export default function VsEngnovatePage() {
           </LI>
         </UL>
         <P>
-          The honest gap on our side: <B>speaking</B>. Engnovate has speaking checkers today; our speaking
-          practice is still on the roadmap.
+          On <B>speaking</B>: our Part 2 cue-card practice is live in beta — you record a real 2-minute
+          answer and get the same conservative per-criterion grading as writing. Engnovate&rsquo;s speaking
+          checkers are more established and cover more ground today; our full live-examiner mock is still
+          on the roadmap.
         </P>
       </Sec>
 
@@ -89,7 +91,7 @@ export default function VsEngnovatePage() {
             },
             {
               label: "Speaking",
-              a: "On the roadmap (coming soon)",
+              a: "Part 2 cue-card practice live (beta) — recorded, transcribed, graded per criterion; full live mock on the roadmap",
               b: "AI speaking checks and pronunciation feedback",
             },
             {
@@ -108,8 +110,8 @@ export default function VsEngnovatePage() {
 
       <Sec title="Which should you pick?">
         <P>
-          <B>Pick Engnovate</B> if you want the biggest possible pile of free material, speaking practice
-          today, or a one-time payment instead of a subscription.
+          <B>Pick Engnovate</B> if you want the biggest possible pile of free material, broader speaking
+          coverage today, or a one-time payment instead of a subscription.
         </P>
         <P>
           <B>Pick EngProgress</B> if the number matters: you want a band score you can trust on exam day,
@@ -124,7 +126,7 @@ export default function VsEngnovatePage() {
         items={[
           {
             q: "Is EngProgress a good Engnovate alternative?",
-            a: "If your priority is grading accuracy and fresh test content, yes: EngProgress's evaluator is calibrated to be conservative and every practice is generated new. If your priority is a huge free content library or speaking practice today, Engnovate remains a strong choice.",
+            a: "If your priority is grading accuracy and fresh test content, yes: EngProgress's evaluator is calibrated to be conservative and every practice is generated new, and speaking practice is live in beta (Part 2 cue-card answers with per-criterion grading). If your priority is a huge free content library or broader speaking coverage, Engnovate remains a strong choice.",
           },
           {
             q: "Can I use EngProgress and Engnovate together?",

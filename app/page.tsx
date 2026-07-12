@@ -549,8 +549,8 @@ function Hero() {
                 { label: "Writing", soon: false },
                 { label: "Reading", soon: false },
                 { label: "Listening", soon: false },
-                { label: "Speaking", soon: true },
-              ].map((c) => (
+                { label: "Speaking", soon: false, beta: true },
+              ].map((c: { label: string; soon: boolean; beta?: boolean }) => (
                 <span
                   key={c.label}
                   style={{
@@ -588,6 +588,18 @@ function Hero() {
                       }}
                     >
                       soon
+                    </span>
+                  ) : c.beta ? (
+                    <span
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 9.5,
+                        letterSpacing: ".08em",
+                        color: "#147a4f",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      beta
                     </span>
                   ) : null}
                 </span>
@@ -2308,7 +2320,7 @@ function Skills() {
     <Band id="skills" bg="#fff">
       <SectionHead
         title="Deep on the skills that decide Band 8"
-        sub="We go deepest on Writing and Reading — where most scores are won or lost — with full Listening tests live and Speaking on the way."
+        sub="We go deepest on Writing and Reading — where most scores are won or lost — with full Listening tests live and Speaking practice in beta."
       />
       <div
         className="lp-cols-2"
@@ -2426,8 +2438,9 @@ function Skills() {
           }}
         >
           <b style={{ color: INK }}>Listening is live</b> — full four-section practice tests with
-          auto-marking, at every level. <b style={{ color: INK }}>Speaking is in development</b> —
-          AI mock interviews, included free for members when it launches.
+          auto-marking, at every level. <b style={{ color: INK }}>Speaking is live in beta</b> —
+          record a real Part 2 cue-card answer and get conservative per-criterion grading; full AI
+          mock interviews are next.
         </div>
       </div>
     </Band>
@@ -2897,7 +2910,7 @@ function Faq() {
     },
     {
       q: "What about Speaking and Listening?",
-      a: "Listening is live — full four-section practice tests with auto-marking at every level. Speaking is in development and will be included free for members when it launches.",
+      a: "Both are live. Listening: full four-section practice tests with auto-marking at every level. Speaking (beta): record a real Part 2 cue-card answer in your browser and get conservative per-criterion grading with a verbatim transcript — full AI mock interviews are next on the roadmap.",
     },
   ];
   return (
