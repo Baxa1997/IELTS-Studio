@@ -5,6 +5,7 @@ import { absoluteUrl } from "@/lib/seo";
 const publicRoutes = [
   { path: "/", priority: 1, changeFrequency: "weekly" },
   { path: "/grade", priority: 0.85, changeFrequency: "monthly" },
+  { path: "/demo", priority: 0.8, changeFrequency: "monthly" },
   { path: "/ielts-practice", priority: 0.8, changeFrequency: "monthly" },
   { path: "/cambridge-ielts-practice", priority: 0.8, changeFrequency: "monthly" },
   { path: "/vs/engnovate", priority: 0.7, changeFrequency: "monthly" },
@@ -13,6 +14,7 @@ const publicRoutes = [
   { path: "/start", priority: 0.65, changeFrequency: "monthly" },
   { path: "/sign-in", priority: 0.3, changeFrequency: "yearly" },
   { path: "/sign-up", priority: 0.3, changeFrequency: "yearly" },
+  { path: "/contact", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
 ] satisfies Array<{

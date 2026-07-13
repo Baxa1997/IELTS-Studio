@@ -39,7 +39,12 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
       <footer style={{ borderTop: `1px solid ${LINE}`, background: "#fff" }}>
         <div style={{ maxWidth: 780, margin: "0 auto", padding: "20px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "baseline", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 12.5, color: "#9A9EAE" }}>© 2026 EngProgress. All rights reserved.</span>
+          <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 14, alignItems: "baseline" }}>
+            <span style={{ fontSize: 12.5, color: "#9A9EAE" }}>© 2026 EngProgress. All rights reserved.</span>
+            <Link href="/privacy" style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7190", textDecoration: "none" }}>Privacy</Link>
+            <Link href="/terms" style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7190", textDecoration: "none" }}>Terms</Link>
+            <Link href="/contact" style={{ fontSize: 12.5, fontWeight: 600, color: "#6B7190", textDecoration: "none" }}>Contact</Link>
+          </span>
           <span style={{ fontSize: 12, lineHeight: 1.5, color: "#A7ABBA", maxWidth: 460 }}>
             Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English.
             All practice content is original and AI-generated.

@@ -16,6 +16,8 @@ const PUBLIC_PATHS = [
   "/accept-invite",
   "/auth",
   "/grade",
+  "/demo",
+  "/contact",
   "/privacy",
   "/terms",
   "/ielts-practice",
