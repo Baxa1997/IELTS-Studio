@@ -94,7 +94,7 @@ export default function VsIeltsGgPage() {
             },
             {
               label: "Pricing",
-              a: "Free / $5.99/mo (20 practices) / $14.99/mo unlimited",
+              a: "Free / $5.99/mo (25 practices) / $14.99/mo unlimited",
               b: "Subscription; pricing on their site",
             },
           ]}

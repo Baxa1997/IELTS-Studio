@@ -52,7 +52,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // schema for the dormant B2B path but is never sold as a feature.
     features: ["Calibrated, conservative AI grading", "IELTS + CEFR practice, generated fresh", "5 gradings · 5 practice sets / month"],
   },
-  // Pricing strategy 2026-07-08 (user): Free 5/5 · Standard $5.99 20/20 ·
+  // Pricing strategy 2026-07-08 (user): Free 5/5 · Standard $5.99 25/25 ·
   // Pro $14.99 unlimited monthly · Enterprise $29.99 for THREE months
   // (unlimited, prepaid quarter). Live checkout charges the pinned dashboard
   // Prices below (user confirmed the dashboard shows these exact amounts and
@@ -68,10 +68,10 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     currency: "usd",
     priceUzs: 75_000,
     stripePriceId: "price_1TodTCAbAzJriIHUxzsOKT52", // live "Ielts Standard" $5.99/mo
-    gradeLimit: 20,
-    generateLimit: 20,
+    gradeLimit: 25,
+    generateLimit: 25,
     seatLimit: 50,
-    features: ["Everything in Free", "20 gradings / month", "20 practice sets / month", "Full mock reading tests"],
+    features: ["Everything in Free", "25 gradings / month", "25 practice sets / month", "Full mock reading tests"],
   },
   pro: {
     id: "pro",

@@ -99,7 +99,7 @@ export default function VsEngnovatePage() {
             },
             {
               label: "Pricing",
-              a: "Free / $5.99/mo (20 practices) / $14.99/mo unlimited",
+              a: "Free / $5.99/mo (25 practices) / $14.99/mo unlimited",
               b: "Free tier; premium one-time ~$11.97 (1 mo) to ~$61.97 (12 mo)",
             },
           ]}

@@ -92,7 +92,7 @@ export default function IeltsPracticePage() {
         items={[
           {
             q: "Is EngProgress free?",
-            a: "Yes — the free plan gives you 5 AI-graded practices per month (writing evaluations, reading or listening practice sets) with no card required. Paid plans start at $5.99/month for 20 practices and $14.99/month for unlimited.",
+            a: "Yes — the free plan gives you 5 AI-graded practices per month (writing evaluations, reading or listening practice sets) with no card required. Paid plans start at $5.99/month for 25 practices and $14.99/month for unlimited.",
           },
           {
             q: "How accurate is the AI band score?",
