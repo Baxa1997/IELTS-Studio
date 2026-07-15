@@ -26,6 +26,10 @@ export interface PlanTier {
   gradeLimit: number | null;
   /** Monthly AI generations (prompts + reading sets). null = unlimited. */
   generateLimit: number | null;
+  /** Monthly LIVE full-mock speaking tests (Parts 1–3). The most expensive thing
+   *  we run (~$0.50–1/session), so it is gated hardest. 0 = not included (free).
+   *  MUST stay in sync with the engine's PLAN_FULL_MOCK_LIMITS (quota.py). */
+  fullMockLimit: number;
   /** Student seats. null = unlimited. */
   seatLimit: number | null;
   features: string[];
@@ -46,6 +50,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // the engine enforces generation quota for the browser-direct endpoints.
     gradeLimit: 5,
     generateLimit: 5,
+    fullMockLimit: 0,
     seatLimit: 10,
     stripePriceId: null,
     // Feature copy is learner-facing (B2C — CLAUDE.md); seatLimit stays in the
@@ -70,8 +75,9 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     stripePriceId: "price_1TodTCAbAzJriIHUxzsOKT52", // live "Ielts Standard" $5.99/mo
     gradeLimit: 25,
     generateLimit: 25,
+    fullMockLimit: 2,
     seatLimit: 50,
-    features: ["Everything in Free", "25 gradings / month", "25 practice sets / month", "Full mock reading tests"],
+    features: ["Everything in Free", "25 gradings / month", "25 practice sets / month", "2 live speaking mock tests / month", "Full mock reading tests"],
   },
   pro: {
     id: "pro",
@@ -83,8 +89,9 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     stripePriceId: "price_1TodTaAbAzJriIHUYFQOiHi0", // live "Ielts Pro" $14.99/mo
     gradeLimit: null,
     generateLimit: null,
+    fullMockLimit: 8,
     seatLimit: 250,
-    features: ["Everything in Standard", "Unlimited gradings", "Unlimited practice sets", "Priority grading queue"],
+    features: ["Everything in Standard", "Unlimited gradings", "Unlimited practice sets", "8 live speaking mock tests / month", "Priority grading queue"],
   },
   enterprise: {
     id: "enterprise",
@@ -96,6 +103,7 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     stripePriceId: "price_1TodTzAbAzJriIHUmxtroK31", // live "Ielts Enterprice" $29.99 / 3 months
     gradeLimit: null,
     generateLimit: null,
+    fullMockLimit: 8,
     seatLimit: null,
     features: ["Everything in Pro, for 3 months", "One payment — $29.99 per quarter", "Best value: under $10 / month"],
   },

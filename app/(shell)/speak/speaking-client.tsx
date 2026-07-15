@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { LiveMock } from "./live-mock";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
 
 /**
@@ -225,6 +226,7 @@ function mmss(s: number): string {
 // ---- the client ---------------------------------------------------------------
 
 export function SpeakingClient() {
+  const [mode, setMode] = useState<"part2" | "full">("part2");
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -377,12 +379,45 @@ export function SpeakingClient() {
             BETA
           </span>
         </h1>
-        {phase !== "idle" ? (
+        {phase !== "idle" && mode === "part2" ? (
           <button type="button" onClick={reset} style={{ ...ghostBtn, height: 34, fontSize: 13 }}>
             Exit practice
           </button>
         ) : null}
       </div>
+
+      {/* mode selector — Part-2 quick practice vs. the live full mock */}
+      {phase === "idle" ? (
+        <div style={{ display: "flex", gap: 6, marginTop: 16, padding: 5, background: "#F5F4FB", border: `1px solid ${LINE}`, borderRadius: 12, maxWidth: 460 }}>
+          {([
+            ["part2", "Quick practice", "Part 2 · ~4 min"],
+            ["full", "Full mock", "Parts 1–3 · live examiner"],
+          ] as const).map(([m, label, sub]) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setError(null);
+                setMode(m);
+              }}
+              style={{
+                flex: 1,
+                padding: "9px 12px",
+                borderRadius: 9,
+                border: "none",
+                cursor: "pointer",
+                textAlign: "left",
+                background: mode === m ? "#fff" : "transparent",
+                boxShadow: mode === m ? "0 1px 3px rgba(28,27,46,.12)" : "none",
+                fontFamily: SANS,
+              }}
+            >
+              <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: mode === m ? INK : MUTED }}>{label}</span>
+              <span style={{ display: "block", fontSize: 11.5, color: MUTED }}>{sub}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {error ? (
         <div style={{ ...card, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED, marginTop: 16, fontSize: 14 }}>
@@ -398,8 +433,11 @@ export function SpeakingClient() {
         </div>
       ) : null}
 
-      {/* idle hub */}
-      {phase === "idle" || phase === "starting" ? (
+      {/* full mock — its own live-examiner flow */}
+      {mode === "full" ? <LiveMock onExit={() => setMode("part2")} /> : null}
+
+      {/* idle hub (Part 2) */}
+      {mode === "part2" && (phase === "idle" || phase === "starting") ? (
         <>
           <div style={{ ...card, marginTop: 18, textAlign: "center", padding: "34px 22px" }}>
             <button
