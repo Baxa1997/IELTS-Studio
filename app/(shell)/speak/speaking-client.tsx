@@ -226,7 +226,9 @@ function mmss(s: number): string {
 // ---- the client ---------------------------------------------------------------
 
 export function SpeakingClient() {
-  const [mode, setMode] = useState<"part2" | "full">("part2");
+  // The full mock IS the product; quick practice is the warm-up. Full first.
+  const [mode, setMode] = useState<"part2" | "full">("full");
+  const [mockRunning, setMockRunning] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -370,7 +372,7 @@ export function SpeakingClient() {
   const quotaHit = error ? /quota|upgrade/i.test(error) : false;
 
   return (
-    <div style={{ fontFamily: SANS, color: INK, maxWidth: 860, margin: "0 auto", padding: "26px 18px 60px" }}>
+    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1020, margin: "0 auto", padding: "26px 18px 60px" }}>
       {/* header */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 600 }}>
@@ -386,36 +388,45 @@ export function SpeakingClient() {
         ) : null}
       </div>
 
-      {/* mode selector — Part-2 quick practice vs. the live full mock */}
-      {phase === "idle" ? (
-        <div style={{ display: "flex", gap: 6, marginTop: 16, padding: 5, background: "#F5F4FB", border: `1px solid ${LINE}`, borderRadius: 12, maxWidth: 460 }}>
+      {/* mode cards — the full mock is the headline product, quick practice the warm-up */}
+      {phase === "idle" && !mockRunning ? (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginTop: 18 }}>
           {([
-            ["part2", "Quick practice", "Part 2 · ~4 min"],
-            ["full", "Full mock", "Parts 1–3 · live examiner"],
-          ] as const).map(([m, label, sub]) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => {
-                setError(null);
-                setMode(m);
-              }}
-              style={{
-                flex: 1,
-                padding: "9px 12px",
-                borderRadius: 9,
-                border: "none",
-                cursor: "pointer",
-                textAlign: "left",
-                background: mode === m ? "#fff" : "transparent",
-                boxShadow: mode === m ? "0 1px 3px rgba(28,27,46,.12)" : "none",
-                fontFamily: SANS,
-              }}
-            >
-              <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: mode === m ? INK : MUTED }}>{label}</span>
-              <span style={{ display: "block", fontSize: 11.5, color: MUTED }}>{sub}</span>
-            </button>
-          ))}
+            ["full", "Full mock test", "The real thing: Parts 1–3 with a live examiner — interview, cue card, discussion.", "11–14 min · live examiner · band report", true],
+            ["part2", "Quick practice", "Just Part 2: a cue card, one minute to prepare, speak for two.", "~4 min · Part 2 only · instant feedback", false],
+          ] as const).map(([m, title, desc, meta, headline]) => {
+            const on = mode === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setMode(m);
+                }}
+                style={{
+                  textAlign: "left",
+                  padding: "18px 18px 16px",
+                  borderRadius: 16,
+                  border: `2px solid ${on ? INDIGO : LINE}`,
+                  background: on ? "#F7F7FE" : "#fff",
+                  cursor: "pointer",
+                  fontFamily: SANS,
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 16.5, fontWeight: 700, color: INK }}>{title}</span>
+                  {headline ? (
+                    <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", color: "#fff", background: INDIGO, borderRadius: 999, padding: "3px 8px" }}>
+                      REAL EXAM
+                    </span>
+                  ) : null}
+                </span>
+                <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.55, color: MUTED, marginTop: 6 }}>{desc}</span>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: on ? INDIGO : "#9A9EAE", marginTop: 10 }}>{meta}</span>
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
@@ -434,7 +445,7 @@ export function SpeakingClient() {
       ) : null}
 
       {/* full mock — its own live-examiner flow */}
-      {mode === "full" ? <LiveMock onExit={() => setMode("part2")} /> : null}
+      {mode === "full" ? <LiveMock onExit={() => setMockRunning(false)} onRunning={setMockRunning} /> : null}
 
       {/* idle hub (Part 2) */}
       {mode === "part2" && (phase === "idle" || phase === "starting") ? (

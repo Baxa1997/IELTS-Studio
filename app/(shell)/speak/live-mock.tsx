@@ -62,15 +62,25 @@ interface PhaseEvent {
 }
 
 // ---- examiner voice playback (24 kHz PCM16 → scheduled AudioBuffers) ---------
+// Tracks REAL playback: the engine must not open the mic until the candidate has
+// actually heard the examiner finish (generation runs far ahead of playback), so
+// we report `onDrained` when the scheduled queue empties and the engine waits for
+// our {type:"played"} before treating the turn as over.
 
 class VoicePlayer {
   private ctx: AudioContext;
   private next = 0;
+  private liveSources = 0;
+  onPlaying: ((on: boolean) => void) | null = null;
+  onDrained: (() => void) | null = null;
   constructor(private rate = 24000) {
     this.ctx = new AudioContext();
   }
   resume() {
     void this.ctx.resume();
+  }
+  get busy(): boolean {
+    return this.liveSources > 0;
   }
   push(pcm: ArrayBuffer) {
     const i16 = new Int16Array(pcm);
@@ -81,7 +91,16 @@ class VoicePlayer {
     const src = this.ctx.createBufferSource();
     src.buffer = buf;
     src.connect(this.ctx.destination);
-    const t = Math.max(this.ctx.currentTime + 0.05, this.next);
+    if (this.liveSources === 0) this.onPlaying?.(true);
+    this.liveSources += 1;
+    src.onended = () => {
+      this.liveSources -= 1;
+      if (this.liveSources === 0) {
+        this.onPlaying?.(false);
+        this.onDrained?.();
+      }
+    };
+    const t = Math.max(this.ctx.currentTime + 0.06, this.next);
     src.start(t);
     this.next = t + buf.duration;
   }
@@ -168,7 +187,14 @@ const PART_LABEL: Record<number, string> = {
   3: "Part 3 — Discussion",
 };
 
-export function LiveMock({ onExit }: { onExit: () => void }) {
+export function LiveMock({
+  onExit,
+  onRunning,
+}: {
+  onExit: () => void;
+  /** True while a test is in progress (the hub hides its chrome). */
+  onRunning?: (running: boolean) => void;
+}) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [examiner, setExaminer] = useState<(typeof EXAMINERS)[number]["id"]>("emily");
@@ -188,6 +214,8 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
   const micRef = useRef<Mic | null>(null);
   const playerRef = useRef<VoicePlayer | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // playback sync: turn_end arrived but audio is still playing → report when drained
+  const pendingPlayedRef = useRef<{ seq: number | null } | null>(null);
 
   const stopClock = () => {
     if (clockRef.current) clearInterval(clockRef.current);
@@ -221,6 +249,10 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
 
   useEffect(() => () => teardown(), [teardown]);
 
+  useEffect(() => {
+    onRunning?.(phase !== "idle" && phase !== "instructions");
+  }, [phase, onRunning]);
+
   const onEvent = useCallback(
     (m: Record<string, unknown>) => {
       switch (m.type) {
@@ -241,8 +273,20 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
           break;
         }
         case "examiner":
-          setExaminerSpeaking(Boolean(m.speaking));
+          // generation state only — the speaking ANIMATION follows real playback
+          // (player.onPlaying); nothing to do here.
           break;
+        case "turn_end": {
+          // The engine finished generating this turn; tell it when the candidate
+          // has actually HEARD it (queue drained), so the floor opens in sync.
+          const seq = typeof m.seq === "number" ? m.seq : null;
+          if (playerRef.current?.busy) {
+            pendingPlayedRef.current = { seq };
+          } else {
+            wsRef.current?.send(JSON.stringify({ type: "played", seq }));
+          }
+          break;
+        }
         case "listening":
           setListening(Boolean(m.on));
           break;
@@ -294,6 +338,14 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
       // 2. audio in/out, then the socket
       const player = new VoicePlayer();
       player.resume();
+      player.onPlaying = (on) => setExaminerSpeaking(on);
+      player.onDrained = () => {
+        const pending = pendingPlayedRef.current;
+        if (pending) {
+          pendingPlayedRef.current = null;
+          wsRef.current?.send(JSON.stringify({ type: "played", seq: pending.seq }));
+        }
+      };
       playerRef.current = player;
 
       const ws = new WebSocket(wsUrl(sid, token, examiner));
@@ -542,77 +594,84 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
     );
   }
 
-  // live view
+  // live view — the exam room: a big animated examiner, one clear status line.
   const inPrep = phase === "part2_prep";
   const inSpeak = phase === "part2_speak";
   const ex = EXAMINERS.find((e) => e.id === examiner) ?? EXAMINERS[0];
+  const status = examinerSpeaking
+    ? `${ex.name} is speaking…`
+    : inPrep
+      ? "Prepare your answer"
+      : listening
+        ? "Your turn — speak naturally"
+        : phase === "connecting"
+          ? `Connecting you with ${ex.name}…`
+          : `${ex.name} is thinking…`;
+  const substatus = inPrep
+    ? "Make notes below — your minute is running."
+    : inSpeak && listening
+      ? "Take your time. Short pauses to think are completely fine."
+      : listening
+        ? `${ex.name} is listening — answer in a few sentences.`
+        : examinerSpeaking
+          ? "Listen — you'll get your turn."
+          : " ";
   return (
     <div style={{ marginTop: 18 }}>
       {/* part progress */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-        {[1, 2, 3].map((p) => (
-          <div
-            key={p}
-            style={{
-              flex: 1,
-              height: 6,
-              borderRadius: 999,
-              background: p < part ? INDIGO : p === part ? INDIGO : LINE,
-              opacity: p === part ? 1 : p < part ? 0.5 : 1,
-            }}
-          />
-        ))}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {[
+          [1, "Interview"],
+          [2, "Long turn"],
+          [3, "Discussion"],
+        ].map(([p, label]) => {
+          const n = p as number;
+          const active = n === part;
+          const done = n < part;
+          return (
+            <div key={n} style={{ flex: 1 }}>
+              <div style={{ height: 6, borderRadius: 999, background: done || active ? ex.hue : LINE, opacity: done ? 0.45 : 1 }} />
+              <div style={{ marginTop: 6, fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: active ? ex.hue : done ? MUTED : "#B9BCC9", textTransform: "uppercase" }}>
+                Part {n} · {label as string}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <div style={{ ...card_, padding: "22px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", color: INDIGO }}>
-            {PART_LABEL[part] ?? "Speaking test"}
-          </span>
-          {clock != null ? (
-            <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: inPrep ? "#B45309" : INK, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ ...card_, padding: "34px 22px 26px", textAlign: "center" }}>
+        <ExaminerHero hue={ex.hue} initial={ex.name[0]} speaking={examinerSpeaking} listening={listening && !examinerSpeaking} level={micLevel} />
+        <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, marginTop: 18 }}>{status}</div>
+        <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6, minHeight: 20 }}>{substatus}</div>
+        {clock != null ? (
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12, padding: "7px 16px", borderRadius: 999, background: inPrep ? "#FDF3E3" : TINT, border: `1px solid ${inPrep ? "#F2D9A8" : "#E4E2F4"}` }}>
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: inPrep ? "#B45309" : INDIGO }}>
+              {inPrep ? "PREP TIME" : "SPEAKING"}
+            </span>
+            <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: inPrep ? "#B45309" : INDIGO, fontVariantNumeric: "tabular-nums" }}>
               {Math.floor(clock / 60)}:{String(clock % 60).padStart(2, "0")}
             </span>
-          ) : null}
-        </div>
-
-        {/* examiner state */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
-          <ExaminerOrb speaking={examinerSpeaking} hue={ex.hue} initial={ex.name[0]} />
-          <div>
-            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>
-              {examinerSpeaking ? `${ex.name} is speaking…` : listening ? "Your turn — speak now" : "…"}
-            </div>
-            <div style={{ fontSize: 13, color: MUTED }}>
-              {inPrep
-                ? "Prepare quietly. You can make notes below."
-                : inSpeak
-                  ? "Speak for one to two minutes. Short pauses to think are fine."
-                  : listening
-                    ? `${ex.name} is listening.`
-                    : `Listen to ${ex.name}.`}
-            </div>
           </div>
-          {listening ? <MicLevel level={micLevel} /> : null}
-        </div>
+        ) : null}
 
         {/* cue card (Part 2) */}
-        {card && (part === 2) ? (
-          <div style={{ marginTop: 18, border: `1px solid ${LINE}`, borderRadius: 12, padding: 16, background: "#FCFCFE" }}>
-            <div style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 600 }}>{card.title}</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: MUTED, margin: "10px 0 4px" }}>You should say:</div>
+        {card && part === 2 ? (
+          <div style={{ marginTop: 20, textAlign: "left", border: `1.5px solid ${ex.hue}44`, borderRadius: 14, padding: "16px 18px", background: `${ex.hue}08` }}>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: ex.hue, marginBottom: 6 }}>YOUR TOPIC CARD</div>
+            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>{card.title}</div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "10px 0 4px" }}>You should say:</div>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7, color: INK }}>
               {card.bullets.map((b) => (
                 <li key={b}>{b}</li>
               ))}
             </ul>
             <div style={{ fontSize: 14, marginTop: 6, color: INK }}>{card.closing}</div>
-            {(inPrep || inSpeak) ? (
+            {inPrep || inSpeak ? (
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Your notes (only you can see these)…"
-                style={{ width: "100%", marginTop: 12, minHeight: 72, resize: "vertical", border: `1px solid ${LINE}`, borderRadius: 8, padding: 10, fontFamily: SANS, fontSize: 13.5, color: INK }}
+                style={{ width: "100%", marginTop: 12, minHeight: 76, resize: "vertical", border: `1px solid ${LINE}`, borderRadius: 10, padding: 10, fontFamily: SANS, fontSize: 13.5, color: INK, background: "#fff" }}
               />
             ) : null}
           </div>
@@ -633,40 +692,79 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
 
 // ---- bits ------------------------------------------------------------------
 
-function ExaminerOrb({ speaking, hue = INDIGO, initial = "E" }: { speaking: boolean; hue?: string; initial?: string }) {
-  return (
-    <span
-      style={{
-        flex: "none",
-        width: 48,
-        height: 48,
-        borderRadius: "50%",
-        background: `radial-gradient(circle at 35% 30%, ${hue}CC, ${hue})`,
-        boxShadow: speaking ? `0 0 0 6px ${hue}29` : "none",
-        transition: "box-shadow .2s",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontWeight: 800,
-        fontSize: 18,
-        fontFamily: SANS,
-      }}
-      aria-hidden
-    >
-      {initial}
-    </span>
-  );
-}
+const HERO_CSS = `
+@keyframes lm-ring { 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes lm-talk { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+@keyframes lm-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+@keyframes lm-bar { 0%,100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+`;
 
-function MicLevel({ level }: { level: number }) {
-  const n = Math.min(5, Math.floor(level * 40));
+/** The exam-room hero: a big animated examiner avatar. Rings ripple outward
+ *  while the examiner speaks; a small equalizer runs while it listens to you. */
+function ExaminerHero({
+  hue,
+  initial,
+  speaking,
+  listening,
+  level,
+}: {
+  hue: string;
+  initial: string;
+  speaking: boolean;
+  listening: boolean;
+  level: number;
+}) {
+  const loud = Math.min(1, level * 26);
   return (
-    <span style={{ display: "inline-flex", gap: 3, marginLeft: "auto", alignItems: "flex-end", height: 22 }} aria-hidden>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <i key={i} style={{ width: 4, height: 6 + i * 4, borderRadius: 2, background: i < n ? INDIGO : LINE }} />
-      ))}
-    </span>
+    <div style={{ position: "relative", width: 168, height: 168, margin: "0 auto" }}>
+      <style>{HERO_CSS}</style>
+      {speaking ? (
+        <>
+          <span aria-hidden style={{ position: "absolute", inset: 6, borderRadius: "50%", border: `2.5px solid ${hue}`, animation: "lm-ring 1.5s ease-out infinite" }} />
+          <span aria-hidden style={{ position: "absolute", inset: 6, borderRadius: "50%", border: `2.5px solid ${hue}`, animation: "lm-ring 1.5s ease-out .55s infinite" }} />
+        </>
+      ) : null}
+      {listening ? (
+        <span aria-hidden style={{ position: "absolute", inset: 2, borderRadius: "50%", border: `2px solid ${hue}55`, boxShadow: `0 0 0 ${4 + loud * 10}px ${hue}14`, transition: "box-shadow .12s" }} />
+      ) : null}
+      <div
+        style={{
+          position: "absolute",
+          inset: 14,
+          borderRadius: "50%",
+          background: `radial-gradient(circle at 34% 28%, ${hue}D9, ${hue})`,
+          boxShadow: `0 22px 46px -18px ${hue}99`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontFamily: SANS,
+          fontWeight: 800,
+          fontSize: 46,
+          animation: speaking ? "lm-talk .9s ease-in-out infinite" : "lm-breathe 3.4s ease-in-out infinite",
+        }}
+        aria-hidden
+      >
+        {initial}
+      </div>
+      {listening ? (
+        <span aria-hidden style={{ position: "absolute", left: "50%", bottom: -6, transform: "translateX(-50%)", display: "inline-flex", gap: 3, alignItems: "flex-end", height: 18 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <i
+              key={i}
+              style={{
+                width: 4,
+                height: 6 + (i % 3) * 5 + loud * 7,
+                borderRadius: 2,
+                background: hue,
+                transformOrigin: "bottom",
+                animation: `lm-bar ${0.7 + i * 0.11}s ease-in-out ${i * 0.08}s infinite`,
+              }}
+            />
+          ))}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
