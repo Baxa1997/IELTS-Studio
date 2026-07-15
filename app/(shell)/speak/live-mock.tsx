@@ -32,9 +32,26 @@ interface CueCard {
   closing: string;
 }
 type Phase =
-  | "idle" | "connecting" | "greeting" | "part1"
+  | "idle" | "instructions" | "connecting" | "greeting" | "part1"
   | "part2_card" | "part2_prep" | "part2_speak" | "part2_round"
   | "part3" | "closing" | "ended" | "error";
+
+// Mirrors the engine's PERSONAS (speaking/live.py) — id must match.
+const EXAMINERS = [
+  { id: "emily", name: "Emily", tag: "Warm & encouraging", hue: "#B85C8A", desc: "Puts nervous candidates at ease. Clear, friendly pace." },
+  { id: "daniel", name: "Daniel", tag: "Calm & formal", hue: "#4338CA", desc: "The classic exam-room examiner. Measured and neutral." },
+  { id: "sofia", name: "Sofia", tag: "Friendly & patient", hue: "#0F766E", desc: "Easy-going rhythm with time to think." },
+  { id: "james", name: "James", tag: "Brisk & precise", hue: "#B45309", desc: "Keeps the pace up — good exam-day pressure training." },
+] as const;
+
+const LEVELS = [
+  { v: null, label: "Any" },
+  { v: 1, label: "1" },
+  { v: 2, label: "2" },
+  { v: 3, label: "3" },
+  { v: 4, label: "4" },
+  { v: 5, label: "5" },
+] as const;
 
 interface PhaseEvent {
   type: "part" | "cue_card" | "prep" | "long_turn";
@@ -138,10 +155,10 @@ async function startMic(sink: (pcm16: ArrayBuffer) => void): Promise<Mic> {
   };
 }
 
-function wsUrl(session_id: string, token: string): string {
+function wsUrl(session_id: string, token: string, examiner: string): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const ws = base.replace(/^http/, "ws"); // https→wss, http→ws
-  const q = new URLSearchParams({ session_id, token });
+  const q = new URLSearchParams({ session_id, token, examiner });
   return `${ws}/speaking/live?${q.toString()}`;
 }
 
@@ -154,13 +171,15 @@ const PART_LABEL: Record<number, string> = {
 export function LiveMock({ onExit }: { onExit: () => void }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
+  const [examiner, setExaminer] = useState<(typeof EXAMINERS)[number]["id"]>("emily");
+  const [level, setLevel] = useState<number | null>(null);
   const [part, setPart] = useState(1);
   const [card, setCard] = useState<CueCard | null>(null);
   const [notes, setNotes] = useState("");
   const [clock, setClock] = useState<number | null>(null); // prep / long-turn countdown
   const [examinerSpeaking, setExaminerSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
-  const [level, setLevel] = useState(0);
+  const [micLevel, setMicLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [endedBand, setEndedBand] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -259,6 +278,7 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
       const res = await fetch(`${backend}/speaking/full/start`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(level ? { difficulty: level } : {}),
       });
       const body = (await res.json().catch(() => ({}))) as {
         session_id?: string;
@@ -276,7 +296,7 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
       player.resume();
       playerRef.current = player;
 
-      const ws = new WebSocket(wsUrl(sid, token));
+      const ws = new WebSocket(wsUrl(sid, token, examiner));
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
@@ -301,7 +321,7 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
         const mic = await startMic((pcm) => {
           if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
         });
-        mic.onLevel((rms) => setLevel(rms));
+        mic.onLevel((rms) => setMicLevel(rms));
         micRef.current = mic;
       };
     } catch (e) {
@@ -309,7 +329,7 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
       setPhase("error");
       teardown();
     }
-  }, [onEvent, teardown]);
+  }, [onEvent, teardown, level, examiner]);
 
   const endEarly = useCallback(() => {
     try {
@@ -321,18 +341,154 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
 
   const quotaHit = error ? /quota|upgrade|plan|Standard|Pro/i.test(error) : false;
 
-  if (phase === "idle") {
+  if (phase === "idle" || phase === "instructions") {
+    const chosen = EXAMINERS.find((e) => e.id === examiner) ?? EXAMINERS[0];
     return (
-      <div style={{ ...card_, marginTop: 18, textAlign: "center", padding: "34px 22px" }}>
-        <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600 }}>Full mock — Parts 1 to 3</div>
-        <p style={{ margin: "8px auto 18px", maxWidth: 520, fontSize: 14, lineHeight: 1.6, color: MUTED }}>
-          A complete 11–14 minute test with a live AI examiner: the interview, the cue-card long
-          turn, then the discussion. Speak naturally — the examiner leads. Use headphones so the
-          examiner&rsquo;s voice doesn&rsquo;t echo into your mic.
-        </p>
-        <button type="button" onClick={begin} style={primaryBtn}>
-          Start the mock test
-        </button>
+      <div style={{ marginTop: 18 }}>
+        {/* setup: pick your examiner */}
+        <div style={{ ...card_, padding: "22px 20px" }}>
+          <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600 }}>Full mock — Parts 1 to 3</div>
+          <p style={{ margin: "6px 0 16px", fontSize: 13.5, lineHeight: 1.55, color: MUTED }}>
+            A complete 11–14 minute speaking test with a live examiner. You won&rsquo;t see the
+            questions in advance — exactly like exam day.
+          </p>
+
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".07em", color: MUTED, textTransform: "uppercase", marginBottom: 8 }}>
+            Choose your examiner
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(165px, 1fr))", gap: 10 }}>
+            {EXAMINERS.map((e) => {
+              const on = e.id === examiner;
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => setExaminer(e.id)}
+                  style={{
+                    textAlign: "left",
+                    border: `2px solid ${on ? e.hue : LINE}`,
+                    background: on ? `${e.hue}0D` : "#fff",
+                    borderRadius: 14,
+                    padding: "14px 14px 12px",
+                    cursor: "pointer",
+                    fontFamily: SANS,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      width: 40,
+                      height: 40,
+                      borderRadius: "50%",
+                      background: `radial-gradient(circle at 35% 30%, ${e.hue}CC, ${e.hue})`,
+                      color: "#fff",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 800,
+                      fontSize: 16,
+                    }}
+                  >
+                    {e.name[0]}
+                  </span>
+                  <div style={{ fontWeight: 700, fontSize: 14.5, color: INK, marginTop: 8 }}>{e.name}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: e.hue }}>{e.tag}</div>
+                  <div style={{ fontSize: 12, lineHeight: 1.45, color: MUTED, marginTop: 4 }}>{e.desc}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 18 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".07em", color: MUTED, textTransform: "uppercase" }}>
+              Question level
+            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {LEVELS.map((l) => {
+                const on = level === l.v;
+                return (
+                  <button
+                    key={l.label}
+                    type="button"
+                    onClick={() => setLevel(l.v)}
+                    style={{
+                      minWidth: 38,
+                      height: 32,
+                      padding: "0 10px",
+                      borderRadius: 9,
+                      border: `1.5px solid ${on ? INDIGO : LINE}`,
+                      background: on ? TINT : "#fff",
+                      color: on ? INDIGO : MUTED,
+                      fontFamily: SANS,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {l.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button type="button" onClick={() => setPhase("instructions")} style={{ ...primaryBtn, marginLeft: "auto" }}>
+              Take the mock test
+            </button>
+          </div>
+        </div>
+
+        {/* instructions modal */}
+        {phase === "instructions" ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setPhase("idle")}
+            style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 18, background: "rgba(28,27,46,.5)", backdropFilter: "blur(3px)" }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: "min(520px, 100%)", maxHeight: "92dvh", overflowY: "auto", background: "#fff", borderRadius: 18, padding: "24px 24px 20px", boxShadow: "0 30px 70px -24px rgba(28,27,46,.6)", fontFamily: SANS, color: INK }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ display: "inline-flex", width: 44, height: 44, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%, ${chosen.hue}CC, ${chosen.hue})`, color: "#fff", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 17 }}>{chosen.name[0]}</span>
+                <div>
+                  <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600 }}>Your examiner today is {chosen.name}</div>
+                  <div style={{ fontSize: 12.5, color: MUTED }}>{chosen.tag} · IELTS Speaking format</div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  ["1", "Introduction & interview", "4–5 min", `${chosen.name} greets you, checks your name, and asks short questions about familiar topics. Answer in 2–4 sentences.`],
+                  ["2", "The long turn", "3–4 min", "You get a topic card on screen, one minute to prepare (make notes!), then speak for 1–2 minutes without interruption."],
+                  ["3", "Discussion", "4–5 min", "Deeper, more abstract questions linked to your Part 2 topic. This is where higher bands are decided."],
+                ].map(([n, t, d, s]) => (
+                  <div key={n} style={{ display: "flex", gap: 12, border: `1px solid ${LINE}`, borderRadius: 12, padding: "11px 13px" }}>
+                    <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13 }}>{n}</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{t} <span style={{ fontWeight: 500, color: MUTED, fontSize: 12.5 }}>· {d}</span></div>
+                      <div style={{ fontSize: 13, lineHeight: 1.5, color: MUTED, marginTop: 2 }}>{s}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <ul style={{ margin: "14px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.7, color: MUTED }}>
+                <li><strong style={{ color: INK }}>Wear headphones</strong> in a quiet room — otherwise {chosen.name}&rsquo;s voice echoes into your mic.</li>
+                <li>{chosen.name} leads the test — just listen and answer naturally. If you talk over the examiner, you&rsquo;ll be asked to wait, like the real thing.</li>
+                <li>The test can&rsquo;t be paused. It runs about 11–14 minutes and counts as one of your monthly mock tests.</li>
+                <li>Your band report (graded conservatively) appears right after the test ends.</li>
+              </ul>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
+                <button type="button" onClick={() => setPhase("idle")} style={ghostBtn_}>
+                  Back
+                </button>
+                <button type="button" onClick={begin} style={primaryBtn}>
+                  I&rsquo;m ready — begin
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -389,6 +545,7 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
   // live view
   const inPrep = phase === "part2_prep";
   const inSpeak = phase === "part2_speak";
+  const ex = EXAMINERS.find((e) => e.id === examiner) ?? EXAMINERS[0];
   return (
     <div style={{ marginTop: 18 }}>
       {/* part progress */}
@@ -421,22 +578,22 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
 
         {/* examiner state */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
-          <ExaminerOrb speaking={examinerSpeaking} />
+          <ExaminerOrb speaking={examinerSpeaking} hue={ex.hue} initial={ex.name[0]} />
           <div>
             <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>
-              {examinerSpeaking ? "The examiner is speaking…" : listening ? "Your turn — speak now" : "…"}
+              {examinerSpeaking ? `${ex.name} is speaking…` : listening ? "Your turn — speak now" : "…"}
             </div>
             <div style={{ fontSize: 13, color: MUTED }}>
               {inPrep
                 ? "Prepare quietly. You can make notes below."
                 : inSpeak
-                  ? "Speak for one to two minutes. Don't stop for pauses."
+                  ? "Speak for one to two minutes. Short pauses to think are fine."
                   : listening
-                    ? "The examiner is listening."
-                    : "Listen to the examiner."}
+                    ? `${ex.name} is listening.`
+                    : `Listen to ${ex.name}.`}
             </div>
           </div>
-          {listening ? <MicLevel level={level} /> : null}
+          {listening ? <MicLevel level={micLevel} /> : null}
         </div>
 
         {/* cue card (Part 2) */}
@@ -476,7 +633,7 @@ export function LiveMock({ onExit }: { onExit: () => void }) {
 
 // ---- bits ------------------------------------------------------------------
 
-function ExaminerOrb({ speaking }: { speaking: boolean }) {
+function ExaminerOrb({ speaking, hue = INDIGO, initial = "E" }: { speaking: boolean; hue?: string; initial?: string }) {
   return (
     <span
       style={{
@@ -484,19 +641,20 @@ function ExaminerOrb({ speaking }: { speaking: boolean }) {
         width: 48,
         height: 48,
         borderRadius: "50%",
-        background: `radial-gradient(circle at 35% 30%, #5A50E0, ${INDIGO})`,
-        boxShadow: speaking ? "0 0 0 6px rgba(67,56,202,.16)" : "none",
+        background: `radial-gradient(circle at 35% 30%, ${hue}CC, ${hue})`,
+        boxShadow: speaking ? `0 0 0 6px ${hue}29` : "none",
         transition: "box-shadow .2s",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
+        color: "#fff",
+        fontWeight: 800,
+        fontSize: 18,
+        fontFamily: SANS,
       }}
       aria-hidden
     >
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-        <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3" />
-      </svg>
+      {initial}
     </span>
   );
 }

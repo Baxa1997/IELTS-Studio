@@ -513,8 +513,8 @@ export function SpeakingClient() {
           ) : null}
 
           <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9A9EAE" }}>
-            Part 1 &amp; Part 3 with a live AI examiner are coming next. AI-estimated bands — not
-            affiliated with or endorsed by IELTS®.
+            Want the full 3-part exam with a live examiner? Switch to <strong>Full mock</strong> above.
+            AI-estimated bands — not affiliated with or endorsed by IELTS®.
           </p>
         </>
       ) : null}
