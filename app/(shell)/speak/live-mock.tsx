@@ -209,11 +209,14 @@ export function LiveMock({
   const [error, setError] = useState<string | null>(null);
   const [endedBand, setEndedBand] = useState<number | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0); // whole-test clock (top bar)
+  const [exitArmed, setExitArmed] = useState(false); // two-tap exit guard
 
   const wsRef = useRef<WebSocket | null>(null);
   const micRef = useRef<Mic | null>(null);
   const playerRef = useRef<VoicePlayer | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // playback sync: turn_end arrived but audio is still playing → report when drained
   const pendingPlayedRef = useRef<{ seq: number | null } | null>(null);
 
@@ -237,6 +240,8 @@ export function LiveMock({
 
   const teardown = useCallback(() => {
     stopClock();
+    if (elapsedRef.current) clearInterval(elapsedRef.current);
+    elapsedRef.current = null;
     try {
       wsRef.current?.close();
     } catch {}
@@ -247,17 +252,40 @@ export function LiveMock({
     playerRef.current = null;
   }, []);
 
+  const startElapsed = useCallback(() => {
+    if (elapsedRef.current) clearInterval(elapsedRef.current);
+    const t0 = Date.now();
+    setElapsed(0);
+    elapsedRef.current = setInterval(
+      () => setElapsed(Math.floor((Date.now() - t0) / 1000)),
+      1000,
+    );
+  }, []);
+
   useEffect(() => () => teardown(), [teardown]);
 
   useEffect(() => {
     onRunning?.(phase !== "idle" && phase !== "instructions");
   }, [phase, onRunning]);
 
+  // The exam room takes over the whole viewport; freeze the page behind it.
+  const roomOpen =
+    phase !== "idle" && phase !== "instructions" && phase !== "ended" && phase !== "error";
+  useEffect(() => {
+    if (!roomOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [roomOpen]);
+
   const onEvent = useCallback(
     (m: Record<string, unknown>) => {
       switch (m.type) {
         case "ready":
           setSessionId(String(m.session_id ?? ""));
+          startElapsed();
           break;
         case "phase": {
           setPhase(String(m.phase) as Phase);
@@ -305,7 +333,7 @@ export function LiveMock({
           break;
       }
     },
-    [runClock, teardown],
+    [runClock, teardown, startElapsed],
   );
 
   const begin = useCallback(async () => {
@@ -594,101 +622,309 @@ export function LiveMock({
     );
   }
 
-  // live view — the exam room: a big animated examiner, one clear status line.
+  // live view — the EXAM ROOM: a full-viewport takeover (exit / part pill /
+  // whole-test clock on top, the examiner centre-stage, cue card mid-page,
+  // and a fixed "YOU" mic dock at the bottom).
   const inPrep = phase === "part2_prep";
   const inSpeak = phase === "part2_speak";
+  const connecting = phase === "connecting";
   const ex = EXAMINERS.find((e) => e.id === examiner) ?? EXAMINERS[0];
-  const status = examinerSpeaking
-    ? `${ex.name} is speaking…`
-    : inPrep
-      ? "Prepare your answer"
-      : listening
-        ? "Your turn — speak naturally"
-        : phase === "connecting"
-          ? `Connecting you with ${ex.name}…`
+  const status = connecting
+    ? `Connecting you with ${ex.name}…`
+    : examinerSpeaking
+      ? `${ex.name} is speaking…`
+      : inPrep
+        ? "Prepare your answer"
+        : listening
+          ? `${ex.name} is listening`
           : `${ex.name} is thinking…`;
-  const substatus = inPrep
-    ? "Make notes below — your minute is running."
-    : inSpeak && listening
-      ? "Take your time. Short pauses to think are completely fine."
-      : listening
-        ? `${ex.name} is listening — answer in a few sentences.`
-        : examinerSpeaking
-          ? "Listen — you'll get your turn."
-          : " ";
+  const dockText = connecting
+    ? "Checking your microphone…"
+    : examinerSpeaking
+      ? "Listen carefully…"
+      : inPrep
+        ? "Make notes — your minute is running"
+        : listening
+          ? inSpeak
+            ? "Speak for 1–2 minutes — short thinking pauses are fine"
+            : "Your turn — speak naturally"
+          : "One moment…";
+  const partHint: Record<number, string> = {
+    1: "Short questions about you and familiar topics. Answer in 2–4 sentences.",
+    2: "Your long turn: one minute to prepare, then speak for 1–2 minutes.",
+    3: "A deeper discussion linked to your topic. Develop and justify your opinions.",
+  };
+  const mm = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   return (
-    <div style={{ marginTop: 18 }}>
-      {/* part progress */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {[
-          [1, "Interview"],
-          [2, "Long turn"],
-          [3, "Discussion"],
-        ].map(([p, label]) => {
-          const n = p as number;
-          const active = n === part;
-          const done = n < part;
-          return (
-            <div key={n} style={{ flex: 1 }}>
-              <div style={{ height: 6, borderRadius: 999, background: done || active ? ex.hue : LINE, opacity: done ? 0.45 : 1 }} />
-              <div style={{ marginTop: 6, fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: active ? ex.hue : done ? MUTED : "#B9BCC9", textTransform: "uppercase" }}>
-                Part {n} · {label as string}
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 70,
+        display: "flex",
+        flexDirection: "column",
+        background: "#F6F6F9",
+        fontFamily: SANS,
+        color: INK,
+      }}
+    >
+      {/* ── top bar ── */}
+      <div
+        style={{
+          flex: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+          padding: "10px 14px",
+          background: "#fff",
+          borderBottom: `1px solid ${LINE}`,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            if (exitArmed) {
+              setExitArmed(false);
+              endEarly();
+            } else {
+              setExitArmed(true);
+              setTimeout(() => setExitArmed(false), 3500);
+            }
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            height: 34,
+            padding: "0 12px",
+            borderRadius: 9,
+            border: `1px solid ${exitArmed ? "#F3C6C6" : LINE}`,
+            background: exitArmed ? "#FDF3F3" : "#fff",
+            color: exitArmed ? RED : MUTED,
+            fontFamily: SANS,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>×</span>
+          {exitArmed ? "End the test?" : "Exit"}
+        </button>
+
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "6px 14px",
+            borderRadius: 999,
+            background: "#DCFCE7",
+            color: "#15803D",
+            fontSize: 13,
+            fontWeight: 800,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }} />
+          Part {part} · {PART_LABEL_SHORT[part] ?? ""}
+        </span>
+
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            color: MUTED,
+            fontSize: 13.5,
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+          {mm(elapsed)}
+        </span>
+      </div>
+      {/* whole-test progress line (16-min cap) */}
+      <div aria-hidden style={{ flex: "none", height: 3, background: LINE }}>
+        <div
+          style={{
+            height: "100%",
+            width: `${Math.min(100, Math.max(1.5, (elapsed / 960) * 100))}%`,
+            background: ex.hue,
+            transition: "width 1s linear",
+          }}
+        />
+      </div>
+
+      {/* ── centre stage ── */}
+      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ width: "min(660px, 100%)", margin: "0 auto", padding: "26px 18px 30px", textAlign: "center" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".16em", color: MUTED }}>EXAMINER</div>
+          <div style={{ marginTop: 14 }}>
+            <ExaminerHero
+              hue={ex.hue}
+              initial={ex.name[0]}
+              speaking={examinerSpeaking}
+              listening={listening && !examinerSpeaking}
+              level={micLevel}
+            />
+          </div>
+          <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600, marginTop: 14 }}>{status}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 5, minHeight: 19 }}>
+            {connecting ? "This takes a few seconds." : partHint[part]}
+          </div>
+
+          {clock != null ? (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 14,
+                padding: "7px 16px",
+                borderRadius: 999,
+                background: inPrep ? "#FDF3E3" : TINT,
+                border: `1px solid ${inPrep ? "#F2D9A8" : "#E4E2F4"}`,
+              }}
+            >
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: inPrep ? "#B45309" : INDIGO }}>
+                {inPrep ? "PREP TIME" : "SPEAKING"}
+              </span>
+              <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: inPrep ? "#B45309" : INDIGO, fontVariantNumeric: "tabular-nums" }}>
+                {mm(clock)}
+              </span>
+            </div>
+          ) : null}
+
+          {/* cue card (Part 2) — styled like the paper slip on exam day */}
+          {card && part === 2 ? (
+            <div
+              style={{
+                marginTop: 22,
+                textAlign: "left",
+                background: "#fff",
+                border: `1px solid ${LINE}`,
+                borderRadius: 16,
+                padding: "16px 18px 18px",
+                boxShadow: "0 14px 34px -22px rgba(28,27,46,.35)",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 8,
+                  background: "#FFF4E5",
+                  color: "#C2410C",
+                  fontSize: 11.5,
+                  fontWeight: 800,
+                  letterSpacing: ".06em",
+                }}
+              >
+                <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="4" y="3" width="16" height="18" rx="2.5" />
+                  <path d="M8 8h8M8 12h8M8 16h5" />
+                </svg>
+                CUE CARD
+              </span>
+              <div style={{ fontFamily: SERIF, fontSize: 18.5, fontWeight: 600, marginTop: 10, lineHeight: 1.4 }}>{card.title}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "10px 0 4px" }}>You should say:</div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.75, color: INK }}>
+                {card.bullets.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+              <div style={{ fontSize: 14, marginTop: 6, color: INK }}>{card.closing}</div>
+              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 10, fontStyle: "italic" }}>
+                You will have 1–2 minutes to talk about this.
+              </div>
+              {inPrep || inSpeak ? (
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Your notes (only you can see these)…"
+                  style={{
+                    width: "100%",
+                    marginTop: 12,
+                    minHeight: 76,
+                    resize: "vertical",
+                    border: `1px solid ${LINE}`,
+                    borderRadius: 10,
+                    padding: 10,
+                    fontFamily: SANS,
+                    fontSize: 13.5,
+                    color: INK,
+                    background: "#FBFBFD",
+                  }}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ── YOU dock ── */}
+      <div
+        style={{
+          flex: "none",
+          background: "#fff",
+          borderTop: `1px solid ${LINE}`,
+          padding: "12px 18px calc(12px + env(safe-area-inset-bottom))",
+        }}
+      >
+        <div style={{ width: "min(660px, 100%)", margin: "0 auto" }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".16em", color: "#B9BCC9", textAlign: "center" }}>YOU</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 7 }}>
+            <span
+              aria-hidden
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                width: 42,
+                height: 42,
+                borderRadius: "50%",
+                alignItems: "center",
+                justifyContent: "center",
+                background: listening && !examinerSpeaking ? "#16A34A" : "#EDEDF3",
+                color: listening && !examinerSpeaking ? "#fff" : "#9A9DAD",
+                boxShadow:
+                  listening && !examinerSpeaking
+                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px rgba(22,163,74,.14)`
+                    : "none",
+                transition: "background .2s, box-shadow .1s",
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2.5" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" />
+              </svg>
+            </span>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700 }}>{dockText}</div>
+              <div style={{ fontSize: 11.5, color: MUTED, marginTop: 1 }}>
+                Original AI examiner · not affiliated with IELTS®
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      <div style={{ ...card_, padding: "34px 22px 26px", textAlign: "center" }}>
-        <ExaminerHero hue={ex.hue} initial={ex.name[0]} speaking={examinerSpeaking} listening={listening && !examinerSpeaking} level={micLevel} />
-        <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, marginTop: 18 }}>{status}</div>
-        <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6, minHeight: 20 }}>{substatus}</div>
-        {clock != null ? (
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 12, padding: "7px 16px", borderRadius: 999, background: inPrep ? "#FDF3E3" : TINT, border: `1px solid ${inPrep ? "#F2D9A8" : "#E4E2F4"}` }}>
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: inPrep ? "#B45309" : INDIGO }}>
-              {inPrep ? "PREP TIME" : "SPEAKING"}
-            </span>
-            <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: inPrep ? "#B45309" : INDIGO, fontVariantNumeric: "tabular-nums" }}>
-              {Math.floor(clock / 60)}:{String(clock % 60).padStart(2, "0")}
-            </span>
           </div>
-        ) : null}
-
-        {/* cue card (Part 2) */}
-        {card && part === 2 ? (
-          <div style={{ marginTop: 20, textAlign: "left", border: `1.5px solid ${ex.hue}44`, borderRadius: 14, padding: "16px 18px", background: `${ex.hue}08` }}>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: ex.hue, marginBottom: 6 }}>YOUR TOPIC CARD</div>
-            <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600 }}>{card.title}</div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "10px 0 4px" }}>You should say:</div>
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.7, color: INK }}>
-              {card.bullets.map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
-            <div style={{ fontSize: 14, marginTop: 6, color: INK }}>{card.closing}</div>
-            {inPrep || inSpeak ? (
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Your notes (only you can see these)…"
-                style={{ width: "100%", marginTop: 12, minHeight: 76, resize: "vertical", border: `1px solid ${LINE}`, borderRadius: 10, padding: 10, fontFamily: SANS, fontSize: 13.5, color: INK, background: "#fff" }}
-              />
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
-        <span style={{ fontSize: 12, color: MUTED }}>
-          Original AI examiner · not affiliated with or endorsed by IELTS®
-        </span>
-        <button type="button" onClick={endEarly} style={ghostBtn_}>
-          End test
-        </button>
+        </div>
       </div>
     </div>
   );
 }
+
+const PART_LABEL_SHORT: Record<number, string> = {
+  1: "Interview",
+  2: "Long turn",
+  3: "Discussion",
+};
 
 // ---- bits ------------------------------------------------------------------
 
