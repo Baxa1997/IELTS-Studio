@@ -208,6 +208,7 @@ export function LiveMock({
   const [micLevel, setMicLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [endedBand, setEndedBand] = useState<number | null>(null);
+  const [grading, setGrading] = useState(false); // exam over, report being written
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0); // whole-test clock (top bar)
   const [exitArmed, setExitArmed] = useState(false); // two-tap exit guard
@@ -321,8 +322,24 @@ export function LiveMock({
         case "your_turn":
           setListening(true);
           break;
+        case "grading":
+          // The exam is over; the engine is grading (~30–40s). Leave the exam
+          // room immediately — sitting in a silent room with a dead mic is
+          // exactly the "cannot finish" experience. Keep the socket: the
+          // `ended` event (with the band) still arrives on it.
+          setGrading(true);
+          setPhase("ended");
+          stopClock();
+          if (elapsedRef.current) clearInterval(elapsedRef.current);
+          elapsedRef.current = null;
+          micRef.current?.stop();
+          micRef.current = null;
+          playerRef.current?.close();
+          playerRef.current = null;
+          break;
         case "ended":
           setEndedBand(typeof m.overall_band === "number" ? m.overall_band : null);
+          setGrading(false);
           setPhase("ended");
           teardown();
           break;
@@ -415,6 +432,16 @@ export function LiveMock({
     try {
       wsRef.current?.send(JSON.stringify({ type: "stop" }));
     } catch {}
+    // Failsafe: if no ended/grading event lands (dead socket, engine hiccup),
+    // leave the room anyway — a stuck exam room is worse than a report that
+    // needs one refresh. The report link keeps working either way.
+    window.setTimeout(() => {
+      setPhase((p) => {
+        if (p === "ended" || p === "error" || p === "idle" || p === "instructions") return p;
+        setGrading(true);
+        return "ended";
+      });
+    }, 6000);
   }, []);
 
   // ---- render ----------------------------------------------------------------
@@ -606,7 +633,22 @@ export function LiveMock({
             </div>
           </div>
         ) : (
-          <p style={{ color: MUTED, fontSize: 14, marginTop: 12 }}>Your report is being prepared.</p>
+          <div style={{ marginTop: 14 }}>
+            <div
+              aria-hidden
+              style={{
+                width: 26, height: 26, margin: "0 auto 10px",
+                border: "3px solid #E4E6F2", borderTopColor: INDIGO, borderRadius: "50%",
+                animation: "spin .9s linear infinite",
+              }}
+            />
+            <p style={{ color: MUTED, fontSize: 14, margin: 0 }}>
+              {grading
+                ? "The examiner is writing your report — your band appears here in under a minute."
+                : "Your report is being prepared."}
+            </p>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
         )}
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 16, flexWrap: "wrap" }}>
           {sessionId ? (
