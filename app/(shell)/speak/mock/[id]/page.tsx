@@ -5,6 +5,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ interface Turn {
   role: "examiner" | "candidate";
   part: number;
   text: string;
+  t_ms?: number;
 }
 
 /**
@@ -58,9 +60,12 @@ export default async function MockResultPage({ params }: PageProps) {
   const dialogue = turns
     .map((t) => `${t.role === "examiner" ? "Examiner" : "You"}: ${t.text.trim()}`)
     .join("\n\n");
+  // The synced player needs timestamps; older sessions may predate t_ms.
+  const synced = audioUrl != null && turns.some((t) => typeof t.t_ms === "number");
 
   const result = (s.result ?? {}) as SpeakResult & { part_notes?: Record<string, string> };
   const partNotes = result.part_notes ?? {};
+  const metrics = (s.metrics ?? {}) as SpeakMetrics & { part_s?: Record<string, number> };
 
   const when = new Date(s.started_at).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -92,11 +97,15 @@ export default async function MockResultPage({ params }: PageProps) {
         </div>
       ) : null}
 
+      {synced ? (
+        <ListenBack audioUrl={audioUrl!} turns={turns as LBTurn[]} partS={metrics.part_s} />
+      ) : null}
+
       <SpeakingReport
         result={result}
-        metrics={(s.metrics ?? {}) as SpeakMetrics}
-        transcript={dialogue}
-        audioUrl={audioUrl}
+        metrics={metrics}
+        transcript={synced ? "" : dialogue}
+        audioUrl={synced ? null : audioUrl}
       />
     </div>
   );
