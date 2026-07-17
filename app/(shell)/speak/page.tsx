@@ -1,10 +1,32 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
+import type { SpeakProgressItem } from "./progress";
 import { SpeakingClient } from "./speaking-client";
 
 export const dynamic = "force-dynamic";
+
+interface GradedResult {
+  overall_band?: number;
+  non_attempt?: boolean;
+  criteria?: Record<string, { band?: number }>;
+}
+
+function toItem(t: string, kind: "mock" | "practice", r: GradedResult | null): SpeakProgressItem | null {
+  if (!r || typeof r.overall_band !== "number" || r.non_attempt) return null;
+  const pick = (k: string) => {
+    const b = r.criteria?.[k]?.band;
+    return typeof b === "number" ? b : undefined;
+  };
+  return {
+    t,
+    band: r.overall_band,
+    kind,
+    crit: { FC: pick("FC"), LR: pick("LR"), GRA: pick("GRA"), P: pick("P") },
+  };
+}
 
 /**
  * Speaking practice hub (BETA) — Part 2 push-to-talk live; Parts 1 & 3 with a
@@ -22,5 +44,31 @@ export default async function SpeakPage({
   // report deep-links straight into quick practice with that exact cue card.
   const sp = await searchParams;
   const card = typeof sp.card === "string" ? sp.card : null;
-  return <SpeakingClient initialCardId={card} />;
+
+  // Progress series: graded mocks + practices, RLS-scoped, oldest→newest.
+  const supabase = await createClient();
+  const [{ data: mocks }, { data: attempts }] = await Promise.all([
+    supabase
+      .from("speaking_sessions")
+      .select("started_at, result")
+      .eq("mode", "full")
+      .eq("state", "graded")
+      .order("started_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("speaking_attempts")
+      .select("created_at, result")
+      .not("result", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(12),
+  ]);
+  const progress = [
+    ...(mocks ?? []).map((m) => toItem(m.started_at as string, "mock", m.result as GradedResult | null)),
+    ...(attempts ?? []).map((a) => toItem(a.created_at as string, "practice", a.result as GradedResult | null)),
+  ]
+    .filter((x): x is SpeakProgressItem => x !== null)
+    .sort((a, b) => a.t.localeCompare(b.t))
+    .slice(-10);
+
+  return <SpeakingClient initialCardId={card} progress={progress} />;
 }

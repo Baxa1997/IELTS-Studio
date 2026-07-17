@@ -7,6 +7,7 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 import { LiveMock } from "./live-mock";
+import { SpeakProgress, type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
 
 /**
@@ -225,7 +226,13 @@ function mmss(s: number): string {
 
 // ---- the client ---------------------------------------------------------------
 
-export function SpeakingClient({ initialCardId = null }: { initialCardId?: string | null }) {
+export function SpeakingClient({
+  initialCardId = null,
+  progress = [],
+}: {
+  initialCardId?: string | null;
+  progress?: SpeakProgressItem[];
+}) {
   // The full mock IS the product; quick practice is the warm-up. Full first —
   // unless they arrived via "practise this card again" (the revision loop).
   const [mode, setMode] = useState<"part2" | "full">(initialCardId ? "part2" : "full");
@@ -450,6 +457,11 @@ export function SpeakingClient({ initialCardId = null }: { initialCardId?: strin
 
       {/* full mock — its own live-examiner flow */}
       {mode === "full" ? <LiveMock onExit={() => setMockRunning(false)} onRunning={setMockRunning} /> : null}
+
+      {/* trajectory: graded mocks + practices — hidden while a test is running */}
+      {!mockRunning && (mode === "full" || phase === "idle") ? (
+        <SpeakProgress items={progress} />
+      ) : null}
 
       {/* idle hub (Part 2) */}
       {mode === "part2" && (phase === "idle" || phase === "starting") ? (
