@@ -229,9 +229,11 @@ function mmss(s: number): string {
 export function SpeakingClient({
   initialCardId = null,
   progress = [],
+  recentMocks = [],
 }: {
   initialCardId?: string | null;
   progress?: SpeakProgressItem[];
+  recentMocks?: { id: string; t: string; band: number }[];
 }) {
   // The full mock IS the product; quick practice is the warm-up. Full first —
   // unless they arrived via "practise this card again" (the revision loop).
@@ -461,6 +463,30 @@ export function SpeakingClient({
       {/* trajectory: graded mocks + practices — hidden while a test is running */}
       {!mockRunning && (mode === "full" || phase === "idle") ? (
         <SpeakProgress items={progress} />
+      ) : null}
+
+      {/* past mock reports — previously only reachable from the ended screen */}
+      {!mockRunning && mode === "full" && recentMocks.length ? (
+        <div style={{ ...card, marginTop: 14 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>My full mocks</div>
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            {recentMocks.map((m) => (
+              <Link
+                key={m.id}
+                href={`/speak/mock/${m.id}`}
+                style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13.5, color: INK, textDecoration: "none", borderBottom: `1px dashed ${LINE}`, paddingBottom: 8 }}
+              >
+                <span>
+                  Full mock ·{" "}
+                  {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                </span>
+                <span style={{ color: INDIGO, fontWeight: 700, whiteSpace: "nowrap" }}>
+                  Band {m.band.toFixed(1)} · report →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       {/* idle hub (Part 2) */}

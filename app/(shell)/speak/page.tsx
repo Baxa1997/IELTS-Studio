@@ -50,7 +50,7 @@ export default async function SpeakPage({
   const [{ data: mocks }, { data: attempts }] = await Promise.all([
     supabase
       .from("speaking_sessions")
-      .select("started_at, result")
+      .select("id, started_at, result")
       .eq("mode", "full")
       .eq("state", "graded")
       .order("started_at", { ascending: false })
@@ -70,5 +70,17 @@ export default async function SpeakPage({
     .sort((a, b) => a.t.localeCompare(b.t))
     .slice(-10);
 
-  return <SpeakingClient initialCardId={card} progress={progress} />;
+  // Finished mocks were unreachable from the hub (report links only lived on
+  // the ended screen) — a graded 6.0 sat invisible until the user asked.
+  const recentMocks = (mocks ?? [])
+    .map((m) => {
+      const r = m.result as GradedResult | null;
+      return r && typeof r.overall_band === "number"
+        ? { id: m.id as string, t: m.started_at as string, band: r.overall_band }
+        : null;
+    })
+    .filter((x): x is { id: string; t: string; band: number } => x !== null)
+    .slice(0, 5);
+
+  return <SpeakingClient initialCardId={card} progress={progress} recentMocks={recentMocks} />;
 }
