@@ -1,9 +1,12 @@
 /**
  * Speaking report — shared presentational block (no hooks) rendered inline by
  * the practice flow right after grading AND by /speak/results/[id]. Mirrors the
- * writing-feedback shape: band hero, per-criterion evidence/caps/fix cards
- * (P flagged beta, excluded from overall), delivery metrics, upgrades.
+ * writing-feedback design language: bandColor hero strip (big number + tier
+ * chip + lift pill + criterion mini-cards with bars), then per-criterion
+ * evidence/caps/fix cards, delivery metrics, upgrades.
  */
+
+import { bandColor } from "@/lib/ui/band";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -61,6 +64,13 @@ const CRIT_NAME: Record<string, string> = {
   P: "Pronunciation",
 };
 
+const CRIT_SHORT: Record<string, string> = {
+  FC: "Fluency",
+  LR: "Vocabulary",
+  GRA: "Grammar",
+  P: "Pronunciation",
+};
+
 function fmtBand(b: number): string {
   return Number.isInteger(b) ? `${b}.0` : String(b);
 }
@@ -83,6 +93,7 @@ export function SpeakingReport({
   // four-criterion structure; otherwise P is an estimate and stays out.
   const pBeta = result.criteria?.P ? result.criteria.P.beta !== false : true;
   const partial = result.partial ?? [];
+  const bc = bandColor(result.overall_band);
 
   return (
     <div style={{ fontFamily: SANS, color: INK, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -105,42 +116,97 @@ export function SpeakingReport({
         </div>
       ) : null}
 
-      {/* hero */}
-      <div style={{ ...CARD, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 18, justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", color: MUTED, textTransform: "uppercase" }}>
-            {pBeta ? "Overall band · FC + LR + GRA" : "Overall band · all four criteria"}
-          </div>
-          <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 600, lineHeight: 1.1, color: INDIGO }}>
-            {fmtBand(result.overall_band)}
-          </div>
-          {result.score_blocker?.why ? (
-            <div style={{ fontSize: 13.5, color: MUTED, maxWidth: 460, marginTop: 4 }}>
-              <strong style={{ color: INK }}>{CRIT_NAME[result.score_blocker.criterion] ?? result.score_blocker.criterion}</strong>{" "}
-              holds it down: {result.score_blocker.why}
-            </div>
-          ) : null}
-          <div style={{ fontSize: 12, color: "#9A9EAE", marginTop: 6 }}>
-            {pBeta
-              ? "Average of Fluency, Vocabulary and Grammar, rounded down to the half band — deliberately conservative. Pronunciation is shown below but not counted until it hears enough audio."
-              : "The official structure: all four criteria weigh 25% each, rounded down to the half band — deliberately conservative. Pronunciation was assessed from your Part 2 recording."}
+      {/* hero — the writing report's score strip: big banded number + tier
+          chip + lift pill + criterion mini-cards with bars */}
+      <div style={{ ...CARD, display: "flex", alignItems: "center", gap: 22, flexWrap: "wrap" }}>
+        <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 14 }}>
+          <span
+            style={{
+              fontSize: 62, fontWeight: 800, lineHeight: 0.82, color: bc.fg,
+              fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em",
+            }}
+          >
+            {result.overall_band.toFixed(1)}
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase", lineHeight: 1.1 }}>
+              Overall<br />band
+            </span>
+            <span style={{ alignSelf: "flex-start", fontSize: 11.5, fontWeight: 700, color: bc.fg, background: bc.bg, padding: "2px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
+              {bc.label}
+            </span>
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
-          {fixes > result.overall_band ? (
-            <span style={{ fontSize: 13, fontWeight: 700, color: GOOD, background: GOOD_BG, border: "1px solid #cfe7da", borderRadius: 999, padding: "6px 13px" }}>
-              {fmtBand(fixes)} with the fixes below
+        {fixes > result.overall_band ? (
+          <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: GOOD_BG, border: "1px solid #cfe7da", borderRadius: 11 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOOD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+            <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
+              Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{fixes.toFixed(1)}</strong> with the fixes
             </span>
-          ) : null}
-          {pBeta ? (
-            <span style={{ fontSize: 12, fontWeight: 600, color: AMBER, background: "#FBF3DE", border: "1px solid #F0E1BB", borderRadius: 999, padding: "5px 11px" }}>
-              Pronunciation is beta — reported, not counted
-            </span>
-          ) : (
-            <span style={{ fontSize: 12, fontWeight: 600, color: GOOD, background: GOOD_BG, border: "1px solid #cfe7da", borderRadius: 999, padding: "5px 11px" }}>
-              Pronunciation heard from your recording
-            </span>
-          )}
+          </div>
+        ) : null}
+        <div
+          style={{
+            flex: 1, minWidth: 250, display: "grid", gap: 10,
+            gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+          }}
+        >
+          {critKeys.map((k) => {
+            const c = result.criteria[k];
+            const isBlocker = result.score_blocker?.criterion === k;
+            const isBeta = k === "P" && pBeta;
+            const color = isBlocker ? "#C2410C" : c.band >= 6 ? "#2C3247" : AMBER;
+            const tag = isBeta
+              ? "Beta — not counted"
+              : isBlocker
+                ? "Fix this first"
+                : c.band >= 7
+                  ? "Strong"
+                  : c.band >= 6
+                    ? "Solid"
+                    : "Needs work";
+            const tagColor = isBeta ? AMBER : isBlocker ? "#C2410C" : c.band >= 6 ? "#9A9EAE" : AMBER;
+            return (
+              <div
+                key={k}
+                style={{
+                  background: isBlocker ? "#FCEEEA" : "#F7F7FB",
+                  border: `1px solid ${isBlocker ? "#F3CFC6" : LINE}`,
+                  borderRadius: 12, padding: "10px 12px", minWidth: 0,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {CRIT_SHORT[k] ?? k}
+                  </span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+                    {c.band.toFixed(1)}
+                  </span>
+                </div>
+                <div style={{ marginTop: 8, height: 5, borderRadius: 3, background: isBlocker ? "#F3DAD3" : "#EBEAF3", overflow: "hidden" }}>
+                  <div style={{ width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`, height: "100%", borderRadius: 3, background: isBlocker ? "#C2410C" : INDIGO, opacity: isBeta ? 0.45 : 1 }} />
+                </div>
+                <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tagColor }}>{tag}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* what holds it down + how the band is built */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {result.score_blocker?.why ? (
+          <div style={{ fontSize: 13.5, color: MUTED }}>
+            <strong style={{ color: INK }}>{CRIT_NAME[result.score_blocker.criterion] ?? result.score_blocker.criterion}</strong>{" "}
+            holds it down: {result.score_blocker.why}
+          </div>
+        ) : null}
+        <div style={{ fontSize: 12, color: "#9A9EAE" }}>
+          {pBeta
+            ? "Average of Fluency, Vocabulary and Grammar, rounded down to the half band — deliberately conservative. Pronunciation is shown but not counted until it hears enough audio."
+            : "Official structure: all four criteria weigh 25% each, rounded down to the half band — deliberately conservative. Pronunciation was assessed from your Part 2 recording."}
         </div>
       </div>
 

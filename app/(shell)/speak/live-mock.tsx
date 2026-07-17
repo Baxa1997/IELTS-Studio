@@ -281,6 +281,45 @@ export function LiveMock({
     };
   }, [roomOpen]);
 
+  // Band fallback: grading takes ~30–60s and the `ended` event rides a socket
+  // that may die in that window — a lost event once left a graded 6.0 sitting
+  // in the DB behind an eternal spinner. Poll the session row (RLS: own rows)
+  // until the band lands, then stop.
+  useEffect(() => {
+    if (phase !== "ended" || endedBand != null || !sessionId) return;
+    const supabase = createClient();
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const t0 = Date.now();
+    const tick = async () => {
+      if (stopped) return;
+      const { data } = await supabase
+        .from("speaking_sessions")
+        .select("state,result")
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (stopped) return;
+      const band = (data?.result as { overall_band?: number } | null)?.overall_band;
+      if (typeof band === "number") {
+        setEndedBand(band);
+        setGrading(false);
+        return;
+      }
+      if (data?.state && data.state !== "pending" && data.state !== "live" && data.state !== "grading"
+          && Date.now() - t0 > 30_000) {
+        setGrading(false); // terminal state without a band — stop spinning
+        return;
+      }
+      if (Date.now() - t0 < 4 * 60_000) timer = setTimeout(tick, 5000);
+      else setGrading(false);
+    };
+    timer = setTimeout(tick, 4000);
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [phase, endedBand, sessionId]);
+
   const onEvent = useCallback(
     (m: Record<string, unknown>) => {
       switch (m.type) {
