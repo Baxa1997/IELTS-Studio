@@ -63,8 +63,12 @@ export default async function MockResultPage({ params }: PageProps) {
   // The synced player needs timestamps; older sessions may predate t_ms.
   const synced = audioUrl != null && turns.some((t) => typeof t.t_ms === "number");
 
-  const result = (s.result ?? {}) as SpeakResult & { part_notes?: Record<string, string> };
+  const result = (s.result ?? {}) as SpeakResult & {
+    part_notes?: Record<string, string>;
+    notes?: string;
+  };
   const partNotes = result.part_notes ?? {};
+  const prepNotes = typeof result.notes === "string" ? result.notes.trim() : "";
   const metrics = (s.metrics ?? {}) as SpeakMetrics & { part_s?: Record<string, number> };
 
   const when = new Date(s.started_at).toLocaleDateString("en-GB", {
@@ -99,6 +103,23 @@ export default async function MockResultPage({ params }: PageProps) {
 
       {synced ? (
         <ListenBack audioUrl={audioUrl!} turns={turns as LBTurn[]} partS={metrics.part_s} />
+      ) : null}
+
+      {prepNotes ? (
+        <details
+          style={{
+            background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14,
+            padding: "13px 16px", marginBottom: 14, cursor: "pointer",
+          }}
+        >
+          <summary style={{ fontWeight: 700, fontSize: 13.5 }}>
+            Your prep-minute notes
+            <span style={{ fontWeight: 500, color: MUTED }}> · compare them with what you actually said</span>
+          </summary>
+          <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.65, color: "#3A3950", whiteSpace: "pre-wrap" }}>
+            {prepNotes}
+          </p>
+        </details>
       ) : null}
 
       <SpeakingReport

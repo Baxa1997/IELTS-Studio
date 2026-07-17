@@ -214,6 +214,7 @@ export function LiveMock({
   const [exitArmed, setExitArmed] = useState(false); // two-tap exit guard
 
   const wsRef = useRef<WebSocket | null>(null);
+  const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const micRef = useRef<Mic | null>(null);
   const playerRef = useRef<VoicePlayer | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -930,8 +931,18 @@ export function LiveMock({
               {inPrep || inSpeak ? (
                 <textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Your notes (only you can see these)…"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setNotes(v);
+                    // debounce → engine persists them into the report
+                    if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+                    notesTimerRef.current = setTimeout(() => {
+                      try {
+                        wsRef.current?.send(JSON.stringify({ type: "notes", text: v.slice(0, 2000) }));
+                      } catch {}
+                    }, 800);
+                  }}
+                  placeholder="Your notes (saved into your report — only you can see them)…"
                   style={{
                     width: "100%",
                     marginTop: 12,
