@@ -33,6 +33,9 @@ export interface SpeakResult {
   upgrades?: { you_said: string; stronger: string; note: string }[];
   cue_card?: { title: string; bullets: string[]; closing: string };
   non_attempt?: boolean;
+  /** full-mock only: parts the candidate never sat (e.g. ["2","3"]) */
+  partial?: string[];
+  pronunciation_beta?: boolean;
 }
 
 export interface SpeakMetrics {
@@ -76,14 +79,37 @@ export function SpeakingReport({
   const cue = result.cue_card;
   const fixes = result.band_with_fixes ?? result.overall_band;
   const critKeys = ["FC", "LR", "GRA", "P"].filter((k) => result.criteria?.[k]);
+  // With real long-turn audio behind Pronunciation, the band uses the official
+  // four-criterion structure; otherwise P is an estimate and stays out.
+  const pBeta = result.criteria?.P ? result.criteria.P.beta !== false : true;
+  const partial = result.partial ?? [];
 
   return (
     <div style={{ fontFamily: SANS, color: INK, display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* partial-test banner — a 3-minute walkout must never read like a full-test verdict */}
+      {partial.length ? (
+        <div
+          style={{
+            border: "1px solid #F0E1BB",
+            background: "#FBF3DE",
+            borderRadius: 14,
+            padding: "12px 16px",
+            fontSize: 13.5,
+            lineHeight: 1.55,
+            color: "#7A5B14",
+          }}
+        >
+          <strong>Partial test.</strong> {partial.length === 2 ? "Parts 2 and 3 were" : `Part ${partial[0]} was`} not
+          attempted, so this band reflects only what you completed — an examiner can&rsquo;t credit
+          speech that never happened. Sit all three parts for a full assessment.
+        </div>
+      ) : null}
+
       {/* hero */}
       <div style={{ ...CARD, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 18, justifyContent: "space-between" }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", color: MUTED, textTransform: "uppercase" }}>
-            Overall band · FC + LR + GRA
+            {pBeta ? "Overall band · FC + LR + GRA" : "Overall band · all four criteria"}
           </div>
           <div style={{ fontFamily: SERIF, fontSize: 46, fontWeight: 600, lineHeight: 1.1, color: INDIGO }}>
             {fmtBand(result.overall_band)}
@@ -94,6 +120,11 @@ export function SpeakingReport({
               holds it down: {result.score_blocker.why}
             </div>
           ) : null}
+          <div style={{ fontSize: 12, color: "#9A9EAE", marginTop: 6 }}>
+            {pBeta
+              ? "Average of Fluency, Vocabulary and Grammar, rounded down to the half band — deliberately conservative. Pronunciation is shown below but not counted until it hears enough audio."
+              : "The official structure: all four criteria weigh 25% each, rounded down to the half band — deliberately conservative. Pronunciation was assessed from your Part 2 recording."}
+          </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
           {fixes > result.overall_band ? (
@@ -101,9 +132,15 @@ export function SpeakingReport({
               {fmtBand(fixes)} with the fixes below
             </span>
           ) : null}
-          <span style={{ fontSize: 12, fontWeight: 600, color: AMBER, background: "#FBF3DE", border: "1px solid #F0E1BB", borderRadius: 999, padding: "5px 11px" }}>
-            Pronunciation is beta — reported, not counted
-          </span>
+          {pBeta ? (
+            <span style={{ fontSize: 12, fontWeight: 600, color: AMBER, background: "#FBF3DE", border: "1px solid #F0E1BB", borderRadius: 999, padding: "5px 11px" }}>
+              Pronunciation is beta — reported, not counted
+            </span>
+          ) : (
+            <span style={{ fontSize: 12, fontWeight: 600, color: GOOD, background: GOOD_BG, border: "1px solid #cfe7da", borderRadius: 999, padding: "5px 11px" }}>
+              Pronunciation heard from your recording
+            </span>
+          )}
         </div>
       </div>
 
