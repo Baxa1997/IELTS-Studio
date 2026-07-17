@@ -976,9 +976,16 @@ export function LiveMock({
                 justifyContent: "center",
                 background: listening && !examinerSpeaking ? "#16A34A" : "#EDEDF3",
                 color: listening && !examinerSpeaking ? "#fff" : "#9A9DAD",
+                // The ring ALWAYS tracks the mic so the candidate can see the
+                // exam hears something even before speech is loud enough to
+                // open the turn ("my answers aren't processed" was mostly a
+                // too-quiet mic with zero visual feedback). Green when the
+                // floor is open, soft indigo otherwise.
                 boxShadow:
-                  listening && !examinerSpeaking
-                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px rgba(22,163,74,.14)`
+                  micLevel > 0.004 && !examinerSpeaking
+                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px ${
+                        listening ? "rgba(22,163,74,.14)" : "rgba(67,56,202,.10)"
+                      }`
                     : "none",
                 transition: "background .2s, box-shadow .1s",
               }}
