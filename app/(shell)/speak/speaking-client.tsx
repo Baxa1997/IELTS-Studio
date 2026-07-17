@@ -225,9 +225,10 @@ function mmss(s: number): string {
 
 // ---- the client ---------------------------------------------------------------
 
-export function SpeakingClient() {
-  // The full mock IS the product; quick practice is the warm-up. Full first.
-  const [mode, setMode] = useState<"part2" | "full">("full");
+export function SpeakingClient({ initialCardId = null }: { initialCardId?: string | null }) {
+  // The full mock IS the product; quick practice is the warm-up. Full first —
+  // unless they arrived via "practise this card again" (the revision loop).
+  const [mode, setMode] = useState<"part2" | "full">(initialCardId ? "part2" : "full");
   const [mockRunning, setMockRunning] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -337,7 +338,10 @@ export function SpeakingClient() {
       const s = await engineJson<StartPayload>("part2/start", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(difficulty ? { difficulty } : {}),
+        body: JSON.stringify({
+          ...(difficulty ? { difficulty } : {}),
+          ...(initialCardId ? { library_id: initialCardId } : {}),
+        }),
       });
       setSession(s);
       setPhase("prep");

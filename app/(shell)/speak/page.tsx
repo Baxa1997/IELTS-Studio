@@ -11,8 +11,16 @@ export const dynamic = "force-dynamic";
  * live AI examiner are phase 2 (docs/ielts-speaking-plan.md in the engine
  * repo). Browser-direct engine calls like Listening/CEFR. Students only.
  */
-export default async function SpeakPage() {
+export default async function SpeakPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { profile } = await requireOrgUser();
   if (profile.role !== "student") redirect("/console");
-  return <SpeakingClient />;
+  // ?card=<library_id> — the revision loop: "practise this card again" from a
+  // report deep-links straight into quick practice with that exact cue card.
+  const sp = await searchParams;
+  const card = typeof sp.card === "string" ? sp.card : null;
+  return <SpeakingClient initialCardId={card} />;
 }
