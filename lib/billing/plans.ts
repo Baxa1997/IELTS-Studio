@@ -50,7 +50,9 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // the engine enforces generation quota for the browser-direct endpoints.
     gradeLimit: 5,
     generateLimit: 5,
-    fullMockLimit: 0,
+    // One live full mock per month on the free tier — MUST stay in sync with the
+    // engine's PLAN_FULL_MOCK_LIMITS (that's the gate that actually enforces it).
+    fullMockLimit: 1,
     seatLimit: 10,
     stripePriceId: null,
     // Feature copy is learner-facing (B2C — CLAUDE.md); seatLimit stays in the
