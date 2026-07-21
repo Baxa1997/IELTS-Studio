@@ -11,13 +11,19 @@
  *      data we deliberately under-state — and banding that rounds HALF DOWN.
  */
 
-export const SKILLS = ["reading", "writing"] as const;
+export const SKILLS = ["reading", "writing", "listening", "speaking"] as const;
 export type Skill = (typeof SKILLS)[number];
 
 export const SKILL_LABELS: Record<Skill, string> = {
   reading: "Reading",
   writing: "Writing",
+  listening: "Listening",
+  speaking: "Speaking",
 };
+
+/** The two skills set by the entry diagnostic. Listening/Speaking are measured
+ *  from their own practice, not the onboarding diagnostic. */
+export const DIAGNOSTIC_SKILLS = ["reading", "writing"] as const;
 
 export const MIN_TARGET_BAND = 5;
 export const MAX_TARGET_BAND = 9;

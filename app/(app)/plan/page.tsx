@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { requireOrgUser, roleHome } from "@/lib/auth";
+import { SKILLS } from "@/lib/estimates/compute";
 import { type WeakCriterion } from "@/lib/dashboard/compute";
 import { loadDashboard } from "@/lib/dashboard/load";
 import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
@@ -43,7 +44,7 @@ export default async function PlanPage() {
   if (!plan) return null;
 
   const [{ estimates, weakestCriterion }, tasksThisWeek] = await Promise.all([
-    loadDashboard(profile.id),
+    loadDashboard(profile.id, profile.organization_id),
     countTasksThisWeek(profile.id),
   ]);
 
@@ -74,10 +75,11 @@ export default async function PlanPage() {
       {/* ─── Level re-check ─── */}
       <LevelCheck due={checkDue} daysToCheck={daysToCheck} />
 
-      {/* ─── Current → target ─── */}
+      {/* ─── Current → target (all four skills) ─── */}
       <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <PlanBandCard estimate={estimates.bySkill.reading} />
-        <PlanBandCard estimate={estimates.bySkill.writing} />
+        {SKILLS.map((s) => (
+          <PlanBandCard key={s} estimate={estimates.bySkill[s]} />
+        ))}
       </div>
 
       {/* ─── Weekly quota + weakest focus ─── */}

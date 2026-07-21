@@ -1,6 +1,8 @@
 import "server-only";
 
+import { refreshDerivedEstimates } from "@/lib/estimates/service";
 import { loadStudentEstimates, type StudentEstimates } from "@/lib/estimates/load";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -33,7 +35,23 @@ export interface DashboardData {
  * ONE grading per essay (its latest) so a heavily-revised essay doesn't skew the
  * weakest-criterion or history; reading uses each graded attempt.
  */
-export async function loadDashboard(studentId: string): Promise<DashboardData> {
+export async function loadDashboard(
+  studentId: string,
+  organizationId?: string,
+): Promise<DashboardData> {
+  // Listening/Speaking are graded off the app's write path, so refresh their
+  // estimates from source before we read them (best-effort — never blocks the
+  // dashboard, and no-ops until the skill-enum migration is applied). Only the
+  // dashboard/plan pages pass an org and want the refresh; the in-task coaches
+  // call this to READ estimates and skip it.
+  if (organizationId) {
+    try {
+      await refreshDerivedEstimates(createAdminClient(), { studentId, organizationId });
+    } catch {
+      /* estimates just stay as they were */
+    }
+  }
+
   const estimates = await loadStudentEstimates(studentId);
   const supabase = await createClient();
 
@@ -62,6 +80,22 @@ export async function loadDashboard(studentId: string): Promise<DashboardData> {
     .order("created_at", { ascending: true });
   const attempts = (attemptsData ?? []) as unknown as AttemptRow[];
 
+  // Listening: each attempt (auto-graded on submit; band in result.band).
+  // Speaking: each graded FULL mock (band in result.overall_band).
+  const [{ data: listenData }, { data: speakData }] = await Promise.all([
+    supabase
+      .from("listening_attempts")
+      .select("result, created_at")
+      .eq("student_id", studentId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("speaking_sessions")
+      .select("result, started_at")
+      .eq("mode", "full")
+      .eq("state", "graded")
+      .order("started_at", { ascending: true }),
+  ]);
+
   // Merge into a single chronological history feed.
   const events: RawHistoryEvent[] = [];
   for (const g of gradings) {
@@ -69,6 +103,15 @@ export async function loadDashboard(studentId: string): Promise<DashboardData> {
   }
   for (const a of attempts) {
     if (a.band != null) events.push({ date: a.submitted_at ?? a.created_at, skill: "reading", band: Number(a.band) });
+  }
+  for (const l of listenData ?? []) {
+    const band = Number((l.result as { band?: unknown } | null)?.band);
+    if (Number.isFinite(band) && band > 0) events.push({ date: l.created_at as string, skill: "listening", band });
+  }
+  for (const s of speakData ?? []) {
+    const r = s.result as { overall_band?: unknown; non_attempt?: unknown } | null;
+    const band = r?.non_attempt ? NaN : Number(r?.overall_band);
+    if (Number.isFinite(band) && band > 0) events.push({ date: s.started_at as string, skill: "speaking", band });
   }
 
   const weakestCriterion = computeWeakestCriterion(gradings);

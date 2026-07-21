@@ -23,7 +23,11 @@ export async function recomputeSkillEstimate(
   const bands =
     skill === "writing"
       ? await writingBands(admin, studentId, organizationId)
-      : await readingBands(admin, studentId, organizationId);
+      : skill === "reading"
+        ? await readingBands(admin, studentId, organizationId)
+        : skill === "listening"
+          ? await listeningBands(admin, studentId, organizationId)
+          : await speakingBands(admin, studentId, organizationId);
 
   const { band, sampleCount } = estimateBand(bands);
   if (sampleCount === 0) return; // nothing graded yet → leave any target-only row alone
@@ -99,4 +103,69 @@ async function readingBands(
     .eq("status", "graded")
     .order("created_at", { ascending: true });
   return (attempts ?? []).filter((a) => a.band != null).map((a) => Number(a.band));
+}
+
+/** One band per listening attempt (band lives in result.band), oldest→newest.
+ *  A listening attempt is auto-graded on submit, so every row has a band. */
+async function listeningBands(
+  admin: SupabaseClient,
+  studentId: string,
+  organizationId: string,
+): Promise<number[]> {
+  const { data: attempts } = await admin
+    .from("listening_attempts")
+    .select("result, created_at")
+    .eq("student_id", studentId)
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: true });
+  return (attempts ?? [])
+    .map((a) => Number((a.result as { band?: unknown } | null)?.band))
+    .filter((b) => Number.isFinite(b) && b > 0);
+}
+
+/** One band per graded FULL speaking mock (result.overall_band), oldest→newest.
+ *  Part-2 practice is excluded — the full mock is the real, exam-shaped speaking
+ *  band; a long-turn-only practice is a partial signal. */
+async function speakingBands(
+  admin: SupabaseClient,
+  studentId: string,
+  organizationId: string,
+): Promise<number[]> {
+  const { data: sessions } = await admin
+    .from("speaking_sessions")
+    .select("result, started_at")
+    .eq("student_id", studentId)
+    .eq("organization_id", organizationId)
+    .eq("mode", "full")
+    .eq("state", "graded")
+    .order("started_at", { ascending: true });
+  return (sessions ?? [])
+    .map((s) => {
+      const r = s.result as { overall_band?: unknown; non_attempt?: unknown } | null;
+      return r?.non_attempt ? NaN : Number(r?.overall_band);
+    })
+    .filter((b) => Number.isFinite(b) && b > 0);
+}
+
+/**
+ * Best-effort refresh of the Listening + Speaking estimates from their source
+ * tables. Reading/Writing recompute at grade time (they have an app-side write
+ * hook); Listening/Speaking are graded off the app's write path (speaking in the
+ * engine), so their estimate is refreshed lazily when the dashboard loads.
+ *
+ * Each skill is isolated in try/catch: before the `skill` enum migration adds
+ * 'listening'/'speaking', the upsert throws and this simply no-ops (the skill
+ * shows "not measured yet") — the dashboard never breaks over a pending migration.
+ */
+export async function refreshDerivedEstimates(
+  admin: SupabaseClient,
+  args: { studentId: string; organizationId: string },
+): Promise<void> {
+  for (const skill of ["listening", "speaking"] as const) {
+    try {
+      await recomputeSkillEstimate(admin, { ...args, skill });
+    } catch {
+      // pending enum migration, or no data yet — leave the skill unmeasured.
+    }
+  }
 }
