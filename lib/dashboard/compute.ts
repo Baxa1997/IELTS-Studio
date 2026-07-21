@@ -199,9 +199,11 @@ export function buildHistory(events: RawHistoryEvent[], limit = 6): HistoryEvent
 // ---- Recommendation --------------------------------------------------------
 
 /**
- * One next task. Diagnostic first if unmeasured; otherwise target the skill
- * furthest below its goal, pointed at that skill's single weakest area. When both
- * skills are at/above target, keep them sharp on the weaker-by-margin skill.
+ * One next task across ALL FOUR skills. Diagnostic first if unmeasured;
+ * otherwise target the skill furthest below its goal, pointed (for Writing and
+ * Reading) at that skill's single weakest area. When everything measured is
+ * at/above target, keep the weakest-by-band one sharp. Unmeasured skills are not
+ * pushed as "furthest below target" — they have no measurement to be below.
  */
 export function recommend(args: {
   estimates: { bySkill: Record<Skill, SkillEstimateView>; diagnosticComplete: boolean };
@@ -218,14 +220,17 @@ export function recommend(args: {
     };
   }
 
-  const reading = estimates.bySkill.reading;
-  const writing = estimates.bySkill.writing;
-  const rGap = gap(reading);
-  const wGap = gap(writing);
-  // Furthest below target wins; if both at/above, nudge the thinner margin.
-  const pickWriting = wGap === rGap ? (writing.currentBand ?? 0) <= (reading.currentBand ?? 0) : wGap > rGap;
+  // Furthest below target wins; tie → lower current band (unmeasured sorts last);
+  // then a fixed skill order for determinism.
+  const order: Skill[] = ["writing", "reading", "listening", "speaking"];
+  const pick = [...order].sort((a, b) => {
+    const ga = gap(estimates.bySkill[a]);
+    const gb = gap(estimates.bySkill[b]);
+    if (gb !== ga) return gb - ga;
+    return (estimates.bySkill[a].currentBand ?? 99) - (estimates.bySkill[b].currentBand ?? 99);
+  })[0];
 
-  if (pickWriting) {
+  if (pick === "writing") {
     const focus = weakestCriterion?.label;
     return {
       title: focus ? `Write a Task 2 — focus on ${focus}` : "Write a Task 2 essay",
@@ -236,17 +241,32 @@ export function recommend(args: {
       cta: "Open writing studio",
     };
   }
-
-  const focus = weakestReadingType?.label;
-  const pct = weakestReadingType ? Math.round(weakestReadingType.accuracy * 100) : null;
+  if (pick === "reading") {
+    const focus = weakestReadingType?.label;
+    const pct = weakestReadingType ? Math.round(weakestReadingType.accuracy * 100) : null;
+    return {
+      title: focus ? `Practice reading — ${focus}` : "Do a reading set",
+      reason:
+        focus && pct != null
+          ? `You're at ${pct}% on ${focus}. Target it with a fresh passage.`
+          : "A timed passage with instant marking and per-answer explanations.",
+      href: "/read",
+      cta: "Start a reading set",
+    };
+  }
+  if (pick === "listening") {
+    return {
+      title: "Do a listening section",
+      reason: "A timed section with instant marking and per-answer explanations.",
+      href: "/listen",
+      cta: "Start listening",
+    };
+  }
   return {
-    title: focus ? `Practice reading — ${focus}` : "Do a reading set",
-    reason:
-      focus && pct != null
-        ? `You're at ${pct}% on ${focus}. Target it with a fresh passage.`
-        : "A timed passage with instant marking and per-answer explanations.",
-    href: "/read",
-    cta: "Start a reading set",
+    title: "Sit a speaking mock",
+    reason: "A full 3-part mock with a real examiner and a per-criterion band.",
+    href: "/speak",
+    cta: "Start speaking",
   };
 }
 

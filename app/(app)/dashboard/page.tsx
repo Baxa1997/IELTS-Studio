@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  AlertTriangle, ArrowRight, BookOpen, CalendarClock, Flame,
-  PenLine, Sparkles, TrendingDown, TrendingUp,
+  AlertTriangle, ArrowRight, BookOpen, CalendarClock, Flame, Headphones,
+  Mic, PenLine, Sparkles, TrendingDown, TrendingUp,
 } from "lucide-react";
 
 import { requireOrgUser } from "@/lib/auth";
-import { SKILL_LABELS } from "@/lib/estimates/compute";
+import { SKILL_LABELS, SKILLS, type Skill } from "@/lib/estimates/compute";
 import type { HistoryEvent, Recommendation, WeakCriterion, WeakReadingType } from "@/lib/dashboard/compute";
 import { loadDashboard } from "@/lib/dashboard/load";
 import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
@@ -45,17 +45,14 @@ export default async function DashboardPage({
   if (!plan) return null;
 
   const [{ estimates, weakestCriterion, weakestReadingType, streakDays, history, recommendation }, tasksThisWeek] =
-    await Promise.all([loadDashboard(profile.id), countTasksThisWeek(profile.id)]);
+    await Promise.all([loadDashboard(profile.id, profile.organization_id), countTasksThisWeek(profile.id)]);
 
   const days = daysUntil(plan.examDate);
 
-  const reading = estimates.bySkill.reading;
-  const writing = estimates.bySkill.writing;
   const bandText = (b: number | null) => (b != null ? `Band ${b.toFixed(1)}` : "not measured yet");
   const coachContext = [
     `Target band: ${plan.targetBand.toFixed(1)}`,
-    `Reading: ${bandText(reading.currentBand)}`,
-    `Writing: ${bandText(writing.currentBand)}`,
+    ...SKILLS.map((s) => `${SKILL_LABELS[s]}: ${bandText(estimates.bySkill[s].currentBand)}`),
     weakestCriterion ? `Weakest writing area: ${weakestCriterion.label}` : "",
     weakestReadingType ? `Weakest reading question type: ${weakestReadingType.label}` : "",
     `Weekly goal: ${tasksThisWeek}/${plan.weeklyGoal} tasks done this week`,
@@ -85,8 +82,9 @@ export default async function DashboardPage({
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <NextTask rec={recommendation} />
           <div className="dash-2">
-            <BandCard estimate={estimates.bySkill.reading} />
-            <BandCard estimate={estimates.bySkill.writing} />
+            {SKILLS.map((s) => (
+              <BandCard key={s} estimate={estimates.bySkill[s]} />
+            ))}
           </div>
           <RecentResults history={history} />
         </div>
@@ -242,7 +240,7 @@ function RecentResults({ history }: { history: HistoryEvent[] }) {
               <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13.5, color: FAINT }}>{fmtDate(h.date)}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK }}>
                 <span style={{ width: 30, height: 30, borderRadius: 8, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-                  {h.skill === "reading" ? <BookOpen size={15} strokeWidth={2} /> : <PenLine size={15} strokeWidth={2} />}
+                  <SkillGlyph skill={h.skill} />
                 </span>
                 {SKILL_LABELS[h.skill]}
               </span>
@@ -256,6 +254,14 @@ function RecentResults({ history }: { history: HistoryEvent[] }) {
       )}
     </div>
   );
+}
+
+function SkillGlyph({ skill }: { skill: Skill }) {
+  const size = 15;
+  if (skill === "reading") return <BookOpen size={size} strokeWidth={2} />;
+  if (skill === "writing") return <PenLine size={size} strokeWidth={2} />;
+  if (skill === "listening") return <Headphones size={size} strokeWidth={2} />;
+  return <Mic size={size} strokeWidth={2} />;
 }
 
 function DeltaBadge({ value }: { value: number | null }) {
@@ -283,6 +289,8 @@ function firstNameOf(name: string | null): string | null {
 function chipsFor(href: string): [string, string] {
   if (href.startsWith("/diagnostic")) return ["~60 min total", "Reading + Writing"];
   if (href.startsWith("/write")) return ["Task 2 · ~40 min", "Per-criterion grade"];
+  if (href.startsWith("/listen")) return ["Timed section", "Instant marking"];
+  if (href.startsWith("/speak")) return ["3-part mock", "Examiner + band"];
   return ["Timed passage", "Instant marking"];
 }
 function fmtDate(iso: string): string {

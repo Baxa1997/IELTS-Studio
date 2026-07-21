@@ -1,5 +1,6 @@
 import "server-only";
 
+import { SKILLS } from "@/lib/estimates/compute";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -113,7 +114,10 @@ export async function saveStudyPlan(actor: PlanActor, rawInput: StudyPlanInput):
 async function propagateTarget(actor: PlanActor, targetBand: number): Promise<void> {
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  for (const skill of ["reading", "writing"] as const) {
+  // All four skills share the learner's one overall target. Listening/Speaking
+  // rows need the skill-enum migration; supabase-js returns (not throws) an enum
+  // error, so pre-migration those simply no-op and Reading/Writing still save.
+  for (const skill of SKILLS) {
     await admin.from("skill_estimates").upsert(
       {
         student_id: actor.studentId,
@@ -154,7 +158,36 @@ export async function countTasksThisWeek(studentId: string): Promise<number> {
     .eq("status", "graded")
     .gte("created_at", since);
 
-  return writing + (reading ?? 0);
+  // Listening (auto-graded on submit) + Speaking (graded full mocks + Part-2
+  // practice) all count as tasks — the weekly goal is about doing the work, not
+  // just Reading/Writing. RLS client = the student's own rows only.
+  const { count: listening } = await supabase
+    .from("listening_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .gte("created_at", since);
+
+  const { count: speakingMocks } = await supabase
+    .from("speaking_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .eq("state", "graded")
+    .gte("started_at", since);
+
+  const { count: speakingPractice } = await supabase
+    .from("speaking_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", studentId)
+    .not("result", "is", null)
+    .gte("created_at", since);
+
+  return (
+    writing +
+    (reading ?? 0) +
+    (listening ?? 0) +
+    (speakingMocks ?? 0) +
+    (speakingPractice ?? 0)
+  );
 }
 
 /**
