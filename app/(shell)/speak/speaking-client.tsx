@@ -448,11 +448,53 @@ export function SpeakingClient({
         </div>
       ) : null}
 
+      {/* What the exam actually is, so the page carries its weight before the
+          start panel: three parts, real timings, and the promise that nothing
+          here helps you — that IS the product. */}
       {!legacyPart2 && tab === "mock" && !mockRunning ? (
-        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6, margin: "16px 0 0" }}>
-          The real thing: Parts 1–3 with a live examiner — interview, cue card, discussion.
-          It never helps or teaches, exactly like exam day, and ends with a band report.
-        </p>
+        <div style={{ marginTop: 20 }}>
+          <p style={{ fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, margin: 0, maxWidth: 660 }}>
+            A complete IELTS speaking test with a live examiner. It asks, listens and moves
+            on — it never helps, hints or teaches, exactly like exam day — then grades you
+            conservatively against the official band descriptors.
+          </p>
+          <div
+            style={{
+              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: 12, marginTop: 18,
+            }}
+          >
+            {([
+              ["Part 1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
+              ["Part 2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
+              ["Part 3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
+            ] as const).map(([part, name, blurb, mins]) => (
+              <div key={part} style={{ ...card, padding: "16px 18px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
+                    {part.toUpperCase()}
+                  </span>
+                  <span style={{ fontSize: 11.5, color: MUTED, fontWeight: 600 }}>{mins}</span>
+                </div>
+                <div style={{ fontSize: 15.5, fontWeight: 700, marginTop: 6 }}>{name}</div>
+                <p style={{ margin: "5px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.55 }}>{blurb}</p>
+              </div>
+            ))}
+          </div>
+          {recentMocks.length ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13.5, color: MUTED }}>
+                Your last mock scored
+              </span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: INDIGO }}>
+                Band {recentMocks[0].band.toFixed(1)}
+              </span>
+              <Link href={`/speak/mock/${recentMocks[0].id}`} style={{ fontSize: 13.5, color: INDIGO, fontWeight: 700 }}>
+                see the report →
+              </Link>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {/* full mock — its own live-examiner flow */}
@@ -489,6 +531,21 @@ export function SpeakingClient({
               </Link>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {/* the legacy Part-2 flow still surfaces its own errors (quota, mic) */}
+      {error ? (
+        <div style={{ ...card, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED, marginTop: 16, fontSize: 14 }}>
+          {error}
+          {quotaHit ? (
+            <>
+              {" "}
+              <Link href="/pricing" style={{ color: INDIGO, fontWeight: 700 }}>
+                See plans →
+              </Link>
+            </>
+          ) : null}
         </div>
       ) : null}
 

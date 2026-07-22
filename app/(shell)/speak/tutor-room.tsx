@@ -39,10 +39,10 @@ const JITTER_LEAD_S = 0.15;
 type Mode = "part1" | "part3" | "cue_card" | "free";
 
 const VOICES = [
-  { id: "emily", name: "Emily" },
-  { id: "daniel", name: "Daniel" },
-  { id: "sofia", name: "Sofia" },
-  { id: "james", name: "James" },
+  { id: "daniel", name: "Daniel", manner: "Calm and clear" },
+  { id: "james", name: "James", manner: "Brisk and direct" },
+  { id: "emily", name: "Emily", manner: "Warm and patient" },
+  { id: "sofia", name: "Sofia", manner: "Easy-going" },
 ];
 
 type Swap = { they_said: string; better: string };
@@ -180,7 +180,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // The learner picks nothing: the lesson opens conversationally and the
   // tutor steers. `mode` stays as the engine's question-spine hint.
   const mode: Mode = "part1";
-  const [voice, setVoice] = useState("emily");
+  const [voice, setVoice] = useState("daniel");
   const [lines, setLines] = useState<Line[]>([]);
   const [listening, setListening] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -194,6 +194,37 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const playerRef = useRef<VoicePlayer | null>(null);
   const stopMicRef = useRef<(() => void) | null>(null);
   const pendingSeqRef = useRef<number | null>(null);   // turn awaiting a `played` report
+  const [sampling, setSampling] = useState<string | null>(null);
+  const sampleRef = useRef<HTMLAudioElement | null>(null);
+
+  /** Play a few seconds of a voice so the accent can be judged by ear. */
+  const playSample = useCallback(async (id: string) => {
+    const backend = clientEnv.aiBackendUrl;
+    if (!backend) return;
+    try {
+      setSampling(id);
+      sampleRef.current?.pause();
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("signed out");
+      const res = await fetch(`${backend}/speaking/tutor/voice-sample?voice=${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const url = URL.createObjectURL(await res.blob());
+      const audio = new Audio(url);
+      sampleRef.current = audio;
+      audio.onended = () => {
+        setSampling(null);
+        URL.revokeObjectURL(url);
+      };
+      await audio.play();
+    } catch {
+      setSampling(null);
+      setError("Couldn't play that voice sample.");
+    }
+  }, []);
 
   useEffect(() => {
     if (state !== "live") return;
@@ -354,61 +385,112 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   if (state === "idle" || state === "connecting") {
     return (
       <div style={{ fontFamily: SANS, maxWidth: 720, margin: "0 auto", padding: "26px 18px 60px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-          <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 27, fontWeight: 600, color: INK }}>
-            Practise with your tutor
-          </h1>
-          <Link href="/speak" style={{ fontSize: 13.5, fontWeight: 700, color: TEAL, textDecoration: "none" }}>
-            ← Speaking
-          </Link>
-        </div>
-        <p style={{ margin: "0 0 26px", fontSize: 15, color: MUTED, lineHeight: 1.65 }}>
-          Just start talking. Your tutor says hello, asks how you are, and the
-          conversation becomes the practice — correcting what you said, explaining
-          why, and showing a better way to say it. Stuck on anything? Ask, in English
-          or o‘zbekcha. Nothing here is scored.
+        <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontSize: 25, fontWeight: 600, color: INK }}>
+          Practise with your tutor
+        </h2>
+        <p style={{ margin: "0 0 22px", fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, maxWidth: 620 }}>
+          Just start talking. Your tutor says hello and the conversation becomes the
+          lesson — nothing to set up, nothing scored.
         </p>
+
+        <div style={{ display: "grid", gap: 10, marginBottom: 24 }}>
+          {([
+            ["Reacts to every answer", "It listens to what you actually said, not a script."],
+            ["Shows you a better way", "\u201cYou said \u2018it is good\u2019 \u2014 a stronger word is \u2018fulfilling\u2019.\u201d"],
+            ["Helps in o\u2018zbekcha", "Stuck? Ask in Uzbek and it explains, then gives you the English to say."],
+          ] as const).map(([title, blurb]) => (
+            <div key={title} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+              <span
+                style={{
+                  flex: "0 0 auto", width: 20, height: 20, borderRadius: "50%",
+                  background: TEAL_SOFT, color: TEAL, fontSize: 12, fontWeight: 800,
+                  display: "grid", placeItems: "center", marginTop: 2,
+                }}
+              >
+                ✓
+              </span>
+              <span style={{ fontSize: 14.5, lineHeight: 1.55 }}>
+                <strong style={{ color: INK }}>{title}.</strong>{" "}
+                <span style={{ color: MUTED }}>{blurb}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Pick by ear, not by name — accents are the whole point of choosing. */}
+        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: MUTED, marginBottom: 9 }}>
+          YOUR TUTOR
+        </div>
+        <div
+          style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: 9, marginBottom: 24,
+          }}
+        >
+          {VOICES.map((v) => {
+            const on = voice === v.id;
+            return (
+              <div
+                key={v.id}
+                onClick={() => setVoice(v.id)}
+                style={{
+                  cursor: "pointer", borderRadius: 14, padding: "13px 14px",
+                  background: on ? TEAL_SOFT : "#fff",
+                  border: `1.5px solid ${on ? TEAL : LINE}`,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                  <span
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%", background: on ? TEAL : "#E7E6EF",
+                      color: on ? "#fff" : MUTED, display: "grid", placeItems: "center",
+                      fontFamily: SERIF, fontSize: 15,
+                    }}
+                  >
+                    {v.name[0]}
+                  </span>
+                  <span>
+                    <span style={{ display: "block", fontWeight: 700, fontSize: 14.5, color: on ? TEAL : INK }}>
+                      {v.name}
+                    </span>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{v.manner}</span>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void playSample(v.id);
+                  }}
+                  style={{
+                    marginTop: 10, width: "100%", cursor: "pointer", borderRadius: 999,
+                    border: `1px solid ${on ? TEAL : LINE}`, background: "#fff",
+                    color: on ? TEAL : MUTED, fontSize: 12.5, fontWeight: 700,
+                    padding: "6px 0", fontFamily: SANS,
+                  }}
+                >
+                  {sampling === v.id ? "Playing…" : "▶ Hear this voice"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
 
         <button
           onClick={() => void start()}
           disabled={state === "connecting"}
           style={{
             display: "block", width: "100%", background: TEAL, color: "#fff",
-            border: "none", borderRadius: 16, padding: "20px 26px", fontSize: 17,
+            border: "none", borderRadius: 16, padding: "18px 26px", fontSize: 17,
             fontWeight: 700, cursor: "pointer", fontFamily: SANS,
             opacity: state === "connecting" ? 0.6 : 1,
           }}
         >
-          {state === "connecting" ? "Connecting…" : "Start speaking"}
+          {state === "connecting" ? "Connecting…" : `Start speaking with ${VOICES.find((v) => v.id === voice)?.name}`}
         </button>
-        <p style={{ margin: "12px 0 26px", fontSize: 12.5, color: MUTED, textAlign: "center" }}>
+        <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center" }}>
           Uses your microphone · up to 20 minutes · not scored
         </p>
-
-        {/* Voice is the only choice worth making up front — everything else the
-            tutor decides in conversation, the way a person would. */}
-        <details style={{ fontSize: 13.5 }}>
-          <summary style={{ cursor: "pointer", color: MUTED, fontWeight: 600 }}>
-            Tutor voice: {VOICES.find((v) => v.id === voice)?.name}
-          </summary>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-            {VOICES.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setVoice(v.id)}
-                style={{
-                  cursor: "pointer", borderRadius: 999, padding: "7px 15px", fontSize: 13.5,
-                  fontWeight: 700, fontFamily: SANS,
-                  background: voice === v.id ? TEAL : "#fff",
-                  color: voice === v.id ? "#fff" : INK,
-                  border: `1.5px solid ${voice === v.id ? TEAL : LINE}`,
-                }}
-              >
-                {v.name}
-              </button>
-            ))}
-          </div>
-        </details>
 
         {error ? <p style={{ color: RED, fontSize: 13.5, margin: "16px 0 0" }}>{error}</p> : null}
       </div>
@@ -493,43 +575,64 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const ring = Math.min(1, level * 9);
   return (
     <div style={{ fontFamily: SANS, maxWidth: 760, margin: "0 auto", padding: "18px 18px 40px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <button
-          onClick={end}
-          style={{
-            background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
-            padding: "7px 15px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, color: INK,
-          }}
-        >
-          End lesson
-        </button>
+      <div
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 4px 14px", borderBottom: `1px solid ${LINE}`, marginBottom: 26,
+        }}
+      >
         <span style={{
-          background: TEAL_SOFT, color: TEAL, borderRadius: 999, padding: "6px 14px",
-          fontSize: 12.5, fontWeight: 800, letterSpacing: ".04em",
+          background: TEAL_SOFT, color: TEAL, borderRadius: 999, padding: "6px 13px",
+          fontSize: 12, fontWeight: 800, letterSpacing: ".05em",
         }}>
           LESSON · not scored
         </span>
-        <span style={{ fontSize: 13, color: MUTED, fontVariantNumeric: "tabular-nums" }}>{mmss}</span>
+        <span style={{ fontSize: 13.5, color: MUTED, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+          {mmss} <span style={{ color: "#A9A7BC" }}>/ 20:00</span>
+        </span>
       </div>
 
-      <div style={{ textAlign: "center", marginBottom: 8 }}>
-        <div
-          style={{
-            width: 86, height: 86, borderRadius: "50%", margin: "0 auto",
-            background: TEAL, display: "grid", placeItems: "center",
-            color: "#fff", fontFamily: SERIF, fontSize: 32,
-            boxShadow: speaking
-              ? `0 0 0 ${8 + ring * 6}px ${TEAL_SOFT}`
-              : listening
-                ? `0 0 0 ${6 + ring * 14}px ${TEAL_SOFT}`
-                : "none",
-            transition: "box-shadow .12s ease-out",
-          }}
-        >
-          {VOICES.find((v) => v.id === voice)?.name[0] ?? "T"}
+      <div style={{ textAlign: "center" }}>
+        <div style={{ position: "relative", width: 132, height: 132, margin: "0 auto" }}>
+          {/* the ring breathes with the mic when it is your turn, and glows
+              steadily while the tutor talks — so the state is readable at a
+              glance, without reading anything */}
+          <div
+            style={{
+              position: "absolute", inset: 0, borderRadius: "50%",
+              background: TEAL_SOFT,
+              transform: `scale(${listening ? 1 + ring * 0.35 : speaking ? 1.12 : 1})`,
+              opacity: listening || speaking ? 1 : 0.55,
+              transition: "transform .12s ease-out, opacity .3s",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute", inset: 23, borderRadius: "50%", background: TEAL,
+              display: "grid", placeItems: "center", color: "#fff",
+              fontFamily: SERIF, fontSize: 34,
+              boxShadow: speaking ? "0 8px 26px rgba(15,118,110,.34)" : "0 4px 14px rgba(15,118,110,.18)",
+              transition: "box-shadow .3s",
+            }}
+          >
+            {VOICES.find((v) => v.id === voice)?.name[0] ?? "T"}
+          </div>
         </div>
-        <p style={{ margin: "12px 0 0", fontSize: 14.5, fontWeight: 700, color: INK }}>
-          {speaking ? "Tutor is speaking" : thinking ? "Thinking…" : listening ? "Your turn — speak" : "…"}
+        <p style={{ margin: "18px 0 0", fontFamily: SERIF, fontSize: 21, fontWeight: 600, color: INK }}>
+          {speaking
+            ? `${VOICES.find((v) => v.id === voice)?.name} is speaking`
+            : thinking
+              ? "Thinking…"
+              : listening
+                ? "Your turn — just talk"
+                : "One moment…"}
+        </p>
+        <p style={{ margin: "5px 0 0", fontSize: 13.5, color: MUTED }}>
+          {listening
+            ? "Pause when you're done and I'll pick it up"
+            : speaking
+              ? "You can cut in any time"
+              : "\u00a0"}
         </p>
       </div>
 
@@ -580,19 +683,29 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         <p style={{ color: RED, fontSize: 12.5, margin: "16px 0 0", textAlign: "center" }}>{error}</p>
       ) : null}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 30 }}>
         <button
           onClick={() => send({ type: "skip" })}
           style={{
             background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
-            padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
             fontFamily: SANS, color: MUTED,
           }}
         >
           Skip this question
         </button>
+        <button
+          onClick={end}
+          style={{
+            background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
+            padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
+            fontFamily: SANS, color: INK,
+          }}
+        >
+          End lesson
+        </button>
       </div>
-      <p style={{ margin: "12px 0 0", textAlign: "center", fontSize: 11.5, color: MUTED }}>
+      <p style={{ margin: "22px 0 0", textAlign: "center", fontSize: 11.5, color: MUTED }}>
         Original AI tutor · not affiliated with IELTS®
       </p>
     </div>
