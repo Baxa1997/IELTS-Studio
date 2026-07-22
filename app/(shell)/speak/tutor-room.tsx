@@ -38,6 +38,13 @@ const OUT_RATE = 24000;
  *  generation starvation that used to break sentences apart. */
 const JITTER_LEAD_S = 0.15;
 
+/** Same reasoning as the hub: a single narrow column left most of a wide
+ *  display empty. Media queries need a real rule, not an inline style. */
+const RESPONSIVE_CSS = `
+.tutor-two-col { grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr); }
+@media (max-width: 900px) { .tutor-two-col { grid-template-columns: 1fr; } }
+`;
+
 type Mode = "part1" | "part3" | "cue_card" | "free";
 
 const VOICES = [
@@ -399,8 +406,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // ---- setup screen ----
   if (state === "idle" || state === "connecting") {
     return (
-      <div style={{ fontFamily: SANS, maxWidth: 720, margin: "0 auto", padding: "26px 18px 60px" }}>
-        <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontSize: 25, fontWeight: 600, color: INK }}>
+      <div style={{ fontFamily: SANS, maxWidth: 1280, margin: "0 auto", padding: "26px 26px 60px" }}>
+        <style>{RESPONSIVE_CSS}</style>
+        <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontSize: 30, fontWeight: 600, color: INK }}>
           Practise with your tutor
         </h2>
         <p style={{ margin: "0 0 22px", fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, maxWidth: 620 }}>
@@ -408,7 +416,11 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           lesson — nothing to set up, nothing scored.
         </p>
 
-        <div style={{ display: "grid", gap: 10, marginBottom: 24 }}>
+        <div
+          className="tutor-two-col"
+          style={{ display: "grid", gap: 26, alignItems: "start", marginTop: 24 }}
+        >
+        <div style={{ display: "grid", gap: 12 }}>
           {([
             ["Reacts to every answer", "It listens to what you actually said, not a script."],
             ["Shows you a better way", "\u201cYou said \u2018it is good\u2019 \u2014 a stronger word is \u2018fulfilling\u2019.\u201d"],
@@ -433,13 +445,19 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         </div>
 
         {/* Pick by ear, not by name — accents are the whole point of choosing. */}
-        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: MUTED, marginBottom: 9 }}>
+        <aside
+          style={{
+            background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16,
+            padding: "24px 22px", alignSelf: "start",
+          }}
+        >
+        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: MUTED, marginBottom: 12 }}>
           YOUR TUTOR
         </div>
         <div
           style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: 9, marginBottom: 24,
+            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))",
+            gap: 9, marginBottom: 20,
           }}
         >
           {VOICES.map((v) => {
@@ -506,6 +524,8 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center" }}>
           Uses your microphone · up to 20 minutes · not scored
         </p>
+        </aside>
+        </div>
 
         {error ? <p style={{ color: RED, fontSize: 13.5, margin: "16px 0 0" }}>{error}</p> : null}
       </div>
@@ -515,7 +535,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // ---- lesson card ----
   if (state === "ended") {
     return (
-      <div style={{ fontFamily: SANS, maxWidth: 720, margin: "0 auto", padding: "26px 18px 60px" }}>
+      <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "26px 26px 60px" }}>
         <h1 style={{ margin: "0 0 4px", fontFamily: SERIF, fontSize: 25, fontWeight: 600, color: INK }}>
           Lesson complete
         </h1>
@@ -589,7 +609,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // ---- live lesson ----
   const ring = Math.min(1, level * 9);
   return (
-    <div style={{ fontFamily: SANS, maxWidth: 760, margin: "0 auto", padding: "18px 18px 40px" }}>
+    <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "22px 26px 48px", minHeight: "72vh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
       <div
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",

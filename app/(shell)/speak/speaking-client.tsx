@@ -192,6 +192,16 @@ async function startRecorder(): Promise<Recorder> {
 
 // ---- UI atoms -----------------------------------------------------------------
 
+/** Wide screens get two columns — narrative left, the thing you act on right;
+ *  narrow ones collapse to a single column. Inline styles cannot express a
+ *  media query, so the columns live in a real stylesheet rule below. */
+const twoCol: React.CSSProperties = { display: "grid", gap: 26, alignItems: "start" };
+
+const RESPONSIVE_CSS = `
+.speak-two-col { grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.85fr); }
+@media (max-width: 900px) { .speak-two-col { grid-template-columns: 1fr; } }
+`;
+
 const card: React.CSSProperties = {
   background: "#fff",
   border: `1px solid ${LINE}`,
@@ -398,7 +408,9 @@ export function SpeakingClient({
   const quotaHit = error ? /quota|upgrade/i.test(error) : false;
 
   return (
-    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1020, margin: "0 auto", padding: "26px 18px 60px" }}>
+    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1280, margin: "0 auto", padding: "26px 26px 60px" }}>
+      <style>{RESPONSIVE_CSS}</style>
+
       {/* header */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 600 }}>
@@ -445,95 +457,160 @@ export function SpeakingClient({
         </div>
       ) : null}
 
-      {/* What the exam actually is, so the page carries its weight before the
-          start panel: three parts, real timings, and the promise that nothing
-          here helps you — that IS the product. */}
+      {/* Two columns on a wide screen: what the exam is on the left, the panel
+          you act on pinned right — a single narrow column left most of the
+          display empty and made the page read as unfinished. */}
       {!legacyPart2 && tab === "mock" ? (
-        <div style={{ marginTop: 20 }}>
-          <p style={{ fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, margin: 0, maxWidth: 660 }}>
-            A complete IELTS speaking test with a live examiner. It asks, listens and moves
-            on — it never helps, hints or teaches, exactly like exam day — then grades you
-            conservatively against the official band descriptors.
-          </p>
-          <div
-            style={{
-              display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 12, marginTop: 18,
-            }}
-          >
-            {([
-              ["Part 1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
-              ["Part 2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
-              ["Part 3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
-            ] as const).map(([part, name, blurb, mins]) => (
-              <div key={part} style={{ ...card, padding: "16px 18px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
-                    {part.toUpperCase()}
+        <div className="speak-two-col" style={{ ...twoCol, marginTop: 26 }}>
+          <div>
+            <p style={{ fontSize: 16.5, color: "#3A3950", lineHeight: 1.65, margin: 0 }}>
+              A complete IELTS speaking test with a live examiner. It asks, listens and
+              moves on — it never helps, hints or teaches, exactly like exam day — then
+              grades you conservatively against the official band descriptors.
+            </p>
+            <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
+              {([
+                ["Part 1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
+                ["Part 2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
+                ["Part 3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
+              ] as const).map(([part, name, blurb, mins]) => (
+                <div
+                  key={part}
+                  style={{
+                    ...card, padding: "18px 20px", display: "flex", gap: 18,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <span
+                    style={{
+                      flex: "0 0 auto", width: 46, height: 46, borderRadius: 12,
+                      background: TINT, color: INDIGO, display: "grid", placeItems: "center",
+                      fontFamily: SERIF, fontSize: 19, fontWeight: 600,
+                    }}
+                  >
+                    {part.split(" ")[1]}
                   </span>
-                  <span style={{ fontSize: 11.5, color: MUTED, fontWeight: 600 }}>{mins}</span>
+                  <span style={{ flex: 1 }}>
+                    <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+                      <span style={{ fontSize: 16.5, fontWeight: 700 }}>{name}</span>
+                      <span style={{ fontSize: 12, color: MUTED, fontWeight: 600, whiteSpace: "nowrap" }}>{mins}</span>
+                    </span>
+                    <span style={{ display: "block", fontSize: 14, color: MUTED, lineHeight: 1.55, marginTop: 3 }}>
+                      {blurb}
+                    </span>
+                  </span>
                 </div>
-                <div style={{ fontSize: 15.5, fontWeight: 700, marginTop: 6 }}>{name}</div>
-                <p style={{ margin: "5px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.55 }}>{blurb}</p>
-              </div>
-            ))}
-          </div>
-          {recentMocks.length ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13.5, color: MUTED }}>
-                Your last mock scored
-              </span>
-              <span style={{ fontSize: 15, fontWeight: 800, color: INDIGO }}>
-                Band {recentMocks[0].band.toFixed(1)}
-              </span>
-              <Link href={`/speak/mock/${recentMocks[0].id}`} style={{ fontSize: 13.5, color: INDIGO, fontWeight: 700 }}>
-                see the report →
-              </Link>
+              ))}
             </div>
-          ) : null}
-        </div>
-      ) : null}
+          </div>
 
-      {/* Each practice gets its own page: you arrive there to do one thing, and
-          nothing else on screen competes with it. The hub only chooses. */}
-      {!legacyPart2 && tab === "mock" ? (
-        <div style={{ marginTop: 22 }}>
-          <Link
-            href="/speak/exam"
-            style={{
-              display: "inline-block", background: INDIGO, color: "#fff",
-              borderRadius: 13, padding: "15px 30px", fontSize: 16, fontWeight: 700,
-              textDecoration: "none", fontFamily: SANS,
-            }}
-          >
-            Take the mock test →
-          </Link>
-          <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED }}>
-            Uses your microphone · 11–14 minutes · counts as one of your monthly mocks
-          </p>
+          <aside style={{ ...card, padding: "26px 24px", alignSelf: "start" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
+              FULL MOCK · PARTS 1–3
+            </div>
+            <p style={{ margin: "10px 0 20px", fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
+              You won’t see the questions in advance. Choose your examiner on the next
+              screen, then it begins.
+            </p>
+            <Link
+              href="/speak/exam"
+              style={{
+                display: "block", textAlign: "center", background: INDIGO, color: "#fff",
+                borderRadius: 13, padding: "16px 24px", fontSize: 16, fontWeight: 700,
+                textDecoration: "none", fontFamily: SANS,
+              }}
+            >
+              Take the mock test →
+            </Link>
+            <p style={{ margin: "12px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center", lineHeight: 1.5 }}>
+              Microphone · 11–14 minutes<br />counts as one of your monthly mocks
+            </p>
+
+            {recentMocks.length ? (
+              <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px dashed ${LINE}` }}>
+                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: MUTED, marginBottom: 10 }}>
+                  YOUR LAST MOCKS
+                </div>
+                {recentMocks.slice(0, 3).map((m) => (
+                  <Link
+                    key={m.id}
+                    href={`/speak/mock/${m.id}`}
+                    style={{
+                      display: "flex", justifyContent: "space-between", gap: 10,
+                      fontSize: 13.5, color: INK, textDecoration: "none", padding: "7px 0",
+                    }}
+                  >
+                    <span style={{ color: MUTED }}>
+                      {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </span>
+                    <span style={{ color: INDIGO, fontWeight: 700, whiteSpace: "nowrap" }}>
+                      Band {m.band.toFixed(1)} →
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
+          </aside>
         </div>
       ) : null}
 
       {!legacyPart2 && tab === "tutor" ? (
-        <div style={{ marginTop: 22 }}>
-          <p style={{ fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, margin: "0 0 20px", maxWidth: 620 }}>
-            A live lesson, not a test. You talk, and your tutor reacts to what you
-            actually said — correcting a mistake, showing a stronger way to say it,
-            and helping in o‘zbekcha whenever you get stuck. Nothing here is scored.
-          </p>
-          <Link
-            href="/speak/tutor"
-            style={{
-              display: "inline-block", background: TEAL, color: "#fff",
-              borderRadius: 13, padding: "15px 30px", fontSize: 16, fontWeight: 700,
-              textDecoration: "none", fontFamily: SANS,
-            }}
-          >
-            Start a lesson →
-          </Link>
-          <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED }}>
-            Uses your microphone · up to 20 minutes · not scored
-          </p>
+        <div className="speak-two-col" style={{ ...twoCol, marginTop: 26 }}>
+          <div>
+            <p style={{ fontSize: 16.5, color: "#3A3950", lineHeight: 1.65, margin: 0 }}>
+              A live lesson, not a test. You talk, and your tutor reacts to what you
+              actually said — correcting a mistake, showing a stronger way to say it,
+              and helping in o‘zbekcha whenever you get stuck. Nothing here is scored.
+            </p>
+            <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
+              {([
+                ["Reacts to every answer", "It listens to what you actually said, not a script — and never reads your answer back to you."],
+                ["Shows you a better way", "“You said ‘it is good’ — a stronger word is ‘fulfilling’.” On almost every turn, not only when you slip."],
+                ["Helps in o‘zbekcha", "Stuck? Ask in Uzbek. It explains, gives you the English to say, then carries on in English."],
+              ] as const).map(([title, blurb]) => (
+                <div key={title} style={{ ...card, padding: "18px 20px", display: "flex", gap: 15 }}>
+                  <span
+                    style={{
+                      flex: "0 0 auto", width: 26, height: 26, borderRadius: "50%",
+                      background: "#E6F4F1", color: TEAL, fontSize: 14, fontWeight: 800,
+                      display: "grid", placeItems: "center",
+                    }}
+                  >
+                    ✓
+                  </span>
+                  <span>
+                    <span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{title}</span>
+                    <span style={{ display: "block", fontSize: 14, color: MUTED, lineHeight: 1.55, marginTop: 3 }}>
+                      {blurb}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside style={{ ...card, padding: "26px 24px", alignSelf: "start" }}>
+            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: TEAL }}>
+              LIVE LESSON
+            </div>
+            <p style={{ margin: "10px 0 20px", fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
+              Pick a tutor and hear them speak on the next screen, then just start
+              talking — there is nothing to set up.
+            </p>
+            <Link
+              href="/speak/tutor"
+              style={{
+                display: "block", textAlign: "center", background: TEAL, color: "#fff",
+                borderRadius: 13, padding: "16px 24px", fontSize: 16, fontWeight: 700,
+                textDecoration: "none", fontFamily: SANS,
+              }}
+            >
+              Start a lesson →
+            </Link>
+            <p style={{ margin: "12px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center", lineHeight: 1.5 }}>
+              Microphone · up to 20 minutes<br />not scored, never counts as a mock
+            </p>
+          </aside>
         </div>
       ) : null}
 
