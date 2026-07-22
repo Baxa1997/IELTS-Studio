@@ -6,10 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
-import { LiveMock } from "./live-mock";
 import { SpeakProgress, type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
-import { TutorRoom } from "./tutor-room";
 
 /**
  * The Speaking hub — two ways to practise and one place to review.
@@ -254,7 +252,6 @@ export function SpeakingClient({
   const legacyPart2 = Boolean(initialCardId);
   const [tab, setTab] = useState<Tab>("mock");
   const mode: "part2" | "full" = legacyPart2 ? "part2" : "full";
-  const [mockRunning, setMockRunning] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -420,7 +417,7 @@ export function SpeakingClient({
       {/* Two ways to practise, one place to look at progress. The exam and the
           lesson are deliberately different colours and never blur: the mock is
           exam-true and never teaches; the tutor only teaches. */}
-      {!legacyPart2 && !mockRunning ? (
+      {!legacyPart2 ? (
         <div style={{ display: "flex", gap: 6, marginTop: 18, borderBottom: `1px solid ${LINE}` }}>
           {([
             ["mock", "Mock test", INDIGO],
@@ -451,7 +448,7 @@ export function SpeakingClient({
       {/* What the exam actually is, so the page carries its weight before the
           start panel: three parts, real timings, and the promise that nothing
           here helps you — that IS the product. */}
-      {!legacyPart2 && tab === "mock" && !mockRunning ? (
+      {!legacyPart2 && tab === "mock" ? (
         <div style={{ marginTop: 20 }}>
           <p style={{ fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, margin: 0, maxWidth: 660 }}>
             A complete IELTS speaking test with a live examiner. It asks, listens and moves
@@ -497,21 +494,56 @@ export function SpeakingClient({
         </div>
       ) : null}
 
-      {/* full mock — its own live-examiner flow */}
+      {/* Each practice gets its own page: you arrive there to do one thing, and
+          nothing else on screen competes with it. The hub only chooses. */}
       {!legacyPart2 && tab === "mock" ? (
-        <LiveMock onExit={() => setMockRunning(false)} onRunning={setMockRunning} />
+        <div style={{ marginTop: 22 }}>
+          <Link
+            href="/speak/exam"
+            style={{
+              display: "inline-block", background: INDIGO, color: "#fff",
+              borderRadius: 13, padding: "15px 30px", fontSize: 16, fontWeight: 700,
+              textDecoration: "none", fontFamily: SANS,
+            }}
+          >
+            Take the mock test →
+          </Link>
+          <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED }}>
+            Uses your microphone · 11–14 minutes · counts as one of your monthly mocks
+          </p>
+        </div>
       ) : null}
 
-      {/* the lesson lives right here, not on another page */}
-      {!legacyPart2 && tab === "tutor" ? <TutorRoom /> : null}
+      {!legacyPart2 && tab === "tutor" ? (
+        <div style={{ marginTop: 22 }}>
+          <p style={{ fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, margin: "0 0 20px", maxWidth: 620 }}>
+            A live lesson, not a test. You talk, and your tutor reacts to what you
+            actually said — correcting a mistake, showing a stronger way to say it,
+            and helping in o‘zbekcha whenever you get stuck. Nothing here is scored.
+          </p>
+          <Link
+            href="/speak/tutor"
+            style={{
+              display: "inline-block", background: TEAL, color: "#fff",
+              borderRadius: 13, padding: "15px 30px", fontSize: 16, fontWeight: 700,
+              textDecoration: "none", fontFamily: SANS,
+            }}
+          >
+            Start a lesson →
+          </Link>
+          <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED }}>
+            Uses your microphone · up to 20 minutes · not scored
+          </p>
+        </div>
+      ) : null}
 
       {/* trajectory: graded mocks + practices — hidden while a test is running */}
-      {!legacyPart2 && !mockRunning && tab === "progress" ? (
+      {!legacyPart2 && tab === "progress" ? (
         <SpeakProgress items={progress} />
       ) : null}
 
       {/* past mock reports — previously only reachable from the ended screen */}
-      {!legacyPart2 && !mockRunning && tab === "progress" && recentMocks.length ? (
+      {!legacyPart2 && tab === "progress" && recentMocks.length ? (
         <div style={{ ...card, marginTop: 14 }}>
           <div style={{ fontWeight: 700, fontSize: 14 }}>My full mocks</div>
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>

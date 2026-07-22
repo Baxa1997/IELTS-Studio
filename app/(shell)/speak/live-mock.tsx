@@ -7,6 +7,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { ConfirmQuit } from "./confirm-quit";
+
 /**
  * Full mock (Parts 1–3) — the LIVE examiner. A bidirectional WebSocket to the
  * engine: the browser streams 16 kHz mic PCM up, the engine streams the examiner's
@@ -211,7 +213,7 @@ export function LiveMock({
   const [grading, setGrading] = useState(false); // exam over, report being written
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0); // whole-test clock (top bar)
-  const [exitArmed, setExitArmed] = useState(false); // two-tap exit guard
+  const [confirmExit, setConfirmExit] = useState(false); // quit needs a real confirmation
 
   const wsRef = useRef<WebSocket | null>(null);
   const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -269,6 +271,19 @@ export function LiveMock({
   useEffect(() => {
     onRunning?.(phase !== "idle" && phase !== "instructions");
   }, [phase, onRunning]);
+
+  // Closing the tab or hitting back mid-test spends the mock just as surely as
+  // the Exit button does, so the browser gets to warn about it too.
+  const testLive = phase !== "idle" && phase !== "instructions" && phase !== "ended";
+  useEffect(() => {
+    if (!testLive) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [testLive]);
 
   // The exam room takes over the whole viewport; freeze the page behind it.
   const roomOpen =
@@ -765,15 +780,7 @@ export function LiveMock({
       >
         <button
           type="button"
-          onClick={() => {
-            if (exitArmed) {
-              setExitArmed(false);
-              endEarly();
-            } else {
-              setExitArmed(true);
-              setTimeout(() => setExitArmed(false), 3500);
-            }
-          }}
+          onClick={() => setConfirmExit(true)}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -781,9 +788,9 @@ export function LiveMock({
             height: 34,
             padding: "0 12px",
             borderRadius: 9,
-            border: `1px solid ${exitArmed ? "#F3C6C6" : LINE}`,
-            background: exitArmed ? "#FDF3F3" : "#fff",
-            color: exitArmed ? RED : MUTED,
+            border: `1px solid ${LINE}`,
+            background: "#fff",
+            color: MUTED,
             fontFamily: SANS,
             fontSize: 13,
             fontWeight: 700,
@@ -792,8 +799,25 @@ export function LiveMock({
           }}
         >
           <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>×</span>
-          {exitArmed ? "End the test?" : "Exit"}
+          Exit
         </button>
+
+        <ConfirmQuit
+          open={confirmExit}
+          title="End the test now?"
+          body={
+            "This ends your speaking test. Everything you have said so far will be " +
+            "graded as a partial test, and the attempt still counts against your " +
+            "monthly mocks — you cannot come back to it."
+          }
+          confirmLabel="End the test"
+          cancelLabel="Carry on with the test"
+          onCancel={() => setConfirmExit(false)}
+          onConfirm={() => {
+            setConfirmExit(false);
+            endEarly();
+          }}
+        />
 
         <span
           style={{

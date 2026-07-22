@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { ConfirmQuit } from "./confirm-quit";
+
 /**
  * The speaking TUTOR room — a lesson, not an exam.
  *
@@ -195,6 +197,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const stopMicRef = useRef<(() => void) | null>(null);
   const pendingSeqRef = useRef<number | null>(null);   // turn awaiting a `played` report
   const [sampling, setSampling] = useState<string | null>(null);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const sampleRef = useRef<HTMLAudioElement | null>(null);
 
   /** Play a few seconds of a voice so the accent can be judged by ear. */
@@ -242,6 +245,18 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   }, []);
 
   useEffect(() => () => teardown(), [teardown]);
+
+  // Same for a lesson in progress: leaving the page ends it and spends the
+  // minutes, so the browser warns before the tab goes.
+  useEffect(() => {
+    if (state !== "live") return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [state]);
 
   const start = async () => {
     setError(null);
@@ -695,7 +710,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           Skip this question
         </button>
         <button
-          onClick={end}
+          onClick={() => setConfirmEnd(true)}
           style={{
             background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
             padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
@@ -705,6 +720,22 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           End lesson
         </button>
       </div>
+
+      <ConfirmQuit
+        open={confirmEnd}
+        title="End the lesson?"
+        body={
+          "This finishes your speaking lesson and writes up what you practised. " +
+          "The minutes you have used still count towards this month's tutor time."
+        }
+        confirmLabel="End the lesson"
+        cancelLabel="Keep practising"
+        onCancel={() => setConfirmEnd(false)}
+        onConfirm={() => {
+          setConfirmEnd(false);
+          end();
+        }}
+      />
       <p style={{ margin: "22px 0 0", textAlign: "center", fontSize: 11.5, color: MUTED }}>
         Original AI tutor · not affiliated with IELTS®
       </p>
