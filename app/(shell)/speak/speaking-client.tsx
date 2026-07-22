@@ -443,6 +443,34 @@ export function SpeakingClient({
         </div>
       ) : null}
 
+      {/* The tutor is a LESSON, not a test — visually separate from the two exam
+          cards above so the modes can never blur: the mock stays exam-true,
+          this is where teaching (and Uzbek) is allowed. */}
+      {phase === "idle" && !mockRunning ? (
+        <Link
+          href="/speak/tutor"
+          style={{
+            display: "block", textDecoration: "none", marginTop: 12,
+            padding: "18px 18px 16px", borderRadius: 16,
+            border: "2px solid #0F766E", background: "#F2FBF9", fontFamily: SANS,
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16.5, fontWeight: 700, color: INK }}>Practise with your tutor</span>
+            <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", color: "#fff", background: "#0F766E", borderRadius: 999, padding: "3px 8px" }}>
+              NEW
+            </span>
+          </span>
+          <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.55, color: MUTED, marginTop: 6 }}>
+            Talk, and it answers — correcting what you said, explaining why, and showing a
+            better version. Ask it anything, in English or o‘zbekcha.
+          </span>
+          <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#0F766E", marginTop: 10 }}>
+            up to 20 min · teaches as you speak · not scored
+          </span>
+        </Link>
+      ) : null}
+
       {error ? (
         <div style={{ ...card, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED, marginTop: 16, fontSize: 14 }}>
           {error}
