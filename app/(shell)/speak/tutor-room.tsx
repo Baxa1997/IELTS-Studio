@@ -205,6 +205,15 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const pendingSeqRef = useRef<number | null>(null);   // turn awaiting a `played` report
   const [sampling, setSampling] = useState<string | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  // Hold-to-talk removes the guessing entirely: the button says when you
+  // started and stopped, so nothing can cut you off or wait through a pause.
+  const [handsFree, setHandsFree] = useState(
+    () => typeof window === "undefined" || localStorage.getItem("tutorHandsFree") !== "0",
+  );
+  const [pressed, setPressed] = useState(false);
+  // Holding only means anything in hold-to-talk, so derive it rather than
+  // clearing the flag from an effect whenever the mode changes.
+  const holding = !handsFree && pressed;
   const sampleRef = useRef<HTMLAudioElement | null>(null);
 
   /** Play a few seconds of a voice so the accent can be judged by ear. */
@@ -386,6 +395,52 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
       wsRef.current.send(JSON.stringify(obj));
     }
   };
+
+  // Tell the engine which way turn-taking works whenever it changes or the
+  // lesson starts; without this a switch back to hands-free would leave the
+  // engine waiting for a press that never comes.
+  useEffect(() => {
+    if (state !== "live") return;
+    send({ type: "mode", hands_free: handsFree });
+    localStorage.setItem("tutorHandsFree", handsFree ? "1" : "0");
+  }, [handsFree, state]);
+
+  const press = () => {
+    if (handsFree || pressed) return;
+    setPressed(true);
+    send({ type: "ptt", on: true });
+  };
+  const release = () => {
+    if (handsFree || !pressed) return;
+    setPressed(false);
+    send({ type: "ptt", on: false });
+  };
+
+  // Spacebar is the natural key for push-to-talk, and it keeps the room usable
+  // without a mouse. Ignored while typing anywhere.
+  useEffect(() => {
+    if (state !== "live" || handsFree) return;
+    const isTyping = (t: EventTarget | null) =>
+      t instanceof HTMLElement && /^(INPUT|TEXTAREA)$/.test(t.tagName);
+    const down = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat && !isTyping(e.target)) {
+        e.preventDefault();
+        press();
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !isTyping(e.target)) {
+        e.preventDefault();
+        release();
+      }
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  });   // no dep array: press/release close over current state
 
   const end = () => {
     send({ type: "stop" });
@@ -658,13 +713,17 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             ? `${VOICES.find((v) => v.id === voice)?.name} is speaking`
             : thinking
               ? "Thinking…"
-              : listening
-                ? "Your turn — just talk"
-                : "One moment…"}
+              : holding
+                ? "Listening — release when you're done"
+                : listening
+                  ? handsFree ? "Your turn — just talk" : "Your turn — hold to talk"
+                  : "One moment…"}
         </p>
         <p style={{ margin: "5px 0 0", fontSize: 13.5, color: MUTED }}>
           {listening
-            ? "Pause when you're done and I'll pick it up"
+            ? handsFree
+              ? "Pause when you're done and I'll pick it up"
+              : "Hold the button (or the spacebar) while you speak"
             : speaking
               ? "You can cut in any time"
               : "\u00a0"}
@@ -718,7 +777,46 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         <p style={{ color: RED, fontSize: 12.5, margin: "16px 0 0", textAlign: "center" }}>{error}</p>
       ) : null}
 
+      {!handsFree ? (
+        <div style={{ display: "grid", placeItems: "center", marginTop: 26 }}>
+          <button
+            onPointerDown={(e) => {
+              e.preventDefault();
+              press();
+            }}
+            onPointerUp={release}
+            onPointerLeave={release}
+            onPointerCancel={release}
+            disabled={speaking || thinking}
+            style={{
+              width: "min(420px, 100%)", padding: "20px 26px", borderRadius: 999,
+              border: `2px solid ${holding ? TEAL : LINE}`,
+              background: holding ? TEAL : "#fff",
+              color: holding ? "#fff" : speaking || thinking ? "#A9A7BC" : INK,
+              fontSize: 16.5, fontWeight: 800, fontFamily: SANS,
+              cursor: speaking || thinking ? "default" : "pointer",
+              touchAction: "none", userSelect: "none",
+              boxShadow: holding ? "0 8px 26px rgba(15,118,110,.30)" : "none",
+              transform: holding ? "scale(0.99)" : "none",
+              transition: "background .12s, transform .12s, box-shadow .2s",
+            }}
+          >
+            {holding ? "Release to send" : "Hold to talk"}
+          </button>
+        </div>
+      ) : null}
+
       <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 30 }}>
+        <button
+          onClick={() => setHandsFree((v) => !v)}
+          style={{
+            background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
+            padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
+            fontFamily: SANS, color: MUTED,
+          }}
+        >
+          {handsFree ? "Switch to hold-to-talk" : "Switch to hands-free"}
+        </button>
         <button
           onClick={() => send({ type: "skip" })}
           style={{
