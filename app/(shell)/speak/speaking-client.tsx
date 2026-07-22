@@ -568,15 +568,16 @@ export function SpeakingClient({
         <div className="speak-two-col" style={{ ...twoCol, marginTop: 26 }}>
           <div>
             <p style={{ fontSize: 16.5, color: "#3A3950", lineHeight: 1.65, margin: 0 }}>
-              A live lesson, not a test. You talk, and your tutor reacts to what you
-              actually said — correcting a mistake, showing a stronger way to say it,
-              and helping in o‘zbekcha whenever you get stuck. Nothing here is scored.
+              A live lesson, not a test. Tell it what you are preparing for — the IELTS
+              exam, a presentation, a job interview, or just talking with friends — and
+              it teaches for that: correcting what you said, showing a stronger way to
+              say it, and handing you the English whenever you get stuck in o‘zbekcha.
             </p>
             <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
               {([
                 ["Reacts to every answer", "It listens to what you actually said, not a script — and never reads your answer back to you."],
                 ["Shows you a better way", "“You said ‘it is good’ — a stronger word is ‘fulfilling’.” On almost every turn, not only when you slip."],
-                ["Helps in o‘zbekcha", "Stuck? Ask in Uzbek. It explains, gives you the English to say, then carries on in English."],
+                ["Helps in o‘zbekcha", "Say it in Uzbek and it gives you the English sentence back, then asks you to repeat it."],
               ] as const).map(([title, blurb]) => (
                 <div key={title} style={{ ...card, padding: "18px 20px", display: "flex", gap: 15 }}>
                   <span

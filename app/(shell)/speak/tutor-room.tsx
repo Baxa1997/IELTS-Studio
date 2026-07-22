@@ -475,10 +475,25 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontSize: 30, fontWeight: 600, color: INK }}>
           Practise with your tutor
         </h2>
-        <p style={{ margin: "0 0 22px", fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, maxWidth: 620 }}>
-          Just start talking. Your tutor says hello and the conversation becomes the
-          lesson — nothing to set up, nothing scored.
+        <p style={{ margin: "0 0 18px", fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, maxWidth: 620 }}>
+          Your tutor asks what you want to work on, then the conversation becomes the
+          lesson. Nothing to set up, nothing scored.
         </p>
+        {/* English is not one skill — say what you are preparing for and the
+            lesson sounds like that situation. */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
+          {["The IELTS exam", "Talking with friends", "A presentation", "A job interview", "Everyday English"].map((c) => (
+            <span
+              key={c}
+              style={{
+                fontSize: 12.5, fontWeight: 600, color: TEAL, background: TEAL_SOFT,
+                borderRadius: 999, padding: "6px 13px",
+              }}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
 
         <div
           className="tutor-two-col"
@@ -488,7 +503,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           {([
             ["Reacts to every answer", "It listens to what you actually said, not a script."],
             ["Shows you a better way", "\u201cYou said \u2018it is good\u2019 \u2014 a stronger word is \u2018fulfilling\u2019.\u201d"],
-            ["Helps in o\u2018zbekcha", "Stuck? Ask in Uzbek and it explains, then gives you the English to say."],
+            ["Helps in o\u2018zbekcha", "Say it in Uzbek and it hands you the English sentence back — then you repeat it."],
           ] as const).map(([title, blurb]) => (
             <div key={title} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
               <span
