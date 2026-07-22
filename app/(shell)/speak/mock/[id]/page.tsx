@@ -5,6 +5,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+import { CoachChat } from "../../coach-chat";
 import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
 
@@ -128,6 +129,8 @@ export default async function MockResultPage({ params }: PageProps) {
         transcript={synced ? "" : dialogue}
         audioUrl={synced ? null : audioUrl}
       />
+
+      {s.state === "graded" ? <CoachChat sessionId={s.id} /> : null}
     </div>
   );
 }
