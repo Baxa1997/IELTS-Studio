@@ -9,12 +9,21 @@ import { createClient } from "@/lib/supabase/client";
 import { LiveMock } from "./live-mock";
 import { SpeakProgress, type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
+import { TutorRoom } from "./tutor-room";
 
 /**
- * Speaking practice (BETA) — Part 2 push-to-talk. One calm mic-first flow:
- * cue card → 60s prep (notes allowed) → record up to 2:00 → conservative
- * graded report. Audio is captured as 16k mono WAV in the browser (AudioWorklet)
- * and uploaded raw to the engine; no model is ever called from the client.
+ * The Speaking hub — two ways to practise and one place to review.
+ *
+ *   Mock test   the full 3-part live examiner. Exam-true: it never teaches.
+ *   Tutor       a live lesson. Only teaches; never scores.
+ *   My progress the band trajectory and past mock reports.
+ *
+ * Part-2 quick practice was retired from the hub, but its flow is kept below
+ * and still runs when arriving via ?card= — that is the "practise this card
+ * again" button on older reports, which would otherwise dead-end.
+ *
+ * Audio is captured as 16k mono WAV in the browser (AudioWorklet) and uploaded
+ * raw to the engine; no model is ever called from the client.
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -25,6 +34,9 @@ const INDIGO = "#4338CA";
 const TINT = "#EFEEFC";
 const LINE = "#E8E6F0";
 const RED = "#b91c1c";
+const TEAL = "#0F766E";   // the tutor — never the examiner's indigo
+
+type Tab = "mock" | "tutor" | "progress";
 
 const PREP_S = 60;
 const SPEAK_S = 120;
@@ -235,9 +247,13 @@ export function SpeakingClient({
   progress?: SpeakProgressItem[];
   recentMocks?: { id: string; t: string; band: number }[];
 }) {
-  // The full mock IS the product; quick practice is the warm-up. Full first —
-  // unless they arrived via "practise this card again" (the revision loop).
-  const [mode, setMode] = useState<"part2" | "full">(initialCardId ? "part2" : "full");
+  // Two things to do here — sit the exam, or have a lesson — plus somewhere to
+  // see how it is going. Part-2 quick practice was retired from the hub; it
+  // stays reachable ONLY via ?card= so the "practise this card again" buttons
+  // on older reports do not dead-end.
+  const legacyPart2 = Boolean(initialCardId);
+  const [tab, setTab] = useState<Tab>("mock");
+  const mode: "part2" | "full" = legacyPart2 ? "part2" : "full";
   const [mockRunning, setMockRunning] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -401,100 +417,59 @@ export function SpeakingClient({
         ) : null}
       </div>
 
-      {/* mode cards — the full mock is the headline product, quick practice the warm-up */}
-      {phase === "idle" && !mockRunning ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginTop: 18 }}>
+      {/* Two ways to practise, one place to look at progress. The exam and the
+          lesson are deliberately different colours and never blur: the mock is
+          exam-true and never teaches; the tutor only teaches. */}
+      {!legacyPart2 && !mockRunning ? (
+        <div style={{ display: "flex", gap: 6, marginTop: 18, borderBottom: `1px solid ${LINE}` }}>
           {([
-            ["full", "Full mock test", "The real thing: Parts 1–3 with a live examiner — interview, cue card, discussion.", "11–14 min · live examiner · band report", true],
-            ["part2", "Quick practice", "Just Part 2: a cue card, one minute to prepare, speak for two.", "~4 min · Part 2 only · instant feedback", false],
-          ] as const).map(([m, title, desc, meta, headline]) => {
-            const on = mode === m;
+            ["mock", "Mock test", INDIGO],
+            ["tutor", "Tutor", TEAL],
+            ["progress", "My progress", INDIGO],
+          ] as const).map(([id, label, colour]) => {
+            const on = tab === id;
             return (
               <button
-                key={m}
+                key={id}
                 type="button"
-                onClick={() => {
-                  setError(null);
-                  setMode(m);
-                }}
+                onClick={() => setTab(id)}
                 style={{
-                  textAlign: "left",
-                  padding: "18px 18px 16px",
-                  borderRadius: 16,
-                  border: `2px solid ${on ? INDIGO : LINE}`,
-                  background: on ? "#F7F7FE" : "#fff",
-                  cursor: "pointer",
-                  fontFamily: SANS,
+                  appearance: "none", background: "none", cursor: "pointer",
+                  border: "none", borderBottom: `2.5px solid ${on ? colour : "transparent"}`,
+                  padding: "10px 16px 12px", fontSize: 15,
+                  fontWeight: on ? 800 : 600, color: on ? colour : MUTED,
+                  fontFamily: SANS, marginBottom: -1,
                 }}
               >
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 16.5, fontWeight: 700, color: INK }}>{title}</span>
-                  {headline ? (
-                    <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", color: "#fff", background: INDIGO, borderRadius: 999, padding: "3px 8px" }}>
-                      REAL EXAM
-                    </span>
-                  ) : null}
-                </span>
-                <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.55, color: MUTED, marginTop: 6 }}>{desc}</span>
-                <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: on ? INDIGO : "#9A9EAE", marginTop: 10 }}>{meta}</span>
+                {label}
               </button>
             );
           })}
         </div>
       ) : null}
 
-      {/* The tutor is a LESSON, not a test — visually separate from the two exam
-          cards above so the modes can never blur: the mock stays exam-true,
-          this is where teaching (and Uzbek) is allowed. */}
-      {phase === "idle" && !mockRunning ? (
-        <Link
-          href="/speak/tutor"
-          style={{
-            display: "block", textDecoration: "none", marginTop: 12,
-            padding: "18px 18px 16px", borderRadius: 16,
-            border: "2px solid #0F766E", background: "#F2FBF9", fontFamily: SANS,
-          }}
-        >
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16.5, fontWeight: 700, color: INK }}>Practise with your tutor</span>
-            <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", color: "#fff", background: "#0F766E", borderRadius: 999, padding: "3px 8px" }}>
-              NEW
-            </span>
-          </span>
-          <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.55, color: MUTED, marginTop: 6 }}>
-            Talk, and it answers — correcting what you said, explaining why, and showing a
-            better version. Ask it anything, in English or o‘zbekcha.
-          </span>
-          <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#0F766E", marginTop: 10 }}>
-            up to 20 min · teaches as you speak · not scored
-          </span>
-        </Link>
-      ) : null}
-
-      {error ? (
-        <div style={{ ...card, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED, marginTop: 16, fontSize: 14 }}>
-          {error}
-          {quotaHit ? (
-            <>
-              {" "}
-              <Link href="/pricing" style={{ color: INDIGO, fontWeight: 700 }}>
-                See plans →
-              </Link>
-            </>
-          ) : null}
-        </div>
+      {!legacyPart2 && tab === "mock" && !mockRunning ? (
+        <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.6, margin: "16px 0 0" }}>
+          The real thing: Parts 1–3 with a live examiner — interview, cue card, discussion.
+          It never helps or teaches, exactly like exam day, and ends with a band report.
+        </p>
       ) : null}
 
       {/* full mock — its own live-examiner flow */}
-      {mode === "full" ? <LiveMock onExit={() => setMockRunning(false)} onRunning={setMockRunning} /> : null}
+      {!legacyPart2 && tab === "mock" ? (
+        <LiveMock onExit={() => setMockRunning(false)} onRunning={setMockRunning} />
+      ) : null}
+
+      {/* the lesson lives right here, not on another page */}
+      {!legacyPart2 && tab === "tutor" ? <TutorRoom /> : null}
 
       {/* trajectory: graded mocks + practices — hidden while a test is running */}
-      {!mockRunning && (mode === "full" || phase === "idle") ? (
+      {!legacyPart2 && !mockRunning && tab === "progress" ? (
         <SpeakProgress items={progress} />
       ) : null}
 
       {/* past mock reports — previously only reachable from the ended screen */}
-      {!mockRunning && mode === "full" && recentMocks.length ? (
+      {!legacyPart2 && !mockRunning && tab === "progress" && recentMocks.length ? (
         <div style={{ ...card, marginTop: 14 }}>
           <div style={{ fontWeight: 700, fontSize: 14 }}>My full mocks</div>
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -518,7 +493,7 @@ export function SpeakingClient({
       ) : null}
 
       {/* idle hub (Part 2) */}
-      {mode === "part2" && (phase === "idle" || phase === "starting") ? (
+      {legacyPart2 && (phase === "idle" || phase === "starting") ? (
         <>
           <div style={{ ...card, marginTop: 18, textAlign: "center", padding: "34px 22px" }}>
             <button
