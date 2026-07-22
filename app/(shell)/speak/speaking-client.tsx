@@ -246,14 +246,24 @@ function mmss(s: number): string {
 
 // ---- the client ---------------------------------------------------------------
 
+interface Lesson {
+  id: string;
+  t: string;
+  minutes: number;
+  corrections: number;
+  headline: string;
+}
+
 export function SpeakingClient({
   initialCardId = null,
   progress = [],
   recentMocks = [],
+  recentLessons = [],
 }: {
   initialCardId?: string | null;
   progress?: SpeakProgressItem[];
   recentMocks?: { id: string; t: string; band: number }[];
+  recentLessons?: Lesson[];
 }) {
   // Two things to do here — sit the exam, or have a lesson — plus somewhere to
   // see how it is going. Part-2 quick practice was retired from the hub; it
@@ -638,6 +648,38 @@ export function SpeakingClient({
                   Band {m.band.toFixed(1)} · report →
                 </span>
               </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Lessons are not scored, so they have no report page — but the work
+          still happened, and a learner should be able to see that it did. */}
+      {!legacyPart2 && tab === "progress" && recentLessons.length ? (
+        <div style={{ ...card, marginTop: 14 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>My tutor lessons</div>
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+            {recentLessons.map((l) => (
+              <div
+                key={l.id}
+                style={{ borderBottom: `1px dashed ${LINE}`, paddingBottom: 9 }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13.5 }}>
+                  <span>
+                    {new Date(l.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    <span style={{ color: MUTED }}>
+                      {" · "}{l.minutes.toFixed(1)} min
+                      {l.corrections ? ` · ${l.corrections} correction${l.corrections === 1 ? "" : "s"}` : ""}
+                    </span>
+                  </span>
+                  <span style={{ color: TEAL, fontWeight: 700, whiteSpace: "nowrap" }}>lesson</span>
+                </div>
+                {l.headline ? (
+                  <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
+                    {l.headline}
+                  </p>
+                ) : null}
+              </div>
             ))}
           </div>
         </div>

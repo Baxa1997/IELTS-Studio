@@ -47,7 +47,7 @@ export default async function SpeakPage({
 
   // Progress series: graded mocks + practices, RLS-scoped, oldest→newest.
   const supabase = await createClient();
-  const [{ data: mocks }, { data: attempts }] = await Promise.all([
+  const [{ data: mocks }, { data: attempts }, { data: lessons }] = await Promise.all([
     supabase
       .from("speaking_sessions")
       .select("id, started_at, result")
@@ -61,6 +61,14 @@ export default async function SpeakPage({
       .not("result", "is", null)
       .order("created_at", { ascending: false })
       .limit(12),
+    // Tutor lessons: practice that is not scored still deserves to be visible,
+    // or the work disappears the moment the lesson ends.
+    supabase
+      .from("speaking_sessions")
+      .select("id, started_at, metrics, result")
+      .eq("mode", "tutor")
+      .order("started_at", { ascending: false })
+      .limit(6),
   ]);
   const progress = [
     ...(mocks ?? []).map((m) => toItem(m.started_at as string, "mock", m.result as GradedResult | null)),
@@ -82,5 +90,26 @@ export default async function SpeakPage({
     .filter((x): x is { id: string; t: string; band: number } => x !== null)
     .slice(0, 5);
 
-  return <SpeakingClient initialCardId={card} progress={progress} recentMocks={recentMocks} />;
+  const recentLessons = (lessons ?? [])
+    .map((l) => {
+      const m = (l.metrics ?? {}) as { minutes?: number; corrections?: number };
+      const r = (l.result ?? {}) as { headline?: string };
+      return {
+        id: l.id as string,
+        t: l.started_at as string,
+        minutes: typeof m.minutes === "number" ? m.minutes : 0,
+        corrections: typeof m.corrections === "number" ? m.corrections : 0,
+        headline: typeof r.headline === "string" ? r.headline : "",
+      };
+    })
+    .filter((l) => l.minutes > 0.2);   // hide instantly-abandoned connections
+
+  return (
+    <SpeakingClient
+      initialCardId={card}
+      progress={progress}
+      recentMocks={recentMocks}
+      recentLessons={recentLessons}
+    />
+  );
 }
