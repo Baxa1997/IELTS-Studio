@@ -45,12 +45,14 @@ const VOICES = [
   { id: "james", name: "James" },
 ];
 
+type Swap = { they_said: string; better: string };
+
 interface Line {
   who: "you" | "tutor";
   text: string;
   language?: string;
-  correction?: { they_said: string; better: string } | null;
-  upgraded?: string | null;
+  correction?: Swap | null;   // a mistake, fixed
+  upgrade?: Swap | null;      // correct English, made better — the main lesson
 }
 
 interface LessonCard {
@@ -273,8 +275,8 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                 who: "tutor",
                 text: String(ev.say ?? ""),
                 language: ev.language as string,
-                correction: (ev.correction as Line["correction"]) ?? null,
-                upgraded: (ev.upgraded_sentence as string) ?? null,
+                correction: (ev.correction as Swap) ?? null,
+                upgrade: (ev.upgrade as Swap) ?? null,
               },
             ]);
             break;
@@ -346,6 +348,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // Only the most recent correction is shown, and only until the next turn.
   const lastTutor = [...lines].reverse().find((l) => l.who === "tutor");
   const lastCorrection = lastTutor?.correction ?? null;
+  const lastUpgrade = lastTutor?.upgrade ?? null;
 
   // ---- setup screen ----
   if (state === "idle" || state === "connecting") {
@@ -535,19 +538,41 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           The only thing worth reading mid-lesson is the one correction just
           made, because a fix you can see is a fix you remember; it fades with
           the next turn. Everything else waits for the lesson card. */}
-      {lastCorrection ? (
-        <div
-          style={{
-            margin: "22px auto 0", maxWidth: 460, background: "#FFF7ED",
-            border: "1px solid #FDE6C8", borderRadius: 12, padding: "11px 16px",
-            fontSize: 15, textAlign: "center",
-          }}
-        >
-          <span style={{ color: MUTED, textDecoration: "line-through" }}>
-            {lastCorrection.they_said}
-          </span>
-          <span style={{ margin: "0 9px", color: AMBER }}>→</span>
-          <span style={{ color: INK, fontWeight: 700 }}>{lastCorrection.better}</span>
+      {lastCorrection || lastUpgrade ? (
+        <div style={{ margin: "22px auto 0", maxWidth: 520, display: "grid", gap: 8 }}>
+          {lastCorrection ? (
+            <div
+              style={{
+                background: "#FFF7ED", border: "1px solid #FDE6C8", borderRadius: 12,
+                padding: "11px 16px", fontSize: 15, textAlign: "center",
+              }}
+            >
+              <span style={{ color: MUTED, textDecoration: "line-through" }}>
+                {lastCorrection.they_said}
+              </span>
+              <span style={{ margin: "0 9px", color: AMBER }}>→</span>
+              <span style={{ color: INK, fontWeight: 700 }}>{lastCorrection.better}</span>
+            </div>
+          ) : null}
+          {lastUpgrade ? (
+            <div
+              style={{
+                background: TEAL_SOFT, border: `1px solid #CDE9E3`, borderRadius: 12,
+                padding: "11px 16px", fontSize: 15, textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".07em", color: TEAL, marginBottom: 4 }}>
+                SAY IT BETTER
+              </div>
+              {lastUpgrade.they_said ? (
+                <>
+                  <span style={{ color: MUTED }}>{lastUpgrade.they_said}</span>
+                  <span style={{ margin: "0 9px", color: TEAL }}>→</span>
+                </>
+              ) : null}
+              <span style={{ color: INK, fontWeight: 700 }}>{lastUpgrade.better}</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
