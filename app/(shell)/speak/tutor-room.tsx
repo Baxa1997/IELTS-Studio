@@ -31,6 +31,9 @@ const RED = "#b91c1c";
 
 const IN_RATE = 16000;
 const OUT_RATE = 24000;
+/** Audio held back before a turn starts playing, so slow chunks can't leave
+ *  gaps mid-sentence. Costs this much added delay before the tutor is heard. */
+const JITTER_LEAD_S = 0.9;
 
 type Mode = "part1" | "part3" | "cue_card" | "free";
 
@@ -81,6 +84,11 @@ class VoicePlayer {
   get busy(): boolean {
     return this.live > 0;
   }
+  /** Start of a new tutor turn: re-arm the jitter buffer. */
+  beginTurn() {
+    this.next = 0;
+  }
+
   push(pcm: ArrayBuffer) {
     const i16 = new Int16Array(pcm);
     if (!i16.length) return;
@@ -99,7 +107,13 @@ class VoicePlayer {
         this.onDrained?.();
       }
     };
-    const t = Math.max(this.ctx.currentTime + 0.06, this.next);
+    // JITTER BUFFER. The model does not generate faster than real time, so
+    // scheduling each chunk the instant it lands leaves playback starving
+    // between chunks — heard as "Hello, I am Emily ..... your tutor ....",
+    // slow and breaking up. Give the first chunk of a turn a head start so a
+    // late chunk still arrives before the previous one has finished playing.
+    const lead = this.next === 0 ? JITTER_LEAD_S : 0.02;
+    const t = Math.max(this.ctx.currentTime + lead, this.next);
     src.start(t);
     this.next = t + buf.duration;
   }
@@ -263,6 +277,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             break;
           case "tutor":
             setThinking(false);
+            player.beginTurn();   // re-arm the jitter buffer for this reply
             setLines((l) => [
               ...l,
               {
