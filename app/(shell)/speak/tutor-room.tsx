@@ -10,9 +10,9 @@ import { createClient } from "@/lib/supabase/client";
  * The speaking TUTOR room — a lesson, not an exam.
  *
  * You talk, it reacts to what you actually said, corrects one thing quoting
- * your own words, and answers you in YOUR language when you switch. The
- * transcript pane matters as much as the audio: seeing the fix written down
- * ("you said X → say Y") is half the teaching.
+ * your own words, and answers you in Uzbek when you switch. Deliberately
+ * SPOKEN, not written: no running transcript, only the single correction just
+ * made, which fades with the next turn.
  *
  * Audio plumbing mirrors the exam room (16 kHz PCM16 up, 24 kHz down) — that
  * path is proven — but the exam's turn machinery is deliberately absent: here
@@ -31,9 +31,10 @@ const RED = "#b91c1c";
 
 const IN_RATE = 16000;
 const OUT_RATE = 24000;
-/** Audio held back before a turn starts playing, so slow chunks can't leave
- *  gaps mid-sentence. Costs this much added delay before the tutor is heard. */
-const JITTER_LEAD_S = 0.9;
+/** Small head start before a turn plays. The engine now sends each reply as one
+ *  complete clip (Cloud TTS), so this only absorbs network jitter, not the
+ *  generation starvation that used to break sentences apart. */
+const JITTER_LEAD_S = 0.15;
 
 type Mode = "part1" | "part3" | "cue_card" | "free";
 
@@ -62,12 +63,9 @@ interface LessonCard {
 // ---- audio ------------------------------------------------------------------
 
 /**
- * Plays the tutor's 24 kHz PCM and — critically — reports when playback has
- * REALLY finished. Generation runs far ahead of playback, so if the engine
- * opened the mic when the audio finished generating, the tutor's own voice
- * would still be coming out of the speakers, get transcribed, and it would
- * answer itself (field report: stuttering and repeating the last word).
- * `onDrained` is what lets the engine wait for the learner instead.
+ * Plays the tutor's 24 kHz PCM and reports when playback has REALLY finished.
+ * Without that report the engine would open the mic while the tutor's voice was
+ * still coming out of the speakers, and it would hear and answer itself.
  */
 class VoicePlayer {
   private ctx: AudioContext;
@@ -107,11 +105,7 @@ class VoicePlayer {
         this.onDrained?.();
       }
     };
-    // JITTER BUFFER. The model does not generate faster than real time, so
-    // scheduling each chunk the instant it lands leaves playback starving
-    // between chunks — heard as "Hello, I am Emily ..... your tutor ....",
-    // slow and breaking up. Give the first chunk of a turn a head start so a
-    // late chunk still arrives before the previous one has finished playing.
+    // A small head start on the first chunk of a turn absorbs network jitter.
     const lead = this.next === 0 ? JITTER_LEAD_S : 0.02;
     const t = Math.max(this.ctx.currentTime + lead, this.next);
     src.start(t);
@@ -197,7 +191,6 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const wsRef = useRef<WebSocket | null>(null);
   const playerRef = useRef<VoicePlayer | null>(null);
   const stopMicRef = useRef<(() => void) | null>(null);
-  const feedRef = useRef<HTMLDivElement>(null);
   const pendingSeqRef = useRef<number | null>(null);   // turn awaiting a `played` report
 
   useEffect(() => {
@@ -205,10 +198,6 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [state]);
-
-  useEffect(() => {
-    feedRef.current?.scrollTo({ top: 1e6, behavior: "smooth" });
-  }, [lines, thinking]);
 
   const teardown = useCallback(() => {
     stopMicRef.current?.();
@@ -354,6 +343,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   };
 
   const mmss = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
+  // Only the most recent correction is shown, and only until the next turn.
+  const lastTutor = [...lines].reverse().find((l) => l.who === "tutor");
+  const lastCorrection = lastTutor?.correction ?? null;
 
   // ---- setup screen ----
   if (state === "idle" || state === "connecting") {
@@ -538,60 +530,30 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         </p>
       </div>
 
-      <div
-        ref={feedRef}
-        style={{
-          maxHeight: "46vh", overflowY: "auto", margin: "14px 0", display: "grid", gap: 10,
-          background: "#FBFAFE", border: `1px solid ${LINE}`, borderRadius: 14, padding: 14,
-        }}
-      >
-        {lines.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 13, color: MUTED, textAlign: "center" }}>
-            Your conversation appears here, with every correction written down.
-          </p>
-        ) : null}
-        {lines.map((l, i) => (
-          <div key={i} style={{ justifySelf: l.who === "you" ? "end" : "start", maxWidth: "90%" }}>
-            <div
-              style={{
-                background: l.who === "you" ? "#EEF2F7" : "#fff",
-                border: `1px solid ${LINE}`, borderRadius: 12, padding: "9px 13px",
-                fontSize: 13.8, lineHeight: 1.6, color: INK,
-              }}
-            >
-              {l.text}
-              {l.language && l.language !== "en" ? (
-                <span style={{ marginLeft: 6, fontSize: 11, color: TEAL, fontWeight: 700 }}>
-                  {l.language.toUpperCase()}
-                </span>
-              ) : null}
-            </div>
-            {l.correction ? (
-              <div style={{
-                marginTop: 5, background: "#FFF7ED", border: "1px solid #FDE6C8",
-                borderRadius: 10, padding: "7px 11px", fontSize: 13,
-              }}>
-                <span style={{ color: MUTED, textDecoration: "line-through" }}>{l.correction.they_said}</span>
-                <span style={{ margin: "0 7px", color: AMBER }}>→</span>
-                <span style={{ color: INK, fontWeight: 700 }}>{l.correction.better}</span>
-              </div>
-            ) : null}
-            {l.upgraded ? (
-              <div style={{
-                marginTop: 5, background: TEAL_SOFT, borderRadius: 10, padding: "7px 11px",
-                fontSize: 13, color: "#0B5B55",
-              }}>
-                Even better: <strong>{l.upgraded}</strong>
-              </div>
-            ) : null}
-          </div>
-        ))}
-        {thinking ? (
-          <div style={{ justifySelf: "start", fontSize: 13, color: MUTED }}>Tutor is thinking…</div>
-        ) : null}
-      </div>
+      {/* Deliberately no running transcript: this is a SPOKEN lesson, and the
+          owner was explicit — "I dont need text written, just speak is enough".
+          The only thing worth reading mid-lesson is the one correction just
+          made, because a fix you can see is a fix you remember; it fades with
+          the next turn. Everything else waits for the lesson card. */}
+      {lastCorrection ? (
+        <div
+          style={{
+            margin: "22px auto 0", maxWidth: 460, background: "#FFF7ED",
+            border: "1px solid #FDE6C8", borderRadius: 12, padding: "11px 16px",
+            fontSize: 15, textAlign: "center",
+          }}
+        >
+          <span style={{ color: MUTED, textDecoration: "line-through" }}>
+            {lastCorrection.they_said}
+          </span>
+          <span style={{ margin: "0 9px", color: AMBER }}>→</span>
+          <span style={{ color: INK, fontWeight: 700 }}>{lastCorrection.better}</span>
+        </div>
+      ) : null}
 
-      {error ? <p style={{ color: RED, fontSize: 12.5, margin: "0 0 8px" }}>{error}</p> : null}
+      {error ? (
+        <p style={{ color: RED, fontSize: 12.5, margin: "16px 0 0", textAlign: "center" }}>{error}</p>
+      ) : null}
 
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
         <button
