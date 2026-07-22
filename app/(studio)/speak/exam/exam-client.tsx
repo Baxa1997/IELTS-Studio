@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { LiveMock } from "../live-mock";
+import { LiveMock } from "@/app/(shell)/speak/live-mock";
 
 /** Wraps the live examiner on its own route. Leaving the test — whether by
  *  finishing or by quitting through the confirmation — returns to the hub. */

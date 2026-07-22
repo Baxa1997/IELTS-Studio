@@ -463,6 +463,15 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
     return (
       <div style={{ fontFamily: SANS, maxWidth: 1280, margin: "0 auto", padding: "26px 26px 60px" }}>
         <style>{RESPONSIVE_CSS}</style>
+        <Link
+          href="/speak"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13.5,
+            fontWeight: 700, color: MUTED, textDecoration: "none", marginBottom: 18,
+          }}
+        >
+          <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>←</span> Speaking
+        </Link>
         <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontSize: 30, fontWeight: 600, color: INK }}>
           Practise with your tutor
         </h2>
@@ -591,6 +600,15 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   if (state === "ended") {
     return (
       <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "26px 26px 60px" }}>
+        <Link
+          href="/speak"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13.5,
+            fontWeight: 700, color: MUTED, textDecoration: "none", marginBottom: 16,
+          }}
+        >
+          <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>←</span> Speaking
+        </Link>
         <h1 style={{ margin: "0 0 4px", fontFamily: SERIF, fontSize: 25, fontWeight: 600, color: INK }}>
           Lesson complete
         </h1>
@@ -664,13 +682,32 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // ---- live lesson ----
   const ring = Math.min(1, level * 9);
   return (
-    <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "22px 26px 48px", minHeight: "72vh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+    <div
+      style={{
+        fontFamily: SANS, minHeight: "100vh",
+        // A soft vertical wash rather than flat white: the room should feel
+        // like a place you are sitting in, not a blank page with a circle.
+        background: "linear-gradient(180deg, #F4FAF8 0%, #FBFDFC 42%, #FFFFFF 100%)",
+      }}
+    >
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 26px 56px",
+                  minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "10px 4px 14px", borderBottom: `1px solid ${LINE}`, marginBottom: 26,
         }}
       >
+        <button
+          onClick={() => setConfirmEnd(true)}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7, background: "none",
+            border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 13.5,
+            fontWeight: 700, color: MUTED, padding: 0,
+          }}
+        >
+          <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>←</span> Speaking
+        </button>
         <span style={{
           background: TEAL_SOFT, color: TEAL, borderRadius: 999, padding: "6px 13px",
           fontSize: 12, fontWeight: 800, letterSpacing: ".05em",
@@ -682,7 +719,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         </span>
       </div>
 
-      <div style={{ textAlign: "center" }}>
+      <div style={{ textAlign: "center", marginTop: "min(7vh, 60px)" }}>
         <div style={{ position: "relative", width: 132, height: 132, margin: "0 auto" }}>
           {/* the ring breathes with the mic when it is your turn, and glows
               steadily while the tutor talks — so the state is readable at a
@@ -736,38 +773,41 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           made, because a fix you can see is a fix you remember; it fades with
           the next turn. Everything else waits for the lesson card. */}
       {lastCorrection || lastUpgrade ? (
-        <div style={{ margin: "22px auto 0", maxWidth: 520, display: "grid", gap: 8 }}>
+        <div style={{ margin: "26px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 10 }}>
           {lastCorrection ? (
             <div
               style={{
-                background: "#FFF7ED", border: "1px solid #FDE6C8", borderRadius: 12,
-                padding: "11px 16px", fontSize: 15, textAlign: "center",
+                background: "#fff", border: "1px solid #FDE6C8", borderRadius: 14,
+                padding: "14px 18px", fontSize: 15.5, lineHeight: 1.6,
+                boxShadow: "0 2px 10px rgba(180,83,9,.06)",
               }}
             >
-              <span style={{ color: MUTED, textDecoration: "line-through" }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".09em",
+                            color: AMBER, marginBottom: 7 }}>
+                A SMALL FIX
+              </div>
+              <div style={{ color: MUTED, textDecoration: "line-through", marginBottom: 3 }}>
                 {lastCorrection.they_said}
-              </span>
-              <span style={{ margin: "0 9px", color: AMBER }}>→</span>
-              <span style={{ color: INK, fontWeight: 700 }}>{lastCorrection.better}</span>
+              </div>
+              <div style={{ color: INK, fontWeight: 700 }}>{lastCorrection.better}</div>
             </div>
           ) : null}
           {lastUpgrade ? (
             <div
               style={{
-                background: TEAL_SOFT, border: `1px solid #CDE9E3`, borderRadius: 12,
-                padding: "11px 16px", fontSize: 15, textAlign: "center",
+                background: "#fff", border: "1px solid #CDE9E3", borderRadius: 14,
+                padding: "14px 18px", fontSize: 15.5, lineHeight: 1.6,
+                boxShadow: "0 2px 10px rgba(15,118,110,.07)",
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".07em", color: TEAL, marginBottom: 4 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".09em",
+                            color: TEAL, marginBottom: 7 }}>
                 SAY IT BETTER
               </div>
               {lastUpgrade.they_said ? (
-                <>
-                  <span style={{ color: MUTED }}>{lastUpgrade.they_said}</span>
-                  <span style={{ margin: "0 9px", color: TEAL }}>→</span>
-                </>
+                <div style={{ color: MUTED, marginBottom: 3 }}>{lastUpgrade.they_said}</div>
               ) : null}
-              <span style={{ color: INK, fontWeight: 700 }}>{lastUpgrade.better}</span>
+              <div style={{ color: INK, fontWeight: 700 }}>{lastUpgrade.better}</div>
             </div>
           ) : null}
         </div>
@@ -854,9 +894,10 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           end();
         }}
       />
-      <p style={{ margin: "22px 0 0", textAlign: "center", fontSize: 11.5, color: MUTED }}>
+      <p style={{ margin: "auto 0 0", paddingTop: 26, textAlign: "center", fontSize: 11.5, color: MUTED }}>
         Original AI tutor · not affiliated with IELTS®
       </p>
+    </div>
     </div>
   );
 }

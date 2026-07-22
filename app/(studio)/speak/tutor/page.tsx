@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 
-import { TutorRoom } from "../tutor-room";
+import { TutorRoom } from "@/app/(shell)/speak/tutor-room";
 
 export const dynamic = "force-dynamic";
 
