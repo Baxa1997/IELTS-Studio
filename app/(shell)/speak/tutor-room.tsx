@@ -34,12 +34,6 @@ const OUT_RATE = 24000;
 
 type Mode = "part1" | "part3" | "cue_card" | "free";
 
-const MODES: { id: Mode; label: string; blurb: string }[] = [
-  { id: "part1", label: "Part 1 practice", blurb: "Short personal questions, corrected as you go" },
-  { id: "part3", label: "Part 3 discussion", blurb: "Opinion questions with follow-ups" },
-  { id: "free", label: "Free talk", blurb: "Practise whatever you choose" },
-];
-
 const VOICES = [
   { id: "emily", name: "Emily" },
   { id: "daniel", name: "Daniel" },
@@ -64,16 +58,28 @@ interface LessonCard {
 
 // ---- audio ------------------------------------------------------------------
 
+/**
+ * Plays the tutor's 24 kHz PCM and — critically — reports when playback has
+ * REALLY finished. Generation runs far ahead of playback, so if the engine
+ * opened the mic when the audio finished generating, the tutor's own voice
+ * would still be coming out of the speakers, get transcribed, and it would
+ * answer itself (field report: stuttering and repeating the last word).
+ * `onDrained` is what lets the engine wait for the learner instead.
+ */
 class VoicePlayer {
   private ctx: AudioContext;
   private next = 0;
   private live = 0;
   onPlaying: ((on: boolean) => void) | null = null;
+  onDrained: (() => void) | null = null;
   constructor(private rate = OUT_RATE) {
     this.ctx = new AudioContext();
   }
   resume() {
     void this.ctx.resume();
+  }
+  get busy(): boolean {
+    return this.live > 0;
   }
   push(pcm: ArrayBuffer) {
     const i16 = new Int16Array(pcm);
@@ -88,7 +94,10 @@ class VoicePlayer {
     this.live += 1;
     src.onended = () => {
       this.live -= 1;
-      if (this.live === 0) this.onPlaying?.(false);
+      if (this.live === 0) {
+        this.onPlaying?.(false);
+        this.onDrained?.();
+      }
     };
     const t = Math.max(this.ctx.currentTime + 0.06, this.next);
     src.start(t);
@@ -158,7 +167,9 @@ function wsUrl(mode: Mode, token: string, voice: string): string {
 
 export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [state, setState] = useState<"idle" | "connecting" | "live" | "ended">("idle");
-  const [mode, setMode] = useState<Mode>("part1");
+  // The learner picks nothing: the lesson opens conversationally and the
+  // tutor steers. `mode` stays as the engine's question-spine hint.
+  const mode: Mode = "part1";
   const [voice, setVoice] = useState("emily");
   const [lines, setLines] = useState<Line[]>([]);
   const [listening, setListening] = useState(false);
@@ -173,6 +184,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const playerRef = useRef<VoicePlayer | null>(null);
   const stopMicRef = useRef<(() => void) | null>(null);
   const feedRef = useRef<HTMLDivElement>(null);
+  const pendingSeqRef = useRef<number | null>(null);   // turn awaiting a `played` report
 
   useEffect(() => {
     if (state !== "live") return;
@@ -211,6 +223,14 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
       player.onPlaying = setSpeaking;
       player.resume();
       playerRef.current = player;
+      // The engine holds the mic shut until we confirm the turn was HEARD.
+      player.onDrained = () => {
+        const seq = pendingSeqRef.current;
+        if (seq != null) {
+          pendingSeqRef.current = null;
+          send({ type: "played", seq });
+        }
+      };
 
       const ws = new WebSocket(wsUrl(mode, token, voice));
       ws.binaryType = "arraybuffer";
@@ -254,6 +274,17 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
               },
             ]);
             break;
+          case "turn_end": {
+            // Generation finished; playback may not have. Report `played` when
+            // the queue actually drains — or immediately if nothing is queued.
+            const seq = Number(ev.seq);
+            if (player.busy) {
+              pendingSeqRef.current = seq;
+            } else {
+              send({ type: "played", seq });
+            }
+            break;
+          }
           case "lesson":
             setCard((ev.card as LessonCard) ?? {});
             setState("ended");
@@ -321,37 +352,36 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             ← Speaking
           </Link>
         </div>
-        <p style={{ margin: "0 0 20px", fontSize: 14.5, color: MUTED, lineHeight: 1.6 }}>
-          Speak, and the tutor answers — correcting what you said, explaining why, and
-          showing a better version. Stuck? Ask anything, in English or in your own
-          language (o‘zbekcha, по-русски). This is a lesson, not the exam: nothing here
-          is scored.
+        <p style={{ margin: "0 0 26px", fontSize: 15, color: MUTED, lineHeight: 1.65 }}>
+          Just start talking. Your tutor says hello, asks how you are, and the
+          conversation becomes the practice — correcting what you said, explaining
+          why, and showing a better way to say it. Stuck on anything? Ask, in English
+          or o‘zbekcha. Nothing here is scored.
         </p>
 
-        <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-          {MODES.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setMode(m.id)}
-              style={{
-                textAlign: "left", cursor: "pointer", borderRadius: 14, padding: "13px 16px",
-                background: mode === m.id ? TEAL_SOFT : "#fff",
-                border: `1.5px solid ${mode === m.id ? TEAL : LINE}`, fontFamily: SANS,
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: 14.5, color: mode === m.id ? TEAL : INK }}>
-                {m.label}
-              </div>
-              <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{m.blurb}</div>
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={() => void start()}
+          disabled={state === "connecting"}
+          style={{
+            display: "block", width: "100%", background: TEAL, color: "#fff",
+            border: "none", borderRadius: 16, padding: "20px 26px", fontSize: 17,
+            fontWeight: 700, cursor: "pointer", fontFamily: SANS,
+            opacity: state === "connecting" ? 0.6 : 1,
+          }}
+        >
+          {state === "connecting" ? "Connecting…" : "Start speaking"}
+        </button>
+        <p style={{ margin: "12px 0 26px", fontSize: 12.5, color: MUTED, textAlign: "center" }}>
+          Uses your microphone · up to 20 minutes · not scored
+        </p>
 
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".07em", color: MUTED, marginBottom: 8 }}>
-            TUTOR VOICE
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {/* Voice is the only choice worth making up front — everything else the
+            tutor decides in conversation, the way a person would. */}
+        <details style={{ fontSize: 13.5 }}>
+          <summary style={{ cursor: "pointer", color: MUTED, fontWeight: 600 }}>
+            Tutor voice: {VOICES.find((v) => v.id === voice)?.name}
+          </summary>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
             {VOICES.map((v) => (
               <button
                 key={v.id}
@@ -368,24 +398,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
               </button>
             ))}
           </div>
-        </div>
+        </details>
 
-        {error ? <p style={{ color: RED, fontSize: 13.5, margin: "0 0 12px" }}>{error}</p> : null}
-
-        <button
-          onClick={() => void start()}
-          disabled={state === "connecting"}
-          style={{
-            background: TEAL, color: "#fff", border: "none", borderRadius: 12,
-            padding: "14px 26px", fontSize: 15.5, fontWeight: 700, cursor: "pointer",
-            fontFamily: SANS, opacity: state === "connecting" ? 0.6 : 1,
-          }}
-        >
-          {state === "connecting" ? "Connecting…" : "Start the lesson"}
-        </button>
-        <p style={{ margin: "10px 0 0", fontSize: 12, color: MUTED }}>
-          Uses your microphone · up to 20 minutes · counts against your monthly tutor time
-        </p>
+        {error ? <p style={{ color: RED, fontSize: 13.5, margin: "16px 0 0" }}>{error}</p> : null}
       </div>
     );
   }
