@@ -8,6 +8,7 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 import { ConfirmQuit } from "./confirm-quit";
+import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars, mmss, type Persona } from "./lucida";
 
 /**
  * Full mock (Parts 1–3) — the LIVE examiner. A bidirectional WebSocket to the
@@ -16,15 +17,6 @@ import { ConfirmQuit } from "./confirm-quit";
  * minute, the 2:00 cut, the 16-min cap) — this client just captures audio, plays
  * the examiner, and renders the room. No model is ever called from here.
  */
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const INDIGO = "#4338CA";
-const TINT = "#EFEEFC";
-const LINE = "#E8E6F0";
-const RED = "#b91c1c";
 
 const IN_RATE = 16000;
 
@@ -38,13 +30,9 @@ type Phase =
   | "part2_card" | "part2_prep" | "part2_speak" | "part2_round"
   | "part3" | "closing" | "ended" | "error";
 
-// Mirrors the engine's PERSONAS (speaking/live.py) — id must match.
-const EXAMINERS = [
-  { id: "emily", name: "Emily", tag: "Warm & encouraging", hue: "#B85C8A", desc: "Puts nervous candidates at ease. Clear, friendly pace." },
-  { id: "daniel", name: "Daniel", tag: "Calm & formal", hue: "#4338CA", desc: "The classic exam-room examiner. Measured and neutral." },
-  { id: "sofia", name: "Sofia", tag: "Friendly & patient", hue: "#0F766E", desc: "Easy-going rhythm with time to think." },
-  { id: "james", name: "James", tag: "Brisk & precise", hue: "#B45309", desc: "Keeps the pace up — good exam-day pressure training." },
-] as const;
+// The four examiners are the shared Lucida PERSONAS (which mirror the engine's
+// speaking/live.py PERSONAS — id must match). Their mock trait/desc come from
+// persona.mockTrait / persona.mockDesc.
 
 const LEVELS = [
   { v: null, label: "Any" },
@@ -183,12 +171,6 @@ function wsUrl(session_id: string, token: string, examiner: string): string {
   return `${ws}/speaking/live?${q.toString()}`;
 }
 
-const PART_LABEL: Record<number, string> = {
-  1: "Part 1 — Introduction & interview",
-  2: "Part 2 — The long turn",
-  3: "Part 3 — Discussion",
-};
-
 export function LiveMock({
   onExit,
   onRunning,
@@ -199,7 +181,7 @@ export function LiveMock({
 }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
-  const [examiner, setExaminer] = useState<(typeof EXAMINERS)[number]["id"]>("emily");
+  const [examiner, setExaminer] = useState<Persona["id"]>("emily");
   const [level, setLevel] = useState<number | null>(null);
   const [part, setPart] = useState(1);
   const [card, setCard] = useState<CueCard | null>(null);
@@ -499,100 +481,100 @@ export function LiveMock({
     }, 6000);
   }, []);
 
-  // ---- render ----------------------------------------------------------------
+  // ---- render (Lucida) -------------------------------------------------------
 
   const quotaHit = error ? /quota|upgrade|plan|Standard|Pro/i.test(error) : false;
+  const persona = personaById(examiner);
+  const kicker: React.CSSProperties = {
+    fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase",
+  };
+  const backLink = (
+    <button
+      type="button"
+      onClick={onExit}
+      className="lc-tab"
+      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", color: "var(--color-neutral-500)", fontFamily: "inherit", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: 24, padding: 0 }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 18l-6-6 6-6" /></svg>
+      Speaking
+    </button>
+  );
 
+  // PICK — choose your examiner + question level, then a short instructions modal.
   if (phase === "idle" || phase === "instructions") {
-    const chosen = EXAMINERS.find((e) => e.id === examiner) ?? EXAMINERS[0];
     return (
-      <div style={{ marginTop: 18 }}>
-        {/* setup: pick your examiner */}
-        <div style={{ ...card_, padding: "22px 20px" }}>
-          <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600 }}>Full mock — Parts 1 to 3</div>
-          <p style={{ margin: "6px 0 16px", fontSize: 13.5, lineHeight: 1.55, color: MUTED }}>
-            A complete 11–14 minute speaking test with a live examiner. You won&rsquo;t see the
-            questions in advance — exactly like exam day.
+      <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "48px 40px 64px" }}>
+          {backLink}
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-4xl)", color: "var(--color-neutral-1000)", letterSpacing: "var(--ls-snug)", marginBottom: 10 }}>
+            Full mock — Parts 1 to 3
+          </div>
+          <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", maxWidth: 680, lineHeight: "var(--lh-relaxed)", margin: "0 0 36px" }}>
+            A complete 11–14 minute speaking test with a live examiner. You won’t see the questions in advance — exactly like exam day.
           </p>
 
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".07em", color: MUTED, textTransform: "uppercase", marginBottom: 8 }}>
-            Choose your examiner
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(165px, 1fr))", gap: 10 }}>
-            {EXAMINERS.map((e) => {
-              const on = e.id === examiner;
+          <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 12 }}>Choose your examiner</div>
+          <div className="lc-persona-grid" style={{ marginBottom: 32 }}>
+            {PERSONAS.map((p) => {
+              const on = p.id === examiner;
               return (
                 <button
-                  key={e.id}
+                  key={p.id}
                   type="button"
-                  onClick={() => setExaminer(e.id)}
+                  onClick={() => setExaminer(p.id)}
+                  className="lc-card-tap"
                   style={{
-                    textAlign: "left",
-                    border: `2px solid ${on ? e.hue : LINE}`,
-                    background: on ? `${e.hue}0D` : "#fff",
-                    borderRadius: 14,
-                    padding: "14px 14px 12px",
-                    cursor: "pointer",
-                    fontFamily: SANS,
+                    textAlign: "left", padding: 22, borderRadius: "var(--radius-xl)", cursor: "pointer",
+                    fontFamily: "inherit",
+                    border: `1.5px solid ${on ? p.accent : "var(--color-neutral-200)"}`,
+                    background: on ? p.tint : "var(--color-neutral-0)",
                   }}
                 >
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: `radial-gradient(circle at 35% 30%, ${e.hue}CC, ${e.hue})`,
-                      color: "#fff",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 800,
-                      fontSize: 16,
-                    }}
-                  >
-                    {e.name[0]}
-                  </span>
-                  <div style={{ fontWeight: 700, fontSize: 14.5, color: INK, marginTop: 8 }}>{e.name}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: e.hue }}>{e.tag}</div>
-                  <div style={{ fontSize: 12, lineHeight: 1.45, color: MUTED, marginTop: 4 }}>{e.desc}</div>
+                  <div style={{ width: 48, height: 48, borderRadius: "50%", background: p.accent, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", marginBottom: 14 }}>
+                    {p.initial}
+                  </div>
+                  <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--color-neutral-1000)", marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: p.accent, marginBottom: 8 }}>{p.mockTrait}</div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-snug)" }}>{p.mockDesc}</div>
                 </button>
               );
             })}
           </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 18 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".07em", color: MUTED, textTransform: "uppercase" }}>
-              Question level
-            </span>
-            <div style={{ display: "flex", gap: 6 }}>
-              {LEVELS.map((l) => {
-                const on = level === l.v;
-                return (
-                  <button
-                    key={l.label}
-                    type="button"
-                    onClick={() => setLevel(l.v)}
-                    style={{
-                      minWidth: 38,
-                      height: 32,
-                      padding: "0 10px",
-                      borderRadius: 9,
-                      border: `1.5px solid ${on ? INDIGO : LINE}`,
-                      background: on ? TINT : "#fff",
-                      color: on ? INDIGO : MUTED,
-                      fontFamily: SANS,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {l.label}
-                  </button>
-                );
-              })}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 24, borderTop: "1px solid var(--color-neutral-200)", flexWrap: "wrap", gap: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ ...kicker, color: "var(--color-neutral-500)" }}>Question level</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {LEVELS.map((l) => {
+                  const on = level === l.v;
+                  return (
+                    <button
+                      key={l.label}
+                      type="button"
+                      onClick={() => setLevel(l.v)}
+                      className="lc-btn"
+                      style={{
+                        width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
+                        borderRadius: "var(--radius-md)", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer",
+                        fontFamily: "inherit",
+                        border: `1.5px solid ${on ? "var(--color-primary-500)" : "var(--color-neutral-200)"}`,
+                        color: on ? "var(--color-primary-600)" : "var(--color-neutral-600)",
+                        background: on ? "rgba(132,86,239,0.08)" : "var(--color-neutral-0)",
+                      }}
+                    >
+                      {l.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <button type="button" onClick={() => setPhase("instructions")} style={{ ...primaryBtn, marginLeft: "auto" }}>
-              Take the mock test
+            <button
+              type="button"
+              onClick={() => setPhase("instructions")}
+              className="lc-btn lc-primary"
+              style={{ border: "none", background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", fontSize: "var(--text-md)", fontWeight: 600, padding: "16px 28px", borderRadius: "var(--radius-lg)", cursor: "pointer", boxShadow: "var(--shadow-glow-sm)" }}
+            >
+              Take the mock test →
             </button>
           </div>
         </div>
@@ -603,138 +585,146 @@ export function LiveMock({
             role="dialog"
             aria-modal="true"
             onClick={() => setPhase("idle")}
-            style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 18, background: "rgba(28,27,46,.5)", backdropFilter: "blur(3px)" }}
+            style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 18, background: "rgba(23,19,28,.55)", backdropFilter: "blur(3px)" }}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              style={{ width: "min(520px, 100%)", maxHeight: "92dvh", overflowY: "auto", background: "#fff", borderRadius: 18, padding: "24px 24px 20px", boxShadow: "0 30px 70px -24px rgba(28,27,46,.6)", fontFamily: SANS, color: INK }}
+              style={{ width: "min(540px, 100%)", maxHeight: "92dvh", overflowY: "auto", background: "var(--color-neutral-0)", borderRadius: "var(--radius-2xl)", padding: "26px 26px 22px", boxShadow: "var(--shadow-3)", color: "var(--color-neutral-1000)" }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ display: "inline-flex", width: 44, height: 44, borderRadius: "50%", background: `radial-gradient(circle at 35% 30%, ${chosen.hue}CC, ${chosen.hue})`, color: "#fff", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 17 }}>{chosen.name[0]}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 46, height: 46, borderRadius: "50%", background: persona.accent, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)" }}>{persona.initial}</div>
                 <div>
-                  <div style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 600 }}>Your examiner today is {chosen.name}</div>
-                  <div style={{ fontSize: 12.5, color: MUTED }}>{chosen.tag} · IELTS Speaking format</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", fontWeight: 700 }}>Your examiner today is {persona.name}</div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)" }}>{persona.mockTrait} · IELTS Speaking format</div>
                 </div>
               </div>
 
-              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  ["1", "Introduction & interview", "4–5 min", `${chosen.name} greets you, checks your name, and asks short questions about familiar topics. Answer in 2–4 sentences.`],
+                  ["1", "Introduction & interview", "4–5 min", `${persona.name} greets you, checks your name, and asks short questions about familiar topics. Answer in 2–4 sentences.`],
                   ["2", "The long turn", "3–4 min", "You get a topic card on screen, one minute to prepare (make notes!), then speak for 1–2 minutes without interruption."],
                   ["3", "Discussion", "4–5 min", "Deeper, more abstract questions linked to your Part 2 topic. This is where higher bands are decided."],
                 ].map(([n, t, d, s]) => (
-                  <div key={n} style={{ display: "flex", gap: 12, border: `1px solid ${LINE}`, borderRadius: 12, padding: "11px 13px" }}>
-                    <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13 }}>{n}</span>
+                  <div key={n} style={{ display: "flex", gap: 14, border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-lg)", padding: "12px 14px" }}>
+                    <span style={{ flex: "none", width: 28, height: 28, borderRadius: "var(--radius-md)", background: "rgba(132,86,239,0.1)", color: "var(--color-primary-600)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-sm)" }}>{n}</span>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>{t} <span style={{ fontWeight: 500, color: MUTED, fontSize: 12.5 }}>· {d}</span></div>
-                      <div style={{ fontSize: 13, lineHeight: 1.5, color: MUTED, marginTop: 2 }}>{s}</div>
+                      <div style={{ fontSize: "var(--text-base)", fontWeight: 600 }}>{t} <span style={{ fontWeight: 400, color: "var(--color-neutral-500)", fontSize: "var(--text-sm)" }}>· {d}</span></div>
+                      <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-normal)", color: "var(--color-neutral-500)", marginTop: 2 }}>{s}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <ul style={{ margin: "14px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.7, color: MUTED }}>
-                <li><strong style={{ color: INK }}>Wear headphones</strong> in a quiet room — otherwise {chosen.name}&rsquo;s voice echoes into your mic.</li>
-                <li>{chosen.name} leads the test — just listen and answer naturally. If you talk over the examiner, you&rsquo;ll be asked to wait, like the real thing.</li>
-                <li>The test can&rsquo;t be paused. It runs about 11–14 minutes and counts as one of your monthly mock tests.</li>
+              <ul style={{ margin: "16px 0 0", paddingLeft: 18, fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-500)" }}>
+                <li><strong style={{ color: "var(--color-neutral-1000)" }}>Wear headphones</strong> in a quiet room — otherwise {persona.name}’s voice echoes into your mic.</li>
+                <li>{persona.name} leads the test — just listen and answer naturally. If you talk over the examiner, you’ll be asked to wait, like the real thing.</li>
+                <li>The test can’t be paused. It runs about 11–14 minutes and counts as one of your monthly mock tests.</li>
                 <li>Your band report (graded conservatively) appears right after the test ends.</li>
               </ul>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 18 }}>
-                <button type="button" onClick={() => setPhase("idle")} style={ghostBtn_}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+                <button type="button" onClick={() => setPhase("idle")} className="lc-btn lc-ghost" style={{ padding: "12px 18px", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-neutral-200)", background: "var(--color-neutral-0)", color: "var(--color-neutral-700)", fontSize: "var(--text-base)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
                   Back
                 </button>
-                <button type="button" onClick={begin} style={primaryBtn}>
-                  I&rsquo;m ready — begin
+                <button type="button" onClick={begin} className="lc-btn lc-primary" style={{ padding: "12px 22px", borderRadius: "var(--radius-lg)", border: "none", background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", fontSize: "var(--text-base)", fontWeight: 600, cursor: "pointer", boxShadow: "var(--shadow-glow-sm)", fontFamily: "inherit" }}>
+                  I’m ready — begin
                 </button>
               </div>
             </div>
           </div>
         ) : null}
-      </div>
+      </LucidaScope>
     );
   }
 
+  // ERROR
   if (phase === "error") {
     return (
-      <div style={{ ...card_, marginTop: 18, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED }}>
-        {error}
-        {quotaHit ? (
-          <>
-            {" "}
-            <Link href="/pricing" style={{ color: INDIGO, fontWeight: 700 }}>
-              See plans →
-            </Link>
-          </>
-        ) : null}
-        <div style={{ marginTop: 14 }}>
-          <button type="button" onClick={onExit} style={ghostBtn_}>
-            Back
-          </button>
+      <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", padding: "64px 40px" }}>
+          {backLink}
+          <div style={{ background: "var(--color-error-bg)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: "var(--radius-xl)", padding: "20px 22px", color: "var(--color-error)", fontSize: "var(--text-md)", lineHeight: "var(--lh-relaxed)" }}>
+            {error}
+            {quotaHit ? (
+              <>
+                {" "}
+                <Link href="/pricing" style={{ color: "var(--color-primary-600)", fontWeight: 700 }}>See plans →</Link>
+              </>
+            ) : null}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <button type="button" onClick={onExit} className="lc-btn lc-ghost" style={{ padding: "12px 18px", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-neutral-200)", background: "var(--color-neutral-0)", color: "var(--color-neutral-700)", fontSize: "var(--text-base)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              Back to speaking
+            </button>
+          </div>
         </div>
-      </div>
+      </LucidaScope>
     );
   }
 
+  // ENDED — the band reveal (full breakdown lives on the report page).
   if (phase === "ended") {
     return (
-      <div style={{ ...card_, marginTop: 18, textAlign: "center", padding: "34px 22px" }}>
-        <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600 }}>That&rsquo;s the end of the test</div>
-        {endedBand != null ? (
-          <div style={{ margin: "14px 0", fontFamily: SERIF, fontSize: 46, fontWeight: 700, color: INDIGO }}>
-            {endedBand.toFixed(1)}
-            <div style={{ fontFamily: SANS, fontSize: 12, fontWeight: 700, letterSpacing: ".08em", color: MUTED }}>
-              INDICATIVE OVERALL BAND
+      <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
+        <div style={{ maxWidth: 620, margin: "0 auto", padding: "56px 40px 72px" }}>
+          {backLink}
+          <div style={{ textAlign: "center", animation: "lcFadeInUp 500ms cubic-bezier(0.16,1,0.3,1)" }}>
+            <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", marginBottom: 12 }}>
+              Your mock with {persona.name} is complete
             </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: 14 }}>
-            <div
-              aria-hidden
-              style={{
-                width: 26, height: 26, margin: "0 auto 10px",
-                border: "3px solid #E4E6F2", borderTopColor: INDIGO, borderRadius: "50%",
-                animation: "spin .9s linear infinite",
-              }}
-            />
-            <p style={{ color: MUTED, fontSize: 14, margin: 0 }}>
-              {grading
-                ? "The examiner is writing your report — your band appears here in under a minute."
-                : "Your report is being prepared."}
+            <div style={{ position: "relative", width: 180, height: 180, margin: "0 auto" }}>
+              <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(circle, rgba(132,86,239,0.16), transparent 70%)" }} />
+              <div style={{ position: "absolute", inset: 12, borderRadius: "50%", border: "1px solid var(--color-neutral-200)", background: "var(--color-neutral-0)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
+                {endedBand != null ? (
+                  <>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: 60, fontWeight: 700, color: "var(--color-neutral-1000)" }}>{endedBand.toFixed(1)}</div>
+                    <div style={{ ...kicker, color: "var(--color-neutral-500)", fontSize: "var(--text-2xs)" }}>Overall band</div>
+                  </>
+                ) : (
+                  <>
+                    <div aria-hidden style={{ width: 30, height: 30, border: "3px solid var(--color-neutral-200)", borderTopColor: "var(--color-primary-500)", borderRadius: "50%", animation: "lcSpin .9s linear infinite" }} />
+                    <div style={{ ...kicker, color: "var(--color-neutral-500)", fontSize: "var(--text-2xs)", marginTop: 10 }}>Grading</div>
+                  </>
+                )}
+              </div>
+            </div>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-relaxed)", maxWidth: 420, margin: "20px auto 0" }}>
+              {endedBand != null
+                ? "Open the full report for the per-criterion breakdown and the examiner’s note."
+                : grading
+                  ? "The examiner is writing your report — your band appears here in under a minute."
+                  : "Your report is being prepared."}
             </p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
-        )}
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 16, flexWrap: "wrap" }}>
-          {sessionId ? (
-            <button type="button" onClick={() => router.push(`/speak/mock/${sessionId}`)} style={primaryBtn}>
-              See full report
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 32, flexWrap: "wrap" }}>
+            {sessionId ? (
+              <button type="button" onClick={() => router.push(`/speak/mock/${sessionId}`)} className="lc-btn lc-primary" style={{ padding: "14px 24px", borderRadius: "var(--radius-lg)", border: "none", background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", fontSize: "var(--text-md)", fontWeight: 600, cursor: "pointer", boxShadow: "var(--shadow-glow-sm)", fontFamily: "inherit" }}>
+                See full report →
+              </button>
+            ) : null}
+            <button type="button" onClick={onExit} className="lc-btn lc-ghost" style={{ padding: "14px 24px", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-neutral-200)", background: "var(--color-neutral-0)", color: "var(--color-neutral-700)", fontSize: "var(--text-md)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              Back to speaking
             </button>
-          ) : null}
-          <button type="button" onClick={onExit} style={ghostBtn_}>
-            Back to speaking
-          </button>
+          </div>
         </div>
-      </div>
+      </LucidaScope>
     );
   }
 
-  // live view — the EXAM ROOM: a full-viewport takeover (exit / part pill /
-  // whole-test clock on top, the examiner centre-stage, cue card mid-page,
-  // and a fixed "YOU" mic dock at the bottom).
+  // LIVE — the exam room: a full-viewport takeover.
   const inPrep = phase === "part2_prep";
   const inSpeak = phase === "part2_speak";
   const connecting = phase === "connecting";
-  const ex = EXAMINERS.find((e) => e.id === examiner) ?? EXAMINERS[0];
+  const userActive = listening && !examinerSpeaking;
   const status = connecting
-    ? `Connecting you with ${ex.name}…`
+    ? `Connecting you with ${persona.name}…`
     : examinerSpeaking
-      ? `${ex.name} is speaking…`
+      ? `${persona.name} is speaking`
       : inPrep
         ? "Prepare your answer"
         : listening
-          ? `${ex.name} is listening`
-          : `${ex.name} is thinking…`;
+          ? `${persona.name} is listening`
+          : `${persona.name} is thinking…`;
   const dockText = connecting
     ? "Checking your microphone…"
     : examinerSpeaking
@@ -751,54 +741,22 @@ export function LiveMock({
     2: "Your long turn: one minute to prepare, then speak for 1–2 minutes.",
     3: "A deeper discussion linked to your topic. Develop and justify your opinions.",
   };
-  const mm = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   return (
-    <div
+    <LucidaScope
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 70,
-        display: "flex",
-        flexDirection: "column",
-        background: "#F6F6F9",
-        fontFamily: SANS,
-        color: INK,
+        position: "fixed", inset: 0, zIndex: 70, display: "flex", flexDirection: "column",
+        background: `radial-gradient(ellipse 900px 500px at 50% 0%, ${persona.glow}, transparent 70%), var(--color-neutral-0)`,
       }}
     >
       {/* ── top bar ── */}
-      <div
-        style={{
-          flex: "none",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-          padding: "10px 14px",
-          background: "#fff",
-          borderBottom: `1px solid ${LINE}`,
-        }}
-      >
+      <div style={{ flex: "none", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "16px 24px", borderBottom: "1px solid var(--color-neutral-200)" }}>
         <button
           type="button"
           onClick={() => setConfirmExit(true)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            height: 34,
-            padding: "0 12px",
-            borderRadius: 9,
-            border: `1px solid ${LINE}`,
-            background: "#fff",
-            color: MUTED,
-            fontFamily: SANS,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-          }}
+          className="lc-btn lc-ghost"
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: "var(--radius-pill)", border: "1px solid var(--color-neutral-200)", background: "var(--color-neutral-0)", color: "var(--color-neutral-600)", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
         >
-          <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>×</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
           Exit
         </button>
 
@@ -819,137 +777,61 @@ export function LiveMock({
           }}
         />
 
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            padding: "6px 14px",
-            borderRadius: 999,
-            background: "#DCFCE7",
-            color: "#15803D",
-            fontSize: 13,
-            fontWeight: 800,
-            whiteSpace: "nowrap",
-          }}
-        >
-          <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }} />
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 18px", borderRadius: "var(--radius-pill)", background: "rgba(132,86,239,0.1)", color: "var(--color-primary-600)", fontSize: "var(--text-sm)", fontWeight: 600, whiteSpace: "nowrap" }}>
+          <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-primary-600)", animation: "lcDotPulse 1.4s ease-in-out infinite" }} />
           Part {part} · {PART_LABEL_SHORT[part] ?? ""}
         </span>
 
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            color: MUTED,
-            fontSize: 13.5,
-            fontWeight: 700,
-            fontVariantNumeric: "tabular-nums",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v5l3 2" />
-          </svg>
-          {mm(elapsed)}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: "var(--text-md)", fontWeight: 500, color: "var(--color-neutral-1000)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+          {mmss(elapsed)}
         </span>
       </div>
       {/* whole-test progress line (16-min cap) */}
-      <div aria-hidden style={{ flex: "none", height: 3, background: LINE }}>
-        <div
-          style={{
-            height: "100%",
-            width: `${Math.min(100, Math.max(1.5, (elapsed / 960) * 100))}%`,
-            background: ex.hue,
-            transition: "width 1s linear",
-          }}
-        />
+      <div aria-hidden style={{ flex: "none", height: 3, background: "var(--color-neutral-100)" }}>
+        <div style={{ height: "100%", width: `${Math.min(100, Math.max(1.5, (elapsed / 960) * 100))}%`, background: "var(--color-primary-500)", transition: "width 1s linear" }} />
       </div>
 
       {/* ── centre stage ── */}
-      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-        <div style={{ width: "min(660px, 100%)", margin: "0 auto", padding: "26px 18px 30px", textAlign: "center" }}>
-          <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".16em", color: MUTED }}>EXAMINER</div>
-          <div style={{ marginTop: 14 }}>
-            <ExaminerHero
-              hue={ex.hue}
-              initial={ex.name[0]}
-              speaking={examinerSpeaking}
-              listening={listening && !examinerSpeaking}
-              level={micLevel}
-            />
+      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: "min(660px, 100%)", margin: "0 auto", padding: "26px 24px 30px", textAlign: "center" }}>
+          <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 20 }}>Examiner</div>
+          <PersonaAvatar initial={persona.initial} accent={persona.accent} glow={persona.glow} size={128} ring={examinerSpeaking} />
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 20, marginBottom: 4 }}>
+            <WaveBars color={persona.accent} active={examinerSpeaking} />
           </div>
-          <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600, marginTop: 14 }}>{status}</div>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 5, minHeight: 19 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--color-neutral-1000)", marginTop: 8, minHeight: 40 }}>{status}</div>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", marginTop: 6, minHeight: 20, lineHeight: "var(--lh-relaxed)" }}>
             {connecting ? "This takes a few seconds." : partHint[part]}
           </div>
 
           {clock != null ? (
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                marginTop: 14,
-                padding: "7px 16px",
-                borderRadius: 999,
-                background: inPrep ? "#FDF3E3" : TINT,
-                border: `1px solid ${inPrep ? "#F2D9A8" : "#E4E2F4"}`,
-              }}
-            >
-              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".06em", color: inPrep ? "#B45309" : INDIGO }}>
-                {inPrep ? "PREP TIME" : "SPEAKING"}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 16, padding: "8px 18px", borderRadius: "var(--radius-pill)", background: inPrep ? "var(--color-warning-bg)" : "rgba(132,86,239,0.08)", border: `1px solid ${inPrep ? "rgba(217,119,6,0.3)" : "rgba(132,86,239,0.25)"}` }}>
+              <span style={{ ...kicker, fontSize: "var(--text-2xs)", color: inPrep ? "var(--color-warning)" : "var(--color-primary-600)" }}>
+                {inPrep ? "Prep time" : "Speaking"}
               </span>
-              <span style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: inPrep ? "#B45309" : INDIGO, fontVariantNumeric: "tabular-nums" }}>
-                {mm(clock)}
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xl)", fontWeight: 500, color: inPrep ? "var(--color-warning)" : "var(--color-primary-600)", fontVariantNumeric: "tabular-nums" }}>
+                {mmss(clock)}
               </span>
             </div>
           ) : null}
 
-          {/* cue card (Part 2) — styled like the paper slip on exam day */}
+          {/* cue card (Part 2) — the paper slip on exam day */}
           {card && part === 2 ? (
-            <div
-              style={{
-                marginTop: 22,
-                textAlign: "left",
-                background: "#fff",
-                border: `1px solid ${LINE}`,
-                borderRadius: 16,
-                padding: "16px 18px 18px",
-                boxShadow: "0 14px 34px -22px rgba(28,27,46,.35)",
-              }}
-            >
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "4px 10px",
-                  borderRadius: 8,
-                  background: "#FFF4E5",
-                  color: "#C2410C",
-                  fontSize: 11.5,
-                  fontWeight: 800,
-                  letterSpacing: ".06em",
-                }}
-              >
-                <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="3" width="16" height="18" rx="2.5" />
-                  <path d="M8 8h8M8 12h8M8 16h5" />
-                </svg>
-                CUE CARD
+            <div style={{ marginTop: 24, textAlign: "left", background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-xl)", padding: "18px 20px 20px", boxShadow: "var(--shadow-2)" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: "var(--radius-md)", background: "rgba(218,119,86,0.12)", color: "var(--color-amber-600)", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase" }}>
+                <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+                Cue card
               </span>
-              <div style={{ fontFamily: SERIF, fontSize: 18.5, fontWeight: 600, marginTop: 10, lineHeight: 1.4 }}>{card.title}</div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "10px 0 4px" }}>You should say:</div>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, lineHeight: 1.75, color: INK }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", fontWeight: 700, marginTop: 12, lineHeight: "var(--lh-snug)", color: "var(--color-neutral-1000)" }}>{card.title}</div>
+              <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", margin: "12px 0 4px" }}>You should say:</div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: "var(--text-base)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>
                 {card.bullets.map((b) => (
                   <li key={b}>{b}</li>
                 ))}
               </ul>
-              <div style={{ fontSize: 14, marginTop: 6, color: INK }}>{card.closing}</div>
-              <div style={{ fontSize: 12.5, color: MUTED, marginTop: 10, fontStyle: "italic" }}>
+              <div style={{ fontSize: "var(--text-base)", marginTop: 6, color: "var(--color-neutral-800)" }}>{card.closing}</div>
+              <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", marginTop: 10, fontStyle: "italic" }}>
                 You will have 1–2 minutes to talk about this.
               </div>
               {inPrep || inSpeak ? (
@@ -958,7 +840,6 @@ export function LiveMock({
                   onChange={(e) => {
                     const v = e.target.value;
                     setNotes(v);
-                    // debounce → engine persists them into the report
                     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
                     notesTimerRef.current = setTimeout(() => {
                       try {
@@ -967,19 +848,7 @@ export function LiveMock({
                     }, 800);
                   }}
                   placeholder="Your notes (saved into your report — only you can see them)…"
-                  style={{
-                    width: "100%",
-                    marginTop: 12,
-                    minHeight: 76,
-                    resize: "vertical",
-                    border: `1px solid ${LINE}`,
-                    borderRadius: 10,
-                    padding: 10,
-                    fontFamily: SANS,
-                    fontSize: 13.5,
-                    color: INK,
-                    background: "#FBFBFD",
-                  }}
+                  style={{ width: "100%", marginTop: 12, minHeight: 76, resize: "vertical", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-md)", padding: 10, fontFamily: "inherit", fontSize: "var(--text-sm)", color: "var(--color-neutral-1000)", background: "var(--color-neutral-50)" }}
                 />
               ) : null}
             </div>
@@ -988,58 +857,36 @@ export function LiveMock({
       </div>
 
       {/* ── YOU dock ── */}
-      <div
-        style={{
-          flex: "none",
-          background: "#fff",
-          borderTop: `1px solid ${LINE}`,
-          padding: "12px 18px calc(12px + env(safe-area-inset-bottom))",
-        }}
-      >
-        <div style={{ width: "min(660px, 100%)", margin: "0 auto" }}>
-          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".16em", color: "#B9BCC9", textAlign: "center" }}>YOU</div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 7 }}>
+      <div style={{ flex: "none", borderTop: "1px solid var(--color-neutral-200)", background: "rgba(251,248,246,0.85)", backdropFilter: "blur(16px)", padding: "20px 24px calc(24px + env(safe-area-inset-bottom))" }}>
+        <div style={{ width: "min(660px, 100%)", margin: "0 auto", textAlign: "center" }}>
+          <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 12 }}>You</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 10 }}>
             <span
               aria-hidden
               style={{
-                position: "relative",
-                display: "inline-flex",
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                alignItems: "center",
-                justifyContent: "center",
-                background: listening && !examinerSpeaking ? "#16A34A" : "#EDEDF3",
-                color: listening && !examinerSpeaking ? "#fff" : "#9A9DAD",
-                // The ring ALWAYS tracks the mic so the candidate can see the
-                // exam hears something even before speech is loud enough to
-                // open the turn ("my answers aren't processed" was mostly a
-                // too-quiet mic with zero visual feedback). Green when the
-                // floor is open, soft indigo otherwise.
+                position: "relative", display: "inline-flex", width: 48, height: 48, borderRadius: "50%",
+                alignItems: "center", justifyContent: "center",
+                background: userActive ? "var(--color-primary-500)" : "var(--color-neutral-200)",
+                color: userActive ? "#FFFFFF" : "var(--color-neutral-600)",
+                // ring always tracks the mic so a too-quiet voice still shows life
                 boxShadow:
                   micLevel > 0.004 && !examinerSpeaking
-                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px ${
-                        listening ? "rgba(22,163,74,.14)" : "rgba(67,56,202,.10)"
-                      }`
+                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px ${userActive ? "rgba(132,86,239,0.16)" : "rgba(132,86,239,0.08)"}`
                     : "none",
                 transition: "background .2s, box-shadow .1s",
               }}
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="2.5" width="6" height="12" rx="3" />
-                <path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" />
-              </svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2.5" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" /></svg>
             </span>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700 }}>{dockText}</div>
-              <div style={{ fontSize: 11.5, color: MUTED, marginTop: 1 }}>
-                Original AI examiner · not affiliated with IELTS®
-              </div>
-            </div>
+            <WaveBars color="var(--color-primary-400)" active={userActive} height={24} />
+          </div>
+          <div style={{ fontSize: "var(--text-md)", fontWeight: 600, color: "var(--color-neutral-1000)" }}>{dockText}</div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--color-neutral-400)", marginTop: 6 }}>
+            Original AI examiner · not affiliated with IELTS®
           </div>
         </div>
       </div>
-    </div>
+    </LucidaScope>
   );
 }
 
@@ -1048,85 +895,3 @@ const PART_LABEL_SHORT: Record<number, string> = {
   2: "Long turn",
   3: "Discussion",
 };
-
-// ---- bits ------------------------------------------------------------------
-
-const HERO_CSS = `
-@keyframes lm-ring { 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(1.7); opacity: 0; } }
-@keyframes lm-talk { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
-@keyframes lm-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-@keyframes lm-bar { 0%,100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
-`;
-
-/** The exam-room hero: a big animated examiner avatar. Rings ripple outward
- *  while the examiner speaks; a small equalizer runs while it listens to you. */
-function ExaminerHero({
-  hue,
-  initial,
-  speaking,
-  listening,
-  level,
-}: {
-  hue: string;
-  initial: string;
-  speaking: boolean;
-  listening: boolean;
-  level: number;
-}) {
-  const loud = Math.min(1, level * 26);
-  return (
-    <div style={{ position: "relative", width: 168, height: 168, margin: "0 auto" }}>
-      <style>{HERO_CSS}</style>
-      {speaking ? (
-        <>
-          <span aria-hidden style={{ position: "absolute", inset: 6, borderRadius: "50%", border: `2.5px solid ${hue}`, animation: "lm-ring 1.5s ease-out infinite" }} />
-          <span aria-hidden style={{ position: "absolute", inset: 6, borderRadius: "50%", border: `2.5px solid ${hue}`, animation: "lm-ring 1.5s ease-out .55s infinite" }} />
-        </>
-      ) : null}
-      {listening ? (
-        <span aria-hidden style={{ position: "absolute", inset: 2, borderRadius: "50%", border: `2px solid ${hue}55`, boxShadow: `0 0 0 ${4 + loud * 10}px ${hue}14`, transition: "box-shadow .12s" }} />
-      ) : null}
-      <div
-        style={{
-          position: "absolute",
-          inset: 14,
-          borderRadius: "50%",
-          background: `radial-gradient(circle at 34% 28%, ${hue}D9, ${hue})`,
-          boxShadow: `0 22px 46px -18px ${hue}99`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          fontFamily: SANS,
-          fontWeight: 800,
-          fontSize: 46,
-          animation: speaking ? "lm-talk .9s ease-in-out infinite" : "lm-breathe 3.4s ease-in-out infinite",
-        }}
-        aria-hidden
-      >
-        {initial}
-      </div>
-      {listening ? (
-        <span aria-hidden style={{ position: "absolute", left: "50%", bottom: -6, transform: "translateX(-50%)", display: "inline-flex", gap: 3, alignItems: "flex-end", height: 18 }}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <i
-              key={i}
-              style={{
-                width: 4,
-                height: 6 + (i % 3) * 5 + loud * 7,
-                borderRadius: 2,
-                background: hue,
-                transformOrigin: "bottom",
-                animation: `lm-bar ${0.7 + i * 0.11}s ease-in-out ${i * 0.08}s infinite`,
-              }}
-            />
-          ))}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-const card_: React.CSSProperties = { border: `1px solid ${LINE}`, borderRadius: 16, background: "#fff", padding: 18 };
-const primaryBtn: React.CSSProperties = { height: 44, padding: "0 22px", border: "none", borderRadius: 12, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 15, fontWeight: 700, cursor: "pointer" };
-const ghostBtn_: React.CSSProperties = { height: 40, padding: "0 16px", border: `1px solid ${LINE}`, borderRadius: 10, background: "#fff", color: INK, fontFamily: SANS, fontSize: 14, fontWeight: 600, cursor: "pointer" };

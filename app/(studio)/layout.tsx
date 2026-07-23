@@ -1,6 +1,13 @@
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { getSession } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
+
+// Speaking "Lucida" runner surface (exam + tutor live sessions). See
+// app/(shell)/speak/lucida.tsx for the scoped token layer these feed.
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap" });
 
 /**
  * Distraction-free shell for the writing/reading studio — deliberately no global
@@ -16,5 +23,9 @@ export default async function StudioLayout({ children }: { children: React.React
     const plan = await loadStudyPlan(session.profile.id);
     if (!plan) return <OnboardingTakeover />;
   }
-  return <div className="bg-background text-foreground min-h-screen">{children}</div>;
+  return (
+    <div className={`${bricolage.variable} ${jakarta.variable} bg-background text-foreground min-h-screen`}>
+      {children}
+    </div>
+  );
 }

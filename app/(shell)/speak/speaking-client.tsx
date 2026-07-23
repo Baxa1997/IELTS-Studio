@@ -6,7 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
-import { SpeakProgress, type SpeakProgressItem } from "./progress";
+import { LucidaScope } from "./lucida";
+import { type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
 
 /**
@@ -32,7 +33,6 @@ const INDIGO = "#4338CA";
 const TINT = "#EFEEFC";
 const LINE = "#E8E6F0";
 const RED = "#b91c1c";
-const TEAL = "#0F766E";   // the tutor — never the examiner's indigo
 
 type Tab = "mock" | "tutor" | "progress";
 
@@ -192,11 +192,8 @@ async function startRecorder(): Promise<Recorder> {
 
 // ---- UI atoms -----------------------------------------------------------------
 
-/** Wide screens get two columns — narrative left, the thing you act on right;
- *  narrow ones collapse to a single column. Inline styles cannot express a
- *  media query, so the columns live in a real stylesheet rule below. */
-const twoCol: React.CSSProperties = { display: "grid", gap: 26, alignItems: "start" };
-
+/** The legacy Part-2 flow keeps its media-query rule for the (now-unused-in-hub)
+ *  two-column layout; the redesigned hub uses the Lucida `.lc-two-col` class. */
 const RESPONSIVE_CSS = `
 .speak-two-col { grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.85fr); }
 @media (max-width: 900px) { .speak-two-col { grid-template-columns: 1fr; } }
@@ -271,7 +268,6 @@ export function SpeakingClient({
   // on older reports do not dead-end.
   const legacyPart2 = Boolean(initialCardId);
   const [tab, setTab] = useState<Tab>("mock");
-  const mode: "part2" | "full" = legacyPart2 ? "part2" : "full";
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -417,6 +413,259 @@ export function SpeakingClient({
 
   const quotaHit = error ? /quota|upgrade/i.test(error) : false;
 
+  // ---- Progress-tab stats (real, RLS-scoped data from page.tsx) --------------
+  const graded = progress.filter((p) => typeof p.band === "number");
+  const avgBand = graded.length ? graded.reduce((a, b) => a + b.band, 0) / graded.length : null;
+  const bestBand = graded.length ? Math.max(...graded.map((g) => g.band)) : null;
+  const critAvg = (k: "FC" | "LR" | "GRA" | "P"): number | null => {
+    const vals = graded.map((g) => g.crit?.[k]).filter((v): v is number => typeof v === "number");
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+  const skillRows: { label: string; v: number | null }[] = [
+    { label: "Fluency & Coherence", v: critAvg("FC") },
+    { label: "Lexical Resource", v: critAvg("LR") },
+    { label: "Grammatical Range", v: critAvg("GRA") },
+    { label: "Pronunciation", v: critAvg("P") },
+  ];
+
+  // ---- The redesigned "Lucida" hub ------------------------------------------
+  // The legacy Part-2 flow (reached only via ?card= from old report links) keeps
+  // its original look below; only the hub gets the new design.
+  if (!legacyPart2) {
+    const bandHue = (b: number) =>
+      b >= 6 ? "var(--color-success)" : b >= 4.5 ? "var(--color-amber-500)" : "var(--color-error)";
+    const TAB: Record<Tab, { label: string; color: string; border: string }> = {
+      mock: { label: "Mock test", color: "var(--color-primary-600)", border: "var(--color-primary-500)" },
+      tutor: { label: "Tutor", color: "var(--color-success)", border: "var(--color-success)" },
+      progress: { label: "My progress", color: "var(--color-neutral-1000)", border: "var(--color-neutral-500)" },
+    };
+    const kicker: React.CSSProperties = {
+      fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)",
+      textTransform: "uppercase",
+    };
+    const lcCard: React.CSSProperties = {
+      background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)",
+      borderRadius: "var(--radius-xl)",
+    };
+    const railCard: React.CSSProperties = {
+      ...lcCard, borderRadius: "var(--radius-2xl)", padding: 28, boxShadow: "var(--shadow-1)",
+      alignSelf: "start",
+    };
+
+    return (
+      <LucidaScope style={{ background: "var(--color-neutral-50)", minHeight: "100%" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "44px 48px 80px" }}>
+          {/* header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-5xl)", color: "var(--color-neutral-1000)", letterSpacing: "var(--ls-snug)" }}>
+              Speaking
+            </div>
+            <span style={{ ...kicker, color: "var(--color-primary-600)", background: "rgba(132,86,239,0.1)", border: "1px solid rgba(132,86,239,0.25)", padding: "4px 10px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-2xs)", letterSpacing: "var(--ls-caps)" }}>
+              Beta
+            </span>
+          </div>
+
+          {/* tabs — the exam and the lesson never blur (violet vs. green) */}
+          <div style={{ display: "flex", gap: 32, borderBottom: "1px solid var(--color-neutral-200)", marginBottom: 40 }}>
+            {(Object.keys(TAB) as Tab[]).map((id) => {
+              const on = tab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  className="lc-tab"
+                  style={{
+                    appearance: "none", background: "none", cursor: "pointer", border: "none",
+                    padding: "0 0 14px", fontSize: "var(--text-lg)", fontWeight: 600,
+                    fontFamily: "inherit", whiteSpace: "nowrap", marginBottom: -1,
+                    color: on ? TAB[id].color : "var(--color-neutral-500)",
+                    borderBottom: `2px solid ${on ? TAB[id].border : "transparent"}`,
+                  }}
+                >
+                  {TAB[id].label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* MOCK TAB */}
+          {tab === "mock" ? (
+            <div className="lc-two-col" style={{ animation: "lcFadeInUp 400ms cubic-bezier(0.16,1,0.3,1)" }}>
+              <div>
+                <p style={{ fontSize: "var(--text-lg)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-600)", maxWidth: 640, margin: "0 0 28px" }}>
+                  A complete IELTS speaking test with a live examiner. It asks, listens and
+                  moves on — it never helps, hints or teaches, exactly like exam day — then
+                  grades you conservatively against the official band descriptors.
+                </p>
+                {([
+                  ["1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
+                  ["2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
+                  ["3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
+                ] as const).map(([n, name, blurb, mins]) => (
+                  <div key={n} style={{ ...lcCard, display: "flex", alignItems: "center", gap: 20, padding: "22px 24px", marginBottom: 16 }}>
+                    <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "var(--radius-md)", background: "rgba(132,86,239,0.1)", color: "var(--color-primary-600)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
+                      {n}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--color-neutral-1000)" }}>{name}</div>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", marginTop: 2 }}>{blurb}</div>
+                    </div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-600)", whiteSpace: "nowrap" }}>{mins}</div>
+                  </div>
+                ))}
+              </div>
+
+              <aside style={railCard}>
+                <div style={{ ...kicker, color: "var(--color-primary-600)", marginBottom: 12 }}>Full mock · Parts 1–3</div>
+                <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", lineHeight: "var(--lh-relaxed)", margin: "0 0 22px" }}>
+                  You won’t see the questions in advance. Choose your examiner on the next screen, then it begins.
+                </p>
+                <Link href="/speak/exam" className="lc-btn lc-primary" style={{ display: "block", textAlign: "center", background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", fontSize: "var(--text-md)", fontWeight: 600, padding: 16, borderRadius: "var(--radius-lg)", textDecoration: "none", boxShadow: "var(--shadow-glow-sm)" }}>
+                  Take the mock test →
+                </Link>
+                <div style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 14, lineHeight: "var(--lh-relaxed)" }}>
+                  Microphone · 11–14 minutes<br />Counts as one of your monthly mocks
+                </div>
+                {recentMocks.length ? (
+                  <>
+                    <div style={{ borderTop: "1px dashed var(--color-neutral-200)", margin: "22px 0" }} />
+                    <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 8 }}>Your last mocks</div>
+                    {recentMocks.slice(0, 3).map((m) => (
+                      <Link key={m.id} href={`/speak/mock/${m.id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--color-neutral-100)", textDecoration: "none" }}>
+                        <span style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-600)" }}>
+                          {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </span>
+                        <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: bandHue(m.band), whiteSpace: "nowrap" }}>
+                          Band {m.band.toFixed(1)} →
+                        </span>
+                      </Link>
+                    ))}
+                  </>
+                ) : null}
+              </aside>
+            </div>
+          ) : null}
+
+          {/* TUTOR TAB */}
+          {tab === "tutor" ? (
+            <div className="lc-two-col" style={{ animation: "lcFadeInUp 400ms cubic-bezier(0.16,1,0.3,1)" }}>
+              <div>
+                <p style={{ fontSize: "var(--text-lg)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-600)", maxWidth: 640, margin: "0 0 28px" }}>
+                  A live lesson, not a test. Tell it what you’re preparing for — the IELTS
+                  exam, a presentation, a job interview, or just talking with friends — and
+                  it teaches for that: correcting what you said, showing a stronger way to
+                  say it, and handing you the English whenever you get stuck.
+                </p>
+                {([
+                  ["Reacts to every answer", "It listens to what you actually said, not a script — and never reads your answer back to you."],
+                  ["Shows you a better way", "“You said ‘it is good’ — a stronger word is ‘fulfilling’.” On almost every turn."],
+                  ["Helps in o‘zbekcha", "Say it in Uzbek and it gives you the English sentence back, then asks you to repeat it."],
+                ] as const).map(([title, blurb]) => (
+                  <div key={title} style={{ display: "flex", gap: 16, padding: "20px 0", borderBottom: "1px solid var(--color-neutral-100)" }}>
+                    <div style={{ width: 26, height: 26, flexShrink: 0, borderRadius: "50%", background: "var(--color-success-bg)", color: "var(--color-success)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>✓</div>
+                    <div>
+                      <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--color-neutral-1000)", marginBottom: 4 }}>{title}</div>
+                      <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-relaxed)" }}>{blurb}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <aside style={railCard}>
+                <div style={{ ...kicker, color: "var(--color-success)", marginBottom: 12 }}>Live lesson</div>
+                <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", lineHeight: "var(--lh-relaxed)", margin: "0 0 22px" }}>
+                  Pick a tutor and hear them speak on the next screen, then just start talking — nothing to set up.
+                </p>
+                <Link href="/speak/tutor" className="lc-btn lc-success" style={{ display: "block", textAlign: "center", background: "var(--color-success)", color: "#FFFFFF", fontSize: "var(--text-md)", fontWeight: 600, padding: 16, borderRadius: "var(--radius-lg)", textDecoration: "none" }}>
+                  Start a lesson →
+                </Link>
+                <div style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 14, lineHeight: "var(--lh-relaxed)" }}>
+                  Microphone · up to 20 minutes<br />Not scored, never counts as a mock
+                </div>
+              </aside>
+            </div>
+          ) : null}
+
+          {/* PROGRESS TAB */}
+          {tab === "progress" ? (
+            <div style={{ animation: "lcFadeInUp 400ms cubic-bezier(0.16,1,0.3,1)" }}>
+              <div className="lc-stat-grid" style={{ marginBottom: 28 }}>
+                {([
+                  ["Average band", avgBand == null ? "—" : avgBand.toFixed(1)],
+                  ["Best band", bestBand == null ? "—" : bestBand.toFixed(1)],
+                  ["Tutor lessons", String(recentLessons.length)],
+                ] as const).map(([label, value]) => (
+                  <div key={label} style={{ ...lcCard, padding: "22px 24px" }}>
+                    <div style={{ ...kicker, color: "var(--color-neutral-500)" }}>{label}</div>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 700, color: "var(--color-neutral-1000)", marginTop: 8 }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ ...lcCard, padding: 28 }}>
+                <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 20, fontSize: "var(--text-sm)" }}>Skill breakdown</div>
+                {graded.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: "var(--text-md)", color: "var(--color-neutral-500)" }}>
+                    Take a mock and your per-criterion bands will appear here.
+                  </p>
+                ) : (
+                  skillRows.map((sk) => (
+                    <div key={sk.label} style={{ marginBottom: 18 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm)", color: "var(--color-neutral-600)", marginBottom: 6 }}>
+                        <span>{sk.label}</span>
+                        <span style={{ fontWeight: 600, color: "var(--color-neutral-1000)" }}>{sk.v == null ? "—" : sk.v.toFixed(1)}</span>
+                      </div>
+                      <div style={{ height: 8, background: "var(--color-neutral-100)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${((sk.v ?? 0) / 9) * 100}%`, background: sk.v == null ? "var(--color-neutral-300)" : bandHue(sk.v), borderRadius: "var(--radius-pill)", transition: "width 700ms cubic-bezier(0.16,1,0.3,1)" }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* history: reopen a past mock report, or see a past lesson */}
+              {recentMocks.length ? (
+                <div style={{ ...lcCard, padding: 24, marginTop: 20 }}>
+                  <div style={{ fontSize: "var(--text-md)", fontWeight: 600, marginBottom: 12 }}>My full mocks</div>
+                  {recentMocks.map((m) => (
+                    <Link key={m.id} href={`/speak/mock/${m.id}`} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: "var(--text-sm)", color: "var(--color-neutral-700)", textDecoration: "none", padding: "10px 0", borderBottom: "1px solid var(--color-neutral-100)" }}>
+                      <span>Full mock · {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
+                      <span style={{ color: bandHue(m.band), fontWeight: 600, whiteSpace: "nowrap" }}>Band {m.band.toFixed(1)} · report →</span>
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+
+              {recentLessons.length ? (
+                <div style={{ ...lcCard, padding: 24, marginTop: 20 }}>
+                  <div style={{ fontSize: "var(--text-md)", fontWeight: 600, marginBottom: 12 }}>My tutor lessons</div>
+                  {recentLessons.map((l) => (
+                    <div key={l.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--color-neutral-100)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: "var(--text-sm)" }}>
+                        <span style={{ color: "var(--color-neutral-700)" }}>
+                          {new Date(l.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                          <span style={{ color: "var(--color-neutral-500)" }}>
+                            {" · "}{l.minutes.toFixed(1)} min
+                            {l.corrections ? ` · ${l.corrections} correction${l.corrections === 1 ? "" : "s"}` : ""}
+                          </span>
+                        </span>
+                        <span style={{ color: "var(--color-success)", fontWeight: 600, whiteSpace: "nowrap" }}>lesson</span>
+                      </div>
+                      {l.headline ? (
+                        <p style={{ margin: "4px 0 0", fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-relaxed)" }}>{l.headline}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </LucidaScope>
+    );
+  }
+
+  // ---- Legacy Part-2 flow (only via ?card=) — original styling --------------
   return (
     <div style={{ fontFamily: SANS, color: INK, maxWidth: 1280, margin: "0 auto", padding: "26px 26px 60px" }}>
       <style>{RESPONSIVE_CSS}</style>
@@ -429,264 +678,14 @@ export function SpeakingClient({
             BETA
           </span>
         </h1>
-        {phase !== "idle" && mode === "part2" ? (
+        {phase !== "idle" ? (
           <button type="button" onClick={reset} style={{ ...ghostBtn, height: 34, fontSize: 13 }}>
             Exit practice
           </button>
         ) : null}
       </div>
 
-      {/* Two ways to practise, one place to look at progress. The exam and the
-          lesson are deliberately different colours and never blur: the mock is
-          exam-true and never teaches; the tutor only teaches. */}
-      {!legacyPart2 ? (
-        <div style={{ display: "flex", gap: 6, marginTop: 18, borderBottom: `1px solid ${LINE}` }}>
-          {([
-            ["mock", "Mock test", INDIGO],
-            ["tutor", "Tutor", TEAL],
-            ["progress", "My progress", INDIGO],
-          ] as const).map(([id, label, colour]) => {
-            const on = tab === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTab(id)}
-                style={{
-                  appearance: "none", background: "none", cursor: "pointer",
-                  border: "none", borderBottom: `2.5px solid ${on ? colour : "transparent"}`,
-                  padding: "10px 16px 12px", fontSize: 15,
-                  fontWeight: on ? 800 : 600, color: on ? colour : MUTED,
-                  fontFamily: SANS, marginBottom: -1,
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {/* Two columns on a wide screen: what the exam is on the left, the panel
-          you act on pinned right — a single narrow column left most of the
-          display empty and made the page read as unfinished. */}
-      {!legacyPart2 && tab === "mock" ? (
-        <div className="speak-two-col" style={{ ...twoCol, marginTop: 26 }}>
-          <div>
-            <p style={{ fontSize: 16.5, color: "#3A3950", lineHeight: 1.65, margin: 0 }}>
-              A complete IELTS speaking test with a live examiner. It asks, listens and
-              moves on — it never helps, hints or teaches, exactly like exam day — then
-              grades you conservatively against the official band descriptors.
-            </p>
-            <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
-              {([
-                ["Part 1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
-                ["Part 2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
-                ["Part 3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
-              ] as const).map(([part, name, blurb, mins]) => (
-                <div
-                  key={part}
-                  style={{
-                    ...card, padding: "18px 20px", display: "flex", gap: 18,
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <span
-                    style={{
-                      flex: "0 0 auto", width: 46, height: 46, borderRadius: 12,
-                      background: TINT, color: INDIGO, display: "grid", placeItems: "center",
-                      fontFamily: SERIF, fontSize: 19, fontWeight: 600,
-                    }}
-                  >
-                    {part.split(" ")[1]}
-                  </span>
-                  <span style={{ flex: 1 }}>
-                    <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-                      <span style={{ fontSize: 16.5, fontWeight: 700 }}>{name}</span>
-                      <span style={{ fontSize: 12, color: MUTED, fontWeight: 600, whiteSpace: "nowrap" }}>{mins}</span>
-                    </span>
-                    <span style={{ display: "block", fontSize: 14, color: MUTED, lineHeight: 1.55, marginTop: 3 }}>
-                      {blurb}
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <aside style={{ ...card, padding: "26px 24px", alignSelf: "start" }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
-              FULL MOCK · PARTS 1–3
-            </div>
-            <p style={{ margin: "10px 0 20px", fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
-              You won’t see the questions in advance. Choose your examiner on the next
-              screen, then it begins.
-            </p>
-            <Link
-              href="/speak/exam"
-              style={{
-                display: "block", textAlign: "center", background: INDIGO, color: "#fff",
-                borderRadius: 13, padding: "16px 24px", fontSize: 16, fontWeight: 700,
-                textDecoration: "none", fontFamily: SANS,
-              }}
-            >
-              Take the mock test →
-            </Link>
-            <p style={{ margin: "12px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center", lineHeight: 1.5 }}>
-              Microphone · 11–14 minutes<br />counts as one of your monthly mocks
-            </p>
-
-            {recentMocks.length ? (
-              <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px dashed ${LINE}` }}>
-                <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: MUTED, marginBottom: 10 }}>
-                  YOUR LAST MOCKS
-                </div>
-                {recentMocks.slice(0, 3).map((m) => (
-                  <Link
-                    key={m.id}
-                    href={`/speak/mock/${m.id}`}
-                    style={{
-                      display: "flex", justifyContent: "space-between", gap: 10,
-                      fontSize: 13.5, color: INK, textDecoration: "none", padding: "7px 0",
-                    }}
-                  >
-                    <span style={{ color: MUTED }}>
-                      {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                    </span>
-                    <span style={{ color: INDIGO, fontWeight: 700, whiteSpace: "nowrap" }}>
-                      Band {m.band.toFixed(1)} →
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </aside>
-        </div>
-      ) : null}
-
-      {!legacyPart2 && tab === "tutor" ? (
-        <div className="speak-two-col" style={{ ...twoCol, marginTop: 26 }}>
-          <div>
-            <p style={{ fontSize: 16.5, color: "#3A3950", lineHeight: 1.65, margin: 0 }}>
-              A live lesson, not a test. Tell it what you are preparing for — the IELTS
-              exam, a presentation, a job interview, or just talking with friends — and
-              it teaches for that: correcting what you said, showing a stronger way to
-              say it, and handing you the English whenever you get stuck in o‘zbekcha.
-            </p>
-            <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
-              {([
-                ["Reacts to every answer", "It listens to what you actually said, not a script — and never reads your answer back to you."],
-                ["Shows you a better way", "“You said ‘it is good’ — a stronger word is ‘fulfilling’.” On almost every turn, not only when you slip."],
-                ["Helps in o‘zbekcha", "Say it in Uzbek and it gives you the English sentence back, then asks you to repeat it."],
-              ] as const).map(([title, blurb]) => (
-                <div key={title} style={{ ...card, padding: "18px 20px", display: "flex", gap: 15 }}>
-                  <span
-                    style={{
-                      flex: "0 0 auto", width: 26, height: 26, borderRadius: "50%",
-                      background: "#E6F4F1", color: TEAL, fontSize: 14, fontWeight: 800,
-                      display: "grid", placeItems: "center",
-                    }}
-                  >
-                    ✓
-                  </span>
-                  <span>
-                    <span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{title}</span>
-                    <span style={{ display: "block", fontSize: 14, color: MUTED, lineHeight: 1.55, marginTop: 3 }}>
-                      {blurb}
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <aside style={{ ...card, padding: "26px 24px", alignSelf: "start" }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: TEAL }}>
-              LIVE LESSON
-            </div>
-            <p style={{ margin: "10px 0 20px", fontSize: 14, color: MUTED, lineHeight: 1.6 }}>
-              Pick a tutor and hear them speak on the next screen, then just start
-              talking — there is nothing to set up.
-            </p>
-            <Link
-              href="/speak/tutor"
-              style={{
-                display: "block", textAlign: "center", background: TEAL, color: "#fff",
-                borderRadius: 13, padding: "16px 24px", fontSize: 16, fontWeight: 700,
-                textDecoration: "none", fontFamily: SANS,
-              }}
-            >
-              Start a lesson →
-            </Link>
-            <p style={{ margin: "12px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center", lineHeight: 1.5 }}>
-              Microphone · up to 20 minutes<br />not scored, never counts as a mock
-            </p>
-          </aside>
-        </div>
-      ) : null}
-
-      {/* trajectory: graded mocks + practices — hidden while a test is running */}
-      {!legacyPart2 && tab === "progress" ? (
-        <SpeakProgress items={progress} />
-      ) : null}
-
-      {/* past mock reports — previously only reachable from the ended screen */}
-      {!legacyPart2 && tab === "progress" && recentMocks.length ? (
-        <div style={{ ...card, marginTop: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>My full mocks</div>
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-            {recentMocks.map((m) => (
-              <Link
-                key={m.id}
-                href={`/speak/mock/${m.id}`}
-                style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13.5, color: INK, textDecoration: "none", borderBottom: `1px dashed ${LINE}`, paddingBottom: 8 }}
-              >
-                <span>
-                  Full mock ·{" "}
-                  {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                </span>
-                <span style={{ color: INDIGO, fontWeight: 700, whiteSpace: "nowrap" }}>
-                  Band {m.band.toFixed(1)} · report →
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Lessons are not scored, so they have no report page — but the work
-          still happened, and a learner should be able to see that it did. */}
-      {!legacyPart2 && tab === "progress" && recentLessons.length ? (
-        <div style={{ ...card, marginTop: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: 14 }}>My tutor lessons</div>
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-            {recentLessons.map((l) => (
-              <div
-                key={l.id}
-                style={{ borderBottom: `1px dashed ${LINE}`, paddingBottom: 9 }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13.5 }}>
-                  <span>
-                    {new Date(l.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                    <span style={{ color: MUTED }}>
-                      {" · "}{l.minutes.toFixed(1)} min
-                      {l.corrections ? ` · ${l.corrections} correction${l.corrections === 1 ? "" : "s"}` : ""}
-                    </span>
-                  </span>
-                  <span style={{ color: TEAL, fontWeight: 700, whiteSpace: "nowrap" }}>lesson</span>
-                </div>
-                {l.headline ? (
-                  <p style={{ margin: "4px 0 0", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-                    {l.headline}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* the legacy Part-2 flow still surfaces its own errors (quota, mic) */}
+      {/* the legacy Part-2 flow surfaces its own errors (quota, mic) */}
       {error ? (
         <div style={{ ...card, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED, marginTop: 16, fontSize: 14 }}>
           {error}
@@ -702,7 +701,7 @@ export function SpeakingClient({
       ) : null}
 
       {/* idle hub (Part 2) */}
-      {legacyPart2 && (phase === "idle" || phase === "starting") ? (
+      {(phase === "idle" || phase === "starting") ? (
         <>
           <div style={{ ...card, marginTop: 18, textAlign: "center", padding: "34px 22px" }}>
             <button

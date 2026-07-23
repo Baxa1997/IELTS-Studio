@@ -7,6 +7,7 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 import { ConfirmQuit } from "./confirm-quit";
+import { LucidaScope, PERSONAS, PersonaAvatar, personaById, TOPICS, WaveBars } from "./lucida";
 
 /**
  * The speaking TUTOR room — a lesson, not an exam.
@@ -21,16 +22,6 @@ import { ConfirmQuit } from "./confirm-quit";
  * you may interrupt, and the tutor simply listens again.
  */
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const TEAL = "#0F766E";          // the tutor's colour — never the examiner's indigo
-const TEAL_SOFT = "#E6F4F1";
-const LINE = "#E8E6F0";
-const AMBER = "#B45309";
-const RED = "#b91c1c";
-
 const IN_RATE = 16000;
 const OUT_RATE = 24000;
 /** Small head start before a turn plays. The engine now sends each reply as one
@@ -38,21 +29,7 @@ const OUT_RATE = 24000;
  *  generation starvation that used to break sentences apart. */
 const JITTER_LEAD_S = 0.15;
 
-/** Same reasoning as the hub: a single narrow column left most of a wide
- *  display empty. Media queries need a real rule, not an inline style. */
-const RESPONSIVE_CSS = `
-.tutor-two-col { grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr); }
-@media (max-width: 900px) { .tutor-two-col { grid-template-columns: 1fr; } }
-`;
-
 type Mode = "part1" | "part3" | "cue_card" | "free";
-
-const VOICES = [
-  { id: "daniel", name: "Daniel", manner: "Calm and clear" },
-  { id: "james", name: "James", manner: "Brisk and direct" },
-  { id: "emily", name: "Emily", manner: "Warm and patient" },
-  { id: "sofia", name: "Sofia", manner: "Easy-going" },
-];
 
 type Swap = { they_said: string; better: string };
 
@@ -458,461 +435,292 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const lastCorrection = lastTutor?.correction ?? null;
   const lastUpgrade = lastTutor?.upgrade ?? null;
 
-  // ---- setup screen ----
+  // ---- setup screen (Lucida tutor pick) ----
   if (state === "idle" || state === "connecting") {
+    const selected = personaById(voice);
     return (
-      <div style={{ fontFamily: SANS, maxWidth: 1280, margin: "0 auto", padding: "26px 26px 60px" }}>
-        <style>{RESPONSIVE_CSS}</style>
-        <Link
-          href="/speak"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13.5,
-            fontWeight: 700, color: MUTED, textDecoration: "none", marginBottom: 18,
-          }}
-        >
-          <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>←</span> Speaking
-        </Link>
-        <h2 style={{ margin: "0 0 6px", fontFamily: SERIF, fontSize: 30, fontWeight: 600, color: INK }}>
-          Practise with your tutor
-        </h2>
-        <p style={{ margin: "0 0 18px", fontSize: 15.5, color: "#3A3950", lineHeight: 1.65, maxWidth: 620 }}>
-          Your tutor asks what you want to work on, then the conversation becomes the
-          lesson. Nothing to set up, nothing scored.
-        </p>
-        {/* English is not one skill — say what you are preparing for and the
-            lesson sounds like that situation. */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginBottom: 22 }}>
-          {["The IELTS exam", "Talking with friends", "A presentation", "A job interview", "Everyday English"].map((c) => (
-            <span
-              key={c}
-              style={{
-                fontSize: 12.5, fontWeight: 600, color: TEAL, background: TEAL_SOFT,
-                borderRadius: 999, padding: "6px 13px",
-              }}
-            >
-              {c}
-            </span>
-          ))}
-        </div>
+      <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 40px 64px" }}>
+          <Link href="/speak" className="lc-tab" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", textDecoration: "none", marginBottom: 24 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 18l-6-6 6-6" /></svg>
+            Speaking
+          </Link>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-4xl)", color: "var(--color-neutral-1000)", letterSpacing: "var(--ls-snug)", marginBottom: 10 }}>
+            Practise with your tutor
+          </div>
+          <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", maxWidth: 680, lineHeight: "var(--lh-relaxed)", margin: "0 0 32px" }}>
+            Your tutor asks what you want to work on, then the conversation becomes the lesson. Nothing to set up, nothing scored.
+          </p>
 
-        <div
-          className="tutor-two-col"
-          style={{ display: "grid", gap: 26, alignItems: "start", marginTop: 24 }}
-        >
-        <div style={{ display: "grid", gap: 12 }}>
-          {([
-            ["Reacts to every answer", "It listens to what you actually said, not a script."],
-            ["Shows you a better way", "\u201cYou said \u2018it is good\u2019 \u2014 a stronger word is \u2018fulfilling\u2019.\u201d"],
-            ["Helps in o\u2018zbekcha", "Say it in Uzbek and it hands you the English sentence back — then you repeat it."],
-          ] as const).map(([title, blurb]) => (
-            <div key={title} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-              <span
-                style={{
-                  flex: "0 0 auto", width: 20, height: 20, borderRadius: "50%",
-                  background: TEAL_SOFT, color: TEAL, fontSize: 12, fontWeight: 800,
-                  display: "grid", placeItems: "center", marginTop: 2,
-                }}
-              >
-                ✓
+          {/* English is not one skill — the tutor adapts the lesson to any of these. */}
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
+            You can practise for
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
+            {TOPICS.map((c) => (
+              <span key={c} style={{ padding: "10px 18px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-sm)", fontWeight: 600, border: "1px solid var(--color-neutral-200)", background: "var(--color-neutral-0)", color: "var(--color-neutral-600)" }}>
+                {c}
               </span>
-              <span style={{ fontSize: 14.5, lineHeight: 1.55 }}>
-                <strong style={{ color: INK }}>{title}.</strong>{" "}
-                <span style={{ color: MUTED }}>{blurb}</span>
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Pick by ear, not by name — accents are the whole point of choosing. */}
-        <aside
-          style={{
-            background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16,
-            padding: "24px 22px", alignSelf: "start",
-          }}
-        >
-        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: MUTED, marginBottom: 12 }}>
-          YOUR TUTOR
-        </div>
-        <div
-          style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))",
-            gap: 9, marginBottom: 20,
-          }}
-        >
-          {VOICES.map((v) => {
-            const on = voice === v.id;
-            return (
-              <div
-                key={v.id}
-                onClick={() => setVoice(v.id)}
-                style={{
-                  cursor: "pointer", borderRadius: 14, padding: "13px 14px",
-                  background: on ? TEAL_SOFT : "#fff",
-                  border: `1.5px solid ${on ? TEAL : LINE}`,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                  <span
-                    style={{
-                      width: 32, height: 32, borderRadius: "50%", background: on ? TEAL : "#E7E6EF",
-                      color: on ? "#fff" : MUTED, display: "grid", placeItems: "center",
-                      fontFamily: SERIF, fontSize: 15,
-                    }}
-                  >
-                    {v.name[0]}
-                  </span>
-                  <span>
-                    <span style={{ display: "block", fontWeight: 700, fontSize: 14.5, color: on ? TEAL : INK }}>
-                      {v.name}
-                    </span>
-                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{v.manner}</span>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void playSample(v.id);
-                  }}
-                  style={{
-                    marginTop: 10, width: "100%", cursor: "pointer", borderRadius: 999,
-                    border: `1px solid ${on ? TEAL : LINE}`, background: "#fff",
-                    color: on ? TEAL : MUTED, fontSize: 12.5, fontWeight: 700,
-                    padding: "6px 0", fontFamily: SANS,
-                  }}
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
+            Choose your tutor
+          </div>
+          <div className="lc-persona-grid" style={{ marginBottom: 32 }}>
+            {PERSONAS.map((p) => {
+              const on = voice === p.id;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => setVoice(p.id)}
+                  className="lc-card-tap"
+                  style={{ cursor: "pointer", padding: 22, borderRadius: "var(--radius-xl)", border: `1.5px solid ${on ? p.accent : "var(--color-neutral-200)"}`, background: on ? p.tint : "var(--color-neutral-0)" }}
                 >
-                  {sampling === v.id ? "Playing…" : "▶ Hear this voice"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                  <div style={{ width: 48, height: 48, borderRadius: "50%", background: p.accent, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)", marginBottom: 14 }}>
+                    {p.initial}
+                  </div>
+                  <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--color-neutral-1000)", marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: p.accent, marginBottom: 8 }}>{p.tutorTrait}</div>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-snug)", marginBottom: 12 }}>{p.tutorDesc}</div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void playSample(p.id);
+                    }}
+                    className="lc-btn"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${on ? p.accent : "var(--color-neutral-200)"}`, background: "var(--color-neutral-0)", color: on ? p.accent : "var(--color-neutral-600)", fontSize: "var(--text-xs)", fontWeight: 600, padding: "8px 12px", borderRadius: "var(--radius-pill)", cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                    {sampling === p.id ? "Playing…" : "Hear this voice"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
 
-        <button
-          onClick={() => void start()}
-          disabled={state === "connecting"}
-          style={{
-            display: "block", width: "100%", background: TEAL, color: "#fff",
-            border: "none", borderRadius: 16, padding: "18px 26px", fontSize: 17,
-            fontWeight: 700, cursor: "pointer", fontFamily: SANS,
-            opacity: state === "connecting" ? 0.6 : 1,
-          }}
-        >
-          {state === "connecting" ? "Connecting…" : `Start speaking with ${VOICES.find((v) => v.id === voice)?.name}`}
-        </button>
-        <p style={{ margin: "11px 0 0", fontSize: 12.5, color: MUTED, textAlign: "center" }}>
-          Uses your microphone · up to 20 minutes · not scored
-        </p>
-        </aside>
-        </div>
+          <button
+            onClick={() => void start()}
+            disabled={state === "connecting"}
+            className="lc-btn lc-success"
+            style={{ width: "100%", border: "none", background: "var(--color-success)", color: "#FFFFFF", fontSize: "var(--text-md)", fontWeight: 600, padding: 18, borderRadius: "var(--radius-lg)", cursor: "pointer", fontFamily: "inherit", opacity: state === "connecting" ? 0.6 : 1 }}
+          >
+            {state === "connecting" ? "Connecting…" : `Start speaking with ${selected.name}`}
+          </button>
+          <p style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 12 }}>
+            Uses your microphone · up to 20 minutes · not scored
+          </p>
 
-        {error ? <p style={{ color: RED, fontSize: 13.5, margin: "16px 0 0" }}>{error}</p> : null}
-      </div>
+          {error ? <p style={{ color: "var(--color-error)", fontSize: "var(--text-sm)", margin: "16px 0 0" }}>{error}</p> : null}
+        </div>
+      </LucidaScope>
     );
   }
 
-  // ---- lesson card ----
+  // ---- lesson card (Lucida) ----
   if (state === "ended") {
     return (
-      <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "26px 26px 60px" }}>
-        <Link
-          href="/speak"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13.5,
-            fontWeight: 700, color: MUTED, textDecoration: "none", marginBottom: 16,
-          }}
-        >
-          <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>←</span> Speaking
-        </Link>
-        <h1 style={{ margin: "0 0 4px", fontFamily: SERIF, fontSize: 25, fontWeight: 600, color: INK }}>
-          Lesson complete
-        </h1>
-        <p style={{ margin: "0 0 18px", fontSize: 13.5, color: MUTED }}>{mmss} of practice</p>
-
-        {card?.headline ? (
-          <div style={{ background: TEAL_SOFT, borderRadius: 14, padding: "15px 18px", marginBottom: 14 }}>
-            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: INK }}>{card.headline}</p>
-          </div>
-        ) : null}
-
-        {card?.focus?.length ? (
-          <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "15px 18px", marginBottom: 14 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: TEAL, marginBottom: 8 }}>
-              WHAT TO WORK ON
-            </div>
-            {card.focus.map((f, i) => (
-              <p key={i} style={{ margin: "0 0 8px", fontSize: 13.8, lineHeight: 1.6, color: "#3A3950" }}>• {f}</p>
-            ))}
-          </div>
-        ) : null}
-
-        {card?.better_sentences?.length ? (
-          <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "15px 18px", marginBottom: 14 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: TEAL, marginBottom: 10 }}>
-              SAY IT BETTER
-            </div>
-            {card.better_sentences.map((b, i) => (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 13.5, color: MUTED, textDecoration: "line-through" }}>{b.you_said}</div>
-                <div style={{ fontSize: 14, color: INK, fontWeight: 600 }}>{b.say_instead}</div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {card?.practise_next ? (
-          <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "15px 18px", marginBottom: 18 }}>
-            <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: AMBER, marginBottom: 6 }}>
-              BEFORE NEXT TIME
-            </div>
-            <p style={{ margin: 0, fontSize: 13.8, lineHeight: 1.6, color: "#3A3950" }}>{card.practise_next}</p>
-          </div>
-        ) : null}
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button
-            onClick={() => setState("idle")}
-            style={{
-              background: TEAL, color: "#fff", border: "none", borderRadius: 12,
-              padding: "12px 22px", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: SANS,
-            }}
-          >
-            Another lesson
-          </button>
-          <Link
-            href="/speak"
-            onClick={onExit}
-            style={{
-              background: "#fff", color: INK, border: `1.5px solid ${LINE}`, borderRadius: 12,
-              padding: "12px 22px", fontSize: 14.5, fontWeight: 700, textDecoration: "none", fontFamily: SANS,
-            }}
-          >
-            Back to Speaking
+      <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 40px 64px" }}>
+          <Link href="/speak" className="lc-tab" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", textDecoration: "none", marginBottom: 20 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 18l-6-6 6-6" /></svg>
+            Speaking
           </Link>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-3xl)", color: "var(--color-neutral-1000)", marginBottom: 4 }}>
+            Lesson complete
+          </div>
+          <p style={{ margin: "0 0 22px", fontSize: "var(--text-sm)", color: "var(--color-neutral-500)" }}>{mmss} of practice</p>
+
+          {card?.headline ? (
+            <div style={{ background: "var(--color-success-bg)", border: "1px solid rgba(22,163,74,0.2)", borderRadius: "var(--radius-xl)", padding: "16px 20px", marginBottom: 16 }}>
+              <p style={{ margin: 0, fontSize: "var(--text-md)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-1000)" }}>{card.headline}</p>
+            </div>
+          ) : null}
+
+          {card?.focus?.length ? (
+            <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-xl)", padding: "18px 20px", marginBottom: 16 }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-success)", marginBottom: 10 }}>What to work on</div>
+              {card.focus.map((f, i) => (
+                <p key={i} style={{ margin: "0 0 8px", fontSize: "var(--text-base)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-700)" }}>• {f}</p>
+              ))}
+            </div>
+          ) : null}
+
+          {card?.better_sentences?.length ? (
+            <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-xl)", padding: "18px 20px", marginBottom: 16 }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-success)", marginBottom: 12 }}>Say it better</div>
+              {card.better_sentences.map((b, i) => (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", textDecoration: "line-through" }}>{b.you_said}</div>
+                  <div style={{ fontSize: "var(--text-base)", color: "var(--color-neutral-1000)", fontWeight: 600 }}>{b.say_instead}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {card?.practise_next ? (
+            <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-xl)", padding: "18px 20px", marginBottom: 20 }}>
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-amber-600)", marginBottom: 6 }}>Before next time</div>
+              <p style={{ margin: 0, fontSize: "var(--text-base)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-700)" }}>{card.practise_next}</p>
+            </div>
+          ) : null}
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button onClick={() => setState("idle")} className="lc-btn lc-success" style={{ background: "var(--color-success)", color: "#FFFFFF", border: "none", borderRadius: "var(--radius-lg)", padding: "14px 24px", fontSize: "var(--text-md)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              Another lesson
+            </button>
+            <Link href="/speak" onClick={onExit} className="lc-btn lc-ghost" style={{ background: "var(--color-neutral-0)", color: "var(--color-neutral-700)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-lg)", padding: "14px 24px", fontSize: "var(--text-md)", fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}>
+              Back to Speaking
+            </Link>
+          </div>
         </div>
-      </div>
+      </LucidaScope>
     );
   }
 
-  // ---- live lesson ----
-  const ring = Math.min(1, level * 9);
+  // ---- live lesson (Lucida) ----
+  const persona = personaById(voice);
+  const micGlow = Math.min(1, level * 9);
   return (
-    <div
+    <LucidaScope
       style={{
-        fontFamily: SANS, minHeight: "100vh",
-        // A soft vertical wash rather than flat white: the room should feel
-        // like a place you are sitting in, not a blank page with a circle.
-        background: "linear-gradient(180deg, #F4FAF8 0%, #FBFDFC 42%, #FFFFFF 100%)",
+        minHeight: "100vh", display: "flex", flexDirection: "column",
+        background: `radial-gradient(ellipse 900px 500px at 50% 0%, ${persona.glow}, transparent 70%), var(--color-neutral-0)`,
       }}
     >
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 26px 56px",
-                  minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 4px 14px", borderBottom: `1px solid ${LINE}`, marginBottom: 26,
-        }}
-      >
-        <button
-          onClick={() => setConfirmEnd(true)}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 7, background: "none",
-            border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 13.5,
-            fontWeight: 700, color: MUTED, padding: 0,
-          }}
-        >
-          <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>←</span> Speaking
-        </button>
-        <span style={{
-          background: TEAL_SOFT, color: TEAL, borderRadius: 999, padding: "6px 13px",
-          fontSize: 12, fontWeight: 800, letterSpacing: ".05em",
-        }}>
-          LESSON · not scored
-        </span>
-        <span style={{ fontSize: 13.5, color: MUTED, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
-          {mmss} <span style={{ color: "#A9A7BC" }}>/ 20:00</span>
-        </span>
-      </div>
+      <div style={{ maxWidth: 760, width: "100%", margin: "0 auto", padding: "20px 26px 40px", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0 16px", borderBottom: "1px solid var(--color-neutral-200)", marginBottom: 26 }}>
+          <button onClick={() => setConfirmEnd(true)} className="lc-tab" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", padding: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 18l-6-6 6-6" /></svg>
+            Speaking
+          </button>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--color-success-bg)", color: "var(--color-success)", borderRadius: "var(--radius-pill)", padding: "8px 16px", fontSize: "var(--text-sm)", fontWeight: 600 }}>
+            <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-success)", animation: "lcDotPulse 1.4s ease-in-out infinite" }} />
+            Lesson · not scored
+          </span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", color: "var(--color-neutral-600)", fontVariantNumeric: "tabular-nums", fontWeight: 500 }}>
+            {mmss} <span style={{ color: "var(--color-neutral-400)" }}>/ 20:00</span>
+          </span>
+        </div>
 
-      <div style={{ textAlign: "center", marginTop: "min(7vh, 60px)" }}>
-        <div style={{ position: "relative", width: 132, height: 132, margin: "0 auto" }}>
-          {/* the ring breathes with the mic when it is your turn, and glows
-              steadily while the tutor talks — so the state is readable at a
-              glance, without reading anything */}
-          <div
-            style={{
-              position: "absolute", inset: 0, borderRadius: "50%",
-              background: TEAL_SOFT,
-              transform: `scale(${listening ? 1 + ring * 0.35 : speaking ? 1.12 : 1})`,
-              opacity: listening || speaking ? 1 : 0.55,
-              transition: "transform .12s ease-out, opacity .3s",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute", inset: 23, borderRadius: "50%", background: TEAL,
-              display: "grid", placeItems: "center", color: "#fff",
-              fontFamily: SERIF, fontSize: 34,
-              boxShadow: speaking ? "0 8px 26px rgba(15,118,110,.34)" : "0 4px 14px rgba(15,118,110,.18)",
-              transition: "box-shadow .3s",
-            }}
-          >
-            {VOICES.find((v) => v.id === voice)?.name[0] ?? "T"}
+        <div style={{ textAlign: "center", marginTop: "min(6vh, 48px)" }}>
+          <div style={{ display: "inline-block", borderRadius: "50%", boxShadow: listening && !speaking ? `0 0 0 ${8 + micGlow * 16}px ${persona.tint}` : "none", transition: "box-shadow .12s ease-out" }}>
+            <PersonaAvatar initial={persona.initial} accent={persona.accent} glow={persona.glow} size={128} ring={speaking} />
           </div>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 20, marginBottom: 4 }}>
+            <WaveBars color={persona.accent} active={speaking || listening} />
+          </div>
+          <p style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--color-neutral-1000)" }}>
+            {speaking
+              ? `${persona.name} is speaking`
+              : thinking
+                ? "Thinking…"
+                : holding
+                  ? "Listening — release when you're done"
+                  : listening
+                    ? handsFree ? "Your turn — just talk" : "Your turn — hold to talk"
+                    : "One moment…"}
+          </p>
+          <p style={{ margin: "6px 0 0", fontSize: "var(--text-sm)", color: "var(--color-neutral-500)" }}>
+            {listening
+              ? handsFree
+                ? "Pause when you're done and I'll pick it up"
+                : "Hold the button (or the spacebar) while you speak"
+              : speaking
+                ? "You can cut in any time"
+                : " "}
+          </p>
         </div>
-        <p style={{ margin: "18px 0 0", fontFamily: SERIF, fontSize: 21, fontWeight: 600, color: INK }}>
-          {speaking
-            ? `${VOICES.find((v) => v.id === voice)?.name} is speaking`
-            : thinking
-              ? "Thinking…"
-              : holding
-                ? "Listening — release when you're done"
-                : listening
-                  ? handsFree ? "Your turn — just talk" : "Your turn — hold to talk"
-                  : "One moment…"}
-        </p>
-        <p style={{ margin: "5px 0 0", fontSize: 13.5, color: MUTED }}>
-          {listening
-            ? handsFree
-              ? "Pause when you're done and I'll pick it up"
-              : "Hold the button (or the spacebar) while you speak"
-            : speaking
-              ? "You can cut in any time"
-              : "\u00a0"}
-        </p>
-      </div>
 
-      {/* Deliberately no running transcript: this is a SPOKEN lesson, and the
-          owner was explicit — "I dont need text written, just speak is enough".
-          The only thing worth reading mid-lesson is the one correction just
-          made, because a fix you can see is a fix you remember; it fades with
-          the next turn. Everything else waits for the lesson card. */}
-      {lastCorrection || lastUpgrade ? (
-        <div style={{ margin: "26px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 10 }}>
-          {lastCorrection ? (
-            <div
+        {/* Deliberately no running transcript: this is a SPOKEN lesson. The only
+            thing worth reading mid-lesson is the one correction just made; it
+            fades with the next turn. Everything else waits for the lesson card. */}
+        {lastCorrection || lastUpgrade ? (
+          <div style={{ margin: "26px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 10 }}>
+            {lastCorrection ? (
+              <div style={{ background: "var(--color-neutral-0)", border: "1px solid rgba(218,119,86,0.28)", borderRadius: "var(--radius-xl)", padding: "16px 20px", fontSize: "var(--text-md)", lineHeight: "var(--lh-relaxed)", boxShadow: "var(--shadow-1)" }}>
+                <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-amber-600)", marginBottom: 8 }}>A small fix</div>
+                <div style={{ color: "var(--color-neutral-500)", textDecoration: "line-through", marginBottom: 4 }}>{lastCorrection.they_said}</div>
+                <div style={{ color: "var(--color-neutral-1000)", fontWeight: 600 }}>{lastCorrection.better}</div>
+              </div>
+            ) : null}
+            {lastUpgrade ? (
+              <div style={{ background: "var(--color-neutral-0)", border: "1px solid rgba(22,163,74,0.28)", borderRadius: "var(--radius-xl)", padding: "16px 20px", fontSize: "var(--text-md)", lineHeight: "var(--lh-relaxed)", boxShadow: "var(--shadow-1)" }}>
+                <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-success)", marginBottom: 8 }}>Say it better</div>
+                {lastUpgrade.they_said ? (
+                  <div style={{ color: "var(--color-neutral-500)", marginBottom: 4 }}>{lastUpgrade.they_said}</div>
+                ) : null}
+                <div style={{ color: "var(--color-neutral-1000)", fontWeight: 600 }}>{lastUpgrade.better}</div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {error ? (
+          <p style={{ color: "var(--color-error)", fontSize: "var(--text-sm)", margin: "16px 0 0", textAlign: "center" }}>{error}</p>
+        ) : null}
+
+        {!handsFree ? (
+          <div style={{ display: "grid", placeItems: "center", marginTop: 26 }}>
+            <button
+              onPointerDown={(e) => {
+                e.preventDefault();
+                press();
+              }}
+              onPointerUp={release}
+              onPointerLeave={release}
+              onPointerCancel={release}
+              disabled={speaking || thinking}
+              className="lc-btn"
               style={{
-                background: "#fff", border: "1px solid #FDE6C8", borderRadius: 14,
-                padding: "14px 18px", fontSize: 15.5, lineHeight: 1.6,
-                boxShadow: "0 2px 10px rgba(180,83,9,.06)",
+                width: "min(420px, 100%)", padding: "20px 26px", borderRadius: "var(--radius-pill)",
+                border: `2px solid ${holding ? "var(--color-success)" : "var(--color-neutral-200)"}`,
+                background: holding ? "var(--color-success)" : "var(--color-neutral-0)",
+                color: holding ? "#FFFFFF" : speaking || thinking ? "var(--color-neutral-400)" : "var(--color-neutral-1000)",
+                fontSize: "var(--text-lg)", fontWeight: 700, fontFamily: "inherit",
+                cursor: speaking || thinking ? "default" : "pointer",
+                touchAction: "none", userSelect: "none",
+                boxShadow: holding ? "0 8px 26px rgba(22,163,74,.30)" : "none",
+                transform: holding ? "scale(0.99)" : "none",
               }}
             >
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".09em",
-                            color: AMBER, marginBottom: 7 }}>
-                A SMALL FIX
-              </div>
-              <div style={{ color: MUTED, textDecoration: "line-through", marginBottom: 3 }}>
-                {lastCorrection.they_said}
-              </div>
-              <div style={{ color: INK, fontWeight: 700 }}>{lastCorrection.better}</div>
-            </div>
-          ) : null}
-          {lastUpgrade ? (
-            <div
-              style={{
-                background: "#fff", border: "1px solid #CDE9E3", borderRadius: 14,
-                padding: "14px 18px", fontSize: 15.5, lineHeight: 1.6,
-                boxShadow: "0 2px 10px rgba(15,118,110,.07)",
-              }}
-            >
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".09em",
-                            color: TEAL, marginBottom: 7 }}>
-                SAY IT BETTER
-              </div>
-              {lastUpgrade.they_said ? (
-                <div style={{ color: MUTED, marginBottom: 3 }}>{lastUpgrade.they_said}</div>
-              ) : null}
-              <div style={{ color: INK, fontWeight: 700 }}>{lastUpgrade.better}</div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+              {holding ? "Release to send" : "Hold to talk"}
+            </button>
+          </div>
+        ) : null}
 
-      {error ? (
-        <p style={{ color: RED, fontSize: 12.5, margin: "16px 0 0", textAlign: "center" }}>{error}</p>
-      ) : null}
-
-      {!handsFree ? (
-        <div style={{ display: "grid", placeItems: "center", marginTop: 26 }}>
-          <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              press();
-            }}
-            onPointerUp={release}
-            onPointerLeave={release}
-            onPointerCancel={release}
-            disabled={speaking || thinking}
-            style={{
-              width: "min(420px, 100%)", padding: "20px 26px", borderRadius: 999,
-              border: `2px solid ${holding ? TEAL : LINE}`,
-              background: holding ? TEAL : "#fff",
-              color: holding ? "#fff" : speaking || thinking ? "#A9A7BC" : INK,
-              fontSize: 16.5, fontWeight: 800, fontFamily: SANS,
-              cursor: speaking || thinking ? "default" : "pointer",
-              touchAction: "none", userSelect: "none",
-              boxShadow: holding ? "0 8px 26px rgba(15,118,110,.30)" : "none",
-              transform: holding ? "scale(0.99)" : "none",
-              transition: "background .12s, transform .12s, box-shadow .2s",
-            }}
-          >
-            {holding ? "Release to send" : "Hold to talk"}
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 30 }}>
+          <button onClick={() => setHandsFree((v) => !v)} className="lc-btn lc-ghost" style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-pill)", padding: "12px 20px", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--color-neutral-600)" }}>
+            {handsFree ? "Switch to hold-to-talk" : "Switch to hands-free"}
+          </button>
+          <button onClick={() => send({ type: "skip" })} className="lc-btn lc-ghost" style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-pill)", padding: "12px 20px", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--color-neutral-600)" }}>
+            Skip this question
+          </button>
+          <button onClick={() => setConfirmEnd(true)} className="lc-btn lc-danger" style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-pill)", padding: "12px 20px", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--color-error)" }}>
+            End lesson
           </button>
         </div>
-      ) : null}
 
-      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 30 }}>
-        <button
-          onClick={() => setHandsFree((v) => !v)}
-          style={{
-            background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
-            padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
-            fontFamily: SANS, color: MUTED,
+        <ConfirmQuit
+          open={confirmEnd}
+          title="End the lesson?"
+          body={
+            "This finishes your speaking lesson and writes up what you practised. " +
+            "The minutes you have used still count towards this month's tutor time."
+          }
+          confirmLabel="End the lesson"
+          cancelLabel="Keep practising"
+          onCancel={() => setConfirmEnd(false)}
+          onConfirm={() => {
+            setConfirmEnd(false);
+            end();
           }}
-        >
-          {handsFree ? "Switch to hold-to-talk" : "Switch to hands-free"}
-        </button>
-        <button
-          onClick={() => send({ type: "skip" })}
-          style={{
-            background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
-            padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
-            fontFamily: SANS, color: MUTED,
-          }}
-        >
-          Skip this question
-        </button>
-        <button
-          onClick={() => setConfirmEnd(true)}
-          style={{
-            background: "#fff", border: `1.5px solid ${LINE}`, borderRadius: 999,
-            padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
-            fontFamily: SANS, color: INK,
-          }}
-        >
-          End lesson
-        </button>
+        />
+        <p style={{ margin: "auto 0 0", paddingTop: 26, textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-400)" }}>
+          Original AI tutor · not affiliated with IELTS®
+        </p>
       </div>
-
-      <ConfirmQuit
-        open={confirmEnd}
-        title="End the lesson?"
-        body={
-          "This finishes your speaking lesson and writes up what you practised. " +
-          "The minutes you have used still count towards this month's tutor time."
-        }
-        confirmLabel="End the lesson"
-        cancelLabel="Keep practising"
-        onCancel={() => setConfirmEnd(false)}
-        onConfirm={() => {
-          setConfirmEnd(false);
-          end();
-        }}
-      />
-      <p style={{ margin: "auto 0 0", paddingTop: 26, textAlign: "center", fontSize: 11.5, color: MUTED }}>
-        Original AI tutor · not affiliated with IELTS®
-      </p>
-    </div>
-    </div>
+    </LucidaScope>
   );
 }

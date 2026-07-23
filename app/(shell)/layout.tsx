@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import {
+  Bricolage_Grotesque,
   DM_Sans,
   Hanken_Grotesk,
   Newsreader,
+  Plus_Jakarta_Sans,
 } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
@@ -18,6 +20,10 @@ const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600"
 // Listening Practice runner surface (IELTS Listening handoff): a single DM Sans
 // family across the whole exam screen (titles, UI, tabular times).
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-dmsans", display: "swap" });
+// Speaking "Lucida" surface: Bricolage Grotesque (display) + Plus Jakarta Sans
+// (body). Scoped to /speak via the .lucida token layer — see speak/lucida.tsx.
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap" });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap" });
 
 const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
 
@@ -52,7 +58,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${dmSans.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} lp-root`}
     >
       <AppShell
         role={profile.role}
