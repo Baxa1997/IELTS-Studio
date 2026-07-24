@@ -484,8 +484,18 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const lastCarded = [...lines].reverse().find((l) => l.who === "tutor" && (l.correction || l.upgrade));
   const lastCorrection = lastCarded?.correction ?? null;
   const lastUpgrade = lastCarded?.upgrade ?? null;
-  const lastTutorLine = [...lines].reverse().find((l) => l.who === "tutor" && l.text.trim());
-  const lastYouLine = [...lines].reverse().find((l) => l.who === "you" && l.text.trim());
+  // The transcript shows ENGLISH ONLY. Uzbek/Russian turns are still spoken
+  // aloud, but their text is not displayed — the learner reads only the
+  // recommended English sentence (the card below). Seeing their own Uzbek or the
+  // tutor's Uzbek scaffolding on screen was noise ("do not show it, only show
+  // the recommended english sentence", owner). English text (undefined = en)
+  // still shows normally.
+  const isEnglish = (lang?: string) => !lang || lang === "en";
+  const lastTutorAny = [...lines].reverse().find((l) => l.who === "tutor" && l.text.trim());
+  const lastYouAny = [...lines].reverse().find((l) => l.who === "you" && l.text.trim());
+  const lastTutorLine = lastTutorAny && isEnglish(lastTutorAny.language) ? lastTutorAny : undefined;
+  const lastYouLine = lastYouAny && isEnglish(lastYouAny.language) ? lastYouAny : undefined;
+  const englishLines = lines.filter((l) => l.text.trim() && isEnglish(l.language));
 
   // ---- setup screen (Lucida tutor pick) ----
   if (state === "idle" || state === "connecting") {
@@ -776,14 +786,14 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
 
           {/* The full back-scroll lives last — least-used, so it never pushes
               the teach card down the page. */}
-          {lines.length > 2 ? (
+          {englishLines.length > 2 ? (
             <div style={{ margin: "18px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 8 }}>
               <button type="button" onClick={() => setShowConversation((v) => !v)} className="lc-btn lc-ghost" style={{ justifySelf: "center", border: "none", background: "transparent", color: "var(--color-neutral-500)", fontSize: "var(--text-xs)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "3px 8px" }}>
-                {showConversation ? "Hide conversation" : `See conversation · ${lines.length} turns`}
+                {showConversation ? "Hide conversation" : `See conversation · ${englishLines.length} turns`}
               </button>
               {showConversation ? (
                 <div style={{ maxHeight: 180, overflowY: "auto", display: "grid", gap: 6, padding: "8px 10px", background: "rgba(243,237,233,0.55)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-lg)", textAlign: "left" }}>
-                  {lines.slice(-8).map((line, index) => (
+                  {englishLines.slice(-8).map((line, index) => (
                     <div key={`${line.who}-${index}`} style={{ fontSize: "var(--text-xs)", lineHeight: "var(--lh-normal)", color: line.who === "tutor" ? "var(--color-neutral-700)" : "var(--color-success)" }}>
                       <strong>{line.who === "tutor" ? persona.name : "You"}:</strong> {line.text}
                     </div>
