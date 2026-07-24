@@ -492,9 +492,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // still shows normally.
   const isEnglish = (lang?: string) => !lang || lang === "en";
   const lastTutorAny = [...lines].reverse().find((l) => l.who === "tutor" && l.text.trim());
-  const lastYouAny = [...lines].reverse().find((l) => l.who === "you" && l.text.trim());
   const lastTutorLine = lastTutorAny && isEnglish(lastTutorAny.language) ? lastTutorAny : undefined;
-  const lastYouLine = lastYouAny && isEnglish(lastYouAny.language) ? lastYouAny : undefined;
   const englishLines = lines.filter((l) => l.text.trim() && isEnglish(l.language));
 
   // ---- setup screen (Lucida tutor pick) ----
@@ -740,23 +738,15 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             </div>
           ) : null}
 
-          {/* Voice-first does not have to mean memory-first: keeping the latest
-              exchange visible makes the tutor feel grounded and lets a learner
-              notice what was heard without forcing a giant transcript on them. */}
-          {lastTutorLine || lastYouLine ? (
-            <div style={{ margin: "22px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 8, textAlign: "left" }}>
-              {lastTutorLine ? (
-                <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "14px 14px 14px 5px", padding: "11px 14px", boxShadow: "var(--shadow-1)" }}>
-                  <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: persona.accent, marginBottom: 4 }}>{persona.name} said</div>
-                  <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>{lastTutorLine.text}</div>
-                </div>
-              ) : null}
-              {lastYouLine ? (
-                <div style={{ justifySelf: "end", maxWidth: "92%", background: "var(--color-success-bg)", border: "1px solid rgba(22,163,74,0.18)", borderRadius: "14px 14px 5px 14px", padding: "11px 14px" }}>
-                  <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-success)", marginBottom: 4 }}>You said</div>
-                  <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>{lastYouLine.text}</div>
-                </div>
-              ) : null}
+          {/* Only the tutor's latest ENGLISH line is shown — no "you said" (it
+              went stale showing an old English turn while the current one was
+              Uzbek, and the learner does not need to read back their own words). */}
+          {lastTutorLine ? (
+            <div style={{ margin: "22px auto 0", maxWidth: 560, width: "100%", textAlign: "left" }}>
+              <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "14px 14px 14px 5px", padding: "11px 14px", boxShadow: "var(--shadow-1)" }}>
+                <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: persona.accent, marginBottom: 4 }}>{persona.name} said</div>
+                <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>{lastTutorLine.text}</div>
+              </div>
             </div>
           ) : null}
 
