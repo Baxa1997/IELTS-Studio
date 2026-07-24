@@ -7,7 +7,7 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 import { ConfirmQuit } from "./confirm-quit";
-import { LucidaScope, PERSONAS, PersonaAvatar, personaById, TOPICS, WaveBars } from "./lucida";
+import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./lucida";
 
 /**
  * The speaking TUTOR room — a lesson, not an exam.
@@ -173,40 +173,30 @@ function wsUrl(mode: Mode, token: string, voice: string, context: string): strin
   return `${base.replace(/^http/, "ws")}/speaking/tutor/live?${q.toString()}`;
 }
 
-// The pick-screen chips → the engine's context slugs (speaking/tutor.py
-// CONTEXT_GOALS). Selecting one lets the tutor confirm the purpose in its
-// greeting instead of asking; null = "just talk", the tutor asks.
-const TOPIC_SLUG: Record<string, string> = {
-  "The IELTS exam": "ielts",
-  "Talking with friends": "friends",
-  "A presentation": "presentation",
-  "A job interview": "interview",
-  "Everyday English": "everyday",
-};
-
-// Free conversation leads and is the default — the tutor is a lesson, not an
-// exam, so IELTS practice is one choice among several, never forced on a
-// learner who just wants to talk ("IELTS must be choosable", owner 2026-07-24).
-const PRACTICE_MODES: { id: Mode; label: string; detail: string; accent: string }[] = [
-  { id: "free", label: "Free conversation", detail: "Just talk — the tutor keeps it going and gently improves your English.", accent: "var(--color-success)" },
-  { id: "part1", label: "IELTS Part 1", detail: "Short, natural answers about familiar topics.", accent: "var(--color-primary-600)" },
-  { id: "cue_card", label: "IELTS Part 2", detail: "Build a long answer with a cue card and follow-up coaching.", accent: "var(--color-amber-600)" },
-  { id: "part3", label: "IELTS Part 3", detail: "Develop deeper opinions and explain your ideas clearly.", accent: "var(--color-info)" },
+// ONE choice of what to practise, not two overlapping ones. Each kind carries
+// the engine's question-spine `mode` and its context slug (speaking/tutor.py
+// CONTEXT_GOALS). IELTS is a single option here — no Part 1/2/3 split, the owner
+// didn't want it — and Free conversation leads and is the default, so IELTS is
+// chosen, never imposed ("IELTS must be choosable", owner 2026-07-24).
+type Kind = { id: string; label: string; detail: string; mode: Mode; context: string; accent: string };
+const KINDS: Kind[] = [
+  { id: "free", label: "Free conversation", detail: "Just talk — the tutor keeps it going and gently improves your English.", mode: "free", context: "", accent: "var(--color-success)" },
+  { id: "ielts", label: "The IELTS exam", detail: "Exam-style questions with band-raising coaching.", mode: "part1", context: "ielts", accent: "var(--color-primary-600)" },
+  { id: "friends", label: "Talking with friends", detail: "Relaxed everyday chat and natural reactions.", mode: "free", context: "friends", accent: "var(--color-info)" },
+  { id: "presentation", label: "A presentation", detail: "Signposting and confident, structured delivery.", mode: "free", context: "presentation", accent: "var(--color-amber-600)" },
+  { id: "interview", label: "A job interview", detail: "Classic questions and clear STAR-style answers.", mode: "free", context: "interview", accent: "var(--color-primary-600)" },
+  { id: "everyday", label: "Everyday English", detail: "Shops, travel, appointments — practical language.", mode: "free", context: "everyday", accent: "var(--color-success)" },
 ];
 
 // ---- room -------------------------------------------------------------------
 
 export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [state, setState] = useState<"idle" | "connecting" | "live" | "ended">("idle");
-  // The mode is a real engine hint, not just a visual preference: it gives the
-  // tutor a question spine so an IELTS lesson feels deliberate rather than
-  // like a generic chatbot conversation. Defaults to free conversation so IELTS
-  // is chosen, never imposed.
-  const [mode, setMode] = useState<Mode>("free");
+  // One choice drives both the engine's question-spine `mode` and its context
+  // slug. Defaults to free conversation so IELTS is chosen, never imposed.
+  const [kindId, setKindId] = useState("free");
+  const selectedKind = KINDS.find((k) => k.id === kindId) ?? KINDS[0];
   const [voice, setVoice] = useState("daniel");
-  // What they're preparing for (a chip on the pick screen). Optional — null
-  // means "just talk" and the tutor asks. Sent to the engine as a context slug.
-  const [topic, setTopic] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [listening, setListening] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -323,7 +313,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         }
       };
 
-      const ws = new WebSocket(wsUrl(mode, token, voice, topic ? TOPIC_SLUG[topic] ?? "" : ""));
+      const ws = new WebSocket(wsUrl(selectedKind.mode, token, voice, selectedKind.context));
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
@@ -496,14 +486,13 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const lastUpgrade = lastCarded?.upgrade ?? null;
   const lastTutorLine = [...lines].reverse().find((l) => l.who === "tutor" && l.text.trim());
   const lastYouLine = [...lines].reverse().find((l) => l.who === "you" && l.text.trim());
-  const selectedMode = PRACTICE_MODES.find((item) => item.id === mode) ?? PRACTICE_MODES[0];
 
   // ---- setup screen (Lucida tutor pick) ----
   if (state === "idle" || state === "connecting") {
     const selected = personaById(voice);
     return (
       <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 40px 64px" }}>
+        <div style={{ width: "100%", padding: "44px clamp(24px, 5vw, 72px) 72px" }}>
           <Link href="/speak" className="lc-tab" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", textDecoration: "none", marginBottom: 24 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 18l-6-6 6-6" /></svg>
             Speaking
@@ -516,20 +505,22 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             corrects the most useful mistake, and gives you a stronger sentence to use straight away.
           </p>
 
+          {/* One list, not two overlapping ones: what you want to practise —
+              free chat, the IELTS exam, or a real-life situation. */}
           <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
-            How should your tutor teach you?
+            What do you want to practise?
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginBottom: 30 }}>
-            {PRACTICE_MODES.map((item) => {
-              const on = mode === item.id;
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, marginBottom: 36 }}>
+            {KINDS.map((item) => {
+              const on = kindId === item.id;
               return (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setMode(item.id)}
+                  onClick={() => setKindId(item.id)}
                   className="lc-card-tap"
                   style={{
-                    textAlign: "left", cursor: "pointer", fontFamily: "inherit", padding: "15px 16px",
+                    textAlign: "left", cursor: "pointer", fontFamily: "inherit", padding: "16px 18px",
                     borderRadius: "var(--radius-lg)", border: `1.5px solid ${on ? item.accent : "var(--color-neutral-200)"}`,
                     background: on ? "var(--color-neutral-0)" : "rgba(251,248,246,0.55)",
                     boxShadow: on ? "var(--shadow-1)" : "none",
@@ -540,29 +531,6 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                     <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: on ? item.accent : "var(--color-neutral-300)", flexShrink: 0 }} />
                   </div>
                   <span style={{ display: "block", marginTop: 5, fontSize: "var(--text-xs)", lineHeight: "var(--lh-normal)", color: "var(--color-neutral-500)" }}>{item.detail}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* English is not one skill — pick what you're preparing for and the
-              tutor confirms it in the greeting and shapes the whole lesson to it.
-              Optional: pick nothing and the tutor just asks. */}
-          <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
-            Optional context
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
-            {TOPICS.map((c) => {
-              const on = topic === c;
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setTopic(on ? null : c)}
-                  className="lc-btn"
-                  style={{ padding: "10px 18px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: `1px solid ${on ? "var(--color-success)" : "var(--color-neutral-200)"}`, background: on ? "var(--color-success-bg)" : "var(--color-neutral-0)", color: on ? "var(--color-success)" : "var(--color-neutral-600)" }}
-                >
-                  {c}
                 </button>
               );
             })}
@@ -610,7 +578,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             className="lc-btn lc-success"
             style={{ width: "100%", border: "none", background: "var(--color-success)", color: "#FFFFFF", fontSize: "var(--text-md)", fontWeight: 600, padding: 18, borderRadius: "var(--radius-lg)", cursor: "pointer", fontFamily: "inherit", opacity: state === "connecting" ? 0.6 : 1 }}
           >
-            {state === "connecting" ? "Connecting…" : `Start ${selectedMode.label.toLowerCase()} with ${selected.name}`}
+            {state === "connecting" ? "Connecting…" : `Start ${selectedKind.label.toLowerCase()} with ${selected.name}`}
           </button>
           <p style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 12 }}>
             Uses your microphone · up to 20 minutes · not scored · you can change the conversation mode next time
@@ -715,13 +683,19 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
           scrolls instead of clipping the avatar off the top. */}
       <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ width: "min(620px, 100%)", margin: "auto", padding: "26px 24px 30px", textAlign: "center" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 11px", borderRadius: "var(--radius-pill)", background: "var(--color-success-bg)", color: "var(--color-success)", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", marginBottom: 18 }}>
-            {selectedMode.label} · {topic ?? "Open practice"}
+          {/* Avatar sits ON TOP, the category label centred BELOW it — they were
+              inline siblings before, so they rendered side by side and overlapped. */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{ display: "inline-block", borderRadius: "50%", boxShadow: listening && !speaking ? `0 0 0 ${8 + micGlow * 16}px ${persona.tint}` : "none", transition: "box-shadow .12s ease-out" }}>
+              <PersonaAvatar initial={persona.initial} accent={persona.accent} glow={persona.glow} size={128} ring={speaking} />
+            </div>
           </div>
-          <div style={{ display: "inline-block", borderRadius: "50%", boxShadow: listening && !speaking ? `0 0 0 ${8 + micGlow * 16}px ${persona.tint}` : "none", transition: "box-shadow .12s ease-out" }}>
-            <PersonaAvatar initial={persona.initial} accent={persona.accent} glow={persona.glow} size={128} ring={speaking} />
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 11px", borderRadius: "var(--radius-pill)", background: "var(--color-success-bg)", color: "var(--color-success)", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase" }}>
+              {selectedKind.label}
+            </span>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 20, marginBottom: 4 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 18, marginBottom: 4 }}>
             <WaveBars color={persona.accent} active={speaking || listening} />
           </div>
           <p style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--color-neutral-1000)" }}>
