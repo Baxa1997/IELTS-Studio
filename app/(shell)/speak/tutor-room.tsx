@@ -444,10 +444,12 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   };
 
   const mmss = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
-  // Only the most recent correction is shown, and only until the next turn.
-  const lastTutor = [...lines].reverse().find((l) => l.who === "tutor");
-  const lastCorrection = lastTutor?.correction ?? null;
-  const lastUpgrade = lastTutor?.upgrade ?? null;
+  // The most recent teach card stays up until a NEWER one replaces it — a turn
+  // without a card (a "didn't catch that", a nudge) must not blank the sentence
+  // the learner is trying to read ("make sure it always show up", owner).
+  const lastCarded = [...lines].reverse().find((l) => l.who === "tutor" && (l.correction || l.upgrade));
+  const lastCorrection = lastCarded?.correction ?? null;
+  const lastUpgrade = lastCarded?.upgrade ?? null;
 
   // ---- setup screen (Lucida tutor pick) ----
   if (state === "idle" || state === "connecting") {
@@ -662,8 +664,8 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                 : " "}
           </p>
 
-          {/* No running transcript (a SPOKEN lesson) — only the one correction
-              just made; it fades with the next turn. */}
+          {/* No running transcript (a SPOKEN lesson) — only the latest teach
+              card; it stays up until the next card replaces it. */}
           {lastCorrection || lastUpgrade ? (
             <div style={{ margin: "26px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 10, textAlign: "left" }}>
               {lastCorrection ? (
