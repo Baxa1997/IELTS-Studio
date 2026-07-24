@@ -184,11 +184,14 @@ const TOPIC_SLUG: Record<string, string> = {
   "Everyday English": "everyday",
 };
 
+// Free conversation leads and is the default — the tutor is a lesson, not an
+// exam, so IELTS practice is one choice among several, never forced on a
+// learner who just wants to talk ("IELTS must be choosable", owner 2026-07-24).
 const PRACTICE_MODES: { id: Mode; label: string; detail: string; accent: string }[] = [
+  { id: "free", label: "Free conversation", detail: "Just talk — the tutor keeps it going and gently improves your English.", accent: "var(--color-success)" },
   { id: "part1", label: "IELTS Part 1", detail: "Short, natural answers about familiar topics.", accent: "var(--color-primary-600)" },
   { id: "cue_card", label: "IELTS Part 2", detail: "Build a long answer with a cue card and follow-up coaching.", accent: "var(--color-amber-600)" },
   { id: "part3", label: "IELTS Part 3", detail: "Develop deeper opinions and explain your ideas clearly.", accent: "var(--color-info)" },
-  { id: "free", label: "Free conversation", detail: "Talk naturally while the tutor gently improves your English.", accent: "var(--color-success)" },
 ];
 
 // ---- room -------------------------------------------------------------------
@@ -197,8 +200,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [state, setState] = useState<"idle" | "connecting" | "live" | "ended">("idle");
   // The mode is a real engine hint, not just a visual preference: it gives the
   // tutor a question spine so an IELTS lesson feels deliberate rather than
-  // like a generic chatbot conversation.
-  const [mode, setMode] = useState<Mode>("part1");
+  // like a generic chatbot conversation. Defaults to free conversation so IELTS
+  // is chosen, never imposed.
+  const [mode, setMode] = useState<Mode>("free");
   const [voice, setVoice] = useState("daniel");
   // What they're preparing for (a chip on the pick screen). Optional — null
   // means "just talk" and the tutor asks. Sent to the engine as a context slug.
@@ -706,9 +710,11 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         </span>
       </div>
 
-      {/* centre stage */}
-      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: "min(620px, 100%)", margin: "0 auto", padding: "26px 24px 30px", textAlign: "center" }}>
+      {/* centre stage — `margin:auto` on the inner column (not justify-content)
+          so a short lesson centres but a tall one (many cards) top-aligns and
+          scrolls instead of clipping the avatar off the top. */}
+      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ width: "min(620px, 100%)", margin: "auto", padding: "26px 24px 30px", textAlign: "center" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 11px", borderRadius: "var(--radius-pill)", background: "var(--color-success-bg)", color: "var(--color-success)", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", marginBottom: 18 }}>
             {selectedMode.label} · {topic ?? "Open practice"}
           </div>
@@ -767,25 +773,12 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                   <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>{lastYouLine.text}</div>
                 </div>
               ) : null}
-              {lines.length > 2 ? (
-                <button type="button" onClick={() => setShowConversation((v) => !v)} className="lc-btn lc-ghost" style={{ justifySelf: "center", border: "none", background: "transparent", color: "var(--color-neutral-500)", fontSize: "var(--text-xs)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "3px 8px" }}>
-                  {showConversation ? "Hide conversation" : `See conversation · ${lines.length} turns`}
-                </button>
-              ) : null}
-              {showConversation ? (
-                <div style={{ maxHeight: 180, overflowY: "auto", display: "grid", gap: 6, padding: "8px 10px", background: "rgba(243,237,233,0.55)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-lg)", textAlign: "left" }}>
-                  {lines.slice(-8).map((line, index) => (
-                    <div key={`${line.who}-${index}`} style={{ fontSize: "var(--text-xs)", lineHeight: "var(--lh-normal)", color: line.who === "tutor" ? "var(--color-neutral-700)" : "var(--color-success)" }}>
-                      <strong>{line.who === "tutor" ? persona.name : "You"}:</strong> {line.text}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
             </div>
           ) : null}
 
           {/* No running transcript (a SPOKEN lesson) — only the latest teach
-              card; it stays up until the next card replaces it. */}
+              card, right under the exchange so it is the thing you read; it
+              stays up until the next card replaces it. */}
           {lastCorrection || lastUpgrade ? (
             <div style={{ margin: "26px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 10, textAlign: "left" }}>
               {lastCorrection ? (
@@ -802,6 +795,25 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                     <div style={{ color: "var(--color-neutral-500)", marginBottom: 4 }}>{lastUpgrade.they_said}</div>
                   ) : null}
                   <div style={{ color: "var(--color-neutral-1000)", fontWeight: 600 }}>{lastUpgrade.better}</div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* The full back-scroll lives last — least-used, so it never pushes
+              the teach card down the page. */}
+          {lines.length > 2 ? (
+            <div style={{ margin: "18px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 8 }}>
+              <button type="button" onClick={() => setShowConversation((v) => !v)} className="lc-btn lc-ghost" style={{ justifySelf: "center", border: "none", background: "transparent", color: "var(--color-neutral-500)", fontSize: "var(--text-xs)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "3px 8px" }}>
+                {showConversation ? "Hide conversation" : `See conversation · ${lines.length} turns`}
+              </button>
+              {showConversation ? (
+                <div style={{ maxHeight: 180, overflowY: "auto", display: "grid", gap: 6, padding: "8px 10px", background: "rgba(243,237,233,0.55)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-lg)", textAlign: "left" }}>
+                  {lines.slice(-8).map((line, index) => (
+                    <div key={`${line.who}-${index}`} style={{ fontSize: "var(--text-xs)", lineHeight: "var(--lh-normal)", color: line.who === "tutor" ? "var(--color-neutral-700)" : "var(--color-success)" }}>
+                      <strong>{line.who === "tutor" ? persona.name : "You"}:</strong> {line.text}
+                    </div>
+                  ))}
                 </div>
               ) : null}
             </div>
