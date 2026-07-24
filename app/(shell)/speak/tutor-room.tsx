@@ -48,6 +48,12 @@ interface LessonCard {
   practise_next?: string;
 }
 
+interface CueCard {
+  title: string;
+  bullets: string[];
+  closing: string;
+}
+
 // ---- audio ------------------------------------------------------------------
 
 /**
@@ -153,6 +159,14 @@ async function startMic(
   };
 }
 
+async function checkMicAccess(): Promise<void> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("This browser cannot access a microphone. Try Chrome, Safari, or Edge over HTTPS.");
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((track) => track.stop());
+}
+
 function wsUrl(mode: Mode, token: string, voice: string, context: string): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const q = new URLSearchParams({ token, mode, voice, ...(context ? { context } : {}) });
@@ -170,13 +184,21 @@ const TOPIC_SLUG: Record<string, string> = {
   "Everyday English": "everyday",
 };
 
+const PRACTICE_MODES: { id: Mode; label: string; detail: string; accent: string }[] = [
+  { id: "part1", label: "IELTS Part 1", detail: "Short, natural answers about familiar topics.", accent: "var(--color-primary-600)" },
+  { id: "cue_card", label: "IELTS Part 2", detail: "Build a long answer with a cue card and follow-up coaching.", accent: "var(--color-amber-600)" },
+  { id: "part3", label: "IELTS Part 3", detail: "Develop deeper opinions and explain your ideas clearly.", accent: "var(--color-info)" },
+  { id: "free", label: "Free conversation", detail: "Talk naturally while the tutor gently improves your English.", accent: "var(--color-success)" },
+];
+
 // ---- room -------------------------------------------------------------------
 
 export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [state, setState] = useState<"idle" | "connecting" | "live" | "ended">("idle");
-  // The learner picks nothing: the lesson opens conversationally and the
-  // tutor steers. `mode` stays as the engine's question-spine hint.
-  const mode: Mode = "part1";
+  // The mode is a real engine hint, not just a visual preference: it gives the
+  // tutor a question spine so an IELTS lesson feels deliberate rather than
+  // like a generic chatbot conversation.
+  const [mode, setMode] = useState<Mode>("part1");
   const [voice, setVoice] = useState("daniel");
   // What they're preparing for (a chip on the pick screen). Optional — null
   // means "just talk" and the tutor asks. Sent to the engine as a context slug.
@@ -188,7 +210,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [card, setCard] = useState<LessonCard | null>(null);
+  const [cueCard, setCueCard] = useState<CueCard | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [showConversation, setShowConversation] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const playerRef = useRef<VoicePlayer | null>(null);
@@ -206,6 +230,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   // clearing the flag from an effect whenever the mode changes.
   const holding = !handsFree && pressed;
   const sampleRef = useRef<HTMLAudioElement | null>(null);
+  const endingRef = useRef(false);
 
   /** Play a few seconds of a voice so the accent can be judged by ear. */
   const playSample = useCallback(async (id: string) => {
@@ -270,8 +295,12 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
     setState("connecting");
     setLines([]);
     setCard(null);
+    setCueCard(null);
     setElapsed(0);
+    setShowConversation(false);
+    endingRef.current = false;
     try {
+      await checkMicAccess();
       const supabase = createClient();
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -302,6 +331,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         const ev = JSON.parse(e.data as string) as Record<string, unknown>;
         switch (ev.type) {
           case "ready":
+            setCueCard((ev.card as CueCard) ?? null);
             setState("live");
             break;
           case "listening":
@@ -434,6 +464,8 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   });   // no dep array: press/release close over current state
 
   const end = () => {
+    if (endingRef.current) return;
+    endingRef.current = true;
     send({ type: "stop" });
     setTimeout(() => {
       if (state !== "ended") {
@@ -443,6 +475,14 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
     }, 8000);
   };
 
+  // The backend also enforces the cap, but ending locally keeps the UI honest
+  // if the socket is quiet or the last turn never arrives.
+  useEffect(() => {
+    if (state === "live" && elapsed >= 20 * 60) end();
+    // `end` intentionally closes over the current socket/state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [elapsed, state]);
+
   const mmss = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
   // The most recent teach card stays up until a NEWER one replaces it — a turn
   // without a card (a "didn't catch that", a nudge) must not blank the sentence
@@ -450,6 +490,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const lastCarded = [...lines].reverse().find((l) => l.who === "tutor" && (l.correction || l.upgrade));
   const lastCorrection = lastCarded?.correction ?? null;
   const lastUpgrade = lastCarded?.upgrade ?? null;
+  const lastTutorLine = [...lines].reverse().find((l) => l.who === "tutor" && l.text.trim());
+  const lastYouLine = [...lines].reverse().find((l) => l.who === "you" && l.text.trim());
+  const selectedMode = PRACTICE_MODES.find((item) => item.id === mode) ?? PRACTICE_MODES[0];
 
   // ---- setup screen (Lucida tutor pick) ----
   if (state === "idle" || state === "connecting") {
@@ -465,14 +508,44 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             Practise with your tutor
           </div>
           <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", maxWidth: 680, lineHeight: "var(--lh-relaxed)", margin: "0 0 32px" }}>
-            Your tutor asks what you want to work on, then the conversation becomes the lesson. Nothing to set up, nothing scored.
+            Choose the kind of conversation you need, then speak normally. Your tutor keeps the lesson moving,
+            corrects the most useful mistake, and gives you a stronger sentence to use straight away.
           </p>
+
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
+            How should your tutor teach you?
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginBottom: 30 }}>
+            {PRACTICE_MODES.map((item) => {
+              const on = mode === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setMode(item.id)}
+                  className="lc-card-tap"
+                  style={{
+                    textAlign: "left", cursor: "pointer", fontFamily: "inherit", padding: "15px 16px",
+                    borderRadius: "var(--radius-lg)", border: `1.5px solid ${on ? item.accent : "var(--color-neutral-200)"}`,
+                    background: on ? "var(--color-neutral-0)" : "rgba(251,248,246,0.55)",
+                    boxShadow: on ? "var(--shadow-1)" : "none",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontSize: "var(--text-base)", fontWeight: 700, color: on ? item.accent : "var(--color-neutral-800)" }}>{item.label}</span>
+                    <span aria-hidden style={{ width: 9, height: 9, borderRadius: "50%", background: on ? item.accent : "var(--color-neutral-300)", flexShrink: 0 }} />
+                  </div>
+                  <span style={{ display: "block", marginTop: 5, fontSize: "var(--text-xs)", lineHeight: "var(--lh-normal)", color: "var(--color-neutral-500)" }}>{item.detail}</span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* English is not one skill — pick what you're preparing for and the
               tutor confirms it in the greeting and shapes the whole lesson to it.
               Optional: pick nothing and the tutor just asks. */}
           <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
-            What do you want to practise?
+            Optional context
           </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 36 }}>
             {TOPICS.map((c) => {
@@ -533,10 +606,10 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             className="lc-btn lc-success"
             style={{ width: "100%", border: "none", background: "var(--color-success)", color: "#FFFFFF", fontSize: "var(--text-md)", fontWeight: 600, padding: 18, borderRadius: "var(--radius-lg)", cursor: "pointer", fontFamily: "inherit", opacity: state === "connecting" ? 0.6 : 1 }}
           >
-            {state === "connecting" ? "Connecting…" : `Start speaking with ${selected.name}`}
+            {state === "connecting" ? "Connecting…" : `Start ${selectedMode.label.toLowerCase()} with ${selected.name}`}
           </button>
           <p style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 12 }}>
-            Uses your microphone · up to 20 minutes · not scored
+            Uses your microphone · up to 20 minutes · not scored · you can change the conversation mode next time
           </p>
 
           {error ? <p style={{ color: "var(--color-error)", fontSize: "var(--text-sm)", margin: "16px 0 0" }}>{error}</p> : null}
@@ -636,7 +709,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
       {/* centre stage */}
       <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <div style={{ width: "min(620px, 100%)", margin: "0 auto", padding: "26px 24px 30px", textAlign: "center" }}>
-          <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 20 }}>Your tutor</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 11px", borderRadius: "var(--radius-pill)", background: "var(--color-success-bg)", color: "var(--color-success)", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", marginBottom: 18 }}>
+            {selectedMode.label} · {topic ?? "Open practice"}
+          </div>
           <div style={{ display: "inline-block", borderRadius: "50%", boxShadow: listening && !speaking ? `0 0 0 ${8 + micGlow * 16}px ${persona.tint}` : "none", transition: "box-shadow .12s ease-out" }}>
             <PersonaAvatar initial={persona.initial} accent={persona.accent} glow={persona.glow} size={128} ring={speaking} />
           </div>
@@ -663,6 +738,51 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                 ? "You can cut in any time"
                 : " "}
           </p>
+
+          {cueCard ? (
+            <div style={{ margin: "20px auto 0", maxWidth: 560, width: "100%", textAlign: "left", background: "rgba(218,119,86,0.08)", border: "1px solid rgba(218,119,86,0.25)", borderRadius: "var(--radius-xl)", padding: "16px 18px" }}>
+              <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-amber-600)", marginBottom: 7 }}>Cue card · use these notes</div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--color-neutral-1000)" }}>{cueCard.title}</div>
+              <ul style={{ margin: "8px 0 0", paddingLeft: 18, color: "var(--color-neutral-700)", fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)" }}>
+                {cueCard.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+              </ul>
+              <div style={{ marginTop: 6, fontSize: "var(--text-sm)", color: "var(--color-neutral-700)" }}>{cueCard.closing}</div>
+            </div>
+          ) : null}
+
+          {/* Voice-first does not have to mean memory-first: keeping the latest
+              exchange visible makes the tutor feel grounded and lets a learner
+              notice what was heard without forcing a giant transcript on them. */}
+          {lastTutorLine || lastYouLine ? (
+            <div style={{ margin: "22px auto 0", maxWidth: 560, width: "100%", display: "grid", gap: 8, textAlign: "left" }}>
+              {lastTutorLine ? (
+                <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "14px 14px 14px 5px", padding: "11px 14px", boxShadow: "var(--shadow-1)" }}>
+                  <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: persona.accent, marginBottom: 4 }}>{persona.name} said</div>
+                  <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>{lastTutorLine.text}</div>
+                </div>
+              ) : null}
+              {lastYouLine ? (
+                <div style={{ justifySelf: "end", maxWidth: "92%", background: "var(--color-success-bg)", border: "1px solid rgba(22,163,74,0.18)", borderRadius: "14px 14px 5px 14px", padding: "11px 14px" }}>
+                  <div style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-success)", marginBottom: 4 }}>You said</div>
+                  <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>{lastYouLine.text}</div>
+                </div>
+              ) : null}
+              {lines.length > 2 ? (
+                <button type="button" onClick={() => setShowConversation((v) => !v)} className="lc-btn lc-ghost" style={{ justifySelf: "center", border: "none", background: "transparent", color: "var(--color-neutral-500)", fontSize: "var(--text-xs)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "3px 8px" }}>
+                  {showConversation ? "Hide conversation" : `See conversation · ${lines.length} turns`}
+                </button>
+              ) : null}
+              {showConversation ? (
+                <div style={{ maxHeight: 180, overflowY: "auto", display: "grid", gap: 6, padding: "8px 10px", background: "rgba(243,237,233,0.55)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-lg)", textAlign: "left" }}>
+                  {lines.slice(-8).map((line, index) => (
+                    <div key={`${line.who}-${index}`} style={{ fontSize: "var(--text-xs)", lineHeight: "var(--lh-normal)", color: line.who === "tutor" ? "var(--color-neutral-700)" : "var(--color-success)" }}>
+                      <strong>{line.who === "tutor" ? persona.name : "You"}:</strong> {line.text}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* No running transcript (a SPOKEN lesson) — only the latest teach
               card; it stays up until the next card replaces it. */}
@@ -730,7 +850,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
               {handsFree ? "Switch to hold-to-talk" : "Switch to hands-free"}
             </button>
             <button onClick={() => send({ type: "skip" })} className="lc-btn lc-ghost" style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-pill)", padding: "10px 18px", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--color-neutral-600)" }}>
-              Skip this question
+              Move on
             </button>
             <button onClick={() => setConfirmEnd(true)} className="lc-btn lc-danger" style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-pill)", padding: "10px 18px", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--color-error)" }}>
               End lesson

@@ -399,7 +399,7 @@ export function SpeakingClient({
       setError(e instanceof Error ? e.message : "Could not start — check mic permission.");
       setPhase("idle");
     }
-  }, [difficulty, record]);
+  }, [difficulty, initialCardId, record]);
 
   const reset = () => {
     clearTimer();

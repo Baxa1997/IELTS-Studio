@@ -78,8 +78,6 @@ export function ListenBack({
     .map((p) => `Part ${p} ${mmss(Number(parts[p]))}`)
     .join(" · ");
 
-  let lastPart = 0;
-
   return (
     <section
       style={{
@@ -163,8 +161,9 @@ export function ListenBack({
       >
         {timed.map((t, i) => {
           const isActive = i === active && playing;
+          const previousPart = timed[i - 1]?.part;
           const chip =
-            t.part !== lastPart ? (
+            t.part !== previousPart ? (
               <div
                 key={`p${t.part}`}
                 style={{
@@ -177,8 +176,7 @@ export function ListenBack({
               >
                 PART {t.part}
               </div>
-            ) : null;
-          lastPart = t.part;
+              ) : null;
           return (
             <div key={i}>
               {chip}

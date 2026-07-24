@@ -164,6 +164,16 @@ async function startMic(sink: (pcm16: ArrayBuffer) => void): Promise<Mic> {
   };
 }
 
+/** Ask for permission before reserving a mock attempt. A denied microphone
+ * should never leave a limited session sitting live on the server. */
+async function checkMicAccess(): Promise<void> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error("This browser cannot access a microphone. Try Chrome, Safari, or Edge over HTTPS.");
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((track) => track.stop());
+}
+
 function wsUrl(session_id: string, token: string, examiner: string): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const ws = base.replace(/^http/, "ws"); // https→wss, http→ws
@@ -394,7 +404,9 @@ export function LiveMock({
     setError(null);
     setPhase("connecting");
     try {
-      // 1. reserve the session (plan-gated) over plain HTTP → clean 402/429
+      // 1. check the mic before reserving the session (plan-gated) over plain
+      // HTTP. Permission errors should be fixable without spending a mock.
+      await checkMicAccess();
       const supabase = createClient();
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       if (!token) throw new Error("Your session expired — please sign in again.");
@@ -452,11 +464,17 @@ export function LiveMock({
         setPhase((p) => (p === "ended" || p === "error" ? p : "ended"));
       };
       ws.onopen = async () => {
-        const mic = await startMic((pcm) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
-        });
-        mic.onLevel((rms) => setMicLevel(rms));
-        micRef.current = mic;
+        try {
+          const mic = await startMic((pcm) => {
+            if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
+          });
+          mic.onLevel((rms) => setMicLevel(rms));
+          micRef.current = mic;
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Microphone unavailable.");
+          setPhase("error");
+          teardown();
+        }
       };
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the mock.");
@@ -476,10 +494,11 @@ export function LiveMock({
       setPhase((p) => {
         if (p === "ended" || p === "error" || p === "idle" || p === "instructions") return p;
         setGrading(true);
+        teardown();
         return "ended";
       });
     }, 6000);
-  }, []);
+  }, [teardown]);
 
   // ---- render (Lucida) -------------------------------------------------------
 
@@ -790,6 +809,20 @@ export function LiveMock({
       {/* whole-test progress line (16-min cap) */}
       <div aria-hidden style={{ flex: "none", height: 3, background: "var(--color-neutral-100)" }}>
         <div style={{ height: "100%", width: `${Math.min(100, Math.max(1.5, (elapsed / 960) * 100))}%`, background: "var(--color-primary-500)", transition: "width 1s linear" }} />
+      </div>
+      {/* Keep the test structure visible. A timer alone creates pressure; this
+          gives the learner a calm answer to “how much is left?” */}
+      <div style={{ flex: "none", display: "flex", justifyContent: "center", gap: 8, padding: "10px 18px 0" }} aria-label={`Part ${part} of 3`}>
+        {[1, 2, 3].map((step) => {
+          const active = step === part;
+          const done = step < part;
+          return (
+            <div key={step} style={{ display: "flex", alignItems: "center", gap: 7, color: active ? "var(--color-primary-600)" : done ? "var(--color-success)" : "var(--color-neutral-400)", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase" }}>
+              <span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: active ? "var(--color-primary-500)" : done ? "var(--color-success-bg)" : "var(--color-neutral-100)", color: active ? "#fff" : done ? "var(--color-success)" : "var(--color-neutral-500)", fontSize: "var(--text-2xs)" }}>{done ? "✓" : step}</span>
+              <span>{PART_LABEL_SHORT[step]}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* ── centre stage ── */}

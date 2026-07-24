@@ -15,7 +15,6 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INK = "#1C1B2E";
 const MUTED = "#56556A";
-const LINE = "#E8E6F0";
 const RED = "#b91c1c";
 
 export function ConfirmQuit({
