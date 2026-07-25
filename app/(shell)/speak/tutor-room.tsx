@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { checkMicAccess, startMic, VoicePlayer } from "./audio";
 import { ConfirmQuit } from "./confirm-quit";
 import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./lucida";
 
@@ -22,9 +23,7 @@ import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./l
  * you may interrupt, and the tutor simply listens again.
  */
 
-const IN_RATE = 16000;
-const OUT_RATE = 24000;
-/** Small head start before a turn plays. The engine now sends each reply as one
+/** Small head start before a turn plays. The engine sends each reply as one
  *  complete clip (Cloud TTS), so this only absorbs network jitter, not the
  *  generation starvation that used to break sentences apart. */
 const JITTER_LEAD_S = 0.15;
@@ -52,141 +51,6 @@ interface CueCard {
   title: string;
   bullets: string[];
   closing: string;
-}
-
-// ---- audio ------------------------------------------------------------------
-
-/**
- * Plays the tutor's 24 kHz PCM and reports when playback has REALLY finished.
- * Without that report the engine would open the mic while the tutor's voice was
- * still coming out of the speakers, and it would hear and answer itself.
- */
-class VoicePlayer {
-  private ctx: AudioContext;
-  private next = 0;
-  private live = 0;
-  private sources = new Set<AudioBufferSourceNode>();
-  onPlaying: ((on: boolean) => void) | null = null;
-  onDrained: (() => void) | null = null;
-  constructor(private rate = OUT_RATE) {
-    this.ctx = new AudioContext();
-  }
-  resume() {
-    void this.ctx.resume();
-  }
-  get busy(): boolean {
-    return this.live > 0;
-  }
-  /** Start of a new tutor turn: re-arm the jitter buffer. */
-  beginTurn() {
-    this.next = 0;
-  }
-
-  push(pcm: ArrayBuffer) {
-    const i16 = new Int16Array(pcm);
-    if (!i16.length) return;
-    const buf = this.ctx.createBuffer(1, i16.length, this.rate);
-    const ch = buf.getChannelData(0);
-    for (let i = 0; i < i16.length; i++) ch[i] = i16[i] / 32768;
-    const src = this.ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(this.ctx.destination);
-    if (this.live === 0) this.onPlaying?.(true);
-    this.live += 1;
-    this.sources.add(src);
-    src.onended = () => {
-      this.sources.delete(src);
-      this.live -= 1;
-      if (this.live === 0) {
-        this.onPlaying?.(false);
-        this.onDrained?.();
-      }
-    };
-    // A small head start on the first chunk of a turn absorbs network jitter.
-    const lead = this.next === 0 ? JITTER_LEAD_S : 0.02;
-    const t = Math.max(this.ctx.currentTime + lead, this.next);
-    src.start(t);
-    this.next = t + buf.duration;
-  }
-  /**
-   * The learner cut in: drop the rest of this turn immediately. `onended` is
-   * detached first — otherwise stopping would run the drain path and report a
-   * turn as PLAYED that the learner deliberately never heard.
-   */
-  stop() {
-    for (const src of this.sources) {
-      src.onended = null;
-      try {
-        src.stop();
-      } catch {
-        /* already finished */
-      }
-    }
-    this.sources.clear();
-    this.live = 0;
-    this.next = 0;
-    this.onPlaying?.(false);
-  }
-  close() {
-    void this.ctx.close();
-  }
-}
-
-const WORKLET_SRC = `
-class Tap extends AudioWorkletProcessor {
-  process(inputs){ const ch = inputs[0]?.[0]; if (ch) this.port.postMessage(ch.slice(0)); return true; }
-}
-registerProcessor("tutor-tap", Tap);`;
-
-async function startMic(
-  sink: (pcm16: ArrayBuffer) => void,
-  level: (rms: number) => void,
-): Promise<() => void> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-  });
-  const ctx = new AudioContext();
-  await ctx.audioWorklet.addModule(
-    URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" })),
-  );
-  const src = ctx.createMediaStreamSource(stream);
-  const tap = new AudioWorkletNode(ctx, "tutor-tap");
-  src.connect(tap);
-  const ratio = ctx.sampleRate / IN_RATE;
-  let frac = 0;
-  tap.port.onmessage = (e: MessageEvent<Float32Array>) => {
-    const input = e.data;
-    let s = 0;
-    for (let i = 0; i < input.length; i++) s += input[i] * input[i];
-    level(Math.sqrt(s / input.length));
-    const out: number[] = [];
-    for (; frac < input.length; frac += ratio) {
-      const i = Math.floor(frac);
-      const a = input[i] ?? 0;
-      const b = input[i + 1] ?? a;
-      out.push(a + (b - a) * (frac - i));
-    }
-    frac -= input.length;
-    const pcm = new Int16Array(out.length);
-    for (let i = 0; i < out.length; i++) {
-      const v = Math.max(-1, Math.min(1, out[i]));
-      pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
-    }
-    if (pcm.length) sink(pcm.buffer);
-  };
-  return () => {
-    tap.port.onmessage = null;
-    stream.getTracks().forEach((t) => t.stop());
-    void ctx.close();
-  };
-}
-
-async function checkMicAccess(): Promise<void> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("This browser cannot access a microphone. Try Chrome, Safari, or Edge over HTTPS.");
-  }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  stream.getTracks().forEach((track) => track.stop());
 }
 
 // Which language the tutor EXPLAINS in when it teaches. English stays the
@@ -349,7 +213,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
       const token = data.session?.access_token;
       if (!token) throw new Error("Your session expired — please sign in again.");
 
-      const player = new VoicePlayer();
+      const player = new VoicePlayer({ leadS: JITTER_LEAD_S, gapS: 0.02 });
       player.onPlaying = setSpeaking;
       player.resume();
       playerRef.current = player;
@@ -457,12 +321,10 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         setThinking(false);
       };
 
-      stopMicRef.current = await startMic(
-        (pcm) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
-        },
-        setLevel,
-      );
+      const mic = await startMic((pcm) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
+      }, setLevel);
+      stopMicRef.current = mic.stop;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the lesson.");
       setState("idle");
