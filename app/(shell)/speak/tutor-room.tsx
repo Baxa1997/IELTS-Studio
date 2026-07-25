@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { checkMicAccess, startMic, VoicePlayer } from "./audio";
 import { ConfirmQuit } from "./confirm-quit";
 import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./lucida";
 
@@ -22,9 +23,7 @@ import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./l
  * you may interrupt, and the tutor simply listens again.
  */
 
-const IN_RATE = 16000;
-const OUT_RATE = 24000;
-/** Small head start before a turn plays. The engine now sends each reply as one
+/** Small head start before a turn plays. The engine sends each reply as one
  *  complete clip (Cloud TTS), so this only absorbs network jitter, not the
  *  generation starvation that used to break sentences apart. */
 const JITTER_LEAD_S = 0.15;
@@ -54,122 +53,27 @@ interface CueCard {
   closing: string;
 }
 
-// ---- audio ------------------------------------------------------------------
+// Which language the tutor EXPLAINS in when it teaches. English stays the
+// practice language either way; this only controls the scaffolding. "auto" lets
+// the tutor follow whatever the learner speaks — fine for a confident learner,
+// but a beginner who needs Uzbek had no way to say so before this control.
+type SupportLanguage = "auto" | "en" | "uz" | "ru";
+const SUPPORT_LANGUAGES: { id: SupportLanguage; label: string; short: string }[] = [
+  { id: "auto", label: "Follow me", short: "Auto" },
+  { id: "en", label: "English only", short: "EN" },
+  { id: "uz", label: "O'zbekcha", short: "UZ" },
+  { id: "ru", label: "Русский", short: "RU" },
+];
 
-/**
- * Plays the tutor's 24 kHz PCM and reports when playback has REALLY finished.
- * Without that report the engine would open the mic while the tutor's voice was
- * still coming out of the speakers, and it would hear and answer itself.
- */
-class VoicePlayer {
-  private ctx: AudioContext;
-  private next = 0;
-  private live = 0;
-  onPlaying: ((on: boolean) => void) | null = null;
-  onDrained: (() => void) | null = null;
-  constructor(private rate = OUT_RATE) {
-    this.ctx = new AudioContext();
-  }
-  resume() {
-    void this.ctx.resume();
-  }
-  get busy(): boolean {
-    return this.live > 0;
-  }
-  /** Start of a new tutor turn: re-arm the jitter buffer. */
-  beginTurn() {
-    this.next = 0;
-  }
-
-  push(pcm: ArrayBuffer) {
-    const i16 = new Int16Array(pcm);
-    if (!i16.length) return;
-    const buf = this.ctx.createBuffer(1, i16.length, this.rate);
-    const ch = buf.getChannelData(0);
-    for (let i = 0; i < i16.length; i++) ch[i] = i16[i] / 32768;
-    const src = this.ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(this.ctx.destination);
-    if (this.live === 0) this.onPlaying?.(true);
-    this.live += 1;
-    src.onended = () => {
-      this.live -= 1;
-      if (this.live === 0) {
-        this.onPlaying?.(false);
-        this.onDrained?.();
-      }
-    };
-    // A small head start on the first chunk of a turn absorbs network jitter.
-    const lead = this.next === 0 ? JITTER_LEAD_S : 0.02;
-    const t = Math.max(this.ctx.currentTime + lead, this.next);
-    src.start(t);
-    this.next = t + buf.duration;
-  }
-  close() {
-    void this.ctx.close();
-  }
-}
-
-const WORKLET_SRC = `
-class Tap extends AudioWorkletProcessor {
-  process(inputs){ const ch = inputs[0]?.[0]; if (ch) this.port.postMessage(ch.slice(0)); return true; }
-}
-registerProcessor("tutor-tap", Tap);`;
-
-async function startMic(
-  sink: (pcm16: ArrayBuffer) => void,
-  level: (rms: number) => void,
-): Promise<() => void> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-  });
-  const ctx = new AudioContext();
-  await ctx.audioWorklet.addModule(
-    URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" })),
-  );
-  const src = ctx.createMediaStreamSource(stream);
-  const tap = new AudioWorkletNode(ctx, "tutor-tap");
-  src.connect(tap);
-  const ratio = ctx.sampleRate / IN_RATE;
-  let frac = 0;
-  tap.port.onmessage = (e: MessageEvent<Float32Array>) => {
-    const input = e.data;
-    let s = 0;
-    for (let i = 0; i < input.length; i++) s += input[i] * input[i];
-    level(Math.sqrt(s / input.length));
-    const out: number[] = [];
-    for (; frac < input.length; frac += ratio) {
-      const i = Math.floor(frac);
-      const a = input[i] ?? 0;
-      const b = input[i + 1] ?? a;
-      out.push(a + (b - a) * (frac - i));
-    }
-    frac -= input.length;
-    const pcm = new Int16Array(out.length);
-    for (let i = 0; i < out.length; i++) {
-      const v = Math.max(-1, Math.min(1, out[i]));
-      pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
-    }
-    if (pcm.length) sink(pcm.buffer);
-  };
-  return () => {
-    tap.port.onmessage = null;
-    stream.getTracks().forEach((t) => t.stop());
-    void ctx.close();
-  };
-}
-
-async function checkMicAccess(): Promise<void> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("This browser cannot access a microphone. Try Chrome, Safari, or Edge over HTTPS.");
-  }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  stream.getTracks().forEach((track) => track.stop());
-}
-
-function wsUrl(mode: Mode, token: string, voice: string, context: string): string {
+function wsUrl(
+  mode: Mode, token: string, voice: string, context: string,
+  supportLanguage: SupportLanguage,
+): string {
   const base = clientEnv.aiBackendUrl ?? "";
-  const q = new URLSearchParams({ token, mode, voice, ...(context ? { context } : {}) });
+  const q = new URLSearchParams({
+    token, mode, voice, support_language: supportLanguage,
+    ...(context ? { context } : {}),
+  });
   return `${base.replace(/^http/, "ws")}/speaking/tutor/live?${q.toString()}`;
 }
 
@@ -197,6 +101,12 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [kindId, setKindId] = useState("free");
   const selectedKind = KINDS.find((k) => k.id === kindId) ?? KINDS[0];
   const [voice, setVoice] = useState("daniel");
+  const [supportLanguage, setSupportLanguage] = useState<SupportLanguage>(
+    () =>
+      (typeof window === "undefined"
+        ? "auto"
+        : ((localStorage.getItem("tutorSupportLanguage") as SupportLanguage) ?? "auto")),
+  );
   const [lines, setLines] = useState<Line[]>([]);
   const [listening, setListening] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -207,6 +117,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const [cueCard, setCueCard] = useState<CueCard | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [showConversation, setShowConversation] = useState(false);
+  // The lesson card is written by an LLM after the last turn; say so instead of
+  // leaving the room looking frozen.
+  const [wrappingUp, setWrappingUp] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const playerRef = useRef<VoicePlayer | null>(null);
@@ -300,7 +213,7 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
       const token = data.session?.access_token;
       if (!token) throw new Error("Your session expired — please sign in again.");
 
-      const player = new VoicePlayer();
+      const player = new VoicePlayer({ leadS: JITTER_LEAD_S, gapS: 0.02 });
       player.onPlaying = setSpeaking;
       player.resume();
       playerRef.current = player;
@@ -313,7 +226,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         }
       };
 
-      const ws = new WebSocket(wsUrl(selectedKind.mode, token, voice, selectedKind.context));
+      const ws = new WebSocket(
+        wsUrl(selectedKind.mode, token, voice, selectedKind.context, supportLanguage),
+      );
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
@@ -325,7 +240,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         const ev = JSON.parse(e.data as string) as Record<string, unknown>;
         switch (ev.type) {
           case "ready":
-            setCueCard((ev.card as CueCard) ?? null);
+            // The engine's field is `cue_card` (speaking/tutor.py run()); reading
+            // `card` here meant the cue card never rendered.
+            setCueCard((ev.cue_card as CueCard) ?? null);
             setState("live");
             break;
           case "listening":
@@ -368,6 +285,18 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             }
             break;
           }
+          case "interrupt":
+            // The engine heard the learner talking over the tutor and has
+            // handed them the floor. Stop mid-sentence, like a person would,
+            // and never report the rest of the turn as played.
+            pendingSeqRef.current = null;
+            player.stop();
+            break;
+          case "settings":
+            if (typeof ev.support_language === "string") {
+              setSupportLanguage(ev.support_language as SupportLanguage);
+            }
+            break;
           case "lesson":
             setCard((ev.card as LessonCard) ?? {});
             setState("ended");
@@ -392,12 +321,10 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
         setThinking(false);
       };
 
-      stopMicRef.current = await startMic(
-        (pcm) => {
-          if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
-        },
-        setLevel,
-      );
+      const mic = await startMic((pcm) => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
+      }, setLevel);
+      stopMicRef.current = mic.stop;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the lesson.");
       setState("idle");
@@ -419,6 +346,15 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
     send({ type: "mode", hands_free: handsFree });
     localStorage.setItem("tutorHandsFree", handsFree ? "1" : "0");
   }, [handsFree, state]);
+
+  // The moment a beginner realises they need Uzbek is MID-lesson, so this is
+  // changeable live, not only on the setup screen. The engine acknowledges with
+  // a `settings` event.
+  useEffect(() => {
+    localStorage.setItem("tutorSupportLanguage", supportLanguage);
+    if (state !== "live") return;
+    send({ type: "support_language", language: supportLanguage });
+  }, [supportLanguage, state]);
 
   const press = () => {
     if (handsFree || pressed) return;
@@ -460,13 +396,18 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
   const end = () => {
     if (endingRef.current) return;
     endingRef.current = true;
+    setWrappingUp(true);
     send({ type: "stop" });
+    // The engine writes the lesson card with an LLM call AFTER the socket's
+    // last turn, which routinely outruns a few seconds. Bailing out at 8s tore
+    // the room down mid-write and left the learner staring at "Lesson complete"
+    // and nothing else, after twenty minutes of work.
     setTimeout(() => {
       if (state !== "ended") {
         teardown();
         setState("ended");
       }
-    }, 8000);
+    }, 25000);
   };
 
   // The backend also enforces the cap, but ending locally keeps the UI honest
@@ -544,6 +485,39 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             })}
           </div>
 
+          {/* English stays the practice language; this is the language the
+              tutor EXPLAINS in when it teaches. Without it a beginner had no
+              way to ask for Uzbek — the tutor could only guess from what they
+              happened to say. */}
+          <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
+            Explain things to me in
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {SUPPORT_LANGUAGES.map((item) => {
+              const on = supportLanguage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSupportLanguage(item.id)}
+                  className="lc-btn lc-ghost"
+                  style={{
+                    padding: "10px 18px", borderRadius: "var(--radius-pill)", cursor: "pointer",
+                    fontFamily: "inherit", fontSize: "var(--text-sm)", fontWeight: 600,
+                    border: `1.5px solid ${on ? "var(--color-primary-600)" : "var(--color-neutral-200)"}`,
+                    background: on ? "var(--color-neutral-0)" : "rgba(251,248,246,0.55)",
+                    color: on ? "var(--color-primary-600)" : "var(--color-neutral-600)",
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", margin: "0 0 36px" }}>
+            You always practise in English — this only changes the language your tutor explains in.
+          </p>
+
           <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-500)", marginBottom: 12 }}>
             Choose your tutor
           </div>
@@ -611,6 +585,18 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             Lesson complete
           </div>
           <p style={{ margin: "0 0 22px", fontSize: "var(--text-sm)", color: "var(--color-neutral-500)" }}>{mmss} of practice</p>
+
+          {/* The write-up is an LLM call and can fail. The practice still
+              counted and the session is stored — say so, rather than showing
+              "Lesson complete" above an empty page. */}
+          {!card?.headline && !card?.focus?.length && !card?.better_sentences?.length && !card?.practise_next ? (
+            <div style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-xl)", padding: "18px 20px", marginBottom: 16 }}>
+              <p style={{ margin: 0, fontSize: "var(--text-base)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-700)" }}>
+                Your practice is saved, but the written summary didn&rsquo;t come through this
+                time. The minutes still counted, and the lesson is in your Speaking history.
+              </p>
+            </div>
+          ) : null}
 
           {card?.headline ? (
             <div style={{ background: "var(--color-success-bg)", border: "1px solid rgba(22,163,74,0.2)", borderRadius: "var(--radius-xl)", padding: "16px 20px", marginBottom: 16 }}>
@@ -707,7 +693,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
             <WaveBars color={persona.accent} active={speaking || listening} />
           </div>
           <p style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--color-neutral-1000)" }}>
-            {speaking
+            {wrappingUp
+              ? "Writing up your lesson…"
+              : speaking
               ? `${persona.name} is speaking`
               : thinking
                 ? "Thinking…"
@@ -718,7 +706,9 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
                     : "One moment…"}
           </p>
           <p style={{ margin: "6px 0 0", fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", minHeight: 20 }}>
-            {listening
+            {wrappingUp
+              ? "This takes a few seconds — please don't close the tab"
+              : listening
               ? handsFree
                 ? "Pause when you're done and I'll pick it up"
                 : "Hold the button (or the spacebar) while you speak"
@@ -830,6 +820,36 @@ export function TutorRoom({ onExit }: { onExit?: () => void }) {
               </button>
             </div>
           ) : null}
+
+          {/* Live support-language switch: the moment a learner gets stuck is
+              exactly when they need to ask for their own language, and leaving
+              the lesson to change it is not an option. */}
+          <div style={{ display: "flex", gap: 6, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+            <span style={{ fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase", color: "var(--color-neutral-400)", marginRight: 2 }}>
+              Explain in
+            </span>
+            {SUPPORT_LANGUAGES.map((item) => {
+              const on = supportLanguage === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSupportLanguage(item.id)}
+                  className="lc-btn lc-ghost"
+                  title={item.label}
+                  style={{
+                    padding: "6px 12px", borderRadius: "var(--radius-pill)", cursor: "pointer",
+                    fontFamily: "inherit", fontSize: "var(--text-2xs)", fontWeight: 700,
+                    border: `1px solid ${on ? "var(--color-primary-600)" : "var(--color-neutral-200)"}`,
+                    background: on ? "var(--color-neutral-0)" : "transparent",
+                    color: on ? "var(--color-primary-600)" : "var(--color-neutral-500)",
+                  }}
+                >
+                  {item.short}
+                </button>
+              );
+            })}
+          </div>
 
           <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
             <button onClick={() => setHandsFree((v) => !v)} className="lc-btn lc-ghost" style={{ background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-pill)", padding: "10px 18px", fontSize: "var(--text-sm)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", color: "var(--color-neutral-600)" }}>

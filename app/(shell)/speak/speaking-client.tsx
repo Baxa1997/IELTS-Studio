@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { WORKLET_SRC } from "./audio";
 import { LucidaScope } from "./lucida";
 import { type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
@@ -92,17 +93,6 @@ async function engineJson<T>(path: string, init: RequestInit): Promise<T> {
 }
 
 // ---- 16k WAV recorder (AudioWorklet → Float32 → downsample → PCM16) ----------
-
-const WORKLET_SRC = `
-class Tap extends AudioWorkletProcessor {
-  process(inputs) {
-    const ch = inputs[0]?.[0];
-    if (ch) this.port.postMessage(ch.slice(0));
-    return true;
-  }
-}
-registerProcessor("speak-tap", Tap);
-`;
 
 interface Recorder {
   stop: () => Promise<{ wav: Blob; durationS: number }>;

@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
+import { checkMicAccess, type Mic, startMic, VoicePlayer } from "./audio";
 import { ConfirmQuit } from "./confirm-quit";
 import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars, mmss, type Persona } from "./lucida";
 
@@ -18,7 +19,6 @@ import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars, mmss, type
  * the examiner, and renders the room. No model is ever called from here.
  */
 
-const IN_RATE = 16000;
 
 interface CueCard {
   title: string;
@@ -52,128 +52,6 @@ interface PhaseEvent {
 }
 
 // ---- examiner voice playback (24 kHz PCM16 → scheduled AudioBuffers) ---------
-// Tracks REAL playback: the engine must not open the mic until the candidate has
-// actually heard the examiner finish (generation runs far ahead of playback), so
-// we report `onDrained` when the scheduled queue empties and the engine waits for
-// our {type:"played"} before treating the turn as over.
-
-class VoicePlayer {
-  private ctx: AudioContext;
-  private next = 0;
-  private liveSources = 0;
-  onPlaying: ((on: boolean) => void) | null = null;
-  onDrained: (() => void) | null = null;
-  constructor(private rate = 24000) {
-    this.ctx = new AudioContext();
-  }
-  resume() {
-    void this.ctx.resume();
-  }
-  get busy(): boolean {
-    return this.liveSources > 0;
-  }
-  push(pcm: ArrayBuffer) {
-    const i16 = new Int16Array(pcm);
-    if (!i16.length) return;
-    const buf = this.ctx.createBuffer(1, i16.length, this.rate);
-    const ch = buf.getChannelData(0);
-    for (let i = 0; i < i16.length; i++) ch[i] = i16[i] / 32768;
-    const src = this.ctx.createBufferSource();
-    src.buffer = buf;
-    src.connect(this.ctx.destination);
-    if (this.liveSources === 0) this.onPlaying?.(true);
-    this.liveSources += 1;
-    src.onended = () => {
-      this.liveSources -= 1;
-      if (this.liveSources === 0) {
-        this.onPlaying?.(false);
-        this.onDrained?.();
-      }
-    };
-    const t = Math.max(this.ctx.currentTime + 0.06, this.next);
-    src.start(t);
-    this.next = t + buf.duration;
-  }
-  close() {
-    void this.ctx.close();
-  }
-}
-
-// ---- mic capture → 16 kHz PCM16 chunks --------------------------------------
-
-const WORKLET_SRC = `
-class Tap extends AudioWorkletProcessor {
-  process(inputs){ const ch = inputs[0]?.[0]; if (ch) this.port.postMessage(ch.slice(0)); return true; }
-}
-registerProcessor("mock-tap", Tap);`;
-
-interface Mic {
-  stop: () => void;
-  onLevel: (cb: (rms: number) => void) => void;
-}
-
-async function startMic(sink: (pcm16: ArrayBuffer) => void): Promise<Mic> {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-  });
-  const ctx = new AudioContext();
-  await ctx.audioWorklet.addModule(
-    URL.createObjectURL(new Blob([WORKLET_SRC], { type: "application/javascript" })),
-  );
-  const src = ctx.createMediaStreamSource(stream);
-  const tap = new AudioWorkletNode(ctx, "mock-tap");
-  src.connect(tap);
-
-  const ratio = ctx.sampleRate / IN_RATE; // e.g. 48000/16000 = 3
-  let frac = 0; // fractional read cursor carried across chunks
-  let levelCb: ((rms: number) => void) | null = null;
-
-  tap.port.onmessage = (e: MessageEvent<Float32Array>) => {
-    const input = e.data;
-    if (levelCb) {
-      let s = 0;
-      for (let i = 0; i < input.length; i++) s += input[i] * input[i];
-      levelCb(Math.sqrt(s / input.length));
-    }
-    // linear-resample to 16 kHz
-    const out: number[] = [];
-    for (; frac < input.length; frac += ratio) {
-      const i = Math.floor(frac);
-      const a = input[i] ?? 0;
-      const b = input[i + 1] ?? a;
-      out.push(a + (b - a) * (frac - i));
-    }
-    frac -= input.length;
-    const pcm = new Int16Array(out.length);
-    for (let i = 0; i < out.length; i++) {
-      const v = Math.max(-1, Math.min(1, out[i]));
-      pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
-    }
-    if (pcm.length) sink(pcm.buffer);
-  };
-
-  return {
-    onLevel: (cb) => {
-      levelCb = cb;
-    },
-    stop: () => {
-      tap.port.onmessage = null;
-      stream.getTracks().forEach((t) => t.stop());
-      void ctx.close();
-    },
-  };
-}
-
-/** Ask for permission before reserving a mock attempt. A denied microphone
- * should never leave a limited session sitting live on the server. */
-async function checkMicAccess(): Promise<void> {
-  if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("This browser cannot access a microphone. Try Chrome, Safari, or Edge over HTTPS.");
-  }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  stream.getTracks().forEach((track) => track.stop());
-}
-
 function wsUrl(session_id: string, token: string, examiner: string): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const ws = base.replace(/^http/, "ws"); // https→wss, http→ws
