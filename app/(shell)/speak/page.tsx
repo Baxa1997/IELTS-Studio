@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { type OrgPlan, planTier } from "@/lib/billing/plans";
 import { createClient } from "@/lib/supabase/server";
 
 import type { SpeakProgressItem } from "./progress";
@@ -50,7 +51,7 @@ export default async function SpeakPage({
   const [{ data: mocks }, { data: attempts }, { data: lessons }] = await Promise.all([
     supabase
       .from("speaking_sessions")
-      .select("id, started_at, result")
+      .select("id, started_at, metrics, result")
       .eq("mode", "full")
       .eq("state", "graded")
       .order("started_at", { ascending: false })
@@ -83,11 +84,14 @@ export default async function SpeakPage({
   const recentMocks = (mocks ?? [])
     .map((m) => {
       const r = m.result as GradedResult | null;
+      // Who examined them, when the engine recorded it (metrics.examiner —
+      // added 2026-07-29). Older rows simply show the date.
+      const who = (m.metrics as { examiner?: string } | null)?.examiner;
       return r && typeof r.overall_band === "number"
-        ? { id: m.id as string, t: m.started_at as string, band: r.overall_band }
+        ? { id: m.id as string, t: m.started_at as string, band: r.overall_band, who: typeof who === "string" ? who : null }
         : null;
     })
-    .filter((x): x is { id: string; t: string; band: number } => x !== null)
+    .filter((x): x is { id: string; t: string; band: number; who: string | null } => x !== null)
     .slice(0, 5);
 
   const recentLessons = (lessons ?? [])
@@ -104,12 +108,41 @@ export default async function SpeakPage({
     })
     .filter((l) => l.minutes > 0.2);   // hide instantly-abandoned connections
 
+  // The mock allowance, mirroring the engine's own gate (quota.py
+  // PLAN_FULL_MOCK_LIMITS + ensure_full_mock_quota) so the hub never promises a
+  // mock the engine will refuse. Counted the same way: this calendar month,
+  // mode=full, anything past `pending` — a session the user backed out of
+  // before connecting spent nothing and is not charged.
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const resetsAt = new Date(monthStart);
+  resetsAt.setUTCMonth(resetsAt.getUTCMonth() + 1);
+  const { count: mocksUsed } = await supabase
+    .from("speaking_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("mode", "full")
+    .neq("state", "pending")
+    .gte("started_at", monthStart.toISOString());
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("plan")
+    .eq("id", profile.organization_id)
+    .maybeSingle();
+  const allowance = {
+    used: mocksUsed ?? 0,
+    limit: planTier((org?.plan ?? "trial") as OrgPlan).fullMockLimit,
+    resetsAt: resetsAt.toISOString(),
+  };
+
   return (
     <SpeakingClient
       initialCardId={card}
       progress={progress}
       recentMocks={recentMocks}
       recentLessons={recentLessons}
+      allowance={allowance}
     />
   );
 }

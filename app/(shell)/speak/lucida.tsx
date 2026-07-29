@@ -59,7 +59,9 @@ const LUCIDA_CSS = `
   /* --- type --- */
   --font-display: var(--font-bricolage), Georgia, serif;
   --font-body:    var(--font-jakarta), system-ui, sans-serif;
-  --font-mono:    var(--font-geist-mono), ui-monospace, monospace;
+  /* Every number and small-caps label: timers, bands, wpm. JetBrains Mono per
+     the design — tabular so a running clock does not jitter. */
+  --font-mono:    var(--font-mono-data), ui-monospace, monospace;
   --fw-light: 300; --fw-regular: 400; --fw-medium: 500;
   --fw-semibold: 600; --fw-bold: 700; --fw-extrabold: 800;
   --text-2xs: 0.6875rem; --text-xs: 0.75rem; --text-sm: 0.8125rem;
@@ -111,10 +113,45 @@ const LUCIDA_CSS = `
 .lc-two-col { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(300px,1fr); gap: 32px; align-items: start; }
 .lc-persona-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
 .lc-stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+/* tutor setup: matched tutor beside the language/summary card */
+.lc-setup-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; align-items: start; }
+/* tutor room: the stage, and the coaching rail beside it */
+.lc-room-grid { display: grid; grid-template-columns: minmax(0,1fr) 340px; gap: 26px; align-items: start; }
+/* hub: the main card beside its summary rail */
+.lc-hub-grid { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(0,1fr); gap: 22px; align-items: start; }
+/* mock setup: the assignment beside its summary */
+.lc-setup-wide { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); gap: 26px; align-items: start; }
+/* mock result: the band circle beside the verdict */
+.lc-result-grid { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 32px; align-items: center; }
+.lc-row { transition: background 160ms ease; }
+.lc-row:hover { background: #F7F4F2; }
+
+/* --- full-bleed pages ---
+   The app shell hands every page a scrolling surface of indefinite height, so a
+   child asking for height:100% has nothing to measure against. A page that
+   should FILL the window rather than grow past it tags itself .lucida-fill,
+   and this reaches back up the tree to make that one wrapper definite. Scoped
+   by :has() so no other shell page is touched. */
+.lp-shell-surface:has(> * > .lucida-fill),
+.lp-shell-surface:has(> .lucida-fill) { overflow: hidden; display: flex; flex-direction: column; }
+.lp-shell-surface:has(> * > .lucida-fill) > *,
+.lp-shell-surface:has(> .lucida-fill) > * { flex: 1; min-height: 0; }
+/* Standalone (the chrome-free /speak/exam and /speak/tutor studio routes) there
+   is no shell surface to inherit from, so the viewport is the measure. Inside
+   the shell the rule above wins and hands it a definite parent instead. */
+.lucida-fill { min-height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.lp-shell-surface .lucida-fill { min-height: 0; height: 100%; }
 @media (max-width: 900px) {
   .lc-two-col { grid-template-columns: 1fr; }
   .lc-persona-grid { grid-template-columns: repeat(2,1fr); }
   .lc-stat-grid { grid-template-columns: 1fr; }
+  .lc-setup-grid { grid-template-columns: 1fr; }
+  .lc-hub-grid { grid-template-columns: 1fr; }
+  .lc-setup-wide { grid-template-columns: 1fr; }
+  .lc-result-grid { grid-template-columns: 1fr; gap: 24px; }
+  /* The rail drops BELOW the stage rather than squeezing beside it — the
+     coaching card is the thing worth reading, not a 120px column of it. */
+  .lc-room-grid { grid-template-columns: 1fr; }
 }
 
 @keyframes lcWaveBar { 0%,100% { transform: scaleY(0.28); } 50% { transform: scaleY(1); } }
@@ -123,6 +160,24 @@ const LUCIDA_CSS = `
 @keyframes lcBlink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
 @keyframes lcDotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 @keyframes lcSpin { to { transform: rotate(360deg); } }
+
+/* --- the tutor room (Speaking.dc.html "om-*" set) ---
+   Each purpose gets a different room, and these are what make one feel like a
+   stage and another like a conversation. Named lc* to match the rest. */
+@keyframes lcBreathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+@keyframes lcRing { 0% { transform: scale(0.85); opacity: 0.55; } 100% { transform: scale(1.75); opacity: 0; } }
+@keyframes lcSweep { 0%,100% { opacity: 0.35; transform: translateX(-14px); } 50% { opacity: 0.75; transform: translateX(14px); } }
+@keyframes lcDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(18px,-22px) scale(1.12); } }
+
+/* Motion is decoration here — the room still reads without it, and for anyone
+   who asked their OS to stop moving things, it must. */
+@media (prefers-reduced-motion: reduce) {
+  .lucida *, .lucida *::before, .lucida *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
 `;
 
 /** Wrap any Speaking screen in this to get the scoped tokens + keyframes. */

@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
+import { Bricolage_Grotesque, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { getSession } from "@/lib/auth";
@@ -8,6 +8,10 @@ import { loadStudyPlan } from "@/lib/plan/service";
 // app/(shell)/speak/lucida.tsx for the scoped token layer these feed.
 const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap" });
+// Every NUMBER and small caps label in the speaking redesign — timers, bands,
+// wpm, section kickers. A proportional font makes a running clock jitter as the
+// digits change width; this is why the design specifies a mono for them.
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-data", display: "swap" });
 
 /**
  * Distraction-free shell for the writing/reading studio — deliberately no global
@@ -24,7 +28,7 @@ export default async function StudioLayout({ children }: { children: React.React
     if (!plan) return <OnboardingTakeover />;
   }
   return (
-    <div className={`${bricolage.variable} ${jakarta.variable} bg-background text-foreground min-h-screen`}>
+    <div className={`${bricolage.variable} ${jakarta.variable} ${jetbrains.variable} bg-background text-foreground min-h-screen`}>
       {children}
     </div>
   );

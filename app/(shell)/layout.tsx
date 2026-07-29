@@ -3,6 +3,7 @@ import {
   Bricolage_Grotesque,
   DM_Sans,
   Hanken_Grotesk,
+  JetBrains_Mono,
   Newsreader,
   Plus_Jakarta_Sans,
 } from "next/font/google";
@@ -24,6 +25,9 @@ const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"
 // (body). Scoped to /speak via the .lucida token layer — see speak/lucida.tsx.
 const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap" });
+// Numbers and small-caps labels across the speaking redesign — timers, bands,
+// wpm. Mono so a running clock does not jitter as its digits change width.
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-data", display: "swap" });
 
 const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
 
@@ -58,7 +62,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} ${jetbrains.variable} lp-root`}
     >
       <AppShell
         role={profile.role}

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CoachChat } from "../../coach-chat";
 import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
+import { AwaitingGrade } from "./awaiting-grade";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,11 @@ export default async function MockResultPage({ params }: PageProps) {
     part_notes?: Record<string, string>;
     notes?: string;
   };
+  // The exam sends the learner straight here now, so this page is what they see
+  // while grading runs. Without this it rendered an empty report shell.
+  if (typeof result.overall_band !== "number" && s.state !== "failed") {
+    return <AwaitingGrade sessionId={s.id as string} />;
+  }
   const partNotes = result.part_notes ?? {};
   const prepNotes = typeof result.notes === "string" ? result.notes.trim() : "";
   const metrics = (s.metrics ?? {}) as SpeakMetrics & { part_s?: Record<string, number> };
@@ -79,7 +85,7 @@ export default async function MockResultPage({ params }: PageProps) {
   });
 
   return (
-    <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "26px 18px 60px" }}>
+    <div style={{ fontFamily: SANS, maxWidth: 1280, margin: "0 auto", padding: "26px clamp(18px, 5vw, 64px) 60px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
           Full mock report <span style={{ fontSize: 14, color: MUTED, fontFamily: SANS }}>· {when}</span>

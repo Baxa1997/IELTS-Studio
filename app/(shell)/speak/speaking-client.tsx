@@ -36,6 +36,13 @@ const LINE = "#E8E6F0";
 const RED = "#b91c1c";
 
 type Tab = "mock" | "tutor" | "progress";
+// Mock test leads, per the design: the exam is the promise, the tutor is one
+// tap away. Order here is the order on screen.
+const TAB: Record<Tab, { label: string }> = {
+  mock: { label: "Mock test" },
+  tutor: { label: "Tutor" },
+  progress: { label: "Progress" },
+};
 
 const PREP_S = 60;
 const SPEAK_S = 120;
@@ -241,23 +248,52 @@ interface Lesson {
   headline: string;
 }
 
+interface Allowance {
+  used: number;
+  limit: number;
+  resetsAt: string;
+}
+
+// The tutor purposes, as the hub's picker shows them. Mirrors the engine's
+// registry (speaking/prompts.py PURPOSES) — the room reads the live catalogue
+// from the socket, but this screen has no socket, so it carries labels only.
+const HUB_PURPOSES = [
+  { id: "general", label: "General English", mark: "G", room: "Open conversation", length: "10–20 min", accent: "#8456EF" },
+  { id: "everyday", label: "Everyday situations", mark: "E", room: "Role-play", length: "10 min", accent: "#DA7756" },
+  { id: "presWork", label: "Presentation for work", mark: "P", room: "Stage", length: "15–20 min", accent: "#7144D8" },
+  { id: "presGeneral", label: "Presentation practice", mark: "S", room: "Stage", length: "15 min", accent: "#5E34BF" },
+  { id: "interview", label: "Work interview", mark: "I", room: "Interview room", length: "20 min", accent: "#3B82F6" },
+  { id: "ielts", label: "IELTS coaching", mark: "B", room: "Coached exam", length: "20 min", accent: "#22C55E" },
+  { id: "friends", label: "Talking with friends", mark: "F", room: "Café", length: "10 min", accent: "#F09070" },
+];
+
 export function SpeakingClient({
   initialCardId = null,
   progress = [],
   recentMocks = [],
-  recentLessons = [],
+  allowance,
 }: {
   initialCardId?: string | null;
   progress?: SpeakProgressItem[];
-  recentMocks?: { id: string; t: string; band: number }[];
+  recentMocks?: { id: string; t: string; band: number; who?: string | null }[];
+  // The hub has no lessons section in the design, so this is accepted and
+  // ignored rather than dropped from the page's query — the tutor's own
+  // history screen still wants it.
   recentLessons?: Lesson[];
+  allowance?: Allowance;
 }) {
   // Two things to do here — sit the exam, or have a lesson — plus somewhere to
   // see how it is going. Part-2 quick practice was retired from the hub; it
   // stays reachable ONLY via ?card= so the "practise this card again" buttons
   // on older reports do not dead-end.
   const legacyPart2 = Boolean(initialCardId);
+  // Mock test leads, per the design. An earlier build made the tutor the front
+  // door; the design puts the exam first and the tutor one tap away, which is
+  // the right order for a product whose promise is a calibrated band.
   const [tab, setTab] = useState<Tab>("mock");
+  // Which purpose the tutor tab's picker has selected. Carried to the room in
+  // the URL; the room remembers it and it stays changeable mid-lesson.
+  const [purpose, setPurpose] = useState("general");
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -405,7 +441,6 @@ export function SpeakingClient({
 
   // ---- Progress-tab stats (real, RLS-scoped data from page.tsx) --------------
   const graded = progress.filter((p) => typeof p.band === "number");
-  const avgBand = graded.length ? graded.reduce((a, b) => a + b.band, 0) / graded.length : null;
   const bestBand = graded.length ? Math.max(...graded.map((g) => g.band)) : null;
   const critAvg = (k: "FC" | "LR" | "GRA" | "P"): number | null => {
     const vals = graded.map((g) => g.crit?.[k]).filter((v): v is number => typeof v === "number");
@@ -418,238 +453,350 @@ export function SpeakingClient({
     { label: "Pronunciation", v: critAvg("P") },
   ];
 
-  // ---- The redesigned "Lucida" hub ------------------------------------------
+  // ---- the hub (Speaking.dc.html, 1:1) --------------------------------------
   // The legacy Part-2 flow (reached only via ?card= from old report links) keeps
-  // its original look below; only the hub gets the new design.
+  // its original look below; only the hub gets the design.
   if (!legacyPart2) {
-    const bandHue = (b: number) =>
-      b >= 6 ? "var(--color-success)" : b >= 4.5 ? "var(--color-amber-500)" : "var(--color-error)";
-    const TAB: Record<Tab, { label: string; color: string; border: string }> = {
-      mock: { label: "Mock test", color: "var(--color-primary-600)", border: "var(--color-primary-500)" },
-      tutor: { label: "Tutor", color: "var(--color-success)", border: "var(--color-success)" },
-      progress: { label: "My progress", color: "var(--color-neutral-1000)", border: "var(--color-neutral-500)" },
-    };
+    // The design's mock accent is the ink, not the violet — the violet is
+    // reserved for the BETA badge and links, so the exam reads as serious.
+    const A = "#1A1520";
+    const aTint = "rgba(26,21,32,0.08)";
+    const bandChip = (b: number) =>
+      b >= 6
+        ? { bg: "#EAF7EE", fg: "#15803D" }
+        : b >= 5
+          ? { bg: "#FEF6E7", fg: "#B45309" }
+          : { bg: "#F5F2F0", fg: "#5C5460" };
     const kicker: React.CSSProperties = {
-      fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)",
-      textTransform: "uppercase",
+      fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
+      letterSpacing: "0.1em", color: "#8C7F8A",
     };
-    const lcCard: React.CSSProperties = {
-      background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)",
-      borderRadius: "var(--radius-xl)",
+    // On a WHITE page a cream card is invisible, so the surfaces are white and
+    // the separation comes from the border; only recessed things (table rows,
+    // the tab track) carry a tint.
+    const card: React.CSSProperties = {
+      background: "#FFFFFF", border: "1px solid #E7E3E0", borderRadius: 18, padding: 22,
     };
-    const railCard: React.CSSProperties = {
-      ...lcCard, borderRadius: "var(--radius-2xl)", padding: 28, boxShadow: "var(--shadow-1)",
-      alignSelf: "start",
+    const chip: React.CSSProperties = {
+      display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
+      background: "#FFFFFF", border: "1px solid #E7E3E0", borderRadius: 999,
+      whiteSpace: "nowrap",
     };
+    // A comped org (engine quota.py UNLIMITED_FULL_MOCK_ORGS) is invisible from
+    // here — but the gate FAILS CLOSED, so having sat more mocks than the plan
+    // allows proves it was never applied. That is the only way `used > limit`
+    // can happen, and it used to render as the nonsense "0 / 8 left · 32 of 8
+    // used" (owner screenshot, 2026-07-29).
+    const unlimited = Boolean(allowance && allowance.used > allowance.limit);
+    const mocksLeft = allowance ? Math.max(0, allowance.limit - allowance.used) : null;
+    // en-GB explicitly: the interface is in English, and the browser locale was
+    // rendering "29 июля" next to "Best band so far".
+    const resetLabel = allowance
+      ? new Date(allowance.resetsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" })
+      : null;
+    const dayMonth = (t: string) =>
+      new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
     return (
-      <LucidaScope style={{ background: "var(--color-neutral-50)", minHeight: "100%" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "44px 48px 80px" }}>
-          {/* header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
-            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-5xl)", color: "var(--color-neutral-1000)", letterSpacing: "var(--ls-snug)" }}>
-              Speaking
-            </div>
-            <span style={{ ...kicker, color: "var(--color-primary-600)", background: "rgba(132,86,239,0.1)", border: "1px solid rgba(132,86,239,0.25)", padding: "4px 10px", borderRadius: "var(--radius-pill)", fontSize: "var(--text-2xs)", letterSpacing: "var(--ls-caps)" }}>
-              Beta
-            </span>
-          </div>
+      <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
+        {/* Fills the window instead of growing past it: the header and tabs are
+            fixed, and only the active panel scrolls — and then only when it
+            genuinely does not fit. */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "clamp(20px, 3vh, 36px) clamp(24px, 5vw, 64px) 32px" }}>
+          <div style={{ maxWidth: 1440, margin: "0 auto" }}>
 
-          {/* tabs — the exam and the lesson never blur (violet vs. green) */}
-          <div style={{ display: "flex", gap: 32, borderBottom: "1px solid var(--color-neutral-200)", marginBottom: 40 }}>
-            {(Object.keys(TAB) as Tab[]).map((id) => {
-              const on = tab === id;
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTab(id)}
-                  className="lc-tab"
-                  style={{
-                    appearance: "none", background: "none", cursor: "pointer", border: "none",
-                    padding: "0 0 14px", fontSize: "var(--text-lg)", fontWeight: 600,
-                    fontFamily: "inherit", whiteSpace: "nowrap", marginBottom: -1,
-                    color: on ? TAB[id].color : "var(--color-neutral-500)",
-                    borderBottom: `2px solid ${on ? TAB[id].border : "transparent"}`,
-                  }}
-                >
-                  {TAB[id].label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* MOCK TAB */}
-          {tab === "mock" ? (
-            <div className="lc-two-col" style={{ animation: "lcFadeInUp 400ms cubic-bezier(0.16,1,0.3,1)" }}>
+            {/* header */}
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
               <div>
-                <p style={{ fontSize: "var(--text-lg)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-600)", maxWidth: 640, margin: "0 0 28px" }}>
-                  A complete IELTS speaking test with a live examiner. It asks, listens and
-                  moves on — it never helps, hints or teaches, exactly like exam day — then
-                  grades you conservatively against the official band descriptors.
-                </p>
-                {([
-                  ["1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
-                  ["2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
-                  ["3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
-                ] as const).map(([n, name, blurb, mins]) => (
-                  <div key={n} style={{ ...lcCard, display: "flex", alignItems: "center", gap: 20, padding: "22px 24px", marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, flexShrink: 0, borderRadius: "var(--radius-md)", background: "rgba(132,86,239,0.1)", color: "var(--color-primary-600)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
-                      {n}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--color-neutral-1000)" }}>{name}</div>
-                      <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", marginTop: 2 }}>{blurb}</div>
-                    </div>
-                    <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-600)", whiteSpace: "nowrap" }}>{mins}</div>
-                  </div>
-                ))}
-              </div>
-
-              <aside style={railCard}>
-                <div style={{ ...kicker, color: "var(--color-primary-600)", marginBottom: 12 }}>Full mock · Parts 1–3</div>
-                <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", lineHeight: "var(--lh-relaxed)", margin: "0 0 22px" }}>
-                  You won’t see the questions in advance. Choose your examiner on the next screen, then it begins.
-                </p>
-                <Link href="/speak/exam" className="lc-btn lc-primary" style={{ display: "block", textAlign: "center", background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", fontSize: "var(--text-md)", fontWeight: 600, padding: 16, borderRadius: "var(--radius-lg)", textDecoration: "none", boxShadow: "var(--shadow-glow-sm)" }}>
-                  Take the mock test →
-                </Link>
-                <div style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 14, lineHeight: "var(--lh-relaxed)" }}>
-                  Microphone · 11–14 minutes<br />Counts as one of your monthly mocks
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 42, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>Speaking</h1>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", padding: "5px 10px", borderRadius: 999, background: "#F4EEFF", color: "#7144D8", border: "1px solid #E4D5FF" }}>BETA</span>
                 </div>
-                {recentMocks.length ? (
-                  <>
-                    <div style={{ borderTop: "1px dashed var(--color-neutral-200)", margin: "22px 0" }} />
-                    <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 8 }}>Your last mocks</div>
-                    {recentMocks.slice(0, 3).map((m) => (
-                      <Link key={m.id} href={`/speak/mock/${m.id}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--color-neutral-100)", textDecoration: "none" }}>
-                        <span style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-600)" }}>
-                          {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 600 }}>
+                  A strict exam simulation that scores you, or a tutor who teaches while you talk.
+                </p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                {allowance ? (
+                  <div style={chip}>
+                    {unlimited ? (
+                      <span style={{ fontSize: 12, color: "#5C5460" }}>Unlimited mocks</span>
+                    ) : (
+                      <>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "#1A1520", fontVariantNumeric: "tabular-nums" }}>
+                          {mocksLeft} / {allowance.limit}
                         </span>
-                        <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: bandHue(m.band), whiteSpace: "nowrap" }}>
-                          Band {m.band.toFixed(1)} →
-                        </span>
-                      </Link>
-                    ))}
-                  </>
+                        <span style={{ fontSize: 12, color: "#8C7F8A" }}>mocks left this month</span>
+                      </>
+                    )}
+                  </div>
                 ) : null}
-              </aside>
-            </div>
-          ) : null}
-
-          {/* TUTOR TAB */}
-          {tab === "tutor" ? (
-            <div className="lc-two-col" style={{ animation: "lcFadeInUp 400ms cubic-bezier(0.16,1,0.3,1)" }}>
-              <div>
-                <p style={{ fontSize: "var(--text-lg)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-600)", maxWidth: 640, margin: "0 0 28px" }}>
-                  A live lesson, not a test. Tell it what you’re preparing for — the IELTS
-                  exam, a presentation, a job interview, or just talking with friends — and
-                  it teaches for that: correcting what you said, showing a stronger way to
-                  say it, and handing you the English whenever you get stuck.
-                </p>
-                {([
-                  ["Reacts to every answer", "It listens to what you actually said, not a script — and never reads your answer back to you."],
-                  ["Shows you a better way", "“You said ‘it is good’ — a stronger word is ‘fulfilling’.” On almost every turn."],
-                  ["Helps in o‘zbekcha", "Say it in Uzbek and it gives you the English sentence back, then asks you to repeat it."],
-                ] as const).map(([title, blurb]) => (
-                  <div key={title} style={{ display: "flex", gap: 16, padding: "20px 0", borderBottom: "1px solid var(--color-neutral-100)" }}>
-                    <div style={{ width: 26, height: 26, flexShrink: 0, borderRadius: "50%", background: "var(--color-success-bg)", color: "var(--color-success)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>✓</div>
-                    <div>
-                      <div style={{ fontSize: "var(--text-lg)", fontWeight: 600, color: "var(--color-neutral-1000)", marginBottom: 4 }}>{title}</div>
-                      <div style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-relaxed)" }}>{blurb}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <aside style={railCard}>
-                <div style={{ ...kicker, color: "var(--color-success)", marginBottom: 12 }}>Live lesson</div>
-                <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", lineHeight: "var(--lh-relaxed)", margin: "0 0 22px" }}>
-                  Pick a tutor and hear them speak on the next screen, then just start talking — nothing to set up.
-                </p>
-                <Link href="/speak/tutor" className="lc-btn lc-success" style={{ display: "block", textAlign: "center", background: "var(--color-success)", color: "#FFFFFF", fontSize: "var(--text-md)", fontWeight: 600, padding: 16, borderRadius: "var(--radius-lg)", textDecoration: "none" }}>
-                  Start a lesson →
-                </Link>
-                <div style={{ textAlign: "center", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", marginTop: 14, lineHeight: "var(--lh-relaxed)" }}>
-                  Microphone · up to 20 minutes<br />Not scored, never counts as a mock
+                <div style={chip}>
+                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }} />
+                  <span style={{ fontSize: 12, color: "#5C5460" }}>Microphone ready</span>
                 </div>
-              </aside>
-            </div>
-          ) : null}
-
-          {/* PROGRESS TAB */}
-          {tab === "progress" ? (
-            <div style={{ animation: "lcFadeInUp 400ms cubic-bezier(0.16,1,0.3,1)" }}>
-              <div className="lc-stat-grid" style={{ marginBottom: 28 }}>
-                {([
-                  ["Average band", avgBand == null ? "—" : avgBand.toFixed(1)],
-                  ["Best band", bestBand == null ? "—" : bestBand.toFixed(1)],
-                  ["Tutor lessons", String(recentLessons.length)],
-                ] as const).map(([label, value]) => (
-                  <div key={label} style={{ ...lcCard, padding: "22px 24px" }}>
-                    <div style={{ ...kicker, color: "var(--color-neutral-500)" }}>{label}</div>
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-4xl)", fontWeight: 700, color: "var(--color-neutral-1000)", marginTop: 8 }}>{value}</div>
-                  </div>
-                ))}
               </div>
+            </div>
 
-              <div style={{ ...lcCard, padding: 28 }}>
-                <div style={{ ...kicker, color: "var(--color-neutral-500)", marginBottom: 20, fontSize: "var(--text-sm)" }}>Skill breakdown</div>
-                {graded.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: "var(--text-md)", color: "var(--color-neutral-500)" }}>
-                    Take a mock and your per-criterion bands will appear here.
+            {/* tabs */}
+            <div style={{ marginTop: 26, display: "inline-flex", padding: 4, gap: 4, background: "#F2EEEC", borderRadius: 999 }}>
+              {(Object.keys(TAB) as Tab[]).map((id) => {
+                const on = tab === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setTab(id)}
+                    style={{
+                      appearance: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+                      padding: "10px 22px", borderRadius: 999, fontSize: 14, fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      background: on ? "#FBF8F7" : "transparent",
+                      color: on ? "#1A1520" : "#5C5460",
+                      boxShadow: on ? "0 1px 3px rgba(26,21,32,0.12)" : "none",
+                    }}
+                  >
+                    {TAB[id].label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── MOCK ── */}
+            {tab === "mock" ? (
+              <div className="lc-hub-grid" style={{ marginTop: 22 }}>
+                <div style={{ ...card, borderRadius: 20, padding: 30, boxShadow: "0 1px 2px rgba(26,21,32,0.04)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                    <span style={{ ...kicker, color: A }}>FULL MOCK · PARTS 1–3</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, padding: "5px 10px", borderRadius: 999, background: "#F5F2F0", border: "1px solid #E7E3E0", color: "#5C5460", whiteSpace: "nowrap" }}>11–14 MIN</span>
+                  </div>
+                  <h2 style={{ margin: "12px 0 0", fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+                    Exam-day conditions, start to finish
+                  </h2>
+                  <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 560 }}>
+                    The examiner asks, listens and moves on. No hints, no questions in advance, and your
+                    examiner is assigned at random — then a conservative band against the official descriptors.
                   </p>
-                ) : (
-                  skillRows.map((sk) => (
-                    <div key={sk.label} style={{ marginBottom: 18 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-sm)", color: "var(--color-neutral-600)", marginBottom: 6 }}>
-                        <span>{sk.label}</span>
-                        <span style={{ fontWeight: 600, color: "var(--color-neutral-1000)" }}>{sk.v == null ? "—" : sk.v.toFixed(1)}</span>
-                      </div>
-                      <div style={{ height: 8, background: "var(--color-neutral-100)", borderRadius: "var(--radius-pill)", overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${((sk.v ?? 0) / 9) * 100}%`, background: sk.v == null ? "var(--color-neutral-300)" : bandHue(sk.v), borderRadius: "var(--radius-pill)", transition: "width 700ms cubic-bezier(0.16,1,0.3,1)" }} />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
 
-              {/* history: reopen a past mock report, or see a past lesson */}
-              {recentMocks.length ? (
-                <div style={{ ...lcCard, padding: 24, marginTop: 20 }}>
-                  <div style={{ fontSize: "var(--text-md)", fontWeight: 600, marginBottom: 12 }}>My full mocks</div>
-                  {recentMocks.map((m) => (
-                    <Link key={m.id} href={`/speak/mock/${m.id}`} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: "var(--text-sm)", color: "var(--color-neutral-700)", textDecoration: "none", padding: "10px 0", borderBottom: "1px solid var(--color-neutral-100)" }}>
-                      <span>Full mock · {new Date(m.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-                      <span style={{ color: bandHue(m.band), fontWeight: 600, whiteSpace: "nowrap" }}>Band {m.band.toFixed(1)} · report →</span>
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
+                  <div style={{ marginTop: 22, border: "1px solid #E7E3E0", borderRadius: 14, overflow: "hidden" }}>
+                    {([
+                      ["1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
+                      ["2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
+                      ["3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
+                    ] as const).map(([n, title, desc, time], i) => (
+                      <div key={n} style={{ display: "grid", gridTemplateColumns: "34px 1fr auto", gap: 16, alignItems: "center", padding: "15px 18px", background: "#FAF9F8", borderTop: i ? "1px solid #E7E3E0" : "none" }}>
+                        <span style={{ width: 30, height: 30, borderRadius: 9, background: aTint, color: A, display: "grid", placeItems: "center", fontWeight: 700, fontSize: 13 }}>{n}</span>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+                          <div style={{ marginTop: 2, fontSize: 13, color: "#8C7F8A" }}>{desc}</div>
+                        </div>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#5C5460", whiteSpace: "nowrap" }}>{time}</span>
+                      </div>
+                    ))}
+                  </div>
 
-              {recentLessons.length ? (
-                <div style={{ ...lcCard, padding: 24, marginTop: 20 }}>
-                  <div style={{ fontSize: "var(--text-md)", fontWeight: 600, marginBottom: 12 }}>My tutor lessons</div>
-                  {recentLessons.map((l) => (
-                    <div key={l.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--color-neutral-100)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: "var(--text-sm)" }}>
-                        <span style={{ color: "var(--color-neutral-700)" }}>
-                          {new Date(l.t).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                          <span style={{ color: "var(--color-neutral-500)" }}>
-                            {" · "}{l.minutes.toFixed(1)} min
-                            {l.corrections ? ` · ${l.corrections} correction${l.corrections === 1 ? "" : "s"}` : ""}
-                          </span>
+                  <div style={{ marginTop: 22, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                      {["Random examiner", "No hints or teaching", "All four criteria"].map((t) => (
+                        <span key={t} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: "#5C5460" }}>
+                          <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#DA7756" }} />
+                          {t}
                         </span>
-                        <span style={{ color: "var(--color-success)", fontWeight: 600, whiteSpace: "nowrap" }}>lesson</span>
+                      ))}
+                    </div>
+                    <Link href="/speak/exam" className="lc-btn" style={{ padding: "14px 26px", borderRadius: 12, background: A, color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 6px 18px rgba(26,21,32,0.28)" }}>
+                      Start mock test&nbsp; →
+                    </Link>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {allowance ? (
+                    <div style={card}>
+                      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>THIS MONTH</div>
+                      <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8 }}>
+                        <span style={{ fontFamily: "var(--font-display)", fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{allowance.used}</span>
+                        <span style={{ fontSize: 14, color: "#8C7F8A" }}>
+                          {unlimited ? "mocks this month" : `of ${allowance.limit} mocks used`}
+                        </span>
                       </div>
-                      {l.headline ? (
-                        <p style={{ margin: "4px 0 0", fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", lineHeight: "var(--lh-relaxed)" }}>{l.headline}</p>
-                      ) : null}
+                      {unlimited ? null : (
+                        <div style={{ marginTop: 14, height: 6, borderRadius: 999, background: "#EFEAE7", overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(100, allowance.limit ? (allowance.used / allowance.limit) * 100 : 0)}%`, height: "100%", background: A, borderRadius: 999 }} />
+                        </div>
+                      )}
+                      <div style={{ marginTop: unlimited ? 12 : 10, fontSize: 12, color: "#8C7F8A" }}>
+                        {unlimited
+                          ? "Your account has no mock limit. Tutor lessons are unlimited too."
+                          : `Allowance resets ${resetLabel}. Tutor lessons are unlimited.`}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div style={card}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>RECENT MOCKS</span>
+                      <button type="button" onClick={() => setTab("progress")} style={{ appearance: "none", border: "none", background: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "#8456EF" }}>
+                        All results
+                      </button>
+                    </div>
+                    {recentMocks.length ? (
+                      <>
+                        <div style={{ marginTop: 8, display: "flex", flexDirection: "column" }}>
+                          {recentMocks.map((m) => {
+                            const hue = bandChip(m.band);
+                            return (
+                              <Link key={m.id} href={`/speak/results/${m.id}`} className="lc-row" style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12, alignItems: "center", padding: "13px 8px", borderBottom: "1px solid #EFEBE9", borderRadius: 8, textDecoration: "none", color: "inherit" }}>
+                                <div>
+                                  <div style={{ fontSize: 14, fontWeight: 600 }}>{dayMonth(m.t)}</div>
+                                  {m.who ? <div style={{ marginTop: 2, fontSize: 12, color: "#8C7F8A" }}>with {m.who}</div> : null}
+                                </div>
+                                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, padding: "5px 10px", borderRadius: 8, background: hue.bg, color: hue.fg }}>
+                                  {m.band.toFixed(1)}
+                                </span>
+                                <span aria-hidden style={{ color: "#A89AA4", fontSize: 14 }}>→</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                        {bestBand != null ? (
+                          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                            <span style={{ color: "#8C7F8A" }}>Best band so far</span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{bestBand.toFixed(1)}</span>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.6, color: "#8C7F8A" }}>
+                        No mocks yet. Your first band appears here the moment one is graded.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {/* ── TUTOR ── */}
+            {tab === "tutor" ? (
+              <div style={{ marginTop: 22, ...card, borderRadius: 20, padding: 30, boxShadow: "0 1px 2px rgba(26,21,32,0.04)" }}>
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 28, flexWrap: "wrap" }}>
+                  <div>
+                    <span style={{ ...kicker, color: "#C0603E" }}>LIVE LESSON · NEVER SCORED</span>
+                    <h2 style={{ margin: "10px 0 0", fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+                      Pick what you are practising for
+                    </h2>
+                    <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 560 }}>
+                      The room, the questions and the coaching change with your goal. Your tutor is matched for you.
+                    </p>
+                  </div>
+                  <Link href={`/speak/tutor?kind=${purpose}`} className="lc-btn" style={{ padding: "14px 26px", borderRadius: 12, background: "#DA7756", color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 6px 18px rgba(218,119,86,0.28)" }}>
+                    Continue&nbsp; →
+                  </Link>
+                </div>
+
+                <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(215px, 1fr))", gap: 10 }}>
+                  {HUB_PURPOSES.map((p) => {
+                    const on = purpose === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPurpose(p.id)}
+                        aria-pressed={on}
+                        className="lc-card-tap"
+                        style={{
+                          textAlign: "left", appearance: "none", cursor: "pointer", fontFamily: "inherit",
+                          border: `1px solid ${on ? p.accent : "#E7E3E0"}`, background: "#FAF9F8",
+                          borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+                          boxShadow: on ? "0 0 0 3px rgba(26,21,32,0.05)" : "none",
+                        }}
+                      >
+                        <span aria-hidden style={{ width: 28, height: 28, borderRadius: 8, display: "grid", placeItems: "center", flex: "0 0 28px", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, background: on ? `${p.accent}1F` : "#F5F2F0", color: on ? p.accent : "#8C7F8A" }}>
+                          {p.mark}
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: "block", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label}</span>
+                          <span style={{ display: "block", marginTop: 2, fontSize: 11, color: "#A89AA4" }}>{p.room} · {p.length}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid #EFEBE9", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
+                  {([
+                    ["Corrects the mistake that matters", "One fix per turn, not a list."],
+                    ["Hands you a stronger sentence", "Then asks you to use it straight away."],
+                    ["Explains in your language", "O‘zbekcha or ruscha — you still answer in English."],
+                  ] as const).map(([title, blurb]) => (
+                    <div key={title}>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{title}</div>
+                      <div style={{ marginTop: 4, fontSize: 13, color: "#8C7F8A", lineHeight: 1.5 }}>{blurb}</div>
                     </div>
                   ))}
                 </div>
-              ) : null}
-            </div>
-          ) : null}
+
+              </div>
+            ) : null}
+
+            {/* ── PROGRESS ── */}
+            {tab === "progress" ? (
+              <div className="lc-hub-grid" style={{ marginTop: 22 }}>
+                <div style={{ ...card, borderRadius: 20, padding: 28 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>
+                    BAND TREND · LAST SIX MOCKS
+                  </div>
+                  {graded.length ? (
+                    <div style={{ marginTop: 24, display: "flex", alignItems: "flex-end", gap: 18, height: 180 }}>
+                      {graded.slice(-6).map((g, i) => (
+                        <div key={`${g.t}-${i}`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 10, height: "100%" }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "#5C5460" }}>{g.band.toFixed(1)}</span>
+                          <div style={{ width: "100%", borderRadius: "8px 8px 0 0", height: `${Math.max(8, (g.band / 9) * 100)}%`, background: g.band >= 6.5 ? "#8456EF" : g.band >= 5.5 ? "#C8AAFF" : "#DDD2F9" }} />
+                          <span style={{ fontSize: 11, color: "#A89AA4", whiteSpace: "nowrap" }}>{dayMonth(g.t)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: "16px 0 0", fontSize: 14, lineHeight: 1.6, color: "#8C7F8A" }}>
+                      Nothing graded yet. Sit a mock and your band trend starts here.
+                    </p>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={card}>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>BY CRITERION</div>
+                    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+                      {skillRows.map((r) => (
+                        <div key={r.label}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                            <span style={{ fontWeight: 600 }}>{r.label}</span>
+                            <span style={{ fontFamily: "var(--font-mono)", color: "#5C5460" }}>{r.v == null ? "—" : r.v.toFixed(1)}</span>
+                          </div>
+                          <div style={{ marginTop: 8, height: 6, borderRadius: 999, background: "#EFEAE7", overflow: "hidden" }}>
+                            <div style={{ height: "100%", borderRadius: 999, background: A, width: `${r.v == null ? 0 : (r.v / 9) * 100}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={card}>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>RECURRING FIXES</div>
+                    {/* Honest placeholder: naming the patterns that repeat ACROSS
+                        mocks needs cross-session aggregation of the grader's
+                        error log, which does not exist yet. Inventing three
+                        plausible lines here would be the one thing a learner
+                        cannot check and must not be lied to about. */}
+                    <p style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.6, color: "#8C7F8A" }}>
+                      Coming soon — the patterns that keep costing you marks across mocks, counted.
+                      For now, each mock report lists what capped that band.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </LucidaScope>
     );
