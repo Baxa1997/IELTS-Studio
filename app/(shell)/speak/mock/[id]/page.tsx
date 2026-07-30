@@ -9,6 +9,7 @@ import { CoachChat } from "../../coach-chat";
 import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
 import { AwaitingGrade } from "./awaiting-grade";
+import { UngradedMock } from "./ungraded";
 
 export const dynamic = "force-dynamic";
 
@@ -69,10 +70,20 @@ export default async function MockResultPage({ params }: PageProps) {
     part_notes?: Record<string, string>;
     notes?: string;
   };
-  // The exam sends the learner straight here now, so this page is what they see
-  // while grading runs. Without this it rendered an empty report shell.
-  if (typeof result.overall_band !== "number" && s.state !== "failed") {
-    return <AwaitingGrade sessionId={s.id as string} />;
+  // The exam sends the learner straight here now, so every no-band case is a
+  // screen someone actually lands on — and there are two of them, not one.
+  //
+  //   still working  (live | grading)      → the marking state, which polls
+  //   terminal, no band (failed|abandoned| → say so; it will never arrive
+  //                      pending)
+  //
+  // Getting this wrong was live: `failed` fell through to the report and threw
+  // on `overall_band.toFixed(1)`, and `abandoned` sat on a spinner forever.
+  if (typeof result.overall_band !== "number") {
+    const terminal = ["failed", "abandoned", "pending"].includes(String(s.state));
+    return terminal
+      ? <UngradedMock state={String(s.state)} />
+      : <AwaitingGrade sessionId={s.id as string} />;
   }
   const partNotes = result.part_notes ?? {};
   const prepNotes = typeof result.notes === "string" ? result.notes.trim() : "";

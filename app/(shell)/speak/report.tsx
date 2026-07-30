@@ -87,13 +87,26 @@ export function SpeakingReport({
   audioUrl?: string | null;
 }) {
   const cue = result.cue_card;
-  const fixes = result.band_with_fixes ?? result.overall_band;
+  // A result with no band reaches here whenever grading failed or a session
+  // died mid-flight. The callers should catch that first, but this component is
+  // shared with the Part-2 flow, and `overall_band.toFixed()` on undefined
+  // takes the whole page down — a guard is cheaper than trusting every caller.
+  const band = typeof result.overall_band === "number" ? result.overall_band : null;
+  if (band == null) {
+    return (
+      <div style={{ fontFamily: SANS, color: MUTED, border: `1px solid ${LINE}`, borderRadius: 16, padding: "18px 20px", fontSize: 14, lineHeight: 1.6 }}>
+        This attempt has no band — the marking step did not complete. Nothing about your
+        speaking caused it.
+      </div>
+    );
+  }
+  const fixes = result.band_with_fixes ?? band;
   const critKeys = ["FC", "LR", "GRA", "P"].filter((k) => result.criteria?.[k]);
   // With real long-turn audio behind Pronunciation, the band uses the official
   // four-criterion structure; otherwise P is an estimate and stays out.
   const pBeta = result.criteria?.P ? result.criteria.P.beta !== false : true;
   const partial = result.partial ?? [];
-  const bc = bandColor(result.overall_band);
+  const bc = bandColor(band);
 
   return (
     <div style={{ fontFamily: SANS, color: INK, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -122,7 +135,7 @@ export function SpeakingReport({
           </div>
           <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
             You did not sit {partial.length === 2 ? "Part 2 or Part 3" : `Part ${partial[0]}`}, so{" "}
-            <strong>{result.overall_band.toFixed(1)} describes only the speech you actually produced</strong> —
+            <strong>{band.toFixed(1)} describes only the speech you actually produced</strong> —
             it is feedback, not a prediction.
             {partial.length === 2
               ? " A real examiner never saw your long turn or your discussion, and cannot award marks for either."
@@ -148,7 +161,7 @@ export function SpeakingReport({
               fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em",
             }}
           >
-            {result.overall_band.toFixed(1)}
+            {band.toFixed(1)}
           </span>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase", lineHeight: 1.1 }}>
@@ -159,7 +172,7 @@ export function SpeakingReport({
             </span>
           </div>
         </div>
-        {fixes > result.overall_band ? (
+        {fixes > band ? (
           <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: GOOD_BG, border: "1px solid #cfe7da", borderRadius: 11 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOOD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M12 19V5M5 12l7-7 7 7" />
