@@ -360,6 +360,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
               setServerPurposes(ev.purposes as { id: string; label: string }[]);
             }
             if (typeof ev.purpose === "string") setPurposeId(ev.purpose);
+            if (typeof ev.role === "string" && ev.role.trim()) setRole(ev.role);
             setState("live");
             break;
           case "listening":
@@ -417,6 +418,10 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
               setSupportLanguage(ev.support_language as SupportLanguage);
             }
             if (typeof ev.purpose === "string") setPurposeId(ev.purpose);
+            // A job the tutor learned by EAR ("I'm going for a backend role")
+            // counts the same as one typed on the setup screen — keeping it
+            // means next session opens knowing it instead of asking again.
+            if (typeof ev.role === "string" && ev.role.trim()) setRole(ev.role);
             break;
           case "stats":
             setStats({
