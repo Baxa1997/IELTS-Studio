@@ -38,6 +38,8 @@ export interface SpeakResult {
   non_attempt?: boolean;
   /** full-mock only: parts the candidate never sat (e.g. ["2","3"]) */
   partial?: string[];
+  /** full-mock only: abuse or refusal aimed at the examiner. Reported, not scored. */
+  conduct?: { kind: "abuse" | "refusal"; quote: string } | null;
   pronunciation_beta?: boolean;
 }
 
@@ -147,6 +149,48 @@ export function SpeakingReport({
           </p>
           <p style={{ margin: "8px 0 0", fontSize: 13.5, lineHeight: 1.55, opacity: 0.85 }}>
             Sit all three parts end to end to get a band that means something.
+          </p>
+        </div>
+      ) : null}
+
+      {/* CONDUCT — said to the examiner, and the mock said nothing back
+          (owner, 2026-07-30: "I told examiner you stupid Emily and it did not
+          react").
+
+          The examiner still does not react DURING the test — a real one
+          doesn't either, and the mock's whole promise is exam conditions. It
+          belongs here, and it has to be accurate about the cost. Rudeness is
+          not in the band descriptors: there is no politeness criterion and
+          nothing was deducted. What is true, and worth far more to know, is
+          that abuse toward test staff is a conduct matter that can void a
+          result outright, and that a turn spent refusing is a turn with no
+          language in it to credit. */}
+      {result.conduct ? (
+        <div style={{ border: "1px solid #F0D2D2", background: "#FDF4F4", borderRadius: 14, padding: "16px 18px", color: "#8A2C2C" }}>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>
+            About what you said to the examiner
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
+            You said &ldquo;<strong>{result.conduct.quote}</strong>&rdquo;.
+          </p>
+          <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
+            {result.conduct.kind === "abuse" ? (
+              <>
+                Your band above is unaffected — politeness is not one of the four criteria, and
+                nothing was deducted for it. In a real test the cost is bigger than a band:
+                abusive language toward an examiner is treated as misconduct, and it can get a
+                test stopped and the result withheld entirely.
+              </>
+            ) : (
+              <>
+                Your band above is unaffected by the refusal itself — but a turn you refuse is a
+                turn with no language in it, and an examiner can only credit what you actually
+                say. Every skipped answer is fluency evidence you chose not to give.
+              </>
+            )}
+          </p>
+          <p style={{ margin: "8px 0 0", fontSize: 13.5, lineHeight: 1.55, opacity: 0.85 }}>
+            Practise as if it were the real room — that is what the mock is for.
           </p>
         </div>
       ) : null}
