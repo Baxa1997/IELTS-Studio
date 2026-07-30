@@ -64,7 +64,10 @@ export default async function MockResultPage({ params }: PageProps) {
     .map((t) => `${t.role === "examiner" ? "Examiner" : "You"}: ${t.text.trim()}`)
     .join("\n\n");
   // The synced player needs timestamps; older sessions may predate t_ms.
-  const synced = audioUrl != null && turns.some((t) => typeof t.t_ms === "number");
+  // "The turn-by-turn transcript is already on this page" — which now depends on
+  // TIMESTAMPS alone, not on audio. Left tied to audio it would print the whole
+  // dialogue a second time underneath the block that just showed it.
+  const synced = turns.some((t) => typeof t.t_ms === "number");
 
   const result = (s.result ?? {}) as SpeakResult & {
     part_notes?: Record<string, string>;
@@ -129,9 +132,15 @@ export default async function MockResultPage({ params }: PageProps) {
         </div>
       ) : null}
 
-      {synced ? (
+      {/* Rendered on TIMESTAMPS, not on audio. Session recording is off engine-
+          side (live.SAVE_AUDIO) because the saved track could not be played
+          back — but the turn-by-turn transcript and its rewrites never depended
+          on the audio, and gating them behind it silently dropped both to a
+          flat wall of dialogue. With a URL this is a player; without one it is
+          the transcript. */}
+      {turns.some((t) => typeof t.t_ms === "number") ? (
         <ListenBack
-          audioUrl={audioUrl!}
+          audioUrl={audioUrl}
           turns={turns as LBTurn[]}
           partS={metrics.part_s}
           upgrades={result.upgrades ?? []}

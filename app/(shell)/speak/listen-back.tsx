@@ -68,7 +68,11 @@ export function ListenBack({
   partS,
   upgrades = [],
 }: {
-  audioUrl: string;
+  /** Omit (or null) to render the transcript ALONE — no player, no seeking.
+   *  Session recording is currently off engine-side (live.SAVE_AUDIO), because
+   *  the saved track could not be played back; the transcript and its rewrites
+   *  are the part that was working and they stay. */
+  audioUrl?: string | null;
   turns: LBTurn[];
   partS?: Record<string, number> | null;
   /** The grader's rewrites, shown under the turn each one quotes. */
@@ -130,11 +134,12 @@ export function ListenBack({
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
         <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
-          LISTEN BACK
+          {audioUrl ? "LISTEN BACK" : "WHAT YOU SAID"}
         </div>
         {partLine ? <div style={{ fontSize: 12.5, color: MUTED }}>{partLine}</div> : null}
       </div>
 
+      {audioUrl ? (
       <audio
         ref={audioRef}
         src={audioUrl}
@@ -145,8 +150,10 @@ export function ListenBack({
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
       />
+      ) : null}
 
-      {/* player row */}
+      {/* player row — absent entirely when nothing was recorded */}
+      {audioUrl ? (
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
         <button
           type="button"
@@ -185,6 +192,7 @@ export function ListenBack({
           {mmss(now)} / {mmss(dur)}
         </div>
       </div>
+      ) : null}
 
       {/* synced transcript */}
       <div
@@ -221,15 +229,16 @@ export function ListenBack({
               {chip}
               <button
                 type="button"
-                onClick={() => seekTo(t.t_ms ?? 0)}
-                title="Play from here"
+                onClick={audioUrl ? () => seekTo(t.t_ms ?? 0) : undefined}
+                title={audioUrl ? "Play from here" : undefined}
+                disabled={!audioUrl}
                 style={{
                   display: "flex",
                   gap: 10,
                   width: "100%",
                   textAlign: "left",
                   border: "none",
-                  cursor: "pointer",
+                  cursor: audioUrl ? "pointer" : "default",
                   padding: "7px 12px",
                   background: isActive ? "#EEF2FF" : "transparent",
                   borderLeft: `3px solid ${isActive ? INDIGO : "transparent"}`,
@@ -275,8 +284,9 @@ export function ListenBack({
         })}
       </div>
       <p style={{ margin: "8px 2px 0", fontSize: 12, color: MUTED }}>
-        Tap any line to hear that moment. Times are from your microphone track, so they can be a
-        second or two off.
+        {audioUrl
+          ? "Tap any line to hear that moment. Times are from your microphone track, so they can be a second or two off."
+          : "Every answer you gave, with a stronger version where one is worth having."}
       </p>
     </section>
   );

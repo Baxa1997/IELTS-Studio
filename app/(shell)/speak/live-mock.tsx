@@ -568,8 +568,9 @@ export function LiveMock({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              style={{ width: "min(600px, 100%)", maxHeight: "92dvh", overflowY: "auto", background: "#FFFFFF", borderRadius: 20, padding: "28px 28px 24px", boxShadow: "0 24px 60px rgba(26,21,32,0.3)", color: INK }}
+              style={{ width: "min(600px, 100%)", maxHeight: "min(92dvh, 760px)", display: "flex", flexDirection: "column", background: "#FFFFFF", borderRadius: 20, boxShadow: "0 24px 60px rgba(26,21,32,0.3)", color: INK, overflow: "hidden" }}
             >
+              <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "26px 26px 4px" }}>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: A }}>BEFORE YOU BEGIN</div>
               <h2 style={{ margin: "10px 0 0", fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
                 The IELTS Speaking test, in three parts
@@ -602,14 +603,24 @@ export function LiveMock({
                 <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: "#8A2C2C" }}>
                   Exam conditions
                 </div>
-                <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13.5, lineHeight: 1.65, color: "#8A2C2C" }}>
-                  <li>You cannot pause, restart, or hear a question twice.</li>
-                  <li>Leaving early is scored as an unfinished test — and still spends the mock.</li>
-                  <li>Use headphones in a quiet room, or {persona.name}&rsquo;s voice reaches your microphone.</li>
-                </ul>
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[
+                    "You cannot pause, restart, or hear a question twice.",
+                    "Leaving early is scored as an unfinished test — and still spends the mock.",
+                    `Use headphones in a quiet room, or ${persona.name}'s voice reaches your microphone.`,
+                  ].map((line) => (
+                    <div key={line} style={{ display: "flex", gap: 8, fontSize: 13.5, lineHeight: 1.55, color: "#8A2C2C" }}>
+                      <span aria-hidden style={{ flex: "none", marginTop: 7, width: 4, height: 4, borderRadius: "50%", background: "currentColor", opacity: 0.7 }} />
+                      <span>{line}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
+              </div>
+
+              {/* pinned: the actions never scroll out of reach */}
+              <div style={{ flex: "none", display: "flex", gap: 10, padding: "16px 26px 22px", borderTop: `1px solid ${DIV}`, background: "#FFFFFF" }}>
                 <button
                   type="button"
                   onClick={begin}
