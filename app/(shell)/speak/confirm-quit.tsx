@@ -11,11 +11,14 @@ import { useEffect } from "react";
  * consequence is spelled out and the destructive choice is never the default.
  */
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const RED = "#b91c1c";
+// The speaking surface's own type and ink, not the app-wide Hanken/Newsreader:
+// this dialog opens ON TOP of the exam room, and a different typeface mid-test
+// reads as a different product.
+const SANS = "var(--font-jakarta), system-ui, sans-serif";
+const DISPLAY = "var(--font-bricolage), Georgia, serif";
+const INK = "#1A1520";
+const MUTED = "#5C5460";
+const RED = "#DC2626";
 
 export function ConfirmQuit({
   open,
@@ -63,21 +66,25 @@ export function ConfirmQuit({
           maxWidth: 430, width: "100%", boxShadow: "0 24px 60px rgba(23,22,40,.28)",
         }}
       >
-        <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 22, fontWeight: 600, color: INK }}>
+        <h2 style={{ margin: 0, fontFamily: DISPLAY, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: INK }}>
           {title}
         </h2>
-        <p style={{ margin: "10px 0 22px", fontSize: 14.5, lineHeight: 1.6, color: MUTED }}>
+        <p style={{ margin: "10px 0 24px", fontSize: 15, lineHeight: 1.6, color: MUTED }}>
           {body}
         </p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {/* STACKED, not side by side. Two flexed buttons split a 430px dialog
+            into ~184px each, which wrapped "Carry on with the test" onto two
+            lines beside a single-line "End the test" — two ragged, unequal
+            boxes. Full width also makes each label unambiguous on a phone. */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {/* Staying is the default: it is the safe choice and the common one. */}
           <button
             type="button"
             onClick={onCancel}
             autoFocus
             style={{
-              flex: 1, minWidth: 140, background: INK, color: "#fff", border: "none",
-              borderRadius: 11, padding: "12px 18px", fontSize: 14.5, fontWeight: 700,
+              width: "100%", background: INK, color: "#fff", border: "none",
+              borderRadius: 12, padding: "14px 18px", fontSize: 15, fontWeight: 600,
               cursor: "pointer", fontFamily: SANS,
             }}
           >
@@ -87,9 +94,9 @@ export function ConfirmQuit({
             type="button"
             onClick={onConfirm}
             style={{
-              flex: 1, minWidth: 140, background: "#fff", color: RED,
-              border: `1.5px solid #F3C6C6`, borderRadius: 11, padding: "12px 18px",
-              fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: SANS,
+              width: "100%", background: "#fff", color: RED,
+              border: "1px solid #F0D2D2", borderRadius: 12, padding: "14px 18px",
+              fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS,
             }}
           >
             {confirmLabel}

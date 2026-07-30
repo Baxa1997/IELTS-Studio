@@ -536,7 +536,7 @@ export function LiveMock({
 
                 <button
                   type="button"
-                  onClick={begin}
+                  onClick={() => setPhase("instructions")}
                   className="lc-btn"
                   style={{ marginTop: 16, width: "100%", padding: 16, borderRadius: 12, border: "none", background: A, color: "#fff", textAlign: "center", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 18px rgba(26,21,32,0.28)" }}
                 >
@@ -550,6 +550,86 @@ export function LiveMock({
             </div>
           </div>
         </div>
+
+        {/* EXAM-DAY INSTRUCTIONS.
+            A real IELTS speaking test does not begin with a button — it begins
+            with an examiner telling you how it will run: three parts, how long
+            each takes, that it is recorded, that you cannot pause, and that
+            they will move you on when your time is up. Starting cold skipped
+            all of it, and the first thing a candidate met was a voice asking
+            their name. */}
+        {phase === "instructions" ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Before you begin"
+            onClick={() => setPhase("idle")}
+            style={{ position: "fixed", inset: 0, zIndex: 60, display: "grid", placeItems: "center", padding: 18, background: "rgba(26,21,32,.55)", backdropFilter: "blur(3px)" }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: "min(600px, 100%)", maxHeight: "92dvh", overflowY: "auto", background: "#FFFFFF", borderRadius: 20, padding: "28px 28px 24px", boxShadow: "0 24px 60px rgba(26,21,32,0.3)", color: INK }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: A }}>BEFORE YOU BEGIN</div>
+              <h2 style={{ margin: "10px 0 0", fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                The IELTS Speaking test, in three parts
+              </h2>
+              <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: MUTED2 }}>
+                {persona.name} will lead. Answer naturally, in full sentences — the test is
+                recorded and marked on four criteria: fluency and coherence, vocabulary,
+                grammar, and pronunciation.
+              </p>
+
+              <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                {([
+                  ["1", "Interview", "4–5 min", `${persona.name} checks your name, then asks about familiar topics — your home, work or studies, and everyday habits. Two to four sentences per answer.`],
+                  ["2", "Long turn", "3–4 min", "You get a task card. You have one minute to prepare and may make notes, then you speak on your own for one to two minutes. You will be stopped at two."],
+                  ["3", "Discussion", "4–5 min", "Abstract questions linked to your Part 2 topic. Give an opinion and support it — this is where the higher bands are decided."],
+                ] as const).map(([n, title, dur, body]) => (
+                  <div key={n} style={{ display: "flex", gap: 14, border: `1px solid ${LINE2}`, borderRadius: 12, padding: "13px 15px" }}>
+                    <span style={{ flex: "none", width: 28, height: 28, borderRadius: 8, background: "rgba(26,21,32,0.06)", color: A, display: "grid", placeItems: "center", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>{n}</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>
+                        {title} <span style={{ fontWeight: 400, color: FAINT }}>· {dur}</span>
+                      </div>
+                      <div style={{ marginTop: 3, fontSize: 13, lineHeight: 1.55, color: FAINT }}>{body}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 18, padding: "14px 16px", borderRadius: 12, background: "#FDF4F4", border: "1px solid #F0D2D2" }}>
+                <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: "#8A2C2C" }}>
+                  Exam conditions
+                </div>
+                <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13.5, lineHeight: 1.65, color: "#8A2C2C" }}>
+                  <li>You cannot pause, restart, or hear a question twice.</li>
+                  <li>Leaving early is scored as an unfinished test — and still spends the mock.</li>
+                  <li>Use headphones in a quiet room, or {persona.name}&rsquo;s voice reaches your microphone.</li>
+                </ul>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={begin}
+                  className="lc-btn"
+                  style={{ flex: "1 1 220px", padding: "15px 22px", borderRadius: 12, border: "none", background: A, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  I understand — start the test
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhase("idle")}
+                  className="lc-btn lc-ghost"
+                  style={{ flex: "0 1 auto", padding: "15px 22px", borderRadius: 12, border: `1px solid ${LINE2}`, background: "#fff", color: MUTED2, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Not yet
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </LucidaScope>
     );
   }

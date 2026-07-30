@@ -97,22 +97,44 @@ export function SpeakingReport({
 
   return (
     <div style={{ fontFamily: SANS, color: INK, display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* partial-test banner — a 3-minute walkout must never read like a full-test verdict */}
+      {/* PARTIAL TEST — the number below is not an exam-day band, and saying so
+          quietly at the bottom was not enough (owner, 2026-07-30: "I have not
+          finished part 1, and not even tried part 2 or 3, so it put 5 overall
+          band, but it must tell the student about it").
+
+          The band the grader produced is honest about the SPEECH it heard. What
+          it cannot be is a prediction: on exam day the examiner marks the whole
+          test, and an absent long turn or discussion is not neutral — there is
+          simply no evidence for those criteria, and the result collapses. So we
+          show both, and never let the good number stand alone. */}
       {partial.length ? (
         <div
           style={{
-            border: "1px solid #F0E1BB",
-            background: "#FBF3DE",
+            border: "1px solid #F0D2D2",
+            background: "#FDF4F4",
             borderRadius: 14,
-            padding: "12px 16px",
-            fontSize: 13.5,
-            lineHeight: 1.55,
-            color: "#7A5B14",
+            padding: "16px 18px",
+            color: "#8A2C2C",
           }}
         >
-          <strong>Partial test.</strong> {partial.length === 2 ? "Parts 2 and 3 were" : `Part ${partial[0]} was`} not
-          attempted, so this band reflects only what you completed — an examiner can&rsquo;t credit
-          speech that never happened. Sit all three parts for a full assessment.
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>
+            Not an exam-day band
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
+            You did not sit {partial.length === 2 ? "Part 2 or Part 3" : `Part ${partial[0]}`}, so{" "}
+            <strong>{result.overall_band.toFixed(1)} describes only the speech you actually produced</strong> —
+            it is feedback, not a prediction.
+            {partial.length === 2
+              ? " A real examiner never saw your long turn or your discussion, and cannot award marks for either."
+              : partial[0] === "2"
+                ? " A real examiner never saw your long turn — the only part that shows you can speak at length."
+                : " A real examiner never saw your discussion — the part where the higher bands are decided."}{" "}
+            On exam day an unfinished test of this length would be scored{" "}
+            <strong>far lower, in the 1–3 range</strong>, however good the English in it was.
+          </p>
+          <p style={{ margin: "8px 0 0", fontSize: 13.5, lineHeight: 1.55, opacity: 0.85 }}>
+            Sit all three parts end to end to get a band that means something.
+          </p>
         </div>
       ) : null}
 

@@ -16,6 +16,7 @@ const MUTED = "#56556A";
 const LINE = "#E8E6F0";
 const INDIGO = "#4338CA";
 const INK = "#141221";
+const GOOD = "#1A7A48";   // the "stronger version" rail, matching the report
 
 export interface LBTurn {
   role: "examiner" | "candidate";
@@ -30,14 +31,48 @@ function mmss(s: number): string {
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
+export interface LBUpgrade {
+  you_said: string;
+  stronger: string;
+  note: string;
+}
+
+/** Match the grader's verbatim quotes onto the turns they came from.
+ *
+ *  The grader is told to quote candidate speech VERBATIM, so a substring test
+ *  is the honest join — no fuzzy matching, because attaching a rewrite to a
+ *  sentence the learner did not say is worse than showing nothing. Comparison
+ *  is on letters and digits only, since the transcript and the quote can differ
+ *  in punctuation and casing alone. */
+function upgradesByTurn(turns: LBTurn[], upgrades: LBUpgrade[]): Map<number, LBUpgrade> {
+  const flat = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const out = new Map<number, LBUpgrade>();
+  const taken = new Set<number>();
+  for (const u of upgrades) {
+    const needle = flat(u.you_said ?? "");
+    if (needle.length < 8) continue;   // too short to attribute safely
+    const i = turns.findIndex(
+      (t, idx) => t.role === "candidate" && !taken.has(idx) && flat(t.text).includes(needle),
+    );
+    if (i >= 0) {
+      out.set(i, u);
+      taken.add(i);
+    }
+  }
+  return out;
+}
+
 export function ListenBack({
   audioUrl,
   turns,
   partS,
+  upgrades = [],
 }: {
   audioUrl: string;
   turns: LBTurn[];
   partS?: Record<string, number> | null;
+  /** The grader's rewrites, shown under the turn each one quotes. */
+  upgrades?: LBUpgrade[];
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -46,6 +81,10 @@ export function ListenBack({
   const [playing, setPlaying] = useState(false);
 
   const timed = turns.filter((t) => typeof t.t_ms === "number");
+  // Keyed on `timed`, NOT `turns` — the list below renders the filtered array,
+  // and any untimed turn (older sessions predate t_ms) would shift every index
+  // after it, hanging each rewrite under somebody else's sentence.
+  const better = upgradesByTurn(timed, upgrades);
   // active turn = the last one whose timestamp is behind the playhead
   let active = -1;
   timed.forEach((t, i) => {
@@ -212,6 +251,25 @@ export function ListenBack({
                   {t.text.trim()}
                 </span>
               </button>
+              {/* The stronger way to say it, right under what was actually
+                  said. Hearing yourself and reading the upgrade in the same
+                  place is the whole point of listening back — sending the
+                  learner to a separate list to find it loses the pairing. */}
+              {better.has(i) ? (
+                <div style={{ margin: "0 12px 10px 74px", borderLeft: `2px solid ${GOOD}`, paddingLeft: 12 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", color: GOOD, textTransform: "uppercase" }}>
+                    Stronger
+                  </div>
+                  <div style={{ marginTop: 3, fontSize: 13.5, lineHeight: 1.55, color: INK, fontWeight: 500 }}>
+                    {better.get(i)!.stronger}
+                  </div>
+                  {better.get(i)!.note ? (
+                    <div style={{ marginTop: 3, fontSize: 12, lineHeight: 1.5, color: MUTED }}>
+                      {better.get(i)!.note}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           );
         })}

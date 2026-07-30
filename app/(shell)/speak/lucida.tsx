@@ -308,8 +308,11 @@ export function PersonaAvatar({
   size?: number;
   ring?: boolean;
 }) {
+  // Sizing note: NOT `margin: 0 auto`. Inside a flex row an auto margin soaks
+  // up all the free space, which centred the avatar and threw the name to the
+  // far right — the broken tutor card. Callers wanting it centred wrap it.
   return (
-    <div style={{ position: "relative", width: size, height: size, margin: "0 auto" }}>
+    <div style={{ position: "relative", width: size, height: size, flex: "0 0 auto" }}>
       {ring ? (
         <>
           <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `2px solid ${accent}`, animation: "lcPulseRing 1.6s ease-out infinite" }} />

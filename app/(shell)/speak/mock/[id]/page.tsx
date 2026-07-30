@@ -95,8 +95,18 @@ export default async function MockResultPage({ params }: PageProps) {
         </Link>
       </div>
 
+      {/* THE BAND FIRST. It was below the part notes and the whole Listen Back
+          player, so the one number the candidate came for sat under a fold of
+          detail they had not asked for yet. */}
+      <SpeakingReport
+        result={result}
+        metrics={metrics}
+        transcript={synced ? "" : dialogue}
+        audioUrl={synced ? null : audioUrl}
+      />
+
       {Object.keys(partNotes).length ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, margin: "14px 0" }}>
           {(["1", "2", "3"] as const).map((p) =>
             partNotes[p] ? (
               <div key={p} style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px" }}>
@@ -109,7 +119,12 @@ export default async function MockResultPage({ params }: PageProps) {
       ) : null}
 
       {synced ? (
-        <ListenBack audioUrl={audioUrl!} turns={turns as LBTurn[]} partS={metrics.part_s} />
+        <ListenBack
+          audioUrl={audioUrl!}
+          turns={turns as LBTurn[]}
+          partS={metrics.part_s}
+          upgrades={result.upgrades ?? []}
+        />
       ) : null}
 
       {prepNotes ? (
@@ -128,13 +143,6 @@ export default async function MockResultPage({ params }: PageProps) {
           </p>
         </details>
       ) : null}
-
-      <SpeakingReport
-        result={result}
-        metrics={metrics}
-        transcript={synced ? "" : dialogue}
-        audioUrl={synced ? null : audioUrl}
-      />
 
       {s.state === "graded" ? <CoachChat sessionId={s.id} /> : null}
     </div>
