@@ -122,8 +122,8 @@ const PURPOSES: Purpose[] = [
     focus: "Speaking from three points instead of a script, and recovering when you lose your place.",
     tags: ["Three-point structure", "Recovery", "Delivery"] },
   { id: "interview", label: "Work interview", mark: "I", room: "Interview room", length: "20 min", theme: "interview", accent: "#3B82F6", defaultMode: "chat",
-    focus: "Complete answers in Situation–Task–Action–Result order, with a measurable result.",
-    tags: ["STAR answers", "Follow-ups", "Numbers"] },
+    focus: "Real interview questions for your actual job, answered in clear English and in STAR order.",
+    tags: ["STAR answers", "Questions for your job", "Follow-ups"] },
   { id: "ielts", label: "IELTS coaching", mark: "B", room: "Coached exam", length: "20 min", theme: "flow", accent: "#22C55E", defaultMode: "part1",
     focus: "Answers long enough for Part 1, a full two minutes in Part 2, and reasons in Part 3.",
     tags: ["Part 2 timing", "Reasons", "Band-7 phrasing"] },
@@ -702,10 +702,10 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
           </div>
 
           {/* The job being prepared for. Only for the interview: elsewhere a
-              field is colour, here it decides the questions — including the
-              technical ones. Free text, because any list of roles we wrote
-              would be wrong for somebody. Blank is fine; the tutor opens by
-              asking rather than running a generic interview. */}
+              field is colour, here it decides which questions get asked. Free
+              text, because any list of roles we wrote would be wrong for
+              somebody. Blank is fine; the tutor opens by asking rather than
+              running a generic interview. */}
           {selectedPurpose.id === "interview" ? (
             <div style={{ marginTop: 24 }}>
               <label
@@ -727,9 +727,9 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 }}
               />
               <p style={{ margin: "8px 0 0", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", maxWidth: 520, lineHeight: "var(--lh-normal)" }}>
-                Your tutor asks what that interview really asks — behavioural, situational and the
-                technical questions for your field. It coaches how clearly you explain them, not
-                whether the technical answer was right.
+                Your tutor asks the questions that interview really asks, in the words your job
+                uses. It is English practice, not a technical test — you talk about your own work,
+                and it coaches how clearly you said it.
               </p>
             </div>
           ) : null}
