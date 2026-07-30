@@ -22,6 +22,39 @@ export default async function AdminPage() {
 
   const { data: profiles } = await admin.from("profiles").select("organization_id, role");
 
+  // Conduct findings — abuse or refusal aimed at the examiner, as reported by
+  // the grader (speaking/service.py `_conduct`). Surfaced HERE and nowhere near
+  // the learner's account: nothing about it changes their band, their quota or
+  // their access. It exists so the owner can tell one bad afternoon from a
+  // pattern, which is the only question this data can honestly answer.
+  const { data: flagged } = await admin
+    .from("speaking_sessions")
+    .select("id, organization_id, started_at, result")
+    .eq("mode", "full")
+    .not("result->conduct", "is", null)
+    .order("started_at", { ascending: false })
+    .limit(25);
+
+  const orgName = new Map<string, string>();
+  for (const o of (orgs ?? []) as OrgRow[]) orgName.set(o.id, o.name);
+
+  const conduct = ((flagged ?? []) as {
+    id: string;
+    organization_id: string;
+    started_at: string;
+    result: { conduct?: { kind?: string; quote?: string } | null } | null;
+  }[])
+    .map((s) => ({
+      id: s.id,
+      org: orgName.get(s.organization_id) ?? s.organization_id,
+      when: new Date(s.started_at).toLocaleDateString("en-GB", {
+        day: "numeric", month: "short", year: "numeric",
+      }),
+      kind: s.result?.conduct?.kind ?? "",
+      quote: s.result?.conduct?.quote ?? "",
+    }))
+    .filter((c) => c.quote);
+
   const memberCount = new Map<string, number>();
   for (const p of (profiles ?? []) as { organization_id: string }[]) {
     memberCount.set(p.organization_id, (memberCount.get(p.organization_id) ?? 0) + 1);
@@ -70,6 +103,34 @@ export default async function AdminPage() {
             ))}
             {orgList.length === 0 ? (
               <li className="text-muted-foreground py-2">No organizations yet.</li>
+            ) : null}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Examiner conduct</CardTitle>
+          <CardDescription>
+            Mocks where the candidate abused or refused the examiner. Reported only — no band,
+            quota or account is affected by anything here.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y text-sm">
+            {conduct.map((c) => (
+              <li key={c.id} className="flex items-start justify-between gap-4 py-2">
+                <span className="min-w-0">
+                  <span className="block truncate">&ldquo;{c.quote}&rdquo;</span>
+                  <span className="text-muted-foreground block text-xs">
+                    {c.org} · {c.when}
+                  </span>
+                </span>
+                <span className="text-muted-foreground shrink-0 capitalize">{c.kind}</span>
+              </li>
+            ))}
+            {conduct.length === 0 ? (
+              <li className="text-muted-foreground py-2">Nothing flagged.</li>
             ) : null}
           </ul>
         </CardContent>
