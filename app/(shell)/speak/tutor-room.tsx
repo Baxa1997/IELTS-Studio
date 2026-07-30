@@ -68,11 +68,12 @@ const SUPPORT_LANGUAGES: { id: SupportLanguage; label: string; short: string }[]
 
 function wsUrl(
   mode: Mode, token: string, voice: string, purpose: string,
-  supportLanguage: SupportLanguage,
+  supportLanguage: SupportLanguage, role: string,
 ): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const q = new URLSearchParams({
     token, mode, voice, support_language: supportLanguage, purpose,
+    ...(role ? { role } : {}),
     // `context` is the engine's older name for the same thing. Sent as well so
     // an app deployed ahead of the engine still lands on the right purpose
     // instead of silently falling back to general.
@@ -186,6 +187,12 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
   // The catalogue the ENGINE reports on `ready`. It owns the real list; ours is
   // only what we can show before a socket exists.
   const [serverPurposes, setServerPurposes] = useState<{ id: string; label: string }[] | null>(null);
+  // The job being prepared for. Free text — "backend engineer at a fintech",
+  // "ICU nurse" — because any list we invented would be wrong for somebody.
+  // Remembered: people interview for the same role over several sessions.
+  const [role, setRole] = useState(() =>
+    typeof window === "undefined" ? "" : localStorage.getItem("tutorRole") ?? "",
+  );
   // The tutor is MATCHED, not picked from a line-up. Choosing between four
   // strangers is a decision nobody has the information to make on their first
   // visit, so one is assigned and "Match another" reshuffles. The match sticks
@@ -331,7 +338,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
       };
 
       const ws = new WebSocket(
-        wsUrl(selectedPurpose.defaultMode, token, voice, selectedPurpose.id, supportLanguage),
+        wsUrl(selectedPurpose.defaultMode, token, voice, selectedPurpose.id, supportLanguage, role),
       );
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
@@ -487,6 +494,14 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
     if (state !== "live") return;
     send({ type: "purpose", purpose: purposeId });
   }, [purposeId, state]);
+
+  // Told mid-lesson ("actually it's a data role"), the tutor should use it from
+  // its next question — same live path as a purpose switch.
+  useEffect(() => {
+    localStorage.setItem("tutorRole", role);
+    if (state !== "live") return;
+    send({ type: "role", role });
+  }, [role, state]);
 
   // Remember who they were matched with, so "my tutor" survives a reload
   // instead of reshuffling into a stranger every visit.
@@ -685,6 +700,39 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
               </div>
             </div>
           </div>
+
+          {/* The job being prepared for. Only for the interview: elsewhere a
+              field is colour, here it decides the questions — including the
+              technical ones. Free text, because any list of roles we wrote
+              would be wrong for somebody. Blank is fine; the tutor opens by
+              asking rather than running a generic interview. */}
+          {selectedPurpose.id === "interview" ? (
+            <div style={{ marginTop: 24 }}>
+              <label
+                htmlFor="tutor-role"
+                style={{ display: "block", fontSize: "var(--text-2xs)", fontWeight: 700, letterSpacing: "var(--ls-caps)", color: "var(--color-neutral-500)" }}
+              >
+                WHAT ROLE ARE YOU INTERVIEWING FOR?
+              </label>
+              <input
+                id="tutor-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value.slice(0, 120))}
+                placeholder="e.g. backend engineer at a fintech, ICU nurse, maths teacher"
+                style={{
+                  marginTop: 10, width: "100%", maxWidth: 520, padding: "12px 14px",
+                  borderRadius: "var(--radius-lg)", border: "1px solid var(--color-neutral-200)",
+                  background: "var(--color-neutral-0)", color: "var(--color-neutral-1000)",
+                  fontFamily: "inherit", fontSize: "var(--text-base)",
+                }}
+              />
+              <p style={{ margin: "8px 0 0", fontSize: "var(--text-xs)", color: "var(--color-neutral-500)", maxWidth: 520, lineHeight: "var(--lh-normal)" }}>
+                Your tutor asks what that interview really asks — behavioural, situational and the
+                technical questions for your field. It coaches how clearly you explain them, not
+                whether the technical answer was right.
+              </p>
+            </div>
+          ) : null}
 
           {/* Changing your mind about the goal, without going back a screen.
               The same control lives inside the room, live. */}
