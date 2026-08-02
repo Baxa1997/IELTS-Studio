@@ -8,9 +8,10 @@ import { serverEnv } from "@/lib/env";
 
 import type { AIProvider, CompletionRequest, CompletionResult } from "./provider";
 
-/** v1 engine. One model for now; the service can route per-task later. Same
- *  model id works on both the Developer API and Vertex AI. */
-const DEFAULT_MODEL = "gemini-2.5-flash";
+/* No default model lives here. Per-task routing is decided ONCE, in
+ * `serverEnv.geminiModels` (lib/env.ts), and the chosen id is passed to this
+ * constructor. A default here would be a second, silent source of truth — the
+ * kind that survives a migration because nothing points at it. */
 
 /**
  * Build the GenAI client for the configured backend:
@@ -108,7 +109,7 @@ export class GeminiProvider implements AIProvider {
   private readonly client: GoogleGenAI;
   private readonly model: string;
 
-  constructor(model: string = DEFAULT_MODEL, client: GoogleGenAI = buildClient()) {
+  constructor(model: string, client: GoogleGenAI = buildClient()) {
     this.client = client;
     this.model = model;
   }
