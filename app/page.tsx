@@ -33,16 +33,35 @@ const hanken = Hanken_Grotesk({
   variable: "--font-hanken",
   display: "swap",
 });
+// Weights below are the ones this page actually paints, taken by walking the
+// rendered DOM rather than guessed. Newsreader was the worst offender: four
+// weights in BOTH normal and italic — eight files — where the page draws 400,
+// 600 and 800 upright, plus italic at 400 only (the Task 2 question in the
+// writing demo tab, app/_landing/demo-screens.tsx). 800 was drawn but never
+// loaded, so the browser had been faux-bolding it.
+//
+// NO italic. Newsreader italic 400 was the single heaviest file on this page —
+// 63 kB, a tenth of its total weight — and next/font PRELOADS it, so every
+// visitor downloaded it before paint. The only italic serif on the marketing
+// surface is one line inside the writing demo tab (the Task 2 question in
+// app/_landing/demo-screens.tsx), which most visitors never open. That line now
+// renders as synthesised oblique: a slight slant instead of true italic, on one
+// short line, in exchange for 63 kB off the front door for everybody.
+//
+// It cannot be split into a lazily-preloaded second declaration either —
+// next/font mints a unique family name per call, so an italic declared
+// separately would never be selected by `font-style: italic` on this family.
 const newsreader = Newsreader({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["400", "600", "800"],
   variable: "--font-newsreader",
   display: "swap",
 });
+// Used: 400, 600, 700. 500 was loaded and never drawn; 700 was drawn and never
+// loaded (so it was synthesised from 600).
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "600", "700"],
   variable: "--font-jetbrains",
   display: "swap",
 });

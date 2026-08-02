@@ -11,9 +11,15 @@ import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } f
 //
 // Geist Mono stays: the theme's --font-mono points at it, so the `font-mono`
 // utility and the speaking screens' var(--font-mono) both resolve through it.
+// preload:false — this is the app-wide mono, but only a handful of screens draw
+// with it (the `font-mono` utility, and the speaking surface via --font-mono).
+// Preloading fetches it before first paint on EVERY route, including the
+// marketing landing and sign-in, which never render a mono glyph. Without the
+// preload hint the browser fetches it only when something actually uses it.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata: Metadata = {

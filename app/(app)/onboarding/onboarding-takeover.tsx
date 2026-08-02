@@ -5,7 +5,7 @@ import { StartWizard } from "@/app/start/start-wizard";
 // Self-contained fonts so the takeover renders correctly from EITHER layout
 // (the app shell or the chrome-free studio shell).
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
-const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
+const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-newsreader", display: "swap" });
 
 /**
  * The mandatory first-run onboarding takeover. A learner without a study plan sees

@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/brand/logo";
 // Legal pages (privacy / terms) wear the same Option A brand as the public pages,
 // scoped via CSS variables so the rest of the app keeps Geist.
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
-const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
+const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-newsreader", display: "swap" });
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const LINE = "#E7E3D5";
