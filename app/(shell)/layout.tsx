@@ -1,12 +1,5 @@
 import { cookies } from "next/headers";
-import {
-  Bricolage_Grotesque,
-  DM_Sans,
-  Hanken_Grotesk,
-  JetBrains_Mono,
-  Newsreader,
-  Plus_Jakarta_Sans,
-} from "next/font/google";
+import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { PlanCard } from "@/components/app-shell/plan-card";
@@ -16,18 +9,13 @@ import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
 
+// The two families every shell page actually renders. The surface-specific ones
+// moved to the segment that uses them — DM Sans to ./listen/layout.tsx, and
+// Bricolage/Jakarta/JetBrains to ./speak/layout.tsx. Loading all six here meant
+// a Reading or Writing page downloaded sixteen weights it never drew a glyph
+// with; the runners themselves are unchanged.
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
 const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], style: ["normal", "italic"], variable: "--font-newsreader", display: "swap" });
-// Listening Practice runner surface (IELTS Listening handoff): a single DM Sans
-// family across the whole exam screen (titles, UI, tabular times).
-const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-dmsans", display: "swap" });
-// Speaking "Lucida" surface: Bricolage Grotesque (display) + Plus Jakarta Sans
-// (body). Scoped to /speak via the .lucida token layer — see speak/lucida.tsx.
-const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap" });
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap" });
-// Numbers and small-caps labels across the speaking redesign — timers, bands,
-// wpm. Mono so a running clock does not jitter as its digits change width.
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-data", display: "swap" });
 
 const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
 
@@ -62,7 +50,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${dmSans.variable} ${bricolage.variable} ${jakarta.variable} ${jetbrains.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} lp-root`}
     >
       <AppShell
         role={profile.role}
