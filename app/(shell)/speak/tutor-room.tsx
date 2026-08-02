@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { checkMicAccess, startMic, VoicePlayer } from "./audio";
 import { ConfirmQuit } from "./confirm-quit";
 import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./lucida";
+import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
 
 /**
  * The speaking TUTOR room — a lesson, not an exam.
@@ -72,11 +73,12 @@ const SUPPORT_LANGUAGES: { id: SupportLanguage; label: string; short: string }[]
 // (see the engine's speaking/ws_auth.py), which nginx does not log.
 function wsUrl(
   mode: Mode, voice: string, purpose: string,
-  supportLanguage: SupportLanguage, role: string,
+  supportLanguage: SupportLanguage, role: string, legacyToken?: string,
 ): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const q = new URLSearchParams({
     mode, voice, support_language: supportLanguage, purpose,
+    ...(legacyToken ? { token: legacyToken } : {}),
     ...(role ? { role } : {}),
     // `context` is the engine's older name for the same thing. Sent as well so
     // an app deployed ahead of the engine still lands on the right purpose
@@ -86,10 +88,6 @@ function wsUrl(
   return `${base.replace(/^http/, "ws")}/speaking/tutor/live?${q.toString()}`;
 }
 
-/** `["bearer", <jwt>]` — the engine selects "bearer" back and reads the token. */
-function wsProtocols(token: string): string[] {
-  return ["bearer", token];
-}
 
 // PURPOSE — what the learner's English is FOR. The engine's registry
 // (speaking/prompts.py PURPOSES) is the source of truth and ships the live
@@ -346,10 +344,22 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
         }
       };
 
-      const ws = new WebSocket(
-        wsUrl(selectedPurpose.defaultMode, voice, selectedPurpose.id, supportLanguage, role),
-        wsProtocols(token),
-      );
+      // Probe the header carry; an engine that predates speaking/ws_auth.py
+      // fails the handshake outright, so fall back to the legacy query carry
+      // rather than showing "Connection to the tutor failed." (see ./ws-auth.ts).
+      const useSubprotocol = prefersSubprotocol();
+      const ws = useSubprotocol
+        ? new WebSocket(
+            wsUrl(selectedPurpose.defaultMode, voice, selectedPurpose.id, supportLanguage, role),
+            bearerProtocols(token),
+          )
+        : new WebSocket(
+            wsUrl(selectedPurpose.defaultMode, voice, selectedPurpose.id, supportLanguage, role, token),
+          );
+      let opened = false;
+      ws.onopen = () => {
+        opened = true;
+      };
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
@@ -457,6 +467,12 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
         }
       };
       ws.onerror = () => {
+        if (!opened && useSubprotocol) {
+          downgradeToQueryCarry();
+          teardown();
+          void start();
+          return;
+        }
         setError("Connection to the tutor failed.");
         setState("idle");
       };

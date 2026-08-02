@@ -12,6 +12,7 @@ import { ConfirmQuit } from "./confirm-quit";
 // No PersonaAvatar here on purpose: the exam room shows an ORB, not a face.
 // The tutor gets a person; an examiner should feel impersonal.
 import { LucidaScope, PERSONAS, personaById, WaveBars, mmss, type Persona } from "./lucida";
+import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
 
 /**
  * Full mock (Parts 1–3) — the LIVE examiner. A bidirectional WebSocket to the
@@ -58,17 +59,15 @@ interface PhaseEvent {
 // nginx access log, which would leave live bearer tokens sitting on disk for
 // their whole ~1h lifetime. It travels in the handshake's subprotocol instead
 // (see the engine's speaking/ws_auth.py), which nginx does not log.
-function wsUrl(session_id: string, examiner: string): string {
+function wsUrl(session_id: string, examiner: string, legacyToken?: string): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const ws = base.replace(/^http/, "ws"); // https→wss, http→ws
   const q = new URLSearchParams({ session_id, examiner });
+  if (legacyToken) q.set("token", legacyToken);
   return `${ws}/speaking/live?${q.toString()}`;
 }
 
-/** `["bearer", <jwt>]` — the engine selects "bearer" back and reads the token. */
-function wsProtocols(token: string): string[] {
-  return ["bearer", token];
-}
+// Auth carry + the old-engine fallback: ./ws-auth.ts explains why it exists.
 
 export function LiveMock({
   onExit,
@@ -352,40 +351,61 @@ export function LiveMock({
       };
       playerRef.current = player;
 
-      const ws = new WebSocket(wsUrl(sid, examiner), wsProtocols(token));
-      ws.binaryType = "arraybuffer";
-      wsRef.current = ws;
+      // Opens the socket for the session ALREADY reserved above. Split out so a
+      // failed subprotocol handshake can retry on the same `sid` — re-running
+      // begin() would reserve a second session for one learner sitting down once.
+      const connect = (useSubprotocol: boolean) => {
+        const ws = useSubprotocol
+          ? new WebSocket(wsUrl(sid, examiner), bearerProtocols(token))
+          : new WebSocket(wsUrl(sid, examiner, token));
+        let opened = false;
+        ws.binaryType = "arraybuffer";
+        wsRef.current = ws;
 
-      ws.onmessage = (e) => {
-        if (typeof e.data === "string") {
-          try {
-            onEvent(JSON.parse(e.data));
-          } catch {}
-        } else {
-          playerRef.current?.push(e.data as ArrayBuffer);
-        }
-      };
-      ws.onerror = () => {
-        setError("Connection to the examiner dropped.");
-        setPhase("error");
-        teardown();
-      };
-      ws.onclose = () => {
-        setPhase((p) => (p === "ended" || p === "error" ? p : "ended"));
-      };
-      ws.onopen = async () => {
-        try {
-          const mic = await startMic((pcm) => {
-            if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
-          });
-          mic.onLevel((rms) => setMicLevel(rms));
-          micRef.current = mic;
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Microphone unavailable.");
+        ws.onmessage = (e) => {
+          if (typeof e.data === "string") {
+            try {
+              onEvent(JSON.parse(e.data));
+            } catch {}
+          } else {
+            playerRef.current?.push(e.data as ArrayBuffer);
+          }
+        };
+        ws.onerror = () => {
+          // Never opened while probing the subprotocol carry => this engine
+          // predates speaking/ws_auth.py. Downgrade the tab and reconnect on the
+          // same session instead of showing an error nobody can act on.
+          if (!opened && useSubprotocol) {
+            downgradeToQueryCarry();
+            connect(false);
+            return;
+          }
+          setError("Connection to the examiner dropped.");
           setPhase("error");
           teardown();
-        }
+        };
+        ws.onclose = () => {
+          // A failed probe is not the end of the session — the retry owns it.
+          if (!opened && useSubprotocol && !prefersSubprotocol()) return;
+          setPhase((p) => (p === "ended" || p === "error" ? p : "ended"));
+        };
+        ws.onopen = async () => {
+          opened = true;
+          try {
+            const mic = await startMic((pcm) => {
+              if (ws.readyState === WebSocket.OPEN) ws.send(pcm);
+            });
+            mic.onLevel((rms) => setMicLevel(rms));
+            micRef.current = mic;
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Microphone unavailable.");
+            setPhase("error");
+            teardown();
+          }
+        };
       };
+
+      connect(prefersSubprotocol());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the mock.");
       setPhase("error");
