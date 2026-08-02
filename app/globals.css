@@ -960,6 +960,32 @@
    (The reading coach is already a floating overlay at every size — see
    .ml-rd-coach-float — so it needs no rule here.) Desktop (>860px) is unchanged. */
 @media (max-width: 860px) {
+  /* CEFR READING was missed when the coach was made an overlay: the passage |
+     questions SPLIT itself never got a narrow-screen rule, so a phone rendered
+     the passage in ~58% of 375px beside a 42% question column — roughly 218px
+     against 157px, both unusable. Same stacking the IELTS reading runner uses
+     (.rd-split above); the two runners now behave identically on a phone. */
+  .ml-rd-row {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .ml-rd-passage,
+  .ml-rd-questions {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    overflow: visible !important;
+  }
+  .ml-rd-passage {
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  /* one swipeable row of part buttons instead of many tall wrapped rows */
+  .ml-rd-qnav {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+  }
   .ml-wr-coach {
     position: absolute !important;
     inset: 0 !important;
