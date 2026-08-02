@@ -4,7 +4,9 @@ Durable context for this repo. Full background: `IELTS_Writing_Reading_SaaS_Proj
 
 ## Product
 
-AI platform for IELTS, **Writing + Reading first**. Speaking and Listening are on the roadmap (shown in-product as "coming soon") and will be added after the Writing + Reading experience is solid — do not build them yet; every v1 decision optimizes the two shipping skills.
+AI platform for IELTS. **All four skills ship**: Writing and Reading (the original core), plus **Listening** and **Speaking**, which are live and no longer carry a BETA badge (2026-08-02 — the earlier "coming soon / do not build them yet" instruction is retired). There is also a **CEFR / Multilevel** track for the Uzbekistan DTM exam: its Reading and Writing papers are live; Listening and Speaking are not built yet.
+
+Writing and Reading remain where the quality bar is highest — the grader and the revision loop are the moat — but a decision that helps one skill should no longer be taken at the expense of the other three.
 
 The whole game is **grading accuracy**. Every competitor already has "AI gives a band + feedback" — that's the price of entry, not the moat. We win on two things:
 
@@ -19,8 +21,8 @@ The whole game is **grading accuracy**. Every competitor already has "AI gives a
 
 - **Next.js** (App Router) + **TypeScript** + **Tailwind**
 - **Supabase** — Postgres, Auth, **RLS**, Storage, **pgvector** (exemplar/rubric corpus)
-- **Langfuse** — AI observability: traces, cost, prompt-version, and grading-quality evals
-- AI providers: **Gemini** for v1, **Claude Sonnet** for the evaluation engine later (route by task, not globally)
+- **Langfuse** — AI observability: traces, cost, prompt-version, and grading-quality evals. (Reality check: the app has a small Langfuse client; the engine currently records spend in the `ai_usage` table rather than Langfuse.)
+- AI providers: **Gemini**, routed **per task, not globally**. Which model serves which task — in both this app and the engine — is inventoried in the engine's `docs/model-inventory.md`; the October 2026 shutdown of the 2.5 line and how to migrate safely is `docs/model-migration-2026-10.md`. Never hardcode a model id outside those env-driven constants.
 
 ## Non-negotiable principles
 
@@ -55,6 +57,13 @@ The `ielts-examiner` skill encodes this; honor it on every grading call:
 - Output per criterion (TR/TA, CC, LR, GRA): `{ band, evidence, what_caps_it, fix }`, plus overall band and a "band with fixes" target.
 - **Calibration loop:** measure grader error and upward bias against a held-out set of expert-judged essays; track in Langfuse; tune to within ±0.5 of human and **not biased upward**. Expert-labeled corrections feed back into the anchor set. (No in-product teacher override in the B2C build; the dormant override path stays for a future B2B return.)
 
+> **Speaking grading is FROZEN until expert labels exist.** The measured +0.409
+> upward bias is against anchors we wrote ourselves, so it is not a real error
+> bar, and the double-flooring that partly offsets it is **load-bearing** —
+> removing it was A/B'd and made the bias *worse*. Read the engine's
+> `docs/calibration-log.md` before changing any grading arithmetic, anchor, or
+> strictness knob. Hiring a marker is the only unblock.
+
 ## IP / content boundaries (legal landmine — read §2 + §9 of the plan)
 
 - **Never ingest or emit** Cambridge/Oxford/Macmillan test books, official past papers, or any competitor's essay corpus (copyrighted).
@@ -66,6 +75,9 @@ The `ielts-examiner` skill encodes this; honor it on every grading call:
 
 - **Writing** (core): **AI-generated-on-demand** Task 1/Task 2 prompts (auto-served, no approval gate), writing studio (timer/autosave), deep per-criterion evaluation, the revision loop (resubmit + re-grade same essay), Band 8 sample comparison.
 - **Reading**: dynamic original passages, all real question types (auto-gradeable), per-answer "why the trap worked" explanations, question-type analytics, timed full-section mode.
+- **Listening**: original multi-voice audio generated and rendered by the engine, Cambridge-style question groups, full 4-part tests and quick practices, transcripts and per-answer explanations.
+- **Speaking**: Part-2 push-to-talk practice, the full **3-part live mock** with an AI examiner (plan-gated — a trial gets exactly one a month), and a **tutor** lesson that reacts and teaches while you talk. Grading is deliberately **frozen** pending expert labels — see the engine's `docs/calibration-log.md` before touching any grading arithmetic, anchor or strictness knob.
+- **CEFR / Multilevel** (Uzbekistan DTM): Reading (5 parts / 35 Qs) and Writing (3 tasks) are live and generated on demand. Listening and Speaking are **not built**; the Listening format research and its open questions live in the engine's `docs/cefr-listening-spec.md`.
 - **Level ID**: entry diagnostic + continuous, conservative re-estimation ("current band → target band").
-- **Activities**: the learner's own history — past graded writing and reading, each reopenable to its stored feedback and band.
+- **Activities**: the learner's own history — past graded work, each reopenable to its stored feedback and band.
 - **Dashboard**: student only (current vs. target, weakest area). _(Dormant/parked: Admin/Teacher console — content review gate, human band override, review queue — and the center/B2B cohort dashboard. Not in the shipping B2C product.)_
