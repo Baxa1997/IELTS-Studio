@@ -67,14 +67,31 @@ export async function updateSession(request: NextRequest) {
 
   // Touch the session so expired tokens get refreshed. Do not run logic between
   // creating the client and this call.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  //
+  // getClaims(), not getUser(): getUser() calls the Supabase Auth server on
+  // EVERY matched request — every navigation, and every <Link> prefetch — and
+  // this proxy runs on all of them, so that round trip sat in front of the whole
+  // app. getClaims() verifies the JWT signature locally with WebCrypto against
+  // the project's cached JWKS, so once the project uses asymmetric signing keys
+  // there is no network hop at all.
+  //
+  // It is safe BEFORE that switch too: with a symmetric secret getClaims()
+  // falls back to asking the server exactly like getUser() did, and it still
+  // refreshes a session whose token is about to expire. So this is a strict
+  // improvement in both configurations, and needs no coordinated flip.
+  //
+  // Trust is unchanged: the signature is verified either way. This is emphatically
+  // not getSession(), which would read unverified cookie contents.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  // `sub` is the user id; its presence is what "signed in" means here. Role and
+  // org are NOT read from the token — server components still resolve those from
+  // `profiles`, and RLS remains the thing that actually guards data.
+  const signedIn = Boolean(claimsData?.claims?.sub);
 
   const { pathname } = request.nextUrl;
 
   // Unauthenticated trying to reach a protected page -> sign-in.
-  if (!user && !isPublicPath(pathname)) {
+  if (!signedIn && !isPublicPath(pathname)) {
     return redirectKeepingCookies(request, supabaseResponse, "/sign-in");
   }
 
@@ -82,7 +99,7 @@ export async function updateSession(request: NextRequest) {
   // /dashboard (the student home) rather than the marketing root `/`, which does
   // NOT forward signed-in visitors and so reads as "sign-in went nowhere".
   // super_admins are bounced on to /admin by the dashboard guard.
-  if (user && (pathname === "/sign-in" || pathname === "/sign-up")) {
+  if (signedIn && (pathname === "/sign-in" || pathname === "/sign-up")) {
     return redirectKeepingCookies(request, supabaseResponse, "/dashboard");
   }
 
