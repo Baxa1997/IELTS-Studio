@@ -33,24 +33,18 @@ const hanken = Hanken_Grotesk({
   variable: "--font-hanken",
   display: "swap",
 });
-// Weights below are the ones this page actually paints, taken by walking the
-// rendered DOM rather than guessed. Newsreader was the worst offender: four
-// weights in BOTH normal and italic — eight files — where the page draws 400,
-// 600 and 800 upright, plus italic at 400 only (the Task 2 question in the
-// writing demo tab, app/_landing/demo-screens.tsx). 800 was drawn but never
-// loaded, so the browser had been faux-bolding it.
+// These weights are the ones this page actually paints, found by walking the
+// rendered DOM rather than guessed: 400, 600 and 800. 800 was being drawn but
+// was never loaded, so the browser had been faux-bolding it; 500 and 700 were
+// loaded and never drawn.
 //
-// NO italic. Newsreader italic 400 was the single heaviest file on this page —
-// 63 kB, a tenth of its total weight — and next/font PRELOADS it, so every
-// visitor downloaded it before paint. The only italic serif on the marketing
-// surface is one line inside the writing demo tab (the Task 2 question in
-// app/_landing/demo-screens.tsx), which most visitors never open. That line now
-// renders as synthesised oblique: a slight slant instead of true italic, on one
-// short line, in exchange for 63 kB off the front door for everybody.
-//
-// It cannot be split into a lazily-preloaded second declaration either —
-// next/font mints a unique family name per call, so an italic declared
-// separately would never be selected by `font-style: italic` on this family.
+// And NO italic. Newsreader italic 400 was the heaviest single file in the app
+// — 63 kB — and next/font preloads it, so every visitor on every route fetched
+// it before first paint. The only italic serif anywhere is one line in the
+// writing demo tab (app/_landing/demo-screens.tsx), which now renders as
+// synthesised oblique. It cannot be split into a lazily-loaded second
+// declaration either: next/font mints a unique family name per call, so an
+// italic declared apart would never be selected by `font-style: italic` here.
 const newsreader = Newsreader({
   subsets: ["latin"],
   weight: ["400", "600", "800"],
@@ -64,6 +58,7 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "600", "700"],
   variable: "--font-jetbrains",
   display: "swap",
+  preload: false,
 });
 // The listening demo screen recreates the in-app runner, which uses DM Sans.
 const dmsans = DM_Sans({
@@ -71,6 +66,7 @@ const dmsans = DM_Sans({
   weight: ["400", "500", "600", "700"],
   variable: "--font-dmsans",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

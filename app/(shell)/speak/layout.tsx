@@ -13,12 +13,14 @@ const bricolage = Bricolage_Grotesque({
   weight: ["500", "600", "700", "800"],
   variable: "--font-bricolage",
   display: "swap",
+  preload: false,
 });
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-jakarta",
   display: "swap",
+  preload: false,
 });
 // Numbers and small-caps labels — timers, bands, wpm. Mono so a running clock
 // does not jitter as its digits change width.
@@ -27,6 +29,7 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "600"],
   variable: "--font-mono-data",
   display: "swap",
+  preload: false,
 });
 
 export default function SpeakFontLayout({ children }: { children: React.ReactNode }) {

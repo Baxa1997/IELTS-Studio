@@ -37,6 +37,7 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "600"],
   variable: "--font-jetbrains",
   display: "swap",
+  preload: false,
 });
 // The listening demo screen recreates the in-app runner, which uses DM Sans.
 const dmsans = DM_Sans({
@@ -44,6 +45,7 @@ const dmsans = DM_Sans({
   weight: ["400", "500", "600", "700"],
   variable: "--font-dmsans",
   display: "swap",
+  preload: false,
 });
 
 const TITLE = "EngProgress Demo — See the IELTS Practice Platform in Action";

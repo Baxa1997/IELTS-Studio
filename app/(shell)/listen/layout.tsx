@@ -10,6 +10,7 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600", "700"],
   variable: "--font-dmsans",
   display: "swap",
+  preload: false,
 });
 
 export default function ListenFontLayout({ children }: { children: React.ReactNode }) {

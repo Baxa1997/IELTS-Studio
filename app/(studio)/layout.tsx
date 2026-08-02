@@ -6,12 +6,12 @@ import { loadStudyPlan } from "@/lib/plan/service";
 
 // Speaking "Lucida" runner surface (exam + tutor live sessions). See
 // app/(shell)/speak/lucida.tsx for the scoped token layer these feed.
-const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap" });
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap" });
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-bricolage", display: "swap", preload: false });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-jakarta", display: "swap", preload: false });
 // Every NUMBER and small caps label in the speaking redesign — timers, bands,
 // wpm, section kickers. A proportional font makes a running clock jitter as the
 // digits change width; this is why the design specifies a mono for them.
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-data", display: "swap" });
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-data", display: "swap", preload: false });
 
 /**
  * Distraction-free shell for the writing/reading studio — deliberately no global
