@@ -66,13 +66,17 @@ const SUPPORT_LANGUAGES: { id: SupportLanguage; label: string; short: string }[]
   { id: "ru", label: "Русский", short: "RU" },
 ];
 
+// The access token is NOT a query parameter: a URL ends up in the engine host's
+// nginx access log, which would leave live bearer tokens sitting on disk for
+// their whole ~1h lifetime. It travels in the handshake's subprotocol instead
+// (see the engine's speaking/ws_auth.py), which nginx does not log.
 function wsUrl(
-  mode: Mode, token: string, voice: string, purpose: string,
+  mode: Mode, voice: string, purpose: string,
   supportLanguage: SupportLanguage, role: string,
 ): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const q = new URLSearchParams({
-    token, mode, voice, support_language: supportLanguage, purpose,
+    mode, voice, support_language: supportLanguage, purpose,
     ...(role ? { role } : {}),
     // `context` is the engine's older name for the same thing. Sent as well so
     // an app deployed ahead of the engine still lands on the right purpose
@@ -80,6 +84,11 @@ function wsUrl(
     ...(purpose !== "general" ? { context: purpose } : {}),
   });
   return `${base.replace(/^http/, "ws")}/speaking/tutor/live?${q.toString()}`;
+}
+
+/** `["bearer", <jwt>]` — the engine selects "bearer" back and reads the token. */
+function wsProtocols(token: string): string[] {
+  return ["bearer", token];
 }
 
 // PURPOSE — what the learner's English is FOR. The engine's registry
@@ -338,7 +347,8 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
       };
 
       const ws = new WebSocket(
-        wsUrl(selectedPurpose.defaultMode, token, voice, selectedPurpose.id, supportLanguage, role),
+        wsUrl(selectedPurpose.defaultMode, voice, selectedPurpose.id, supportLanguage, role),
+        wsProtocols(token),
       );
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;

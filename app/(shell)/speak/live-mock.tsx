@@ -54,11 +54,20 @@ interface PhaseEvent {
 }
 
 // ---- examiner voice playback (24 kHz PCM16 → scheduled AudioBuffers) ---------
-function wsUrl(session_id: string, token: string, examiner: string): string {
+// The access token is NOT a query parameter: a URL ends up in the engine host's
+// nginx access log, which would leave live bearer tokens sitting on disk for
+// their whole ~1h lifetime. It travels in the handshake's subprotocol instead
+// (see the engine's speaking/ws_auth.py), which nginx does not log.
+function wsUrl(session_id: string, examiner: string): string {
   const base = clientEnv.aiBackendUrl ?? "";
   const ws = base.replace(/^http/, "ws"); // https→wss, http→ws
-  const q = new URLSearchParams({ session_id, token, examiner });
+  const q = new URLSearchParams({ session_id, examiner });
   return `${ws}/speaking/live?${q.toString()}`;
+}
+
+/** `["bearer", <jwt>]` — the engine selects "bearer" back and reads the token. */
+function wsProtocols(token: string): string[] {
+  return ["bearer", token];
 }
 
 export function LiveMock({
@@ -343,7 +352,7 @@ export function LiveMock({
       };
       playerRef.current = player;
 
-      const ws = new WebSocket(wsUrl(sid, token, examiner));
+      const ws = new WebSocket(wsUrl(sid, examiner), wsProtocols(token));
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;
 
