@@ -1,5 +1,9 @@
 export const SITE_NAME = "EngProgress";
-export const PREVIEW_IMAGE = "/link-preview.png";
+// JPEG, not PNG: the same card as a PNG was 744 kB, and several chat apps skip a
+// link preview whose image is too big (WhatsApp's ceiling is ~600 kB) — so the
+// heaviest possible file was silently costing us previews on the channels this
+// audience actually shares in. Re-encoded at q82: 170 kB, visually identical.
+export const PREVIEW_IMAGE = "/link-preview.jpg";
 
 export const SEO_DESCRIPTION =
   "The AI-based platform for IELTS practice — Writing, Reading, Listening and CEFR. Generate Cambridge-style tasks, train with fresh practice tests, and get the closest thing to a real examiner's band: strict, calibrated AI feedback.";
