@@ -775,17 +775,30 @@ function Hero() {
                     marginTop: 12,
                   }}
                 >
+                  {/* Rendered at 40px tall, so these ship at 80px (2x) in WebP.
+                      They used to be full-size PNGs — 568 kB for four logos, half
+                      the weight of this entire page, to draw 40 pixels of height.
+                      `width`/`height` are the intrinsic 2x dimensions: they give
+                      the browser the aspect ratio up front so the strip does not
+                      jump as each logo arrives. */}
                   {[
-                    { src: "/mit34.png", alt: "MIT" },
-                    { src: "/harvard.png", alt: "Harvard" },
-                    { src: "/stanford.png", alt: "Stanford" },
-                    { src: "/columb.png", alt: "Columbia" },
+                    { src: "/logos/mit.webp", alt: "MIT", w: 122 },
+                    { src: "/logos/harvard.webp", alt: "Harvard", w: 161 },
+                    { src: "/logos/stanford.webp", alt: "Stanford", w: 164 },
+                    { src: "/logos/columbia.webp", alt: "Columbia", w: 194 },
                   ].map((u) => (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       key={u.alt}
                       src={u.src}
                       alt={u.alt}
+                      width={u.w}
+                      height={80}
+                      // NOT loading="lazy": these sit in the hero's trust strip,
+                      // and with lazy set the browser never requested them at all
+                      // on this page — they rendered as four empty 40px gaps.
+                      // At ~6 kB each there is nothing to defer anyway.
+                      decoding="async"
                       style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }}
                     />
                   ))}
