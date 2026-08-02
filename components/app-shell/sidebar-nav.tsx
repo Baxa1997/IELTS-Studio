@@ -58,8 +58,8 @@ const STUDENT: Section[] = [
     items: [
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
-      { label: "Listening", href: "/listen", icon: Headphones, badge: "BETA" },
-      { label: "Speaking", href: "/speak", icon: Mic, badge: "BETA" },
+      { label: "Listening", href: "/listen", icon: Headphones },
+      { label: "Speaking", href: "/speak", icon: Mic },
       { label: "CEFR practice", href: "/cefr", icon: GraduationCap },
       { label: "Vocabulary", href: "/vocabulary", icon: BookA },
     ],

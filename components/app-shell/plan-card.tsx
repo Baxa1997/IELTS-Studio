@@ -58,6 +58,10 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
 
       <QuotaRow label="Gradings" used={usage.grade.used} limit={usage.grade.limit} />
       <QuotaRow label="Practice sets" used={usage.generate.used} limit={usage.generate.limit} />
+      {/* Speaking mocks are counted separately because they are separately
+          expensive — a live 3-part exam is real audio minutes, not a text call.
+          A trial gets exactly one, so "1 left" is the whole allowance. */}
+      <QuotaRow label="Speaking mocks" used={usage.speaking.used} limit={usage.speaking.limit} />
 
       {upgradable ? (
         <Link

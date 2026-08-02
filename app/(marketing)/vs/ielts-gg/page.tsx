@@ -74,7 +74,7 @@ export default function VsIeltsGgPage() {
             },
             {
               label: "Speaking",
-              a: "On the roadmap (coming soon)",
+              a: "Full 3-part live mock with an AI examiner, scored on the four criteria; plus a tutor that teaches while you talk",
               b: "Strong — fast AI speaking feedback, daily practice",
             },
             {

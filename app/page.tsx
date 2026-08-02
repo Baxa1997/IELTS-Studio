@@ -435,7 +435,7 @@ function Hero() {
                 { label: "Writing", soon: false },
                 { label: "Reading", soon: false },
                 { label: "Listening", soon: false },
-                { label: "Speaking", soon: true },
+                { label: "Speaking", soon: false },
               ].map((c) => (
                 <span
                   key={c.label}

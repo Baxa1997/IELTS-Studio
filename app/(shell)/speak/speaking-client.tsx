@@ -510,7 +510,6 @@ export function SpeakingClient({
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                   <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 42, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>Speaking</h1>
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", padding: "5px 10px", borderRadius: 999, background: "#F4EEFF", color: "#7144D8", border: "1px solid #E4D5FF" }}>BETA</span>
                 </div>
                 <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 600 }}>
                   A strict exam simulation that scores you, or a tutor who teaches while you talk.
@@ -809,12 +808,7 @@ export function SpeakingClient({
 
       {/* header */}
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-        <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 600 }}>
-          Speaking{" "}
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", color: INDIGO, background: TINT, borderRadius: 999, padding: "4px 10px", verticalAlign: "middle" }}>
-            BETA
-          </span>
-        </h1>
+        <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 600 }}>Speaking</h1>
         {phase !== "idle" ? (
           <button type="button" onClick={reset} style={{ ...ghostBtn, height: 34, fontSize: 13 }}>
             Exit practice

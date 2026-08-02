@@ -200,8 +200,8 @@ function StepWelcome({ mode, onContinue }: { mode: "signup" | "authed"; onContin
   const skills: { Icon: LucideIcon; label: string; on: boolean }[] = [
     { Icon: PenLine, label: "Writing", on: true },
     { Icon: BookOpen, label: "Reading", on: true },
-    { Icon: Headphones, label: "Listening", on: false },
-    { Icon: Mic, label: "Speaking", on: false },
+    { Icon: Headphones, label: "Listening", on: true },
+    { Icon: Mic, label: "Speaking", on: true },
   ];
   return (
     <div>

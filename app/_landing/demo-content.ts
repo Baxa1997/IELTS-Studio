@@ -2,9 +2,6 @@
 // themselves are LIVE coded replicas of the real product UI (see
 // `demo-screens.tsx`), keyed by `slug` — there are no screenshots to upload.
 // The report proof-strip lives in `demo-screens.tsx` too (REPORT_CARDS).
-//
-// Speaking is deliberately absent while the marketing hold is in effect —
-// adding it later is one tab entry here plus one screen in demo-screens.tsx.
 
 export type DemoTab = {
   /** Must match a key in `SCREENS` (demo-screens.tsx) and the deep-link hash. */
@@ -42,6 +39,13 @@ export const DEMO_TABS: DemoTab[] = [
     title: "Full Listening tests with original audio",
     blurb:
       "Multi-voice recordings across six difficulty levels — full four-section tests or quick practices, with transcripts and per-answer explanations.",
+  },
+  {
+    slug: "speaking",
+    label: "Speaking mock",
+    title: "A full 3-part mock with a live examiner",
+    blurb:
+      "Talk to an AI examiner through all three parts — interview, the cue-card long turn with prep time, then the discussion. Scored on the four official criteria, with your own words quoted back.",
   },
   {
     slug: "coach",

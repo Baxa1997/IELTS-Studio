@@ -42,8 +42,9 @@ export default function IeltsPracticePage() {
           forty.
         </P>
         <P>
-          Speaking practice is on the roadmap and marked &ldquo;coming soon&rdquo; in the product — we
-          would rather ship it properly than ship it first.
+          Speaking is live too: a full three-part mock with an AI examiner — the interview, the
+          cue-card long turn with its preparation minute, and the discussion — scored on the four
+          official criteria.
         </P>
       </Sec>
 

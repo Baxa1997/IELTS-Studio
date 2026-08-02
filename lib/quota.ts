@@ -130,17 +130,51 @@ export interface UsageSummary {
   planName: string;
   grade: Quota;
   generate: Quota;
+  /** Live 3-part speaking mocks — the most expensive thing a learner can start. */
+  speaking: Quota;
 }
 
-/** One call for the sidebar plan card: plan + both monthly quotas. */
+/** One call for the sidebar plan card: plan + every monthly quota. */
 export async function getUsageSummary(organizationId: string): Promise<UsageSummary> {
   const { org } = await loadOrg(organizationId);
   const plan = (org?.plan ?? "trial") as OrgPlan;
-  const [grade, generate] = await Promise.all([
+  const [grade, generate, speaking] = await Promise.all([
     getGradingQuota(organizationId),
     getGenerationQuota(organizationId),
+    getSpeakingQuota(organizationId),
   ]);
-  return { plan, planName: planTier(plan).name, grade, generate };
+  return { plan, planName: planTier(plan).name, grade, generate, speaking };
+}
+
+/**
+ * How many live full mocks this org has left this month.
+ *
+ * READ-ONLY MIRROR of the engine's `ensure_full_mock_quota` (quota.py), which is
+ * what actually admits or refuses a session. The counting rule is copied
+ * deliberately, down to the `pending` exclusion: a learner who taps "start" and
+ * backs out never connects, spends no Live minutes, and must not be charged a
+ * mock. If that rule ever changes in the engine it has to change here too, or
+ * the sidebar will promise a session the engine then refuses.
+ *
+ * Not mirrored: the engine's comped-org list (unlimited mocks for the owner and
+ * one other account). Those orgs will see a limit here that is not enforced on
+ * them — harmless, and better than duplicating an allow-list across repos.
+ */
+export async function getSpeakingQuota(organizationId: string): Promise<Quota> {
+  const { admin, org } = await loadOrg(organizationId);
+  const plan = (org?.plan ?? "trial") as OrgPlan;
+  const limit = planTier(plan).fullMockLimit;
+  const { start, resetAt } = monthWindow();
+
+  const { count } = await admin
+    .from("speaking_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("mode", "full")
+    .neq("state", "pending")
+    .gte("started_at", start);
+
+  return toQuota(limit, count ?? 0, resetAt);
 }
 
 function toQuota(limit: number | null, used: number, resetAt: string): Quota {

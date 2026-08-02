@@ -885,7 +885,10 @@ export function LiveMock({
               </span>
               <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-xl)", fontWeight: 700, marginTop: 12, lineHeight: "var(--lh-snug)", color: "var(--color-neutral-1000)" }}>{card.title}</div>
               <div style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", margin: "12px 0 4px" }}>You should say:</div>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: "var(--text-base)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>
+              {/* listStyle is explicit: Tailwind's preflight resets ul markers, so
+                  without it the cue card's points render as bare indented lines —
+                  not what a candidate sees on the real card. */}
+              <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: "var(--text-base)", lineHeight: "var(--lh-relaxed)", color: "var(--color-neutral-800)" }}>
                 {card.bullets.map((b) => (
                   <li key={b}>{b}</li>
                 ))}
