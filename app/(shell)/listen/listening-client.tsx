@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } from "lucide-react";
 
@@ -1397,7 +1397,7 @@ function Runner({
     : player.duration > 0
       ? player.duration
       : 480;
-  const examLeft = Math.max(0, total - (isTest ? beforeSecs + player.elapsed : player.elapsed));
+
 
   const partIdx = partViews.findIndex((p) => p.part === currentPart);
   // Parts are freely navigable: a tab click mid-test loads that part's own
@@ -1543,7 +1543,7 @@ function Runner({
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v5l3 2" />
             </svg>
-            {fmtClock(examLeft)}
+            <ExamClock player={player} isTest={isTest} beforeSecs={beforeSecs} total={total} />
           </div>
 
           <div
@@ -2060,6 +2060,8 @@ function segSecs(s: Segment): number {
   return s.kind === "pause" ? s.seconds : (s.seconds ?? 0);
 }
 
+type PlayerTick = { curTime: number; pauseLeft: number };
+
 type PlayerApi = {
   phase: PlayerPhase;
   paused: boolean;
@@ -2068,14 +2070,15 @@ type PlayerApi = {
   seg: Segment | null;
   idx: number;
   title: string;
-  status: string;
   isPause: boolean;
   audioPart: number; // part currently sounding
   partReached: number; // highest part the audio has reached
-  elapsed: number; // seconds into the whole recording
   duration: number; // total seconds (best estimate)
-  progress: number; // 0..1
-  countdown: number; // remaining seconds in a pause segment
+  durs: number[]; // per-segment durations (declared or measured)
+  /** Playback position store — subscribe via usePlayerTick; several updates a
+   *  second, deliberately outside React state so ticks re-render ONLY the
+   *  subscribers (audio strip, exam clock), never the whole runner. */
+  tick: { subscribe: (cb: () => void) => () => void; get: () => PlayerTick };
   speed: number;
   muted: boolean;
   audioError: string | null;
@@ -2088,6 +2091,43 @@ type PlayerApi = {
   reset: () => void;
   seekTo: (fraction: number) => void;
 };
+
+
+/** Subscribe this component to the playback position. Only components that call
+ *  this re-render on a tick. */
+function usePlayerTick(player: PlayerApi): PlayerTick {
+  return useSyncExternalStore(player.tick.subscribe, player.tick.get, player.tick.get);
+}
+
+/** Everything the UI derives from the position, computed at the SUBSCRIBER so
+ *  the runner itself stays out of the tick path. Mirrors the pre-store math. */
+function derivePlayerPos(p: PlayerApi, t: PlayerTick) {
+  const isPause = p.seg?.kind === "pause";
+  const countdown = isPause
+    ? t.pauseLeft > 0
+      ? t.pauseLeft
+      : (p.seg as PauseSeg).seconds
+    : 0;
+  const before = p.idx > 0 ? p.durs.slice(0, p.idx).reduce((a, b) => a + (b || 0), 0) : 0;
+  const within =
+    p.seg?.kind === "audio"
+      ? Math.min(t.curTime, p.durs[p.idx] || t.curTime)
+      : isPause
+        ? (p.seg as PauseSeg).seconds - countdown
+        : 0;
+  const elapsed = p.finished ? p.duration : p.idx < 0 ? 0 : before + within;
+  const progress = p.duration > 0 ? Math.min(1, elapsed / p.duration) : 0;
+  const status = p.finished
+    ? "Review your answers, then submit"
+    : p.phase === "idle"
+      ? "Ready — press play or drag the bar"
+      : p.paused
+        ? "Paused"
+        : isPause
+          ? `Reading time — ${countdown}s`
+          : (p.audioError ?? "Now playing...");
+  return { countdown, elapsed, progress, status };
+}
 
 /** Segment player: the recording is a sequence of audio clips + timed reading
  *  pauses. Playback runs in order, but the scrubber is freely seekable (click or
@@ -2106,9 +2146,39 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
   const [paused, setPaused] = useState(false);
   const [speedIdx, setSpeedIdx] = useState(0);
   const [muted, setMuted] = useState(false);
-  const [curTime, setCurTime] = useState(0); // position within the current audio seg
-  const [pauseLeft, setPauseLeft] = useState(0); // remaining seconds of a pause seg
   const [audioError, setAudioError] = useState<string | null>(null);
+  // Playback POSITION (position in the current clip + a pause's remaining
+  // seconds) is deliberately NOT React state. It changes several times a second
+  // for the whole recording, and this hook lives in Runner — as state, every
+  // `timeupdate` re-rendered the entire exam surface (all 40 question rows, the
+  // tabs, the transcript) for 30+ minutes straight, which is what made a
+  // full test feel heavy on modest hardware. It lives in a tiny external store
+  // instead; the audio strip and the exam clock subscribe via
+  // `usePlayerTick`, and nothing else re-renders on a tick.
+  const tickRef = useRef<PlayerTick>({ curTime: 0, pauseLeft: 0 });
+  const tickSubsRef = useRef<Set<() => void>>(new Set());
+  const setTick = useCallback((patch: Partial<PlayerTick>) => {
+    const cur = tickRef.current;
+    const next: PlayerTick = {
+      curTime: patch.curTime ?? cur.curTime,
+      pauseLeft: patch.pauseLeft ?? cur.pauseLeft,
+    };
+    if (next.curTime === cur.curTime && next.pauseLeft === cur.pauseLeft) return;
+    tickRef.current = next; // new object every change: useSyncExternalStore compares by identity
+    tickSubsRef.current.forEach((fn) => fn());
+  }, []);
+  const tick = useMemo(
+    () => ({
+      subscribe: (cb: () => void) => {
+        tickSubsRef.current.add(cb);
+        return () => {
+          tickSubsRef.current.delete(cb);
+        };
+      },
+      get: () => tickRef.current,
+    }),
+    [],
+  );
   // Declared/measured duration per segment (audio may not carry `seconds`).
   const [durs, setDurs] = useState<number[]>(() =>
     segments.map((s) => (s.kind === "pause" ? s.seconds : (s.seconds ?? 0))),
@@ -2132,11 +2202,10 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     setPhase("idle");
     setIdx(-1);
     setPaused(false);
-    setCurTime(0);
-    setPauseLeft(0);
+    setTick({ curTime: 0, pauseLeft: 0 });
     setAudioError(null);
     setDurs(segments.map((s) => (s.kind === "pause" ? s.seconds : (s.seconds ?? 0))));
-  }, [segments]);
+  }, [segments, setTick]);
 
   // Part boundaries derived once from the narrator labels.
   const partByIdx = useMemo(() => {
@@ -2172,15 +2241,14 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
 
   const advance = useCallback(() => {
     setPaused(false);
-    setCurTime(0);
-    setPauseLeft(0);
+    setTick({ curTime: 0, pauseLeft: 0 });
     if (idx + 1 >= segments.length) {
       setPhase("finished");
       onFinishedRef.current?.();
     } else {
       setIdx(idx + 1);
     }
-  }, [idx, segments.length]);
+  }, [idx, segments.length, setTick]);
 
   // Own a detached <audio> element (created on the client, never rendered) so
   // the hook's public API carries no refs and playback survives re-renders.
@@ -2189,7 +2257,7 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     const el = new Audio();
     el.preload = "auto";
     audioRef.current = el;
-    const onTime = () => setCurTime(el.currentTime);
+    const onTime = () => setTick({ curTime: el.currentTime });
     el.addEventListener("timeupdate", onTime);
     return () => {
       el.pause();
@@ -2197,7 +2265,7 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
       el.removeAttribute("src");
       audioRef.current = null;
     };
-  }, []);
+  }, [setTick]);
 
   // Advance to the next segment when the current audio clip finishes.
   useEffect(() => {
@@ -2250,33 +2318,22 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     if (!seg || phase !== "running" || seg.kind !== "pause" || paused) return;
     const secs = seg.seconds;
     const t = setInterval(() => {
-      setPauseLeft((cur) => {
-        const next = Math.max((cur > 0 ? cur : secs) - 1, 0);
-        if (next === 0) {
-          clearInterval(t);
-          advance();
-        }
-        return next;
-      });
+      const cur = tickRef.current.pauseLeft;
+      const next = Math.max((cur > 0 ? cur : secs) - 1, 0);
+      setTick({ pauseLeft: next });
+      if (next === 0) {
+        clearInterval(t);
+        advance();
+      }
     }, 1000);
     return () => clearInterval(t);
-  }, [seg, phase, paused, advance]);
+  }, [seg, phase, paused, advance, setTick]);
 
   const finished = phase === "finished";
   const playing = phase === "running" && !paused;
   const isPause = seg?.kind === "pause";
-  const countdown = isPause ? (pauseLeft > 0 ? pauseLeft : (seg as PauseSeg).seconds) : 0;
 
   const duration = durs.reduce((a, b) => a + (b || 0), 0);
-  const before = idx > 0 ? durs.slice(0, idx).reduce((a, b) => a + (b || 0), 0) : 0;
-  const within =
-    seg?.kind === "audio"
-      ? Math.min(curTime, durs[idx] || curTime)
-      : isPause
-        ? (seg as PauseSeg).seconds - countdown
-        : 0;
-  const elapsed = finished ? duration : idx < 0 ? 0 : before + within;
-  const progress = duration > 0 ? Math.min(1, elapsed / duration) : 0;
 
   const audioPart = idx >= 0 ? partByIdx[Math.min(idx, partByIdx.length - 1)] : 1;
   const partReached = idx >= 0 ? Math.max(1, ...partByIdx.slice(0, idx + 1)) : 1;
@@ -2286,15 +2343,8 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     [segments],
   );
   const title = finished ? "Recording finished" : (seg?.label ?? firstLabel);
-  const status = finished
-    ? "Review your answers, then submit"
-    : phase === "idle"
-      ? "Ready — press play or drag the bar"
-      : paused
-        ? "Paused"
-        : isPause
-          ? `Reading time — ${countdown}s`
-          : (audioError ?? "Now playing...");
+  // elapsed / progress / countdown / the ticking part of `status` are computed
+  // by subscribers from the tick store — see derivePlayerPos + usePlayerTick.
 
   const start = useCallback(() => {
     // Play the first clip synchronously in the click gesture so browsers don't
@@ -2310,9 +2360,8 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     }
     setPhase("running");
     setIdx(0);
-    setCurTime(0);
-    setPauseLeft(0);
-  }, [segments]);
+    setTick({ curTime: 0, pauseLeft: 0 });
+  }, [segments, setTick]);
 
   const togglePlay = useCallback(() => {
     if (phase === "idle") start();
@@ -2336,12 +2385,11 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     setPhase("idle");
     setIdx(-1);
     setPaused(false);
-    setCurTime(0);
-    setPauseLeft(0);
+    setTick({ curTime: 0, pauseLeft: 0 });
     setSpeedIdx(0);
     setMuted(false);
     setAudioError(null);
-  }, []);
+  }, [setTick]);
 
   // Free seek: map a 0..1 scrubber position to a segment + offset and jump
   // there (a reading-pause lands on its remaining countdown). Practice mode —
@@ -2366,12 +2414,11 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
       setPaused(false);
       setIdx(ti);
       if (s.kind === "pause") {
-        setPauseLeft(Math.max(1, Math.round(s.seconds - off)));
-        setCurTime(0);
+        setTick({ curTime: 0, pauseLeft: Math.max(1, Math.round(s.seconds - off)) });
         audioRef.current?.pause();
         return;
       }
-      setPauseLeft(0);
+      setTick({ pauseLeft: 0 });
       const el = audioRef.current;
       if (!el) return;
       const apply = () => {
@@ -2380,7 +2427,7 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
         } catch {
           /* seeking before metadata is ready — timeupdate will correct it */
         }
-        setCurTime(off);
+        setTick({ curTime: off });
         el.play()
           .then(() => setAudioError(null))
           .catch(() => {});
@@ -2397,7 +2444,7 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
         apply();
       }
     },
-    [segments, durs, duration],
+    [segments, durs, duration, setTick],
   );
 
   return {
@@ -2408,14 +2455,12 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
     seg,
     idx,
     title,
-    status,
     isPause,
     audioPart,
     partReached,
-    elapsed,
     duration,
-    progress,
-    countdown,
+    durs,
+    tick,
     speed,
     muted,
     audioError,
@@ -2433,6 +2478,14 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
 /** The handoff audio bar (62px): play/pause with a live pulse ring · track meta ·
  *  elapsed · a freely seekable scrubber (click or drag anywhere) · total · speed ·
  *  mute. Seeking drives the real segment player; grab the playhead and drop it. */
+/** The whole-exam countdown chip. Isolated so ONLY this chip re-renders on a
+ *  playback tick — it is the one thing in Runner's chrome that needs the time. */
+function ExamClock({ player, isTest, beforeSecs, total }: { player: PlayerApi; isTest: boolean; beforeSecs: number; total: number }) {
+  const t = usePlayerTick(player);
+  const { elapsed } = derivePlayerPos(player, t);
+  return <>{fmtClock(Math.max(0, total - (isTest ? beforeSecs + elapsed : elapsed)))}</>;
+}
+
 function AudioStrip({ player }: { player: PlayerApi }) {
   const seek = (clientX: number, rect: DOMRect) => {
     if (rect.width > 0) player.seekTo((clientX - rect.left) / rect.width);
@@ -2448,13 +2501,15 @@ function AudioStrip({ player }: { player: PlayerApi }) {
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
   };
+  const tick = usePlayerTick(player);
+  const pos = derivePlayerPos(player, tick);
   const onScrubKey = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft") player.seekTo(player.progress - 0.02);
-    else if (e.key === "ArrowRight") player.seekTo(player.progress + 0.02);
+    if (e.key === "ArrowLeft") player.seekTo(pos.progress - 0.02);
+    else if (e.key === "ArrowRight") player.seekTo(pos.progress + 0.02);
     else return;
     e.preventDefault();
   };
-  const pct = (player.progress * 100).toFixed(2);
+  const pct = (pos.progress * 100).toFixed(2);
   const blue = {
     bg: "#102347",
     border: "#1b3766",
@@ -2573,12 +2628,12 @@ function AudioStrip({ player }: { player: PlayerApi }) {
             textOverflow: "ellipsis",
           }}
         >
-          {player.status}
+          {pos.status}
         </div>
       </div>
 
       <span style={{ ...time, color: blue.muted, width: 42, textAlign: "right" }}>
-        {fmtClock(player.elapsed)}
+        {fmtClock(pos.elapsed)}
       </span>
 
       {/* Freely seekable scrubber */}
@@ -2588,7 +2643,7 @@ function AudioStrip({ player }: { player: PlayerApi }) {
         aria-label="Audio position"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(player.progress * 100)}
+        aria-valuenow={Math.round(pos.progress * 100)}
         onPointerDown={onScrubDown}
         onKeyDown={onScrubKey}
         title="Drag to move the playhead"
@@ -5179,3 +5234,4 @@ function ReviewPanel({ grade }: { grade: Grade }) {
     </div>
   );
 }
+
