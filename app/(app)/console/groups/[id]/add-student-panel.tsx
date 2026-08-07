@@ -57,6 +57,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               autoComplete="off"
               placeholder="student@example.com"
             />
+            <p className="text-muted-foreground text-xs">Emails them the login and password.</p>
           </div>
           <div className="w-44 space-y-2">
             <Label htmlFor="student-password">Password</Label>
@@ -121,9 +122,8 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
             </Button>
           </div>
           <p className="text-muted-foreground text-xs">
-            {state.created.email
-              ? `They can sign in with either the login or ${state.created.email}.`
-              : "No email on file, so this login is the only way in — and there's no email password reset. You can always add one later."}
+            {state.emailNote ??
+              "No email on file, so this login is the only way in — and there's no email password reset. Send it over Telegram or write it down. You can always add an email later."}
           </p>
         </div>
       ) : null}

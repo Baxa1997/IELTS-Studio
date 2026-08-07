@@ -7,6 +7,8 @@ import { headers } from "next/headers";
 
 import { requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
+import { sendEmail } from "@/lib/email/send";
+import { serverEnv } from "@/lib/env";
 import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
@@ -32,6 +34,8 @@ export interface AddStudentState {
   created?: { name: string; login: string; email: string | null; password: string };
   /** Non-fatal problem (e.g. the optional photo failed) — the account exists. */
   warning?: string;
+  /** What happened to the credentials email, when an address was given. */
+  emailNote?: string;
 }
 
 /** Logins are typed by hand, often from a whiteboard: letters, digits and a few
@@ -509,11 +513,72 @@ export async function addStudentAccount(
     };
   }
 
+  // A real address means the credentials can be delivered rather than dictated.
+  // Never fatal: the teacher still has them on screen to hand over in person.
+  let emailNote: string | null = null;
+  if (emailInput) {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", profile.organization_id)
+      .maybeSingle();
+    emailNote = await sendCredentials({
+      to: emailInput,
+      name: fullName,
+      login,
+      password,
+      centerName: (org?.name as string | null) ?? "your center",
+    });
+  }
+
   revalidatePath(`/console/groups/${groupId}`);
   return {
     created: { name: fullName, login, email: emailInput || null, password },
     warning: photoWarning ?? undefined,
+    emailNote: emailNote ?? undefined,
   };
+}
+
+/** Email a new student their sign-in details. Returns a line for the teacher
+ *  about what happened — sending is best-effort, never a blocker. */
+async function sendCredentials(args: {
+  to: string;
+  name: string;
+  login: string;
+  password: string;
+  centerName: string;
+}): Promise<string> {
+  const signInUrl = `${serverEnv.siteUrl}/sign-in`;
+  const result = await sendEmail({
+    to: args.to,
+    subject: `Your ${args.centerName} account on EngProgress`,
+    text:
+      `Hi ${args.name},\n\n` +
+      `${args.centerName} has set up your EngProgress account for IELTS practice.\n\n` +
+      `Sign in here: ${signInUrl}\n` +
+      `Login:    ${args.login}\n` +
+      `Password: ${args.password}\n\n` +
+      `Please change your password after you sign in.\n\n— EngProgress`,
+    html:
+      `<p>Hi ${escapeHtml(args.name)},</p>` +
+      `<p><strong>${escapeHtml(args.centerName)}</strong> has set up your EngProgress account for IELTS practice.</p>` +
+      `<p><a href="${signInUrl}">Sign in here</a></p>` +
+      `<p>Login: <strong>${escapeHtml(args.login)}</strong><br>` +
+      `Password: <strong>${escapeHtml(args.password)}</strong></p>` +
+      `<p>Please change your password after you sign in.</p><p>— EngProgress</p>`,
+  });
+
+  return result.sent
+    ? `Sign-in details emailed to ${args.to}.`
+    : `Couldn't email the details (${result.detail}) — hand them over below instead.`;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 /** Readable throwaway password — the student can change it later. Avoids
