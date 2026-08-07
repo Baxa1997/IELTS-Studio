@@ -147,7 +147,7 @@ export async function acceptInvite(
 
   const { data: invite } = await admin
     .from("invites")
-    .select("id, email, organization_id, role")
+    .select("id, email, organization_id, role, group_id")
     .eq("token", token)
     .is("accepted_at", null)
     .gt("expires_at", new Date().toISOString())
@@ -182,10 +182,24 @@ export async function acceptInvite(
     return { error: "Could not set up your profile. Please contact your center." };
   }
 
+  // Invited straight into a group (phase 2): create the membership. Best-effort —
+  // a failure here must not cost them the account they just set a password for;
+  // the teacher can add them to the group by hand.
+  if (invite.group_id) {
+    const { error: memberError } = await admin.from("group_members").insert({
+      group_id: invite.group_id,
+      student_id: created.user.id,
+      organization_id: invite.organization_id,
+      added_by: null,
+    });
+    if (memberError) console.error("[accept-invite] group join failed:", invite.id, memberError);
+  }
+
   await admin.from("invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
 
-  // Establish the session (sets cookies) then land on the student dashboard.
+  // Establish the session (sets cookies) then land on the role's home — teachers
+  // in the console, students on their dashboard.
   const supabase = await createClient();
   await supabase.auth.signInWithPassword({ email: invite.email, password });
-  redirect("/dashboard");
+  redirect(invite.role === "student" ? "/dashboard" : "/console");
 }

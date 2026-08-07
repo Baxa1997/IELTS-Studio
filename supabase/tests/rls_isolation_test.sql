@@ -102,4 +102,55 @@ begin
   raise notice 'PASS 4c: center_admin can still rename their own org';
 end $$;
 
+-- ---- Case 5: groups are org-scoped, and rosters are staff-only --------------
+-- Seed (as owner): a group in Center A owned by a teacher, plus one in B.
+set local role postgres;
+insert into auth.users (instance_id, id, aud, role, email) values
+  ('00000000-0000-0000-0000-000000000000', '88888888-8888-8888-8888-888888888888', 'authenticated', 'authenticated', 'teacher.a@test.local');
+insert into public.profiles (id, organization_id, role, full_name) values
+  ('88888888-8888-8888-8888-888888888888', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'teacher', 'Teacher A');
+insert into public.groups (id, organization_id, name, teacher_id) values
+  ('99999999-9999-9999-9999-999999999999', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Group A', '88888888-8888-8888-8888-888888888888'),
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Group B', null);
+insert into public.group_members (group_id, student_id, organization_id) values
+  ('99999999-9999-9999-9999-999999999999', '22222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+  ('99999999-9999-9999-9999-999999999999', '33333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+set local role authenticated;
+
+-- Teacher A: sees Center A groups only, and the full roster of their own group.
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare a_groups int; b_groups int; roster int;
+begin
+  select count(*) into a_groups from public.groups where organization_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  select count(*) into b_groups from public.groups where organization_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+  select count(*) into roster   from public.group_members where group_id = '99999999-9999-9999-9999-999999999999';
+  assert a_groups = 1, format('Teacher A should see Center A groups; saw %s', a_groups);
+  assert b_groups = 0, 'BREACH: Teacher A can read Center B groups';
+  assert roster = 2, format('Teacher A should see their own roster; saw %s', roster);
+  raise notice 'PASS 5: Teacher A sees only Center A groups, with their own roster';
+end $$;
+
+-- Student A: sees their own group, but NOT the classmate list.
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare visible_groups int; visible_members int;
+begin
+  select count(*) into visible_groups  from public.groups;
+  select count(*) into visible_members from public.group_members;
+  assert visible_groups = 1, format('Student A should see only their own group; saw %s', visible_groups);
+  assert visible_members = 1, format('BREACH: Student A can see classmates; saw %s membership rows', visible_members);
+  raise notice 'PASS 6: Student A sees their group but only their own membership row';
+end $$;
+
+-- Student B (other tenant): sees nothing of Center A's groups.
+set local request.jwt.claims = '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}';
+do $$
+declare leaked int;
+begin
+  select count(*) into leaked from public.groups where organization_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  assert leaked = 0, 'BREACH: Center B student can read Center A groups';
+  raise notice 'PASS 7: Center B cannot see Center A groups';
+end $$;
+
 rollback;  -- discards all seed data and resets role/claims

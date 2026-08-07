@@ -1,8 +1,5 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
-
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 import { getSession, type AppRole } from "@/lib/auth";
@@ -35,70 +32,8 @@ import { createClient } from "@/lib/supabase/server";
 
 const CAN_REVIEW: AppRole[] = ["center_admin", "teacher"];
 
-export interface InviteFormState {
-  error?: string;
-  email?: string;
-  inviteUrl?: string;
-}
-
-/**
- * Center admin invites a student to THEIR org. Creates (or refreshes) a tokenized
- * invite and returns a copyable accept link. The student's org/role come from the
- * admin here — never from the student — so there's no self-signup into other orgs.
- *
- * Writes go through the RLS-protected user client, so the policy independently
- * enforces "admin of this org only" even if the code check were bypassed.
- */
-export async function inviteStudent(
-  _prev: InviteFormState,
-  formData: FormData,
-): Promise<InviteFormState> {
-  const email = String(formData.get("email") ?? "")
-    .trim()
-    .toLowerCase();
-  if (!email || !email.includes("@")) return { error: "Enter a valid email address." };
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "You are not signed in." };
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("organization_id, role")
-    .eq("id", user.id)
-    .single();
-  if (!profile || profile.role !== "center_admin") {
-    return { error: "Only a center admin can invite students." };
-  }
-
-  const token = randomBytes(24).toString("base64url");
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const { error } = await supabase.from("invites").upsert(
-    {
-      organization_id: profile.organization_id,
-      email,
-      role: "student",
-      token,
-      invited_by: user.id,
-      accepted_at: null,
-      expires_at: expiresAt,
-    },
-    { onConflict: "organization_id,email" },
-  );
-  if (error) return { error: error.message };
-
-  const headerList = await headers();
-  const origin =
-    headerList.get("origin") ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    `https://${headerList.get("host")}`;
-
-  revalidatePath("/console");
-  return { email, inviteUrl: `${origin}/accept-invite?token=${token}` };
-}
+// Inviting members lives in ./groups/actions.ts (it also handles roles, group
+// binding and seat limits).
 
 // ── Writing-prompt library (teacher/admin) ──────────────────────────────────
 

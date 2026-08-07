@@ -8,7 +8,6 @@ import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
-import { InvitePanel } from "./invite-panel";
 import { GeneratePromptPanel } from "./prompt-studio";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -25,27 +24,34 @@ export default async function ConsolePage() {
   const supabase = await createClient();
   const isAdmin = profile.role === "center_admin";
 
-  // RLS scopes every query to this admin/teacher's own organization.
-  const [membersRes, invitesRes, promptCountRes, passageCountRes] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").order("role", { ascending: true }),
-    isAdmin
-      ? supabase
-          .from("invites")
-          .select("email, created_at, expires_at")
-          .is("accepted_at", null)
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: null }),
-    supabase
-      .from("writing_prompts")
-      .select("id", { count: "exact", head: true })
-      .eq("task_type", "task2")
-      .eq("status", "pending"),
-    supabase.from("reading_passages").select("id", { count: "exact", head: true }).eq("status", "pending"),
-  ]);
+  // RLS scopes every query to this admin/teacher's own organization — and, for
+  // groups, to the ones a teacher actually owns.
+  let groupCountQuery = supabase.from("groups").select("id", { count: "exact", head: true });
+  if (!isAdmin) groupCountQuery = groupCountQuery.eq("teacher_id", profile.id);
+
+  const [membersRes, invitesRes, promptCountRes, passageCountRes, groupCountRes] =
+    await Promise.all([
+      supabase.from("profiles").select("id, full_name, role").order("role", { ascending: true }),
+      isAdmin
+        ? supabase
+            .from("invites")
+            .select("email, created_at, expires_at")
+            .is("accepted_at", null)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("writing_prompts")
+        .select("id", { count: "exact", head: true })
+        .eq("task_type", "task2")
+        .eq("status", "pending"),
+      supabase.from("reading_passages").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      groupCountQuery,
+    ]);
 
   const members = membersRes.data;
   const pendingInvites = invitesRes.data;
   const pendingContent = (promptCountRes.count ?? 0) + (passageCountRes.count ?? 0);
+  const groupCount = groupCountRes.count ?? 0;
 
   return (
     <div className="space-y-6">
@@ -79,17 +85,24 @@ export default async function ConsolePage() {
         </CardContent>
       </Card>
 
-      {isAdmin ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Invite a student</CardTitle>
-            <CardDescription>They join your center only — never another org.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <InvitePanel />
-          </CardContent>
-        </Card>
-      ) : null}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Groups</CardTitle>
+          <CardDescription>
+            {isAdmin
+              ? "Classes, their teachers, and their students. Invites are issued from here."
+              : "The classes assigned to you, and their students."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-3">
+          <p className="text-muted-foreground text-sm">
+            {groupCount} group{groupCount === 1 ? "" : "s"}
+          </p>
+          <Link href="/console/groups" className={cn(buttonVariants())}>
+            Manage groups <ArrowRight className="size-4" />
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

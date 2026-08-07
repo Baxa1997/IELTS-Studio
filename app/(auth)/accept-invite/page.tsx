@@ -10,21 +10,28 @@ export default async function AcceptInvitePage({
 }) {
   const { token } = await searchParams;
 
-  let invite: { email: string; orgName: string } | null = null;
+  let invite: { email: string; orgName: string; role: string; groupName: string | null } | null =
+    null;
   if (token) {
     const admin = createAdminClient();
     const { data } = await admin
       .from("invites")
-      .select("email, organization_id, accepted_at, expires_at")
+      .select("email, organization_id, accepted_at, expires_at, role, group_id")
       .eq("token", token)
       .single();
     if (data && !data.accepted_at && new Date(data.expires_at) > new Date()) {
-      const { data: org } = await admin
-        .from("organizations")
-        .select("name")
-        .eq("id", data.organization_id)
-        .single();
-      invite = { email: data.email, orgName: org?.name ?? "your center" };
+      const [{ data: org }, { data: group }] = await Promise.all([
+        admin.from("organizations").select("name").eq("id", data.organization_id).single(),
+        data.group_id
+          ? admin.from("groups").select("name").eq("id", data.group_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+      invite = {
+        email: data.email,
+        orgName: org?.name ?? "your center",
+        role: data.role as string,
+        groupName: (group as { name: string } | null)?.name ?? null,
+      };
     }
   }
 
@@ -35,7 +42,11 @@ export default async function AcceptInvitePage({
           <>
             <CardHeader>
               <CardTitle>Join {invite.orgName}</CardTitle>
-              <CardDescription>Set a password to activate your student account.</CardDescription>
+              <CardDescription>
+                Set a password to activate your{" "}
+                {invite.role === "teacher" ? "teacher" : "student"} account
+                {invite.groupName ? ` — you'll join ${invite.groupName}` : ""}.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <AcceptInviteForm token={token} email={invite.email} />

@@ -70,6 +70,7 @@ const ADMIN: Section[] = [
   {
     items: [
       { label: "Console", href: "/console", icon: LayoutDashboard },
+      { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Cohort", href: "/console/cohort", icon: Users },
       { label: "Review", href: "/console/review", icon: ClipboardCheck },
       { label: "Billing", href: "/console/billing", icon: CreditCard },
@@ -81,6 +82,7 @@ const TEACHER: Section[] = [
   {
     items: [
       { label: "Console", href: "/console", icon: LayoutDashboard },
+      { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Review", href: "/console/review", icon: ClipboardCheck },
     ],
   },
