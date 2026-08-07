@@ -4,10 +4,14 @@ import { ArrowLeft } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgUser } from "@/lib/auth";
+import { loadGroupAssignments } from "@/lib/console/assignments";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
+import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 import { AssignTeacherForm, DeleteGroupButton, RemoveMemberButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
+import { AssignPanel } from "./assign-panel";
 
 /** One group: its roster, outstanding invites, and (for the admin) the teacher
  *  assignment. RLS decides visibility — a teacher who doesn't own this group
@@ -28,9 +32,25 @@ export default async function GroupDetailPage({
   const isOwner = isAdmin || group.teacherId === profile.id;
   if (!isOwner) notFound();
 
-  const { teachers } = isAdmin
-    ? await loadGroups(profile)
-    : { teachers: [] as { id: string; name: string }[] };
+  // The shared reading library lives in its own org, so it's read with the
+  // service-role client (exactly as the student read hub does).
+  const admin = createAdminClient();
+  const [{ teachers }, assignments, libTestsRes] = await Promise.all([
+    isAdmin ? loadGroups(profile) : Promise.resolve({ teachers: [] as { id: string; name: string }[] }),
+    loadGroupAssignments(group.id),
+    admin
+      .from("reading_tests")
+      .select("id, target_band")
+      .eq("organization_id", READING_LIBRARY_ORG_ID)
+      .eq("is_library", true)
+      .order("target_band", { ascending: true })
+      .limit(12),
+  ]);
+
+  const libraryTests = (libTestsRes.data ?? []).map((t, i) => ({
+    id: t.id as string,
+    label: t.target_band ? `Test ${i + 1} — band ${t.target_band} level` : `Test ${i + 1}`,
+  }));
 
   return (
     <div className="space-y-6">
@@ -69,6 +89,51 @@ export default async function GroupDetailPage({
             {group.members.length === 0 ? (
               <li className="text-muted-foreground py-2">
                 No students yet — invite them below.
+              </li>
+            ) : null}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Assign practice</CardTitle>
+          <CardDescription>
+            Everyone in the group gets the same prompt or test, so their results are comparable.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AssignPanel groupId={group.id} libraryTests={libraryTests} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Assignments ({assignments.length})</CardTitle>
+          <CardDescription>Open one to see each student&apos;s band and mistakes.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y text-sm">
+            {assignments.map((a) => (
+              <li key={a.id} className="flex items-center justify-between gap-4 py-3">
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">{a.title}</span>
+                  <span className="text-muted-foreground block text-xs capitalize">
+                    {a.kind} · {a.completed}/{group.members.length} completed
+                    {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
+                  </span>
+                </span>
+                <Link
+                  href={`/console/groups/${group.id}/assignments/${a.id}`}
+                  className="text-primary shrink-0 text-sm font-medium hover:underline"
+                >
+                  Report
+                </Link>
+              </li>
+            ))}
+            {assignments.length === 0 ? (
+              <li className="text-muted-foreground py-2">
+                Nothing assigned yet — use the panel above.
               </li>
             ) : null}
           </ul>

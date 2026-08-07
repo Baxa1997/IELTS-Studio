@@ -153,4 +153,59 @@ begin
   raise notice 'PASS 7: Center B cannot see Center A groups';
 end $$;
 
+-- ---- Case 8: assignments reach the group, and nobody else ------------------
+set local role postgres;
+insert into public.writing_prompts (id, organization_id, task_type, prompt_text, status)
+values ('bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'task2', 'Assigned prompt', 'approved');
+insert into public.assignments (id, organization_id, group_id, kind, title, prompt_id)
+values ('cccccccc-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        '99999999-9999-9999-9999-999999999999', 'writing', 'Week 1 essay', 'bbbbbbbb-0000-0000-0000-000000000001');
+set local role authenticated;
+
+-- The group's student sees it.
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.assignments;
+  assert seen = 1, format('Group member should see their assignment; saw %s', seen);
+  raise notice 'PASS 8: a group member sees their assignment';
+end $$;
+
+-- A student in the SAME org but not in the group sees nothing. (Student B2 is
+-- Student A2 — in Center A, not in Group A after we remove them.)
+set local role postgres;
+delete from public.group_members
+ where group_id = '99999999-9999-9999-9999-999999999999'
+   and student_id = '33333333-3333-3333-3333-333333333333';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.assignments;
+  assert seen = 0, format('BREACH: non-member in the same org saw %s assignment(s)', seen);
+  raise notice 'PASS 9: a non-member in the same org sees no assignment';
+end $$;
+
+-- A student cannot create or edit assignments.
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare changed int;
+begin
+  begin
+    insert into public.assignments (organization_id, group_id, kind, title, prompt_id)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '99999999-9999-9999-9999-999999999999',
+            'writing', 'Self-assigned', 'bbbbbbbb-0000-0000-0000-000000000001');
+    raise exception 'BREACH: a student inserted an assignment';
+  exception when insufficient_privilege then
+    raise notice 'PASS 10a: students cannot create assignments';
+  end;
+
+  update public.assignments set title = 'Hacked' where id = 'cccccccc-0000-0000-0000-000000000001';
+  get diagnostics changed = row_count;
+  assert changed = 0, 'BREACH: a student updated an assignment';
+  raise notice 'PASS 10b: students cannot edit assignments';
+end $$;
+
 rollback;  -- discards all seed data and resets role/claims

@@ -88,10 +88,23 @@ const TEACHER: Section[] = [
   },
 ];
 
-function sectionsFor(role: string): Section[] {
-  if (role === "student") return STUDENT;
-  if (role === "center_admin") return ADMIN;
-  return TEACHER;
+/** Only students who actually belong to a center group get an Assignments link —
+ *  a solo B2C learner has nothing to put behind it. */
+function sectionsFor(role: string, showAssignments: boolean): Section[] {
+  if (role !== "student") return role === "center_admin" ? ADMIN : TEACHER;
+  if (!showAssignments) return STUDENT;
+  const [home, ...rest] = STUDENT;
+  return [
+    {
+      ...home,
+      items: [
+        home.items[0],
+        { label: "Assignments", href: "/assignments", icon: ClipboardCheck },
+        ...home.items.slice(1),
+      ],
+    },
+    ...rest,
+  ];
 }
 
 /**
@@ -117,9 +130,15 @@ const itemBase: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-export function SidebarNav({ role }: { role: string }) {
+export function SidebarNav({
+  role,
+  showAssignments = false,
+}: {
+  role: string;
+  showAssignments?: boolean;
+}) {
   const pathname = usePathname();
-  const sections = sectionsFor(role);
+  const sections = sectionsFor(role, showAssignments);
   const all = sections.flatMap((s) => s.items);
   // Single active item = the longest href the path falls under.
   const activeHref = all

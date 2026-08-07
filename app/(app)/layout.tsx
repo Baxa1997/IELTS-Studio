@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell/shell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
+import { createClient } from "@/lib/supabase/server";
 
 import { OnboardingTakeover } from "./onboarding/onboarding-takeover";
 
@@ -34,10 +35,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
+  // Center students (i.e. in a group) get the Assignments nav item; solo B2C
+  // learners never see it — RLS returns nothing for them anyway.
+  let showAssignments = false;
   if (profile.role === "student") {
-    const usage = await getUsageSummary(profile.organization_id);
+    const supabase = await createClient();
+    const [usage, membership] = await Promise.all([
+      getUsageSummary(profile.organization_id),
+      supabase.from("group_members").select("group_id", { count: "exact", head: true }),
+    ]);
     sidebarFooter = <PlanCard usage={usage} />;
     quotaBar = <QuotaBar usage={usage} />;
+    showAssignments = (membership.count ?? 0) > 0;
   }
 
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
@@ -46,6 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
       <AppShell
         role={profile.role}
+        showAssignments={showAssignments}
         home={roleHome(profile.role)}
         name={profile.full_name ?? user.email ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}

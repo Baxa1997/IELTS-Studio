@@ -48,6 +48,7 @@ function readCollapsed(fallback: boolean): boolean {
  */
 export function AppShell({
   role,
+  showAssignments = false,
   home,
   name,
   roleLabel,
@@ -59,6 +60,8 @@ export function AppShell({
   children,
 }: {
   role: string;
+  /** Student is in a center group, so the Assignments nav item is relevant. */
+  showAssignments?: boolean;
   home: string;
   name: string;
   roleLabel: string;
@@ -256,7 +259,7 @@ export function AppShell({
             className="lp-sb-scroll"
             style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", paddingTop: 12 }}
           >
-            <SidebarNav role={role} />
+            <SidebarNav role={role} showAssignments={showAssignments} />
           </div>
 
           {/* footer: optional target card (hidden when collapsed), then profile menu.

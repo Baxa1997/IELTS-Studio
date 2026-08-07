@@ -6,7 +6,10 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { requireOrgUser } from "@/lib/auth";
-import { PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
+import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
+import { TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
+import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
+import { instantiateLibraryTest } from "@/lib/reading/service";
 import { createClient } from "@/lib/supabase/server";
 
 export interface GroupFormState {
@@ -203,6 +206,138 @@ export async function inviteMember(
   revalidatePath("/console/groups");
   if (groupId) revalidatePath(`/console/groups/${groupId}`);
   return { email, inviteUrl: `${origin}/accept-invite?token=${token}` };
+}
+
+/**
+ * Create one assignment for a group. The content is produced HERE, once, and
+ * pinned — everyone in the group then works the identical prompt/test, which is
+ * what makes the results table comparable:
+ *
+ *   • writing — generate an original Task 2 prompt and approve it immediately
+ *     (a teacher choosing to assign it IS the approval; there is no separate
+ *     content gate in this product).
+ *   • reading — clone a shared library test into the org (a row copy, no model
+ *     call). instantiateLibraryTest dedupes per org, so re-assigning the same
+ *     template reuses the same copy.
+ */
+export async function createAssignment(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can create assignments." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const kind = String(formData.get("kind") ?? "");
+  if (!groupId) return { error: "Missing group." };
+  if (kind !== "writing" && kind !== "reading") return { error: "Choose a practice type." };
+
+  const dueRaw = String(formData.get("due_at") ?? "").trim();
+  const dueAt = dueRaw ? new Date(dueRaw) : null;
+  if (dueAt && Number.isNaN(dueAt.getTime())) return { error: "That due date isn't valid." };
+  const instructions = String(formData.get("instructions") ?? "").trim() || null;
+
+  const supabase = await createClient();
+
+  // RLS hides other teachers' groups, so this doubles as the permission check.
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, name, teacher_id")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "Group not found." };
+  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
+    return { error: "You can only assign practice to your own groups." };
+  }
+
+  const actor = {
+    userId: profile.id,
+    organizationId: profile.organization_id,
+    role: profile.role,
+  };
+
+  let title: string;
+  let promptId: string | null = null;
+  let readingTestId: string | null = null;
+
+  if (kind === "writing") {
+    const category = String(formData.get("category") ?? "") as Task2Category;
+    if (!TASK2_CATEGORIES.includes(category)) return { error: "Choose a valid question type." };
+    const topicFamily = String(formData.get("topic_family") ?? "").trim();
+    if (!topicFamily) return { error: "Enter a topic family (e.g. environment)." };
+
+    const quota = await getGenerationQuota(profile.organization_id);
+    if (quota.exceeded) {
+      return {
+        error: `Your center has reached its monthly generation limit (${quota.limit}). It resets on ${new Date(quota.resetAt).toLocaleDateString()}, or upgrade your plan.`,
+      };
+    }
+
+    try {
+      const prompt = await generateWritingPrompt({ category, topicFamily, difficulty: 7 }, actor);
+      // Assigning it releases it — otherwise RLS would hide it from the students
+      // who are supposed to write it.
+      await reviewWritingPrompt(prompt.id, "approved", actor);
+      promptId = prompt.id;
+    } catch (err) {
+      return {
+        error:
+          err instanceof PromptServiceError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Could not generate the prompt.",
+      };
+    }
+    title = String(formData.get("title") ?? "").trim() || `Writing Task 2 — ${topicFamily}`;
+  } else {
+    const libraryTestId = String(formData.get("library_test_id") ?? "").trim();
+    if (!libraryTestId) return { error: "Pick a reading test." };
+    try {
+      readingTestId = await instantiateLibraryTest(actor, libraryTestId);
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Could not prepare the reading test." };
+    }
+    title = String(formData.get("title") ?? "").trim() || "Reading test";
+  }
+
+  const { error } = await supabase.from("assignments").insert({
+    organization_id: profile.organization_id,
+    group_id: groupId,
+    kind,
+    title,
+    instructions,
+    prompt_id: promptId,
+    reading_test_id: readingTestId,
+    due_at: dueAt ? dueAt.toISOString() : null,
+    created_by: profile.id,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath(`/console/groups/${groupId}`);
+  return { notice: `Assigned to ${group.name}.` };
+}
+
+/** Remove an assignment. Student work already submitted against its content is
+ *  untouched — it just stops being listed as an assignment. */
+export async function deleteAssignment(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  await requireOrgUser();
+
+  const assignmentId = String(formData.get("assignment_id") ?? "").trim();
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  if (!assignmentId) return { error: "Missing assignment." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("assignments").delete().eq("id", assignmentId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/console/groups/${groupId}`);
+  return { notice: "Assignment removed." };
 }
 
 type RlsClient = Awaited<ReturnType<typeof createClient>>;
