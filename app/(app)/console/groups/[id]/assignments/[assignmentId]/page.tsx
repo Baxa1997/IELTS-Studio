@@ -1,16 +1,27 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  EmptyRow,
+  FAINT,
+  INK,
+  List,
+  PageHead,
+  Panel,
+  Pill,
+  Row,
+  RowText,
+  SANS,
+  StatRow,
+  StatTile,
+} from "@/components/console/page-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadAssignmentReport } from "@/lib/console/assignments";
 
-const STATUS_LABEL = {
-  not_started: "Not started",
-  in_progress: "In progress",
-  graded: "Graded",
-} as const;
+const STATUS = {
+  not_started: { label: "Not started", tone: "neutral" as const },
+  in_progress: { label: "In progress", tone: "warn" as const },
+  graded: { label: "Graded", tone: "good" as const },
+};
 
 /** The teacher's results table for one assignment: who did it, what band they
  *  got, and what cost them marks. */
@@ -29,91 +40,86 @@ export default async function AssignmentReportPage({
   const completed = report.rows.filter((r) => r.status === "graded").length;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <Link
-          href={`/console/groups/${report.groupId}`}
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
-        >
-          <ArrowLeft className="size-4" /> {report.groupName}
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{report.title}</h1>
-        <p className="text-muted-foreground capitalize">
-          {report.kind} · {completed}/{report.rows.length} completed
-          {report.dueAt ? ` · due ${new Date(report.dueAt).toLocaleDateString()}` : ""}
-        </p>
-        {report.instructions ? <p className="text-sm">{report.instructions}</p> : null}
-      </div>
+    <div>
+      <PageHead
+        back={{ href: `/console/groups/${report.groupId}`, label: report.groupName }}
+        eyebrow={report.kind}
+        title={report.title}
+        subtitle={
+          <>
+            {completed}/{report.rows.length} completed
+            {report.dueAt ? ` · due ${new Date(report.dueAt).toLocaleDateString()}` : ""}
+            {report.instructions ? ` · ${report.instructions}` : ""}
+          </>
+        }
+      />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-2xl font-semibold tabular-nums">
-            {report.averageBand?.toFixed(1) ?? "—"}
-          </p>
-          <p className="text-muted-foreground text-xs">Average band (graded only)</p>
-        </div>
-        <div className="bg-card rounded-xl border p-4">
-          <p className="text-2xl font-semibold tabular-nums">
-            {completed}/{report.rows.length}
-          </p>
-          <p className="text-muted-foreground text-xs">Completed</p>
-        </div>
-      </div>
+      <StatRow>
+        <StatTile
+          value={report.averageBand?.toFixed(1) ?? "—"}
+          label="Average band (graded only)"
+          tone="indigo"
+        />
+        <StatTile value={`${completed}/${report.rows.length}`} label="Completed" />
+      </StatRow>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Results</CardTitle>
-          <CardDescription>Lowest band first — who needs attention.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y text-sm">
-            {report.rows.map((r) => (
-              <li key={r.studentId} className="flex items-start justify-between gap-4 py-3">
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{r.name}</span>
-                  <span className="text-muted-foreground block text-xs">
-                    {STATUS_LABEL[r.status]}
-                    {r.score ? ` · ${r.score}` : ""}
-                    {r.weakness ? ` · weakest: ${r.weakness}` : ""}
-                  </span>
-                </span>
-                <span className="shrink-0 text-lg font-semibold tabular-nums">
+      <Panel title="Results" description="Lowest band first — who needs attention.">
+        <List>
+          {report.rows.map((r, i) => {
+            const status = STATUS[r.status];
+            return (
+              <Row key={r.studentId} first={i === 0}>
+                <RowText
+                  title={r.name}
+                  meta={
+                    <>
+                      <Pill tone={status.tone}>{status.label}</Pill>
+                      {r.score ? ` · ${r.score}` : ""}
+                      {r.weakness ? ` · weakest: ${r.weakness}` : ""}
+                    </>
+                  }
+                />
+                <span
+                  style={{
+                    flex: "none",
+                    fontFamily: SANS,
+                    fontWeight: 700,
+                    fontSize: 17,
+                    fontVariantNumeric: "tabular-nums",
+                    color: INK,
+                  }}
+                >
                   {r.band != null ? r.band.toFixed(1) : "—"}
                 </span>
-              </li>
-            ))}
-            {report.rows.length === 0 ? (
-              <li className="text-muted-foreground py-2">
-                This group has no students yet.
-              </li>
-            ) : null}
-          </ul>
-        </CardContent>
-      </Card>
+              </Row>
+            );
+          })}
+          {report.rows.length === 0 ? (
+            <EmptyRow>This group has no students yet.</EmptyRow>
+          ) : null}
+        </List>
+      </Panel>
 
       {report.commonMistakes.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">What the group struggled with</CardTitle>
-            <CardDescription>
-              {report.kind === "writing"
-                ? "The criterion capping each student's band."
-                : "The question types most often missed."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y text-sm">
-              {report.commonMistakes.map((m) => (
-                <li key={m.label} className="flex items-center justify-between py-2">
-                  <span className="truncate capitalize">{m.label}</span>
-                  <span className="text-muted-foreground shrink-0 text-xs">
-                    {m.count} student{m.count === 1 ? "" : "s"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <Panel
+          title="What the group struggled with"
+          description={
+            report.kind === "writing"
+              ? "The criterion capping each student's band."
+              : "The question types most often missed."
+          }
+        >
+          <List>
+            {report.commonMistakes.map((m, i) => (
+              <Row key={m.label} first={i === 0}>
+                <RowText title={<span style={{ textTransform: "capitalize" }}>{m.label}</span>} />
+                <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, flex: "none" }}>
+                  {m.count} student{m.count === 1 ? "" : "s"}
+                </span>
+              </Row>
+            ))}
+          </List>
+        </Panel>
       ) : null}
     </div>
   );

@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 
+import {
+  EmptyRow,
+  FAINT,
+  INDIGO,
+  LINE,
+  List,
+  PageHead,
+  Panel,
+  Row,
+  RowLink,
+  SANS,
+} from "@/components/console/page-ui";
 import { StudentPhoto } from "@/components/console/student-photo";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
@@ -16,9 +26,8 @@ import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { AssignPanel } from "./assign-panel";
 
-/** One group: its roster, outstanding invites, and (for the admin) the teacher
- *  assignment. RLS decides visibility — a teacher who doesn't own this group
- *  can't read its membership, so the page 404s for them. */
+/** One group: its roster, assignments and invites. RLS decides visibility — a
+ *  teacher who doesn't own this group can't read its membership, so it 404s. */
 export default async function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
@@ -55,165 +64,139 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <Link
-          href="/console/groups"
-          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
-        >
-          <ArrowLeft className="size-4" /> All groups
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{group.name}</h1>
-        <p className="text-muted-foreground">
-          {group.teacherName ? `Teacher: ${group.teacherName}` : "No teacher assigned"} ·{" "}
-          {group.members.length} student{group.members.length === 1 ? "" : "s"}
-        </p>
-      </div>
+    <div>
+      <PageHead
+        back={{ href: "/console/groups", label: "All groups" }}
+        title={group.name}
+        subtitle={
+          <>
+            {group.teacherName ? `Teacher: ${group.teacherName}` : "No teacher assigned"} ·{" "}
+            {group.members.length} student{group.members.length === 1 ? "" : "s"}
+          </>
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Students</CardTitle>
-          <CardDescription>
-            Open a student to see everything they&apos;ve practised and where they keep losing
-            marks.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y text-sm">
-            {group.members.map((m) => {
-              const act = activity.get(m.id);
-              return (
-                <li key={m.id} className="flex items-center justify-between gap-4 py-2">
-                  <Link
-                    href={`/console/groups/${group.id}/students/${m.id}`}
-                    className="flex min-w-0 flex-1 items-center gap-3 hover:underline"
-                  >
-                    <StudentPhoto name={m.name} url={m.photoUrl} />
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{m.name}</span>
-                      <span className="text-muted-foreground block text-xs">
-                        {act?.count30d ?? 0} practice{(act?.count30d ?? 0) === 1 ? "" : "s"} in 30
-                        days
-                        {act?.lastActive
-                          ? ` · last active ${new Date(act.lastActive).toLocaleDateString()}`
-                          : " · never practised"}
-                      </span>
-                    </span>
-                  </Link>
-                  <RemoveMemberButton groupId={group.id} studentId={m.id} />
-                </li>
-              );
-            })}
-            {group.members.length === 0 ? (
-              <li className="text-muted-foreground py-2">No students yet — add them below.</li>
-            ) : null}
-          </ul>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Add a student</CardTitle>
-          <CardDescription>
-            Creates the account outright — hand them the email and password in class. Nothing is
-            emailed.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AddStudentPanel groupId={group.id} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Assign practice</CardTitle>
-          <CardDescription>
-            Everyone in the group gets the same prompt or test, so their results are comparable.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AssignPanel groupId={group.id} libraryTests={libraryTests} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Assignments ({assignments.length})</CardTitle>
-          <CardDescription>Open one to see each student&apos;s band and mistakes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y text-sm">
-            {assignments.map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-4 py-3">
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{a.title}</span>
-                  <span className="text-muted-foreground block text-xs capitalize">
-                    {a.kind} · {a.completed}/{group.members.length} completed
-                    {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
-                  </span>
-                </span>
+      <Panel
+        title="Students"
+        description="Open a student to see everything they've practised and where they keep losing marks."
+      >
+        <List>
+          {group.members.map((m, i) => {
+            const act = activity.get(m.id);
+            return (
+              <Row key={m.id} first={i === 0}>
                 <Link
-                  href={`/console/groups/${group.id}/assignments/${a.id}`}
-                  className="text-primary shrink-0 text-sm font-medium hover:underline"
+                  href={`/console/groups/${group.id}/students/${m.id}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 11,
+                    minWidth: 0,
+                    flex: 1,
+                    textDecoration: "none",
+                    color: "inherit",
+                  }}
                 >
-                  Report
+                  <StudentPhoto name={m.name} url={m.photoUrl} />
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 600, color: INDIGO }}>
+                      {m.name}
+                    </span>
+                    <span style={{ display: "block", fontSize: 12.5, color: FAINT, marginTop: 2 }}>
+                      {act?.count30d ?? 0} practice{(act?.count30d ?? 0) === 1 ? "" : "s"} in 30 days
+                      {act?.lastActive
+                        ? ` · last active ${new Date(act.lastActive).toLocaleDateString()}`
+                        : " · never practised"}
+                    </span>
+                  </span>
                 </Link>
-              </li>
-            ))}
-            {assignments.length === 0 ? (
-              <li className="text-muted-foreground py-2">
-                Nothing assigned yet — use the panel above.
-              </li>
-            ) : null}
-          </ul>
-        </CardContent>
-      </Card>
+                <RemoveMemberButton groupId={group.id} studentId={m.id} />
+              </Row>
+            );
+          })}
+          {group.members.length === 0 ? (
+            <EmptyRow>No students yet — add them below.</EmptyRow>
+          ) : null}
+        </List>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Invite a student to this group</CardTitle>
-          <CardDescription>
-            They join {group.name} automatically when they accept the link.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <InviteMemberPanel fixedGroupId={group.id} canInviteTeachers={false} />
-        </CardContent>
-      </Card>
+      <Panel
+        title="Add a student"
+        description="Creates the account outright. Give an email and their login is sent there; leave it blank and hand the details over in class."
+      >
+        <AddStudentPanel groupId={group.id} />
+      </Panel>
+
+      <Panel
+        title="Assign practice"
+        description="Everyone in the group gets the same prompt or test, so their results are comparable."
+      >
+        <AssignPanel groupId={group.id} libraryTests={libraryTests} />
+      </Panel>
+
+      <Panel
+        title={`Assignments (${assignments.length})`}
+        description="Open one to see each student's band and mistakes."
+      >
+        <List>
+          {assignments.map((a, i) => (
+            <Row key={a.id} first={i === 0}>
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 500 }}>{a.title}</span>
+                <span
+                  style={{
+                    display: "block",
+                    fontSize: 12.5,
+                    color: FAINT,
+                    marginTop: 2,
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {a.kind} · {a.completed}/{group.members.length} completed
+                  {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
+                </span>
+              </span>
+              <RowLink href={`/console/groups/${group.id}/assignments/${a.id}`}>Report</RowLink>
+            </Row>
+          ))}
+          {assignments.length === 0 ? (
+            <EmptyRow>Nothing assigned yet — use the panel above.</EmptyRow>
+          ) : null}
+        </List>
+      </Panel>
+
+      <Panel
+        title="Invite a student to this group"
+        description={`They join ${group.name} automatically when they accept the link.`}
+      >
+        <InviteMemberPanel fixedGroupId={group.id} canInviteTeachers={false} />
+      </Panel>
 
       {group.pendingInvites.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pending invites</CardTitle>
-            <CardDescription>{group.pendingInvites.length} awaiting acceptance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y text-sm">
-              {group.pendingInvites.map((i) => (
-                <li key={i.email} className="flex items-center justify-between py-2">
-                  <span className="truncate">{i.email}</span>
-                  <span className="text-muted-foreground text-xs">
-                    expires {new Date(i.expiresAt).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <Panel
+          title="Pending invites"
+          description={`${group.pendingInvites.length} awaiting acceptance`}
+        >
+          <List>
+            {group.pendingInvites.map((inv, i) => (
+              <Row key={inv.email} first={i === 0}>
+                <span style={{ minWidth: 0 }}>{inv.email}</span>
+                <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT }}>
+                  expires {new Date(inv.expiresAt).toLocaleDateString()}
+                </span>
+              </Row>
+            ))}
+          </List>
+        </Panel>
       ) : null}
 
       {isAdmin ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Group settings</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <AssignTeacherForm groupId={group.id} teacherId={group.teacherId} teachers={teachers} />
-            <div className="border-t pt-4">
-              <DeleteGroupButton groupId={group.id} />
-            </div>
-          </CardContent>
-        </Card>
+        <Panel title="Group settings">
+          <AssignTeacherForm groupId={group.id} teacherId={group.teacherId} teachers={teachers} />
+          <div style={{ borderTop: `1px solid ${LINE}`, marginTop: 18, paddingTop: 16 }}>
+            <DeleteGroupButton groupId={group.id} />
+          </div>
+        </Panel>
       ) : null}
     </div>
   );

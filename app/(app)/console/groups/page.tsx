@@ -1,8 +1,14 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Users } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  EmptyRow,
+  List,
+  PageHead,
+  Panel,
+  Row,
+  RowLink,
+  RowText,
+} from "@/components/console/page-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 
@@ -19,80 +25,64 @@ export default async function GroupsPage() {
   const { groups, teachers } = await loadGroups(profile);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
-        <p className="text-muted-foreground">
-          {isAdmin
+    <div>
+      <PageHead
+        eyebrow="Your center"
+        title="Groups"
+        subtitle={
+          isAdmin
             ? "Organize students into classes and assign a teacher to each."
-            : "The classes assigned to you."}
-        </p>
-      </div>
+            : "The classes assigned to you."
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Create a group</CardTitle>
-          <CardDescription>
-            {!isAdmin
-              ? "Your own class — you'll be its teacher, and you add the students."
-              : teachers.length === 0
-                ? "No teachers yet — invite one below, then assign them here."
-                : "Assign a teacher now or later."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CreateGroupForm teachers={teachers} canAssignTeacher={isAdmin} />
-        </CardContent>
-      </Card>
+      <Panel
+        title="Create a group"
+        description={
+          !isAdmin
+            ? "Your own class — you'll be its teacher, and you add the students."
+            : teachers.length === 0
+              ? "No teachers yet — invite one below, then assign them here."
+              : "Assign a teacher now or later."
+        }
+      >
+        <CreateGroupForm teachers={teachers} canAssignTeacher={isAdmin} />
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {isAdmin ? "All groups" : "Your groups"} ({groups.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y text-sm">
-            {groups.map((g) => (
-              <li key={g.id} className="flex items-center justify-between gap-4 py-3">
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{g.name}</span>
-                  <span className="text-muted-foreground block text-xs">
+      <Panel title={`${isAdmin ? "All groups" : "Your groups"} (${groups.length})`}>
+        <List>
+          {groups.map((g, i) => (
+            <Row key={g.id} first={i === 0}>
+              <RowText
+                title={g.name}
+                meta={
+                  <>
                     {g.teacherName ? `Teacher: ${g.teacherName}` : "No teacher assigned"} ·{" "}
                     {g.memberCount} student{g.memberCount === 1 ? "" : "s"}
-                  </span>
-                </span>
-                <Link
-                  href={`/console/groups/${g.id}`}
-                  className="text-primary flex shrink-0 items-center gap-1 text-sm font-medium hover:underline"
-                >
-                  Open <ArrowRight className="size-4" />
-                </Link>
-              </li>
-            ))}
-            {groups.length === 0 ? (
-              <li className="text-muted-foreground flex items-center gap-2 py-3">
-                <Users className="size-4" />
-                {isAdmin ? "No groups yet — create one above." : "No groups assigned to you yet."}
-              </li>
-            ) : null}
-          </ul>
-        </CardContent>
-      </Card>
+                  </>
+                }
+              />
+              <RowLink href={`/console/groups/${g.id}`}>Open →</RowLink>
+            </Row>
+          ))}
+          {groups.length === 0 ? (
+            <EmptyRow>
+              {isAdmin ? "No groups yet — create one above." : "No groups assigned to you yet."}
+            </EmptyRow>
+          ) : null}
+        </List>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Invite people</CardTitle>
-          <CardDescription>
-            {isAdmin
-              ? "Invite a teacher, or a student straight into a group. They join your center only."
-              : "Invite a student into one of your groups."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />
-        </CardContent>
-      </Card>
+      <Panel
+        title="Invite people"
+        description={
+          isAdmin
+            ? "Invite a teacher, or a student straight into a group. They join your center only."
+            : "Invite a student into one of your groups."
+        }
+      >
+        <InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />
+      </Panel>
     </div>
   );
 }

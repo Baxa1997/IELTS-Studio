@@ -1,12 +1,20 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, ClipboardCheck, Mail, Users } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  EmptyRow,
+  FAINT,
+  List,
+  PageHead,
+  Panel,
+  PrimaryLink,
+  Row,
+  RowText,
+  SANS,
+  StatRow,
+  StatTile,
+} from "@/components/console/page-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 
 import { GeneratePromptPanel } from "./prompt-studio";
 
@@ -29,7 +37,7 @@ export default async function ConsolePage() {
   let groupCountQuery = supabase.from("groups").select("id", { count: "exact", head: true });
   if (!isAdmin) groupCountQuery = groupCountQuery.eq("teacher_id", profile.id);
 
-  const [membersRes, invitesRes, promptCountRes, passageCountRes, groupCountRes] =
+  const [membersRes, invitesRes, groupCountRes, orgRes, promptCountRes, passageCountRes] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, role").order("role", { ascending: true }),
       isAdmin
@@ -39,148 +47,111 @@ export default async function ConsolePage() {
             .is("accepted_at", null)
             .order("created_at", { ascending: false })
         : Promise.resolve({ data: null }),
+      groupCountQuery,
+      supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
       supabase
         .from("writing_prompts")
         .select("id", { count: "exact", head: true })
         .eq("task_type", "task2")
         .eq("status", "pending"),
-      supabase.from("reading_passages").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      groupCountQuery,
+      supabase
+        .from("reading_passages")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending"),
     ]);
 
-  const members = membersRes.data;
-  const pendingInvites = invitesRes.data;
-  const pendingContent = (promptCountRes.count ?? 0) + (passageCountRes.count ?? 0);
+  const members = membersRes.data ?? [];
+  const pendingInvites = invitesRes.data ?? [];
   const groupCount = groupCountRes.count ?? 0;
+  const students = members.filter((m) => m.role === "student").length;
+  const pendingContent = (promptCountRes.count ?? 0) + (passageCountRes.count ?? 0);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Center console</h1>
-        <p className="text-muted-foreground">Manage your center&apos;s students, content and grading.</p>
-      </div>
+    <div>
+      <PageHead
+        eyebrow={ROLE_LABEL[profile.role] ?? profile.role}
+        title={(orgRes.data?.name as string | null) ?? "Your center"}
+        subtitle={
+          isAdmin
+            ? "Your classes, your teachers, and the practice you set them."
+            : "Your classes and the practice you set them."
+        }
+        actions={<PrimaryLink href="/console/groups">Manage groups →</PrimaryLink>}
+      />
 
-      {/* At-a-glance stats. */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Stat icon={Users} value={members?.length ?? 0} label="Members" />
-        <Stat icon={ClipboardCheck} value={pendingContent} label="Awaiting approval" />
-        {isAdmin ? <Stat icon={Mail} value={pendingInvites?.length ?? 0} label="Pending invites" /> : null}
-      </div>
+      <StatRow>
+        <StatTile value={groupCount} label={isAdmin ? "Groups" : "Your groups"} tone="indigo" />
+        <StatTile value={students} label="Students" />
+        <StatTile value={members.length} label="People in the center" />
+        <StatTile value={pendingContent} label="Awaiting approval" />
+        {isAdmin ? <StatTile value={pendingInvites.length} label="Pending invites" /> : null}
+      </StatRow>
 
-      {/* The core daily action — also in the sidebar, surfaced here for prominence. */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Review queue</CardTitle>
-          <CardDescription>
-            Audit AI gradings, approve content, and adjust bands — your overrides train the grader.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between gap-3">
-          <p className="text-muted-foreground text-sm">
-            {pendingContent} item{pendingContent === 1 ? "" : "s"} awaiting approval, plus gradings to review.
-          </p>
-          <Link href="/console/review" className={cn(buttonVariants())}>
-            Open queue <ArrowRight className="size-4" />
-          </Link>
-        </CardContent>
-      </Card>
+      <Panel
+        title="Review queue"
+        description="Audit AI gradings, approve library content, and adjust bands — your overrides train the grader."
+        actions={<PrimaryLink href="/console/review">Open queue →</PrimaryLink>}
+      >
+        <p style={{ fontFamily: SANS, fontSize: 13.5, color: FAINT, margin: 0 }}>
+          {pendingContent} item{pendingContent === 1 ? "" : "s"} awaiting approval, plus gradings to
+          review. Practice you assign to a group is approved automatically and never queues here.
+        </p>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Groups</CardTitle>
-          <CardDescription>
-            {isAdmin
-              ? "Classes, their teachers, and their students. Invites are issued from here."
-              : "The classes assigned to you, and their students."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between gap-3">
-          <p className="text-muted-foreground text-sm">
-            {groupCount} group{groupCount === 1 ? "" : "s"}
-          </p>
-          <Link href="/console/groups" className={cn(buttonVariants())}>
-            Manage groups <ArrowRight className="size-4" />
-          </Link>
-        </CardContent>
-      </Card>
+      <Panel
+        title="Groups"
+        description={
+          isAdmin
+            ? "Classes, their teachers and their students. Assignments and reports live inside a group."
+            : "The classes assigned to you. Assignments and reports live inside a group."
+        }
+      >
+        <List>
+          <Row first>
+            <RowText
+              title={`${groupCount} group${groupCount === 1 ? "" : "s"}`}
+              meta="Add students, assign practice, read the results"
+            />
+            <PrimaryLink href="/console/groups">Open →</PrimaryLink>
+          </Row>
+        </List>
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Generate a Task 2 prompt</CardTitle>
-          <CardDescription>
-            Original prompts via AI. They stay hidden from students until approved in the review queue.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GeneratePromptPanel />
-        </CardContent>
-      </Card>
+      <Panel
+        title="Generate a Task 2 prompt"
+        description="An original prompt via AI, for your own library. To set one as homework, use Assign practice inside a group instead."
+      >
+        <GeneratePromptPanel />
+      </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Members</CardTitle>
-          <CardDescription>{members?.length ?? 0} in your center</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y text-sm">
-            {(members ?? []).map((m) => (
-              <li key={m.id} className="flex items-center justify-between py-2">
-                <span>{m.full_name ?? "—"}</span>
-                <span className="text-muted-foreground text-xs">{ROLE_LABEL[m.role] ?? m.role}</span>
-              </li>
+      <Panel title="Members" description={`${members.length} in your center`}>
+        <List>
+          {members.map((m, i) => (
+            <Row key={m.id as string} first={i === 0}>
+              <RowText title={(m.full_name as string | null) ?? "—"} />
+              <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, flex: "none" }}>
+                {ROLE_LABEL[m.role as string] ?? (m.role as string)}
+              </span>
+            </Row>
+          ))}
+          {members.length === 0 ? <EmptyRow>No members yet.</EmptyRow> : null}
+        </List>
+      </Panel>
+
+      {isAdmin && pendingInvites.length > 0 ? (
+        <Panel title="Pending invites" description={`${pendingInvites.length} awaiting acceptance`}>
+          <List>
+            {pendingInvites.map((inv, i) => (
+              <Row key={inv.email as string} first={i === 0}>
+                <RowText title={inv.email as string} />
+                <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, flex: "none" }}>
+                  expires {new Date(inv.expires_at as string).toLocaleDateString()}
+                </span>
+              </Row>
             ))}
-            {(members ?? []).length === 0 ? (
-              <li className="text-muted-foreground py-2">No members yet.</li>
-            ) : null}
-          </ul>
-        </CardContent>
-      </Card>
-
-      {isAdmin ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pending invites</CardTitle>
-            <CardDescription>{pendingInvites?.length ?? 0} awaiting acceptance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y text-sm">
-              {(pendingInvites ?? []).map((inv) => (
-                <li key={inv.email} className="flex items-center justify-between py-2">
-                  <span>{inv.email}</span>
-                  <span className="text-muted-foreground text-xs">
-                    expires {new Date(inv.expires_at).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-              {(pendingInvites ?? []).length === 0 ? (
-                <li className="text-muted-foreground py-2">No pending invites.</li>
-              ) : null}
-            </ul>
-          </CardContent>
-        </Card>
+          </List>
+        </Panel>
       ) : null}
-    </div>
-  );
-}
-
-function Stat({
-  icon: Icon,
-  value,
-  label,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  value: number;
-  label: string;
-}) {
-  return (
-    <div className="bg-card flex items-center gap-3 rounded-xl border p-4">
-      <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
-        <Icon className="size-5" />
-      </span>
-      <div>
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
-        <p className="text-muted-foreground text-xs">{label}</p>
-      </div>
     </div>
   );
 }
