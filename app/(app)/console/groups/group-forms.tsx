@@ -19,8 +19,15 @@ const FIELD =
 
 const initial: GroupFormState = {};
 
-/** Center admin creates a group, optionally assigning a teacher immediately. */
-export function CreateGroupForm({ teachers }: { teachers: { id: string; name: string }[] }) {
+/** Create a group. An admin picks the teacher; a teacher always owns the class
+ *  they create, so they get no picker. */
+export function CreateGroupForm({
+  teachers,
+  canAssignTeacher,
+}: {
+  teachers: { id: string; name: string }[];
+  canAssignTeacher: boolean;
+}) {
   const [state, formAction, pending] = useActionState(createGroup, initial);
 
   return (
@@ -30,17 +37,19 @@ export function CreateGroupForm({ teachers }: { teachers: { id: string; name: st
           <Label htmlFor="group-name">Group name</Label>
           <Input id="group-name" name="name" placeholder="IELTS evening — Sept" required />
         </div>
-        <div className="w-48 space-y-2">
-          <Label htmlFor="group-teacher">Teacher</Label>
-          <select id="group-teacher" name="teacher_id" className={FIELD} defaultValue="">
-            <option value="">Unassigned</option>
-            {teachers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {canAssignTeacher ? (
+          <div className="w-48 space-y-2">
+            <Label htmlFor="group-teacher">Teacher</Label>
+            <select id="group-teacher" name="teacher_id" className={FIELD} defaultValue="">
+              <option value="">Unassigned</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <Button type="submit" disabled={pending}>
           {pending ? "Creating…" : "Create group"}
         </Button>

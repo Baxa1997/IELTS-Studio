@@ -208,4 +208,85 @@ begin
   raise notice 'PASS 10b: students cannot edit assignments';
 end $$;
 
+-- ---- Case 11: a teacher owns the groups they create, and only those --------
+-- Re-add Student A2 to Group A (case 8 removed them) so the roster is real.
+set local role postgres;
+insert into public.group_members (group_id, student_id, organization_id) values
+  ('99999999-9999-9999-9999-999999999999', '33333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+-- A second teacher in Center A, with their own group and their own student.
+insert into auth.users (instance_id, id, aud, role, email) values
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'teacher.a2@test.local');
+insert into public.profiles (id, organization_id, role, full_name) values
+  ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'teacher', 'Teacher A2');
+set local role authenticated;
+
+set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000001","role":"authenticated"}';
+do $$
+declare owned int;
+begin
+  -- Allowed: create a class they own.
+  insert into public.groups (organization_id, name, teacher_id)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Teacher A2 class', 'dddddddd-0000-0000-0000-000000000001');
+  select count(*) into owned from public.groups where teacher_id = 'dddddddd-0000-0000-0000-000000000001';
+  assert owned = 1, format('Teacher A2 should own 1 group; saw %s', owned);
+  raise notice 'PASS 11a: a teacher can create their own group';
+
+  -- Refused: hand a group to someone else (an admin-only move).
+  begin
+    insert into public.groups (organization_id, name, teacher_id)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Not mine', '88888888-8888-8888-8888-888888888888');
+    raise exception 'BREACH: teacher created a group owned by another teacher';
+  exception when insufficient_privilege then
+    raise notice 'PASS 11b: a teacher cannot create a group for someone else';
+  end;
+end $$;
+
+-- ---- Case 12: practice visibility follows group membership -----------------
+set local role postgres;
+insert into public.listening_items (id, organization_id, student_id, scope, part, topic, content) values
+  ('eeeeeeee-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'part', 1, 'Library tour', '{}'::jsonb);
+insert into public.listening_attempts (id, organization_id, student_id, item_id, score, max_score) values
+  ('ffffffff-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'eeeeeeee-0000-0000-0000-000000000001', 7, 10);
+set local role authenticated;
+
+-- Teacher A teaches Student A -> can see the listening attempt.
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.listening_attempts;
+  assert seen = 1, format('Teacher A should see their student listening attempt; saw %s', seen);
+  raise notice 'PASS 12a: a teacher sees their own student''s listening practice';
+end $$;
+
+-- Teacher A2 teaches nobody in that group -> sees nothing.
+set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000001","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.listening_attempts;
+  assert seen = 0, format('BREACH: an unrelated teacher saw %s listening attempt(s)', seen);
+  raise notice 'PASS 12b: a teacher cannot see another teacher''s students';
+end $$;
+
+-- The center admin sees everyone in their org.
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.listening_attempts;
+  assert seen = 1, format('Center admin should see org listening attempts; saw %s', seen);
+  raise notice 'PASS 12c: the center admin sees their whole org';
+end $$;
+
+-- And a classmate still cannot.
+set local request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.listening_attempts;
+  assert seen = 0, format('BREACH: a classmate saw %s listening attempt(s)', seen);
+  raise notice 'PASS 12d: a classmate cannot see another student''s practice';
+end $$;
+
 rollback;  -- discards all seed data and resets role/claims

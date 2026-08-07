@@ -89,8 +89,9 @@ const TEACHER: Section[] = [
 ];
 
 /** Only students who actually belong to a center group get an Assignments link —
- *  a solo B2C learner has nothing to put behind it. */
-function sectionsFor(role: string, showAssignments: boolean): Section[] {
+ *  a solo B2C learner has nothing to put behind it. `pending` is the count of
+ *  homework they haven't finished; it rides the existing badge slot. */
+function sectionsFor(role: string, showAssignments: boolean, pending: number): Section[] {
   if (role !== "student") return role === "center_admin" ? ADMIN : TEACHER;
   if (!showAssignments) return STUDENT;
   const [home, ...rest] = STUDENT;
@@ -99,7 +100,12 @@ function sectionsFor(role: string, showAssignments: boolean): Section[] {
       ...home,
       items: [
         home.items[0],
-        { label: "Assignments", href: "/assignments", icon: ClipboardCheck },
+        {
+          label: "Assignments",
+          href: "/assignments",
+          icon: ClipboardCheck,
+          badge: pending > 0 ? String(pending) : undefined,
+        },
         ...home.items.slice(1),
       ],
     },
@@ -133,12 +139,14 @@ const itemBase: React.CSSProperties = {
 export function SidebarNav({
   role,
   showAssignments = false,
+  pendingAssignments = 0,
 }: {
   role: string;
   showAssignments?: boolean;
+  pendingAssignments?: number;
 }) {
   const pathname = usePathname();
-  const sections = sectionsFor(role, showAssignments);
+  const sections = sectionsFor(role, showAssignments, pendingAssignments);
   const all = sections.flatMap((s) => s.items);
   // Single active item = the longest href the path falls under.
   const activeHref = all

@@ -29,21 +29,21 @@ export default async function GroupsPage() {
         </p>
       </div>
 
-      {isAdmin ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Create a group</CardTitle>
-            <CardDescription>
-              {teachers.length === 0
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Create a group</CardTitle>
+          <CardDescription>
+            {!isAdmin
+              ? "Your own class — you'll be its teacher, and you add the students."
+              : teachers.length === 0
                 ? "No teachers yet — invite one below, then assign them here."
                 : "Assign a teacher now or later."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CreateGroupForm teachers={teachers} />
-          </CardContent>
-        </Card>
-      ) : null}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CreateGroupForm teachers={teachers} canAssignTeacher={isAdmin} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

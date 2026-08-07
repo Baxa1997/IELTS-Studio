@@ -6,11 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
+import { loadGroupActivity } from "@/lib/console/student-report";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { AssignTeacherForm, DeleteGroupButton, RemoveMemberButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
+import { AddStudentPanel } from "./add-student-panel";
 import { AssignPanel } from "./assign-panel";
 
 /** One group: its roster, outstanding invites, and (for the admin) the teacher
@@ -35,9 +37,10 @@ export default async function GroupDetailPage({
   // The shared reading library lives in its own org, so it's read with the
   // service-role client (exactly as the student read hub does).
   const admin = createAdminClient();
-  const [{ teachers }, assignments, libTestsRes] = await Promise.all([
+  const [{ teachers }, assignments, activity, libTestsRes] = await Promise.all([
     isAdmin ? loadGroups(profile) : Promise.resolve({ teachers: [] as { id: string; name: string }[] }),
     loadGroupAssignments(group.id),
+    loadGroupActivity(group.members.map((m) => m.id)),
     admin
       .from("reading_tests")
       .select("id, target_band")
@@ -71,27 +74,50 @@ export default async function GroupDetailPage({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Students</CardTitle>
-          <CardDescription>Everyone currently in this group.</CardDescription>
+          <CardDescription>
+            Open a student to see everything they&apos;ve practised and where they keep losing
+            marks.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="divide-y text-sm">
-            {group.members.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-4 py-2">
-                <span className="min-w-0">
-                  <span className="block truncate">{m.name}</span>
-                  <span className="text-muted-foreground block text-xs">
-                    joined {new Date(m.joinedAt).toLocaleDateString()}
-                  </span>
-                </span>
-                <RemoveMemberButton groupId={group.id} studentId={m.id} />
-              </li>
-            ))}
+            {group.members.map((m) => {
+              const act = activity.get(m.id);
+              return (
+                <li key={m.id} className="flex items-center justify-between gap-4 py-2">
+                  <Link
+                    href={`/console/groups/${group.id}/students/${m.id}`}
+                    className="min-w-0 flex-1 hover:underline"
+                  >
+                    <span className="block truncate font-medium">{m.name}</span>
+                    <span className="text-muted-foreground block text-xs">
+                      {act?.count30d ?? 0} practice{(act?.count30d ?? 0) === 1 ? "" : "s"} in 30 days
+                      {act?.lastActive
+                        ? ` · last active ${new Date(act.lastActive).toLocaleDateString()}`
+                        : " · never practised"}
+                    </span>
+                  </Link>
+                  <RemoveMemberButton groupId={group.id} studentId={m.id} />
+                </li>
+              );
+            })}
             {group.members.length === 0 ? (
-              <li className="text-muted-foreground py-2">
-                No students yet — invite them below.
-              </li>
+              <li className="text-muted-foreground py-2">No students yet — add them below.</li>
             ) : null}
           </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Add a student</CardTitle>
+          <CardDescription>
+            Creates the account outright — hand them the email and password in class. Nothing is
+            emailed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AddStudentPanel groupId={group.id} />
         </CardContent>
       </Card>
 

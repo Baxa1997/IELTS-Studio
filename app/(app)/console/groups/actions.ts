@@ -10,6 +10,7 @@ import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
 import { instantiateLibraryTest } from "@/lib/reading/service";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export interface GroupFormState {
@@ -23,18 +24,33 @@ export interface InviteFormState {
   inviteUrl?: string;
 }
 
-/** Center admin creates a group, optionally assigning a teacher up front.
- *  RLS independently enforces "center_admin of this org" on the insert. */
+export interface AddStudentState {
+  error?: string;
+  /** Credentials to hand to the student — shown once, right after creation. */
+  created?: { name: string; email: string; password: string };
+}
+
+/**
+ * Create a group. A center_admin can create one for any teacher (or leave it
+ * unassigned); a teacher creates their own class and always owns it — RLS
+ * enforces that independently (groups_teacher_insert requires
+ * teacher_id = auth.uid()).
+ */
 export async function createGroup(
   _prev: GroupFormState,
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin") return { error: "Only a center admin can create groups." };
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can create groups." };
+  }
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Enter a group name." };
-  const teacherId = String(formData.get("teacher_id") ?? "").trim() || null;
+  const teacherId =
+    profile.role === "teacher"
+      ? profile.id
+      : String(formData.get("teacher_id") ?? "").trim() || null;
 
   const supabase = await createClient();
   const { error } = await supabase.from("groups").insert({
@@ -341,6 +357,117 @@ export async function deleteAssignment(
 
   revalidatePath(`/console/groups/${groupId}`);
   return { notice: "Assignment removed." };
+}
+
+/**
+ * Create a student account directly and drop them into the group — the way a
+ * center actually onboards a class: the teacher types a name and email, gets a
+ * password back, and hands over the two lines. No email is sent and no invite
+ * link has to survive a WhatsApp forward.
+ *
+ * The account is a perfectly ordinary account: the student signs in at
+ * /sign-in with that email and password, practises whatever they like, and can
+ * change the password later. It just happens to live in the center's org, so
+ * their teacher can set homework and see their progress.
+ *
+ * Runs on the service-role client because creating an auth user is privileged —
+ * so the caller's right to manage this group is checked explicitly first.
+ */
+export async function addStudentAccount(
+  _prev: AddStudentState,
+  formData: FormData,
+): Promise<AddStudentState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can add students." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const passwordInput = String(formData.get("password") ?? "").trim();
+
+  if (!groupId) return { error: "Missing group." };
+  if (!fullName) return { error: "Enter the student's name." };
+  if (!email || !email.includes("@")) return { error: "Enter a valid email address." };
+  if (passwordInput && passwordInput.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+
+  const supabase = await createClient();
+  // RLS hides other teachers' groups, so a hit here proves the caller manages it.
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, teacher_id")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "Group not found." };
+  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
+    return { error: "You can only add students to your own groups." };
+  }
+
+  const seatError = await seatLimitError(supabase, profile.organization_id);
+  if (seatError) return { error: seatError };
+
+  const password = passwordInput || generatePassword();
+  const admin = createAdminClient();
+
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    // organization_id present -> handle_new_user skips auto-provisioning; the
+    // profile is created explicitly below, in this center's org.
+    app_metadata: { organization_id: profile.organization_id, role: "student" },
+    user_metadata: { full_name: fullName },
+  });
+  if (createError || !created?.user) {
+    const already = /already|exists|registered/i.test(createError?.message ?? "");
+    return {
+      error: already
+        ? `${email} already has an account on the platform. Ask the student to use a different email — moving an existing personal account into a center isn't supported yet.`
+        : (createError?.message ?? "Could not create the account."),
+    };
+  }
+
+  const { error: profileError } = await admin.from("profiles").insert({
+    id: created.user.id,
+    organization_id: profile.organization_id,
+    role: "student",
+    full_name: fullName,
+  });
+  if (profileError) {
+    // Roll back the orphaned auth user so the email can be retried cleanly.
+    await admin.auth.admin.deleteUser(created.user.id);
+    return { error: `Could not set up the student's profile: ${profileError.message}` };
+  }
+
+  const { error: memberError } = await admin.from("group_members").insert({
+    group_id: groupId,
+    student_id: created.user.id,
+    organization_id: profile.organization_id,
+    added_by: profile.id,
+  });
+  if (memberError) {
+    // The account is fine — only the membership failed. Say so rather than
+    // deleting an account the student may already have been told about.
+    return {
+      error: `Account created, but adding them to the group failed: ${memberError.message}`,
+    };
+  }
+
+  revalidatePath(`/console/groups/${groupId}`);
+  return { created: { name: fullName, email, password } };
+}
+
+/** Readable throwaway password — the student can change it later. Avoids
+ *  look-alike characters so it survives being written on a whiteboard. */
+function generatePassword(): string {
+  const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = randomBytes(10);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
 
 type RlsClient = Awaited<ReturnType<typeof createClient>>;

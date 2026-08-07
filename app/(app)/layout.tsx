@@ -4,6 +4,7 @@ import { Hanken_Grotesk, Newsreader } from "next/font/google";
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
+import { loadStudentAssignments } from "@/lib/assignments/student";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
@@ -38,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Center students (i.e. in a group) get the Assignments nav item; solo B2C
   // learners never see it — RLS returns nothing for them anyway.
   let showAssignments = false;
+  let pendingAssignments = 0;
   if (profile.role === "student") {
     const supabase = await createClient();
     const [usage, membership] = await Promise.all([
@@ -47,6 +49,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     sidebarFooter = <PlanCard usage={usage} />;
     quotaBar = <QuotaBar usage={usage} />;
     showAssignments = (membership.count ?? 0) > 0;
+    // Only center students pay for this lookup; it drives the homework badge.
+    if (showAssignments) {
+      const assignments = await loadStudentAssignments(profile.id);
+      pendingAssignments = assignments.filter((a) => !a.done).length;
+    }
   }
 
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
@@ -56,6 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppShell
         role={profile.role}
         showAssignments={showAssignments}
+        pendingAssignments={pendingAssignments}
         home={roleHome(profile.role)}
         name={profile.full_name ?? user.email ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
