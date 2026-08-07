@@ -1,9 +1,16 @@
-// Create THE platform super admin. Super admins are above all orgs: the role
-// lives in app_metadata (not user-editable, not in the profiles table), so the
-// handle_new_user trigger skips provisioning and they get no org/profile.
+// Create (or update) THE platform super admin. Super admins are above all orgs:
+// the role lives in app_metadata (not user-editable, not in the profiles table),
+// so the handle_new_user trigger skips provisioning and they get no org/profile.
+//
+// Because they have no profile row, their LOGIN also lives in app_metadata —
+// public.email_for_login reads it there. Pass one to sign in by name instead of
+// by email.
 //
 // Usage:
-//   node scripts/create-super-admin.mjs <email> <password>
+//   node scripts/create-super-admin.mjs <email> <password> [login]
+//
+// Re-running with an existing email updates that account's password and login
+// instead of failing, so it doubles as the password-rotation tool.
 //
 // Reads NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env.local.
 
@@ -34,27 +41,64 @@ if (!url || !serviceKey) {
   process.exit(1);
 }
 
-const [email, password] = process.argv.slice(2);
-if (!email || !password) {
-  console.error("Usage: node scripts/create-super-admin.mjs <email> <password>");
+const [emailArg, password, loginArg] = process.argv.slice(2);
+if (!emailArg || !password) {
+  console.error("Usage: node scripts/create-super-admin.mjs <email> <password> [login]");
   process.exit(1);
 }
+const email = emailArg.toLowerCase();
+const login = loginArg ? loginArg.toLowerCase() : undefined;
 
 const admin = createClient(url, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const { data: created, error } = await admin.auth.admin.createUser({
-  email: email.toLowerCase(),
+const appMetadata = { role: "super_admin", ...(login ? { username: login } : {}) };
+
+const { error } = await admin.auth.admin.createUser({
+  email,
   password,
   email_confirm: true,
-  app_metadata: { role: "super_admin" },
+  app_metadata: appMetadata,
 });
-if (error || !created?.user) {
-  console.error("Create super admin failed:", error?.message);
-  process.exit(1);
+
+let action = "created";
+if (error) {
+  // Already there → rotate the password and (re)set the login rather than
+  // making the operator go hunting in the dashboard.
+  const existing = await findUserByEmail(admin, email);
+  if (!existing) {
+    console.error("Create super admin failed:", error.message);
+    process.exit(1);
+  }
+  const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
+    password,
+    app_metadata: appMetadata,
+  });
+  if (updateError) {
+    console.error("Update super admin failed:", updateError.message);
+    process.exit(1);
+  }
+  action = "updated";
 }
 
-console.log("✅ Super admin created");
-console.log(`   Email : ${email.toLowerCase()}`);
+console.log(`✅ Super admin ${action}`);
+console.log(`   Email : ${email}`);
+if (login) console.log(`   Login : ${login}`);
 console.log("   Sign in at /sign-in, then you'll land on /admin.");
+if (login) {
+  console.log("   (Login-name sign-in needs migration 20260807190000_platform_login.sql.)");
+}
+
+/** Page through users to find one by email — the admin API has no direct
+ *  get-by-email, and listUsers is capped per page. */
+async function findUserByEmail(client, wanted) {
+  for (let page = 1; page <= 20; page++) {
+    const { data, error: listError } = await client.auth.admin.listUsers({ page, perPage: 200 });
+    if (listError || !data?.users?.length) return null;
+    const hit = data.users.find((u) => u.email?.toLowerCase() === wanted);
+    if (hit) return hit;
+    if (data.users.length < 200) return null;
+  }
+  return null;
+}

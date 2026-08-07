@@ -49,22 +49,22 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
 }
 
 /**
- * Look up the account email behind a login name. Runs on the service-role
- * client because the caller has no session yet — and because `profiles` is not
- * readable anonymously, which is exactly what we want: the only way to probe a
- * login is through the sign-in form, which answers identically either way.
+ * Look up the account email behind a login name — an org member's
+ * `profiles.username`, or a super admin's app_metadata login (they have no
+ * profile row, being above orgs). The `email_for_login` function covers both
+ * and is service_role-only, so this is the sole path to that mapping and it
+ * answers identically for an unknown login and a wrong password.
  */
 async function emailForLogin(login: string): Promise<string | null> {
   const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("username", login)
-    .maybeSingle();
-  if (!profile) return null;
-
-  const { data } = await admin.auth.admin.getUserById(profile.id as string);
-  return data?.user?.email ?? null;
+  const { data, error } = await admin.rpc("email_for_login", { p_login: login });
+  if (error) {
+    // Most likely the migration hasn't been applied yet — say so in the log
+    // rather than leaving "invalid login" as the only clue.
+    console.error("[auth] email_for_login failed:", error.message);
+    return null;
+  }
+  return typeof data === "string" && data ? data : null;
 }
 
 /**
