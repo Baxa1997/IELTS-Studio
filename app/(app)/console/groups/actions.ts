@@ -7,7 +7,7 @@ import { headers } from "next/headers";
 
 import { requireOrgUser } from "@/lib/auth";
 import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
-import { TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
+import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
 import { instantiateLibraryTest } from "@/lib/reading/service";
 import { createClient } from "@/lib/supabase/server";
@@ -276,7 +276,10 @@ export async function createAssignment(
     }
 
     try {
-      const prompt = await generateWritingPrompt({ category, topicFamily, difficulty: 7 }, actor);
+      const prompt = await generateWritingPrompt(
+        { category, topicFamily, difficulty: DEFAULT_DIFFICULTY },
+        actor,
+      );
       // Assigning it releases it — otherwise RLS would hide it from the students
       // who are supposed to write it.
       await reviewWritingPrompt(prompt.id, "approved", actor);
