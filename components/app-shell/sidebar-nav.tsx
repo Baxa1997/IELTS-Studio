@@ -88,10 +88,18 @@ const TEACHER: Section[] = [
   },
 ];
 
+/** The platform owner: no organization, so none of the org menus apply. */
+const SUPER_ADMIN: Section[] = [
+  {
+    items: [{ label: "Platform", href: "/admin", icon: LayoutDashboard }],
+  },
+];
+
 /** Only students who actually belong to a center group get an Assignments link —
  *  a solo B2C learner has nothing to put behind it. `pending` is the count of
  *  homework they haven't finished; it rides the existing badge slot. */
 function sectionsFor(role: string, showAssignments: boolean, pending: number): Section[] {
+  if (role === "super_admin") return SUPER_ADMIN;
   if (role !== "student") return role === "center_admin" ? ADMIN : TEACHER;
   if (!showAssignments) return STUDENT;
   const [home, ...rest] = STUDENT;

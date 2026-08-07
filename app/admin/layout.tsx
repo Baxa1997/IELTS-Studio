@@ -1,28 +1,46 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
+import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
-import { SignOutButton } from "@/app/(auth)/sign-out-button";
+import { AppShell } from "@/components/app-shell/shell";
 import { requireSuperAdmin } from "@/lib/auth";
 
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-hanken",
+  display: "swap",
+});
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
+
+/**
+ * The platform console runs in the SAME shell as the rest of the app — same
+ * rail, same chrome, same type. Only the menu and the pages differ, because a
+ * super admin has no organization and a different job.
+ *
+ * The font variables have to be declared here too: this route group sits
+ * outside (app), so it doesn't inherit that layout's `lp-root` wrapper.
+ */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = await requireSuperAdmin();
+  const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-6 py-3">
-          <Link href="/admin" className="font-semibold tracking-tight">
-            IELTS W&amp;R · Platform
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="text-right leading-tight">
-              <p className="text-sm">{user.email}</p>
-              <p className="text-muted-foreground text-xs">Super admin</p>
-            </div>
-            <SignOutButton />
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">{children}</main>
+    <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
+      <AppShell
+        role="super_admin"
+        home="/admin"
+        name={user.email ?? "Platform"}
+        roleLabel="Super admin"
+        email={user.email}
+        initialCollapsed={collapsed}
+      >
+        {children}
+      </AppShell>
     </div>
   );
 }

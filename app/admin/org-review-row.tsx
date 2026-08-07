@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { FAINT, INK, SANS } from "@/components/console/page-ui";
 import { Button } from "@/components/ui/button";
 
 import { reviewOrganization, type ReviewState } from "./actions";
@@ -23,12 +24,12 @@ export function OrgReviewRow({
   const [state, formAction, pending] = useActionState(reviewOrganization, initialState);
 
   return (
-    <li className="py-3">
+    <li style={{ padding: "11px 0", fontFamily: SANS, fontSize: 14.5, color: INK }}>
       <form action={formAction} className="flex flex-wrap items-center justify-between gap-3">
         <input type="hidden" name="org_id" value={orgId} />
-        <span className="min-w-0">
-          <span className="block truncate font-medium">{name}</span>
-          <span className="text-muted-foreground block truncate text-xs">
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontWeight: 600 }}>{name}</span>
+          <span style={{ display: "block", fontSize: 12.5, color: FAINT, marginTop: 2 }}>
             {email ?? "no email"} · applied {applied}
           </span>
         </span>
