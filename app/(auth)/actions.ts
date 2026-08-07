@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 import { applyPendingPlan } from "@/lib/plan/apply-pending";
+import { placeUserInOrg } from "@/lib/provision";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -212,8 +213,9 @@ export async function acceptInvite(
     email: invite.email,
     password,
     email_confirm: true,
-    // organization_id present -> handle_new_user skips auto-provisioning; we
-    // create the profile explicitly below in the invited org/role.
+    // Recorded for getSession, but it does NOT stop handle_new_user building a
+    // personal org — Supabase writes app_metadata after the INSERT. placeUserInOrg
+    // reconciles that below.
     app_metadata: { organization_id: invite.organization_id, role: invite.role },
     user_metadata: { full_name: fullName || null },
   });
@@ -224,13 +226,12 @@ export async function acceptInvite(
     };
   }
 
-  const { error: profileError } = await admin.from("profiles").insert({
-    id: created.user.id,
-    organization_id: invite.organization_id,
+  const { error: placeError } = await placeUserInOrg(admin, created.user.id, {
+    organizationId: invite.organization_id,
     role: invite.role,
-    full_name: fullName || null,
+    fullName: fullName || null,
   });
-  if (profileError) {
+  if (placeError) {
     // Roll back the orphaned auth user so the invite can be retried cleanly.
     await admin.auth.admin.deleteUser(created.user.id);
     return { error: "Could not set up your profile. Please contact your center." };

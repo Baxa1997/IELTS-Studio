@@ -63,27 +63,65 @@ function check(name, ok, detail = "") {
   }
 }
 
-async function makeUser(email, metadata) {
+/** Create an auth user. Pass `appMetadata` with an organization_id to make
+ *  handle_new_user skip provisioning — that is exactly how the server
+ *  pre-provisions invited staff and teacher-created students. Omit it and the
+ *  trigger builds a personal org, which is right only for a self-signup. */
+async function makeUser(email, userMetadata, appMetadata) {
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password: PASSWORD,
     email_confirm: true, // no confirmation mail; the trigger still fires
-    user_metadata: metadata,
+    user_metadata: userMetadata,
+    ...(appMetadata ? { app_metadata: appMetadata } : {}),
   });
   if (error) throw new Error(`createUser ${email}: ${error.message}`);
   created.users.push(data.user.id);
   return data.user;
 }
 
+/** Mirrors lib/provision.ts `placeUserInOrg`: handle_new_user has already built
+ *  this user a personal workspace (it cannot see app_metadata at INSERT time),
+ *  so drop that workspace — which cascades the profile — then claim the id. */
+async function placeInOrg(userId, orgId, role, fullName, username) {
+  const { data: stray } = await admin
+    .from("profiles")
+    .select("organization_id")
+    .eq("id", userId)
+    .maybeSingle();
+  let removedOrgId = null;
+  if (stray && stray.organization_id !== orgId) {
+    await admin.from("organizations").delete().eq("id", stray.organization_id).eq("kind", "personal");
+    removedOrgId = stray.organization_id;
+  }
+  const { error } = await admin.from("profiles").upsert(
+    {
+      id: userId,
+      organization_id: orgId,
+      role,
+      full_name: fullName,
+      ...(username ? { username } : {}),
+    },
+    { onConflict: "id" },
+  );
+  if (error) throw new Error(`placeInOrg ${role}: ${error.message}`);
+  return removedOrgId;
+}
+
 async function cleanup() {
   console.log("\n── Cleanup ──");
-  for (const id of created.users) {
-    const { error } = await admin.auth.admin.deleteUser(id);
-    console.log(`  ${error ? "⚠️ " : "🗑 "} user ${id.slice(0, 8)}${error ? ` — ${error.message}` : ""}`);
-  }
+  // Org FIRST. Deleting a teacher while they still own a group fails: the
+  // composite FK (teacher_id, organization_id) -> profiles is ON DELETE SET
+  // NULL, and nulling it would violate groups.organization_id NOT NULL.
+  // Dropping the org cascades the groups out of the way first.
   if (created.orgId) {
     const { error } = await admin.from("organizations").delete().eq("id", created.orgId);
     console.log(`  ${error ? "⚠️ " : "🗑 "} org ${created.orgId.slice(0, 8)}${error ? ` — ${error.message}` : ""}`);
+  }
+  for (const id of created.users) {
+    const { error } = await admin.auth.admin.deleteUser(id);
+    const why = error ? ` — ${error.message || JSON.stringify(error)}` : "";
+    console.log(`  ${error ? "⚠️ " : "🗑 "} user ${id.slice(0, 8)}${why}`);
   }
 }
 
@@ -163,13 +201,37 @@ try {
   // ── 4. Teacher, created by the center admin ────────────────────────────
   console.log("\n── 4. Teacher + group (RLS: teachers own their groups) ──");
   const teacherEmail = `${TAG}-teacher@example.com`;
-  const teacher = await makeUser(teacherEmail, { pre_provisioned: true, full_name: "QA Teacher" });
-  await admin.from("profiles").insert({
-    id: teacher.id,
-    organization_id: created.orgId,
-    role: "teacher",
-    full_name: "QA Teacher",
-  });
+  const teacher = await makeUser(
+    teacherEmail,
+    { full_name: "QA Teacher" },
+    { organization_id: created.orgId },
+  );
+  const strayOrgId = await placeInOrg(teacher.id, created.orgId, "teacher", "QA Teacher");
+  const { data: teacherProfile } = await admin
+    .from("profiles")
+    .select("organization_id, role")
+    .eq("id", teacher.id)
+    .single();
+  check(
+    "staff land in the CENTER, not an auto-made personal org",
+    teacherProfile?.organization_id === created.orgId && teacherProfile?.role === "teacher",
+    `org ${teacherProfile?.organization_id?.slice(0, 8)} role ${teacherProfile?.role}`,
+  );
+  // The exact workspace the trigger made for THIS user must be gone, not merely
+  // detached — matching on name would also catch residue from an earlier run.
+  check(
+    "the trigger's personal workspace was reclaimed",
+    strayOrgId !== null,
+    "trigger did not create one — has Supabase started exposing app_metadata at INSERT?",
+  );
+  if (strayOrgId) {
+    const { data: leftover } = await admin
+      .from("organizations")
+      .select("id")
+      .eq("id", strayOrgId)
+      .maybeSingle();
+    check("...and left nothing orphaned", leftover === null);
+  }
 
   const teacherClient = await clientFor(teacherEmail, PASSWORD);
   const { data: group, error: groupError } = await teacherClient
@@ -189,17 +251,12 @@ try {
   console.log("\n── 5. Students (created outright, no invite) ──");
   const studentIds = [];
   for (const n of ["a", "b"]) {
-    const s = await makeUser(`${TAG}-student-${n}@example.com`, {
-      pre_provisioned: true,
-      full_name: `QA Student ${n.toUpperCase()}`,
-    });
-    await admin.from("profiles").insert({
-      id: s.id,
-      organization_id: created.orgId,
-      role: "student",
-      full_name: `QA Student ${n.toUpperCase()}`,
-      username: `${TAG}-${n}`,
-    });
+    const s = await makeUser(
+      `${TAG}-student-${n}@example.com`,
+      { full_name: `QA Student ${n.toUpperCase()}` },
+      { organization_id: created.orgId },
+    );
+    await placeInOrg(s.id, created.orgId, "student", `QA Student ${n.toUpperCase()}`, `${TAG}-${n}`);
     await admin.from("group_members").insert({
       group_id: group.id,
       student_id: s.id,

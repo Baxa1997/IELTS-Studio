@@ -70,6 +70,19 @@ if (userError || !created?.user) {
   process.exit(1);
 }
 
+// 2b) handle_new_user has just built this user a personal workspace: Supabase
+// writes app_metadata AFTER the insert, so the trigger's skip branch never sees
+// the organization_id above. Drop that workspace (deleting it cascades the
+// profile) before claiming the id for the real one. See lib/provision.ts.
+const { data: stray } = await admin
+  .from("profiles")
+  .select("organization_id")
+  .eq("id", created.user.id)
+  .maybeSingle();
+if (stray && stray.organization_id !== org.id) {
+  await admin.from("organizations").delete().eq("id", stray.organization_id).eq("kind", "personal");
+}
+
 // 3) profile
 const { error: profileError } = await admin.from("profiles").insert({
   id: created.user.id,

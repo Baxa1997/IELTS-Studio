@@ -10,6 +10,7 @@ import { uploadAvatar } from "@/lib/console/avatars";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
+import { placeUserInOrg } from "@/lib/provision";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
 import { instantiateLibraryTest } from "@/lib/reading/service";
@@ -459,8 +460,10 @@ export async function addStudentAccount(
     email,
     password,
     email_confirm: true,
-    // organization_id present -> handle_new_user skips auto-provisioning; the
-    // profile is created explicitly below, in this center's org.
+    // Kept as the record of who this user is, and read by getSession. It does
+    // NOT stop handle_new_user provisioning a personal org — Supabase writes
+    // app_metadata after the INSERT, so the trigger never sees it. placeUserInOrg
+    // below undoes that.
     app_metadata: { organization_id: profile.organization_id, role: "student" },
     user_metadata: { full_name: fullName },
   });
@@ -473,17 +476,16 @@ export async function addStudentAccount(
     };
   }
 
-  const { error: profileError } = await admin.from("profiles").insert({
-    id: created.user.id,
-    organization_id: profile.organization_id,
+  const { error: placeError } = await placeUserInOrg(admin, created.user.id, {
+    organizationId: profile.organization_id,
     role: "student",
-    full_name: fullName,
+    fullName,
     username: login,
   });
-  if (profileError) {
+  if (placeError) {
     // Roll back the orphaned auth user so the email can be retried cleanly.
     await admin.auth.admin.deleteUser(created.user.id);
-    return { error: `Could not set up the student's profile: ${profileError.message}` };
+    return { error: placeError };
   }
 
   // Optional photo. A failed upload must not cost them the account — the

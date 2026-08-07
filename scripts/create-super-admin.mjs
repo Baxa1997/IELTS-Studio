@@ -55,7 +55,7 @@ const admin = createClient(url, serviceKey, {
 
 const appMetadata = { role: "super_admin", ...(login ? { username: login } : {}) };
 
-const { error } = await admin.auth.admin.createUser({
+const { data: created, error } = await admin.auth.admin.createUser({
   email,
   password,
   email_confirm: true,
@@ -80,6 +80,28 @@ if (error) {
     process.exit(1);
   }
   action = "updated";
+}
+
+// handle_new_user gives every new auth user a personal workspace. Its skip
+// branch reads app_metadata.role, which Supabase writes AFTER the insert — so
+// the trigger never sees it and a super admin ends up with an org and a student
+// profile they must not have. Strip it back off. (Idempotent: a rerun finds
+// nothing.) See lib/provision.ts for the same fix on the app side.
+const userId = created?.user?.id ?? (await findUserByEmail(admin, email))?.id;
+if (userId) {
+  const { data: stray } = await admin
+    .from("profiles")
+    .select("organization_id")
+    .eq("id", userId)
+    .maybeSingle();
+  if (stray) {
+    await admin
+      .from("organizations")
+      .delete()
+      .eq("id", stray.organization_id)
+      .eq("kind", "personal");
+    console.log("   Removed the auto-provisioned personal workspace.");
+  }
 }
 
 console.log(`✅ Super admin ${action}`);
