@@ -94,6 +94,21 @@ it fails with `535 authentication failed`.
 These go in three places: `.env.local` (dev), Vercel project env vars (prod),
 and Supabase → Auth → SMTP (host/port/user/pass plus sender name+address).
 
+### ⚠️ The key expires two ways
+
+Brevo SMTP keys expire on their set date **and after 90 days of inactivity**,
+whichever comes first.
+
+- Key `engprogress-app`, Standard (64), created **2026-08-07**, expires **2027-08-07**.
+
+The inactivity clock is the dangerous one. Center approvals are rare, so a quiet
+quarter kills the key on its own. The failure is silent: sending just starts
+returning `535`, the approval still succeeds, and the admin UI reports the email
+was not sent — which reads like an app bug.
+
+**If email stops working after a quiet period, regenerate the key before
+debugging anything else.** `node scripts/test-email.mjs` tells you in seconds.
+
 ## Verify before trusting it
 
 ```bash
