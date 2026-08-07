@@ -32,14 +32,24 @@ const inputStyle: React.CSSProperties = {
   background: "#fff",
 };
 
+type Audience = "individual" | "organization";
+
 /**
  * Brand sign-in panel (Option A). Owns both auth paths so the look stays
  * cohesive: Google OAuth (client redirect) and email/password via the shared
  * `signIn` server action. No AI or business logic here — just the form.
+ *
+ * The Individual / Organization switch is presentation only — BOTH tabs post
+ * the same credentials to the same action, and the app routes by the role
+ * already on the account. That is deliberate: a tab that actually filtered
+ * would let someone pick "wrong" and be told their correct password failed.
+ * What the switch changes is context — Google (which no center account uses)
+ * and the sign-up link that makes sense for who you are.
  */
 export function SignInForm({ next }: { next?: string | null }) {
   const [state, formAction, pending] = useActionState(signIn, initialState);
   const [googlePending, setGooglePending] = useState(false);
+  const [audience, setAudience] = useState<Audience>("individual");
 
   async function signInWithGoogle() {
     setGooglePending(true);
@@ -59,47 +69,128 @@ export function SignInForm({ next }: { next?: string | null }) {
 
   return (
     <div>
-      {/* Google */}
-      <button
-        type="button"
-        onClick={() => void signInWithGoogle()}
-        disabled={googlePending}
-        className="lp-ghost-btn"
+      {/* Individual / Organization */}
+      <div
+        role="tablist"
+        aria-label="Account type"
         style={{
-          width: "100%",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          background: "#fff",
-          border: "1px solid #DAD8C9",
-          borderRadius: 11,
-          padding: "12px 16px",
-          fontFamily: SANS,
-          fontWeight: 600,
-          fontSize: 15,
-          color: INK,
-          cursor: googlePending ? "default" : "pointer",
-          opacity: googlePending ? 0.7 : 1,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 4,
+          background: "#EFEDE0",
+          border: "1px solid #E1DECD",
+          borderRadius: 12,
+          padding: 4,
+          marginBottom: 22,
         }}
       >
-        <GoogleG />
-        {googlePending ? "Redirecting…" : "Continue with Google"}
-      </button>
-
-      {/* divider */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
-        <span style={{ height: 1, flex: 1, background: "#E6E3D4" }} />
-        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 12, color: "#9a998c" }}>or sign in with email</span>
-        <span style={{ height: 1, flex: 1, background: "#E6E3D4" }} />
+        {(
+          [
+            ["individual", "Individual"],
+            ["organization", "Organization"],
+          ] as const
+        ).map(([value, label]) => {
+          const on = audience === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setAudience(value)}
+              style={{
+                border: "none",
+                borderRadius: 9,
+                padding: "9px 12px",
+                fontFamily: SANS,
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                background: on ? "#fff" : "transparent",
+                color: on ? INK : "#6b6e84",
+                boxShadow: on ? "0 1px 3px rgba(26,28,51,.12)" : "none",
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
+
+      {audience === "individual" ? (
+        <>
+          {/* Google */}
+          <button
+            type="button"
+            onClick={() => void signInWithGoogle()}
+            disabled={googlePending}
+            className="lp-ghost-btn"
+            style={{
+              width: "100%",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              background: "#fff",
+              border: "1px solid #DAD8C9",
+              borderRadius: 11,
+              padding: "12px 16px",
+              fontFamily: SANS,
+              fontWeight: 600,
+              fontSize: 15,
+              color: INK,
+              cursor: googlePending ? "default" : "pointer",
+              opacity: googlePending ? 0.7 : 1,
+            }}
+          >
+            <GoogleG />
+            {googlePending ? "Redirecting…" : "Continue with Google"}
+          </button>
+
+          {/* divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "20px 0" }}>
+            <span style={{ height: 1, flex: 1, background: "#E6E3D4" }} />
+            <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 12, color: "#9a998c" }}>or sign in with email</span>
+            <span style={{ height: 1, flex: 1, background: "#E6E3D4" }} />
+          </div>
+        </>
+      ) : (
+        <p
+          style={{
+            fontFamily: SANS,
+            fontWeight: 400,
+            fontSize: 13.5,
+            lineHeight: 1.55,
+            color: "#6b6e84",
+            background: "#fff",
+            border: "1px solid #E6E3D4",
+            borderRadius: 11,
+            padding: "11px 13px",
+            margin: "0 0 20px",
+          }}
+        >
+          Sign in with your organization email. Teachers and students of a center use this too —
+          the credentials your center gave you.
+        </p>
+      )}
 
       {/* email + password */}
       <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {next ? <input type="hidden" name="next" value={next} /> : null}
         <div>
-          <label htmlFor="email" style={labelStyle}>Email</label>
-          <input id="email" name="email" type="email" autoComplete="email" required placeholder="you@email.com" className="lp-input" style={inputStyle} />
+          <label htmlFor="email" style={labelStyle}>
+            {audience === "organization" ? "Organization email" : "Email"}
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder={audience === "organization" ? "center@example.com" : "you@email.com"}
+            className="lp-input"
+            style={inputStyle}
+          />
         </div>
         <div>
           <label htmlFor="password" style={labelStyle}>Password</label>
@@ -136,6 +227,24 @@ export function SignInForm({ next }: { next?: string | null }) {
         >
           {pending ? "Signing in…" : "Sign in"}
         </button>
+
+        {audience === "organization" ? (
+          <p
+            style={{
+              fontFamily: SANS,
+              fontSize: 13.5,
+              color: "#6b6e84",
+              textAlign: "center",
+              margin: 0,
+            }}
+          >
+            No organization account?{" "}
+            <a href="/sign-up" style={{ fontWeight: 600, color: INDIGO, textDecoration: "none" }}>
+              Apply for one
+            </a>{" "}
+            — our team reviews it before it goes live.
+          </p>
+        ) : null}
       </form>
     </div>
   );
