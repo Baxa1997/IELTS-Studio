@@ -84,12 +84,21 @@ the record — but only after Brevo is verified and working. One change at a tim
 | --- | --- |
 | `SMTP_HOST` | `smtp-relay.brevo.com` |
 | `SMTP_PORT` | `587` |
-| `SMTP_USER` | the login on Brevo's SMTP tab (an account email, or `…@smtp-brevo.com`) |
+| `SMTP_USER` | `b4c665001@smtp-brevo.com` |
 | `SMTP_PASS` | the **SMTP key** — *not* the Brevo account password |
 | `SMTP_FROM` | `EngProgress <no-reply@engprogress.com>` |
 
-The most common failure is using the account password instead of the SMTP key;
-it fails with `535 authentication failed`.
+`SMTP_USER` is **not** the Brevo account email — Brevo issues a dedicated login,
+shown under *Your SMTP Settings*. Using the account email fails with
+`535 5.7.8 Authentication failed`, as does using the account password in place of
+the SMTP key.
+
+### ⚠️ Never enable "block unauthorized IP addresses"
+
+The SMTP & API page offers to restrict sending to an allow-list of IPs. **Do not
+turn this on.** Production runs on Vercel serverless, whose egress IPs rotate
+with no stable range to authorize, so enabling it breaks sending in production
+while local dev keeps working — a confusing failure to chase down later.
 
 These go in three places: `.env.local` (dev), Vercel project env vars (prod),
 and Supabase → Auth → SMTP (host/port/user/pass plus sender name+address).
