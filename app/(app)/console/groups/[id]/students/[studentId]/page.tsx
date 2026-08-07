@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { StudentPhoto } from "@/components/console/student-photo";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupDetail } from "@/lib/console/groups";
 import { loadStudentReport, type WeaknessRow } from "@/lib/console/student-report";
+import { cn } from "@/lib/utils";
 
 const SKILL_LABEL = {
   writing: "Writing",
@@ -43,13 +46,18 @@ export default async function StudentReportPage({
         >
           <ArrowLeft className="size-4" /> {group.name}
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">{report.name}</h1>
-        <p className="text-muted-foreground">
-          {report.recentCount} practice{report.recentCount === 1 ? "" : "s"} in the last 30 days
-          {report.lastActive
-            ? ` · last active ${new Date(report.lastActive).toLocaleDateString()}`
-            : " · no practice yet"}
-        </p>
+        <div className="flex items-center gap-3">
+          <StudentPhoto name={report.name} url={report.photoUrl} size={48} />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{report.name}</h1>
+            <p className="text-muted-foreground">
+              {report.recentCount} practice{report.recentCount === 1 ? "" : "s"} in the last 30 days
+              {report.lastActive
+                ? ` · last active ${new Date(report.lastActive).toLocaleDateString()}`
+                : " · no practice yet"}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
@@ -85,39 +93,69 @@ export default async function StudentReportPage({
         <CardHeader>
           <CardTitle className="text-base">Practice history</CardTitle>
           <CardDescription>
-            Homework and their own practice — {report.homework.done} of {report.homework.assigned}{" "}
-            assigned {report.homework.assigned === 1 ? "task" : "tasks"} completed.
+            Every practice with its date and band — open any one for the full marked-up report.{" "}
+            {report.homework.done} of {report.homework.assigned} assigned{" "}
+            {report.homework.assigned === 1 ? "task" : "tasks"} completed.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <ul className="divide-y text-sm">
-            {report.practices.map((p) => (
-              <li key={`${p.skill}-${p.id}`} className="flex items-center justify-between gap-4 py-2">
-                <span className="min-w-0">
-                  <span className="block truncate">
+        <CardContent className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-muted-foreground border-b text-left text-xs">
+                <th className="py-2 pr-4 font-medium">Date</th>
+                <th className="py-2 pr-4 font-medium">Practice</th>
+                <th className="py-2 pr-4 font-medium">Score</th>
+                <th className="py-2 pr-4 text-right font-medium">Band</th>
+                <th className="py-2 text-right font-medium">Report</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.practices.map((p) => (
+                <tr key={`${p.skill}-${p.id}`} className="border-b last:border-0">
+                  <td className="text-muted-foreground py-2 pr-4 whitespace-nowrap">
+                    {new Date(p.when).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
+                  <td className="py-2 pr-4">
                     {SKILL_LABEL[p.skill]}
                     {p.assigned ? (
                       <span className="bg-primary/10 text-primary ml-2 rounded-full px-2 py-0.5 text-xs font-medium">
                         Homework
                       </span>
                     ) : null}
-                  </span>
-                  <span className="text-muted-foreground block text-xs">
-                    {new Date(p.when).toLocaleDateString()}
-                    {p.score ? ` · ${p.score}` : ""}
-                  </span>
-                </span>
-                <span className="shrink-0 font-semibold tabular-nums">
-                  {p.band != null ? p.band.toFixed(1) : "—"}
-                </span>
-              </li>
-            ))}
-            {report.practices.length === 0 ? (
-              <li className="text-muted-foreground py-2">
-                This student hasn&apos;t practised yet.
-              </li>
-            ) : null}
-          </ul>
+                  </td>
+                  <td className="text-muted-foreground py-2 pr-4 whitespace-nowrap">
+                    {p.score ?? "—"}
+                  </td>
+                  <td className="py-2 pr-4 text-right font-semibold tabular-nums">
+                    {p.band != null ? p.band.toFixed(1) : "—"}
+                  </td>
+                  <td className="py-2 text-right">
+                    {p.reportHref ? (
+                      <Link
+                        href={p.reportHref}
+                        className={cn(buttonVariants({ size: "sm", variant: "outline" }))}
+                      >
+                        Report
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Not graded</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {report.practices.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-muted-foreground py-3">
+                    This student hasn&apos;t practised yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     </div>

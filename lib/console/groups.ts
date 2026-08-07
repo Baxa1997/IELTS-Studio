@@ -1,6 +1,7 @@
 import "server-only";
 
 import { type Profile } from "@/lib/auth";
+import { signAvatars } from "@/lib/console/avatars";
 import { createClient } from "@/lib/supabase/server";
 
 export interface GroupSummary {
@@ -20,6 +21,8 @@ export interface GroupMemberRow {
   id: string;
   name: string;
   joinedAt: string;
+  /** Signed URL for their photo, or null when they don't have one. */
+  photoUrl: string | null;
 }
 
 export interface GroupDetail {
@@ -117,14 +120,22 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
   const memberRows = membersRes.data ?? [];
   const studentIds = memberRows.map((m) => m.student_id as string);
   const names = new Map<string, string>();
+  const photos = new Map<string, string>();
   if (studentIds.length > 0) {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, avatar_path")
       .in("id", studentIds);
-    for (const p of profiles ?? []) {
+    const rows = profiles ?? [];
+    for (const p of rows) {
       names.set(p.id as string, (p.full_name as string | null) ?? "—");
     }
+    // One signing call for the whole roster.
+    const signed = await signAvatars(rows.map((p) => (p.avatar_path as string | null) ?? null));
+    rows.forEach((p, i) => {
+      const url = signed[i];
+      if (url) photos.set(p.id as string, url);
+    });
   }
 
   return {
@@ -136,6 +147,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
       id: m.student_id as string,
       name: names.get(m.student_id as string) ?? "—",
       joinedAt: m.joined_at as string,
+      photoUrl: photos.get(m.student_id as string) ?? null,
     })),
     pendingInvites: (invitesRes.data ?? []).map((i) => ({
       email: i.email as string,

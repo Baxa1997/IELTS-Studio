@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { StudentPhoto } from "@/components/console/student-photo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
@@ -18,11 +19,7 @@ import { AssignPanel } from "./assign-panel";
 /** One group: its roster, outstanding invites, and (for the admin) the teacher
  *  assignment. RLS decides visibility — a teacher who doesn't own this group
  *  can't read its membership, so the page 404s for them. */
-export default async function GroupDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 
@@ -38,7 +35,9 @@ export default async function GroupDetailPage({
   // service-role client (exactly as the student read hub does).
   const admin = createAdminClient();
   const [{ teachers }, assignments, activity, libTestsRes] = await Promise.all([
-    isAdmin ? loadGroups(profile) : Promise.resolve({ teachers: [] as { id: string; name: string }[] }),
+    isAdmin
+      ? loadGroups(profile)
+      : Promise.resolve({ teachers: [] as { id: string; name: string }[] }),
     loadGroupAssignments(group.id),
     loadGroupActivity(group.members.map((m) => m.id)),
     admin
@@ -87,14 +86,18 @@ export default async function GroupDetailPage({
                 <li key={m.id} className="flex items-center justify-between gap-4 py-2">
                   <Link
                     href={`/console/groups/${group.id}/students/${m.id}`}
-                    className="min-w-0 flex-1 hover:underline"
+                    className="flex min-w-0 flex-1 items-center gap-3 hover:underline"
                   >
-                    <span className="block truncate font-medium">{m.name}</span>
-                    <span className="text-muted-foreground block text-xs">
-                      {act?.count30d ?? 0} practice{(act?.count30d ?? 0) === 1 ? "" : "s"} in 30 days
-                      {act?.lastActive
-                        ? ` · last active ${new Date(act.lastActive).toLocaleDateString()}`
-                        : " · never practised"}
+                    <StudentPhoto name={m.name} url={m.photoUrl} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{m.name}</span>
+                      <span className="text-muted-foreground block text-xs">
+                        {act?.count30d ?? 0} practice{(act?.count30d ?? 0) === 1 ? "" : "s"} in 30
+                        days
+                        {act?.lastActive
+                          ? ` · last active ${new Date(act.lastActive).toLocaleDateString()}`
+                          : " · never practised"}
+                      </span>
                     </span>
                   </Link>
                   <RemoveMemberButton groupId={group.id} studentId={m.id} />
@@ -205,11 +208,7 @@ export default async function GroupDetailPage({
             <CardTitle className="text-base">Group settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <AssignTeacherForm
-              groupId={group.id}
-              teacherId={group.teacherId}
-              teachers={teachers}
-            />
+            <AssignTeacherForm groupId={group.id} teacherId={group.teacherId} teachers={teachers} />
             <div className="border-t pt-4">
               <DeleteGroupButton groupId={group.id} />
             </div>

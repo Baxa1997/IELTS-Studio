@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -105,8 +105,11 @@ function QuestionRow({ r }: { r: StoredQResult }) {
  * attempts render exactly as they were marked.
  */
 export default async function ListeningResultPage({ params }: PageProps) {
-  const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect("/console");
+  // Students see their own; center staff open this from a student's practice
+  // report. No role check is needed — RLS decides which attempts are readable
+  // (own row for a student, can_view_student for staff), so an attempt they
+  // shouldn't see simply isn't found below.
+  await requireOrgUser();
   const { id } = await params;
 
   const supabase = await createClient();

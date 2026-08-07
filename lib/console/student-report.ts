@@ -1,5 +1,6 @@
 import "server-only";
 
+import { signAvatar } from "@/lib/console/avatars";
 import { createClient } from "@/lib/supabase/server";
 
 export type PracticeSkill = "writing" | "reading" | "listening" | "speaking";
@@ -13,6 +14,12 @@ export interface PracticeRow {
   score: string | null;
   /** Homework when this content was assigned to one of their groups. */
   assigned: boolean;
+  /**
+   * The full marked-up feedback for THIS attempt — the same page the student
+   * sees, reused rather than rebuilt. Null while a piece of work has no report
+   * yet (an unsubmitted draft, an abandoned mock).
+   */
+  reportHref: string | null;
 }
 
 export interface WeaknessRow {
@@ -25,6 +32,7 @@ export interface WeaknessRow {
 export interface StudentReport {
   studentId: string;
   name: string;
+  photoUrl: string | null;
   bands: { skill: PracticeSkill; current: number | null; target: number | null }[];
   practices: PracticeRow[];
   /** Total practices in the last 30 days, across all four skills. */
@@ -62,7 +70,7 @@ export async function loadStudentReport(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name")
+    .select("id, full_name, avatar_path")
     .eq("id", studentId)
     .maybeSingle();
   if (!profile) return null;
@@ -146,6 +154,7 @@ export async function loadStudentReport(
       band: grading?.band ?? null,
       score: null,
       assigned: e.prompt_id ? assignedPrompts.has(e.prompt_id as string) : false,
+      reportHref: grading ? `/activities/essay/${e.id}` : null,
     });
   }
 
@@ -167,6 +176,7 @@ export async function loadStudentReport(
           ? `${r.correct_count ?? 0} / ${r.total_questions}`
           : null,
       assigned: r.test_id ? assignedTests.has(r.test_id as string) : false,
+      reportHref: r.status === "graded" ? `/activities/reading/${r.id}` : null,
     });
   }
 
@@ -181,6 +191,7 @@ export async function loadStudentReport(
       band: Number.isFinite(band) ? band : null,
       score: l.max_score ? `${l.score ?? 0} / ${l.max_score}` : null,
       assigned: false,
+      reportHref: `/listen/results/${l.id}`,
     });
   }
 
@@ -195,6 +206,7 @@ export async function loadStudentReport(
       band: Number.isFinite(band) ? band : null,
       score: null,
       assigned: false,
+      reportHref: `/speak/mock/${s.id}`,
     });
   }
 
@@ -206,6 +218,7 @@ export async function loadStudentReport(
   return {
     studentId,
     name: (profile.full_name as string | null) ?? "—",
+    photoUrl: await signAvatar((profile.avatar_path as string | null) ?? null),
     bands: (["writing", "reading", "listening", "speaking"] as PracticeSkill[]).map((skill) => {
       const est = (estimatesRes.data ?? []).find((e) => e.skill === skill);
       return {

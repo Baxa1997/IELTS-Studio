@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { requireOrgUser } from "@/lib/auth";
+import { uploadAvatar } from "@/lib/console/avatars";
 import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
@@ -28,6 +29,8 @@ export interface AddStudentState {
   error?: string;
   /** Credentials to hand to the student — shown once, right after creation. */
   created?: { name: string; email: string; password: string };
+  /** Non-fatal problem (e.g. the optional photo failed) — the account exists. */
+  warning?: string;
 }
 
 /**
@@ -444,6 +447,19 @@ export async function addStudentAccount(
     return { error: `Could not set up the student's profile: ${profileError.message}` };
   }
 
+  // Optional photo. A failed upload must not cost them the account — the
+  // teacher just sees the reason and can add a picture later.
+  const photo = formData.get("photo");
+  let photoWarning: string | null = null;
+  if (photo instanceof File && photo.size > 0) {
+    const { path, error } = await uploadAvatar(photo, profile.organization_id, created.user.id);
+    if (path) {
+      await admin.from("profiles").update({ avatar_path: path }).eq("id", created.user.id);
+    } else {
+      photoWarning = error ?? "The photo could not be saved.";
+    }
+  }
+
   const { error: memberError } = await admin.from("group_members").insert({
     group_id: groupId,
     student_id: created.user.id,
@@ -459,7 +475,7 @@ export async function addStudentAccount(
   }
 
   revalidatePath(`/console/groups/${groupId}`);
-  return { created: { name: fullName, email, password } };
+  return { created: { name: fullName, email, password }, warning: photoWarning ?? undefined };
 }
 
 /** Readable throwaway password — the student can change it later. Avoids

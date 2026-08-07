@@ -56,6 +56,18 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               minLength={8}
             />
           </div>
+          <div className="w-56 space-y-2">
+            <Label htmlFor="student-photo">
+              Photo <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="student-photo"
+              name="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="h-8 py-0.5 text-xs file:mr-2 file:h-6 file:rounded file:border file:px-2 file:text-xs"
+            />
+          </div>
           <Button type="submit" disabled={pending}>
             {pending ? "Creating…" : "Add student"}
           </Button>
@@ -65,6 +77,12 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
       {state.error ? (
         <p className="text-destructive text-sm" role="alert">
           {state.error}
+        </p>
+      ) : null}
+
+      {state.warning ? (
+        <p className="text-sm text-amber-600" role="status">
+          {state.warning}
         </p>
       ) : null}
 

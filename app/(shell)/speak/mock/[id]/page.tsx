@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -39,8 +39,10 @@ interface Turn {
  */
 export default async function MockResultPage({ params }: PageProps) {
   const { id } = await params;
-  const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect("/console");
+  // Students see their own; center staff open this from a student's practice
+  // report. RLS decides (own row for a student, can_view_student for staff), so
+  // a session they shouldn't see simply isn't found below.
+  await requireOrgUser();
 
   const supabase = await createClient();
   const { data: s } = await supabase
