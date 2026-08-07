@@ -26,6 +26,21 @@ export function OrgSignUpForm() {
         <Input id="org_email" name="email" type="email" autoComplete="email" required />
       </div>
       <div className="space-y-2">
+        <Label htmlFor="org_login">
+          Login <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <Input
+          id="org_login"
+          name="login"
+          autoComplete="off"
+          placeholder="cambridge-tashkent"
+          pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,30}[A-Za-z0-9]"
+        />
+        <p className="text-muted-foreground text-xs">
+          A short name to sign in with instead of the email. You can always use the email too.
+        </p>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="org_password">Password</Label>
         <Input
           id="org_password"

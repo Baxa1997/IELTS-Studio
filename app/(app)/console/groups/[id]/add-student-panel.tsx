@@ -19,8 +19,8 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
   const [state, formAction, pending] = useActionState(addStudentAccount, initial);
   const [copied, setCopied] = useState(false);
 
-  async function copyCredentials(email: string, password: string) {
-    await navigator.clipboard.writeText(`Email: ${email}\nPassword: ${password}`);
+  async function copyCredentials(login: string, password: string) {
+    await navigator.clipboard.writeText(`Login: ${login}\nPassword: ${password}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
@@ -35,15 +35,27 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
             <Label htmlFor="student-name">Full name</Label>
             <Input id="student-name" name="full_name" autoComplete="off" required />
           </div>
-          <div className="min-w-48 flex-1 space-y-2">
-            <Label htmlFor="student-email">Email</Label>
+          <div className="min-w-40 flex-1 space-y-2">
+            <Label htmlFor="student-login">Login</Label>
+            <Input
+              id="student-login"
+              name="login"
+              autoComplete="off"
+              placeholder="aziz.karimov"
+              pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,30}[A-Za-z0-9]"
+              required
+            />
+          </div>
+          <div className="min-w-44 flex-1 space-y-2">
+            <Label htmlFor="student-email">
+              Email <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
             <Input
               id="student-email"
               name="email"
               type="email"
               autoComplete="off"
               placeholder="student@example.com"
-              required
             />
           </div>
           <div className="w-44 space-y-2">
@@ -94,7 +106,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="bg-background rounded border px-2 py-1 font-mono text-xs">
-              {state.created.email}
+              {state.created.login}
             </code>
             <code className="bg-background rounded border px-2 py-1 font-mono text-xs">
               {state.created.password}
@@ -103,11 +115,16 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => copyCredentials(state.created!.email, state.created!.password)}
+              onClick={() => copyCredentials(state.created!.login, state.created!.password)}
             >
               {copied ? "Copied" : "Copy both"}
             </Button>
           </div>
+          <p className="text-muted-foreground text-xs">
+            {state.created.email
+              ? `They can sign in with either the login or ${state.created.email}.`
+              : "No email on file, so this login is the only way in — and there's no email password reset. You can always add one later."}
+          </p>
         </div>
       ) : null}
     </div>

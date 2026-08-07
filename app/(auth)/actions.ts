@@ -13,22 +13,58 @@ export interface AuthFormState {
   notice?: string;
 }
 
-/** Sign in with email + password, then route to `next` (if a safe in-app path was
- *  passed, e.g. from a "Try it free" CTA) or the role's home. */
+/**
+ * Sign in with an email OR a login name, plus a password, then route to `next`
+ * (if a safe in-app path was passed, e.g. from a "Try it free" CTA) or the
+ * role's home.
+ *
+ * One field takes both: anything without an "@" is treated as a login and
+ * resolved to its account server-side. Centers hand out credentials in class
+ * and many of their students have no email, so a login is the only thing they
+ * can be given — but Supabase Auth is still email/password underneath, and
+ * that resolution is the whole trick.
+ */
 export async function signIn(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  const email = String(formData.get("email") ?? "")
-    .trim()
-    .toLowerCase();
+  const identifier = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  if (!email || !password) return { error: "Email and password are required." };
+  if (!identifier || !password) return { error: "Login and password are required." };
   const next = safeNextPath(String(formData.get("next") ?? ""));
+
+  const isLogin = !identifier.includes("@");
+  let email = identifier.toLowerCase();
+  if (isLogin) {
+    const resolved = await emailForLogin(email);
+    // Same message whether the login is unknown or the password is wrong —
+    // otherwise this form would tell a stranger which logins exist.
+    if (!resolved) return { error: "Invalid login or password." };
+    email = resolved;
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  if (error) return { error: isLogin ? "Invalid login or password." : error.message };
 
   const session = await getSession();
   redirect(next ?? (session ? roleHome(session.role) : "/dashboard"));
+}
+
+/**
+ * Look up the account email behind a login name. Runs on the service-role
+ * client because the caller has no session yet — and because `profiles` is not
+ * readable anonymously, which is exactly what we want: the only way to probe a
+ * login is through the sign-in form, which answers identically either way.
+ */
+async function emailForLogin(login: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", login)
+    .maybeSingle();
+  if (!profile) return null;
+
+  const { data } = await admin.auth.admin.getUserById(profile.id as string);
+  return data?.user?.email ?? null;
 }
 
 /**
@@ -90,10 +126,28 @@ export async function signUpOrganization(
   const email = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
+  const login = String(formData.get("login") ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (!orgName) return { error: "Official organization name is required." };
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (login && !/^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])$/.test(login)) {
+    return {
+      error: "A login must be 3–32 characters: letters, digits, and . _ - in the middle.",
+    };
+  }
+  if (login) {
+    // Logins are global, so a clash has to be reported before the account is
+    // created — the trigger would otherwise fail the whole signup opaquely.
+    const { data: taken } = await createAdminClient()
+      .from("profiles")
+      .select("id")
+      .eq("username", login)
+      .maybeSingle();
+    if (taken) return { error: `The login "${login}" is taken. Please choose another.` };
+  }
 
   const headerList = await headers();
   const origin =
@@ -106,7 +160,7 @@ export async function signUpOrganization(
     email,
     password,
     options: {
-      data: { account_kind: "center", org_name: orgName },
+      data: { account_kind: "center", org_name: orgName, username: login || null },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });

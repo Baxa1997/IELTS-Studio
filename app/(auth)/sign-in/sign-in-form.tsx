@@ -169,8 +169,8 @@ export function SignInForm({ next }: { next?: string | null }) {
             margin: "0 0 20px",
           }}
         >
-          Sign in with your organization email. Teachers and students of a center use this too —
-          the credentials your center gave you.
+          Use the login your center gave you — students don&apos;t need an email address. An
+          organization email works here too.
         </p>
       )}
 
@@ -179,15 +179,17 @@ export function SignInForm({ next }: { next?: string | null }) {
         {next ? <input type="hidden" name="next" value={next} /> : null}
         <div>
           <label htmlFor="email" style={labelStyle}>
-            {audience === "organization" ? "Organization email" : "Email"}
+            {audience === "organization" ? "Login or email" : "Email"}
           </label>
+          {/* type="text" on the organization side: a login is not an email, and
+              the browser would refuse to submit one in an email field. */}
           <input
             id="email"
             name="email"
-            type="email"
-            autoComplete="email"
+            type={audience === "organization" ? "text" : "email"}
+            autoComplete={audience === "organization" ? "username" : "email"}
             required
-            placeholder={audience === "organization" ? "center@example.com" : "you@email.com"}
+            placeholder={audience === "organization" ? "aziz.karimov" : "you@email.com"}
             className="lp-input"
             style={inputStyle}
           />

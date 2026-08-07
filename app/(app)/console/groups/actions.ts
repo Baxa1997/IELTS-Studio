@@ -27,11 +27,21 @@ export interface InviteFormState {
 
 export interface AddStudentState {
   error?: string;
-  /** Credentials to hand to the student — shown once, right after creation. */
-  created?: { name: string; email: string; password: string };
+  /** Credentials to hand to the student — shown once, right after creation.
+   *  `email` is null when the student has no address and signs in by login. */
+  created?: { name: string; login: string; email: string | null; password: string };
   /** Non-fatal problem (e.g. the optional photo failed) — the account exists. */
   warning?: string;
 }
+
+/** Logins are typed by hand, often from a whiteboard: letters, digits and a few
+ *  separators only, and case-insensitive (stored lowercase). */
+const LOGIN_RE = /^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])$/;
+
+/** Students created without a real address get an address on a domain we own
+ *  that has no mail exchanger — valid to Supabase, undeliverable in practice,
+ *  and impossible to collide with someone's real inbox. */
+const NO_MAIL_DOMAIN = "students.engprogress.com";
 
 /**
  * Create a group. A center_admin can create one for any teacher (or leave it
@@ -387,17 +397,30 @@ export async function addStudentAccount(
 
   const groupId = String(formData.get("group_id") ?? "").trim();
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const email = String(formData.get("email") ?? "")
+  const login = String(formData.get("login") ?? "")
+    .trim()
+    .toLowerCase();
+  const emailInput = String(formData.get("email") ?? "")
     .trim()
     .toLowerCase();
   const passwordInput = String(formData.get("password") ?? "").trim();
 
   if (!groupId) return { error: "Missing group." };
   if (!fullName) return { error: "Enter the student's name." };
-  if (!email || !email.includes("@")) return { error: "Enter a valid email address." };
+  if (!login) return { error: "Enter a login for the student." };
+  if (!LOGIN_RE.test(login)) {
+    return {
+      error:
+        "A login must be 3–32 characters: letters, digits, and . _ - in the middle (no spaces).",
+    };
+  }
+  if (emailInput && !emailInput.includes("@")) return { error: "Enter a valid email address." };
   if (passwordInput && passwordInput.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
+
+  // The email is optional; a student without one signs in by login alone.
+  const email = emailInput || `${login}@${NO_MAIL_DOMAIN}`;
 
   const supabase = await createClient();
   // RLS hides other teachers' groups, so a hit here proves the caller manages it.
@@ -417,6 +440,17 @@ export async function addStudentAccount(
   const password = passwordInput || generatePassword();
   const admin = createAdminClient();
 
+  // Logins are global (the sign-in box can't know which center you belong to
+  // until you're in), so check before creating an auth user we'd have to undo.
+  const { data: taken } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", login)
+    .maybeSingle();
+  if (taken) {
+    return { error: `The login "${login}" is already taken. Try adding a number, e.g. ${login}2.` };
+  }
+
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     password,
@@ -430,7 +464,7 @@ export async function addStudentAccount(
     const already = /already|exists|registered/i.test(createError?.message ?? "");
     return {
       error: already
-        ? `${email} already has an account on the platform. Ask the student to use a different email — moving an existing personal account into a center isn't supported yet.`
+        ? `${email} already has an account on the platform. Use a different email or login — moving an existing personal account into a center isn't supported yet.`
         : (createError?.message ?? "Could not create the account."),
     };
   }
@@ -440,6 +474,7 @@ export async function addStudentAccount(
     organization_id: profile.organization_id,
     role: "student",
     full_name: fullName,
+    username: login,
   });
   if (profileError) {
     // Roll back the orphaned auth user so the email can be retried cleanly.
@@ -475,7 +510,10 @@ export async function addStudentAccount(
   }
 
   revalidatePath(`/console/groups/${groupId}`);
-  return { created: { name: fullName, email, password }, warning: photoWarning ?? undefined };
+  return {
+    created: { name: fullName, login, email: emailInput || null, password },
+    warning: photoWarning ?? undefined,
+  };
 }
 
 /** Readable throwaway password — the student can change it later. Avoids
