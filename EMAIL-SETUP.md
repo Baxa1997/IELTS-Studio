@@ -40,33 +40,43 @@ reports that no email went out.
    Every record must read authenticated before sending will work properly.
 5. **SMTP & API → SMTP tab** → generate an **SMTP key**.
 
-## ⚠️ The SPF record — edit, never add
+## The four records
 
-The domain already has exactly one SPF record:
+Brevo authenticates by **DKIM alignment**, so it asks for no SPF change at all.
+Leave the existing SPF record alone.
+
+| Type | Name | Value | Action |
+| --- | --- | --- | --- |
+| TXT | `@` (blank if `@` is rejected) | `brevo-code:…` | add |
+| CNAME | `brevo1._domainkey` | `b1.engprogress-com.dkim.brevo.com` | add |
+| CNAME | `brevo2._domainkey` | `b2.engprogress-com.dkim.brevo.com` | add |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` | **replace** |
+
+DKIM arrives as CNAMEs, not a 400-character TXT key, so registrar panels that
+truncate long TXT values are not a problem here.
+
+## ⚠️ DMARC — edit, never add
+
+The domain already has one: `v=DMARC1; p=none;`. **One DMARC record per domain** —
+two of them is treated as none. Brevo's value replaces it (and adds `rua=`, which
+turns on aggregate reports). The same rule governs SPF, which is why the record
+above is an edit and not an addition.
+
+Ordinary TXT records are different: the `brevo-code` TXT sits happily alongside
+the existing `google-site-verification` TXT at the root. Only SPF and DMARC are
+one-per-domain.
+
+## SPF, for later
+
+Untouched and currently:
 
 ```
 v=spf1 +a +mx +ip4:185.196.212.52 ~all
 ```
 
-Brevo needs `include:spf.brevo.com` in it. **Edit this record in place:**
-
-```
-v=spf1 +a +mx +ip4:185.196.212.52 include:spf.brevo.com ~all
-```
-
-Rules that matter:
-
-- **One SPF record per domain.** Two `v=spf1` records is treated as *none*, which
-  is worse than not setting it up at all. If Brevo's instructions say "add a TXT
-  record" for SPF and one already exists, they mean merge, not append.
-- **`include:` must come before `~all`.** Anything after `all` is ignored.
-- `_dmarc` is already `v=DMARC1; p=none;` — leave it there until mail is flowing,
-  then consider tightening to `p=quarantine`.
-
-(Optional later cleanup: `+a` authorizes Vercel's shared IP to send as this
-domain, and `+mx` authorizes a mail host that doesn't exist. Neither sends mail.
-Trimming them tightens the record, but do it only after Brevo is verified and
-working — one change at a time.)
+`+a` authorizes Vercel's shared IP to send as this domain and `+mx` authorizes a
+mail host that doesn't exist. Neither sends mail, so trimming them would tighten
+the record — but only after Brevo is verified and working. One change at a time.
 
 ## The credentials
 
