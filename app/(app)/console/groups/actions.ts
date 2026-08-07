@@ -346,16 +346,20 @@ export async function deleteAssignment(
 type RlsClient = Awaited<ReturnType<typeof createClient>>;
 
 /** Student seats are a plan limit; pending invites count so a center can't
- *  oversubscribe by issuing links it hasn't spent yet. */
+ *  oversubscribe by issuing links it hasn't spent yet. Skipped entirely while
+ *  the org is unmetered (`billing_enforced = false` — centers, for now; see
+ *  migration 20260807150000). */
 async function seatLimitError(
   supabase: RlsClient,
   organizationId: string,
 ): Promise<string | null> {
   const { data: org } = await supabase
     .from("organizations")
-    .select("plan")
+    .select("plan, billing_enforced")
     .eq("id", organizationId)
     .maybeSingle();
+  if (org?.billing_enforced === false) return null;
+
   const limit = PLAN_SEAT_LIMITS[(org?.plan ?? "trial") as OrgPlan];
   if (limit == null) return null;
 

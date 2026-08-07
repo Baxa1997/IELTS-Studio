@@ -50,17 +50,33 @@ async function loadOrg(organizationId: string) {
   const admin = createAdminClient();
   const { data } = await admin
     .from("organizations")
-    .select("plan, grading_monthly_limit, generation_monthly_limit")
+    .select("plan, grading_monthly_limit, generation_monthly_limit, billing_enforced")
     .eq("id", organizationId)
     .single();
   return { admin, org: data };
+}
+
+/**
+ * The billing switch. Education centers run unmetered for now (see migration
+ * 20260807150000): an org with `billing_enforced = false` gets an unlimited
+ * quota regardless of its plan. Flipping the column starts enforcement
+ * everywhere at once, because every quota read passes through here.
+ *
+ * Defaults to enforcing when the column or the row is missing — a lookup
+ * failure must never silently hand out unlimited AI.
+ */
+function effectiveLimit(
+  org: { billing_enforced?: boolean | null } | null,
+  planLimit: number | null,
+): number | null {
+  return org?.billing_enforced === false ? null : planLimit;
 }
 
 /** Monthly AI-grading quota (AI gradings only — teacher overrides don't count). */
 export async function getGradingQuota(organizationId: string): Promise<Quota> {
   const { admin, org } = await loadOrg(organizationId);
   const plan = (org?.plan ?? "trial") as OrgPlan;
-  const limit = org?.grading_monthly_limit ?? planTier(plan).gradeLimit;
+  const limit = effectiveLimit(org, org?.grading_monthly_limit ?? planTier(plan).gradeLimit);
   const { start, resetAt } = monthWindow();
 
   let used = 0;
@@ -84,7 +100,7 @@ export async function getGradingQuota(organizationId: string): Promise<Quota> {
 export async function getGenerationQuota(organizationId: string): Promise<Quota> {
   const { admin, org } = await loadOrg(organizationId);
   const plan = (org?.plan ?? "trial") as OrgPlan;
-  const limit = org?.generation_monthly_limit ?? planTier(plan).generateLimit;
+  const limit = effectiveLimit(org, org?.generation_monthly_limit ?? planTier(plan).generateLimit);
   const { start, resetAt } = monthWindow();
 
   let used = 0;
