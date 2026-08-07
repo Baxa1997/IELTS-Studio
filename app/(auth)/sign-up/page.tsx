@@ -1,9 +1,8 @@
 import Link from "next/link";
 
-import { GoogleButton } from "@/app/(auth)/google-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { SignUpForm } from "./sign-up-form";
+import { SignUpTabs } from "./sign-up-tabs";
 
 export default async function SignUpPage({
   searchParams,
@@ -16,16 +15,10 @@ export default async function SignUpPage({
       <Card>
         <CardHeader>
           <CardTitle>Create your account</CardTitle>
-          <CardDescription>Practice IELTS Writing &amp; Reading</CardDescription>
+          <CardDescription>Practice solo, or apply for your organization</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <GoogleButton label="Sign up with Google" />
-          <div className="flex items-center gap-3">
-            <span className="bg-border h-px flex-1" />
-            <span className="text-muted-foreground text-xs">or</span>
-            <span className="bg-border h-px flex-1" />
-          </div>
-          <SignUpForm defaultEmail={email} />
+          <SignUpTabs defaultEmail={email} />
           <p className="text-muted-foreground text-xs leading-relaxed">
             By creating an account you agree to our{" "}
             <Link href="/terms" className="underline underline-offset-4">

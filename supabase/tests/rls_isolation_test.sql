@@ -74,4 +74,32 @@ begin
   raise notice 'PASS 3: Admin A sees Center A essays only';
 end $$;
 
+-- ---- Case 4: org approval state is NOT client-writable (column grants) ------
+-- The organizations_b2b migration restricts authenticated UPDATE to cosmetic
+-- columns (name/slug/branding). A center_admin must not be able to approve
+-- their own pending center (status) or give themselves a plan upgrade (plan).
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+begin
+  begin
+    update public.organizations set status = 'suspended'
+     where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    raise exception 'BREACH: center_admin updated organizations.status';
+  exception when insufficient_privilege then
+    raise notice 'PASS 4a: organizations.status is not client-writable';
+  end;
+
+  begin
+    update public.organizations set plan = 'pro'
+     where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+    raise exception 'BREACH: center_admin updated organizations.plan';
+  exception when insufficient_privilege then
+    raise notice 'PASS 4b: organizations.plan is not client-writable';
+  end;
+
+  update public.organizations set name = 'Center A (renamed)'
+   where id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+  raise notice 'PASS 4c: center_admin can still rename their own org';
+end $$;
+
 rollback;  -- discards all seed data and resets role/claims

@@ -217,6 +217,23 @@ export const serverEnv = {
     return process.env.CRON_SECRET;
   },
 
+  /** Transactional email over SMTP (org-approval confirmations). Point this at
+   *  the same provider the Supabase project's custom SMTP uses for auth emails —
+   *  one sender identity for everything. null → sending is skipped (the action
+   *  still succeeds and reports that no email went out). */
+  get smtp(): { host: string; port: number; user?: string; pass?: string; from: string } | null {
+    const host = env("SMTP_HOST");
+    if (!host) return null;
+    const user = env("SMTP_USER");
+    return {
+      host,
+      port: intEnv(env("SMTP_PORT"), 587),
+      user,
+      pass: env("SMTP_PASS"),
+      from: env("SMTP_FROM") ?? user ?? "no-reply@localhost",
+    };
+  },
+
   /** Public no-login grader limits. perIp/global are rolling-window ceilings; the
    *  salt fingerprints IPs before they're stored. Sensible defaults so the funnel
    *  works out of the box; tune via env in production. */

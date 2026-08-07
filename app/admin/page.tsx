@@ -2,10 +2,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireSuperAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { OrgReviewRow } from "./org-review-row";
+
 interface OrgRow {
   id: string;
   name: string;
   plan: string;
+  kind: "personal" | "center";
+  status: "pending" | "active" | "rejected" | "suspended";
+  contact_email: string | null;
   created_at: string;
 }
 
@@ -17,7 +22,7 @@ export default async function AdminPage() {
 
   const { data: orgs } = await admin
     .from("organizations")
-    .select("id, name, plan, created_at")
+    .select("id, name, plan, kind, status, contact_email, created_at")
     .order("created_at", { ascending: false });
 
   const { data: profiles } = await admin.from("profiles").select("organization_id, role");
@@ -61,6 +66,10 @@ export default async function AdminPage() {
   }
 
   const orgList = (orgs ?? []) as OrgRow[];
+  const pendingCenters = orgList.filter((o) => o.kind === "center" && o.status === "pending");
+
+  const applied = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
     <div className="space-y-6">
@@ -68,6 +77,30 @@ export default async function AdminPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Platform console</h1>
         <p className="text-muted-foreground">Every center and individual learner workspace.</p>
       </div>
+
+      {pendingCenters.length > 0 ? (
+        <Card className="border-amber-500/40">
+          <CardHeader>
+            <CardTitle className="text-base">Center applications</CardTitle>
+            <CardDescription>
+              Organizations waiting for approval. Approving sends the confirmation email.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y text-sm">
+              {pendingCenters.map((o) => (
+                <OrgReviewRow
+                  key={o.id}
+                  orgId={o.id}
+                  name={o.name}
+                  email={o.contact_email}
+                  applied={applied(o.created_at)}
+                />
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -94,7 +127,23 @@ export default async function AdminPage() {
           <ul className="divide-y text-sm">
             {orgList.map((o) => (
               <li key={o.id} className="flex items-center justify-between gap-4 py-2">
-                <span className="truncate">{o.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate">{o.name}</span>
+                  {o.kind === "center" ? (
+                    <span
+                      className={
+                        "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium " +
+                        (o.status === "active"
+                          ? "bg-emerald-500/10 text-emerald-600"
+                          : o.status === "pending"
+                            ? "bg-amber-500/10 text-amber-600"
+                            : "bg-destructive/10 text-destructive")
+                      }
+                    >
+                      center · {o.status}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="text-muted-foreground flex shrink-0 items-center gap-4">
                   <span className="capitalize">{o.plan}</span>
                   <span>{memberCount.get(o.id) ?? 0} members</span>

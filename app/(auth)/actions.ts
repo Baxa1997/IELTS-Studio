@@ -74,6 +74,54 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   redirect(applied ? "/diagnostic" : "/dashboard");
 }
 
+/**
+ * Organization (center) self-application from the "Organization" tab of the
+ * sign-up page. Same Supabase signup as B2C, but user_metadata carries
+ * account_kind='center' + the official name, so handle_new_user provisions a
+ * PENDING center org + center_admin profile instead of a personal workspace.
+ * The account stays gated on /awaiting-approval until the super_admin approves
+ * it in /admin (which sends the confirmation email).
+ */
+export async function signUpOrganization(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const orgName = String(formData.get("org_name") ?? "").trim();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!orgName) return { error: "Official organization name is required." };
+  if (!email || !password) return { error: "Email and password are required." };
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+
+  const headerList = await headers();
+  const origin =
+    headerList.get("origin") ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    `https://${headerList.get("host")}`;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { account_kind: "center", org_name: orgName },
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
+  });
+  if (error) return { error: error.message };
+  if (!data.session) {
+    // Email confirmation required: confirm first, then the application waits
+    // for admin review (the /awaiting-approval gate explains this after login).
+    return {
+      notice:
+        "Check your inbox to confirm your email. Your organization application is then reviewed by our team — you'll receive a confirmation email once it's approved.",
+    };
+  }
+  redirect("/awaiting-approval");
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();

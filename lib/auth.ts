@@ -7,11 +7,17 @@ import { createClient } from "@/lib/supabase/server";
 /** super_admin is platform-level (in app_metadata, no org); the rest are org-scoped. */
 export type AppRole = "super_admin" | "center_admin" | "teacher" | "student";
 
+export type OrgKind = "personal" | "center";
+export type OrgStatus = "pending" | "active" | "rejected" | "suspended";
+
 export interface Profile {
   id: string;
   organization_id: string;
   role: Exclude<AppRole, "super_admin">;
   full_name: string | null;
+  /** Approval state of the workspace. Personal orgs are always 'active';
+   *  centers start 'pending' until a super_admin approves them in /admin. */
+  org: { kind: OrgKind; status: OrgStatus };
 }
 
 export interface Session {
@@ -58,14 +64,21 @@ export async function getSession(): Promise<Session | null> {
     return { user: { id: user.id, email: user.email }, role: "super_admin", profile: null };
   }
 
-  const { data: profile } = await supabase
+  // Embed the org's approval state in the same query (profiles → organizations
+  // FK) so gating on it costs no extra round trip.
+  const { data } = await supabase
     .from("profiles")
-    .select("id, organization_id, role, full_name")
+    .select("id, organization_id, role, full_name, organizations!inner(kind, status)")
     .eq("id", user.id)
     .single();
-  if (!profile) return null;
+  if (!data) return null;
 
-  return { user: { id: user.id, email: user.email }, role: (profile as Profile).role, profile };
+  const { organizations: org, ...rest } = data as unknown as Omit<Profile, "org"> & {
+    organizations: Profile["org"];
+  };
+  const profile: Profile = { ...rest, org };
+
+  return { user: { id: user.id, email: user.email }, role: profile.role, profile };
 }
 
 /** Guard for org-scoped pages (/dashboard, /console). Sends super_admins to /admin. */
@@ -77,6 +90,9 @@ export async function requireOrgUser(): Promise<{
   if (!session) redirect("/sign-in");
   if (session.role === "super_admin") redirect("/admin");
   if (!session.profile) redirect("/sign-in");
+  // A workspace that isn't approved (pending/rejected center, or a suspended
+  // org) sees only the status page — no app, no console, no data.
+  if (session.profile.org.status !== "active") redirect("/awaiting-approval");
   return { user: session.user, profile: session.profile };
 }
 
