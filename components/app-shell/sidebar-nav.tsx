@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BookA,
   BookOpen,
+  Building2,
   ClipboardCheck,
   CreditCard,
   GraduationCap,
@@ -91,7 +92,11 @@ const TEACHER: Section[] = [
 /** The platform owner: no organization, so none of the org menus apply. */
 const SUPER_ADMIN: Section[] = [
   {
-    items: [{ label: "Platform", href: "/admin", icon: LayoutDashboard }],
+    items: [
+      { label: "Platform", href: "/admin", icon: LayoutDashboard },
+      { label: "Centers", href: "/admin/centers", icon: Building2 },
+      { label: "Users", href: "/admin/users", icon: Users },
+    ],
   },
 ];
 

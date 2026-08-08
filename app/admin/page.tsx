@@ -6,44 +6,32 @@ import {
   Panel,
   Pill,
   Row,
+  RowLink,
   RowText,
   SANS,
   StatRow,
   StatTile,
 } from "@/components/console/page-ui";
+import { loadCenters, loadPlatformStats } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { OrgReviewRow } from "./org-review-row";
 
-interface OrgRow {
-  id: string;
-  name: string;
-  plan: string;
-  kind: "personal" | "center";
-  status: "pending" | "active" | "rejected" | "suspended";
-  contact_email: string | null;
-  created_at: string;
-}
+const dateFmt = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 export default async function AdminPage() {
-  // Platform-wide view: read across all tenants with the service-role client
-  // (super_admins intentionally have no org, so RLS would otherwise hide rows).
   await requireSuperAdmin();
-  const admin = createAdminClient();
-
-  const { data: orgs } = await admin
-    .from("organizations")
-    .select("id, name, plan, kind, status, contact_email, created_at")
-    .order("created_at", { ascending: false });
-
-  const { data: profiles } = await admin.from("profiles").select("organization_id, role");
+  const [stats, centers] = await Promise.all([loadPlatformStats(), loadCenters()]);
+  const pending = centers.filter((c) => c.status === "pending");
 
   // Conduct findings — abuse or refusal aimed at the examiner, as reported by
   // the grader (speaking/service.py `_conduct`). Surfaced HERE and nowhere near
   // the learner's account: nothing about it changes their band, their quota or
   // their access. It exists so the owner can tell one bad afternoon from a
   // pattern, which is the only question this data can honestly answer.
+  const admin = createAdminClient();
   const { data: flagged } = await admin
     .from("speaking_sessions")
     .select("id, organization_id, started_at, result")
@@ -52,8 +40,8 @@ export default async function AdminPage() {
     .order("started_at", { ascending: false })
     .limit(25);
 
-  const orgName = new Map<string, string>();
-  for (const o of (orgs ?? []) as OrgRow[]) orgName.set(o.id, o.name);
+  const { data: orgNames } = await admin.from("organizations").select("id, name");
+  const orgName = new Map((orgNames ?? []).map((o) => [o.id, o.name]));
 
   const conduct = (
     (flagged ?? []) as {
@@ -66,94 +54,108 @@ export default async function AdminPage() {
     .map((s) => ({
       id: s.id,
       org: orgName.get(s.organization_id) ?? s.organization_id,
-      when: new Date(s.started_at).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
+      when: dateFmt(s.started_at),
       kind: s.result?.conduct?.kind ?? "",
       quote: s.result?.conduct?.quote ?? "",
     }))
     .filter((c) => c.quote);
 
-  const memberCount = new Map<string, number>();
-  for (const p of (profiles ?? []) as { organization_id: string }[]) {
-    memberCount.set(p.organization_id, (memberCount.get(p.organization_id) ?? 0) + 1);
-  }
-
-  const orgList = (orgs ?? []) as OrgRow[];
-  const pendingCenters = orgList.filter((o) => o.kind === "center" && o.status === "pending");
-  const centers = orgList.filter((o) => o.kind === "center");
-
-  const applied = (iso: string) =>
-    new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const p = stats.practice30d;
 
   return (
     <div>
       <PageHead
         eyebrow="Platform"
-        title="Every center and learner workspace"
-        subtitle="Approve organizations, and keep an eye on the whole platform."
+        title="Everything, across every tenant"
+        subtitle="Approve centers, and watch the platform as a whole."
       />
 
       <StatRow>
-        <StatTile value={pendingCenters.length} label="Awaiting approval" tone="indigo" />
-        <StatTile value={centers.length} label="Centers" />
-        <StatTile value={orgList.length} label="Workspaces" />
-        <StatTile value={profiles?.length ?? 0} label="Users" />
+        <StatTile value={stats.learners} label="Learners" tone="indigo" />
+        <StatTile value={stats.centers} label="Centers" />
+        <StatTile value={stats.teachers} label="Teachers" />
+        <StatTile value={stats.newUsers7d} label="New this week" />
+        <StatTile value={p.total} label="Practices (30d)" />
       </StatRow>
 
-      {pendingCenters.length > 0 ? (
+      {pending.length > 0 ? (
         <Panel
           tone="flag"
-          title="Center applications"
-          description="Organizations waiting for approval. Approving sends the confirmation email."
+          title={`${pending.length} center${pending.length === 1 ? "" : "s"} waiting for approval`}
+          description="Approving activates the workspace and emails the applicant."
         >
           <List>
-            {pendingCenters.map((o) => (
+            {pending.map((c) => (
               <OrgReviewRow
-                key={o.id}
-                orgId={o.id}
-                name={o.name}
-                email={o.contact_email}
-                applied={applied(o.created_at)}
+                key={c.id}
+                orgId={c.id}
+                name={c.name}
+                email={c.contactEmail}
+                applied={dateFmt(c.createdAt)}
               />
             ))}
           </List>
         </Panel>
       ) : null}
 
-      <Panel title="All organizations" description={`${orgList.length} workspaces`}>
+      <Panel
+        title="Practice in the last 30 days"
+        description="Every graded attempt on the platform, by skill."
+      >
+        <StatRow>
+          <StatTile value={p.writing} label="Writing" />
+          <StatTile value={p.reading} label="Reading" />
+          <StatTile value={p.listening} label="Listening" />
+          <StatTile value={p.speaking} label="Speaking" />
+        </StatRow>
+      </Panel>
+
+      <Panel
+        title="Centers"
+        description={
+          centers.length > 0
+            ? `${centers.length} organization${centers.length === 1 ? "" : "s"}`
+            : undefined
+        }
+        actions={centers.length > 0 ? <RowLink href="/admin/centers">See all</RowLink> : undefined}
+      >
         <List>
-          {orgList.map((o, i) => (
-            <Row key={o.id} first={i === 0}>
+          {centers.slice(0, 6).map((c, i) => (
+            <Row key={c.id} first={i === 0}>
               <RowText
                 title={
                   <>
-                    {o.name}
-                    {o.kind === "center" ? (
-                      <span style={{ marginLeft: 8 }}>
-                        <Pill
-                          tone={
-                            o.status === "active"
-                              ? "good"
-                              : o.status === "pending"
-                                ? "warn"
-                                : "bad"
-                          }
-                        >
-                          center · {o.status}
-                        </Pill>
-                      </span>
-                    ) : null}
+                    {c.name}{" "}
+                    <Pill
+                      tone={
+                        c.status === "active" ? "good" : c.status === "pending" ? "warn" : "bad"
+                      }
+                    >
+                      {c.status}
+                    </Pill>
                   </>
                 }
-                meta={`${o.plan} · ${memberCount.get(o.id) ?? 0} member${(memberCount.get(o.id) ?? 0) === 1 ? "" : "s"}`}
+                meta={`${c.teachers} teacher${c.teachers === 1 ? "" : "s"} · ${c.groups} group${c.groups === 1 ? "" : "s"} · ${c.students} student${c.students === 1 ? "" : "s"}`}
               />
+              <RowLink href={`/admin/centers/${c.id}`}>Open</RowLink>
             </Row>
           ))}
-          {orgList.length === 0 ? <EmptyRow>No organizations yet.</EmptyRow> : null}
+          {centers.length === 0 ? (
+            <EmptyRow>
+              No centers yet. They arrive through the Organization tab on the sign-up page.
+            </EmptyRow>
+          ) : null}
         </List>
+      </Panel>
+
+      <Panel
+        title="Individual learners"
+        description="Self-serve accounts, each in their own personal workspace."
+      >
+        <StatRow>
+          <StatTile value={stats.personalWorkspaces} label="Personal workspaces" />
+          <StatTile value={stats.centerAdmins} label="Center admins" />
+        </StatRow>
       </Panel>
 
       <Panel
