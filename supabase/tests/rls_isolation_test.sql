@@ -289,4 +289,117 @@ begin
   raise notice 'PASS 12d: a classmate cannot see another student''s practice';
 end $$;
 
+-- ---- Case 13: writing + reading follow the same rule as listening ----------
+-- Before 20260808130000 any teacher in the org could read (and grade) any
+-- student's essay. Student A is taught by Teacher A and by nobody else.
+set local role postgres;
+insert into public.gradings (id, organization_id, essay_id, model, overall_band, criteria)
+values ('11111111-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        '66666666-6666-6666-6666-666666666666', 'test-model', 6.5, '{}'::jsonb);
+insert into public.reading_passages (id, organization_id, title)
+values ('33333333-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Test passage');
+insert into public.reading_attempts (id, organization_id, student_id, passage_id, status, band)
+values ('22222222-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        '22222222-2222-2222-2222-222222222222', '33333333-0000-0000-0000-000000000001', 'graded', 7.0);
+set local role authenticated;
+
+-- Teacher A teaches Student A -> sees the essay, its grading, the attempt.
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare essays int; gradings int; attempts int;
+begin
+  select count(*) into essays   from public.essays;
+  select count(*) into gradings from public.gradings;
+  select count(*) into attempts from public.reading_attempts;
+  assert essays = 1,   format('Teacher A should see their student essay; saw %s', essays);
+  assert gradings = 1, format('Teacher A should see their student grading; saw %s', gradings);
+  assert attempts = 1, format('Teacher A should see their student reading attempt; saw %s', attempts);
+  raise notice 'PASS 13a: a teacher sees their own student''s writing and reading';
+end $$;
+
+-- Teacher A2 teaches nobody in that group -> sees none of it.
+set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000001","role":"authenticated"}';
+do $$
+declare essays int; gradings int; attempts int; changed int;
+begin
+  select count(*) into essays   from public.essays;
+  select count(*) into gradings from public.gradings;
+  select count(*) into attempts from public.reading_attempts;
+  assert essays = 0,   format('BREACH: unrelated teacher read %s essay(s)', essays);
+  assert gradings = 0, format('BREACH: unrelated teacher read %s grading(s)', gradings);
+  assert attempts = 0, format('BREACH: unrelated teacher read %s reading attempt(s)', attempts);
+
+  -- ...and cannot override a band on work that isn't theirs.
+  update public.gradings set overall_band = 9.0
+   where id = '11111111-0000-0000-0000-000000000001';
+  get diagnostics changed = row_count;
+  assert changed = 0, 'BREACH: unrelated teacher overrode another teacher''s grading';
+  raise notice 'PASS 13b: an unrelated teacher sees and grades none of it';
+end $$;
+
+-- The center admin still sees the whole org (cohort analytics depend on it).
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+declare essays int; gradings int; attempts int;
+begin
+  select count(*) into essays   from public.essays;
+  select count(*) into gradings from public.gradings;
+  select count(*) into attempts from public.reading_attempts;
+  assert essays = 1,   format('Center admin should see org essays; saw %s', essays);
+  assert gradings = 1, format('Center admin should see org gradings; saw %s', gradings);
+  assert attempts = 1, format('Center admin should see org attempts; saw %s', attempts);
+  raise notice 'PASS 13c: the center admin still sees their whole org';
+end $$;
+
+-- ---- Case 14: the stat views count graded work, and nothing else -----------
+-- Student A now has: 1 graded reading attempt, 1 graded listening attempt, and
+-- 1 essay still at 'submitted' (seeded at the top). The essay must NOT count —
+-- that inflation is what made "Have practised" wrong.
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+declare practices int; never int; ungrouped int;
+begin
+  select practice_count into practices
+    from public.v_center_student_stats where student_id = '22222222-2222-2222-2222-222222222222';
+  assert practices = 2,
+    format('Student A has 2 GRADED practices (reading + listening), not %s', practices);
+
+  select count(*) into never
+    from public.v_center_student_stats where practice_count = 0;
+  assert never = 1, format('Student A2 has never practised; "never" count was %s', never);
+
+  select count(*) into ungrouped
+    from public.v_center_student_stats where group_count = 0;
+  assert ungrouped = 0, format('Both Center A students are in a group; "in no group" was %s', ungrouped);
+  raise notice 'PASS 14a: v_center_student_stats counts graded work only';
+end $$;
+
+-- The view is security_invoker: a student sees themselves and no classmate.
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare rows_seen int;
+begin
+  select count(*) into rows_seen from public.v_center_student_stats;
+  assert rows_seen = 1, format('BREACH: a student saw %s roster row(s) through the view', rows_seen);
+  raise notice 'PASS 14b: the stat view leaks nothing to a student';
+end $$;
+
+-- ---- Case 15: pending invites exclude expired ones -------------------------
+set local role postgres;
+insert into public.invites (organization_id, email, role, token, expires_at) values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'fresh@test.local', 'student', 'tok-fresh', now() + interval '7 days'),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'stale@test.local', 'student', 'tok-stale', now() - interval '1 day');
+set local role authenticated;
+
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+declare pending int; raw int;
+begin
+  select count(*) into pending from public.v_pending_invites;
+  select count(*) into raw     from public.invites where accepted_at is null;
+  assert raw = 2, format('seed check: expected 2 unaccepted invites, saw %s', raw);
+  assert pending = 1, format('Only the unexpired invite is pending; saw %s', pending);
+  raise notice 'PASS 15: an expired invite is not a pending invite';
+end $$;
+
 rollback;  -- discards all seed data and resets role/claims

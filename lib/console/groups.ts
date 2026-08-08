@@ -106,12 +106,9 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
       .select("student_id, joined_at")
       .eq("group_id", groupId)
       .order("joined_at", { ascending: true }),
-    supabase
-      .from("invites")
-      .select("email, expires_at")
-      .eq("group_id", groupId)
-      .is("accepted_at", null)
-      .gt("expires_at", new Date().toISOString()),
+    // v_pending_invites IS the definition of pending (unaccepted + unexpired);
+    // re-deriving it per page is how /console ended up counting dead invites.
+    supabase.from("v_pending_invites").select("email, expires_at").eq("group_id", groupId),
     group.teacher_id
       ? supabase.from("profiles").select("full_name").eq("id", group.teacher_id).maybeSingle()
       : Promise.resolve({ data: null }),

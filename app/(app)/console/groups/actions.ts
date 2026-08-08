@@ -243,6 +243,79 @@ export async function inviteMember(
 }
 
 /**
+ * Revoke a pending invite — the link stops working immediately, because the
+ * accept page resolves the token against this row.
+ *
+ * No permission check in code: RLS is the check. A center_admin manages every
+ * invite in their org, a teacher only those attached to a group they own, and a
+ * row that isn't yours simply doesn't match.
+ */
+export async function revokeInvite(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  await requireOrgUser();
+
+  const inviteId = String(formData.get("invite_id") ?? "").trim();
+  if (!inviteId) return { error: "Missing invite." };
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("invites")
+    .delete({ count: "exact" })
+    .eq("id", inviteId);
+  if (error) return { error: error.message };
+  if (!count) return { error: "That invite is no longer yours to revoke." };
+
+  revalidatePath("/console");
+  revalidatePath("/console/groups");
+  return { notice: "Invite revoked." };
+}
+
+/**
+ * Re-issue a pending invite: a fresh token and another 7 days, on the same row.
+ *
+ * This is "resend" in a product that sends no invite emails — the old link dies
+ * and the caller gets a new one to hand over. Rotating the token is the point:
+ * an invite that has been sitting in a forwarded chat for six days should not
+ * stay valid just because someone clicked Resend.
+ */
+export async function refreshInvite(
+  _prev: InviteFormState,
+  formData: FormData,
+): Promise<InviteFormState> {
+  await requireOrgUser();
+
+  const inviteId = String(formData.get("invite_id") ?? "").trim();
+  if (!inviteId) return { error: "Missing invite." };
+
+  const token = randomBytes(24).toString("base64url");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("invites")
+    .update({
+      token,
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      accepted_at: null,
+    })
+    .eq("id", inviteId)
+    .select("email")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "That invite is no longer yours to renew." };
+
+  const headerList = await headers();
+  const origin =
+    headerList.get("origin") ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    `https://${headerList.get("host")}`;
+
+  revalidatePath("/console");
+  revalidatePath("/console/groups");
+  return { email: data.email as string, inviteUrl: `${origin}/accept-invite?token=${token}` };
+}
+
+/**
  * Create one assignment for a group. The content is produced HERE, once, and
  * pinned — everyone in the group then works the identical prompt/test, which is
  * what makes the results table comparable:

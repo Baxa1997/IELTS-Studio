@@ -1,19 +1,19 @@
 import { redirect } from "next/navigation";
 
 import {
-  FAINT,
   List,
   PageHead,
   Panel,
   PrimaryLink,
   Row,
   RowText,
-  SANS,
   StatRow,
   StatTile,
 } from "@/components/console/page-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+
+import { PendingInvites, type PendingInvite } from "./pending-invites";
 
 const ROLE_LABEL: Record<string, string> = {
   center_admin: "Center admin",
@@ -31,27 +31,48 @@ export default async function ConsolePage() {
 
   // RLS scopes every query to this admin/teacher's own organization — and, for
   // groups, to the ones a teacher actually owns.
-  let groupCountQuery = supabase.from("groups").select("id", { count: "exact", head: true });
-  if (!isAdmin) groupCountQuery = groupCountQuery.eq("teacher_id", profile.id);
+  let groupsQuery = supabase.from("groups").select("id");
+  if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
-  const [membersRes, invitesRes, groupCountRes, orgRes] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").order("role", { ascending: true }),
-    isAdmin
-      ? supabase
-          .from("invites")
-          .select("email, created_at, expires_at")
-          .is("accepted_at", null)
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: null }),
-    groupCountQuery,
+  const [membersRes, invitesRes, groupsRes, orgRes] = await Promise.all([
+    supabase.from("profiles").select("id, role"),
+    supabase
+      .from("v_pending_invites")
+      .select("id, email, role, expires_at")
+      .order("created_at", { ascending: false }),
+    groupsQuery,
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
   ]);
 
-  const members = membersRes.data ?? [];
-  const pendingInvites = invitesRes.data ?? [];
-  const groupCount = groupCountRes.count ?? 0;
-  const students = members.filter((m) => m.role === "student").length;
-  const teachers = members.filter((m) => m.role === "teacher").length;
+  const groupIds = (groupsRes.data ?? []).map((g) => g.id as string);
+  const groupCount = groupIds.length;
+  const teachers = (membersRes.data ?? []).filter((m) => m.role === "teacher").length;
+
+  // An admin counts every learner in the center. A teacher counts the learners
+  // in their own classes — `profiles` is readable org-wide by any staff member,
+  // so counting it here would have shown a teacher the whole center's total on
+  // this page while /console/students showed them only their own.
+  let students: number;
+  if (isAdmin) {
+    students = (membersRes.data ?? []).filter((m) => m.role === "student").length;
+  } else if (groupIds.length === 0) {
+    students = 0;
+  } else {
+    const { data: roster } = await supabase
+      .from("group_members")
+      .select("student_id")
+      .in("group_id", groupIds);
+    students = new Set((roster ?? []).map((r) => r.student_id as string)).size;
+  }
+
+  // A pending invite is unaccepted AND unexpired — the view is the definition
+  // (this card used to count expired invites, the group page did not).
+  const pendingInvites: PendingInvite[] = (invitesRes.data ?? []).map((i) => ({
+    id: i.id as string,
+    email: i.email as string,
+    role: i.role as string,
+    expiresAt: i.expires_at as string,
+  }));
 
   return (
     <div>
@@ -69,7 +90,7 @@ export default async function ConsolePage() {
         <StatTile value={groupCount} label={isAdmin ? "Groups" : "Your groups"} tone="indigo" />
         <StatTile value={students} label="Students" />
         {isAdmin ? <StatTile value={teachers} label="Teachers" /> : null}
-        {isAdmin ? <StatTile value={pendingInvites.length} label="Pending invites" /> : null}
+        <StatTile value={pendingInvites.length} label="Pending invites" />
       </StatRow>
 
       <Panel
@@ -103,18 +124,12 @@ export default async function ConsolePage() {
         </List>
       </Panel>
 
-      {isAdmin && pendingInvites.length > 0 ? (
-        <Panel title="Pending invites" description={`${pendingInvites.length} awaiting acceptance`}>
-          <List>
-            {pendingInvites.map((inv, i) => (
-              <Row key={inv.email as string} first={i === 0}>
-                <RowText title={inv.email as string} />
-                <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, flex: "none" }}>
-                  expires {new Date(inv.expires_at as string).toLocaleDateString()}
-                </span>
-              </Row>
-            ))}
-          </List>
+      {pendingInvites.length > 0 ? (
+        <Panel
+          title="Pending invites"
+          description={`${pendingInvites.length} awaiting acceptance. Expired invites are not listed — they stop working on their own.`}
+        >
+          <PendingInvites invites={pendingInvites} />
         </Panel>
       ) : null}
     </div>

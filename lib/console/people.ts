@@ -26,8 +26,9 @@ export interface StudentRow {
   username: string | null;
   avatarPath: string | null;
   groups: { id: string; name: string }[];
+  /** GRADED practices, any skill — see v_practice_activity. Drafts don't count. */
   practiceCount: number;
-  /** Most recent practice of any kind, ISO, or null if they never have. */
+  /** Most recent graded practice of any kind, ISO, or null if they never have. */
   lastActive: string | null;
 }
 
@@ -72,6 +73,11 @@ export async function loadTeachers(): Promise<TeacherRow[]> {
 /**
  * Students, with their groups and how much they've done. A teacher sees the
  * students in the groups they own; a center_admin sees everyone.
+ *
+ * Practice counts come from `v_center_student_stats`, which is the single
+ * definition of what a practice is (graded work, all four skills). Counting the
+ * raw attempt tables here is what used to make "Have practised" wrong — an
+ * abandoned draft counted the same as a graded essay.
  */
 export async function loadStudents(opts: {
   role: string;
@@ -102,47 +108,25 @@ export async function loadStudents(opts: {
 
   // An admin also sees students who are in no group at all; a teacher, by
   // definition, cannot — a student outside their classes isn't theirs to see.
-  let profileQuery = supabase
-    .from("profiles")
-    .select("id, full_name, username, avatar_path")
-    .eq("role", "student");
+  let statsQuery = supabase
+    .from("v_center_student_stats")
+    .select("student_id, full_name, username, avatar_path, practice_count, last_active");
   if (!isAdmin) {
     const ids = [...groupsByStudent.keys()];
     if (ids.length === 0) return [];
-    profileQuery = profileQuery.in("id", ids);
+    statsQuery = statsQuery.in("student_id", ids);
   }
-  const { data: profiles } = await profileQuery;
+  const { data: stats } = await statsQuery;
 
-  const ids = (profiles ?? []).map((p) => p.id);
-  if (ids.length === 0) return [];
-
-  const [essays, reading, listening, speaking] = await Promise.all([
-    supabase.from("essays").select("student_id, created_at").in("student_id", ids),
-    supabase.from("reading_attempts").select("student_id, created_at").in("student_id", ids),
-    supabase.from("listening_attempts").select("student_id, created_at").in("student_id", ids),
-    supabase.from("speaking_sessions").select("student_id, started_at").in("student_id", ids),
-  ]);
-
-  const count = new Map<string, number>();
-  const latest = new Map<string, string>();
-  const note = (studentId: string, at: string | null) => {
-    count.set(studentId, (count.get(studentId) ?? 0) + 1);
-    if (at && (!latest.has(studentId) || at > latest.get(studentId)!)) latest.set(studentId, at);
-  };
-  for (const r of essays.data ?? []) note(r.student_id, r.created_at);
-  for (const r of reading.data ?? []) note(r.student_id, r.created_at);
-  for (const r of listening.data ?? []) note(r.student_id, r.created_at);
-  for (const r of speaking.data ?? []) note(r.student_id, r.started_at);
-
-  return (profiles ?? [])
-    .map((p) => ({
-      id: p.id,
-      name: p.full_name ?? "Unnamed",
-      username: p.username,
-      avatarPath: p.avatar_path,
-      groups: groupsByStudent.get(p.id) ?? [],
-      practiceCount: count.get(p.id) ?? 0,
-      lastActive: latest.get(p.id) ?? null,
+  return (stats ?? [])
+    .map((s) => ({
+      id: s.student_id as string,
+      name: (s.full_name as string | null) ?? "Unnamed",
+      username: (s.username as string | null) ?? null,
+      avatarPath: (s.avatar_path as string | null) ?? null,
+      groups: groupsByStudent.get(s.student_id as string) ?? [],
+      practiceCount: (s.practice_count as number | null) ?? 0,
+      lastActive: (s.last_active as string | null) ?? null,
     }))
     .sort((a, b) => b.practiceCount - a.practiceCount || a.name.localeCompare(b.name));
 }
