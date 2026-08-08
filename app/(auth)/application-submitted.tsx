@@ -22,6 +22,8 @@ export function ApplicationSubmitted({
 }) {
   return (
     <div style={{ textAlign: "center", padding: "6px 0 2px" }}>
+      {/* Indigo, not the usual success green — this is the brand's accent, and
+          a green tick would also overstate things: nothing is approved yet. */}
       <div
         aria-hidden
         style={{
@@ -29,8 +31,8 @@ export function ApplicationSubmitted({
           height: 54,
           margin: "0 auto 16px",
           borderRadius: "50%",
-          background: "#E7F7EE",
-          color: "#15803d",
+          background: "#F0F0FB",
+          color: INDIGO,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

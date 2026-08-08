@@ -541,6 +541,115 @@ export async function addStudentAccount(
   };
 }
 
+/**
+ * Create a teacher outright, the same way a teacher creates a student: name +
+ * login + password, email optional. center_admin only.
+ *
+ * The tokenized invite path still exists and is better when you have a real
+ * address and want them to set their own password. This is for the common case
+ * in a center — the teacher is standing next to you and needs an account now.
+ */
+export async function addTeacherAccount(
+  _prev: AddStudentState,
+  formData: FormData,
+): Promise<AddStudentState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can add teachers." };
+  }
+
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const login = String(formData.get("login") ?? "")
+    .trim()
+    .toLowerCase();
+  const emailInput = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const passwordInput = String(formData.get("password") ?? "").trim();
+
+  if (!fullName) return { error: "Enter the teacher's name." };
+  if (!login) return { error: "Enter a login for the teacher." };
+  if (!LOGIN_RE.test(login)) {
+    return {
+      error:
+        "A login must be 3–32 characters: letters, digits, and . _ - in the middle (no spaces).",
+    };
+  }
+  if (emailInput && !emailInput.includes("@")) return { error: "Enter a valid email address." };
+  if (passwordInput && passwordInput.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+
+  const supabase = await createClient();
+  const seatError = await seatLimitError(supabase, profile.organization_id);
+  if (seatError) return { error: seatError };
+
+  const password = passwordInput || generatePassword();
+  const admin = createAdminClient();
+
+  const { data: taken } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", login)
+    .maybeSingle();
+  if (taken) {
+    return { error: `The login "${login}" is already taken. Try adding a number, e.g. ${login}2.` };
+  }
+
+  // Same rule as students: no address means a synthetic one on a domain with no
+  // mail exchanger, so they sign in by login and cannot reset by email.
+  const email = emailInput || `${login}@${NO_MAIL_DOMAIN}`;
+
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    app_metadata: { organization_id: profile.organization_id, role: "teacher" },
+    user_metadata: { full_name: fullName },
+  });
+  if (createError || !created?.user) {
+    const already = /already|exists|registered/i.test(createError?.message ?? "");
+    return {
+      error: already
+        ? `${email} already has an account on the platform. Use a different email or login.`
+        : (createError?.message ?? "Could not create the account."),
+    };
+  }
+
+  const { error: placeError } = await placeUserInOrg(admin, created.user.id, {
+    organizationId: profile.organization_id,
+    role: "teacher",
+    fullName,
+    username: login,
+  });
+  if (placeError) {
+    await admin.auth.admin.deleteUser(created.user.id);
+    return { error: placeError };
+  }
+
+  let emailNote: string | null = null;
+  if (emailInput) {
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", profile.organization_id)
+      .maybeSingle();
+    emailNote = await sendCredentials({
+      to: emailInput,
+      name: fullName,
+      login,
+      password,
+      centerName: (org?.name as string | null) ?? "your center",
+    });
+  }
+
+  revalidatePath("/console/teachers");
+  return {
+    created: { name: fullName, login, email: emailInput || null, password },
+    emailNote: emailNote ?? undefined,
+  };
+}
+
 /** Email a new student their sign-in details. Returns a line for the teacher
  *  about what happened — sending is best-effort, never a blocker. */
 async function sendCredentials(args: {

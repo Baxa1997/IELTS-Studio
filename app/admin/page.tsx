@@ -132,7 +132,7 @@ export default async function AdminPage() {
               previous={trends.previous.signups}
             />
           </div>
-          <TrendChart points={trends.signups} color="#15803d" label="Sign-ups per day" />
+          <TrendChart points={trends.signups} label="Sign-ups per day" />
         </Panel>
       </div>
 

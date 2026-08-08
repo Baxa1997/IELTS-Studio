@@ -15,6 +15,7 @@ import {
   Mic,
   SquarePen,
   Target,
+  UserRound,
   Users,
 } from "lucide-react";
 
@@ -67,13 +68,18 @@ const STUDENT: Section[] = [
   },
 ];
 
+/* Center staff. "Dashboard", not "Console" — it's the same word the learner
+   side uses, and nobody outside this codebase knows what a console is.
+   Cohort and Review are deliberately absent: both are parked features (see
+   CLAUDE.md) and they made the menu read like an unfinished admin tool. Add the
+   line back to restore either. */
 const ADMIN: Section[] = [
   {
     items: [
-      { label: "Console", href: "/console", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+      { label: "Teachers", href: "/console/teachers", icon: GraduationCap },
       { label: "Groups", href: "/console/groups", icon: Users },
-      { label: "Cohort", href: "/console/cohort", icon: Users },
-      { label: "Review", href: "/console/review", icon: ClipboardCheck },
+      { label: "Students", href: "/console/students", icon: UserRound },
       { label: "Billing", href: "/console/billing", icon: CreditCard },
     ],
   },
@@ -82,9 +88,9 @@ const ADMIN: Section[] = [
 const TEACHER: Section[] = [
   {
     items: [
-      { label: "Console", href: "/console", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users },
-      { label: "Review", href: "/console/review", icon: ClipboardCheck },
+      { label: "Students", href: "/console/students", icon: UserRound },
     ],
   },
 ];
