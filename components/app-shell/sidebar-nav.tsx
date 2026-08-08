@@ -80,6 +80,7 @@ const ADMIN: Section[] = [
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap },
       { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Students", href: "/console/students", icon: UserRound },
+      { label: "Practice", href: "/console/practices", icon: SquarePen },
       { label: "Billing", href: "/console/billing", icon: CreditCard },
     ],
   },
@@ -91,6 +92,7 @@ const TEACHER: Section[] = [
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Students", href: "/console/students", icon: UserRound },
+      { label: "Practice", href: "/console/practices", icon: SquarePen },
     ],
   },
 ];

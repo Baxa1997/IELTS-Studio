@@ -33,7 +33,10 @@ export const TASK2_CATEGORY_LABELS: Record<Task2Category, string> = {
   positive_negative: "Positive or negative development",
 };
 
-export const PROMPT_STATUSES = ["pending", "approved", "rejected"] as const;
+/** `pending` is the library's Drafts tab (staff-only, RLS hides it from
+ *  students), `approved` is Published, `archived` is retired-but-kept — a
+ *  student's graded work points at the prompt, so it is never deleted. */
+export const PROMPT_STATUSES = ["pending", "approved", "rejected", "archived"] as const;
 export type PromptStatus = (typeof PROMPT_STATUSES)[number];
 
 export const PROMPT_SOURCES = ["ai", "manual", "seed"] as const;

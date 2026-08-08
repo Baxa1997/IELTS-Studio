@@ -10,8 +10,9 @@
 -- Everything runs inside BEGIN … ROLLBACK, so it leaves NO data behind.
 -- A failed ASSERT aborts with an error (non-zero exit under ON_ERROR_STOP).
 --
--- Cases 13-15 need migrations 20260808130000 / 140000 / 150000. Without them
--- you get a missing-relation error on v_center_student_stats, not a failure.
+-- Cases 13-15 need migrations 20260808130000 / 140000 / 150000, and case 16
+-- needs 160000. Without them you get a missing-relation or invalid-enum error,
+-- not a failure.
 -- ============================================================================
 begin;
 
@@ -412,6 +413,48 @@ begin
   assert raw = 2, format('seed check: expected 2 unaccepted invites, saw %s', raw);
   assert pending = 1, format('Only the unexpired invite is pending; saw %s', pending);
   raise notice 'PASS 15: an expired invite is not a pending invite';
+end $$;
+
+-- ---- Case 16: an assigned prompt is frozen, but can still change state ------
+-- 01 D7: version-safe editing by never editing. The prompt seeded in case 8 is
+-- assigned to Group A, so its wording must be immutable — while publish and
+-- archive, which only touch `status`, must still work.
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare changed int;
+begin
+  begin
+    update public.writing_prompts set prompt_text = 'Rewritten under the class'
+     where id = 'bbbbbbbb-0000-0000-0000-000000000001';
+    raise exception 'BREACH: reworded a prompt students have already been set';
+  exception when check_violation then
+    raise notice 'PASS 16a: an assigned prompt cannot be reworded';
+  end;
+
+  -- Archiving is a state change, not an edit: it must still be allowed.
+  update public.writing_prompts set status = 'archived'
+   where id = 'bbbbbbbb-0000-0000-0000-000000000001';
+  get diagnostics changed = row_count;
+  assert changed = 1, 'An assigned prompt must still be archivable';
+  raise notice 'PASS 16b: archiving an assigned prompt still works';
+end $$;
+
+-- A prompt nobody has been set is still freely editable — the freeze is about
+-- protecting answered work, not about locking drafts.
+set local role postgres;
+insert into public.writing_prompts (id, organization_id, task_type, prompt_text, status, created_by)
+values ('bbbbbbbb-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        'task2', 'Unassigned draft', 'pending', '88888888-8888-8888-8888-888888888888');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare changed int;
+begin
+  update public.writing_prompts set prompt_text = 'Reworded draft'
+   where id = 'bbbbbbbb-0000-0000-0000-000000000002';
+  get diagnostics changed = row_count;
+  assert changed = 1, 'An unassigned draft must stay editable';
+  raise notice 'PASS 16c: an unassigned draft is still editable';
 end $$;
 
 rollback;  -- discards all seed data and resets role/claims
