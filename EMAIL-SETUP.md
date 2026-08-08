@@ -8,8 +8,19 @@ There are **two** email systems, and both need the same credentials:
 
 | Email | Sent by | Configured in |
 | --- | --- | --- |
-| Center approval / rejection<br>Student login credentials | our code (`lib/email/send.ts`, nodemailer) | `.env.local` + Vercel env |
+| Center application + approval / rejection<br>Student login credentials | our code (`lib/email/send.ts`, nodemailer) | `.env.local` + Vercel env |
 | Signup confirmation, password reset | Supabase Auth | Supabase → Auth → SMTP |
+
+### Who receives what, when a center applies
+
+The single **Organization email** field on the application form becomes both the
+center admin's sign-in address and `organizations.contact_email`. From it:
+
+| Moment | Goes to |
+| --- | --- |
+| Application submitted | the **center** — "we have it, wait for review" |
+| Application submitted | the **platform owner** — `PLATFORM_ADMIN_EMAIL`, a nudge to go and review |
+| Approved / rejected | the **center**, at `contact_email` |
 
 Supabase's SMTP box does **not** cover the first row. Configuring only Supabase
 leaves center approvals silent — the approval still succeeds, and the admin UI
@@ -87,6 +98,12 @@ the record — but only after Brevo is verified and working. One change at a tim
 | `SMTP_USER` | `b4c665001@smtp-brevo.com` |
 | `SMTP_PASS` | the **SMTP key** — *not* the Brevo account password |
 | `SMTP_FROM` | `EngProgress <no-reply@engprogress.com>` |
+| `PLATFORM_ADMIN_EMAIL` | where "a center has applied" lands — a mailbox you read |
+
+`PLATFORM_ADMIN_EMAIL` matters more than it looks. Unset, notifications fall back
+to the super admin's account email, `super_admin@engprogress.com` — and this
+domain has **no inbound mail** (the MX points at Vercel), so that address is a
+black hole. Applications would then sit in `/admin` unannounced.
 
 `SMTP_USER` is **not** the Brevo account email — Brevo issues a dedicated login,
 shown under *Your SMTP Settings*. Using the account email fails with
