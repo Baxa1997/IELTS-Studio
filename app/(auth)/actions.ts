@@ -16,6 +16,8 @@ export interface AuthFormState {
   notice?: string;
   /** A center application went through — the form swaps to a success panel. */
   submitted?: boolean;
+  /** The login the new center should sign in with, shown on that panel. */
+  signInWith?: string;
 }
 
 /**
@@ -140,23 +142,28 @@ export async function signUpOrganization(
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
   if (!orgName) return { error: "Official organization name is required." };
-  if (!email || !password) return { error: "Email and password are required." };
+  if (!email || !password) return { error: "A contact email and password are required." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
-  if (login && !/^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])$/.test(login)) {
+  if (!login) return { error: "Choose a login for the center to sign in with." };
+  if (!/^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])$/.test(login)) {
     return {
       error: "A login must be 3–32 characters: letters, digits, and . _ - in the middle.",
     };
   }
-  if (login) {
-    // Logins are global, so a clash has to be reported before the account is
-    // created — the trigger would otherwise fail the whole signup opaquely.
-    const { data: taken } = await createAdminClient()
-      .from("profiles")
-      .select("id")
-      .eq("username", login)
-      .maybeSingle();
-    if (taken) return { error: `The login "${login}" is taken. Please choose another.` };
-  }
+
+  const admin = createAdminClient();
+
+  // Logins are global, so a clash has to be reported before the account is
+  // created — the trigger would otherwise fail the whole signup opaquely.
+  const { data: takenLogin } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", login)
+    .maybeSingle();
+  if (takenLogin) return { error: `The login "${login}" is taken. Please choose another.` };
+
+  const guard = await applicationGuard(admin, email);
+  if (guard) return { error: guard };
 
   const headerList = await headers();
   const origin =
@@ -164,22 +171,29 @@ export async function signUpOrganization(
     process.env.NEXT_PUBLIC_SITE_URL ??
     `https://${headerList.get("host")}`;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
+  // The address they sign in with is not necessarily the address we write to.
+  // If the contact email is free, it serves as both, so email sign-in keeps
+  // working. If it already belongs to somebody — very often the applicant's own
+  // learner account — the auth identity moves to a synthetic address on a domain
+  // we own, and the login carries them. `contact_email` holds the real one
+  // regardless, which is what the trigger stores and where every notice goes.
+  const emailFree = !(await emailInUse(admin, email));
+  const authEmail = emailFree ? email : `${login}@centers.engprogress.com`;
+
+  const { error } = await admin.auth.admin.createUser({
+    email: authEmail,
     password,
-    options: {
-      data: { account_kind: "center", org_name: orgName, username: login || null },
-      emailRedirectTo: `${origin}/auth/callback`,
+    // We send our own "application received"; there is no inbox behind a
+    // synthetic address to confirm anyway.
+    email_confirm: true,
+    user_metadata: {
+      account_kind: "center",
+      org_name: orgName,
+      username: login,
+      contact_email: email,
     },
   });
   if (error) return { error: error.message };
-  if (emailAlreadyRegistered(data.user)) {
-    return {
-      error:
-        "An account already uses this email address. Sign in with it instead, or apply with a different address.",
-    };
-  }
 
   // Tell the applicant we have it, and tell the platform owner to go look.
   // Both are best-effort: an application that succeeded must not be reported as
@@ -202,15 +216,63 @@ export async function signUpOrganization(
     notifyPlatformAdmin(orgName, email, origin),
   ]);
 
-  if (!data.session) {
-    // Email confirmation is switched on for this project: they must confirm
-    // before they can sign in at all. The application itself is already filed.
-    return {
-      submitted: true,
-      notice: "Please also confirm your email address using the link we just sent.",
-    };
+  return {
+    submitted: true,
+    signInWith: login,
+    notice: emailFree
+      ? undefined
+      : `That email already has a personal learner account, which stays separate. Sign in to the center with the login “${login}”.`,
+  };
+}
+
+/**
+ * Cheap abuse guards for a public endpoint that now creates auth users with the
+ * service-role key, and so no longer sits behind Supabase's own signup throttle.
+ * Two queries, no new tables: a repeat application from the same address, and a
+ * burst of them from anywhere.
+ */
+async function applicationGuard(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<string | null> {
+  const { data: already } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("kind", "center")
+    .eq("contact_email", email)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (already) {
+    return "We already have an application from this address and it's still under review.";
   }
-  return { submitted: true };
+
+  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count } = await admin
+    .from("organizations")
+    .select("id", { count: "exact", head: true })
+    .eq("kind", "center")
+    .gte("created_at", hourAgo);
+  // No real hour brings twenty centers. A burst is a script.
+  if ((count ?? 0) >= 20) {
+    return "Too many applications right now. Please try again shortly.";
+  }
+  return null;
+}
+
+/** Is this address already an auth identity? The admin API has no lookup by
+ *  email, so page through — cheap here, since applications are rare. */
+async function emailInUse(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+): Promise<boolean> {
+  const wanted = email.toLowerCase();
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error || !data?.users?.length) return false;
+    if (data.users.some((u) => u.email?.toLowerCase() === wanted)) return true;
+    if (data.users.length < 200) return false;
+  }
+  return false;
 }
 
 /**
@@ -219,13 +281,10 @@ export async function signUpOrganization(
  * With email confirmation on, Supabase answers a duplicate signup with a
  * SUCCESS — a decoy user carrying an empty `identities` array, no session, and
  * no error — so the form can't be used to discover who has an account. Nothing
- * is created and no trigger fires.
+ * is created and no trigger fires, so the caller must not report success.
  *
- * For a center application that silence is worse than the enumeration risk it
- * prevents: the applicant is shown "we received it" and waits for an approval
- * that can never arrive, because there is nothing in the queue. Better to tell
- * them the address is in use. The sign-IN form still refuses to enumerate,
- * which is where it actually matters.
+ * Only the learner signup still needs this. Center applications go through the
+ * admin API, which fails loudly instead.
  */
 function emailAlreadyRegistered(user: { identities?: unknown[] | null } | null): boolean {
   return Boolean(user && Array.isArray(user.identities) && user.identities.length === 0);

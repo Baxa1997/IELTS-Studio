@@ -10,10 +10,13 @@ import { HAIRLINE, INDIGO, MUTED, SANS, SERIF } from "@/app/(auth)/brand-form";
  */
 export function ApplicationSubmitted({
   note,
+  signInWith,
   onClose,
 }: {
-  /** Extra line from the server, e.g. "confirm your email address too". */
+  /** Extra line from the server, e.g. why the login is the way in. */
   note?: string;
+  /** The login this center will use — the one thing they must not forget. */
+  signInWith?: string;
   /** Rendered as a button when the panel is inside the dialog. */
   onClose?: () => void;
 }) {
@@ -65,6 +68,44 @@ export function ApplicationSubmitted({
         <strong style={{ color: INDIGO }}> not active yet</strong>. As soon as it&apos;s approved
         we&apos;ll send a confirmation email and you can sign in and set it up.
       </p>
+
+      {signInWith ? (
+        <div
+          style={{
+            margin: "18px auto 0",
+            maxWidth: 380,
+            padding: "12px 14px",
+            background: "#F7F7FC",
+            border: `1px solid ${HAIRLINE}`,
+            borderRadius: 12,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: SANS,
+              fontWeight: 700,
+              fontSize: 11,
+              letterSpacing: ".07em",
+              textTransform: "uppercase",
+              color: MUTED,
+            }}
+          >
+            Your login
+          </div>
+          <div
+            style={{
+              fontFamily: SANS,
+              fontWeight: 700,
+              fontSize: 18,
+              color: INDIGO,
+              marginTop: 4,
+              wordBreak: "break-all",
+            }}
+          >
+            {signInWith}
+          </div>
+        </div>
+      ) : null}
 
       {note ? (
         <p

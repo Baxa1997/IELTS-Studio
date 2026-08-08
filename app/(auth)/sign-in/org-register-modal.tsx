@@ -86,7 +86,11 @@ export function OrgRegisterModal({ open, onClose }: { open: boolean; onClose: ()
         }}
       >
         {state.submitted ? (
-          <ApplicationSubmitted note={state.notice} onClose={onClose} />
+          <ApplicationSubmitted
+            note={state.notice}
+            signInWith={state.signInWith}
+            onClose={onClose}
+          />
         ) : (
           <>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -170,7 +174,7 @@ export function OrgRegisterModal({ open, onClose }: { open: boolean; onClose: ()
 
           <div>
             <label htmlFor="org-modal-email" style={labelStyle}>
-              Organization email
+              Contact email
             </label>
             <input
               id="org-modal-email"
@@ -182,23 +186,28 @@ export function OrgRegisterModal({ open, onClose }: { open: boolean; onClose: ()
               className="lp-input"
               style={inputStyle}
             />
+            <p style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, margin: "7px 0 0" }}>
+              Where we send the approval. Fine to use an address that already has a personal
+              account — that account stays separate.
+            </p>
           </div>
 
           <div>
             <label htmlFor="org-modal-login" style={labelStyle}>
-              Login <span style={{ fontWeight: 500, color: MUTED }}>(optional)</span>
+              Login
             </label>
             <input
               id="org-modal-login"
               name="login"
               autoComplete="off"
+              required
               placeholder="cambridge-tashkent"
               pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,30}[A-Za-z0-9]"
               className="lp-input"
               style={inputStyle}
             />
             <p style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, margin: "7px 0 0" }}>
-              A short name to sign in with instead of the email.
+              What the center signs in with. Letters, digits, and . _ -
             </p>
           </div>
 

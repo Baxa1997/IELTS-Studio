@@ -16,7 +16,8 @@ const initialState: AuthFormState = {};
 export function OrgSignUpForm() {
   const [state, formAction, pending] = useActionState(signUpOrganization, initialState);
 
-  if (state.submitted) return <ApplicationSubmitted note={state.notice} />;
+  if (state.submitted)
+    return <ApplicationSubmitted note={state.notice} signInWith={state.signInWith} />;
 
   return (
     <form action={formAction} className="space-y-4">
@@ -25,22 +26,25 @@ export function OrgSignUpForm() {
         <Input id="org_name" name="org_name" autoComplete="organization" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="org_email">Organization email</Label>
+        <Label htmlFor="org_email">Contact email</Label>
         <Input id="org_email" name="email" type="email" autoComplete="email" required />
+        <p className="text-muted-foreground text-xs">
+          Where we send the approval. Fine to use an address that already has a personal account
+          — that account stays separate.
+        </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="org_login">
-          Login <span className="text-muted-foreground font-normal">(optional)</span>
-        </Label>
+        <Label htmlFor="org_login">Login</Label>
         <Input
           id="org_login"
           name="login"
           autoComplete="off"
+          required
           placeholder="cambridge-tashkent"
           pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,30}[A-Za-z0-9]"
         />
         <p className="text-muted-foreground text-xs">
-          A short name to sign in with instead of the email. You can always use the email too.
+          What the center signs in with. Letters, digits, and . _ -
         </p>
       </div>
       <div className="space-y-2">
