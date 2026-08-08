@@ -59,16 +59,38 @@ export async function reviewOrganization(
   }
 
   const signInUrl = `${serverEnv.siteUrl}/sign-in`;
+
+  // The login, not the email, is how a center signs in — and for a center whose
+  // contact address already belonged to a personal learner account, the email
+  // is not a way in at all: it resolves to that other account. An approval
+  // email that omits this leaves them locked out of an approved center.
+  const { data: admins } = await admin
+    .from("profiles")
+    .select("username")
+    .eq("organization_id", orgId)
+    .eq("role", "center_admin")
+    .limit(1);
+  const login = admins?.[0]?.username ?? null;
+  const credentials = login
+    ? `\nSign in with your login: ${login}\n(and the password you chose when you applied)\n`
+    : "";
+  const credentialsHtml = login
+    ? `<p>Sign in with your login: <strong>${escapeHtml(login)}</strong><br>` +
+      `<span style="color:#5A6076">…and the password you chose when you applied.</span></p>`
+    : "";
+
   const result = approve
     ? await sendEmail({
         to: org.contact_email,
         subject: `${org.name} is approved on EngProgress`,
         text:
-          `Good news — your organization "${org.name}" has been approved.\n\n` +
-          `You can now sign in and set up your center:\n${signInUrl}\n\n` +
+          `Good news — your organization "${org.name}" has been approved.\n` +
+          `${credentials}\n` +
+          `Sign in and set up your center:\n${signInUrl}\n\n` +
           `— The EngProgress team`,
         html:
           `<p>Good news — your organization <strong>${escapeHtml(org.name)}</strong> has been approved.</p>` +
+          credentialsHtml +
           `<p><a href="${signInUrl}">Sign in</a> to set up your center.</p>` +
           `<p>— The EngProgress team</p>`,
       })

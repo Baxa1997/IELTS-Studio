@@ -206,12 +206,26 @@ export async function signUpOrganization(
         `Thanks for applying to EngProgress.\n\n` +
         `"${orgName}" is now in our review queue. We check every organization by hand, ` +
         `and you'll get an email as soon as yours is approved — usually within a working day.\n\n` +
-        `Nothing to do until then.\n\n— The EngProgress team`,
+        `Your login: ${login}\n` +
+        `Keep it safe — it's how you'll sign in, together with the password you just chose.\n` +
+        (emailFree
+          ? ""
+          : `Note: this email address already has a personal learner account, which stays ` +
+            `separate. Use the login above for the center, not the email.\n`) +
+        `\n— The EngProgress team`,
       html:
         `<p>Thanks for applying to EngProgress.</p>` +
         `<p><strong>${escapeHtml(orgName)}</strong> is now in our review queue. We check every ` +
         `organization by hand, and you'll get an email as soon as yours is approved — usually ` +
-        `within a working day.</p><p>Nothing to do until then.</p><p>— The EngProgress team</p>`,
+        `within a working day.</p>` +
+        `<p>Your login: <strong>${escapeHtml(login)}</strong><br>` +
+        `<span style="color:#5A6076">Keep it safe — it's how you'll sign in, together with the ` +
+        `password you just chose.</span></p>` +
+        (emailFree
+          ? ""
+          : `<p style="color:#5A6076">This email address already has a personal learner account, ` +
+            `which stays separate. Use the login above for the center, not the email.</p>`) +
+        `<p>— The EngProgress team</p>`,
     }),
     notifyPlatformAdmin(orgName, email, origin),
   ]);
