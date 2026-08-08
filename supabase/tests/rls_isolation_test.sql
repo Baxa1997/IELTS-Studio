@@ -9,20 +9,32 @@
 --
 -- Everything runs inside BEGIN … ROLLBACK, so it leaves NO data behind.
 -- A failed ASSERT aborts with an error (non-zero exit under ON_ERROR_STOP).
+--
+-- Cases 13-15 need migrations 20260808130000 / 140000 / 150000. Without them
+-- you get a missing-relation error on v_center_student_stats, not a failure.
 -- ============================================================================
 begin;
 
 -- ---- Seed (runs as table owner / postgres, so RLS is bypassed here) --------
-insert into auth.users (instance_id, id, aud, role, email) values
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'admin.a@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'student.a@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'student.a2@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'admin.b@test.local'),
-  ('00000000-0000-0000-0000-000000000000', '55555555-5555-5555-5555-555555555555', 'authenticated', 'authenticated', 'student.b@test.local');
-
+-- Organizations first: every seeded auth user names one in `raw_app_meta_data`.
 insert into public.organizations (id, name) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Center A'),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Center B');
+
+-- `organization_id` in raw_app_meta_data is REQUIRED here, and is what keeps
+-- this file working. The `handle_new_user` trigger fires on every auth.users
+-- INSERT and, for a user it doesn't recognise, provisions a personal org and a
+-- student profile — which then collides with the profiles INSERT below
+-- ("duplicate key value violates profiles_pkey"). The trigger's already-
+-- provisioned branch skips exactly that, and it DOES fire for rows inserted
+-- directly by SQL (unlike auth.admin.createUser, which writes app_metadata only
+-- after the INSERT — see 20260807200000_restore_handle_new_user.sql).
+insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data) values
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111', 'authenticated', 'authenticated', 'admin.a@test.local',   '{"organization_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', '22222222-2222-2222-2222-222222222222', 'authenticated', 'authenticated', 'student.a@test.local',  '{"organization_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', '33333333-3333-3333-3333-333333333333', 'authenticated', 'authenticated', 'student.a2@test.local', '{"organization_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', '44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'admin.b@test.local',    '{"organization_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}'::jsonb),
+  ('00000000-0000-0000-0000-000000000000', '55555555-5555-5555-5555-555555555555', 'authenticated', 'authenticated', 'student.b@test.local',  '{"organization_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}'::jsonb);
 
 insert into public.profiles (id, organization_id, role, full_name) values
   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'center_admin', 'Admin A'),
@@ -105,8 +117,8 @@ end $$;
 -- ---- Case 5: groups are org-scoped, and rosters are staff-only --------------
 -- Seed (as owner): a group in Center A owned by a teacher, plus one in B.
 set local role postgres;
-insert into auth.users (instance_id, id, aud, role, email) values
-  ('00000000-0000-0000-0000-000000000000', '88888888-8888-8888-8888-888888888888', 'authenticated', 'authenticated', 'teacher.a@test.local');
+insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data) values
+  ('00000000-0000-0000-0000-000000000000', '88888888-8888-8888-8888-888888888888', 'authenticated', 'authenticated', 'teacher.a@test.local', '{"organization_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}'::jsonb);
 insert into public.profiles (id, organization_id, role, full_name) values
   ('88888888-8888-8888-8888-888888888888', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'teacher', 'Teacher A');
 insert into public.groups (id, organization_id, name, teacher_id) values
@@ -214,8 +226,8 @@ set local role postgres;
 insert into public.group_members (group_id, student_id, organization_id) values
   ('99999999-9999-9999-9999-999999999999', '33333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 -- A second teacher in Center A, with their own group and their own student.
-insert into auth.users (instance_id, id, aud, role, email) values
-  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'teacher.a2@test.local');
+insert into auth.users (instance_id, id, aud, role, email, raw_app_meta_data) values
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'teacher.a2@test.local', '{"organization_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}'::jsonb);
 insert into public.profiles (id, organization_id, role, full_name) values
   ('dddddddd-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'teacher', 'Teacher A2');
 set local role authenticated;
