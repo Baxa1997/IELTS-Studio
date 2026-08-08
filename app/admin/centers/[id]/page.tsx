@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { EmptyTableRow, ScrollTable, TD, TH, THead, TR } from "@/components/admin/table";
 import {
   EmptyRow,
   FAINT,
@@ -29,7 +30,7 @@ export default async function CenterDetailPage({
   const detail = await loadCenterDetail(id);
   if (!detail) notFound();
 
-  const { center, staff, groups, practice30d, ungroupedStudents } = detail;
+  const { center, staff, groups, students, practice30d, ungroupedStudents } = detail;
   const teachers = staff.filter((s) => s.role === "teacher");
   const admins = staff.filter((s) => s.role === "center_admin");
 
@@ -130,6 +131,41 @@ export default async function CenterDetailPage({
           ))}
           {groups.length === 0 ? <EmptyRow>No groups yet.</EmptyRow> : null}
         </List>
+      </Panel>
+
+      <Panel
+        title="Students"
+        description="Ordered by how much they've practised, so an idle roster shows itself. Counts are lifetime, all four skills."
+      >
+        <ScrollTable maxHeight={420} caption="Scroll for more.">
+          <THead>
+            <TH>Name</TH>
+            <TH>Login</TH>
+            <TH>Group</TH>
+            <TH align="right">Practice</TH>
+          </THead>
+          <tbody>
+            {students.map((s, i) => (
+              <TR key={s.id} first={i === 0}>
+                <TD>{s.name}</TD>
+                <TD muted>{s.username ?? "—"}</TD>
+                <TD muted>
+                  {s.groups.length > 0 ? (
+                    s.groups.join(", ")
+                  ) : (
+                    <Pill tone="warn">no group</Pill>
+                  )}
+                </TD>
+                <TD align="right" numeric muted={s.practiceCount === 0}>
+                  {s.practiceCount}
+                </TD>
+              </TR>
+            ))}
+            {students.length === 0 ? (
+              <EmptyTableRow colSpan={4}>No students yet.</EmptyTableRow>
+            ) : null}
+          </tbody>
+        </ScrollTable>
       </Panel>
 
       {ungroupedStudents > 0 ? (

@@ -12,7 +12,8 @@ import {
   StatRow,
   StatTile,
 } from "@/components/console/page-ui";
-import { loadCenters, loadPlatformStats } from "@/lib/admin/platform";
+import { BarList, DeltaStat, TrendChart } from "@/components/admin/charts";
+import { loadCenters, loadPlatformStats, loadPlatformTrends } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -23,7 +24,11 @@ const dateFmt = (iso: string) =>
 
 export default async function AdminPage() {
   await requireSuperAdmin();
-  const [stats, centers] = await Promise.all([loadPlatformStats(), loadCenters()]);
+  const [stats, centers, trends] = await Promise.all([
+    loadPlatformStats(),
+    loadCenters(),
+    loadPlatformTrends(30),
+  ]);
   const pending = centers.filter((c) => c.status === "pending");
 
   // Conduct findings — abuse or refusal aimed at the examiner, as reported by
@@ -98,16 +103,48 @@ export default async function AdminPage() {
         </Panel>
       ) : null}
 
-      <Panel
-        title="Practice in the last 30 days"
-        description="Every graded attempt on the platform, by skill."
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 16,
+        }}
       >
-        <StatRow>
-          <StatTile value={p.writing} label="Writing" />
-          <StatTile value={p.reading} label="Reading" />
-          <StatTile value={p.listening} label="Listening" />
-          <StatTile value={p.speaking} label="Speaking" />
-        </StatRow>
+        <Panel
+          title="Practice"
+          description="Every graded attempt on the platform, per day for 30 days."
+        >
+          <div style={{ marginBottom: 14 }}>
+            <DeltaStat
+              value={trends.totals.practice}
+              label="vs. the 30 days before"
+              previous={trends.previous.practice}
+            />
+          </div>
+          <TrendChart points={trends.practice} label="Practice per day" />
+        </Panel>
+
+        <Panel title="New accounts" description="Sign-ups per day for 30 days.">
+          <div style={{ marginBottom: 14 }}>
+            <DeltaStat
+              value={trends.totals.signups}
+              label="vs. the 30 days before"
+              previous={trends.previous.signups}
+            />
+          </div>
+          <TrendChart points={trends.signups} color="#15803d" label="Sign-ups per day" />
+        </Panel>
+      </div>
+
+      <Panel title="Which skills are being used" description="Last 30 days, all tenants.">
+        <BarList
+          rows={[
+            { label: "Writing", value: p.writing },
+            { label: "Reading", value: p.reading },
+            { label: "Listening", value: p.listening },
+            { label: "Speaking", value: p.speaking },
+          ]}
+        />
       </Panel>
 
       <Panel

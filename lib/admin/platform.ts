@@ -83,6 +83,95 @@ export async function loadPlatformStats(): Promise<PlatformStats> {
   };
 }
 
+export interface DayPoint {
+  /** ISO date, YYYY-MM-DD. */
+  day: string;
+  value: number;
+}
+
+export interface PlatformTrends {
+  /** New accounts per day. */
+  signups: DayPoint[];
+  /** All practice per day, and the same split by skill. */
+  practice: DayPoint[];
+  bySkill: { writing: DayPoint[]; reading: DayPoint[]; listening: DayPoint[]; speaking: DayPoint[] };
+  /** Totals over the window, and over the window before it, for a delta. */
+  totals: { signups: number; practice: number };
+  previous: { signups: number; practice: number };
+}
+
+/** Bucket ISO timestamps into a dense day series — days with nothing still
+ *  appear as zero, or the chart lies about the shape of the week. */
+function series(stamps: (string | null | undefined)[], days: number): DayPoint[] {
+  const counts = new Map<string, number>();
+  const out: DayPoint[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(Date.now() - i * DAY).toISOString().slice(0, 10);
+    counts.set(day, 0);
+    out.push({ day, value: 0 });
+  }
+  for (const s of stamps) {
+    if (!s) continue;
+    const day = s.slice(0, 10);
+    if (counts.has(day)) counts.set(day, (counts.get(day) ?? 0) + 1);
+  }
+  for (const point of out) point.value = counts.get(point.day) ?? 0;
+  return out;
+}
+
+/** Daily activity for the dashboard charts. `days` is the visible window; the
+ *  same span before it is fetched too, purely to compute the change. */
+export async function loadPlatformTrends(days = 30): Promise<PlatformTrends> {
+  const admin = createAdminClient();
+  const windowStart = daysAgo(days);
+  const priorStart = daysAgo(days * 2);
+
+  const [profiles, essays, reading, listening, speaking] = await Promise.all([
+    admin.from("profiles").select("created_at").gte("created_at", priorStart),
+    admin.from("essays").select("created_at").gte("created_at", priorStart),
+    admin.from("reading_attempts").select("created_at").gte("created_at", priorStart),
+    admin.from("listening_attempts").select("created_at").gte("created_at", priorStart),
+    admin.from("speaking_sessions").select("started_at").gte("started_at", priorStart),
+  ]);
+
+  const signupStamps = (profiles.data ?? []).map((r) => r.created_at);
+  const skillStamps = {
+    writing: (essays.data ?? []).map((r) => r.created_at),
+    reading: (reading.data ?? []).map((r) => r.created_at),
+    listening: (listening.data ?? []).map((r) => r.created_at),
+    speaking: (speaking.data ?? []).map((r) => r.started_at),
+  };
+  const allPractice = [
+    ...skillStamps.writing,
+    ...skillStamps.reading,
+    ...skillStamps.listening,
+    ...skillStamps.speaking,
+  ];
+
+  const inWindow = (s: string | null | undefined) => Boolean(s && s >= windowStart);
+  const inPrior = (s: string | null | undefined) =>
+    Boolean(s && s >= priorStart && s < windowStart);
+
+  return {
+    signups: series(signupStamps, days),
+    practice: series(allPractice, days),
+    bySkill: {
+      writing: series(skillStamps.writing, days),
+      reading: series(skillStamps.reading, days),
+      listening: series(skillStamps.listening, days),
+      speaking: series(skillStamps.speaking, days),
+    },
+    totals: {
+      signups: signupStamps.filter(inWindow).length,
+      practice: allPractice.filter(inWindow).length,
+    },
+    previous: {
+      signups: signupStamps.filter(inPrior).length,
+      practice: allPractice.filter(inPrior).length,
+    },
+  };
+}
+
 export interface CenterRow {
   id: string;
   name: string;
@@ -176,10 +265,20 @@ export interface CenterGroup {
   assignments: number;
 }
 
+export interface CenterStudent {
+  id: string;
+  name: string;
+  username: string | null;
+  /** Every group they're in — usually one, occasionally none. */
+  groups: string[];
+  practiceCount: number;
+}
+
 export interface CenterDetail {
   center: CenterRow;
   staff: CenterStaff[];
   groups: CenterGroup[];
+  students: CenterStudent[];
   /** Practice in the last 30 days, split by skill. */
   practice30d: { writing: number; reading: number; listening: number; speaking: number };
   /** Students who belong to no group — invisible to every teacher report. */
@@ -230,6 +329,42 @@ export async function loadCenterDetail(orgId: string): Promise<CenterDetail | nu
     (p) => p.role === "student" && !enrolled.has(p.id),
   ).length;
 
+  // Lifetime practice per student in this center, so an idle roster is obvious.
+  const studentIds = (profiles.data ?? []).filter((p) => p.role === "student").map((p) => p.id);
+  const perStudent = new Map<string, number>();
+  if (studentIds.length > 0) {
+    const sets = await Promise.all([
+      admin.from("essays").select("student_id").in("student_id", studentIds),
+      admin.from("reading_attempts").select("student_id").in("student_id", studentIds),
+      admin.from("listening_attempts").select("student_id").in("student_id", studentIds),
+      admin.from("speaking_sessions").select("student_id").in("student_id", studentIds),
+    ]);
+    for (const s of sets) {
+      for (const row of s.data ?? []) {
+        perStudent.set(row.student_id, (perStudent.get(row.student_id) ?? 0) + 1);
+      }
+    }
+  }
+
+  const groupNameById = new Map((groups.data ?? []).map((g) => [g.id, g.name]));
+  const groupsByStudent = new Map<string, string[]>();
+  for (const m of members.data ?? []) {
+    const name = groupNameById.get(m.group_id);
+    if (!name) continue;
+    groupsByStudent.set(m.student_id, [...(groupsByStudent.get(m.student_id) ?? []), name]);
+  }
+
+  const students: CenterStudent[] = (profiles.data ?? [])
+    .filter((p) => p.role === "student")
+    .map((p) => ({
+      id: p.id,
+      name: p.full_name ?? "Unnamed",
+      username: p.username,
+      groups: groupsByStudent.get(p.id) ?? [],
+      practiceCount: perStudent.get(p.id) ?? 0,
+    }))
+    .sort((a, b) => b.practiceCount - a.practiceCount);
+
   const staff: CenterStaff[] = (profiles.data ?? [])
     .filter((p): p is typeof p & { role: "center_admin" | "teacher" } =>
       p.role === "center_admin" || p.role === "teacher",
@@ -258,6 +393,7 @@ export async function loadCenterDetail(orgId: string): Promise<CenterDetail | nu
     center,
     staff,
     groups: groupRows,
+    students,
     practice30d: {
       writing: essays.count ?? 0,
       reading: reading.count ?? 0,
