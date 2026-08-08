@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { signUpOrganization, type AuthFormState } from "@/app/(auth)/actions";
+import { ApplicationSubmitted } from "@/app/(auth)/application-submitted";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,8 @@ const initialState: AuthFormState = {};
  *  created pending and unlocks after super_admin approval. */
 export function OrgSignUpForm() {
   const [state, formAction, pending] = useActionState(signUpOrganization, initialState);
+
+  if (state.submitted) return <ApplicationSubmitted note={state.notice} />;
 
   return (
     <form action={formAction} className="space-y-4">

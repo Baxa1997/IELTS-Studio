@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
+import { platformAdminEmail } from "@/lib/email/platform-admin";
+import { sendEmail } from "@/lib/email/send";
 import { applyPendingPlan } from "@/lib/plan/apply-pending";
 import { placeUserInOrg } from "@/lib/provision";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -12,6 +14,8 @@ import { createClient } from "@/lib/supabase/server";
 export interface AuthFormState {
   error?: string;
   notice?: string;
+  /** A center application went through — the form swaps to a success panel. */
+  submitted?: boolean;
 }
 
 /**
@@ -166,15 +170,61 @@ export async function signUpOrganization(
     },
   });
   if (error) return { error: error.message };
+
+  // Tell the applicant we have it, and tell the platform owner to go look.
+  // Both are best-effort: an application that succeeded must not be reported as
+  // failed because a mail server was down. The admin queue is the real record.
+  await Promise.all([
+    sendEmail({
+      to: email,
+      subject: `We received your application — ${orgName}`,
+      text:
+        `Thanks for applying to EngProgress.\n\n` +
+        `"${orgName}" is now in our review queue. We check every organization by hand, ` +
+        `and you'll get an email as soon as yours is approved — usually within a working day.\n\n` +
+        `Nothing to do until then.\n\n— The EngProgress team`,
+      html:
+        `<p>Thanks for applying to EngProgress.</p>` +
+        `<p><strong>${escapeHtml(orgName)}</strong> is now in our review queue. We check every ` +
+        `organization by hand, and you'll get an email as soon as yours is approved — usually ` +
+        `within a working day.</p><p>Nothing to do until then.</p><p>— The EngProgress team</p>`,
+    }),
+    notifyPlatformAdmin(orgName, email, origin),
+  ]);
+
   if (!data.session) {
-    // Email confirmation required: confirm first, then the application waits
-    // for admin review (the /awaiting-approval gate explains this after login).
+    // Email confirmation is switched on for this project: they must confirm
+    // before they can sign in at all. The application itself is already filed.
     return {
-      notice:
-        "Check your inbox to confirm your email. Your organization application is then reviewed by our team — you'll receive a confirmation email once it's approved.",
+      submitted: true,
+      notice: "Please also confirm your email address using the link we just sent.",
     };
   }
-  redirect("/awaiting-approval");
+  return { submitted: true };
+}
+
+/** Nudge the platform owner that something is waiting in /admin. */
+async function notifyPlatformAdmin(orgName: string, contact: string, origin: string) {
+  const to = await platformAdminEmail();
+  if (!to) return;
+  await sendEmail({
+    to,
+    subject: `New center application: ${orgName}`,
+    text:
+      `${orgName} (${contact}) has applied for a center account.\n\n` +
+      `Approve or reject: ${origin}/admin`,
+    html:
+      `<p><strong>${escapeHtml(orgName)}</strong> (${escapeHtml(contact)}) has applied for a center account.</p>` +
+      `<p><a href="${origin}/admin">Review it in the admin console</a></p>`,
+  });
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 export async function signOut(): Promise<void> {

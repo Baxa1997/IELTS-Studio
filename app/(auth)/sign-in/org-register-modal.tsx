@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 
 import { signUpOrganization, type AuthFormState } from "@/app/(auth)/actions";
+import { ApplicationSubmitted } from "@/app/(auth)/application-submitted";
 import {
   errorStyle,
   HAIRLINE,
@@ -84,6 +85,10 @@ export function OrgRegisterModal({ open, onClose }: { open: boolean; onClose: ()
           margin: "auto",
         }}
       >
+        {state.submitted ? (
+          <ApplicationSubmitted note={state.notice} onClose={onClose} />
+        ) : (
+          <>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div
@@ -229,6 +234,8 @@ export function OrgRegisterModal({ open, onClose }: { open: boolean; onClose: ()
             {pending ? "Submitting…" : "Submit application"}
           </button>
         </form>
+          </>
+        )}
       </div>
     </div>
   );
