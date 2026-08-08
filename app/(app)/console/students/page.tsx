@@ -37,10 +37,20 @@ const SORTS = {
 
 type SortKey = keyof typeof SORTS;
 
+/** The stat cards double as filters — a number you can click is a number you can
+ *  check. Each one is just a predicate over the same roster. */
+const CARD_FILTERS = {
+  practised: (s: StudentRow) => s.practiceCount > 0,
+  never: (s: StudentRow) => s.practiceCount === 0,
+  nogroup: (s: StudentRow) => s.groups.length === 0,
+} as const;
+
+type CardFilter = keyof typeof CARD_FILTERS;
+
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; group?: string; sort?: string }>;
+  searchParams: Promise<{ q?: string; group?: string; sort?: string; filter?: string }>;
 }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
@@ -49,6 +59,11 @@ export default async function StudentsPage({
   const query = sp.q?.trim().toLowerCase() || undefined;
   const groupFilter = sp.group && sp.group !== "all" ? sp.group : undefined;
   const sort: SortKey = (sp.sort && sp.sort in SORTS ? sp.sort : "practice") as SortKey;
+  const card: CardFilter | undefined =
+    sp.filter && sp.filter in CARD_FILTERS ? (sp.filter as CardFilter) : undefined;
+
+  // Clicking the active card again clears it, so the strip is a toggle.
+  const cardHref = (key: CardFilter) => (card === key ? "/console/students" : `?filter=${key}`);
 
   const all = await loadStudents({ role: profile.role, profileId: profile.id });
 
@@ -70,6 +85,7 @@ export default async function StudentsPage({
           ? s.groups.some((g) => g.id === groupFilter)
           : true,
     )
+    .filter((s) => (card ? CARD_FILTERS[card](s) : true))
     .sort(SORTS[sort].cmp);
 
   const neverPractised = all.filter((s) => s.practiceCount === 0).length;
@@ -88,11 +104,32 @@ export default async function StudentsPage({
       />
 
       <StatRow>
-        <StatTile value={all.length} label="Students" tone="indigo" />
-        <StatTile value={all.length - neverPractised} label="Have practised" />
-        <StatTile value={neverPractised} label="Never practised" />
+        <StatTile
+          value={all.length}
+          label="Students"
+          tone="indigo"
+          href="/console/students"
+          active={!card}
+        />
+        <StatTile
+          value={all.length - neverPractised}
+          label="Have practised"
+          href={cardHref("practised")}
+          active={card === "practised"}
+        />
+        <StatTile
+          value={neverPractised}
+          label="Never practised"
+          href={cardHref("never")}
+          active={card === "never"}
+        />
         {profile.role === "center_admin" ? (
-          <StatTile value={ungrouped} label="In no group" />
+          <StatTile
+            value={ungrouped}
+            label="In no group"
+            href={cardHref("nogroup")}
+            active={card === "nogroup"}
+          />
         ) : null}
       </StatRow>
 
@@ -106,6 +143,8 @@ export default async function StudentsPage({
         }
       >
         <FilterBar>
+          {/* Applying a search must not silently drop the card filter above. */}
+          {card ? <input type="hidden" name="filter" value={card} /> : null}
           <SearchField name="q" label="Search" value={sp.q} placeholder="Name or login…" />
           <SelectField
             name="group"
@@ -153,11 +192,9 @@ export default async function StudentsPage({
                   {s.lastActive ? dateFmt(s.lastActive) : "never"}
                 </TD>
                 <TD align="right">
-                  {s.groups[0] ? (
-                    <RowLink href={`/console/groups/${s.groups[0].id}/students/${s.id}`}>
-                      Report
-                    </RowLink>
-                  ) : null}
+                  {/* Roster route, not the group one: a student in no group has
+                      a report too, and this row is the only way to reach it. */}
+                  <RowLink href={`/console/students/${s.id}`}>Report</RowLink>
                 </TD>
               </TR>
             ))}

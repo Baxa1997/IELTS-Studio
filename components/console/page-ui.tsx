@@ -161,18 +161,28 @@ export function Panel({
   );
 }
 
-/** Big number + caption, for the stat strips. */
+/**
+ * Big number + caption, for the stat strips.
+ *
+ * Pass `href` and the tile becomes the filter for the list below it — the fix
+ * for a number nobody trusts is letting them click it and count the rows.
+ * `active` rings the tile that is currently filtering.
+ */
 export function StatTile({
   value,
   label,
   tone = "ink",
+  href,
+  active = false,
 }: {
   value: React.ReactNode;
   label: string;
   tone?: "ink" | "indigo";
+  href?: string;
+  active?: boolean;
 }) {
-  return (
-    <div style={cardStyle}>
+  const body = (
+    <>
       <div
         style={{
           fontFamily: SANS,
@@ -186,7 +196,19 @@ export function StatTile({
         {value}
       </div>
       <div style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, marginTop: 5 }}>{label}</div>
-    </div>
+    </>
+  );
+
+  const style: React.CSSProperties = {
+    ...cardStyle,
+    ...(active ? { borderColor: INDIGO, boxShadow: `0 0 0 1px ${INDIGO}` } : null),
+  };
+
+  if (!href) return <div style={style}>{body}</div>;
+  return (
+    <Link href={href} style={{ ...style, display: "block", textDecoration: "none" }}>
+      {body}
+    </Link>
   );
 }
 
