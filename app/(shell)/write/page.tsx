@@ -1,10 +1,10 @@
-import { redirect } from "next/navigation";
 
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { pitchDifficulty } from "@/lib/plan/types";
 import { seedStarterPrompts } from "@/lib/prompts/starter";
+import { DEFAULT_DIFFICULTY } from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
 
 import { WritingLibrary, type LibraryPrompt } from "./library";
@@ -19,13 +19,18 @@ export const dynamic = "force-dynamic";
  */
 export default async function WritePage() {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect(roleHome(profile.role));
+  // Staff browse the same library the class does — a teacher previews a prompt by
+  // doing what the student will do, not through a console mock-up of it. They
+  // have no study plan, so the plan-shaped bits below fall back to defaults.
+  const isStaff = profile.role !== "student";
 
   // New learners onboard first — the (shell) layout renders the takeover, so this
   // page renders nothing until a plan exists. Then ensure the starter set is seeded.
   const plan = await loadStudyPlan(profile.id);
-  if (!plan) return null;
-  await seedStarterPrompts({ studentId: profile.id, organizationId: profile.organization_id }, plan);
+  if (!plan && !isStaff) return null;
+  if (plan) {
+    await seedStarterPrompts({ studentId: profile.id, organizationId: profile.organization_id }, plan);
+  }
 
   const supabase = await createClient();
 
@@ -64,11 +69,13 @@ export default async function WritePage() {
 
   // The band generated tasks are pitched at — surfaced so the learner sees tasks
   // are tuned to their level (the route applies the same pitch server-side).
-  const pitchBand = pitchDifficulty({
-    measuredBand: est.bySkill.writing.currentBand,
-    selfReportedBand: plan.selfReportedBand,
-    targetBand: plan.targetBand,
-  });
+  const pitchBand = plan
+    ? pitchDifficulty({
+        measuredBand: est.bySkill.writing.currentBand,
+        selfReportedBand: plan.selfReportedBand,
+        targetBand: plan.targetBand,
+      })
+    : DEFAULT_DIFFICULTY;
 
   // The shell (sidebar + header) is owned by the (shell) layout.
   return <WritingLibrary library={library} practised={practised} pitchBand={pitchBand} />;

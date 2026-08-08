@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-export type AssignmentKind = "writing" | "reading";
+export type AssignmentKind = "writing" | "reading" | "listening";
 
 export interface AssignmentSummary {
   id: string;
@@ -54,7 +54,7 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
 
   const { data: rows } = await supabase
     .from("assignments")
-    .select("id, kind, title, due_at, created_at, prompt_id, reading_test_id")
+    .select("id, kind, title, due_at, created_at, prompt_id, reading_test_id, listening_library_id")
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
   if (!rows || rows.length === 0) return [];
@@ -67,9 +67,12 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
 
   const promptIds = rows.filter((r) => r.prompt_id).map((r) => r.prompt_id as string);
   const testIds = rows.filter((r) => r.reading_test_id).map((r) => r.reading_test_id as string);
+  const listeningIds = rows
+    .filter((r) => r.listening_library_id)
+    .map((r) => r.listening_library_id as string);
 
-  // Two queries for the whole list rather than one per assignment.
-  const [essaysRes, attemptsRes] = await Promise.all([
+  // A few queries for the whole list rather than one per assignment.
+  const [essaysRes, attemptsRes, listeningRes] = await Promise.all([
     promptIds.length > 0 && memberIds.length > 0
       ? supabase
           .from("essays")
@@ -82,6 +85,13 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
           .from("reading_attempts")
           .select("test_id, student_id, status")
           .in("test_id", testIds)
+          .in("student_id", memberIds)
+      : Promise.resolve({ data: [] }),
+    listeningIds.length > 0 && memberIds.length > 0
+      ? supabase
+          .from("listening_attempts")
+          .select("library_id, student_id, score")
+          .in("library_id", listeningIds)
           .in("student_id", memberIds)
       : Promise.resolve({ data: [] }),
   ]);
@@ -98,6 +108,14 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
   for (const a of (attemptsRes.data ?? []) as { test_id: string; student_id: string; status: string }[]) {
     if (a.status === "graded") mark(a.test_id, a.student_id);
   }
+  // Listening has no status column — a score is the grade.
+  for (const l of (listeningRes.data ?? []) as {
+    library_id: string;
+    student_id: string;
+    score: number | null;
+  }[]) {
+    if (l.score != null) mark(l.library_id, l.student_id);
+  }
 
   return rows.map((r) => ({
     id: r.id as string,
@@ -105,7 +123,8 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
     title: r.title as string,
     dueAt: (r.due_at as string | null) ?? null,
     createdAt: r.created_at as string,
-    completed: done.get((r.prompt_id ?? r.reading_test_id) as string)?.size ?? 0,
+    completed:
+      done.get((r.prompt_id ?? r.reading_test_id ?? r.listening_library_id) as string)?.size ?? 0,
   }));
 }
 
@@ -122,7 +141,9 @@ export async function loadAssignmentReport(assignmentId: string): Promise<Assign
 
   const { data: a } = await supabase
     .from("assignments")
-    .select("id, kind, title, instructions, due_at, group_id, prompt_id, reading_test_id")
+    .select(
+      "id, kind, title, instructions, due_at, group_id, prompt_id, reading_test_id, listening_library_id",
+    )
     .eq("id", assignmentId)
     .maybeSingle();
   if (!a) return null;
@@ -145,7 +166,9 @@ export async function loadAssignmentReport(assignmentId: string): Promise<Assign
   const rows: AssignmentReportRow[] =
     a.kind === "writing"
       ? await writingRows(supabase, a.prompt_id as string, memberIds, names)
-      : await readingRows(supabase, a.reading_test_id as string, memberIds, names);
+      : a.kind === "reading"
+        ? await readingRows(supabase, a.reading_test_id as string, memberIds, names)
+        : await listeningRows(supabase, a.listening_library_id as string, memberIds, names);
 
   const graded = rows.filter((r) => r.band != null);
   const averageBand =
@@ -283,6 +306,55 @@ async function readingRows(
       band: Number(at.band),
       score: `${at.correct_count ?? 0} / ${at.total_questions ?? 0}`,
       weakness: worstQuestionTypes(at.type_breakdown as Record<string, { attempted?: number; correct?: number }> | null),
+    };
+  });
+}
+
+/**
+ * Listening rows. There is no band on the attempt and no per-question type
+ * breakdown to rank, so the report is honest about what it has: raw score out of
+ * the maximum, and nothing invented in the weakness column.
+ */
+async function listeningRows(
+  supabase: RlsClient,
+  libraryId: string,
+  memberIds: string[],
+  names: Map<string, string>,
+): Promise<AssignmentReportRow[]> {
+  if (memberIds.length === 0) return [];
+
+  const { data: attempts } = await supabase
+    .from("listening_attempts")
+    .select("student_id, score, max_score, created_at")
+    .eq("library_id", libraryId)
+    .in("student_id", memberIds)
+    .order("created_at", { ascending: true });
+
+  const byStudent = new Map<string, { score: number | null; max: number | null }>();
+  for (const at of (attempts ?? []) as {
+    student_id: string;
+    score: number | null;
+    max_score: number | null;
+  }[]) {
+    byStudent.set(at.student_id, { score: at.score, max: at.max_score });
+  }
+
+  return memberIds.map((id) => {
+    const at = byStudent.get(id);
+    const name = names.get(id) ?? "—";
+    if (!at) {
+      return { studentId: id, name, status: "not_started" as const, band: null, score: null, weakness: null };
+    }
+    if (at.score == null) {
+      return { studentId: id, name, status: "in_progress" as const, band: null, score: null, weakness: null };
+    }
+    return {
+      studentId: id,
+      name,
+      status: "graded" as const,
+      band: null,
+      score: `${at.score} / ${at.max ?? 0}`,
+      weakness: null,
     };
   });
 }

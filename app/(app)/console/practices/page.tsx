@@ -12,6 +12,7 @@ import {
   Pill,
   Row,
   RowLink,
+  RowText,
   SANS,
   StatRow,
   StatTile,
@@ -21,7 +22,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadPractices, type PracticeRow, type PracticeTab } from "@/lib/console/practices";
 import { TASK2_CATEGORY_LABELS, type Task2Category } from "@/lib/prompts/types";
 
-import { NewPracticeForm } from "./new-practice-form";
+import { PracticeRowActions } from "./practice-row-actions";
 
 const TABS: { key: PracticeTab; label: string; blurb: string }[] = [
   { key: "drafts", label: "Drafts", blurb: "Generated, not yet published. Only staff can see these." },
@@ -43,6 +44,9 @@ export default async function PracticesPage({
     ? (sp.tab as PracticeTab)
     : "published";
 
+  // Practice is a teaching decision: a center_admin reads the library, a teacher
+  // makes it.
+  const canCreate = profile.role === "teacher";
   const all = await loadPractices({ role: profile.role, profileId: profile.id });
   const rows = all.filter((p) => p.tab === tab);
   const count = (key: PracticeTab) => all.filter((p) => p.tab === key).length;
@@ -72,24 +76,44 @@ export default async function PracticesPage({
         ))}
       </StatRow>
 
-      <Panel
-        title="Write a new Task 2 prompt"
-        description="It's generated as a draft — you read it before any student does."
-      >
-        <NewPracticeForm />
-      </Panel>
+      {canCreate ? (
+        <Panel
+          title="Make a new practice"
+          description="You get the same screens your students do — generate it, work through it if you like, then set it to a class from the button on that page."
+        >
+          <List>
+            <Row first>
+              <RowText title="Writing" meta="Generate a Task 2 prompt, or pick one from the library." />
+              <RowLink href="/write">Open writing →</RowLink>
+            </Row>
+            <Row>
+              <RowText title="Reading" meta="A full test or a single passage, from the shared library." />
+              <RowLink href="/read">Open reading →</RowLink>
+            </Row>
+            <Row>
+              <RowText title="Listening" meta="Cambridge-style parts and full tests." />
+              <RowLink href="/listen">Open listening →</RowLink>
+            </Row>
+          </List>
+        </Panel>
+      ) : null}
 
       <Panel title={TABS.find((t) => t.key === tab)!.label} description={TABS.find((t) => t.key === tab)!.blurb}>
         <List>
           {rows.map((p, i) => (
-            <PracticeListRow key={`${p.kind}-${p.id}`} practice={p} first={i === 0} />
+            <PracticeListRow
+              key={`${p.kind}-${p.id}`}
+              practice={p}
+              first={i === 0}
+              canManage={canCreate}
+            />
           ))}
           {rows.length === 0 ? (
             <EmptyRow>
               {tab === "drafts"
-                ? "No drafts. Generate one above."
+                ? "No drafts. Anything you generate in Writing lands here until you set it to a class."
                 : tab === "published"
-                  ? "Nothing published yet. Generate a prompt, read it, then publish."
+                  ? "Nothing published yet. Open Writing, generate a prompt, then set it to a class."
                   : "Nothing archived."}
             </EmptyRow>
           ) : null}
@@ -99,7 +123,15 @@ export default async function PracticesPage({
   );
 }
 
-function PracticeListRow({ practice, first }: { practice: PracticeRow; first: boolean }) {
+function PracticeListRow({
+  practice,
+  first,
+  canManage,
+}: {
+  practice: PracticeRow;
+  first: boolean;
+  canManage: boolean;
+}) {
   const meta = [
     practice.kind === "reading"
       ? "Reading"
@@ -164,13 +196,20 @@ function PracticeListRow({ practice, first }: { practice: PracticeRow; first: bo
         )}
       </span>
 
-      {practice.kind === "writing" ? (
-        <RowLink href={`/console/practices/${practice.id}`}>Open →</RowLink>
-      ) : (
-        <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, flex: "none" }}>
-          set from a group
-        </span>
-      )}
+      <span style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
+        {canManage && practice.kind === "writing" ? (
+          <PracticeRowActions promptId={practice.id} archived={practice.tab === "archived"} />
+        ) : null}
+        {/* "Open" is the real runner, not a console preview: the only honest way
+            to see a practice is the screen the student sees. */}
+        <RowLink
+          href={
+            practice.kind === "writing" ? `/write/${practice.id}` : `/read/test/${practice.id}`
+          }
+        >
+          Open →
+        </RowLink>
+      </span>
     </Row>
   );
 }

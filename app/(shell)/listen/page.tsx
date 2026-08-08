@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-
+import { AssignToClass } from "@/components/console/assign-to-class";
 import { requireOrgUser } from "@/lib/auth";
 
 import { ListeningClient } from "./listening-client";
@@ -12,8 +11,21 @@ export const dynamic = "force-dynamic";
  * soon). Browser-direct engine calls like the CEFR hub, so the ~2 min
  * generate+synthesize runs off Vercel's serverless cap. Students only.
  */
-export default async function ListenPage() {
-  const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect("/console");
-  return <ListeningClient />;
+export default async function ListenPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ item?: string }>;
+}) {
+  // Staff browse and play the same practices their class does.
+  await requireOrgUser();
+  // ?item=<library id> opens that practice directly — set by the client when a
+  // practice is opened, and by the assignment link a student follows.
+  const { item } = await searchParams;
+
+  return (
+    <>
+      <ListeningClient initialLibraryId={item} />
+      {item ? <AssignToClass kind="listening" contentId={item} /> : null}
+    </>
+  );
 }

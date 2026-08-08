@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } from "lucide-react";
 
 import { AiGenerateButton, AiGenerateSection } from "@/components/ai-generate-section";
@@ -344,7 +345,12 @@ const LEVEL_STYLE: Record<number, { bg: string; fg: string; ring: string }> = {
 
 // ---- Top-level ---------------------------------------------------------------
 
-export function ListeningClient() {
+export function ListeningClient({ initialLibraryId }: { initialLibraryId?: string }) {
+  // Opening a library practice writes its id into the URL. Two things need
+  // that: a teacher's "set this to a class" control (server-rendered from the
+  // query string), and a student following an assignment link straight to the
+  // practice they were set.
+  const router = useRouter();
   const [tab, setTab] = useState<HubTab>("tests");
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
   const [mine, setMine] = useState<MineItem[] | null>(null);
@@ -386,12 +392,37 @@ export function ListeningClient() {
     try {
       setSource("library");
       setView(await callEngine<RenderView>("library/render", { library_id: item.id }));
+      router.replace(`/listen?item=${item.id}`, { scroll: false });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not open this practice.");
     } finally {
       setBusy(null);
     }
-  }, []);
+  }, [router]);
+
+  // /listen?item=<library id> — how an assignment deep-links to the exact
+  // practice a class was set. Runs once; after that the hub behaves normally.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (!initialLibraryId || autoOpened.current) return;
+    autoOpened.current = true;
+    let alive = true;
+    setBusy(initialLibraryId);
+    setSource("library");
+    callEngine<RenderView>("library/render", { library_id: initialLibraryId })
+      .then((v) => {
+        if (alive) setView(v);
+      })
+      .catch((e) => {
+        if (alive) setError(e instanceof Error ? e.message : "Could not open this practice.");
+      })
+      .finally(() => {
+        if (alive) setBusy(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [initialLibraryId]);
 
   const openMine = useCallback(async (id: string) => {
     setBusy(`mine:${id}`);

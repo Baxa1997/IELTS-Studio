@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { AssignToClass } from "@/components/console/assign-to-class";
+import { requireOrgUser } from "@/lib/auth";
 import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import { createClient } from "@/lib/supabase/server";
 import { parseFigure } from "@/lib/writing/figure";
@@ -26,7 +27,6 @@ interface PageProps {
  */
 export default async function WriteStudioPage({ params, searchParams }: PageProps) {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect(roleHome(profile.role));
   const { id } = await params;
   const { n } = await searchParams;
   const practiceNo = n && /^\d+$/.test(n) ? Number(n) : null;
@@ -58,6 +58,9 @@ export default async function WriteStudioPage({ params, searchParams }: PageProp
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
       <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} practiceNo={practiceNo} />
+      {/* Staff only, and collapsed until used — the runner itself is the same
+          page the student gets. */}
+      <AssignToClass kind="writing" contentId={prompt.id} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { requireOrgUser } from "@/lib/auth";
 import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import type { NoteMeta, ReadingModule, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -27,7 +27,6 @@ interface PageProps {
  */
 export default async function ReadingRunnerPage({ params, searchParams }: PageProps) {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect(roleHome(profile.role));
   const { id } = await params;
   const { n } = await searchParams;
   const practiceNo = n && /^\d+$/.test(n) ? Number(n) : null;

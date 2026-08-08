@@ -135,12 +135,15 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
         <BulkAddPanel groupId={group.id} />
       </Panel>
 
-      <Panel
-        title="Assign practice"
-        description="Everyone in the group gets the same prompt or test, so their results are comparable."
-      >
-        <AssignPanel groupId={group.id} libraryTests={libraryTests} />
-      </Panel>
+      {/* Only the class's own teacher sets practice — see createAssignment. */}
+      {group.teacherId === profile.id ? (
+        <Panel
+          title="Assign practice"
+          description="Everyone in the group gets the same prompt or test, so their results are comparable. You can also set practice from the Writing, Reading or Listening screens themselves."
+        >
+          <AssignPanel groupId={group.id} libraryTests={libraryTests} />
+        </Panel>
+      ) : null}
 
       <Panel
         title={`Assignments (${assignments.length})`}

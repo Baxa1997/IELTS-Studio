@@ -332,8 +332,11 @@ export async function createAssignment(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
-    return { error: "Only center staff can create assignments." };
+  // Setting practice is a teaching decision, so it is the teacher's alone — a
+  // center_admin runs people, billing and reports. (An owner who also teaches
+  // holds a teacher account.)
+  if (profile.role !== "teacher") {
+    return { error: "Only a teacher can set practice for a class." };
   }
 
   const groupId = String(formData.get("group_id") ?? "").trim();
@@ -355,8 +358,8 @@ export async function createAssignment(
     .eq("id", groupId)
     .maybeSingle();
   if (!group) return { error: "Group not found." };
-  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
-    return { error: "You can only assign practice to your own groups." };
+  if (group.teacher_id !== profile.id) {
+    return { error: "You can only set practice for your own classes." };
   }
 
   const actor = {

@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import type { ReadingQuestionType } from "@/lib/reading/types";
@@ -27,8 +26,9 @@ const MIN_PRACTICE_QUESTIONS = 11;
  * items clone into the learner's org on Start; both show only a "Start" button.
  */
 export default async function ReadingHubPage() {
+  // Staff see the same hub as the class — the only thing they get extra is the
+  // control to set a test as homework, on the runner itself.
   const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect(roleHome(profile.role));
 
   const supabase = await createClient();
   const admin = createAdminClient();

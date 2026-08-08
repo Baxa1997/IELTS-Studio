@@ -29,8 +29,10 @@ export async function generatePracticeDraft(
   formData: FormData,
 ): Promise<PracticeFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
-    return { error: "Only center staff can create practice." };
+  // Practice is a teaching decision, so it belongs to teachers only — a
+  // center_admin runs people, billing and reports.
+  if (profile.role !== "teacher") {
+    return { error: "Only a teacher can create practice." };
   }
 
   const category = String(formData.get("category") ?? "") as Task2Category;
@@ -80,8 +82,8 @@ export async function publishPractice(
   formData: FormData,
 ): Promise<PracticeFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
-    return { error: "Only center staff can publish practice." };
+  if (profile.role !== "teacher") {
+    return { error: "Only a teacher can publish practice." };
   }
 
   const id = String(formData.get("prompt_id") ?? "").trim();
@@ -110,7 +112,8 @@ export async function archivePractice(
   _prev: PracticeFormState,
   formData: FormData,
 ): Promise<PracticeFormState> {
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "teacher") return { error: "Only a teacher can archive practice." };
 
   const id = String(formData.get("prompt_id") ?? "").trim();
   if (!id) return { error: "Missing practice." };
@@ -132,7 +135,8 @@ export async function restorePractice(
   _prev: PracticeFormState,
   formData: FormData,
 ): Promise<PracticeFormState> {
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "teacher") return { error: "Only a teacher can restore practice." };
 
   const id = String(formData.get("prompt_id") ?? "").trim();
   if (!id) return { error: "Missing practice." };
@@ -160,8 +164,8 @@ export async function duplicatePractice(
   formData: FormData,
 ): Promise<PracticeFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
-    return { error: "Only center staff can copy practice." };
+  if (profile.role !== "teacher") {
+    return { error: "Only a teacher can copy practice." };
   }
 
   const id = String(formData.get("prompt_id") ?? "").trim();
@@ -197,11 +201,22 @@ export async function duplicatePractice(
   redirect(`/console/practices/${copy.id}`);
 }
 
+const KIND_TITLE = {
+  writing: "Writing Task 2",
+  reading: "Reading test",
+  listening: "Listening practice",
+} as const;
+
 /**
- * Set one practice to one or more groups at once — the multi-group step the
- * group page can't do, since it only ever knew about the group you were on.
+ * Set the practice on screen to one or more of the teacher's classes.
  *
- * Publishes on the way if the teacher assigns straight from a draft: choosing to
+ * Called from the floating control on the learner runners (/write/[id],
+ * /read/test/[id], the listening player) and from the practice library, so it
+ * takes `kind` + `content_id` — the id of the CONTENT, because that is what an
+ * attempt carries. Assignments deliberately stamp no id on the attempt; every
+ * report joins group member x content id.
+ *
+ * A writing prompt still sitting as a draft is published on the way: choosing to
  * set it to a class is a stronger statement of approval than any button.
  */
 export async function assignPractice(
@@ -209,58 +224,85 @@ export async function assignPractice(
   formData: FormData,
 ): Promise<PracticeFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
-    return { error: "Only center staff can assign practice." };
+  // Teaching decisions belong to whoever runs the class. A center_admin manages
+  // people, billing and reports; an owner who also teaches holds a teacher
+  // account too.
+  if (profile.role !== "teacher") {
+    return { error: "Only a teacher can set practice for a class." };
   }
 
-  const promptId = String(formData.get("prompt_id") ?? "").trim();
-  if (!promptId) return { error: "Missing practice." };
+  // `prompt_id` is the older field name, still posted by the library rows.
+  const contentId =
+    String(formData.get("content_id") ?? "").trim() ||
+    String(formData.get("prompt_id") ?? "").trim();
+  if (!contentId) return { error: "Missing practice." };
+
+  const kindRaw = String(formData.get("kind") ?? "writing");
+  if (kindRaw !== "writing" && kindRaw !== "reading" && kindRaw !== "listening") {
+    return { error: "That practice type can't be set as homework yet." };
+  }
+  const kind = kindRaw;
 
   const groupIds = formData.getAll("group_ids").map((g) => String(g));
-  if (groupIds.length === 0) return { error: "Pick at least one group." };
+  if (groupIds.length === 0) return { error: "Pick at least one class." };
 
   const dueRaw = String(formData.get("due_at") ?? "").trim();
   const dueAt = dueRaw ? new Date(dueRaw) : null;
   if (dueAt && Number.isNaN(dueAt.getTime())) return { error: "That due date isn't valid." };
   const instructions = String(formData.get("instructions") ?? "").trim() || null;
-  const title = String(formData.get("title") ?? "").trim() || "Writing Task 2";
+  const title = String(formData.get("title") ?? "").trim() || KIND_TITLE[kind];
 
   const supabase = await createClient();
 
-  // RLS returns only groups this caller manages, so the intersection below IS
-  // the permission check — a group id typed by hand simply won't come back.
-  const { data: allowed } = await supabase.from("groups").select("id, name").in("id", groupIds);
-  const allowedIds = new Set(((allowed ?? []) as { id: string }[]).map((g) => g.id));
-  const targets = groupIds.filter((id) => allowedIds.has(id));
-  if (targets.length === 0) return { error: "You can only assign to your own groups." };
+  // Own classes only, and RLS narrows the read to this org besides — so a group
+  // id typed by hand simply doesn't come back.
+  const { data: allowed } = await supabase
+    .from("groups")
+    .select("id, name")
+    .in("id", groupIds)
+    .eq("teacher_id", profile.id);
+  const allowedRows = (allowed ?? []) as { id: string; name: string }[];
+  const targets = allowedRows.map((g) => g.id);
+  if (targets.length === 0) return { error: "You can only set practice for your own classes." };
 
-  const { data: prompt } = await supabase
-    .from("writing_prompts")
-    .select("status")
-    .eq("id", promptId)
-    .maybeSingle();
-  if (!prompt) return { error: "Practice not found." };
+  if (kind === "writing") {
+    const { data: prompt } = await supabase
+      .from("writing_prompts")
+      .select("status")
+      .eq("id", contentId)
+      .maybeSingle();
+    if (!prompt) return { error: "Practice not found." };
 
-  if (prompt.status !== "approved") {
-    try {
-      await reviewWritingPrompt(promptId, "approved", {
-        userId: profile.id,
-        organizationId: profile.organization_id,
-        role: profile.role,
-      });
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : "Could not publish before assigning." };
+    if (prompt.status !== "approved") {
+      try {
+        await reviewWritingPrompt(contentId, "approved", {
+          userId: profile.id,
+          organizationId: profile.organization_id,
+          role: profile.role,
+        });
+      } catch (err) {
+        return {
+          error: err instanceof Error ? err.message : "Could not publish before assigning.",
+        };
+      }
     }
   }
+
+  const contentColumn =
+    kind === "writing"
+      ? "prompt_id"
+      : kind === "reading"
+        ? "reading_test_id"
+        : "listening_library_id";
 
   const { error } = await supabase.from("assignments").insert(
     targets.map((groupId) => ({
       organization_id: profile.organization_id,
       group_id: groupId,
-      kind: "writing" as const,
+      kind,
       title,
       instructions,
-      prompt_id: promptId,
+      [contentColumn]: contentId,
       due_at: dueAt ? dueAt.toISOString() : null,
       created_by: profile.id,
     })),
@@ -268,11 +310,7 @@ export async function assignPractice(
   if (error) return { error: error.message };
 
   revalidatePath("/console/practices");
-  revalidatePath(`/console/practices/${promptId}`);
   for (const groupId of targets) revalidatePath(`/console/groups/${groupId}`);
 
-  const names = ((allowed ?? []) as { id: string; name: string }[])
-    .filter((g) => allowedIds.has(g.id))
-    .map((g) => g.name);
-  return { notice: `Set to ${names.join(", ")}.` };
+  return { notice: `Set to ${allowedRows.map((g) => g.name).join(", ")}.` };
 }

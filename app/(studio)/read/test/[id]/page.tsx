@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { AssignToClass } from "@/components/console/assign-to-class";
+import { requireOrgUser } from "@/lib/auth";
 import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import type { NoteMeta, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -26,7 +27,6 @@ interface PageProps {
  */
 export default async function ReadingTestPage({ params, searchParams }: PageProps) {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect(roleHome(profile.role));
   const { id } = await params;
   const { n } = await searchParams;
   const practiceNo = n && /^\d+$/.test(n) ? Number(n) : null;
@@ -92,6 +92,7 @@ export default async function ReadingTestPage({ params, searchParams }: PageProp
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
       <ReadingTestRunner testId={id} passages={testPassages} learnerContext={learnerContext} practiceNo={practiceNo} />
+      <AssignToClass kind="reading" contentId={id} />
     </div>
   );
 }
