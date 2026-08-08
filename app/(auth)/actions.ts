@@ -104,6 +104,10 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
     },
   });
   if (error) return { error: error.message };
+  if (emailAlreadyRegistered(data.user)) {
+    // Otherwise they're told to check an inbox nothing was sent to.
+    return { error: "An account already uses this email address. Try signing in instead." };
+  }
   if (!data.session) {
     // Email confirmation required — the stashed plan (if any) applies when they
     // return through /auth/callback. Don't clear it here.
@@ -170,6 +174,12 @@ export async function signUpOrganization(
     },
   });
   if (error) return { error: error.message };
+  if (emailAlreadyRegistered(data.user)) {
+    return {
+      error:
+        "An account already uses this email address. Sign in with it instead, or apply with a different address.",
+    };
+  }
 
   // Tell the applicant we have it, and tell the platform owner to go look.
   // Both are best-effort: an application that succeeded must not be reported as
@@ -201,6 +211,24 @@ export async function signUpOrganization(
     };
   }
   return { submitted: true };
+}
+
+/**
+ * Did `signUp` quietly do nothing because the address is already taken?
+ *
+ * With email confirmation on, Supabase answers a duplicate signup with a
+ * SUCCESS — a decoy user carrying an empty `identities` array, no session, and
+ * no error — so the form can't be used to discover who has an account. Nothing
+ * is created and no trigger fires.
+ *
+ * For a center application that silence is worse than the enumeration risk it
+ * prevents: the applicant is shown "we received it" and waits for an approval
+ * that can never arrive, because there is nothing in the queue. Better to tell
+ * them the address is in use. The sign-IN form still refuses to enumerate,
+ * which is where it actually matters.
+ */
+function emailAlreadyRegistered(user: { identities?: unknown[] | null } | null): boolean {
+  return Boolean(user && Array.isArray(user.identities) && user.identities.length === 0);
 }
 
 /** Nudge the platform owner that something is waiting in /admin. */
