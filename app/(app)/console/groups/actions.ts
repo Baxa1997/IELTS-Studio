@@ -614,6 +614,241 @@ export async function addStudentAccount(
   };
 }
 
+export interface BulkStudentState {
+  error?: string;
+  /** Accounts created this run, in the order pasted — this IS the credentials
+   *  sheet, and the passwords are never retrievable again. */
+  created?: { name: string; login: string; email: string | null; password: string }[];
+  /** Lines that produced no account, each with the reason. */
+  skipped?: { line: string; reason: string }[];
+}
+
+/** One class at a time. Each student costs an auth-user round trip, so a bigger
+ *  paste risks the request being killed half-way — and a half-done batch whose
+ *  passwords were never shown is the worst possible outcome. */
+const MAX_BULK_STUDENTS = 30;
+
+/**
+ * Create a whole class from a pasted list — the way a center actually onboards.
+ * One student per line:
+ *
+ *     Aziza Karimova
+ *     Bekzod Toshmatov, bekzod.t
+ *     Dilnoza Rashidova, dilnoza@example.com
+ *
+ * Extra fields are optional and order-free: anything with an `@` is the email,
+ * anything else is the login. A missing login is derived from the name
+ * (`dilnoza.r`) and de-duplicated against every login on the platform AND the
+ * rest of the paste. A missing password is generated.
+ *
+ * DELIBERATELY SENDS NO EMAIL, unlike the single-student form. Thirty SMTP round
+ * trips inside one request is how this times out, and the credentials sheet the
+ * teacher downloads is the delivery mechanism here. An address given on a line
+ * still lands on the account, so that student keeps email password reset.
+ *
+ * Every row is independent: one bad line is reported and skipped, it never costs
+ * the other twenty-nine their accounts.
+ */
+export async function addStudentsBulk(
+  _prev: BulkStudentState,
+  formData: FormData,
+): Promise<BulkStudentState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can add students." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  if (!groupId) return { error: "Missing group." };
+
+  const lines = String(formData.get("roster") ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return { error: "Paste at least one name." };
+  if (lines.length > MAX_BULK_STUDENTS) {
+    return {
+      error: `That's ${lines.length} students. Add up to ${MAX_BULK_STUDENTS} at a time so nothing is lost half-way — paste the rest straight after.`,
+    };
+  }
+
+  const supabase = await createClient();
+  // RLS hides other teachers' groups, so a hit here proves the caller manages it.
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, teacher_id")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "Group not found." };
+  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
+    return { error: "You can only add students to your own groups." };
+  }
+
+  const admin = createAdminClient();
+  const created: NonNullable<BulkStudentState["created"]> = [];
+  const skipped: NonNullable<BulkStudentState["skipped"]> = [];
+  const loginsThisBatch = new Set<string>();
+
+  for (const [i, line] of lines.entries()) {
+    const parsed = parseRosterLine(line);
+    if (!parsed) {
+      skipped.push({ line, reason: "Couldn't read a name on this line." });
+      continue;
+    }
+    if (parsed.login && !LOGIN_RE.test(parsed.login)) {
+      skipped.push({ line, reason: `"${parsed.login}" isn't a valid login.` });
+      continue;
+    }
+
+    // Seats are checked per row, not once: the limit can be reached mid-batch,
+    // and everyone created before that point keeps their account.
+    const seatError = await seatLimitError(supabase, profile.organization_id);
+    if (seatError) {
+      for (const rest of lines.slice(i)) skipped.push({ line: rest, reason: seatError });
+      break;
+    }
+
+    const login = await resolveLogin(admin, parsed.login ?? loginFromName(parsed.name), loginsThisBatch);
+    if (!login) {
+      skipped.push({ line, reason: "Every login built from this name is taken. Give one explicitly." });
+      continue;
+    }
+
+    const password = generatePassword();
+    const email = parsed.email || `${login}@${NO_MAIL_DOMAIN}`;
+
+    const { data: account, error: createError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      app_metadata: { organization_id: profile.organization_id, role: "student" },
+      user_metadata: { full_name: parsed.name },
+    });
+    if (createError || !account?.user) {
+      const already = /already|exists|registered/i.test(createError?.message ?? "");
+      skipped.push({
+        line,
+        reason: already
+          ? `${email} already has an account on the platform.`
+          : (createError?.message ?? "Could not create the account."),
+      });
+      continue;
+    }
+
+    const { error: placeError } = await placeUserInOrg(admin, account.user.id, {
+      organizationId: profile.organization_id,
+      role: "student",
+      fullName: parsed.name,
+      username: login,
+    });
+    if (placeError) {
+      await admin.auth.admin.deleteUser(account.user.id);
+      skipped.push({ line, reason: placeError });
+      continue;
+    }
+
+    const { error: memberError } = await admin.from("group_members").insert({
+      group_id: groupId,
+      student_id: account.user.id,
+      organization_id: profile.organization_id,
+      added_by: profile.id,
+    });
+    // The account exists and the password has been generated — report it either
+    // way, or the teacher hands out credentials for an account they can't see.
+    if (memberError) {
+      skipped.push({
+        line,
+        reason: `Account created (login ${login}) but joining the group failed: ${memberError.message}`,
+      });
+    }
+
+    loginsThisBatch.add(login);
+    created.push({ name: parsed.name, login, email: parsed.email || null, password });
+  }
+
+  revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath("/console/students");
+
+  if (created.length === 0) {
+    return { error: "No accounts were created.", skipped };
+  }
+  return { created, skipped: skipped.length > 0 ? skipped : undefined };
+}
+
+/** `Name`, `Name, login`, `Name, email`, `Name, login, email` — in any order
+ *  after the name, comma- or tab-separated (a paste from a spreadsheet). */
+function parseRosterLine(line: string): { name: string; login: string | null; email: string } | null {
+  const parts = line
+    .split(/[\t,;]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const name = parts.shift();
+  if (!name) return null;
+
+  let login: string | null = null;
+  let email = "";
+  for (const part of parts) {
+    if (part.includes("@")) email = part.toLowerCase();
+    else login = part.toLowerCase();
+  }
+  return { name, login, email };
+}
+
+/** Build a login from a name the way a teacher would: `dilnoza.r`. Cyrillic is
+ *  transliterated rather than dropped — a class list pasted from a Russian
+ *  register must not produce thirty identical empty logins. */
+function loginFromName(name: string): string {
+  const tokens = transliterate(name)
+    .split(/\s+/)
+    .map((t) => t.replace(/[^a-z0-9]/g, ""))
+    .filter(Boolean);
+
+  let base = tokens[0] ?? "";
+  if (tokens.length > 1) base = `${tokens[0]}.${tokens[tokens.length - 1][0]}`;
+  base = base.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "");
+  // LOGIN_RE needs at least three characters, first and last alphanumeric.
+  while (base.length > 0 && base.length < 3) base += "1";
+  return base || "student";
+}
+
+const CYRILLIC: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "yo", ж: "j", з: "z", и: "i",
+  й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t",
+  у: "u", ф: "f", х: "x", ц: "ts", ч: "ch", ш: "sh", щ: "sh", ъ: "", ы: "i", ь: "",
+  э: "e", ю: "yu", я: "ya", ў: "o", қ: "q", ғ: "g", ҳ: "h",
+};
+
+function transliterate(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents (é → e)
+    .replace(/[ʻʼ'’`]/g, "") // Uzbek Latin oʻ/gʻ and stray apostrophes
+    .split("")
+    .map((ch) => CYRILLIC[ch] ?? ch)
+    .join("");
+}
+
+/** First free login in the `base, base2, base3…` series — free both on the
+ *  platform (logins are global) and within this paste. */
+async function resolveLogin(
+  admin: ReturnType<typeof createAdminClient>,
+  base: string,
+  usedInBatch: Set<string>,
+): Promise<string | null> {
+  for (let n = 1; n <= 50; n += 1) {
+    const candidate = n === 1 ? base : `${base}${n}`;
+    if (!LOGIN_RE.test(candidate) || usedInBatch.has(candidate)) continue;
+    const { data: taken } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("username", candidate)
+      .maybeSingle();
+    if (!taken) return candidate;
+  }
+  return null;
+}
+
 /**
  * Create a teacher outright, the same way a teacher creates a student: name +
  * login + password, email optional. center_admin only.

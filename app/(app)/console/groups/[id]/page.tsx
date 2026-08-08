@@ -25,6 +25,7 @@ import { AssignTeacherForm, DeleteGroupButton, RemoveMemberButton } from "../gro
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { AssignPanel } from "./assign-panel";
+import { BulkAddPanel } from "./bulk-add-panel";
 
 /** One group: its roster, assignments and invites. RLS decides visibility — a
  *  teacher who doesn't own this group can't read its membership, so it 404s. */
@@ -125,6 +126,13 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ id
         description="Creates the account outright. Give an email and their login is sent there; leave it blank and hand the details over in class."
       >
         <AddStudentPanel groupId={group.id} />
+      </Panel>
+
+      <Panel
+        title="Add a whole class"
+        description="Paste the register, one student per line. Logins and passwords are generated, and you get a sheet to hand out."
+      >
+        <BulkAddPanel groupId={group.id} />
       </Panel>
 
       <Panel
