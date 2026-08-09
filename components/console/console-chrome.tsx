@@ -274,9 +274,22 @@ export function ConsoleChrome({
       </header>
 
       <div className="cn-page" style={{ padding: "26px 28px 60px" }}>
-        {flash ? <FlashBanner flash={flash} onClose={() => setFlash(null)} /> : null}
         {children}
       </div>
+
+      {/* Success takes over the screen rather than sitting quietly at the top:
+          it usually carries a password shown exactly once, and a banner is far
+          too easy to scroll past or dismiss on the way to the next thing. */}
+      {flash ? (
+        <Modal
+          eyebrow="Done"
+          title={flash.title}
+          note={flash.body ?? ""}
+          onClose={() => setFlash(null)}
+        >
+          <FlashBody flash={flash} onClose={() => setFlash(null)} />
+        </Modal>
+      ) : null}
 
       {panel === "enrol" && enrolPanel ? (
         <SlideOver
@@ -325,8 +338,14 @@ export function ConsoleChrome({
   );
 }
 
-/** Success banner. Carries the one-time credentials out of the closed drawer. */
-function FlashBanner({ flash, onClose }: { flash: ConsoleFlash; onClose: () => void }) {
+/**
+ * The body of the success modal: the credentials, a copy button, and a way out.
+ *
+ * The password is generated once and never retrievable, so this is the only
+ * moment it exists on screen. That is why it is a modal and not a toast, and
+ * why "Done" is the only way to leave rather than an auto-dismiss.
+ */
+function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -339,59 +358,43 @@ function FlashBanner({ flash, onClose }: { flash: ConsoleFlash; onClose: () => v
   }
 
   return (
-    <div
-      role="status"
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 14,
-        background: "#EAF4EE",
-        border: "1px solid #CFE6D9",
-        borderRadius: 12,
-        padding: "14px 16px",
-        marginBottom: 18,
-        flexWrap: "wrap",
-      }}
-    >
-      <div style={{ minWidth: 200, flex: 1 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#16794C" }}>{flash.title}</div>
-        {flash.body ? (
-          <div style={{ fontSize: 12.5, color: "#16794C", marginTop: 3, lineHeight: 1.5 }}>
-            {flash.body}
-          </div>
-        ) : null}
-        {flash.credentials ? (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {flash.credentials ? (
+        <>
           <div
             style={{
-              fontFamily: "ui-monospace, monospace",
-              fontSize: 12.5,
-              color: "#14532d",
-              marginTop: 8,
-              lineHeight: 1.7,
+              background: "#EAF4EE",
+              border: "1px solid #CFE6D9",
+              borderRadius: 12,
+              padding: "14px 16px",
             }}
           >
-            Login <strong>{flash.credentials.login}</strong>
-            <br />
-            Password <strong>{flash.credentials.password}</strong>
+            <Cred label="Login" value={flash.credentials.login} />
+            <div style={{ height: 10 }} />
+            <Cred label="Password" value={flash.credentials.password} />
           </div>
-        ) : null}
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <p style={{ fontSize: 12, color: "#93919F", margin: 0, lineHeight: 1.55 }}>
+            The password isn&apos;t shown again — copy it now if you still need to hand it over.
+          </p>
+        </>
+      ) : null}
+
+      <div style={{ display: "flex", gap: 8 }}>
         {flash.credentials ? (
           <button
             type="button"
             onClick={() => void copy()}
             style={{
+              flex: 1,
               background: "#fff",
-              border: "1px solid #CFE6D9",
-              borderRadius: 8,
-              padding: "7px 12px",
+              border: "1px solid #CFCABC",
+              borderRadius: 9,
+              padding: 11,
               fontFamily: "inherit",
-              fontSize: 12.5,
+              fontSize: 13.5,
               fontWeight: 600,
-              color: "#16794C",
+              color: INK,
               cursor: "pointer",
-              whiteSpace: "nowrap",
             }}
           >
             {copied ? "Copied" : "Copy credentials"}
@@ -400,19 +403,41 @@ function FlashBanner({ flash, onClose }: { flash: ConsoleFlash; onClose: () => v
         <button
           type="button"
           onClick={onClose}
-          aria-label="Dismiss"
           style={{
-            background: "none",
+            flex: 1,
+            background: INDIGO,
+            color: "#fff",
             border: 0,
-            color: "#16794C",
+            borderRadius: 9,
+            padding: 11,
+            fontFamily: "inherit",
+            fontSize: 13.5,
+            fontWeight: 600,
             cursor: "pointer",
-            fontSize: 17,
-            lineHeight: 1,
-            padding: "0 2px",
           }}
         >
-          ×
+          Done
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** One credential line — label above, value in mono so O/0 can be told apart. */
+function Cred({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, color: "#16794C", fontWeight: 600 }}>{label}</div>
+      <div
+        style={{
+          fontFamily: "ui-monospace, monospace",
+          fontSize: 15,
+          color: "#14532d",
+          marginTop: 2,
+          wordBreak: "break-all",
+        }}
+      >
+        {value}
       </div>
     </div>
   );
