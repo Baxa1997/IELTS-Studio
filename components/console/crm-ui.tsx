@@ -30,6 +30,10 @@ export const LINE = "#E7E5DF"; // card border
 export const RULE = "#F0EEE9"; // header divider inside a card
 export const HAIR = "#F5F4F0"; // row divider
 export const HEADBG = "#FAFAF8"; // table header / input fill
+/* Form-control border. Deliberately darker than the card hairline (#E7E5DF):
+   a card edge only has to separate two surfaces, but a field edge has to say
+   "you can type here", and at the card's weight it disappeared on white. */
+export const FIELD_LINE = "#CFCABC";
 
 export const INDIGO = "#4340CB";
 export const GREEN = "#16794C";
@@ -1002,7 +1006,7 @@ export function Toolbar({ children }: { children: React.ReactNode }) {
 
 /** Input/select styling shared by the toolbars and slide-over forms. */
 export const fieldStyle: React.CSSProperties = {
-  border: `1px solid #E4E2DC`,
+  border: `1px solid ${FIELD_LINE}`,
   borderRadius: 8,
   padding: "8px 11px",
   fontFamily: SANS,

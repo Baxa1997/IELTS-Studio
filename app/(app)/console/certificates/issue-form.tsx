@@ -11,7 +11,7 @@ const MUTED = "#6E6C87";
 const label: React.CSSProperties = { fontSize: 12, color: MUTED, display: "block", marginBottom: 5 };
 const field: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #E4E2DC",
+  border: "1px solid #CFCABC",
   borderRadius: 8,
   padding: "9px 11px",
   fontFamily: "inherit",

@@ -744,7 +744,8 @@
   --primary-foreground: #ffffff;
   --ring: #4340cb;
   --border: #e4e2dc;
-  --input: #e4e2dc;
+  /* Fields carry a stronger edge than cards — see FIELD_LINE in crm-ui.tsx. */
+  --input: #cfcabc;
   --background: #ffffff;
   --card: #ffffff;
   --foreground: #16162e;
@@ -846,6 +847,11 @@
 .cn-root select,
 .cn-root textarea {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cn-root input:hover:not(:focus),
+.cn-root select:hover:not(:focus),
+.cn-root textarea:hover:not(:focus) {
+  border-color: #b9b3a2;
 }
 .cn-root input:focus,
 .cn-root select:focus,

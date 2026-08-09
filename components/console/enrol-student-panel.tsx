@@ -27,7 +27,7 @@ const label: React.CSSProperties = {
 };
 const field: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #E4E2DC",
+  border: "1px solid #CFCABC",
   borderRadius: 8,
   padding: "10px 11px",
   fontFamily: "inherit",
@@ -178,7 +178,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
             <button
               type="submit"
               disabled={pending}
-              className="crm-btn-primary"
+              className="cn-btn cn-btn--primary"
               style={{
                 flex: 1,
                 background: INDIGO,
