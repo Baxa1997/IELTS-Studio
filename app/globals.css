@@ -708,70 +708,25 @@
    are here.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ---- the CRM shell (components/console/crm-shell.tsx) --------------------- */
-/* Desktop: the rail is in flow. Below 1024px it becomes a slide-in drawer and
-   the top bar grows a hamburger. */
-.crm-rail {
-  transition: transform 0.24s cubic-bezier(0.33, 1, 0.68, 1);
-}
-.crm-burger {
-  display: none;
-}
-@media (max-width: 1024px) {
-  .crm-rail {
-    position: fixed;
-    z-index: 50;
-    left: 0;
-    top: 0;
-    transform: translateX(-100%);
-  }
-  .crm-rail--open {
-    transform: translateX(0);
-    box-shadow: 20px 0 50px rgba(20, 19, 58, 0.25);
-  }
-  .crm-burger {
-    display: inline-flex;
-  }
-}
-@media (min-width: 1025px) {
-  .crm-scrim {
-    display: none;
+/* ---- console page chrome (components/console/console-chrome.tsx) --------- */
+/* The sticky top bar and slide-overs live INSIDE the app shell's content
+   surface — the sidebar is the app's own, unchanged. */
+@media (max-width: 900px) {
+  .cn-hide-md {
+    display: none !important;
   }
 }
 @media (max-width: 720px) {
-  .crm-hide-sm {
+  .cn-hide-sm {
     display: none !important;
   }
-  .crm-topbar {
+  .cn-topbar {
     padding: 10px 16px !important;
   }
-  .crm-page {
-    padding: 18px 16px 48px !important;
-  }
-  .crm-slideover {
+  .cn-slideover {
     width: 100vw !important;
     padding: 20px 18px !important;
   }
-}
-.crm-nav {
-  transition: background 0.15s ease, color 0.15s ease;
-}
-/* Resting items set no inline background, so this wash can take effect; the
-   active item sets one inline and correctly wins. */
-.crm-nav:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-}
-.crm-signout:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #c9c7e4;
-}
-.crm-btn-primary:hover {
-  background: #5350d8 !important;
-}
-.crm-btn-ghost:hover {
-  background: #faf9f6;
-  border-color: #d4d1c9;
 }
 
 .cn-root {
@@ -900,13 +855,9 @@
   box-shadow: 0 0 0 3px rgba(67, 64, 203, 0.12);
 }
 
-/* The console rail is the design's flat deep navy, not the learner gradient. */
-.lp-shell-sidebar--console {
-  background: #14133a !important;
-}
-.lp-shell-sidebar--console .lp-sb-section-title {
-  color: #55538a;
-}
+/* Note: the rail is NOT restyled for the console. It keeps the app's own
+   gradient, type and collapse behaviour for every role — the CRM design applies
+   to the content surface beside it, which is what `variant="console"` changes. */
 
 /* Brand form inputs (login / auth) */
 .lp-root .lp-input {

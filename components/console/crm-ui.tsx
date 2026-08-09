@@ -292,14 +292,18 @@ export function Card({
   flush = false,
   tone = "plain",
   style,
+  id,
 }: {
   children: React.ReactNode;
   flush?: boolean;
   tone?: "plain" | "dark";
   style?: React.CSSProperties;
+  /** Anchor target, so a page-head action can jump to the card it opens. */
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       style={{
         ...cardStyle,
         ...(tone === "dark" ? { background: RAIL.bg, border: "none", color: "#fff" } : null),

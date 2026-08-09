@@ -3,9 +3,11 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Award,
   BookA,
   BookOpen,
   Building2,
+  CalendarCheck,
   ChartNoAxesColumn,
   ClipboardCheck,
   CreditCard,
@@ -13,7 +15,9 @@ import {
   Headphones,
   History,
   LayoutDashboard,
+  Megaphone,
   Mic,
+  Settings,
   SquarePen,
   Target,
   UserRound,
@@ -85,12 +89,26 @@ const ADMIN: Section[] = [
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
     ],
   },
   // No Practice: the library is the teacher's. An admin runs people, billing
   // and reports, and sees results through Reports and the groups.
-  { title: "Insight", items: [{ label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn }] },
-  { title: "Admin", items: [{ label: "Billing & plan", href: "/console/billing", icon: CreditCard }] },
+  {
+    title: "Insight",
+    items: [
+      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
+      { label: "Certificates", href: "/console/certificates", icon: Award },
+      { label: "Announcements", href: "/console/announcements", icon: Megaphone },
+    ],
+  },
+  {
+    title: "Admin",
+    items: [
+      { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
+      { label: "Settings & roles", href: "/console/settings", icon: Settings },
+    ],
+  },
 ];
 
 const TEACHER: Section[] = [
@@ -101,9 +119,16 @@ const TEACHER: Section[] = [
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Practice", href: "/console/practices", icon: SquarePen },
+      { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
     ],
   },
-  { title: "Insight", items: [{ label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn }] },
+  {
+    title: "Insight",
+    items: [
+      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
+      { label: "Certificates", href: "/console/certificates", icon: Award },
+    ],
+  },
 ];
 
 /** The platform owner: no organization, so none of the org menus apply. */

@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell/shell";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import { StaffShell } from "@/components/console/staff-shell";
+import { loadNavCounts } from "@/lib/console/nav";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
@@ -41,18 +41,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (!plan) return <OnboardingTakeover />;
   }
 
-  // Staff get the CRM chrome — a different shell, not a variant of the learner
-  // one: 236px navy rail carrying the center's identity, a sticky top bar, and
-  // the enrol/invite slide-overs. Students keep <AppShell>.
-  if (profile.role === "center_admin" || profile.role === "teacher") {
-    return (
-      <div className={`${work.variable} ${serif4.variable} cn-root`}>
-        <StaffShell profile={profile} userName={profile.full_name ?? user.email ?? "Account"}>
-          {children}
-        </StaffShell>
-      </div>
-    );
-  }
+  // Staff keep THIS shell — the same collapsible rail every role uses. Only the
+  // canvas and the menu change (variant="console"): the CRM design applies to
+  // the content area, not to the app's own chrome.
+  const isStaff = profile.role === "center_admin" || profile.role === "teacher";
+  const navCounts = isStaff ? await loadNavCounts(profile) : undefined;
 
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
@@ -82,9 +75,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
-    <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
+    <div
+      className={`${hanken.variable} ${newsreader.variable} ${work.variable} ${serif4.variable} lp-root`}
+    >
       <AppShell
         role={profile.role}
+        variant={isStaff ? "console" : "learner"}
+        navCounts={navCounts}
         showAssignments={showAssignments}
         pendingAssignments={pendingAssignments}
         home={roleHome(profile.role)}

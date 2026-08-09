@@ -326,11 +326,9 @@ export function AppShell({
             }}
           >
             {quotaBar}
-            <div
-              className={
-                contentClassName ?? (isConsole ? "cn-page" : "w-full px-4 py-5 sm:px-6 sm:py-6")
-              }
-            >
+            {/* The console gets no padding here: its own layout owns the sticky
+                top bar, which has to run full-bleed to the surface edges. */}
+            <div className={contentClassName ?? (isConsole ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")}>
               {children}
             </div>
           </div>
