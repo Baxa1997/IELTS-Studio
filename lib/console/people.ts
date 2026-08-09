@@ -44,7 +44,16 @@ export interface StudentRow {
   measuredSkills: number;
   /** Attendance rate 0–100, or null when no register has ever included them. */
   attendancePct: number | null;
+  /**
+   * Graded practices per week over the last six weeks, oldest first — the
+   * roster's trend sparkline. Deliberately activity, not band: a six-point band
+   * series would need a grading history per student per week, and a flat line
+   * drawn from one measurement would imply a trend that isn't there.
+   */
+  spark: number[];
 }
+
+const SPARK_WEEKS = 6;
 
 export async function loadTeachers(): Promise<TeacherRow[]> {
   const supabase = await createClient();
@@ -138,6 +147,7 @@ export async function loadStudents(opts: {
   const bands = new Map<string, { skill: string; band: number }[]>();
   const targets = new Map<string, number>();
   const attendance = new Map<string, number>();
+  const sparks = new Map<string, number[]>();
   if (rosterIds.length > 0) {
     const [{ data: estimates }, { data: rates }] = await Promise.all([
       supabase
@@ -148,6 +158,25 @@ export async function loadStudents(opts: {
       // room (see the view's comment).
       supabase.from("v_student_attendance").select("student_id, rate_pct").in("student_id", rosterIds),
     ]);
+
+    // Weekly practice counts for the sparkline, from the same view every other
+    // console statistic uses, so the trend and the total can't disagree.
+    const sparkSince = new Date(Date.now() - SPARK_WEEKS * 7 * 86400_000);
+    const { data: activity } = await supabase
+      .from("v_practice_activity")
+      .select("student_id, at")
+      .in("student_id", rosterIds)
+      .gte("at", sparkSince.toISOString());
+    for (const a of (activity ?? []) as { student_id: string; at: string }[]) {
+      const week = Math.min(
+        SPARK_WEEKS - 1,
+        Math.floor((Date.parse(a.at) - sparkSince.getTime()) / (7 * 86400_000)),
+      );
+      if (week < 0) continue;
+      const row = sparks.get(a.student_id) ?? new Array(SPARK_WEEKS).fill(0);
+      row[week] += 1;
+      sparks.set(a.student_id, row);
+    }
     for (const r of (rates ?? []) as { student_id: string; rate_pct: number | null }[]) {
       if (r.rate_pct != null) attendance.set(r.student_id, r.rate_pct);
     }
@@ -187,6 +216,7 @@ export async function loadStudents(opts: {
         targetBand: targets.get(id) ?? null,
         measuredSkills: measured.length,
         attendancePct: attendance.get(id) ?? null,
+        spark: sparks.get(id) ?? new Array(SPARK_WEEKS).fill(0),
       };
     })
     .sort((a, b) => b.practiceCount - a.practiceCount || a.name.localeCompare(b.name));

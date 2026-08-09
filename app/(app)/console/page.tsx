@@ -37,19 +37,6 @@ import { PendingInvites, type PendingInvite } from "./pending-invites";
 
 export const dynamic = "force-dynamic";
 
-const SKILL_LABEL: Record<string, string> = {
-  writing: "Writing",
-  reading: "Reading",
-  listening: "Listening",
-  speaking: "Speaking",
-};
-const SKILL_TONE: Record<string, Tone> = {
-  writing: "indigo",
-  reading: "green",
-  speaking: "amber",
-  listening: "neutral",
-};
-
 /**
  * The center Overview, built to the CRM design: hero, five KPIs, "Needs
  * attention" beside the day's activity, then the band trend beside the skill
@@ -67,13 +54,15 @@ export default async function ConsolePage() {
 
   const supabase = await createClient();
   const isAdmin = profile.role === "center_admin";
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10);
 
   // RLS scopes every query to this admin/teacher's own organization — and, for
   // groups, to the ones a teacher actually owns.
   let groupsQuery = supabase.from("groups").select("id");
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
-  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, recentRes] =
+  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, todayGroupsRes, sessionsRes] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, role"),
       supabase
@@ -85,13 +74,11 @@ export default async function ConsolePage() {
       // Only ever used as "has any" — RLS already narrows a teacher to their own.
       supabase.from("assignments").select("id", { count: "exact", head: true }),
       loadCenterReport({ role: profile.role, profileId: profile.id }),
-      // The design's "Today" list. There is no timetable, so this is the real
-      // equivalent: the practice that actually came in, newest first.
-      supabase
-        .from("v_practice_activity")
-        .select("student_id, skill, at")
-        .order("at", { ascending: false })
-        .limit(8),
+      // The design's "Today" panel. There is no timetable, so instead of
+      // inventing session times this lists the classes and whether their
+      // register has been marked — which is the question that panel answers.
+      supabase.from("groups").select("id, name, teacher_id").order("name"),
+      supabase.from("attendance_sessions").select("group_id, state").eq("held_on", todayIso),
     ]);
 
   const people = membersRes.data ?? [];
@@ -138,6 +125,29 @@ export default async function ConsolePage() {
   const lowCompletion = report.groups.filter(
     (g) => g.completionPct != null && g.completionPct < 50,
   ).length;
+
+  // Today's classes with their register state. A teacher sees only their own,
+  // because `groups` is already RLS-scoped and this filters to what they own.
+  const sessionState = new Map(
+    ((sessionsRes.data ?? []) as { group_id: string; state: string }[]).map((r) => [
+      r.group_id,
+      r.state,
+    ]),
+  );
+  const todayClasses = ((todayGroupsRes.data ?? []) as {
+    id: string;
+    name: string;
+    teacher_id: string | null;
+  }[])
+    .filter((g) => isAdmin || g.teacher_id === profile.id)
+    .slice(0, 6)
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      teacher: g.teacher_id ? (nameOf.get(g.teacher_id) ?? "Unassigned") : "No teacher",
+      marked: sessionState.get(g.id) === "marked",
+    }));
+  const openRegisters = todayClasses.filter((c) => !c.marked).length;
 
   // The four things that have to exist before a center is running. Once they all
   // do, the checklist never comes back — it exists to cure the empty console.
@@ -202,6 +212,20 @@ export default async function ConsolePage() {
           href: "/console/reports",
         }
       : null,
+    openRegisters > 0
+      ? {
+          icon: "◷",
+          tone: "amber" as Tone,
+          title: `${openRegisters} register${openRegisters === 1 ? "" : "s"} still open today`,
+          detail: todayClasses
+            .filter((c) => !c.marked)
+            .slice(0, 2)
+            .map((c) => c.name)
+            .join(", "),
+          cta: "Open",
+          href: "/console/attendance",
+        }
+      : null,
     pendingInvites.length > 0
       ? {
           icon: "✉",
@@ -220,7 +244,6 @@ export default async function ConsolePage() {
   const trendHigh = Math.max(...trend.map((t) => t.band ?? 0), 0);
   const drift =
     trend.length >= 2 ? (trend[trend.length - 1].band ?? 0) - (trend[0].band ?? 0) : null;
-  const recent = (recentRes.data ?? []) as { student_id: string; skill: string; at: string }[];
   const activeStudents = report.totals.students - report.atRisk.length;
 
   return (
@@ -362,63 +385,26 @@ export default async function ConsolePage() {
           ) : (
             <Card flush>
               <CardHead
-                title="Latest practice"
+                title={`Today · ${today.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}`}
                 divided
-                actions={<TextLink href="/console/reports">Reports →</TextLink>}
+                actions={<TextLink href="/console/attendance">Attendance →</TextLink>}
               />
-              {recent.map((r, i) => (
-                <div
-                  key={`${r.student_id}-${r.at}-${i}`}
-                  className="cn-row"
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "center",
-                    padding: "11px 18px",
-                    borderBottom: "1px solid #F5F4F0",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: SANS,
-                      fontSize: 12.5,
-                      color: INK,
-                      fontWeight: 600,
-                      width: 52,
-                      flex: "0 0 52px",
-                    }}
-                  >
-                    {new Date(r.at).toLocaleTimeString("en-GB", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div
-                      style={{
-                        fontFamily: SANS,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {nameOf.get(r.student_id) ?? "A student"}
-                    </div>
-                    <div style={{ fontFamily: SANS, fontSize: 11.5, color: "#7C7A93" }}>
-                      {new Date(r.at).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </div>
-                  </div>
-                  <Tag tone={SKILL_TONE[r.skill] ?? "neutral"}>
-                    {SKILL_LABEL[r.skill] ?? r.skill}
-                  </Tag>
-                </div>
+              {todayClasses.map((c) => (
+                <ListRow
+                  key={c.id}
+                  href={`/console/attendance?group=${c.id}`}
+                  title={c.name}
+                  meta={c.teacher}
+                  trail={
+                    <Tag tone={c.marked ? "green" : "amber"}>
+                      {c.marked ? "Marked" : "Register open"}
+                    </Tag>
+                  }
+                />
               ))}
-              {recent.length === 0 ? <Empty>No graded practice yet.</Empty> : null}
+              {todayClasses.length === 0 ? (
+                <Empty>No classes yet — create one and it appears here to mark.</Empty>
+              ) : null}
             </Card>
           )}
         </Split>

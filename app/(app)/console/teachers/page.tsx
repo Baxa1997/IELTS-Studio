@@ -3,10 +3,8 @@ import { redirect } from "next/navigation";
 import {
   AMBER,
   Bar,
-  BtnLink,
   Card,
   CardHead,
-  CardNote,
   Empty,
   fieldStyle,
   GREEN,
@@ -15,7 +13,6 @@ import {
   PageHead,
   PersonCell,
   SANS,
-  Stack,
   Table,
   Tag,
   TD,
@@ -23,12 +20,11 @@ import {
   Toolbar,
   TRow,
 } from "@/components/console/crm-ui";
+import { PanelButton } from "@/components/console/console-chrome";
 import { requireOrgUser } from "@/lib/auth";
 import { loadTeachers } from "@/lib/console/people";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
-
-import { AddTeacherPanel } from "./add-teacher-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -151,7 +147,7 @@ export default async function TeachersPage({
         eyebrow="Staff"
         title="Teachers"
         subtitle={`${teachers.length} on staff · each teacher sees only the groups assigned to them.`}
-        actions={<BtnLink href="#add-teacher">+ Add teacher</BtnLink>}
+        actions={<PanelButton panel="teacher">+ Add teacher</PanelButton>}
       />
 
       <KpiRow>
@@ -178,7 +174,6 @@ export default async function TeachersPage({
         />
       </KpiRow>
 
-      <Stack>
         <Card flush>
           <CardHead
             title="Your teachers"
@@ -265,22 +260,13 @@ export default async function TeachersPage({
             {rows.length === 0 ? (
               <Empty>
                 {teachers.length === 0
-                  ? "No teachers yet. Add one below and they can start building classes."
+                  ? "No teachers yet. Use + Add teacher above and they can start building classes."
                   : "Nobody matches that search."}
               </Empty>
             ) : null}
           </Table>
         </Card>
 
-        <Card id="add-teacher">
-          <CardHead title="Add a teacher" />
-          <CardNote>
-            Creates the account immediately. Give an email and the sign-in details are sent; leave
-            it out and you hand them over yourself.
-          </CardNote>
-          <AddTeacherPanel />
-        </Card>
-      </Stack>
     </div>
   );
 }

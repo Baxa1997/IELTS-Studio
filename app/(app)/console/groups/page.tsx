@@ -6,16 +6,16 @@ import {
   Avatar,
   Bar,
   BODY,
+  BtnLink,
   Card,
   CardHead,
   CardNote,
   cardStyle,
   Chip,
   FAINT,
+  fieldStyle,
   GREEN,
   INK,
-  Kpi,
-  KpiRow,
   PageHead,
   SANS,
   SERIF,
@@ -27,6 +27,7 @@ import {
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadCenterReport } from "@/lib/console/reports";
+import { createClient } from "@/lib/supabase/server";
 
 import { CreateGroupForm } from "./group-forms";
 import { InviteMemberPanel } from "./invite-member-panel";
@@ -47,6 +48,10 @@ const FILTERS = {
 
 type FilterKey = keyof typeof FILTERS;
 
+/** Mean of a list, or null when there is nothing to average. */
+const mean = (xs: number[]) =>
+  xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null;
+
 interface Card_ {
   id: string;
   name: string;
@@ -55,6 +60,7 @@ interface Card_ {
   assignments: number;
   completionPct: number | null;
   averageBand: number | null;
+  attendancePct: number | null;
 }
 
 /** Groups list. Center admins manage every group and the teaching staff;
@@ -62,7 +68,7 @@ interface Card_ {
 export default async function GroupsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string }>;
 }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
@@ -71,10 +77,28 @@ export default async function GroupsPage({
   const sp = await searchParams;
   const filter: FilterKey = (sp.filter && sp.filter in FILTERS ? sp.filter : "all") as FilterKey;
 
-  const [{ groups, teachers }, report] = await Promise.all([
+  const supabase = await createClient();
+  const [{ groups, teachers }, report, membersRes, ratesRes] = await Promise.all([
     loadGroups(profile),
     loadCenterReport({ role: profile.role, profileId: profile.id }),
+    supabase.from("group_members").select("group_id, student_id"),
+    supabase.from("v_student_attendance").select("student_id, rate_pct"),
   ]);
+
+  // Attendance per class = the mean rate of its members. RLS has already
+  // narrowed both queries to what this person may read.
+  const rateOf = new Map(
+    ((ratesRes.data ?? []) as { student_id: string; rate_pct: number | null }[]).map((r) => [
+      r.student_id,
+      r.rate_pct,
+    ]),
+  );
+  const ratesByGroup = new Map<string, number[]>();
+  for (const m of (membersRes.data ?? []) as { group_id: string; student_id: string }[]) {
+    const rate = rateOf.get(m.student_id);
+    if (rate == null) continue;
+    ratesByGroup.set(m.group_id, [...(ratesByGroup.get(m.group_id) ?? []), rate]);
+  }
 
   // `loadGroups` owns the roster count; the report owns the graded figures.
   // Joined by id so a group with no graded work still shows up, with dashes.
@@ -89,11 +113,19 @@ export default async function GroupsPage({
       assignments: r?.assignments ?? 0,
       completionPct: r?.completionPct ?? null,
       averageBand: r?.averageBand ?? null,
+      attendancePct: mean(ratesByGroup.get(g.id) ?? []),
     };
   });
 
-  const shown = cards.filter(FILTERS[filter].test);
-  const banded = cards.filter((c) => c.averageBand != null);
+  const query = sp.q?.trim().toLowerCase() || undefined;
+  const shown = cards
+    .filter(FILTERS[filter].test)
+    .filter((c) =>
+      query
+        ? c.name.toLowerCase().includes(query) ||
+          (c.teacherName ?? "").toLowerCase().includes(query)
+        : true,
+    );
 
   return (
     <div>
@@ -105,30 +137,12 @@ export default async function GroupsPage({
             ? `${groups.length} class${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
             : "The classes assigned to you — set practice here and read the results."
         }
+        actions={
+          <BtnLink href="#new-group" variant="green">
+            + New group
+          </BtnLink>
+        }
       />
-
-      <KpiRow>
-        <Kpi label={isAdmin ? "Classes" : "Your classes"} value={groups.length} />
-        <Kpi
-          label="Students enrolled"
-          value={cards.reduce((n, c) => n + c.students, 0)}
-          sub="across every class"
-        />
-        <Kpi
-          label="Practice set"
-          value={cards.reduce((n, c) => n + c.assignments, 0)}
-          sub={`${cards.filter((c) => c.assignments === 0).length} class(es) with none`}
-        />
-        <Kpi
-          label="Average band"
-          value={
-            banded.length
-              ? (banded.reduce((n, c) => n + (c.averageBand ?? 0), 0) / banded.length).toFixed(1)
-              : "—"
-          }
-          sub={banded.length ? `${banded.length} class(es) graded` : "nothing graded yet"}
-        />
-      </KpiRow>
 
       <div
         style={{
@@ -149,6 +163,16 @@ export default async function GroupsPage({
             <span style={{ opacity: 0.7, marginLeft: 6 }}>{cards.filter(FILTERS[k].test).length}</span>
           </Chip>
         ))}
+        <form method="GET" style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          {filter !== "all" ? <input type="hidden" name="filter" value={filter} /> : null}
+          <input
+            name="q"
+            defaultValue={sp.q ?? ""}
+            placeholder="Filter by name or teacher…"
+            aria-label="Filter groups"
+            style={{ ...fieldStyle, width: 260, background: "#fff" }}
+          />
+        </form>
       </div>
 
       <Stack>
@@ -169,14 +193,14 @@ export default async function GroupsPage({
             <p style={{ fontFamily: SANS, fontSize: 13.5, color: SOFT, margin: 0 }}>
               {cards.length === 0
                 ? isAdmin
-                  ? "No groups yet — create one below."
+                  ? "No groups yet — use + New group above."
                   : "No groups assigned to you yet."
                 : "No class matches that filter."}
             </p>
           </Card>
         )}
 
-        <Card>
+        <Card id="new-group">
           <CardHead title="Create a group" />
           <CardNote>
             {!isAdmin
@@ -287,8 +311,14 @@ function GroupCard({ group: g }: { group: Card_ }) {
         }}
       >
         <Stat label="Avg band" value={g.averageBand?.toFixed(1) ?? "—"} />
-        <Stat label="Practice" value={g.assignments} />
-        <Stat label="Students" value={g.students} />
+        <Stat
+          label="Completion"
+          value={g.completionPct == null ? "—" : `${g.completionPct}%`}
+        />
+        <Stat
+          label="Attendance"
+          value={g.attendancePct == null ? "—" : `${g.attendancePct}%`}
+        />
       </div>
     </Link>
   );

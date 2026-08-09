@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 /**
  * The console's page chrome, from the "Center Admin CRM" design: a sticky
@@ -41,6 +41,54 @@ function initials(name: string): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export type ConsolePanel = "enrol" | "teacher" | "invite";
+
+/**
+ * Lets a page open one of the chrome's panels. A page is a server component, so
+ * it can't hold the open/closed state itself — it renders <PanelButton>, which
+ * reads this context. That is what keeps "+ Add teacher" a single button at the
+ * top of the Teachers page rather than a second copy of the form inline.
+ */
+const PanelContext = createContext<(panel: ConsolePanel) => void>(() => {});
+
+export function PanelButton({
+  panel,
+  variant = "primary",
+  children,
+}: {
+  panel: ConsolePanel;
+  variant?: "primary" | "ghost";
+  children: React.ReactNode;
+}) {
+  const open = useContext(PanelContext);
+  const primary = variant === "primary";
+  return (
+    <button
+      type="button"
+      onClick={() => open(panel)}
+      className={`cn-btn cn-btn--${primary ? "primary" : "ghost"}`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        borderRadius: 8,
+        padding: primary ? "10px 15px" : "9px 13px",
+        fontFamily: "inherit",
+        fontSize: 13,
+        fontWeight: primary ? 600 : 500,
+        whiteSpace: "nowrap",
+        cursor: "pointer",
+        flex: "none",
+        border: primary ? 0 : "1px solid #E0DED8",
+        background: primary ? INDIGO : "#fff",
+        color: primary ? "#fff" : INK,
+      }}
+    >
+      {children}
+    </button>
+  );
 }
 
 export function ConsoleChrome({
@@ -83,7 +131,7 @@ export function ConsoleChrome({
   const crumb = CRUMBS.find(([href]) => pathname === href || pathname.startsWith(href + "/"))?.[1];
 
   return (
-    <>
+    <PanelContext.Provider value={setPanel}>
       <header
         className="cn-topbar"
         style={{
@@ -137,26 +185,6 @@ export function ConsoleChrome({
               }}
             >
               Invite people
-            </button>
-          ) : null}
-          {teacherPanel ? (
-            <button
-              type="button"
-              onClick={() => setPanel("teacher")}
-              className="cn-btn cn-btn--ghost cn-hide-md"
-              style={{
-                background: "#fff",
-                border: "1px solid #E0DED8",
-                borderRadius: 8,
-                padding: "7px 11px",
-                fontFamily: "inherit",
-                fontSize: 12.5,
-                color: INK,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              + Teacher
             </button>
           ) : null}
           {enrolPanel ? (
@@ -239,7 +267,7 @@ export function ConsoleChrome({
           {invitePanel}
         </Modal>
       ) : null}
-    </>
+    </PanelContext.Provider>
   );
 }
 

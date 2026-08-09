@@ -8,6 +8,7 @@ import {
   FAINT,
   fieldStyle,
   GREEN,
+  INDIGO,
   Kpi,
   KpiRow,
   PageHead,
@@ -21,6 +22,7 @@ import {
   Toolbar,
   TRow,
 } from "@/components/console/crm-ui";
+import { PanelButton } from "@/components/console/console-chrome";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudents, type StudentRow } from "@/lib/console/people";
 
@@ -62,7 +64,7 @@ const CARD_FILTERS = {
 
 type CardFilter = keyof typeof CARD_FILTERS;
 
-const COLS = "2.2fr 1.5fr 1.2fr .7fr .8fr .8fr 1fr .6fr";
+const COLS = "2.2fr 1.5fr 1.1fr 1.1fr .7fr 1fr";
 
 export default async function StudentsPage({
   searchParams,
@@ -105,11 +107,13 @@ export default async function StudentsPage({
     .filter((s) => (card ? CARD_FILTERS[card](s) : true))
     .sort(SORTS[sort].cmp);
 
-  const neverPractised = all.filter((s) => s.practiceCount === 0).length;
   const ungrouped = all.filter((s) => s.groups.length === 0).length;
-  const atTarget = all.filter(
-    (s) => s.weakest != null && s.targetBand != null && s.weakest.band >= s.targetBand,
-  ).length;
+  // The last bucket of the sparkline IS this week, so the KPI and the trend
+  // column can never tell different stories.
+  const practisedThisWeek = all.filter((s) => (s.spark.at(-1) ?? 0) > 0).length;
+  // Read off the same six-week series rather than re-deriving a cutoff from the
+  // clock: the last two buckets ARE the last fourteen days.
+  const goneQuiet = all.filter((s) => s.spark.slice(-2).every((n) => n === 0)).length;
 
   return (
     <div>
@@ -121,26 +125,31 @@ export default async function StudentsPage({
             ? `${all.length} enrolled across ${groupOptions.length} class${groupOptions.length === 1 ? "" : "es"}.`
             : "The students in the groups you run."
         }
+        actions={<PanelButton panel="enrol">+ Enrol student</PanelButton>}
       />
 
       <KpiRow>
         <Kpi
-          label="Students"
+          label="Enrolled"
           value={all.length}
           sub="click a card to filter the list"
           href="/console/students"
           active={!card}
         />
         <Kpi
-          label="Have practised"
-          value={all.length - neverPractised}
+          label="Practised this week"
+          value={practisedThisWeek}
+          delta={all.length ? `${Math.round((practisedThisWeek / all.length) * 100)}%` : undefined}
+          deltaTone="good"
+          sub="of the roll"
           href={cardHref("practised")}
           active={card === "practised"}
         />
         <Kpi
-          label="Never practised"
-          value={neverPractised}
-          deltaTone="bad"
+          label="Gone quiet 14 days"
+          value={goneQuiet}
+          delta={goneQuiet > 0 ? "worth a call" : "nobody"}
+          deltaTone={goneQuiet > 0 ? "bad" : "good"}
           href={cardHref("never")}
           active={card === "never"}
         />
@@ -148,11 +157,11 @@ export default async function StudentsPage({
           <Kpi
             label="In no group"
             value={ungrouped}
+            deltaTone="bad"
             href={cardHref("nogroup")}
             active={card === "nogroup"}
           />
         ) : null}
-        <Kpi label="At or above target" value={atTarget} sub="on their weakest skill" />
       </KpiRow>
 
       <Card flush>
@@ -209,7 +218,7 @@ export default async function StudentsPage({
         <Table cols={COLS} minWidth={860}>
           <THead
             cols={COLS}
-            labels={["Student", "Group", "Weakest skill", "Target", "Practice", "Att.", "Last active", ""]}
+            labels={["Student", "Group", "Band", "Trend", "Att.", "Last active"]}
           />
           {rows.map((s) => {
             const short = s.weakest ? s.weakest.skill : null;
@@ -245,8 +254,9 @@ export default async function StudentsPage({
                     <span style={{ color: FAINT }}>not measured</span>
                   )}
                 </TD>
-                <TD tone="soft">{s.targetBand?.toFixed(1) ?? "—"}</TD>
-                <TD tone={s.practiceCount === 0 ? "faint" : "body"}>{s.practiceCount}</TD>
+                <TD>
+                  <Spark weeks={s.spark} />
+                </TD>
                 <TD
                   tone={s.attendancePct == null ? "faint" : "body"}
                   weight={s.attendancePct != null && s.attendancePct < 75 ? 600 : undefined}
@@ -254,11 +264,6 @@ export default async function StudentsPage({
                   {s.attendancePct == null ? "—" : `${s.attendancePct}%`}
                 </TD>
                 <TD tone="soft">{s.lastActive ? dateFmt(s.lastActive) : "never"}</TD>
-                {/* The whole row is the link, so this is a marker, not an
-                    anchor — an <a> inside an <a> is invalid HTML. */}
-                <TD align="right" tone="faint">
-                  ›
-                </TD>
               </TRow>
             );
           })}
@@ -272,5 +277,30 @@ export default async function StudentsPage({
         </Table>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Six weekly practice counts as bars, the design's trend column. The last bar
+ * is this week and is inked so "are they working right now" reads at a glance.
+ */
+function Spark({ weeks }: { weeks: number[] }) {
+  const top = Math.max(1, ...weeks);
+  return (
+    <span style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 26 }}>
+      {weeks.map((n, i) => (
+        <span
+          key={i}
+          title={`${n} practice${n === 1 ? "" : "s"}`}
+          style={{
+            width: 6,
+            borderRadius: 2,
+            // A zero week still shows a 2px stub, so the row keeps its shape.
+            height: Math.max(2, Math.round((n / top) * 26)),
+            background: i === weeks.length - 1 ? INDIGO : "#D9D8EF",
+          }}
+        />
+      ))}
+    </span>
   );
 }
