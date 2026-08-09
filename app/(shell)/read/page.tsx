@@ -26,12 +26,26 @@ const MIN_PRACTICE_QUESTIONS = 11;
  * items clone into the learner's org on Start; both show only a "Start" button.
  */
 export default async function ReadingHubPage() {
-  // Staff see the same hub as the class — the only thing they get extra is the
-  // control to set a test as homework, on the runner itself.
+  // Staff see the same hub as the class. A teacher gets one thing extra: an
+  // Attach control under every card, so setting homework doesn't require
+  // starting the test first to reach the runner's floating control.
   const { profile } = await requireOrgUser();
+  const isTeacher = profile.role === "teacher";
 
   const supabase = await createClient();
   const admin = createAdminClient();
+
+  // Own classes only — RLS narrows it anyway, and a teacher can only assign to
+  // classes they run (the rule assignPractice enforces server-side).
+  let teacherGroups: { id: string; name: string }[] = [];
+  if (isTeacher) {
+    const { data } = await supabase
+      .from("groups")
+      .select("id, name")
+      .eq("teacher_id", profile.id)
+      .order("name");
+    teacherGroups = (data ?? []) as { id: string; name: string }[];
+  }
 
   const [estimates, libTestsRes, libPassagesRes, ownTestsRes, ownPassagesRes, attemptsRes] =
     await Promise.all([
@@ -158,6 +172,8 @@ export default async function ReadingHubPage() {
         ownTests={ownTests}
         libraryPassages={libraryPassages}
         ownPassages={ownPassages}
+        isTeacher={isTeacher}
+        groups={teacherGroups}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import { notifyAssignment } from "@/lib/notifications/send";
 import { generateWritingPrompt, PromptServiceError, reviewWritingPrompt } from "@/lib/prompts/service";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota } from "@/lib/quota";
+import { instantiateLibraryTest } from "@/lib/reading/service";
 import { createClient } from "@/lib/supabase/server";
 
 export interface PracticeFormState {
@@ -289,6 +290,38 @@ export async function assignPractice(
     }
   }
 
+  // A LIBRARY reading test belongs to the shared library org, not to this
+  // center — assigning its id directly would point the assignment at another
+  // org's row, and every downstream join (the report, the runner, RLS) would be
+  // reading across a tenant boundary. Clone it into this org first.
+  //
+  // This lives in the action, not in one caller, because it has to hold for
+  // every entry point: the reading hub's cards, the runner's floating control,
+  // and the group page's assign panel. The group page already did it by hand;
+  // instantiateLibraryTest dedupes per org, so doing it here too is a no-op for
+  // that path rather than a second copy.
+  let assignedId = contentId;
+  if (kind === "reading") {
+    const { data: test } = await supabase
+      .from("reading_tests")
+      .select("id, is_library")
+      .eq("id", contentId)
+      .maybeSingle();
+    if (!test) return { error: "Practice not found." };
+    if (test.is_library) {
+      try {
+        assignedId = await instantiateLibraryTest(
+          { userId: profile.id, organizationId: profile.organization_id, role: profile.role },
+          contentId,
+        );
+      } catch (err) {
+        return {
+          error: err instanceof Error ? err.message : "Could not copy that test into your center.",
+        };
+      }
+    }
+  }
+
   const contentColumn =
     kind === "writing"
       ? "prompt_id"
@@ -303,7 +336,7 @@ export async function assignPractice(
       kind,
       title,
       instructions,
-      [contentColumn]: contentId,
+      [contentColumn]: assignedId,
       due_at: dueAt ? dueAt.toISOString() : null,
       created_by: profile.id,
     })),
@@ -318,10 +351,10 @@ export async function assignPractice(
     title,
     href:
       kind === "writing"
-        ? `/write/${contentId}`
+        ? `/write/${assignedId}`
         : kind === "reading"
-          ? `/read/test/${contentId}`
-          : `/listen?item=${contentId}`,
+          ? `/read/test/${assignedId}`
+          : `/listen?item=${assignedId}`,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 

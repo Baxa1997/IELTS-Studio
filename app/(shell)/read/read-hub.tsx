@@ -10,6 +10,8 @@ import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
 
+import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
+
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -64,6 +66,8 @@ export function ReadingHub({
   ownTests,
   libraryPassages,
   ownPassages,
+  isTeacher = false,
+  groups = [],
 }: {
   levelBand: number | null;
   levelMeasured: boolean;
@@ -71,11 +75,45 @@ export function ReadingHub({
   ownTests: TestCard[];
   libraryPassages: PassageCard[];
   ownPassages: PassageCard[];
+  /** Teachers get an Attach control under every card. */
+  isTeacher?: boolean;
+  groups?: { id: string; name: string }[];
 }) {
   const [tab, setTab] = useState<Tab>("test");
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The card a teacher is setting to a class. Library ids are fine to pass
+  // straight through: assignPractice clones a library test into the center's
+  // own org before writing the assignment.
+  const [attachId, setAttachId] = useState<string | null>(null);
+
+  /** Attach control under a card. Rendered as a sibling, never inside — the
+   *  card itself is a <Link>, and a button nested in an anchor is invalid. */
+  const attachSlot = (id: string) =>
+    isTeacher ? (
+      <button
+        type="button"
+        onClick={() => setAttachId(id)}
+        disabled={groups.length === 0}
+        title={groups.length === 0 ? "Create a class first" : undefined}
+        style={{
+          marginTop: 8,
+          width: "100%",
+          background: "#fff",
+          border: "1px solid #ECEAF2",
+          borderRadius: 10,
+          padding: "8px 12px",
+          fontFamily: "inherit",
+          fontSize: 13,
+          fontWeight: 600,
+          color: groups.length === 0 ? "#8A8FA0" : "#3B43B5",
+          cursor: groups.length === 0 ? "not-allowed" : "pointer",
+        }}
+      >
+        Attach to a class
+      </button>
+    ) : null;
 
   async function startLibrary(kind: Tab, id: string, num?: number) {
     if (loadingId) return;
@@ -204,14 +242,16 @@ export function ReadingHub({
               <SectionLabel>Your tests</SectionLabel>
               <Grid>
                 {ownTests.map((t, i) => (
-                  <TestTile
-                    key={t.id}
-                    title={`Practice test ${i + 1}`}
-                    footerLeft={fmtDate(t.createdAt)}
-                    isNew
-                    practised={t.practised}
-                    href={`/read/test/${t.id}?n=${i + 1}`}
-                  />
+                  <div key={t.id}>
+                    <TestTile
+                      title={`Practice test ${i + 1}`}
+                      footerLeft={fmtDate(t.createdAt)}
+                      isNew
+                      practised={t.practised}
+                      href={`/read/test/${t.id}?n=${i + 1}`}
+                    />
+                    {attachSlot(t.id)}
+                  </div>
                 ))}
               </Grid>
             </>
@@ -224,15 +264,17 @@ export function ReadingHub({
                 {libraryTests.map((t, i) => {
                   const num = ownTests.length + i + 1;
                   return (
-                    <TestTile
-                      key={t.id}
-                      title={`Practice test ${num}`}
-                      footerLeft={
-                        t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
-                      }
-                      onStart={() => void startLibrary("test", t.id, num)}
-                      loading={loadingId === t.id}
-                    />
+                    <div key={t.id}>
+                      <TestTile
+                        title={`Practice test ${num}`}
+                        footerLeft={
+                          t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
+                        }
+                        onStart={() => void startLibrary("test", t.id, num)}
+                        loading={loadingId === t.id}
+                      />
+                      {attachSlot(t.id)}
+                    </div>
                   );
                 })}
               </Grid>
@@ -296,6 +338,17 @@ export function ReadingHub({
       )}
 
       {error ? <UpgradeNotice message={error} /> : null}
+
+      {attachId ? (
+        <PracticeModal title="Attach to a class" onClose={() => setAttachId(null)}>
+          <AttachForm
+            kind="reading"
+            contentId={attachId}
+            groups={groups}
+            onDone={() => setAttachId(null)}
+          />
+        </PracticeModal>
+      ) : null}
 
       <LegalFooter note="Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by IELTS®." />
     </div>
