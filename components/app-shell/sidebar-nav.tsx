@@ -181,10 +181,28 @@ function sectionsFor(
       ...home.items.slice(1),
     ],
   };
-  // A center student practises what they were set. Dropping the Practice
-  // section is the visible half of that; the hubs also redirect (see
-  // isHomeworkOnlyStudent), because a menu is not a permission.
-  return homeworkOnly ? [withAssignments] : [withAssignments, ...rest];
+  if (!homeworkOnly) return [withAssignments, ...rest];
+  // A center student practises what they were set — so the four skills lead to
+  // their homework, not a library, and there is no Generate anywhere.
+  //
+  // Vocabulary stays: it is revision of words they have already met, not
+  // un-assigned exam practice, so it doesn't undercut the rule — and a student
+  // with no homework set should still have something useful to open.
+  // Certificates is theirs to look at; the center issues them.
+  return [
+    withAssignments,
+    {
+      title: "Practice",
+      items: [
+        { label: "Writing", href: "/write", icon: SquarePen },
+        { label: "Reading", href: "/read", icon: BookOpen },
+        { label: "Listening", href: "/listen", icon: Headphones },
+        { label: "Speaking", href: "/speak", icon: Mic },
+        { label: "Vocabulary", href: "/vocabulary", icon: BookA },
+      ],
+    },
+    { title: "You", items: [{ label: "Certificates", href: "/certificates", icon: Award }] },
+  ];
 }
 
 /**
