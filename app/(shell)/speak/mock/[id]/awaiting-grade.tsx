@@ -58,17 +58,37 @@ export function AwaitingGrade({ sessionId }: { sessionId: string }) {
 
   return (
     <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
-      <div style={{ flex: 1, minHeight: 0, display: "grid", placeItems: "center", padding: "40px 24px" }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "grid",
+          placeItems: "center",
+          padding: "40px 24px",
+        }}
+      >
         <div style={{ textAlign: "center", maxWidth: 460 }}>
           <div
             aria-hidden
             style={{
-              width: 38, height: 38, margin: "0 auto", borderRadius: "50%",
-              border: "3px solid #EFEBE9", borderTopColor: "#1A1520",
+              width: 38,
+              height: 38,
+              margin: "0 auto",
+              borderRadius: "50%",
+              border: "3px solid #EFEBE9",
+              borderTopColor: "#1A1520",
               animation: "lcSpin .9s linear infinite",
             }}
           />
-          <h1 style={{ margin: "22px 0 0", fontFamily: "var(--font-display)", fontSize: 27, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          <h1
+            style={{
+              margin: "22px 0 0",
+              fontFamily: "var(--font-display)",
+              fontSize: 27,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+            }}
+          >
             Marking your mock
           </h1>
           <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460" }}>

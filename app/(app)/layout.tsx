@@ -15,14 +15,38 @@ import { createClient } from "@/lib/supabase/server";
 
 import { OnboardingTakeover } from "./onboarding/onboarding-takeover";
 
-const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
-const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-newsreader", display: "swap" });
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-hanken",
+  display: "swap",
+});
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
 /* The console's type: Source Serif 4 headings over Work Sans. Declared here
    rather than in the console layout because the staff shell sits above it. */
-const work = Work_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-work", display: "swap" });
-const serif4 = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-serif4", display: "swap" });
+const work = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-work",
+  display: "swap",
+});
+const serif4 = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-serif4",
+  display: "swap",
+});
 
-const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
+const ROLE_LABEL: Record<string, string> = {
+  center_admin: "Center admin",
+  teacher: "Teacher",
+  student: "Student",
+};
 
 /**
  * Authenticated app shell wrapper (Option A brand). Resolves the session and hands
@@ -36,7 +60,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // First-run gate: a student without a study plan sees ONLY the full-screen
   // onboarding takeover (no shell, no nav) until they complete it — whatever route
   // they're on. The page underneath renders nothing (see each page's plan guard).
-  if (profile.role === "student") {
+  // Onboarding asks a learner for their target band and builds them a study
+  // plan. A center student is taught to their class's plan, not their own, and
+  // does not choose their own practice — so the takeover would ask them to set
+  // up something that never gets used. Solo learners still get it.
+  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
     const plan = await loadStudyPlan(profile.id);
     if (!plan) return <OnboardingTakeover />;
   }
@@ -49,24 +77,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
-  // Center students (i.e. in a group) get the Assignments nav item; solo B2C
-  // learners never see it — RLS returns nothing for them anyway.
+  // A student in a group gets the Assignments nav item; a solo B2C learner
+  // never does — RLS returns nothing for them anyway. This is computed for
+  // EVERY student, including center ones: homework is the whole menu for them,
+  // so gating it behind the billing branch below would hide the one item they
+  // actually need.
   let showAssignments = false;
   let pendingAssignments = 0;
   if (profile.role === "student") {
     const supabase = await createClient();
-    const [usage, membership] = await Promise.all([
-      getUsageSummary(profile.organization_id),
-      supabase.from("group_members").select("group_id", { count: "exact", head: true }),
-    ]);
-    sidebarFooter = <PlanCard usage={usage} />;
-    quotaBar = <QuotaBar usage={usage} />;
-    showAssignments = (membership.count ?? 0) > 0;
-    // Only center students pay for this lookup; it drives the homework badge.
+    const { count } = await supabase
+      .from("group_members")
+      .select("group_id", { count: "exact", head: true });
+    showAssignments = (count ?? 0) > 0;
     if (showAssignments) {
       const assignments = await loadStudentAssignments(profile.id);
       pendingAssignments = assignments.filter((a) => !a.done).length;
     }
+  }
+
+  // Plan card and quota bar are billing surfaces. A center pays per seat, not
+  // per essay (organizations.billing_enforced is false for them), so showing a
+  // center student a usage meter would quote a limit nobody enforces.
+  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
+    const usage = await getUsageSummary(profile.organization_id);
+    sidebarFooter = <PlanCard usage={usage} />;
+    quotaBar = <QuotaBar usage={usage} />;
   }
 
   // Loaded here, not in the client bell, so the unread badge is correct on the

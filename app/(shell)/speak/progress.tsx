@@ -79,12 +79,21 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
         <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
           YOUR PROGRESS
         </span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: bc.fg, fontVariantNumeric: "tabular-nums" }}>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 800,
+            color: bc.fg,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
           {latest.band.toFixed(1)}
           <span style={{ fontWeight: 600, color: MUTED }}> latest</span>
         </span>
         {delta !== 0 ? (
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: delta > 0 ? "#15803D" : "#C2410C" }}>
+          <span
+            style={{ fontSize: 12.5, fontWeight: 700, color: delta > 0 ? "#15803D" : "#C2410C" }}
+          >
             {delta > 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} vs previous
           </span>
         ) : (
@@ -104,13 +113,27 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
       >
         {[5, 6, 7, 8].map((g) => (
           <g key={g}>
-            <line x1={PAD} x2={W - PAD} y1={yOf(g)} y2={yOf(g)} stroke="#EFEDF6" strokeDasharray="3 4" />
+            <line
+              x1={PAD}
+              x2={W - PAD}
+              y1={yOf(g)}
+              y2={yOf(g)}
+              stroke="#EFEDF6"
+              strokeDasharray="3 4"
+            />
             <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" fill="#B9B6CC" textAnchor="start">
               {g}
             </text>
           </g>
         ))}
-        <polyline points={pts} fill="none" stroke={INDIGO} strokeWidth="2" strokeLinejoin="round" opacity="0.85" />
+        <polyline
+          points={pts}
+          fill="none"
+          stroke={INDIGO}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          opacity="0.85"
+        />
         {items.map((it, i) => (
           <circle
             key={i}
@@ -125,16 +148,39 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
       </svg>
 
       {avgs.length ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gap: 8,
+            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+          }}
+        >
           {avgs.map(({ key, avg }) => {
             const isWeak = weakest?.key === key && avgs.length > 1;
             return (
               <div key={key} style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, fontWeight: 600, color: isWeak ? AMBER : MUTED }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: isWeak ? AMBER : MUTED,
+                  }}
+                >
                   <span>{CRIT_LABEL[key]}</span>
                   <span style={{ fontVariantNumeric: "tabular-nums" }}>{avg.toFixed(1)}</span>
                 </div>
-                <div style={{ marginTop: 5, height: 5, borderRadius: 3, background: "#EFEDF6", overflow: "hidden" }}>
+                <div
+                  style={{
+                    marginTop: 5,
+                    height: 5,
+                    borderRadius: 3,
+                    background: "#EFEDF6",
+                    overflow: "hidden",
+                  }}
+                >
                   <div
                     style={{
                       width: `${Math.round((Math.min(9, avg) / 9) * 100)}%`,
@@ -153,7 +199,8 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
         <p style={{ margin: "10px 0 0", fontSize: 12.5, color: MUTED }}>
           <strong style={{ color: AMBER }}>{CRIT_LABEL[weakest.key]}</strong> is your weakest
           criterion right now (avg {weakest.avg.toFixed(1)} over your last {withCrit.length} graded
-          attempts) — the report&rsquo;s &ldquo;Fix&rdquo; lines for it are where the next half band lives.
+          attempts) — the report&rsquo;s &ldquo;Fix&rdquo; lines for it are where the next half band
+          lives.
         </p>
       ) : null}
     </section>

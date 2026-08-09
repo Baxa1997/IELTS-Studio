@@ -14,7 +14,9 @@ export default function ListenLoading() {
       aria-label="Loading"
     >
       {/* Heading + pill */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14 }}>
+      <div
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14 }}
+      >
         <div>
           <Block w={220} h={34} r={10} />
           <Block w={440} h={14} r={7} mt={12} />
@@ -35,9 +37,27 @@ export default function ListenLoading() {
       </div>
 
       {/* Card grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14, marginTop: 18 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+          gap: 14,
+          marginTop: 18,
+        }}
+      >
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} style={{ background: "#fff", border: "1px solid rgba(28,27,46,.09)", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 11 }}>
+          <div
+            key={i}
+            style={{
+              background: "#fff",
+              border: "1px solid rgba(28,27,46,.09)",
+              borderRadius: 14,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 11,
+            }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Block w={40} h={40} r={11} />
               <Block w={70} h={24} r={8} />
@@ -54,7 +74,17 @@ export default function ListenLoading() {
           </div>
         ))}
       </div>
-      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Loading…</span>
+      <span
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+        }}
+      >
+        Loading…
+      </span>
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { redirect } from "next/navigation";
+import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -19,10 +20,15 @@ export const dynamic = "force-dynamic";
  */
 export default async function WritePage() {
   const { profile } = await requireOrgUser();
-  // Center students practise what they were set. The menu already hides this
-  // hub for them; this is the half that actually enforces it, because a URL is
-  // not a menu. Their assignment links point at the RUNNERS, which stay open.
-  if (isHomeworkOnlyStudent(profile)) redirect("/assignments");
+  // A center student gets this skill's homework here, not a library and
+  // not a redirect: "Writing" in the menu should open Writing and
+  // show what they owe. Generating is a teaching decision for them.
+  if (isHomeworkOnlyStudent(profile)) {
+    const assignments = await loadStudentAssignments(profile.id);
+    return (
+      <AssignedHub skill="writing" assignments={assignments.filter((a) => a.kind === "writing")} />
+    );
+  }
   // Staff browse the same library the class does — a teacher previews a prompt by
   // doing what the student will do, not through a console mock-up of it. They
   // have no study plan, so the plan-shaped bits below fall back to defaults.

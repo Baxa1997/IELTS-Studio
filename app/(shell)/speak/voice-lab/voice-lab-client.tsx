@@ -98,28 +98,90 @@ export function VoiceLabClient() {
   }, []);
 
   const kicker: React.CSSProperties = {
-    fontSize: "var(--text-xs)", fontWeight: 700, letterSpacing: "var(--ls-wide)", textTransform: "uppercase",
+    fontSize: "var(--text-xs)",
+    fontWeight: 700,
+    letterSpacing: "var(--ls-wide)",
+    textTransform: "uppercase",
   };
 
   return (
     <LucidaScope style={{ minHeight: "100vh", background: "var(--color-neutral-50)" }}>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 40px 72px" }}>
-        <Link href="/speak" className="lc-tab" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--color-neutral-500)", textDecoration: "none", marginBottom: 24 }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M15 18l-6-6 6-6" /></svg>
+        <Link
+          href="/speak"
+          className="lc-tab"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: "var(--text-sm)",
+            fontWeight: 600,
+            color: "var(--color-neutral-500)",
+            textDecoration: "none",
+            marginBottom: 24,
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
           Speaking
         </Link>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "var(--text-4xl)", color: "var(--color-neutral-1000)", letterSpacing: "var(--ls-snug)", marginBottom: 10 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: "var(--text-4xl)",
+            color: "var(--color-neutral-1000)",
+            letterSpacing: "var(--ls-snug)",
+            marginBottom: 10,
+          }}
+        >
           Voice ear-test
         </div>
-        <p style={{ fontSize: "var(--text-md)", color: "var(--color-neutral-600)", maxWidth: 680, lineHeight: "var(--lh-relaxed)", margin: "0 0 8px" }}>
-          Every candidate reads the same three lines — a greeting, a teaching correction, and a praise. Listen across a row, pick the one you like best per manner, and tell me the four names. I&rsquo;ll wire them into Emily / Daniel / James / Sofia.
+        <p
+          style={{
+            fontSize: "var(--text-md)",
+            color: "var(--color-neutral-600)",
+            maxWidth: 680,
+            lineHeight: "var(--lh-relaxed)",
+            margin: "0 0 8px",
+          }}
+        >
+          Every candidate reads the same three lines — a greeting, a teaching correction, and a
+          praise. Listen across a row, pick the one you like best per manner, and tell me the four
+          names. I&rsquo;ll wire them into Emily / Daniel / James / Sofia.
         </p>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--color-neutral-500)", margin: "0 0 32px" }}>
+        <p
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "var(--color-neutral-500)",
+            margin: "0 0 32px",
+          }}
+        >
           (Emotion-capable Gemini-TTS voices come in a second round once these are picked.)
         </p>
 
         {error ? (
-          <div style={{ background: "var(--color-error-bg)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: "var(--radius-lg)", padding: "10px 14px", color: "var(--color-error)", fontSize: "var(--text-sm)", marginBottom: 20 }}>{error}</div>
+          <div
+            style={{
+              background: "var(--color-error-bg)",
+              border: "1px solid rgba(220,38,38,0.3)",
+              borderRadius: "var(--radius-lg)",
+              padding: "10px 14px",
+              color: "var(--color-error)",
+              fontSize: "var(--text-sm)",
+              marginBottom: 20,
+            }}
+          >
+            {error}
+          </div>
         ) : null}
 
         {GROUPS.map((g) => (
@@ -127,10 +189,32 @@ export function VoiceLabClient() {
             <div style={{ ...kicker, color: g.accent, marginBottom: 12 }}>{g.manner}</div>
             <div style={{ display: "grid", gap: 10 }}>
               {g.voices.map((v) => (
-                <div key={v.name} style={{ display: "flex", alignItems: "center", gap: 16, background: "var(--color-neutral-0)", border: "1px solid var(--color-neutral-200)", borderRadius: "var(--radius-xl)", padding: "16px 20px", flexWrap: "wrap" }}>
+                <div
+                  key={v.name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    background: "var(--color-neutral-0)",
+                    border: "1px solid var(--color-neutral-200)",
+                    borderRadius: "var(--radius-xl)",
+                    padding: "16px 20px",
+                    flexWrap: "wrap",
+                  }}
+                >
                   <div style={{ minWidth: 150, flex: "0 0 auto" }}>
-                    <div style={{ fontSize: "var(--text-md)", fontWeight: 600, color: "var(--color-neutral-1000)" }}>{v.name}</div>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--color-neutral-500)" }}>{v.note}</div>
+                    <div
+                      style={{
+                        fontSize: "var(--text-md)",
+                        fontWeight: 600,
+                        color: "var(--color-neutral-1000)",
+                      }}
+                    >
+                      {v.name}
+                    </div>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--color-neutral-500)" }}>
+                      {v.note}
+                    </div>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginLeft: "auto" }}>
                     {LINES.map((label, i) => {
@@ -142,9 +226,24 @@ export function VoiceLabClient() {
                           type="button"
                           onClick={() => play(v.name, i)}
                           className="lc-btn"
-                          style={{ display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${on ? g.accent : "var(--color-neutral-200)"}`, background: on ? "var(--color-neutral-50)" : "var(--color-neutral-0)", color: on ? g.accent : "var(--color-neutral-600)", fontSize: "var(--text-sm)", fontWeight: 600, padding: "8px 14px", borderRadius: "var(--radius-pill)", cursor: "pointer", fontFamily: "inherit" }}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            border: `1px solid ${on ? g.accent : "var(--color-neutral-200)"}`,
+                            background: on ? "var(--color-neutral-50)" : "var(--color-neutral-0)",
+                            color: on ? g.accent : "var(--color-neutral-600)",
+                            fontSize: "var(--text-sm)",
+                            fontWeight: 600,
+                            padding: "8px 14px",
+                            borderRadius: "var(--radius-pill)",
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
                         >
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
                           {on ? "Playing…" : label}
                         </button>
                       );

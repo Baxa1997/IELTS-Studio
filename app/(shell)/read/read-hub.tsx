@@ -91,9 +91,7 @@ export function ReadingHub({
   /** What a teacher's card needs to show its Attach action. Undefined for a
    *  student, which keeps their card exactly as it was: one big click target. */
   const attachFor = (id: string) =>
-    isTeacher
-      ? { onAttach: () => setAttachId(id), disabled: groups.length === 0 }
-      : undefined;
+    isTeacher ? { onAttach: () => setAttachId(id), disabled: groups.length === 0 } : undefined;
 
   async function startLibrary(kind: Tab, id: string, num?: number) {
     if (loadingId) return;

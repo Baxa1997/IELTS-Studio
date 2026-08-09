@@ -16,10 +16,24 @@ import { getUsageSummary } from "@/lib/quota";
 // Bricolage/Jakarta/JetBrains to ./speak/layout.tsx. Loading all six here meant
 // a Reading or Writing page downloaded sixteen weights it never drew a glyph
 // with; the runners themselves are unchanged.
-const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
-const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-newsreader", display: "swap" });
+const hanken = Hanken_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-hanken",
+  display: "swap",
+});
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-newsreader",
+  display: "swap",
+});
 
-const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
+const ROLE_LABEL: Record<string, string> = {
+  center_admin: "Center admin",
+  teacher: "Teacher",
+  student: "Student",
+};
 
 /**
  * Persistent app-shell wrapper for the Reading & Writing HUBS (the library/chooser
@@ -35,14 +49,19 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   // First-run gate: a student without a study plan sees only the onboarding
   // takeover (matches the (app)/(studio) layouts), whatever hub they aimed for.
-  if (profile.role === "student") {
+  // Onboarding asks a learner for their target band and builds them a study
+  // plan. A center student is taught to their class's plan, not their own, and
+  // does not choose their own practice — so the takeover would ask them to set
+  // up something that never gets used. Solo learners still get it.
+  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
     const plan = await loadStudyPlan(profile.id);
     if (!plan) return <OnboardingTakeover />;
   }
 
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
-  if (profile.role === "student") {
+  // No plan card or quota bar for a center student — see the (app) layout.
+  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
     const usage = await getUsageSummary(profile.organization_id);
     sidebarFooter = <PlanCard usage={usage} />;
     quotaBar = <QuotaBar usage={usage} />;
@@ -54,9 +73,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
-    <div
-      className={`${hanken.variable} ${newsreader.variable} lp-root`}
-    >
+    <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
       <AppShell
         role={profile.role}
         homeworkOnly={isHomeworkOnlyStudent(profile)}

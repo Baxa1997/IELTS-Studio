@@ -86,9 +86,11 @@ export default async function MockResultPage({ params }: PageProps) {
   // on `overall_band.toFixed(1)`, and `abandoned` sat on a spinner forever.
   if (typeof result.overall_band !== "number") {
     const terminal = ["failed", "abandoned", "pending"].includes(String(s.state));
-    return terminal
-      ? <UngradedMock state={String(s.state)} />
-      : <AwaitingGrade sessionId={s.id as string} />;
+    return terminal ? (
+      <UngradedMock state={String(s.state)} />
+    ) : (
+      <AwaitingGrade sessionId={s.id as string} />
+    );
   }
   const partNotes = result.part_notes ?? {};
   const prepNotes = typeof result.notes === "string" ? result.notes.trim() : "";
@@ -101,12 +103,32 @@ export default async function MockResultPage({ params }: PageProps) {
   });
 
   return (
-    <div style={{ fontFamily: SANS, maxWidth: 1280, margin: "0 auto", padding: "26px clamp(18px, 5vw, 64px) 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+    <div
+      style={{
+        fontFamily: SANS,
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: "26px clamp(18px, 5vw, 64px) 60px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
-          Full mock report <span style={{ fontSize: 14, color: MUTED, fontFamily: SANS }}>· {when}</span>
+          Full mock report{" "}
+          <span style={{ fontSize: 14, color: MUTED, fontFamily: SANS }}>· {when}</span>
         </h1>
-        <Link href="/speak" style={{ fontSize: 13.5, fontWeight: 700, color: INDIGO, textDecoration: "none" }}>
+        <Link
+          href="/speak"
+          style={{ fontSize: 13.5, fontWeight: 700, color: INDIGO, textDecoration: "none" }}
+        >
           ← Speaking
         </Link>
       </div>
@@ -122,12 +144,35 @@ export default async function MockResultPage({ params }: PageProps) {
       />
 
       {Object.keys(partNotes).length ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, margin: "14px 0" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: 12,
+            margin: "14px 0",
+          }}
+        >
           {(["1", "2", "3"] as const).map((p) =>
             partNotes[p] ? (
-              <div key={p} style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: INDIGO }}>PART {p}</div>
-                <p style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: "#3A3950" }}>{partNotes[p]}</p>
+              <div
+                key={p}
+                style={{
+                  background: "#fff",
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 14,
+                  padding: "14px 16px",
+                }}
+              >
+                <div
+                  style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: INDIGO }}
+                >
+                  PART {p}
+                </div>
+                <p
+                  style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: "#3A3950" }}
+                >
+                  {partNotes[p]}
+                </p>
               </div>
             ) : null,
           )}
@@ -152,15 +197,30 @@ export default async function MockResultPage({ params }: PageProps) {
       {prepNotes ? (
         <details
           style={{
-            background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14,
-            padding: "13px 16px", marginBottom: 14, cursor: "pointer",
+            background: "#fff",
+            border: `1px solid ${LINE}`,
+            borderRadius: 14,
+            padding: "13px 16px",
+            marginBottom: 14,
+            cursor: "pointer",
           }}
         >
           <summary style={{ fontWeight: 700, fontSize: 13.5 }}>
             Your prep-minute notes
-            <span style={{ fontWeight: 500, color: MUTED }}> · compare them with what you actually said</span>
+            <span style={{ fontWeight: 500, color: MUTED }}>
+              {" "}
+              · compare them with what you actually said
+            </span>
           </summary>
-          <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.65, color: "#3A3950", whiteSpace: "pre-wrap" }}>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 13.5,
+              lineHeight: 1.65,
+              color: "#3A3950",
+              whiteSpace: "pre-wrap",
+            }}
+          >
             {prepNotes}
           </p>
         </details>

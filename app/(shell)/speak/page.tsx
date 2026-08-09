@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AssignedHub } from "@/components/assignments/assigned-hub";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { type OrgPlan, planTier } from "@/lib/billing/plans";
 import { createClient } from "@/lib/supabase/server";
@@ -44,10 +45,13 @@ export default async function SpeakPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { profile } = await requireOrgUser();
-  // Center students practise what they were set. The menu already hides this
-  // hub for them; this is the half that actually enforces it, because a URL is
-  // not a menu. Their assignment links point at the RUNNERS, which stay open.
-  if (isHomeworkOnlyStudent(profile)) redirect("/assignments");
+  // A center student gets this skill's homework here, not a library and
+  // not a redirect: "Speaking" in the menu should open Speaking and
+  // show what they owe. Generating is a teaching decision for them.
+  // Speaking has no assignment kind — `assignments.kind` is writing | reading |
+  // listening, so there is literally nothing a teacher can set here yet. The
+  // empty state says so rather than the page pretending to be a filter.
+  if (isHomeworkOnlyStudent(profile)) return <AssignedHub skill="speaking" assignments={[]} />;
   if (profile.role !== "student") redirect("/console");
   // ?card=<library_id> — the revision loop: "practise this card again" from a
   // report deep-links straight into quick practice with that exact cue card.

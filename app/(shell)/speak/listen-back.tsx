@@ -16,7 +16,7 @@ const MUTED = "#56556A";
 const LINE = "#E8E6F0";
 const INDIGO = "#4338CA";
 const INK = "#141221";
-const GOOD = "#1A7A48";   // the "stronger version" rail, matching the report
+const GOOD = "#1A7A48"; // the "stronger version" rail, matching the report
 
 export interface LBTurn {
   role: "examiner" | "candidate";
@@ -45,12 +45,16 @@ export interface LBUpgrade {
  *  is on letters and digits only, since the transcript and the quote can differ
  *  in punctuation and casing alone. */
 function upgradesByTurn(turns: LBTurn[], upgrades: LBUpgrade[]): Map<number, LBUpgrade> {
-  const flat = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const flat = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
   const out = new Map<number, LBUpgrade>();
   const taken = new Set<number>();
   for (const u of upgrades) {
     const needle = flat(u.you_said ?? "");
-    if (needle.length < 8) continue;   // too short to attribute safely
+    if (needle.length < 8) continue; // too short to attribute safely
     const i = turns.findIndex(
       (t, idx) => t.role === "candidate" && !taken.has(idx) && flat(t.text).includes(needle),
     );
@@ -132,7 +136,15 @@ export function ListenBack({
         fontFamily: SANS,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
         <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
           {audioUrl ? "LISTEN BACK" : "WHAT YOU SAID"}
         </div>
@@ -140,58 +152,65 @@ export function ListenBack({
       </div>
 
       {audioUrl ? (
-      <audio
-        ref={audioRef}
-        src={audioUrl}
-        preload="metadata"
-        onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
-        onDurationChange={(e) => setDur(e.currentTarget.duration || 0)}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
-      />
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          preload="metadata"
+          onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
+          onDurationChange={(e) => setDur(e.currentTarget.duration || 0)}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
       ) : null}
 
       {/* player row — absent entirely when nothing was recorded */}
       {audioUrl ? (
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={playing ? "Pause" : "Play"}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            border: "none",
-            background: INDIGO,
-            color: "#fff",
-            fontSize: 15,
-            cursor: "pointer",
-            flexShrink: 0,
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          {playing ? "❚❚" : "▶"}
-        </button>
-        <input
-          type="range"
-          min={0}
-          max={Math.max(dur, 1)}
-          step={0.5}
-          value={Math.min(now, dur)}
-          onChange={(e) => {
-            const a = audioRef.current;
-            if (a) a.currentTime = Number(e.target.value);
-          }}
-          aria-label="Seek"
-          style={{ flex: 1, accentColor: INDIGO }}
-        />
-        <div style={{ fontSize: 12.5, color: MUTED, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-          {mmss(now)} / {mmss(dur)}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={playing ? "Pause" : "Play"}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              border: "none",
+              background: INDIGO,
+              color: "#fff",
+              fontSize: 15,
+              cursor: "pointer",
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            {playing ? "❚❚" : "▶"}
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={Math.max(dur, 1)}
+            step={0.5}
+            value={Math.min(now, dur)}
+            onChange={(e) => {
+              const a = audioRef.current;
+              if (a) a.currentTime = Number(e.target.value);
+            }}
+            aria-label="Seek"
+            style={{ flex: 1, accentColor: INDIGO }}
+          />
+          <div
+            style={{
+              fontSize: 12.5,
+              color: MUTED,
+              fontVariantNumeric: "tabular-nums",
+              flexShrink: 0,
+            }}
+          >
+            {mmss(now)} / {mmss(dur)}
+          </div>
         </div>
-      </div>
       ) : null}
 
       {/* synced transcript */}
@@ -223,7 +242,7 @@ export function ListenBack({
               >
                 PART {t.part}
               </div>
-              ) : null;
+            ) : null;
           return (
             <div key={i}>
               {chip}
@@ -256,7 +275,13 @@ export function ListenBack({
                 >
                   {mmss((t.t_ms ?? 0) / 1000)} {t.role === "examiner" ? "EX" : "YOU"}
                 </span>
-                <span style={{ fontSize: 13.5, lineHeight: 1.55, color: t.role === "examiner" ? MUTED : INK }}>
+                <span
+                  style={{
+                    fontSize: 13.5,
+                    lineHeight: 1.55,
+                    color: t.role === "examiner" ? MUTED : INK,
+                  }}
+                >
                   {t.text.trim()}
                 </span>
               </button>
@@ -265,11 +290,33 @@ export function ListenBack({
                   place is the whole point of listening back — sending the
                   learner to a separate list to find it loses the pairing. */}
               {better.has(i) ? (
-                <div style={{ margin: "0 12px 10px 74px", borderLeft: `2px solid ${GOOD}`, paddingLeft: 12 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".07em", color: GOOD, textTransform: "uppercase" }}>
+                <div
+                  style={{
+                    margin: "0 12px 10px 74px",
+                    borderLeft: `2px solid ${GOOD}`,
+                    paddingLeft: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      letterSpacing: ".07em",
+                      color: GOOD,
+                      textTransform: "uppercase",
+                    }}
+                  >
                     Stronger
                   </div>
-                  <div style={{ marginTop: 3, fontSize: 13.5, lineHeight: 1.55, color: INK, fontWeight: 500 }}>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: 13.5,
+                      lineHeight: 1.55,
+                      color: INK,
+                      fontWeight: 500,
+                    }}
+                  >
                     {better.get(i)!.stronger}
                   </div>
                   {better.get(i)!.note ? (

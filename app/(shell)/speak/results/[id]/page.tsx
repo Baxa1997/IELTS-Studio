@@ -74,28 +74,62 @@ export default async function SpeakResultPage({ params }: PageProps) {
 
   return (
     <div style={{ fontFamily: SANS, maxWidth: 860, margin: "0 auto", padding: "26px 18px 60px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
-          Speaking report <span style={{ fontSize: 14, color: "#56556A", fontFamily: SANS }}>· {when}</span>
+          Speaking report{" "}
+          <span style={{ fontSize: 14, color: "#56556A", fontFamily: SANS }}>· {when}</span>
         </h1>
         <div style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
           {attempt.library_id ? (
             <Link
               href={`/speak?card=${attempt.library_id}`}
-              style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", background: "#4338CA", borderRadius: 999, padding: "8px 16px", textDecoration: "none" }}
+              style={{
+                fontSize: 13.5,
+                fontWeight: 700,
+                color: "#fff",
+                background: "#4338CA",
+                borderRadius: 999,
+                padding: "8px 16px",
+                textDecoration: "none",
+              }}
             >
               Practise this card again →
             </Link>
           ) : null}
-          <Link href="/speak" style={{ fontSize: 13.5, fontWeight: 700, color: "#4338CA", textDecoration: "none" }}>
+          <Link
+            href="/speak"
+            style={{ fontSize: 13.5, fontWeight: 700, color: "#4338CA", textDecoration: "none" }}
+          >
             ← Speaking practice
           </Link>
         </div>
       </div>
 
-      {prev?.result ? <RevisionStrip now={result} nowM={metrics} prev={prev.result} prevM={prev.metrics} prevWhen={prev.created_at} /> : null}
+      {prev?.result ? (
+        <RevisionStrip
+          now={result}
+          nowM={metrics}
+          prev={prev.result}
+          prevM={prev.metrics}
+          prevWhen={prev.created_at}
+        />
+      ) : null}
 
-      <SpeakingReport result={result} metrics={metrics} transcript={attempt.transcript ?? ""} audioUrl={audioUrl} />
+      <SpeakingReport
+        result={result}
+        metrics={metrics}
+        transcript={attempt.transcript ?? ""}
+        audioUrl={audioUrl}
+      />
     </div>
   );
 }
@@ -118,7 +152,9 @@ function RevisionStrip({
   const up = d > 0;
   const same = d === 0;
   const when = new Date(prevWhen).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const crits = (["FC", "LR", "GRA"] as const).filter((k) => now.criteria?.[k] && prev.criteria?.[k]);
+  const crits = (["FC", "LR", "GRA"] as const).filter(
+    (k) => now.criteria?.[k] && prev.criteria?.[k],
+  );
   const chip = (label: string, delta: number, suffix = "") => (
     <span
       key={label}
@@ -132,7 +168,9 @@ function RevisionStrip({
         border: `1px solid ${delta > 0 ? "#CFE7DA" : delta < 0 ? "#F3CFC6" : "#E4E2EF"}`,
       }}
     >
-      {label} {delta > 0 ? "+" : ""}{delta.toFixed(1).replace(/\.0$/, "")}{suffix}
+      {label} {delta > 0 ? "+" : ""}
+      {delta.toFixed(1).replace(/\.0$/, "")}
+      {suffix}
     </span>
   );
   return (
@@ -149,7 +187,13 @@ function RevisionStrip({
         <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "#4338CA" }}>
           SECOND DELIVERY · vs {when}
         </span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: up ? "#15803D" : same ? "#56556A" : "#C2410C" }}>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: up ? "#15803D" : same ? "#56556A" : "#C2410C",
+          }}
+        >
           {prev.overall_band.toFixed(1)} → {now.overall_band.toFixed(1)}
           {up ? " — better" : same ? " — level" : " — lower this time"}
         </span>
@@ -160,7 +204,10 @@ function RevisionStrip({
           ? chip("pace", nowM.wpm - prevM.wpm, " wpm")
           : null}
         {typeof nowM.fillers === "number" && typeof prevM.fillers === "number"
-          ? chip("fillers", -(prevM.fillers - nowM.fillers) === 0 ? 0 : nowM.fillers - prevM.fillers)
+          ? chip(
+              "fillers",
+              -(prevM.fillers - nowM.fillers) === 0 ? 0 : nowM.fillers - prevM.fillers,
+            )
           : null}
       </div>
       <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#56556A" }}>

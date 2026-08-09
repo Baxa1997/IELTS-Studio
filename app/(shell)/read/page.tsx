@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
-
+import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
@@ -31,10 +31,15 @@ export default async function ReadingHubPage() {
   // Attach control under every card, so setting homework doesn't require
   // starting the test first to reach the runner's floating control.
   const { profile } = await requireOrgUser();
-  // Center students practise what they were set. The menu already hides this
-  // hub for them; this is the half that actually enforces it, because a URL is
-  // not a menu. Their assignment links point at the RUNNERS, which stay open.
-  if (isHomeworkOnlyStudent(profile)) redirect("/assignments");
+  // A center student gets this skill's homework here, not a library and
+  // not a redirect: "Reading" in the menu should open Reading and
+  // show what they owe. Generating is a teaching decision for them.
+  if (isHomeworkOnlyStudent(profile)) {
+    const assignments = await loadStudentAssignments(profile.id);
+    return (
+      <AssignedHub skill="reading" assignments={assignments.filter((a) => a.kind === "reading")} />
+    );
+  }
   const isTeacher = profile.role === "teacher";
 
   const supabase = await createClient();

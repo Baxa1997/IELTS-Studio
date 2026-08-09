@@ -96,9 +96,19 @@ export function SpeakingReport({
   const band = typeof result.overall_band === "number" ? result.overall_band : null;
   if (band == null) {
     return (
-      <div style={{ fontFamily: SANS, color: MUTED, border: `1px solid ${LINE}`, borderRadius: 16, padding: "18px 20px", fontSize: 14, lineHeight: 1.6 }}>
-        This attempt has no band — the marking step did not complete. Nothing about your
-        speaking caused it.
+      <div
+        style={{
+          fontFamily: SANS,
+          color: MUTED,
+          border: `1px solid ${LINE}`,
+          borderRadius: 16,
+          padding: "18px 20px",
+          fontSize: 14,
+          lineHeight: 1.6,
+        }}
+      >
+        This attempt has no band — the marking step did not complete. Nothing about your speaking
+        caused it.
       </div>
     );
   }
@@ -111,7 +121,9 @@ export function SpeakingReport({
   const bc = bandColor(band);
 
   return (
-    <div style={{ fontFamily: SANS, color: INK, display: "flex", flexDirection: "column", gap: 14 }}>
+    <div
+      style={{ fontFamily: SANS, color: INK, display: "flex", flexDirection: "column", gap: 14 }}
+    >
       {/* PARTIAL TEST — the number below is not an exam-day band, and saying so
           quietly at the bottom was not enough (owner, 2026-07-30: "I have not
           finished part 1, and not even tried part 2 or 3, so it put 5 overall
@@ -132,13 +144,20 @@ export function SpeakingReport({
             color: "#8A2C2C",
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+            }}
+          >
             Not an exam-day band
           </div>
           <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
             You did not sit {partial.length === 2 ? "Part 2 or Part 3" : `Part ${partial[0]}`}, so{" "}
-            <strong>{band.toFixed(1)} describes only the speech you actually produced</strong> —
-            it is feedback, not a prediction.
+            <strong>{band.toFixed(1)} describes only the speech you actually produced</strong> — it
+            is feedback, not a prediction.
             {partial.length === 2
               ? " A real examiner never saw your long turn or your discussion, and cannot award marks for either."
               : partial[0] === "2"
@@ -166,8 +185,23 @@ export function SpeakingReport({
           result outright, and that a turn spent refusing is a turn with no
           language in it to credit. */}
       {result.conduct ? (
-        <div style={{ border: "1px solid #F0D2D2", background: "#FDF4F4", borderRadius: 14, padding: "16px 18px", color: "#8A2C2C" }}>
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>
+        <div
+          style={{
+            border: "1px solid #F0D2D2",
+            background: "#FDF4F4",
+            borderRadius: 14,
+            padding: "16px 18px",
+            color: "#8A2C2C",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: ".06em",
+              textTransform: "uppercase",
+            }}
+          >
             About what you said to the examiner
           </div>
           <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.6 }}>
@@ -177,15 +211,15 @@ export function SpeakingReport({
             {result.conduct.kind === "abuse" ? (
               <>
                 Your band above is unaffected — politeness is not one of the four criteria, and
-                nothing was deducted for it. In a real test the cost is bigger than a band:
-                abusive language toward an examiner is treated as misconduct, and it can get a
-                test stopped and the result withheld entirely.
+                nothing was deducted for it. In a real test the cost is bigger than a band: abusive
+                language toward an examiner is treated as misconduct, and it can get a test stopped
+                and the result withheld entirely.
               </>
             ) : (
               <>
                 Your band above is unaffected by the refusal itself — but a turn you refuse is a
-                turn with no language in it, and an examiner can only credit what you actually
-                say. Every skipped answer is fluency evidence you chose not to give.
+                turn with no language in it, and an examiner can only credit what you actually say.
+                Every skipped answer is fluency evidence you chose not to give.
               </>
             )}
           </p>
@@ -201,34 +235,86 @@ export function SpeakingReport({
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 14 }}>
           <span
             style={{
-              fontSize: 62, fontWeight: 800, lineHeight: 0.82, color: bc.fg,
-              fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em",
+              fontSize: 62,
+              fontWeight: 800,
+              lineHeight: 0.82,
+              color: bc.fg,
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: "-.03em",
             }}
           >
             {band.toFixed(1)}
           </span>
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase", lineHeight: 1.1 }}>
-              Overall<br />band
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                letterSpacing: ".04em",
+                color: "#8A8FA0",
+                textTransform: "uppercase",
+                lineHeight: 1.1,
+              }}
+            >
+              Overall
+              <br />
+              band
             </span>
-            <span style={{ alignSelf: "flex-start", fontSize: 11.5, fontWeight: 700, color: bc.fg, background: bc.bg, padding: "2px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
+            <span
+              style={{
+                alignSelf: "flex-start",
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: bc.fg,
+                background: bc.bg,
+                padding: "2px 9px",
+                borderRadius: 999,
+                whiteSpace: "nowrap",
+              }}
+            >
               {bc.label}
             </span>
           </div>
         </div>
         {fixes > band ? (
-          <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: GOOD_BG, border: "1px solid #cfe7da", borderRadius: 11 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOOD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <div
+            style={{
+              flex: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "7px 13px",
+              background: GOOD_BG,
+              border: "1px solid #cfe7da",
+              borderRadius: 11,
+            }}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={GOOD}
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>
             <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
-              Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{fixes.toFixed(1)}</strong> with the fixes
+              Up to{" "}
+              <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{fixes.toFixed(1)}</strong> with
+              the fixes
             </span>
           </div>
         ) : null}
         <div
           style={{
-            flex: 1, minWidth: 250, display: "grid", gap: 10,
+            flex: 1,
+            minWidth: 250,
+            display: "grid",
+            gap: 10,
             gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
           }}
         >
@@ -246,28 +332,78 @@ export function SpeakingReport({
                   : c.band >= 6
                     ? "Solid"
                     : "Needs work";
-            const tagColor = isBeta ? AMBER : isBlocker ? "#C2410C" : c.band >= 6 ? "#9A9EAE" : AMBER;
+            const tagColor = isBeta
+              ? AMBER
+              : isBlocker
+                ? "#C2410C"
+                : c.band >= 6
+                  ? "#9A9EAE"
+                  : AMBER;
             return (
               <div
                 key={k}
                 style={{
                   background: isBlocker ? "#FCEEEA" : "#F7F7FB",
                   border: `1px solid ${isBlocker ? "#F3CFC6" : LINE}`,
-                  borderRadius: 12, padding: "10px 12px", minWidth: 0,
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                  minWidth: 0,
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-                  <span style={{ fontSize: 11.5, fontWeight: 600, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: MUTED,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {CRIT_SHORT[k] ?? k}
                   </span>
-                  <span style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+                  <span
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 800,
+                      color,
+                      fontVariantNumeric: "tabular-nums",
+                      lineHeight: 1,
+                    }}
+                  >
                     {c.band.toFixed(1)}
                   </span>
                 </div>
-                <div style={{ marginTop: 8, height: 5, borderRadius: 3, background: isBlocker ? "#F3DAD3" : "#EBEAF3", overflow: "hidden" }}>
-                  <div style={{ width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`, height: "100%", borderRadius: 3, background: isBlocker ? "#C2410C" : INDIGO, opacity: isBeta ? 0.45 : 1 }} />
+                <div
+                  style={{
+                    marginTop: 8,
+                    height: 5,
+                    borderRadius: 3,
+                    background: isBlocker ? "#F3DAD3" : "#EBEAF3",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`,
+                      height: "100%",
+                      borderRadius: 3,
+                      background: isBlocker ? "#C2410C" : INDIGO,
+                      opacity: isBeta ? 0.45 : 1,
+                    }}
+                  />
                 </div>
-                <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tagColor }}>{tag}</div>
+                <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tagColor }}>
+                  {tag}
+                </div>
               </div>
             );
           })}
@@ -278,7 +414,9 @@ export function SpeakingReport({
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {result.score_blocker?.why ? (
           <div style={{ fontSize: 13.5, color: MUTED }}>
-            <strong style={{ color: INK }}>{CRIT_NAME[result.score_blocker.criterion] ?? result.score_blocker.criterion}</strong>{" "}
+            <strong style={{ color: INK }}>
+              {CRIT_NAME[result.score_blocker.criterion] ?? result.score_blocker.criterion}
+            </strong>{" "}
             holds it down: {result.score_blocker.why}
           </div>
         ) : null}
@@ -297,7 +435,12 @@ export function SpeakingReport({
             You should say: {cue.bullets?.join(" · ")} — {cue.closing}
           </div>
           {audioUrl ? (
-            <audio controls src={audioUrl} style={{ width: "100%", marginTop: 12 }} preload="none" />
+            <audio
+              controls
+              src={audioUrl}
+              style={{ width: "100%", marginTop: 12 }}
+              preload="none"
+            />
           ) : null}
         </div>
       ) : audioUrl ? (
@@ -307,13 +450,33 @@ export function SpeakingReport({
       {/* delivery metrics */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {[
-          ["Speaking time", metrics.duration_s != null ? `${Math.round(metrics.duration_s)}s` : "—"],
+          [
+            "Speaking time",
+            metrics.duration_s != null ? `${Math.round(metrics.duration_s)}s` : "—",
+          ],
           ["Words", metrics.words ?? "—"],
           ["Pace", metrics.wpm ? `${metrics.wpm} wpm` : "—"],
-          ["Fillers", metrics.fillers != null ? `${metrics.fillers} (${metrics.filler_per_min}/min)` : "—"],
-          ["Distinct words", metrics.distinct_ratio != null ? `${Math.round((metrics.distinct_ratio ?? 0) * 100)}%` : "—"],
+          [
+            "Fillers",
+            metrics.fillers != null ? `${metrics.fillers} (${metrics.filler_per_min}/min)` : "—",
+          ],
+          [
+            "Distinct words",
+            metrics.distinct_ratio != null
+              ? `${Math.round((metrics.distinct_ratio ?? 0) * 100)}%`
+              : "—",
+          ],
         ].map(([k, v]) => (
-          <span key={String(k)} style={{ fontSize: 13, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 999, padding: "7px 13px" }}>
+          <span
+            key={String(k)}
+            style={{
+              fontSize: 13,
+              background: "#fff",
+              border: `1px solid ${LINE}`,
+              borderRadius: 999,
+              padding: "7px 13px",
+            }}
+          >
             <span style={{ color: MUTED }}>{k}: </span>
             <strong>{String(v)}</strong>
           </span>
@@ -321,21 +484,48 @@ export function SpeakingReport({
       </div>
 
       {/* criteria */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 12,
+        }}
+      >
         {critKeys.map((k) => {
           const c = result.criteria[k];
           return (
             <div key={k} style={CARD}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: 8,
+                }}
+              >
                 <span style={{ fontWeight: 700, fontSize: 14 }}>
                   {CRIT_NAME[k]}
                   {c.beta ? (
-                    <span style={{ marginLeft: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: ".08em", color: AMBER }}>BETA</span>
+                    <span
+                      style={{
+                        marginLeft: 7,
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        letterSpacing: ".08em",
+                        color: AMBER,
+                      }}
+                    >
+                      BETA
+                    </span>
                   ) : null}
                 </span>
-                <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, color: INDIGO }}>{fmtBand(c.band)}</span>
+                <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, color: INDIGO }}>
+                  {fmtBand(c.band)}
+                </span>
               </div>
-              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "#3A3F58" }}>{c.evidence}</p>
+              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "#3A3F58" }}>
+                {c.evidence}
+              </p>
               {c.what_caps_it ? (
                 <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.55, color: MUTED }}>
                   <strong style={{ color: AMBER }}>Caps it:</strong> {c.what_caps_it}
@@ -355,9 +545,19 @@ export function SpeakingReport({
       {result.highlights?.length ? (
         <div style={CARD}>
           <div style={{ fontWeight: 700, fontSize: 14 }}>What worked</div>
-          <ul style={{ margin: "8px 0 0", paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6 }}>
+          <ul
+            style={{
+              margin: "8px 0 0",
+              paddingLeft: 20,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
             {result.highlights.map((h) => (
-              <li key={h} style={{ fontSize: 13.5, lineHeight: 1.55, color: "#3A3F58" }}>{h}</li>
+              <li key={h} style={{ fontSize: 13.5, lineHeight: 1.55, color: "#3A3F58" }}>
+                {h}
+              </li>
             ))}
           </ul>
         </div>
@@ -369,8 +569,7 @@ export function SpeakingReport({
             {result.upgrades.map((u, i) => (
               <div key={i} style={{ fontSize: 13.5, lineHeight: 1.6 }}>
                 <span style={{ color: MUTED, textDecoration: "line-through" }}>{u.you_said}</span>{" "}
-                <span aria-hidden>→</span>{" "}
-                <strong style={{ color: INDIGO }}>{u.stronger}</strong>
+                <span aria-hidden>→</span> <strong style={{ color: INDIGO }}>{u.stronger}</strong>
                 {u.note ? <span style={{ color: MUTED }}> — {u.note}</span> : null}
               </div>
             ))}
@@ -382,7 +581,17 @@ export function SpeakingReport({
       {transcript ? (
         <details style={{ ...CARD, cursor: "pointer" }}>
           <summary style={{ fontWeight: 700, fontSize: 14 }}>Your transcript (verbatim)</summary>
-          <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.7, color: "#3A3F58", whiteSpace: "pre-wrap" }}>{transcript}</p>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 13.5,
+              lineHeight: 1.7,
+              color: "#3A3F58",
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {transcript}
+          </p>
         </details>
       ) : null}
 

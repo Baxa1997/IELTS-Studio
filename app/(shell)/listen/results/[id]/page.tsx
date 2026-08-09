@@ -220,8 +220,8 @@ export default async function ListeningResultPage({ params }: PageProps) {
             Answer review
           </h2>
           <p style={{ fontSize: 13.5, color: MUTED, margin: "0 0 10px" }}>
-            Wrong answers show the correction; the note under a question explains the trap in
-            the recording.
+            Wrong answers show the correction; the note under a question explains the trap in the
+            recording.
           </p>
           {results.map((r, i) => (
             <div key={r.q}>
@@ -257,9 +257,7 @@ export default async function ListeningResultPage({ params }: PageProps) {
             >
               Transcript
             </summary>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
               {result.transcript.map((l, i) => (
                 <div key={i} style={{ fontSize: 14, lineHeight: 1.6 }}>
                   <span style={{ fontWeight: 700, color: INDIGO }}>{l.speaker}: </span>

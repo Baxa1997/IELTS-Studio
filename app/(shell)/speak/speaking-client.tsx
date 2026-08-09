@@ -226,7 +226,15 @@ const ghostBtn: React.CSSProperties = {
 
 function MicGlyph({ size = 22, color = "#fff" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
       <rect x="9" y="3" width="6" height="11" rx="3" />
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
     </svg>
@@ -258,13 +266,62 @@ interface Allowance {
 // registry (speaking/prompts.py PURPOSES) — the room reads the live catalogue
 // from the socket, but this screen has no socket, so it carries labels only.
 const HUB_PURPOSES = [
-  { id: "general", label: "General English", mark: "G", room: "Open conversation", length: "10–20 min", accent: "#8456EF" },
-  { id: "everyday", label: "Everyday situations", mark: "E", room: "Role-play", length: "10 min", accent: "#DA7756" },
-  { id: "presWork", label: "Presentation for work", mark: "P", room: "Stage", length: "15–20 min", accent: "#7144D8" },
-  { id: "presGeneral", label: "Presentation practice", mark: "S", room: "Stage", length: "15 min", accent: "#5E34BF" },
-  { id: "interview", label: "Work interview", mark: "I", room: "Interview room", length: "20 min", accent: "#3B82F6" },
-  { id: "ielts", label: "IELTS coaching", mark: "B", room: "Coached exam", length: "20 min", accent: "#22C55E" },
-  { id: "friends", label: "Talking with friends", mark: "F", room: "Café", length: "10 min", accent: "#F09070" },
+  {
+    id: "general",
+    label: "General English",
+    mark: "G",
+    room: "Open conversation",
+    length: "10–20 min",
+    accent: "#8456EF",
+  },
+  {
+    id: "everyday",
+    label: "Everyday situations",
+    mark: "E",
+    room: "Role-play",
+    length: "10 min",
+    accent: "#DA7756",
+  },
+  {
+    id: "presWork",
+    label: "Presentation for work",
+    mark: "P",
+    room: "Stage",
+    length: "15–20 min",
+    accent: "#7144D8",
+  },
+  {
+    id: "presGeneral",
+    label: "Presentation practice",
+    mark: "S",
+    room: "Stage",
+    length: "15 min",
+    accent: "#5E34BF",
+  },
+  {
+    id: "interview",
+    label: "Work interview",
+    mark: "I",
+    room: "Interview room",
+    length: "20 min",
+    accent: "#3B82F6",
+  },
+  {
+    id: "ielts",
+    label: "IELTS coaching",
+    mark: "B",
+    room: "Coached exam",
+    length: "20 min",
+    accent: "#22C55E",
+  },
+  {
+    id: "friends",
+    label: "Talking with friends",
+    mark: "F",
+    room: "Café",
+    length: "10 min",
+    accent: "#F09070",
+  },
 ];
 
 export function SpeakingClient({
@@ -468,18 +525,29 @@ export function SpeakingClient({
           ? { bg: "#FEF6E7", fg: "#B45309" }
           : { bg: "#F5F2F0", fg: "#5C5460" };
     const kicker: React.CSSProperties = {
-      fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600,
-      letterSpacing: "0.1em", color: "#8C7F8A",
+      fontFamily: "var(--font-mono)",
+      fontSize: 11,
+      fontWeight: 600,
+      letterSpacing: "0.1em",
+      color: "#8C7F8A",
     };
     // On a WHITE page a cream card is invisible, so the surfaces are white and
     // the separation comes from the border; only recessed things (table rows,
     // the tab track) carry a tint.
     const card: React.CSSProperties = {
-      background: "#FFFFFF", border: "1px solid #E7E3E0", borderRadius: 18, padding: 22,
+      background: "#FFFFFF",
+      border: "1px solid #E7E3E0",
+      borderRadius: 18,
+      padding: 22,
     };
     const chip: React.CSSProperties = {
-      display: "flex", alignItems: "center", gap: 10, padding: "10px 16px",
-      background: "#FFFFFF", border: "1px solid #E7E3E0", borderRadius: 999,
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: "10px 16px",
+      background: "#FFFFFF",
+      border: "1px solid #E7E3E0",
+      borderRadius: 999,
       whiteSpace: "nowrap",
     };
     // A comped org (engine quota.py UNLIMITED_FULL_MOCK_ORGS) is invisible from
@@ -502,16 +570,49 @@ export function SpeakingClient({
         {/* Fills the window instead of growing past it: the header and tabs are
             fixed, and only the active panel scrolls — and then only when it
             genuinely does not fit. */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "clamp(20px, 3vh, 36px) clamp(24px, 5vw, 64px) 32px" }}>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            padding: "clamp(20px, 3vh, 36px) clamp(24px, 5vw, 64px) 32px",
+          }}
+        >
           <div style={{ maxWidth: 1440, margin: "0 auto" }}>
-
             {/* header */}
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 32, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "space-between",
+                gap: 32,
+                flexWrap: "wrap",
+              }}
+            >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 42, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>Speaking</h1>
+                  <h1
+                    style={{
+                      margin: 0,
+                      fontFamily: "var(--font-display)",
+                      fontSize: 42,
+                      fontWeight: 700,
+                      letterSpacing: "-0.03em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    Speaking
+                  </h1>
                 </div>
-                <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 600 }}>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    fontSize: 15,
+                    lineHeight: 1.6,
+                    color: "#5C5460",
+                    maxWidth: 600,
+                  }}
+                >
                   A strict exam simulation that scores you, or a tutor who teaches while you talk.
                 </p>
               </div>
@@ -522,23 +623,45 @@ export function SpeakingClient({
                       <span style={{ fontSize: 12, color: "#5C5460" }}>Unlimited mocks</span>
                     ) : (
                       <>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "#1A1520", fontVariantNumeric: "tabular-nums" }}>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#1A1520",
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
                           {mocksLeft} / {allowance.limit}
                         </span>
-                        <span style={{ fontSize: 12, color: "#8C7F8A" }}>mocks left this month</span>
+                        <span style={{ fontSize: 12, color: "#8C7F8A" }}>
+                          mocks left this month
+                        </span>
                       </>
                     )}
                   </div>
                 ) : null}
                 <div style={chip}>
-                  <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }} />
+                  <span
+                    aria-hidden
+                    style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }}
+                  />
                   <span style={{ fontSize: 12, color: "#5C5460" }}>Microphone ready</span>
                 </div>
               </div>
             </div>
 
             {/* tabs */}
-            <div style={{ marginTop: 26, display: "inline-flex", padding: 4, gap: 4, background: "#F2EEEC", borderRadius: 999 }}>
+            <div
+              style={{
+                marginTop: 26,
+                display: "inline-flex",
+                padding: 4,
+                gap: 4,
+                background: "#F2EEEC",
+                borderRadius: 999,
+              }}
+            >
               {(Object.keys(TAB) as Tab[]).map((id) => {
                 const on = tab === id;
                 return (
@@ -547,8 +670,14 @@ export function SpeakingClient({
                     type="button"
                     onClick={() => setTab(id)}
                     style={{
-                      appearance: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-                      padding: "10px 22px", borderRadius: 999, fontSize: 14, fontWeight: 600,
+                      appearance: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      padding: "10px 22px",
+                      borderRadius: 999,
+                      fontSize: 14,
+                      fontWeight: 600,
                       whiteSpace: "nowrap",
                       background: on ? "#FBF8F7" : "transparent",
                       color: on ? "#1A1520" : "#5C5460",
@@ -564,46 +693,189 @@ export function SpeakingClient({
             {/* ── MOCK ── */}
             {tab === "mock" ? (
               <div className="lc-hub-grid" style={{ marginTop: 22 }}>
-                <div style={{ ...card, borderRadius: 20, padding: 30, boxShadow: "0 1px 2px rgba(26,21,32,0.04)" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                <div
+                  style={{
+                    ...card,
+                    borderRadius: 20,
+                    padding: 30,
+                    boxShadow: "0 1px 2px rgba(26,21,32,0.04)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                    }}
+                  >
                     <span style={{ ...kicker, color: A }}>FULL MOCK · PARTS 1–3</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, padding: "5px 10px", borderRadius: 999, background: "#F5F2F0", border: "1px solid #E7E3E0", color: "#5C5460", whiteSpace: "nowrap" }}>11–14 MIN</span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        padding: "5px 10px",
+                        borderRadius: 999,
+                        background: "#F5F2F0",
+                        border: "1px solid #E7E3E0",
+                        color: "#5C5460",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      11–14 MIN
+                    </span>
                   </div>
-                  <h2 style={{ margin: "12px 0 0", fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+                  <h2
+                    style={{
+                      margin: "12px 0 0",
+                      fontFamily: "var(--font-display)",
+                      fontSize: 28,
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.15,
+                    }}
+                  >
                     Exam-day conditions, start to finish
                   </h2>
-                  <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 560 }}>
-                    The examiner asks, listens and moves on. No hints, no questions in advance, and your
-                    examiner is assigned at random — then a conservative band against the official descriptors.
+                  <p
+                    style={{
+                      margin: "10px 0 0",
+                      fontSize: 15,
+                      lineHeight: 1.6,
+                      color: "#5C5460",
+                      maxWidth: 560,
+                    }}
+                  >
+                    The examiner asks, listens and moves on. No hints, no questions in advance, and
+                    your examiner is assigned at random — then a conservative band against the
+                    official descriptors.
                   </p>
 
-                  <div style={{ marginTop: 22, border: "1px solid #E7E3E0", borderRadius: 14, overflow: "hidden" }}>
-                    {([
-                      ["1", "Interview", "Familiar questions about you, your home, your work or studies.", "4–5 min"],
-                      ["2", "Long turn", "A cue card, one minute to prepare, then you speak for two.", "3–4 min"],
-                      ["3", "Discussion", "Abstract questions that push your ideas and your language.", "4–5 min"],
-                    ] as const).map(([n, title, desc, time], i) => (
-                      <div key={n} style={{ display: "grid", gridTemplateColumns: "34px 1fr auto", gap: 16, alignItems: "center", padding: "15px 18px", background: "#FAF9F8", borderTop: i ? "1px solid #E7E3E0" : "none" }}>
-                        <span style={{ width: 30, height: 30, borderRadius: 9, background: aTint, color: A, display: "grid", placeItems: "center", fontWeight: 700, fontSize: 13 }}>{n}</span>
+                  <div
+                    style={{
+                      marginTop: 22,
+                      border: "1px solid #E7E3E0",
+                      borderRadius: 14,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {(
+                      [
+                        [
+                          "1",
+                          "Interview",
+                          "Familiar questions about you, your home, your work or studies.",
+                          "4–5 min",
+                        ],
+                        [
+                          "2",
+                          "Long turn",
+                          "A cue card, one minute to prepare, then you speak for two.",
+                          "3–4 min",
+                        ],
+                        [
+                          "3",
+                          "Discussion",
+                          "Abstract questions that push your ideas and your language.",
+                          "4–5 min",
+                        ],
+                      ] as const
+                    ).map(([n, title, desc, time], i) => (
+                      <div
+                        key={n}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "34px 1fr auto",
+                          gap: 16,
+                          alignItems: "center",
+                          padding: "15px 18px",
+                          background: "#FAF9F8",
+                          borderTop: i ? "1px solid #E7E3E0" : "none",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: 9,
+                            background: aTint,
+                            color: A,
+                            display: "grid",
+                            placeItems: "center",
+                            fontWeight: 700,
+                            fontSize: 13,
+                          }}
+                        >
+                          {n}
+                        </span>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
                           <div style={{ marginTop: 2, fontSize: 13, color: "#8C7F8A" }}>{desc}</div>
                         </div>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#5C5460", whiteSpace: "nowrap" }}>{time}</span>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 12,
+                            color: "#5C5460",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {time}
+                        </span>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ marginTop: 22, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      marginTop: 22,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 24,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                       {["Random examiner", "No hints or teaching", "All four criteria"].map((t) => (
-                        <span key={t} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, color: "#5C5460" }}>
-                          <span aria-hidden style={{ width: 5, height: 5, borderRadius: "50%", background: "#DA7756" }} />
+                        <span
+                          key={t}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 7,
+                            fontSize: 12,
+                            color: "#5C5460",
+                          }}
+                        >
+                          <span
+                            aria-hidden
+                            style={{
+                              width: 5,
+                              height: 5,
+                              borderRadius: "50%",
+                              background: "#DA7756",
+                            }}
+                          />
                           {t}
                         </span>
                       ))}
                     </div>
-                    <Link href="/speak/exam" className="lc-btn" style={{ padding: "14px 26px", borderRadius: 12, background: A, color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 6px 18px rgba(26,21,32,0.28)" }}>
+                    <Link
+                      href="/speak/exam"
+                      className="lc-btn"
+                      style={{
+                        padding: "14px 26px",
+                        borderRadius: 12,
+                        background: A,
+                        color: "#fff",
+                        fontSize: 15,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        whiteSpace: "nowrap",
+                        boxShadow: "0 6px 18px rgba(26,21,32,0.28)",
+                      }}
+                    >
                       Start mock test&nbsp; →
                     </Link>
                   </div>
@@ -612,19 +884,56 @@ export function SpeakingClient({
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {allowance ? (
                     <div style={card}>
-                      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>THIS MONTH</div>
-                      <div style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8 }}>
-                        <span style={{ fontFamily: "var(--font-display)", fontSize: 34, fontWeight: 700, lineHeight: 1 }}>{allowance.used}</span>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
+                          color: "#8C7F8A",
+                        }}
+                      >
+                        THIS MONTH
+                      </div>
+                      <div
+                        style={{ marginTop: 12, display: "flex", alignItems: "baseline", gap: 8 }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "var(--font-display)",
+                            fontSize: 34,
+                            fontWeight: 700,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {allowance.used}
+                        </span>
                         <span style={{ fontSize: 14, color: "#8C7F8A" }}>
                           {unlimited ? "mocks this month" : `of ${allowance.limit} mocks used`}
                         </span>
                       </div>
                       {unlimited ? null : (
-                        <div style={{ marginTop: 14, height: 6, borderRadius: 999, background: "#EFEAE7", overflow: "hidden" }}>
-                          <div style={{ width: `${Math.min(100, allowance.limit ? (allowance.used / allowance.limit) * 100 : 0)}%`, height: "100%", background: A, borderRadius: 999 }} />
+                        <div
+                          style={{
+                            marginTop: 14,
+                            height: 6,
+                            borderRadius: 999,
+                            background: "#EFEAE7",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${Math.min(100, allowance.limit ? (allowance.used / allowance.limit) * 100 : 0)}%`,
+                              height: "100%",
+                              background: A,
+                              borderRadius: 999,
+                            }}
+                          />
                         </div>
                       )}
-                      <div style={{ marginTop: unlimited ? 12 : 10, fontSize: 12, color: "#8C7F8A" }}>
+                      <div
+                        style={{ marginTop: unlimited ? 12 : 10, fontSize: 12, color: "#8C7F8A" }}
+                      >
                         {unlimited
                           ? "Your account has no mock limit. Tutor lessons are unlimited too."
                           : `Allowance resets ${resetLabel}. Tutor lessons are unlimited.`}
@@ -633,9 +942,38 @@ export function SpeakingClient({
                   ) : null}
 
                   <div style={card}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>RECENT MOCKS</span>
-                      <button type="button" onClick={() => setTab("progress")} style={{ appearance: "none", border: "none", background: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, color: "#8456EF" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
+                          color: "#8C7F8A",
+                        }}
+                      >
+                        RECENT MOCKS
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setTab("progress")}
+                        style={{
+                          appearance: "none",
+                          border: "none",
+                          background: "none",
+                          padding: 0,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#8456EF",
+                        }}
+                      >
                         All results
                       </button>
                     </div>
@@ -645,28 +983,78 @@ export function SpeakingClient({
                           {recentMocks.map((m) => {
                             const hue = bandChip(m.band);
                             return (
-                              <Link key={m.id} href={`/speak/results/${m.id}`} className="lc-row" style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 12, alignItems: "center", padding: "13px 8px", borderBottom: "1px solid #EFEBE9", borderRadius: 8, textDecoration: "none", color: "inherit" }}>
+                              <Link
+                                key={m.id}
+                                href={`/speak/results/${m.id}`}
+                                className="lc-row"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "1fr auto auto",
+                                  gap: 12,
+                                  alignItems: "center",
+                                  padding: "13px 8px",
+                                  borderBottom: "1px solid #EFEBE9",
+                                  borderRadius: 8,
+                                  textDecoration: "none",
+                                  color: "inherit",
+                                }}
+                              >
                                 <div>
-                                  <div style={{ fontSize: 14, fontWeight: 600 }}>{dayMonth(m.t)}</div>
-                                  {m.who ? <div style={{ marginTop: 2, fontSize: 12, color: "#8C7F8A" }}>with {m.who}</div> : null}
+                                  <div style={{ fontSize: 14, fontWeight: 600 }}>
+                                    {dayMonth(m.t)}
+                                  </div>
+                                  {m.who ? (
+                                    <div style={{ marginTop: 2, fontSize: 12, color: "#8C7F8A" }}>
+                                      with {m.who}
+                                    </div>
+                                  ) : null}
                                 </div>
-                                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, padding: "5px 10px", borderRadius: 8, background: hue.bg, color: hue.fg }}>
+                                <span
+                                  style={{
+                                    fontFamily: "var(--font-mono)",
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    padding: "5px 10px",
+                                    borderRadius: 8,
+                                    background: hue.bg,
+                                    color: hue.fg,
+                                  }}
+                                >
                                   {m.band.toFixed(1)}
                                 </span>
-                                <span aria-hidden style={{ color: "#A89AA4", fontSize: 14 }}>→</span>
+                                <span aria-hidden style={{ color: "#A89AA4", fontSize: 14 }}>
+                                  →
+                                </span>
                               </Link>
                             );
                           })}
                         </div>
                         {bestBand != null ? (
-                          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 13 }}>
+                          <div
+                            style={{
+                              marginTop: 14,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              fontSize: 13,
+                            }}
+                          >
                             <span style={{ color: "#8C7F8A" }}>Best band so far</span>
-                            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{bestBand.toFixed(1)}</span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                              {bestBand.toFixed(1)}
+                            </span>
                           </div>
                         ) : null}
                       </>
                     ) : (
-                      <p style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.6, color: "#8C7F8A" }}>
+                      <p
+                        style={{
+                          margin: "12px 0 0",
+                          fontSize: 13,
+                          lineHeight: 1.6,
+                          color: "#8C7F8A",
+                        }}
+                      >
                         No mocks yet. Your first band appears here the moment one is graded.
                       </p>
                     )}
@@ -677,23 +1065,78 @@ export function SpeakingClient({
 
             {/* ── TUTOR ── */}
             {tab === "tutor" ? (
-              <div style={{ marginTop: 22, ...card, borderRadius: 20, padding: 30, boxShadow: "0 1px 2px rgba(26,21,32,0.04)" }}>
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 28, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  marginTop: 22,
+                  ...card,
+                  borderRadius: 20,
+                  padding: 30,
+                  boxShadow: "0 1px 2px rgba(26,21,32,0.04)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-end",
+                    justifyContent: "space-between",
+                    gap: 28,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <div>
                     <span style={{ ...kicker, color: "#C0603E" }}>LIVE LESSON · NEVER SCORED</span>
-                    <h2 style={{ margin: "10px 0 0", fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
+                    <h2
+                      style={{
+                        margin: "10px 0 0",
+                        fontFamily: "var(--font-display)",
+                        fontSize: 28,
+                        fontWeight: 700,
+                        letterSpacing: "-0.02em",
+                        lineHeight: 1.15,
+                      }}
+                    >
                       Pick what you are practising for
                     </h2>
-                    <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460", maxWidth: 560 }}>
-                      The room, the questions and the coaching change with your goal. Your tutor is matched for you.
+                    <p
+                      style={{
+                        margin: "8px 0 0",
+                        fontSize: 15,
+                        lineHeight: 1.6,
+                        color: "#5C5460",
+                        maxWidth: 560,
+                      }}
+                    >
+                      The room, the questions and the coaching change with your goal. Your tutor is
+                      matched for you.
                     </p>
                   </div>
-                  <Link href={`/speak/tutor?kind=${purpose}`} className="lc-btn" style={{ padding: "14px 26px", borderRadius: 12, background: "#DA7756", color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 6px 18px rgba(218,119,86,0.28)" }}>
+                  <Link
+                    href={`/speak/tutor?kind=${purpose}`}
+                    className="lc-btn"
+                    style={{
+                      padding: "14px 26px",
+                      borderRadius: 12,
+                      background: "#DA7756",
+                      color: "#fff",
+                      fontSize: 15,
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      whiteSpace: "nowrap",
+                      boxShadow: "0 6px 18px rgba(218,119,86,0.28)",
+                    }}
+                  >
                     Continue&nbsp; →
                   </Link>
                 </div>
 
-                <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(215px, 1fr))", gap: 10 }}>
+                <div
+                  style={{
+                    marginTop: 24,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(215px, 1fr))",
+                    gap: 10,
+                  }}
+                >
                   {HUB_PURPOSES.map((p) => {
                     const on = purpose === p.id;
                     return (
@@ -704,37 +1147,97 @@ export function SpeakingClient({
                         aria-pressed={on}
                         className="lc-card-tap"
                         style={{
-                          textAlign: "left", appearance: "none", cursor: "pointer", fontFamily: "inherit",
-                          border: `1px solid ${on ? p.accent : "#E7E3E0"}`, background: "#FAF9F8",
-                          borderRadius: 12, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12,
+                          textAlign: "left",
+                          appearance: "none",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          border: `1px solid ${on ? p.accent : "#E7E3E0"}`,
+                          background: "#FAF9F8",
+                          borderRadius: 12,
+                          padding: "14px 16px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
                           boxShadow: on ? "0 0 0 3px rgba(26,21,32,0.05)" : "none",
                         }}
                       >
-                        <span aria-hidden style={{ width: 28, height: 28, borderRadius: 8, display: "grid", placeItems: "center", flex: "0 0 28px", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, background: on ? `${p.accent}1F` : "#F5F2F0", color: on ? p.accent : "#8C7F8A" }}>
+                        <span
+                          aria-hidden
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            display: "grid",
+                            placeItems: "center",
+                            flex: "0 0 28px",
+                            fontFamily: "var(--font-display)",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            background: on ? `${p.accent}1F` : "#F5F2F0",
+                            color: on ? p.accent : "#8C7F8A",
+                          }}
+                        >
                           {p.mark}
                         </span>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: "block", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label}</span>
-                          <span style={{ display: "block", marginTop: 2, fontSize: 11, color: "#A89AA4" }}>{p.room} · {p.length}</span>
+                          <span
+                            style={{
+                              display: "block",
+                              fontSize: 14,
+                              fontWeight: 600,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {p.label}
+                          </span>
+                          <span
+                            style={{
+                              display: "block",
+                              marginTop: 2,
+                              fontSize: 11,
+                              color: "#A89AA4",
+                            }}
+                          >
+                            {p.room} · {p.length}
+                          </span>
                         </span>
                       </button>
                     );
                   })}
                 </div>
 
-                <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid #EFEBE9", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20 }}>
-                  {([
-                    ["Corrects the mistake that matters", "One fix per turn, not a list."],
-                    ["Hands you a stronger sentence", "Then asks you to use it straight away."],
-                    ["Explains in your language", "O‘zbekcha or ruscha — you still answer in English."],
-                  ] as const).map(([title, blurb]) => (
+                <div
+                  style={{
+                    marginTop: 22,
+                    paddingTop: 20,
+                    borderTop: "1px solid #EFEBE9",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: 20,
+                  }}
+                >
+                  {(
+                    [
+                      ["Corrects the mistake that matters", "One fix per turn, not a list."],
+                      ["Hands you a stronger sentence", "Then asks you to use it straight away."],
+                      [
+                        "Explains in your language",
+                        "O‘zbekcha or ruscha — you still answer in English.",
+                      ],
+                    ] as const
+                  ).map(([title, blurb]) => (
                     <div key={title}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{title}</div>
-                      <div style={{ marginTop: 4, fontSize: 13, color: "#8C7F8A", lineHeight: 1.5 }}>{blurb}</div>
+                      <div
+                        style={{ marginTop: 4, fontSize: 13, color: "#8C7F8A", lineHeight: 1.5 }}
+                      >
+                        {blurb}
+                      </div>
                     </div>
                   ))}
                 </div>
-
               </div>
             ) : null}
 
@@ -742,21 +1245,73 @@ export function SpeakingClient({
             {tab === "progress" ? (
               <div className="lc-hub-grid" style={{ marginTop: 22 }}>
                 <div style={{ ...card, borderRadius: 20, padding: 28 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      color: "#8C7F8A",
+                    }}
+                  >
                     BAND TREND · LAST SIX MOCKS
                   </div>
                   {graded.length ? (
-                    <div style={{ marginTop: 24, display: "flex", alignItems: "flex-end", gap: 18, height: 180 }}>
+                    <div
+                      style={{
+                        marginTop: 24,
+                        display: "flex",
+                        alignItems: "flex-end",
+                        gap: 18,
+                        height: 180,
+                      }}
+                    >
                       {graded.slice(-6).map((g, i) => (
-                        <div key={`${g.t}-${i}`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 10, height: "100%" }}>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "#5C5460" }}>{g.band.toFixed(1)}</span>
-                          <div style={{ width: "100%", borderRadius: "8px 8px 0 0", height: `${Math.max(8, (g.band / 9) * 100)}%`, background: g.band >= 6.5 ? "#8456EF" : g.band >= 5.5 ? "#C8AAFF" : "#DDD2F9" }} />
-                          <span style={{ fontSize: 11, color: "#A89AA4", whiteSpace: "nowrap" }}>{dayMonth(g.t)}</span>
+                        <div
+                          key={`${g.t}-${i}`}
+                          style={{
+                            flex: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                            gap: 10,
+                            height: "100%",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "#5C5460",
+                            }}
+                          >
+                            {g.band.toFixed(1)}
+                          </span>
+                          <div
+                            style={{
+                              width: "100%",
+                              borderRadius: "8px 8px 0 0",
+                              height: `${Math.max(8, (g.band / 9) * 100)}%`,
+                              background:
+                                g.band >= 6.5 ? "#8456EF" : g.band >= 5.5 ? "#C8AAFF" : "#DDD2F9",
+                            }}
+                          />
+                          <span style={{ fontSize: 11, color: "#A89AA4", whiteSpace: "nowrap" }}>
+                            {dayMonth(g.t)}
+                          </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p style={{ margin: "16px 0 0", fontSize: 14, lineHeight: 1.6, color: "#8C7F8A" }}>
+                    <p
+                      style={{
+                        margin: "16px 0 0",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: "#8C7F8A",
+                      }}
+                    >
                       Nothing graded yet. Sit a mock and your band trend starts here.
                     </p>
                   )}
@@ -764,16 +1319,50 @@ export function SpeakingClient({
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div style={card}>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>BY CRITERION</div>
-                    <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        color: "#8C7F8A",
+                      }}
+                    >
+                      BY CRITERION
+                    </div>
+                    <div
+                      style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}
+                    >
                       {skillRows.map((r) => (
                         <div key={r.label}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: 13,
+                            }}
+                          >
                             <span style={{ fontWeight: 600 }}>{r.label}</span>
-                            <span style={{ fontFamily: "var(--font-mono)", color: "#5C5460" }}>{r.v == null ? "—" : r.v.toFixed(1)}</span>
+                            <span style={{ fontFamily: "var(--font-mono)", color: "#5C5460" }}>
+                              {r.v == null ? "—" : r.v.toFixed(1)}
+                            </span>
                           </div>
-                          <div style={{ marginTop: 8, height: 6, borderRadius: 999, background: "#EFEAE7", overflow: "hidden" }}>
-                            <div style={{ height: "100%", borderRadius: 999, background: A, width: `${r.v == null ? 0 : (r.v / 9) * 100}%` }} />
+                          <div
+                            style={{
+                              marginTop: 8,
+                              height: 6,
+                              borderRadius: 999,
+                              background: "#EFEAE7",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: "100%",
+                                borderRadius: 999,
+                                background: A,
+                                width: `${r.v == null ? 0 : (r.v / 9) * 100}%`,
+                              }}
+                            />
                           </div>
                         </div>
                       ))}
@@ -781,13 +1370,29 @@ export function SpeakingClient({
                   </div>
 
                   <div style={card}>
-                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", color: "#8C7F8A" }}>RECURRING FIXES</div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        color: "#8C7F8A",
+                      }}
+                    >
+                      RECURRING FIXES
+                    </div>
                     {/* Honest placeholder: naming the patterns that repeat ACROSS
                         mocks needs cross-session aggregation of the grader's
                         error log, which does not exist yet. Inventing three
                         plausible lines here would be the one thing a learner
                         cannot check and must not be lied to about. */}
-                    <p style={{ margin: "12px 0 0", fontSize: 13, lineHeight: 1.6, color: "#8C7F8A" }}>
+                    <p
+                      style={{
+                        margin: "12px 0 0",
+                        fontSize: 13,
+                        lineHeight: 1.6,
+                        color: "#8C7F8A",
+                      }}
+                    >
                       Coming soon — the patterns that keep costing you marks across mocks, counted.
                       For now, each mock report lists what capped that band.
                     </p>
@@ -803,11 +1408,27 @@ export function SpeakingClient({
 
   // ---- Legacy Part-2 flow (only via ?card=) — original styling --------------
   return (
-    <div style={{ fontFamily: SANS, color: INK, maxWidth: 1280, margin: "0 auto", padding: "26px 26px 60px" }}>
+    <div
+      style={{
+        fontFamily: SANS,
+        color: INK,
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: "26px 26px 60px",
+      }}
+    >
       <style>{RESPONSIVE_CSS}</style>
 
       {/* header */}
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 10,
+        }}
+      >
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 30, fontWeight: 600 }}>Speaking</h1>
         {phase !== "idle" ? (
           <button type="button" onClick={reset} style={{ ...ghostBtn, height: 34, fontSize: 13 }}>
@@ -818,7 +1439,16 @@ export function SpeakingClient({
 
       {/* the legacy Part-2 flow surfaces its own errors (quota, mic) */}
       {error ? (
-        <div style={{ ...card, borderColor: "#F3C6C6", background: "#FDF3F3", color: RED, marginTop: 16, fontSize: 14 }}>
+        <div
+          style={{
+            ...card,
+            borderColor: "#F3C6C6",
+            background: "#FDF3F3",
+            color: RED,
+            marginTop: 16,
+            fontSize: 14,
+          }}
+        >
           {error}
           {quotaHit ? (
             <>
@@ -832,7 +1462,7 @@ export function SpeakingClient({
       ) : null}
 
       {/* idle hub (Part 2) */}
-      {(phase === "idle" || phase === "starting") ? (
+      {phase === "idle" || phase === "starting" ? (
         <>
           <div style={{ ...card, marginTop: 18, textAlign: "center", padding: "34px 22px" }}>
             <button
@@ -859,11 +1489,28 @@ export function SpeakingClient({
             <div style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 600, marginTop: 16 }}>
               {phase === "starting" ? "Preparing your cue card…" : "Part 2 — the long turn"}
             </div>
-            <p style={{ margin: "8px auto 0", maxWidth: 460, fontSize: 14, lineHeight: 1.6, color: MUTED }}>
-              A cue card, exactly 1 minute to prepare (notes allowed), then speak for up to 2 minutes.
-              Strict, examiner-calibrated feedback in about a minute. Use headphones in a quiet room.
+            <p
+              style={{
+                margin: "8px auto 0",
+                maxWidth: 460,
+                fontSize: 14,
+                lineHeight: 1.6,
+                color: MUTED,
+              }}
+            >
+              A cue card, exactly 1 minute to prepare (notes allowed), then speak for up to 2
+              minutes. Strict, examiner-calibrated feedback in about a minute. Use headphones in a
+              quiet room.
             </p>
-            <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 16, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 6,
+                marginTop: 16,
+                flexWrap: "wrap",
+              }}
+            >
               {[null, 1, 2, 3, 4, 5].map((d) => (
                 <button
                   key={String(d)}
@@ -893,9 +1540,20 @@ export function SpeakingClient({
                   <Link
                     key={r.id}
                     href={`/speak/results/${r.id}`}
-                    style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13.5, color: INK, textDecoration: "none", borderBottom: `1px dashed ${LINE}`, paddingBottom: 8 }}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      fontSize: 13.5,
+                      color: INK,
+                      textDecoration: "none",
+                      borderBottom: `1px dashed ${LINE}`,
+                      paddingBottom: 8,
+                    }}
                   >
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span
+                      style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
                       {r.result?.cue_card?.title ?? "Speaking practice"}
                     </span>
                     <span style={{ color: INDIGO, fontWeight: 700, whiteSpace: "nowrap" }}>
@@ -908,8 +1566,8 @@ export function SpeakingClient({
           ) : null}
 
           <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9A9EAE" }}>
-            Want the full 3-part exam with a live examiner? Switch to <strong>Full mock</strong> above.
-            AI-estimated bands — not affiliated with or endorsed by IELTS®.
+            Want the full 3-part exam with a live examiner? Switch to <strong>Full mock</strong>{" "}
+            above. AI-estimated bands — not affiliated with or endorsed by IELTS®.
           </p>
         </>
       ) : null}
@@ -918,28 +1576,69 @@ export function SpeakingClient({
       {(phase === "prep" || phase === "recording") && session ? (
         <>
           <div style={{ ...card, marginTop: 18, background: TINT, borderColor: "#DDDAF6" }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".1em", color: MUTED, textTransform: "uppercase" }}>
+            <div
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                letterSpacing: ".1em",
+                color: MUTED,
+                textTransform: "uppercase",
+              }}
+            >
               Cue card · level {session.difficulty}
             </div>
-            <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, marginTop: 6 }}>{session.cue_card.title}</div>
+            <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, marginTop: 6 }}>
+              {session.cue_card.title}
+            </div>
             <div style={{ fontSize: 14, color: MUTED, marginTop: 8 }}>You should say:</div>
             <ul style={{ margin: "6px 0 0", paddingLeft: 20 }}>
               {session.cue_card.bullets.map((b) => (
-                <li key={b} style={{ fontSize: 14.5, lineHeight: 1.7 }}>{b}</li>
+                <li key={b} style={{ fontSize: 14.5, lineHeight: 1.7 }}>
+                  {b}
+                </li>
               ))}
             </ul>
-            <div style={{ fontSize: 14.5, marginTop: 8, fontWeight: 600 }}>{session.cue_card.closing}</div>
+            <div style={{ fontSize: 14.5, marginTop: 8, fontWeight: 600 }}>
+              {session.cue_card.closing}
+            </div>
           </div>
 
           {phase === "prep" ? (
             <div style={{ ...card, marginTop: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", color: MUTED, textTransform: "uppercase" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: ".1em",
+                  color: MUTED,
+                  textTransform: "uppercase",
+                }}
+              >
                 Preparation time
               </div>
-              <div style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 600, color: clock <= 10 ? RED : INK }}>{mmss(clock)}</div>
+              <div
+                style={{
+                  fontFamily: SERIF,
+                  fontSize: 44,
+                  fontWeight: 600,
+                  color: clock <= 10 ? RED : INK,
+                }}
+              >
+                {mmss(clock)}
+              </div>
               <textarea
                 placeholder="Your notes (like the paper you'd get in the exam)…"
-                style={{ width: "100%", minHeight: 90, marginTop: 10, border: `1px solid ${LINE}`, borderRadius: 12, padding: "10px 12px", fontFamily: "inherit", fontSize: 14, resize: "vertical" }}
+                style={{
+                  width: "100%",
+                  minHeight: 90,
+                  marginTop: 10,
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                  fontFamily: "inherit",
+                  fontSize: 14,
+                  resize: "vertical",
+                }}
               />
               <button type="button" onClick={record} style={{ ...primaryBtn, marginTop: 12 }}>
                 <MicGlyph size={16} /> Start speaking now
@@ -947,17 +1646,47 @@ export function SpeakingClient({
             </div>
           ) : (
             <div style={{ ...card, marginTop: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", color: RED, textTransform: "uppercase" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: ".1em",
+                  color: RED,
+                  textTransform: "uppercase",
+                }}
+              >
                 ● Recording
               </div>
               <div style={{ fontFamily: SERIF, fontSize: 44, fontWeight: 600 }}>{mmss(clock)}</div>
-              <div aria-hidden style={{ height: 8, borderRadius: 999, background: "#EFEDE3", overflow: "hidden", maxWidth: 340, margin: "10px auto 0" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, level * 700)}%`, background: INDIGO, borderRadius: 999, transition: "width .12s linear" }} />
+              <div
+                aria-hidden
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  background: "#EFEDE3",
+                  overflow: "hidden",
+                  maxWidth: 340,
+                  margin: "10px auto 0",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${Math.min(100, level * 700)}%`,
+                    background: INDIGO,
+                    borderRadius: 999,
+                    transition: "width .12s linear",
+                  }}
+                />
               </div>
               <p style={{ margin: "10px 0 0", fontSize: 13, color: MUTED }}>
                 Aim for 1–2 minutes and cover every bullet. The examiner stops you at 2:00.
               </p>
-              <button type="button" onClick={finish} style={{ ...primaryBtn, marginTop: 12, background: RED }}>
+              <button
+                type="button"
+                onClick={finish}
+                style={{ ...primaryBtn, marginTop: 12, background: RED }}
+              >
                 I&apos;m finished
               </button>
             </div>
@@ -968,12 +1697,25 @@ export function SpeakingClient({
       {/* grading */}
       {phase === "grading" ? (
         <div style={{ ...card, marginTop: 18, textAlign: "center", padding: "38px 22px" }}>
-          <div className="speak-spin" aria-hidden style={{ width: 34, height: 34, margin: "0 auto", border: `3px solid ${TINT}`, borderTopColor: INDIGO, borderRadius: "50%" }} />
+          <div
+            className="speak-spin"
+            aria-hidden
+            style={{
+              width: 34,
+              height: 34,
+              margin: "0 auto",
+              border: `3px solid ${TINT}`,
+              borderTopColor: INDIGO,
+              borderRadius: "50%",
+            }}
+          />
           <style>{`.speak-spin{animation:speakspin 1s linear infinite}@keyframes speakspin{to{transform:rotate(360deg)}}`}</style>
-          <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, marginTop: 14 }}>The examiner is grading your answer…</div>
+          <div style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 600, marginTop: 14 }}>
+            The examiner is grading your answer…
+          </div>
           <p style={{ margin: "6px 0 0", fontSize: 13.5, color: MUTED }}>
-            Transcribing, measuring your delivery, and scoring each criterion with evidence.
-            Usually under a minute — please keep this tab open.
+            Transcribing, measuring your delivery, and scoring each criterion with evidence. Usually
+            under a minute — please keep this tab open.
           </p>
         </div>
       ) : null}
@@ -991,7 +1733,10 @@ export function SpeakingClient({
             <button type="button" onClick={reset} style={primaryBtn}>
               Practice again
             </button>
-            <Link href={`/speak/results/${report.attempt_id}`} style={{ ...ghostBtn, textDecoration: "none" }}>
+            <Link
+              href={`/speak/results/${report.attempt_id}`}
+              style={{ ...ghostBtn, textDecoration: "none" }}
+            >
               Full report page
             </Link>
           </div>

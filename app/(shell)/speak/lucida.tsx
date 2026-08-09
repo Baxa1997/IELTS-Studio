@@ -220,28 +220,56 @@ export interface Persona {
 
 export const PERSONAS: Persona[] = [
   {
-    id: "emily", initial: "E", name: "Emily",
-    accent: "var(--color-primary-500)", hex: "#8456EF", glow: "rgba(132,86,239,0.35)", tint: "rgba(132,86,239,0.08)",
-    mockTrait: "Warm & encouraging", mockDesc: "Puts nervous candidates at ease. Clear, friendly pace.",
-    tutorTrait: "Warm and patient", tutorDesc: "Easy pace, plenty of encouragement.",
+    id: "emily",
+    initial: "E",
+    name: "Emily",
+    accent: "var(--color-primary-500)",
+    hex: "#8456EF",
+    glow: "rgba(132,86,239,0.35)",
+    tint: "rgba(132,86,239,0.08)",
+    mockTrait: "Warm & encouraging",
+    mockDesc: "Puts nervous candidates at ease. Clear, friendly pace.",
+    tutorTrait: "Warm and patient",
+    tutorDesc: "Easy pace, plenty of encouragement.",
   },
   {
-    id: "daniel", initial: "D", name: "Daniel",
-    accent: "var(--color-info)", hex: "#3B82F6", glow: "rgba(59,130,246,0.30)", tint: "rgba(59,130,246,0.08)",
-    mockTrait: "Calm & formal", mockDesc: "The classic exam-room examiner. Measured and neutral.",
-    tutorTrait: "Calm and clear", tutorDesc: "Precise corrections, steady tone.",
+    id: "daniel",
+    initial: "D",
+    name: "Daniel",
+    accent: "var(--color-info)",
+    hex: "#3B82F6",
+    glow: "rgba(59,130,246,0.30)",
+    tint: "rgba(59,130,246,0.08)",
+    mockTrait: "Calm & formal",
+    mockDesc: "The classic exam-room examiner. Measured and neutral.",
+    tutorTrait: "Calm and clear",
+    tutorDesc: "Precise corrections, steady tone.",
   },
   {
-    id: "sofia", initial: "S", name: "Sofia",
-    accent: "var(--color-success)", hex: "#16A34A", glow: "rgba(22,163,74,0.30)", tint: "rgba(22,163,74,0.08)",
-    mockTrait: "Friendly & patient", mockDesc: "Easy-going rhythm with time to think.",
-    tutorTrait: "Easy-going", tutorDesc: "Relaxed, conversational lessons.",
+    id: "sofia",
+    initial: "S",
+    name: "Sofia",
+    accent: "var(--color-success)",
+    hex: "#16A34A",
+    glow: "rgba(22,163,74,0.30)",
+    tint: "rgba(22,163,74,0.08)",
+    mockTrait: "Friendly & patient",
+    mockDesc: "Easy-going rhythm with time to think.",
+    tutorTrait: "Easy-going",
+    tutorDesc: "Relaxed, conversational lessons.",
   },
   {
-    id: "james", initial: "J", name: "James",
-    accent: "var(--color-amber-500)", hex: "#DA7756", glow: "rgba(218,119,86,0.30)", tint: "rgba(218,119,86,0.08)",
-    mockTrait: "Brisk & precise", mockDesc: "Keeps the pace up — good exam-day pressure training.",
-    tutorTrait: "Brisk and direct", tutorDesc: "Fast pace, straight to the point.",
+    id: "james",
+    initial: "J",
+    name: "James",
+    accent: "var(--color-amber-500)",
+    hex: "#DA7756",
+    glow: "rgba(218,119,86,0.30)",
+    tint: "rgba(218,119,86,0.08)",
+    mockTrait: "Brisk & precise",
+    mockDesc: "Keeps the pace up — good exam-day pressure training.",
+    tutorTrait: "Brisk and direct",
+    tutorDesc: "Fast pace, straight to the point.",
   },
 ];
 
@@ -315,18 +343,48 @@ export function PersonaAvatar({
     <div style={{ position: "relative", width: size, height: size, flex: "0 0 auto" }}>
       {ring ? (
         <>
-          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `2px solid ${accent}`, animation: "lcPulseRing 1.6s ease-out infinite" }} />
-          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `2px solid ${accent}`, animation: "lcPulseRing 1.6s ease-out infinite 0.6s" }} />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              border: `2px solid ${accent}`,
+              animation: "lcPulseRing 1.6s ease-out infinite",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              border: `2px solid ${accent}`,
+              animation: "lcPulseRing 1.6s ease-out infinite 0.6s",
+            }}
+          />
         </>
       ) : null}
       <div
         style={{
-          width: "100%", height: "100%", borderRadius: "50%", background: accent,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: `0 0 50px ${glow}`, position: "relative", zIndex: 1,
+          width: "100%",
+          height: "100%",
+          borderRadius: "50%",
+          background: accent,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: `0 0 50px ${glow}`,
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        <span style={{ fontFamily: "var(--font-display)", fontSize: size * 0.34, fontWeight: 700, color: "#FFFFFF" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: size * 0.34,
+            fontWeight: 700,
+            color: "#FFFFFF",
+          }}
+        >
           {initial}
         </span>
       </div>

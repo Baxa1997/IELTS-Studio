@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
 import { AssignToClass } from "@/components/console/assign-to-class";
+import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,7 +40,18 @@ export default async function ListenPage({
   // This route is both the hub and the player: ?item=<id> opens one practice,
   // which is exactly what an assignment link does. So a center student is sent
   // away from the browsable hub but can still open what they were set.
-  if (!item && isHomeworkOnlyStudent(profile)) redirect("/assignments");
+  // ?item=<id> is the player — an assignment link lands there and must open.
+  // Without one this is the browsable hub, which a center student swaps for
+  // their own listening homework.
+  if (!item && isHomeworkOnlyStudent(profile)) {
+    const assignments = await loadStudentAssignments(profile.id);
+    return (
+      <AssignedHub
+        skill="listening"
+        assignments={assignments.filter((a) => a.kind === "listening")}
+      />
+    );
+  }
 
   return (
     <>

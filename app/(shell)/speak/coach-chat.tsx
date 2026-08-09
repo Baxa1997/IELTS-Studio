@@ -72,9 +72,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
         throw new Error(detail ?? `The coach couldn't reply (${res.status}).`);
       }
       setMessages([...next, { role: "coach", content: json.reply ?? "" }]);
-      requestAnimationFrame(() =>
-        scrollRef.current?.scrollTo({ top: 1e6, behavior: "smooth" }),
-      );
+      requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 1e6, behavior: "smooth" }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "The coach couldn't reply.");
       setMessages(messages); // roll the unanswered message back into the input
@@ -87,8 +85,12 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
   return (
     <section
       style={{
-        background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14,
-        padding: "16px 18px", marginTop: 14, fontFamily: SANS,
+        background: "#fff",
+        border: `1px solid ${LINE}`,
+        borderRadius: 14,
+        padding: "16px 18px",
+        marginTop: 14,
+        fontFamily: SANS,
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -97,8 +99,13 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
         </h2>
         <span
           style={{
-            fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO,
-            background: TINT, borderRadius: 999, padding: "3px 8px",
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: ".08em",
+            color: INDIGO,
+            background: TINT,
+            borderRadius: 999,
+            padding: "3px 8px",
           }}
         >
           BETA
@@ -111,7 +118,13 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
       {messages.length ? (
         <div
           ref={scrollRef}
-          style={{ maxHeight: 420, overflowY: "auto", margin: "14px 0 4px", display: "grid", gap: 10 }}
+          style={{
+            maxHeight: 420,
+            overflowY: "auto",
+            margin: "14px 0 4px",
+            display: "grid",
+            gap: 10,
+          }}
         >
           {messages.map((m, i) => (
             <div
@@ -146,8 +159,14 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
               onClick={() => void send(s)}
               disabled={busy}
               style={{
-                background: TINT, color: INDIGO, border: "none", borderRadius: 999,
-                padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                background: TINT,
+                color: INDIGO,
+                border: "none",
+                borderRadius: 999,
+                padding: "8px 14px",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
                 fontFamily: SANS,
               }}
             >
@@ -157,9 +176,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
         </div>
       )}
 
-      {error ? (
-        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: RED }}>{error}</p>
-      ) : null}
+      {error ? <p style={{ margin: "8px 0 0", fontSize: 12.5, color: RED }}>{error}</p> : null}
 
       <form
         onSubmit={(e) => {
@@ -174,17 +191,29 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
           placeholder="Ask about your bands, mistakes, or how to improve…"
           maxLength={2000}
           style={{
-            flex: 1, border: `1px solid ${LINE}`, borderRadius: 10, padding: "10px 13px",
-            fontSize: 13.5, fontFamily: SANS, color: INK, outline: "none", background: "#FDFDFF",
+            flex: 1,
+            border: `1px solid ${LINE}`,
+            borderRadius: 10,
+            padding: "10px 13px",
+            fontSize: 13.5,
+            fontFamily: SANS,
+            color: INK,
+            outline: "none",
+            background: "#FDFDFF",
           }}
         />
         <button
           type="submit"
           disabled={busy || !input.trim()}
           style={{
-            background: busy || !input.trim() ? "#B9B6E8" : INDIGO, color: "#fff",
-            border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13.5,
-            fontWeight: 700, cursor: busy || !input.trim() ? "default" : "pointer",
+            background: busy || !input.trim() ? "#B9B6E8" : INDIGO,
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 18px",
+            fontSize: 13.5,
+            fontWeight: 700,
+            cursor: busy || !input.trim() ? "default" : "pointer",
             fontFamily: SANS,
           }}
         >

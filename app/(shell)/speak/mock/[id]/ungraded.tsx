@@ -43,36 +43,91 @@ export function UngradedMock({ state }: { state: string }) {
 
   return (
     <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
-      <div style={{ flex: 1, minHeight: 0, display: "grid", placeItems: "center", padding: "40px 24px" }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "grid",
+          placeItems: "center",
+          padding: "40px 24px",
+        }}
+      >
         <div style={{ textAlign: "center", maxWidth: 480 }}>
           <div
             aria-hidden
             style={{
-              width: 46, height: 46, margin: "0 auto", borderRadius: "50%",
-              display: "grid", placeItems: "center",
-              background: "#F5F2F0", color: "#8C7F8A",
+              width: 46,
+              height: 46,
+              margin: "0 auto",
+              borderRadius: "50%",
+              display: "grid",
+              placeItems: "center",
+              background: "#F5F2F0",
+              color: "#8C7F8A",
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+            >
               <circle cx="12" cy="12" r="9" />
               <path d="M12 8v5M12 16.5v.01" />
             </svg>
           </div>
-          <h1 style={{ margin: "20px 0 0", fontFamily: "var(--font-display)", fontSize: 27, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          <h1
+            style={{
+              margin: "20px 0 0",
+              fontFamily: "var(--font-display)",
+              fontSize: 27,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+            }}
+          >
             {copy.title}
           </h1>
-          <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460" }}>{copy.body}</p>
+          <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460" }}>
+            {copy.body}
+          </p>
           <p style={{ margin: "14px 0 0", fontSize: 13, color: "#8C7F8A" }}>{copy.note}</p>
-          <div style={{ marginTop: 24, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <div
+            style={{
+              marginTop: 24,
+              display: "flex",
+              gap: 10,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <Link
               href="/speak/exam"
-              style={{ padding: "14px 24px", borderRadius: 12, background: "#1A1520", color: "#fff", fontSize: 15, fontWeight: 600, textDecoration: "none" }}
+              style={{
+                padding: "14px 24px",
+                borderRadius: 12,
+                background: "#1A1520",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
             >
               Sit another mock
             </Link>
             <Link
               href="/speak"
-              style={{ padding: "14px 24px", borderRadius: 12, border: "1px solid #E7E3E0", color: "#5C5460", fontSize: 15, fontWeight: 600, textDecoration: "none" }}
+              style={{
+                padding: "14px 24px",
+                borderRadius: 12,
+                border: "1px solid #E7E3E0",
+                color: "#5C5460",
+                fontSize: 15,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
             >
               Back to Speaking
             </Link>

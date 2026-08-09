@@ -104,8 +104,7 @@ export default async function ListeningResultsPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {attempts.map((a) => {
-              const ratio =
-                a.score != null && a.max_score ? a.score / a.max_score : null;
+              const ratio = a.score != null && a.max_score ? a.score / a.max_score : null;
               return (
                 <Link
                   key={a.id}

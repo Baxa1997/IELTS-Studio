@@ -55,23 +55,40 @@ export function ConfirmQuit({
       aria-label={title}
       onClick={onCancel}
       style={{
-        position: "fixed", inset: 0, zIndex: 1000, background: "rgba(23,22,40,.45)",
-        display: "grid", placeItems: "center", padding: 18, fontFamily: SANS,
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "rgba(23,22,40,.45)",
+        display: "grid",
+        placeItems: "center",
+        padding: 18,
+        fontFamily: SANS,
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#fff", borderRadius: 18, padding: "26px 26px 22px",
-          maxWidth: 430, width: "100%", boxShadow: "0 24px 60px rgba(23,22,40,.28)",
+          background: "#fff",
+          borderRadius: 18,
+          padding: "26px 26px 22px",
+          maxWidth: 430,
+          width: "100%",
+          boxShadow: "0 24px 60px rgba(23,22,40,.28)",
         }}
       >
-        <h2 style={{ margin: 0, fontFamily: DISPLAY, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: INK }}>
+        <h2
+          style={{
+            margin: 0,
+            fontFamily: DISPLAY,
+            fontSize: 24,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            color: INK,
+          }}
+        >
           {title}
         </h2>
-        <p style={{ margin: "10px 0 24px", fontSize: 15, lineHeight: 1.6, color: MUTED }}>
-          {body}
-        </p>
+        <p style={{ margin: "10px 0 24px", fontSize: 15, lineHeight: 1.6, color: MUTED }}>{body}</p>
         {/* STACKED, not side by side. Two flexed buttons split a 430px dialog
             into ~184px each, which wrapped "Carry on with the test" onto two
             lines beside a single-line "End the test" — two ragged, unequal
@@ -83,9 +100,16 @@ export function ConfirmQuit({
             onClick={onCancel}
             autoFocus
             style={{
-              width: "100%", background: INK, color: "#fff", border: "none",
-              borderRadius: 12, padding: "14px 18px", fontSize: 15, fontWeight: 600,
-              cursor: "pointer", fontFamily: SANS,
+              width: "100%",
+              background: INK,
+              color: "#fff",
+              border: "none",
+              borderRadius: 12,
+              padding: "14px 18px",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: SANS,
             }}
           >
             {cancelLabel}
@@ -94,9 +118,16 @@ export function ConfirmQuit({
             type="button"
             onClick={onConfirm}
             style={{
-              width: "100%", background: "#fff", color: RED,
-              border: "1px solid #F0D2D2", borderRadius: 12, padding: "14px 18px",
-              fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS,
+              width: "100%",
+              background: "#fff",
+              color: RED,
+              border: "1px solid #F0D2D2",
+              borderRadius: 12,
+              padding: "14px 18px",
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: SANS,
             }}
           >
             {confirmLabel}

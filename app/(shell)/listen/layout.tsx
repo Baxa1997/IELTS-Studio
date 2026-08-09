@@ -16,5 +16,9 @@ const dmSans = DM_Sans({
 export default function ListenFontLayout({ children }: { children: React.ReactNode }) {
   // A plain wrapper: --font-dmsans is an inherited custom property, so
   // everything below picks it up exactly as it did from the shell.
-  return <div className={dmSans.variable} style={{ display: "contents" }}>{children}</div>;
+  return (
+    <div className={dmSans.variable} style={{ display: "contents" }}>
+      {children}
+    </div>
+  );
 }

@@ -16,7 +16,9 @@ export default function CefrLoading() {
       aria-label="Loading"
     >
       {/* Heading + level pill */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14 }}>
+      <div
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14 }}
+      >
         <div>
           <Block w={240} h={34} r={10} />
           <Block w={420} h={14} r={7} mt={12} />
@@ -40,7 +42,13 @@ export default function CefrLoading() {
         <Block w={170} h={14} r={7} />
         <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.08)" }} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+          gap: 14,
+        }}
+      >
         {Array.from({ length: 5 }).map((_, i) => (
           <Card key={i}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -48,14 +56,31 @@ export default function CefrLoading() {
               <Block w={48} h={20} r={7} />
             </div>
             <Block w="90%" h={12} r={6} mt={14} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 16,
+              }}
+            >
               <Block w={90} h={12} r={6} />
               <Block w={56} h={13} r={7} />
             </div>
           </Card>
         ))}
       </div>
-      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Loading…</span>
+      <span
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+        }}
+      >
+        Loading…
+      </span>
     </div>
   );
 }

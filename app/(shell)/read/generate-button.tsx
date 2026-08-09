@@ -38,8 +38,7 @@ async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
       message?: string;
       detail?: string | { message?: string };
     };
-    const detailMsg =
-      typeof body.detail === "string" ? body.detail : body.detail?.message;
+    const detailMsg = typeof body.detail === "string" ? body.detail : body.detail?.message;
     return { ok: res.ok && Boolean(body.id), id: body.id, message: body.message ?? detailMsg };
   }
 
@@ -54,11 +53,7 @@ async function postReadingGenerate(path: "next" | "test"): Promise<GenResult> {
  * (passage + validated questions, auto-approved) then opens it. The call is two
  * model passes, so it takes ~1 min — we show that wait explicitly.
  */
-export function GeneratePassageButton({
-  label = "Generate a passage",
-}: {
-  label?: string;
-}) {
+export function GeneratePassageButton({ label = "Generate a passage" }: { label?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +86,16 @@ export function GeneratePassageButton({
         minWidth={244}
       />
       {error ? (
-        <p style={{ fontFamily: SANS, fontSize: 13, color: "#fecaca", margin: 0, textAlign: "right" }} role="alert">
+        <p
+          style={{
+            fontFamily: SANS,
+            fontSize: 13,
+            color: "#fecaca",
+            margin: 0,
+            textAlign: "right",
+          }}
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
@@ -138,12 +142,30 @@ export function StartTestButton({ label = "Start a full reading test" }: { label
         minWidth={266}
       />
       {loading ? (
-        <p style={{ fontFamily: SANS, fontSize: 12.5, color: "rgba(255,255,255,0.78)", margin: 0, textAlign: "right", maxWidth: 280 }}>
+        <p
+          style={{
+            fontFamily: SANS,
+            fontSize: 12.5,
+            color: "rgba(255,255,255,0.78)",
+            margin: 0,
+            textAlign: "right",
+            maxWidth: 280,
+          }}
+        >
           Writing 3 original passages at your level — hang tight, don’t close this tab.
         </p>
       ) : null}
       {error ? (
-        <p style={{ fontFamily: SANS, fontSize: 13, color: "#fecaca", margin: 0, textAlign: "right" }} role="alert">
+        <p
+          style={{
+            fontFamily: SANS,
+            fontSize: 13,
+            color: "#fecaca",
+            margin: 0,
+            textAlign: "right",
+          }}
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
