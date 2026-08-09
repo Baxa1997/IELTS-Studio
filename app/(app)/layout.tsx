@@ -5,7 +5,9 @@ import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
 import { loadStudentAssignments } from "@/lib/assignments/student";
+import { NotificationBell } from "@/components/app-shell/notification-bell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
+import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
 import { createClient } from "@/lib/supabase/server";
@@ -56,6 +58,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     }
   }
 
+  // Loaded here, not in the client bell, so the unread badge is correct on the
+  // first paint rather than after a fetch.
+  const inbox = await loadInbox();
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
@@ -70,6 +75,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         email={user.email}
         sidebarFooter={sidebarFooter}
         quotaBar={quotaBar}
+        bell={<NotificationBell inbox={inbox} />}
         initialCollapsed={collapsed}
       >
         {children}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { notifyAssignment } from "@/lib/notifications/send";
 import { generateWritingPrompt, PromptServiceError, reviewWritingPrompt } from "@/lib/prompts/service";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota } from "@/lib/quota";
@@ -308,6 +309,21 @@ export async function assignPractice(
     })),
   );
   if (error) return { error: error.message };
+
+  // Tell the class. Best-effort: homework that was set is set, whether or not
+  // the bell lit up.
+  await notifyAssignment({
+    organizationId: profile.organization_id,
+    groupIds: targets,
+    title,
+    href:
+      kind === "writing"
+        ? `/write/${contentId}`
+        : kind === "reading"
+          ? `/read/test/${contentId}`
+          : `/listen?item=${contentId}`,
+    dueAt: dueAt ? dueAt.toISOString() : null,
+  });
 
   revalidatePath("/console/practices");
   for (const groupId of targets) revalidatePath(`/console/groups/${groupId}`);

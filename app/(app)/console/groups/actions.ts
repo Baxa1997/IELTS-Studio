@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import { requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
 import { sendEmail } from "@/lib/email/send";
+import { notifyAssignment } from "@/lib/notifications/send";
 import { serverEnv } from "@/lib/env";
 import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
 import { placeUserInOrg } from "@/lib/provision";
@@ -428,6 +429,14 @@ export async function createAssignment(
     created_by: profile.id,
   });
   if (error) return { error: error.message };
+
+  await notifyAssignment({
+    organizationId: profile.organization_id,
+    groupIds: [groupId],
+    title,
+    href: promptId ? `/write/${promptId}` : `/read/test/${readingTestId}`,
+    dueAt: dueAt ? dueAt.toISOString() : null,
+  });
 
   revalidatePath(`/console/groups/${groupId}`);
   return { notice: `Assigned to ${group.name}.` };

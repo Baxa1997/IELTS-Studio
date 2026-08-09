@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { GradingError, runGrading, type GradableEssay } from "@/lib/grading/run";
+import { notifyGraded, notifyQueued } from "@/lib/notifications/send";
 import { enqueueGrading } from "@/lib/queue/grading";
 import { getGradingQuota } from "@/lib/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -68,9 +69,30 @@ export async function POST(_req: Request, ctx: RouteContext) {
   // --- Quota (per-org monthly AI grading limit) ----------------------------
   const quota = await getGradingQuota(organizationId);
   if (quota.exceeded) {
+    // Never drop the attempt (spec 01 §3.5). Park it in the queue with a
+    // run_after past the reset, so the month rolling over drains it by itself,
+    // and tell the learner it is waiting rather than lost.
+    const admin = createAdminClient();
+    await admin.from("essays").update({ status: "queued" }).eq("id", essay.id);
+    await enqueueGrading(admin, essay.id, organizationId, "quota_exceeded", quota.resetAt);
+    await notifyQueued({
+      organizationId,
+      studentId: essay.student_id as string,
+      reason: "quota",
+      retryAt: quota.resetAt,
+    });
     return NextResponse.json(
-      { error: "quota_exceeded", limit: quota.limit, used: quota.used, resetAt: quota.resetAt },
-      { status: 429, headers: { "Retry-After": String(secondsUntil(quota.resetAt)) } },
+      {
+        status: "queued",
+        essayId: essay.id,
+        error: "quota_exceeded",
+        limit: quota.limit,
+        used: quota.used,
+        resetAt: quota.resetAt,
+        message:
+          "Your center has used its marking allowance this month. Your essay is queued and will be marked when the allowance resets.",
+      },
+      { status: 202, headers: { "Retry-After": String(secondsUntil(quota.resetAt)) } },
     );
   }
 
@@ -93,6 +115,17 @@ export async function POST(_req: Request, ctx: RouteContext) {
       figureText,
       userId: session.user.id,
     });
+    // Only worth telling somebody when it wasn't them watching the spinner —
+    // homework marked while the tab is closed is exactly the case the bell is
+    // for, and a self-marked essay simply shows the result on screen.
+    if (essay.student_id !== session.user.id) {
+      await notifyGraded({
+        organizationId,
+        studentId: essay.student_id as string,
+        band: numberOrNull(outcome.grading?.overall_band),
+        href: `/activities/essay/${essay.id}`,
+      });
+    }
     return NextResponse.json(
       {
         grading: outcome.grading,
@@ -111,6 +144,11 @@ export async function POST(_req: Request, ctx: RouteContext) {
     // Model failure after retries → degrade to the async queue (the spike fallback).
     await admin.from("essays").update({ status: "queued" }).eq("id", essay.id);
     await enqueueGrading(admin, essay.id, essay.organization_id, errMsg(err));
+    await notifyQueued({
+      organizationId,
+      studentId: essay.student_id as string,
+      reason: "busy",
+    });
     console.error("[grade] model failure, essay queued:", essay.id, errMsg(err));
     return NextResponse.json(
       {
@@ -133,4 +171,11 @@ function secondsUntil(iso: string): number {
 
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/** The stored grading is loosely typed on the way back out; the notification
+ *  only wants a band it can print. */
+function numberOrNull(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
 }

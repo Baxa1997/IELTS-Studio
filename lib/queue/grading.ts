@@ -25,12 +25,20 @@ export interface GradingJob {
   max_attempts: number;
 }
 
-/** Enqueue (or re-arm) a job for an essay. Attempts are preserved across re-enqueue. */
+/**
+ * Enqueue (or re-arm) a job for an essay. Attempts are preserved across
+ * re-enqueue.
+ *
+ * `runAfter` overrides the usual backoff — an essay parked because the org is
+ * out of quota should wake when the allowance resets, not in forty seconds, or
+ * the drainer burns its retries against a wall.
+ */
 export async function enqueueGrading(
   admin: SupabaseClient,
   essayId: string,
   organizationId: string,
   lastError?: string,
+  runAfter?: string,
 ): Promise<void> {
   const { data: existing } = await admin
     .from("grading_jobs")
@@ -45,7 +53,7 @@ export async function enqueueGrading(
       organization_id: organizationId,
       status: "queued",
       last_error: lastError ?? null,
-      run_after: new Date(Date.now() + backoffMs(attempts)).toISOString(),
+      run_after: runAfter ?? new Date(Date.now() + backoffMs(attempts)).toISOString(),
     },
     { onConflict: "essay_id" },
   );

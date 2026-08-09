@@ -5,7 +5,9 @@ import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
+import { NotificationBell } from "@/components/app-shell/notification-bell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
+import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
 
@@ -46,6 +48,9 @@ export default async function ShellLayout({ children }: { children: React.ReactN
     quotaBar = <QuotaBar usage={usage} />;
   }
 
+  // Loaded here, not in the client bell, so the unread badge is correct on the
+  // first paint rather than after a fetch.
+  const inbox = await loadInbox();
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
@@ -61,6 +66,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
         contentClassName=""
         sidebarFooter={sidebarFooter}
         quotaBar={quotaBar}
+        bell={<NotificationBell inbox={inbox} />}
         initialCollapsed={collapsed}
       >
         {children}

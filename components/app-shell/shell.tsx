@@ -57,6 +57,7 @@ export function AppShell({
   contentClassName,
   sidebarFooter,
   quotaBar,
+  bell,
   initialCollapsed = false,
   children,
 }: {
@@ -78,6 +79,9 @@ export function AppShell({
   /** Optional low-quota warning strip at the top of the content surface (the
    *  node itself decides whether to render — see quota-bar.tsx). */
   quotaBar?: React.ReactNode;
+  /** Notification bell, rendered in the rail footer and in the mobile top bar.
+   *  Server-loaded by the layout so the badge is right on first paint. */
+  bell?: React.ReactNode;
   /** Desktop rail starts collapsed — read from a cookie by the layout so the choice
    *  survives navigation across route groups (which remounts this component). */
   initialCollapsed?: boolean;
@@ -147,6 +151,7 @@ export function AppShell({
         <Link href={home} style={{ textDecoration: "none" }}>
           <Logo />
         </Link>
+        {bell ? <div style={{ marginLeft: "auto" }}>{bell}</div> : null}
       </header>
 
       {/* ===== body: sidebar + main ===== */}
@@ -281,6 +286,11 @@ export function AppShell({
             }}
           >
             {sidebarFooter}
+            {bell ? (
+              <div className="lp-sb-bell" style={{ display: "flex", justifyContent: "flex-end" }}>
+                {bell}
+              </div>
+            ) : null}
             <ProfileMenu name={name} roleLabel={roleLabel} email={email} />
           </div>
         </aside>

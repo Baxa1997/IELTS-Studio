@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
 import { GradingError, runGrading, type GradableEssay } from "@/lib/grading/run";
+import { notifyGraded, notifyGradingFailed } from "@/lib/notifications/send";
 import { claimJobs, completeJob, failJob } from "@/lib/queue/grading";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { figureToText, parseFigure } from "@/lib/writing/figure";
@@ -88,7 +89,7 @@ export async function POST(req: Request): Promise<Response> {
     // Claim the essay row too, then grade through the shared path.
     await admin.from("essays").update({ status: "grading" }).eq("id", essay.id);
     try {
-      await runGrading(admin, {
+      const outcome = await runGrading(admin, {
         essay: essay as GradableEssay,
         promptText,
         figureText,
@@ -96,10 +97,28 @@ export async function POST(req: Request): Promise<Response> {
       });
       await completeJob(admin, job.id);
       succeeded += 1;
+      // Nobody is watching a queued grade — the bell is the only way the learner
+      // finds out it came back.
+      await notifyGraded({
+        organizationId: essay.organization_id,
+        studentId: essay.student_id,
+        band: numberOrNull(outcome.grading?.overall_band),
+        href: `/activities/essay/${essay.id}`,
+      });
     } catch (err) {
       const message = err instanceof GradingError ? `${err.phase}: ${err.message}` : String(err);
+      const exhausted = job.attempts + 1 >= job.max_attempts;
       await failJob(admin, job, message);
       failed += 1;
+      // Out of retries: this is the one failure a human has to pick up, so the
+      // learner and every teacher who owns a group they're in are told.
+      if (exhausted) {
+        await notifyGradingFailed({
+          organizationId: essay.organization_id,
+          studentId: essay.student_id,
+          essayId: essay.id,
+        });
+      }
     }
   }
 
@@ -110,4 +129,11 @@ function isAuthorized(req: Request, secret: string): boolean {
   const auth = req.headers.get("authorization");
   if (auth === `Bearer ${secret}`) return true;
   return req.headers.get("x-cron-secret") === secret;
+}
+
+/** The stored grading is loosely typed on the way back out; the notification
+ *  only wants a band it can print. */
+function numberOrNull(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
 }
