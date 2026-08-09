@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { serverEnv } from "@/lib/env";
 import { notifyAssignment } from "@/lib/notifications/send";
+import { notifyAssignmentTelegram } from "@/lib/telegram/send";
 import { generateWritingPrompt, PromptServiceError, reviewWritingPrompt } from "@/lib/prompts/service";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota } from "@/lib/quota";
@@ -345,16 +347,29 @@ export async function assignPractice(
 
   // Tell the class. Best-effort: homework that was set is set, whether or not
   // the bell lit up.
+  const href =
+    kind === "writing"
+      ? `/write/${assignedId}`
+      : kind === "reading"
+        ? `/read/test/${assignedId}`
+        : `/listen?item=${assignedId}`;
+
   await notifyAssignment({
     organizationId: profile.organization_id,
     groupIds: targets,
     title,
-    href:
-      kind === "writing"
-        ? `/write/${assignedId}`
-        : kind === "reading"
-          ? `/read/test/${assignedId}`
-          : `/listen?item=${assignedId}`,
+    href,
+    dueAt: dueAt ? dueAt.toISOString() : null,
+  });
+
+  // Second channel on the same event, not a second event. Best-effort like the
+  // bell: a channel that didn't answer must not un-set the homework.
+  await notifyAssignmentTelegram({
+    organizationId: profile.organization_id,
+    groupIds: targets,
+    kind,
+    title,
+    url: `${serverEnv.siteUrl}${href}`,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 

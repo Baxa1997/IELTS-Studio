@@ -29,10 +29,7 @@ const STATUSES = new Set(["present", "late", "absent"]);
  * post the whole class in one go and a student left unmarked simply has no row
  * rather than a guessed one.
  */
-export async function saveRegister(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export async function saveRegister(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireOrgUser();
   if (profile.role !== "center_admin" && profile.role !== "teacher") {
     return { error: "Only center staff can mark attendance." };
@@ -223,7 +220,9 @@ export async function sendAnnouncement(
   });
 
   revalidatePath("/console/announcements");
-  return { ok: `Sent to ${recipientIds.length} ${recipientIds.length === 1 ? "person" : "people"}.` };
+  return {
+    ok: `Sent to ${recipientIds.length} ${recipientIds.length === 1 ? "person" : "people"}.`,
+  };
 }
 
 /* ── center profile ───────────────────────────────────────────────────────── */
@@ -253,4 +252,72 @@ export async function saveCenterProfile(
 
   revalidatePath("/console", "layout");
   return { ok: "Saved." };
+}
+
+/* ── telegram ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Start the handshake: mint a code for this group and show it. The teacher
+ * posts it in the channel; the bot's webhook matches it and records the chat id
+ * (see app/api/telegram/webhook). A code, not a pasted chat id, because a chat
+ * id is not a secret — the code is what proves the person linking the channel
+ * can post in it.
+ */
+export async function startTelegramLink(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can connect a channel." };
+  }
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  if (!groupId) return { error: "Missing class." };
+
+  // No O/0 or I/1 — this gets read off a screen and typed into Telegram.
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const pick = () =>
+    Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
+  const code = `${pick()}-${pick()}`;
+
+  const supabase = await createClient();
+  // RLS decides whether this person manages the group; upsert so re-running
+  // replaces a stale code rather than piling rows up.
+  const { error } = await supabase.from("telegram_links").upsert(
+    {
+      organization_id: profile.organization_id,
+      group_id: groupId,
+      link_code: code,
+      code_expires_at: new Date(Date.now() + 15 * 60_000).toISOString(),
+      verified_at: null,
+      chat_id: null,
+      linked_by: profile.id,
+    },
+    { onConflict: "organization_id,group_id" },
+  );
+  if (error) return { error: error.message };
+
+  revalidatePath(`/console/groups/${groupId}`);
+  return { ok: code };
+}
+
+/** Forget a channel. The bot stays in it; it just stops being posted to. */
+export async function unlinkTelegram(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can disconnect a channel." };
+  }
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  if (!groupId) return { error: "Missing class." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("telegram_links")
+    .delete()
+    .eq("group_id", groupId)
+    .eq("organization_id", profile.organization_id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/console/groups/${groupId}`);
+  return { ok: "Disconnected." };
 }

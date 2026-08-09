@@ -42,6 +42,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AssignTeacherForm, DeleteGroupButton, RemoveMemberButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
+import { TelegramPanel } from "./telegram-panel";
 import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 
@@ -103,6 +104,15 @@ export default async function GroupDetailPage({
           .in("student_id", memberIds)
       : Promise.resolve({ data: null }),
   ]);
+
+  // The class's Telegram channel, if the handshake completed.
+  const { data: tgRow } = await supabase
+    .from("telegram_links")
+    .select("chat_title, verified_at")
+    .eq("group_id", group.id)
+    .maybeSingle();
+  const telegramLinked =
+    tgRow?.verified_at != null ? { chatTitle: (tgRow.chat_title as string | null) ?? null } : null;
 
   // The last dozen registers for this class, oldest-to-newest across the row so
   // the strip reads left to right like a calendar.
@@ -181,7 +191,8 @@ export default async function GroupDetailPage({
       ? Math.round((totalCompleted / (assignments.length * group.members.length)) * 100)
       : null;
 
-  const tabHref = (t: Tab) => (t === "roster" ? `/console/groups/${id}` : `/console/groups/${id}?tab=${t}`);
+  const tabHref = (t: Tab) =>
+    t === "roster" ? `/console/groups/${id}` : `/console/groups/${id}?tab=${t}`;
 
   return (
     <div>
@@ -196,12 +207,18 @@ export default async function GroupDetailPage({
           </>
         }
         actions={
-          <TextLink href={`/console/groups/${id}?tab=manage`}>Add students & set practice →</TextLink>
+          <TextLink href={`/console/groups/${id}?tab=manage`}>
+            Add students & set practice →
+          </TextLink>
         }
       />
 
       <KpiRow>
-        <Kpi label="Students" value={group.members.length} sub={`${activeCount} active in 30 days`} />
+        <Kpi
+          label="Students"
+          value={group.members.length}
+          sub={`${activeCount} active in 30 days`}
+        />
         <Kpi label="Practice set" value={assignments.length} />
         <Kpi
           label="Completion"
@@ -228,7 +245,11 @@ export default async function GroupDetailPage({
       <Tabs
         tabs={[
           { href: tabHref("roster"), label: "Roster", active: tab === "roster" },
-          { href: tabHref("practice"), label: `Practice (${assignments.length})`, active: tab === "practice" },
+          {
+            href: tabHref("practice"),
+            label: `Practice (${assignments.length})`,
+            active: tab === "practice",
+          },
           { href: tabHref("progress"), label: "Progress", active: tab === "progress" },
           { href: tabHref("attendance"), label: "Attendance", active: tab === "attendance" },
           { href: tabHref("manage"), label: "Manage", active: tab === "manage" },
@@ -250,7 +271,11 @@ export default async function GroupDetailPage({
               const behind = weakest && target != null ? weakest.band - target : null;
               return (
                 <TRow key={m.id} cols={ROSTER_COLS}>
-                  <PersonCell name={m.name} photoUrl={m.photoUrl} meta={`joined ${new Date(m.joinedAt).toLocaleDateString()}`} />
+                  <PersonCell
+                    name={m.name}
+                    photoUrl={m.photoUrl}
+                    meta={`joined ${new Date(m.joinedAt).toLocaleDateString()}`}
+                  />
                   <TD>
                     {weakest ? (
                       <span
@@ -260,7 +285,9 @@ export default async function GroupDetailPage({
                         }}
                       >
                         {weakest.band.toFixed(1)}{" "}
-                        <span style={{ fontWeight: 400, color: FAINT, textTransform: "capitalize" }}>
+                        <span
+                          style={{ fontWeight: 400, color: FAINT, textTransform: "capitalize" }}
+                        >
                           {weakest.skill}
                         </span>
                       </span>
@@ -277,7 +304,9 @@ export default async function GroupDetailPage({
                   </TD>
                   <TD align="right">
                     <span style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                      <TextLink href={`/console/groups/${group.id}/students/${m.id}`}>Report</TextLink>
+                      <TextLink href={`/console/groups/${group.id}/students/${m.id}`}>
+                        Report
+                      </TextLink>
                       <RemoveMemberButton groupId={group.id} studentId={m.id} />
                     </span>
                   </TD>
@@ -301,15 +330,17 @@ export default async function GroupDetailPage({
           />
           {assignments.map((a) => {
             const pct =
-              group.members.length > 0
-                ? Math.round((a.completed / group.members.length) * 100)
-                : 0;
+              group.members.length > 0 ? Math.round((a.completed / group.members.length) * 100) : 0;
             return (
               <ListRow
                 key={a.id}
                 href={`/console/groups/${group.id}/assignments/${a.id}`}
                 lead={
-                  <KindBadge tone={a.kind === "writing" ? "indigo" : a.kind === "reading" ? "green" : "amber"}>
+                  <KindBadge
+                    tone={
+                      a.kind === "writing" ? "indigo" : a.kind === "reading" ? "green" : "amber"
+                    }
+                  >
                     {KIND_LABEL[a.kind] ?? "?"}
                   </KindBadge>
                 }
@@ -404,7 +435,9 @@ export default async function GroupDetailPage({
           <CardHead
             title={`Last ${sessions.length || 12} sessions`}
             note="a late arrival still counts as attended"
-            actions={<TextLink href={`/console/attendance?group=${group.id}`}>Mark today →</TextLink>}
+            actions={
+              <TextLink href={`/console/attendance?group=${group.id}`}>Mark today →</TextLink>
+            }
           />
           {sessions.length === 0 ? (
             <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
@@ -488,7 +521,15 @@ export default async function GroupDetailPage({
                   ["Not marked", "#EFEDE8"],
                 ].map(([text, color]) => (
                   <span key={text} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <i style={{ width: 10, height: 10, borderRadius: 3, background: color, display: "inline-block" }} />
+                    <i
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 3,
+                        background: color,
+                        display: "inline-block",
+                      }}
+                    />
                     {text}
                   </span>
                 ))}
@@ -549,19 +590,33 @@ export default async function GroupDetailPage({
                   key={inv.email}
                   title={inv.email}
                   trail={
-                    <Tag tone="neutral">
-                      expires {new Date(inv.expiresAt).toLocaleDateString()}
-                    </Tag>
+                    <Tag tone="neutral">expires {new Date(inv.expiresAt).toLocaleDateString()}</Tag>
                   }
                 />
               ))}
             </Card>
           ) : null}
 
+          <Card>
+            <CardHead title="Telegram channel" />
+            <CardNote>
+              Announce new practice where the class already talks. One channel per class.
+            </CardNote>
+            <TelegramPanel
+              groupId={group.id}
+              linked={telegramLinked}
+              botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
+            />
+          </Card>
+
           {isAdmin ? (
             <Card>
               <CardHead title="Group settings" />
-              <AssignTeacherForm groupId={group.id} teacherId={group.teacherId} teachers={teachers} />
+              <AssignTeacherForm
+                groupId={group.id}
+                teacherId={group.teacherId}
+                teachers={teachers}
+              />
               <div style={{ borderTop: `1px solid ${LINE}`, marginTop: 18, paddingTop: 16 }}>
                 <DeleteGroupButton groupId={group.id} />
               </div>
