@@ -100,15 +100,18 @@ export function ReadingHub({
         style={{
           marginTop: 8,
           width: "100%",
-          background: "#fff",
-          border: "1px solid #ECEAF2",
+          // Filled brand indigo, matching the Attach on the writing bench and the
+          // listening card — it is the same action, so it reads the same way.
+          background: "#3B43B5",
+          border: 0,
           borderRadius: 10,
-          padding: "8px 12px",
+          padding: "9px 12px",
           fontFamily: "inherit",
           fontSize: 13,
           fontWeight: 600,
-          color: groups.length === 0 ? "#8A8FA0" : "#3B43B5",
+          color: "#fff",
           cursor: groups.length === 0 ? "not-allowed" : "pointer",
+          opacity: groups.length === 0 ? 0.45 : 1,
         }}
       >
         Attach to a class
