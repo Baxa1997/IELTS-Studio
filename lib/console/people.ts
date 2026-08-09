@@ -42,6 +42,8 @@ export interface StudentRow {
   targetBand: number | null;
   /** How many of the four skills have ever been measured. */
   measuredSkills: number;
+  /** Attendance rate 0–100, or null when no register has ever included them. */
+  attendancePct: number | null;
 }
 
 export async function loadTeachers(): Promise<TeacherRow[]> {
@@ -135,11 +137,20 @@ export async function loadStudents(opts: {
   const rosterIds = (stats ?? []).map((s) => s.student_id as string);
   const bands = new Map<string, { skill: string; band: number }[]>();
   const targets = new Map<string, number>();
+  const attendance = new Map<string, number>();
   if (rosterIds.length > 0) {
-    const { data: estimates } = await supabase
-      .from("skill_estimates")
-      .select("student_id, skill, current_band, target_band")
-      .in("student_id", rosterIds);
+    const [{ data: estimates }, { data: rates }] = await Promise.all([
+      supabase
+        .from("skill_estimates")
+        .select("student_id, skill, current_band, target_band")
+        .in("student_id", rosterIds),
+      // The one definition of an attendance rate — late still counts as in the
+      // room (see the view's comment).
+      supabase.from("v_student_attendance").select("student_id, rate_pct").in("student_id", rosterIds),
+    ]);
+    for (const r of (rates ?? []) as { student_id: string; rate_pct: number | null }[]) {
+      if (r.rate_pct != null) attendance.set(r.student_id, r.rate_pct);
+    }
     for (const e of (estimates ?? []) as {
       student_id: string;
       skill: string;
@@ -175,6 +186,7 @@ export async function loadStudents(opts: {
         weakest,
         targetBand: targets.get(id) ?? null,
         measuredSkills: measured.length,
+        attendancePct: attendance.get(id) ?? null,
       };
     })
     .sort((a, b) => b.practiceCount - a.practiceCount || a.name.localeCompare(b.name));

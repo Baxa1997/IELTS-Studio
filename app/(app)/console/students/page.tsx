@@ -62,7 +62,7 @@ const CARD_FILTERS = {
 
 type CardFilter = keyof typeof CARD_FILTERS;
 
-const COLS = "2.2fr 1.6fr 1.2fr .8fr .9fr 1.1fr .8fr";
+const COLS = "2.2fr 1.5fr 1.2fr .7fr .8fr .8fr 1fr .6fr";
 
 export default async function StudentsPage({
   searchParams,
@@ -209,7 +209,7 @@ export default async function StudentsPage({
         <Table cols={COLS} minWidth={860}>
           <THead
             cols={COLS}
-            labels={["Student", "Group", "Weakest skill", "Target", "Practice", "Last active", ""]}
+            labels={["Student", "Group", "Weakest skill", "Target", "Practice", "Att.", "Last active", ""]}
           />
           {rows.map((s) => {
             const short = s.weakest ? s.weakest.skill : null;
@@ -247,6 +247,12 @@ export default async function StudentsPage({
                 </TD>
                 <TD tone="soft">{s.targetBand?.toFixed(1) ?? "—"}</TD>
                 <TD tone={s.practiceCount === 0 ? "faint" : "body"}>{s.practiceCount}</TD>
+                <TD
+                  tone={s.attendancePct == null ? "faint" : "body"}
+                  weight={s.attendancePct != null && s.attendancePct < 75 ? 600 : undefined}
+                >
+                  {s.attendancePct == null ? "—" : `${s.attendancePct}%`}
+                </TD>
                 <TD tone="soft">{s.lastActive ? dateFmt(s.lastActive) : "never"}</TD>
                 {/* The whole row is the link, so this is a marker, not an
                     anchor — an <a> inside an <a> is invalid HTML. */}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import {
+  AMBER,
   Bar,
   Card,
   CardHead,
@@ -24,12 +25,13 @@ import {
 import { requireOrgUser } from "@/lib/auth";
 import { loadTeachers } from "@/lib/console/people";
 import { loadCenterReport } from "@/lib/console/reports";
+import { createClient } from "@/lib/supabase/server";
 
 import { AddTeacherPanel } from "./add-teacher-panel";
 
 export const dynamic = "force-dynamic";
 
-const COLS = "2.2fr .8fr .9fr .9fr 1.3fr 1.1fr";
+const COLS = "2.2fr .7fr .8fr .8fr 1.2fr 1.2fr 1fr";
 
 export default async function TeachersPage({
   searchParams,
@@ -43,10 +45,37 @@ export default async function TeachersPage({
   const sp = await searchParams;
   const query = sp.q?.trim().toLowerCase() || undefined;
 
-  const [teachers, report] = await Promise.all([
+  const supabase = await createClient();
+  const [teachers, report, groupsRes, membersRes, ratesRes] = await Promise.all([
     loadTeachers(),
     loadCenterReport({ role: profile.role, profileId: profile.id }),
+    supabase.from("groups").select("id, teacher_id"),
+    supabase.from("group_members").select("group_id, student_id"),
+    supabase.from("v_student_attendance").select("student_id, rate_pct"),
   ]);
+
+  // Attendance rolled up to the teacher: the mean rate of the students in the
+  // classes they own. A student in two of their classes counts once.
+  const teacherOfGroup = new Map(
+    ((groupsRes.data ?? []) as { id: string; teacher_id: string | null }[]).map((g) => [
+      g.id,
+      g.teacher_id,
+    ]),
+  );
+  const rateOf = new Map(
+    ((ratesRes.data ?? []) as { student_id: string; rate_pct: number | null }[]).map((r) => [
+      r.student_id,
+      r.rate_pct,
+    ]),
+  );
+  const studentsOfTeacher = new Map<string, Set<string>>();
+  for (const m of (membersRes.data ?? []) as { group_id: string; student_id: string }[]) {
+    const teacherId = teacherOfGroup.get(m.group_id);
+    if (!teacherId) continue;
+    const set = studentsOfTeacher.get(teacherId) ?? new Set<string>();
+    set.add(m.student_id);
+    studentsOfTeacher.set(teacherId, set);
+  }
 
   // Roll the class report up to the person who runs the classes. Joined on
   // teacher id, not name — two teachers can share a name.
@@ -59,6 +88,12 @@ export default async function TeachersPage({
     stats.set(g.teacherId, s);
   }
   const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+  const attendanceOf = (teacherId: string) =>
+    mean(
+      [...(studentsOfTeacher.get(teacherId) ?? [])]
+        .map((id) => rateOf.get(id))
+        .filter((r): r is number => r != null),
+    );
 
   const rows = teachers.filter((t) =>
     query
@@ -121,12 +156,13 @@ export default async function TeachersPage({
           <Table cols={COLS} minWidth={760}>
             <THead
               cols={COLS}
-              labels={["Teacher", "Classes", "Students", "Avg band", "Completion", "Status"]}
+              labels={["Teacher", "Classes", "Students", "Avg band", "Completion", "Attendance", "Status"]}
             />
             {rows.map((t) => {
               const s = stats.get(t.id);
               const band = mean(s?.bands ?? []);
               const completion = mean(s?.completions ?? []);
+              const attendance = attendanceOf(t.id);
               return (
                 <TRow key={t.id} cols={COLS}>
                   <PersonCell name={t.name} meta={t.username ?? "no login"} />
@@ -142,6 +178,20 @@ export default async function TeachersPage({
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <Bar pct={completion} width={54} fill={completion >= 60 ? GREEN : undefined} />
                         <span style={{ fontSize: 12 }}>{Math.round(completion)}%</span>
+                      </span>
+                    )}
+                  </TD>
+                  <TD>
+                    {attendance == null ? (
+                      <span style={{ color: "#93919F" }}>—</span>
+                    ) : (
+                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Bar
+                          pct={attendance}
+                          width={54}
+                          fill={attendance >= 90 ? GREEN : attendance >= 80 ? AMBER : "#E0A9A3"}
+                        />
+                        <span style={{ fontSize: 12 }}>{Math.round(attendance)}%</span>
                       </span>
                     )}
                   </TD>

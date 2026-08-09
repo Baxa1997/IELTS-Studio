@@ -37,6 +37,8 @@ export interface CenterReport {
   groups: GroupReportRow[];
   /** Bands awarded in the window, bucketed by half band. */
   bandBuckets: { label: string; value: number }[];
+  /** Mean band per calendar month in the window — the trend, not the spread. */
+  bandTrend: { key: string; label: string; band: number | null; samples: number }[];
   /** Mean band per skill, with how many gradings it rests on. */
   skillAverages: { skill: string; band: number | null; samples: number }[];
   /** How often each writing criterion was the one capping the essay. */
@@ -119,6 +121,7 @@ export async function loadCenterReport(opts: {
         averageBand: null,
       })),
       bandBuckets: [],
+      bandTrend: [],
       skillAverages: [],
       writingCaps: [],
       readingMisses: [],
@@ -187,26 +190,51 @@ export async function loadCenterReport(opts: {
   // --- band distribution + per-skill averages --------------------------------
   const bands: number[] = [];
   const bySkill: Record<string, number[]> = { writing: [], reading: [], speaking: [] };
+  // Bands keyed by calendar month, for the trend line. Same numbers as the
+  // distribution, bucketed by when they were awarded rather than by value.
+  const byMonth = new Map<string, number[]>();
+  const addMonth = (when: string, band: number) => {
+    const key = when.slice(0, 7); // YYYY-MM
+    byMonth.set(key, [...(byMonth.get(key) ?? []), band]);
+  };
   for (const e of essays) {
     const b = essayBand.get(e.id);
     if (b != null) {
       bands.push(b);
       bySkill.writing.push(b);
+      addMonth(e.created_at, b);
     }
   }
-  for (const r of (readingRes.data ?? []) as { band: number | null }[]) {
+  for (const r of (readingRes.data ?? []) as { band: number | null; created_at: string }[]) {
     if (r.band != null) {
       bands.push(Number(r.band));
       bySkill.reading.push(Number(r.band));
+      addMonth(r.created_at, Number(r.band));
     }
   }
-  for (const s of (speakingRes.data ?? []) as { result: { overall_band?: number } | null }[]) {
+  for (const s of (speakingRes.data ?? []) as {
+    result: { overall_band?: number } | null;
+    started_at: string;
+  }[]) {
     const b = s.result?.overall_band;
     if (typeof b === "number") {
       bands.push(b);
       bySkill.speaking.push(b);
+      addMonth(s.started_at, b);
     }
   }
+
+  const bandTrend = [...byMonth.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, xs]) => ({
+      key,
+      label: new Date(`${key}-01T00:00:00Z`).toLocaleDateString("en-GB", {
+        month: "short",
+        timeZone: "UTC",
+      }),
+      band: mean(xs),
+      samples: xs.length,
+    }));
 
   const bucket = new Map<number, number>();
   for (const b of bands) {
@@ -345,6 +373,7 @@ export async function loadCenterReport(opts: {
     },
     groups: groupRows,
     bandBuckets,
+    bandTrend,
     skillAverages,
     writingCaps,
     readingMisses,

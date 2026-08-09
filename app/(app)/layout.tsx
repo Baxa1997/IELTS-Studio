@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { Hanken_Grotesk, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
 
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
@@ -7,7 +7,7 @@ import { AppShell } from "@/components/app-shell/shell";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import { loadNavCounts } from "@/lib/console/nav";
+import { StaffShell } from "@/components/console/staff-shell";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
@@ -17,6 +17,10 @@ import { OnboardingTakeover } from "./onboarding/onboarding-takeover";
 
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });
 const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-newsreader", display: "swap" });
+/* The console's type: Source Serif 4 headings over Work Sans. Declared here
+   rather than in the console layout because the staff shell sits above it. */
+const work = Work_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-work", display: "swap" });
+const serif4 = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-serif4", display: "swap" });
 
 const ROLE_LABEL: Record<string, string> = { center_admin: "Center admin", teacher: "Teacher", student: "Student" };
 
@@ -37,12 +41,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (!plan) return <OnboardingTakeover />;
   }
 
+  // Staff get the CRM chrome — a different shell, not a variant of the learner
+  // one: 236px navy rail carrying the center's identity, a sticky top bar, and
+  // the enrol/invite slide-overs. Students keep <AppShell>.
+  if (profile.role === "center_admin" || profile.role === "teacher") {
+    return (
+      <div className={`${work.variable} ${serif4.variable} cn-root`}>
+        <StaffShell profile={profile} userName={profile.full_name ?? user.email ?? "Account"}>
+          {children}
+        </StaffShell>
+      </div>
+    );
+  }
+
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
-  // Staff run the CRM chrome (flat navy rail, cream canvas) and get the nav
-  // tallies with it; students keep the learner shell.
-  const isStaff = profile.role === "center_admin" || profile.role === "teacher";
-  const navCounts = isStaff ? await loadNavCounts(profile) : undefined;
   // Center students (i.e. in a group) get the Assignments nav item; solo B2C
   // learners never see it — RLS returns nothing for them anyway.
   let showAssignments = false;
@@ -72,8 +85,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
       <AppShell
         role={profile.role}
-        variant={isStaff ? "console" : "learner"}
-        navCounts={navCounts}
         showAssignments={showAssignments}
         pendingAssignments={pendingAssignments}
         home={roleHome(profile.role)}

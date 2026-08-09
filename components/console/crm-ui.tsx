@@ -863,6 +863,30 @@ export function BtnLink({
   );
 }
 
+/** Small bordered action at the end of a row — the design's alert CTA. */
+export function ChipLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="cn-chip"
+      style={{
+        display: "inline-block",
+        background: CANVAS,
+        border: `1px solid #E4E2DC`,
+        borderRadius: 7,
+        padding: "6px 11px",
+        fontFamily: SANS,
+        fontSize: 12,
+        color: INK,
+        textDecoration: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** Quiet indigo text link — row actions, "Export CSV", "Attendance →". */
 export function TextLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (

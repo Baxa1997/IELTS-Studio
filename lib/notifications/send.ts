@@ -20,7 +20,9 @@ export type NotificationType =
   | "grading_queued"
   | "grading_failed"
   | "quota_warning"
-  | "quota_exhausted";
+  | "quota_exhausted"
+  /** A center-wide message from the center admin. */
+  | "announcement";
 
 interface NotifyInput {
   organizationId: string;

@@ -10,6 +10,7 @@ import {
   FAINT,
   GREEN,
   INDIGO,
+  INK,
   Kpi,
   KpiRow,
   KindBadge,
@@ -46,7 +47,7 @@ import { BulkAddPanel } from "./bulk-add-panel";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["roster", "practice", "progress", "manage"] as const;
+const TABS = ["roster", "practice", "progress", "attendance", "manage"] as const;
 type Tab = (typeof TABS)[number];
 
 const ROSTER_COLS = "2.2fr 1.2fr .8fr 1.2fr 1.2fr .7fr";
@@ -102,6 +103,41 @@ export default async function GroupDetailPage({
           .in("student_id", memberIds)
       : Promise.resolve({ data: null }),
   ]);
+
+  // The last dozen registers for this class, oldest-to-newest across the row so
+  // the strip reads left to right like a calendar.
+  const { data: sessionRows } = await supabase
+    .from("attendance_sessions")
+    .select("id, held_on")
+    .eq("group_id", group.id)
+    .order("held_on", { ascending: false })
+    .limit(12);
+  const sessions = ((sessionRows ?? []) as { id: string; held_on: string }[]).reverse();
+  const marks = new Map<string, Map<string, string>>();
+  if (sessions.length > 0) {
+    const { data: markRows } = await supabase
+      .from("attendance_marks")
+      .select("session_id, student_id, status")
+      .in(
+        "session_id",
+        sessions.map((s) => s.id),
+      );
+    for (const m of (markRows ?? []) as {
+      session_id: string;
+      student_id: string;
+      status: string;
+    }[]) {
+      const row = marks.get(m.student_id) ?? new Map<string, string>();
+      row.set(m.session_id, m.status);
+      marks.set(m.student_id, row);
+    }
+  }
+  const attendanceRate = (studentId: string) => {
+    const row = marks.get(studentId);
+    if (!row || row.size === 0) return null;
+    const attended = [...row.values()].filter((s) => s !== "absent").length;
+    return Math.round((attended / row.size) * 100);
+  };
 
   const libraryTests = (libTestsRes.data ?? []).map((t, i) => ({
     id: t.id as string,
@@ -194,6 +230,7 @@ export default async function GroupDetailPage({
           { href: tabHref("roster"), label: "Roster", active: tab === "roster" },
           { href: tabHref("practice"), label: `Practice (${assignments.length})`, active: tab === "practice" },
           { href: tabHref("progress"), label: "Progress", active: tab === "progress" },
+          { href: tabHref("attendance"), label: "Attendance", active: tab === "attendance" },
           { href: tabHref("manage"), label: "Manage", active: tab === "manage" },
         ]}
       />
@@ -358,6 +395,106 @@ export default async function GroupDetailPage({
               Nobody in this class has a graded band yet. Set some practice and it fills in.
             </p>
           ) : null}
+        </Card>
+      ) : null}
+
+      {/* ── attendance ──────────────────────────────────────────────────────── */}
+      {tab === "attendance" ? (
+        <Card>
+          <CardHead
+            title={`Last ${sessions.length || 12} sessions`}
+            note="a late arrival still counts as attended"
+            actions={<TextLink href={`/console/attendance?group=${group.id}`}>Mark today →</TextLink>}
+          />
+          {sessions.length === 0 ? (
+            <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+              No registers taken for this class yet. Open Attendance and mark one — the strip fills
+              in from there.
+            </p>
+          ) : (
+            <>
+              {group.members.map((m) => {
+                const row = marks.get(m.id);
+                const rate = attendanceRate(m.id);
+                return (
+                  <div
+                    key={m.id}
+                    style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 9 }}
+                  >
+                    <div
+                      style={{
+                        width: 150,
+                        flex: "0 0 150px",
+                        fontFamily: SANS,
+                        fontSize: 12.5,
+                        color: INK,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {m.name}
+                    </div>
+                    <div style={{ display: "flex", gap: 4, flex: 1, flexWrap: "wrap" }}>
+                      {sessions.map((s) => {
+                        const status = row?.get(s.id);
+                        const color =
+                          status === "present"
+                            ? GREEN
+                            : status === "late"
+                              ? "#E5A85C"
+                              : status === "absent"
+                                ? "#E0A9A3"
+                                : "#EFEDE8";
+                        return (
+                          <span
+                            key={s.id}
+                            title={`${new Date(`${s.held_on}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })} · ${status ?? "not marked"}`}
+                            style={{ width: 18, height: 18, borderRadius: 5, background: color }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div
+                      style={{
+                        width: 50,
+                        textAlign: "right",
+                        fontFamily: SANS,
+                        fontSize: 12.5,
+                        fontWeight: 600,
+                        color: rate == null ? FAINT : INK,
+                      }}
+                    >
+                      {rate == null ? "—" : `${rate}%`}
+                    </div>
+                  </div>
+                );
+              })}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  marginTop: 16,
+                  fontFamily: SANS,
+                  fontSize: 11.5,
+                  color: SOFT,
+                  flexWrap: "wrap",
+                }}
+              >
+                {[
+                  ["Present", GREEN],
+                  ["Late", "#E5A85C"],
+                  ["Absent", "#E0A9A3"],
+                  ["Not marked", "#EFEDE8"],
+                ].map(([text, color]) => (
+                  <span key={text} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <i style={{ width: 10, height: 10, borderRadius: 3, background: color, display: "inline-block" }} />
+                    {text}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       ) : null}
 
