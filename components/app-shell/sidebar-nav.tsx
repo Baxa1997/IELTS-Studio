@@ -6,6 +6,7 @@ import {
   BookA,
   BookOpen,
   Building2,
+  ChartNoAxesColumn,
   ClipboardCheck,
   CreditCard,
   GraduationCap,
@@ -81,6 +82,7 @@ const ADMIN: Section[] = [
       { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Students", href: "/console/students", icon: UserRound },
       { label: "Practice", href: "/console/practices", icon: SquarePen },
+      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
       { label: "Billing", href: "/console/billing", icon: CreditCard },
     ],
   },
@@ -93,6 +95,7 @@ const TEACHER: Section[] = [
       { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Students", href: "/console/students", icon: UserRound },
       { label: "Practice", href: "/console/practices", icon: SquarePen },
+      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
 ];

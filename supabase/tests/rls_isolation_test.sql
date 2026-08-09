@@ -10,9 +10,9 @@
 -- Everything runs inside BEGIN … ROLLBACK, so it leaves NO data behind.
 -- A failed ASSERT aborts with an error (non-zero exit under ON_ERROR_STOP).
 --
--- Cases 13-15 need migrations 20260808130000 / 140000 / 150000, and case 16
--- needs 160000. Without them you get a missing-relation or invalid-enum error,
--- not a failure.
+-- Cases 13-15 need migrations 20260808130000 / 140000 / 150000; case 16 needs
+-- 160000 and case 17 needs 170000. Without them you get a missing-relation or
+-- invalid-enum error, not a failure.
 -- ============================================================================
 begin;
 
@@ -456,5 +456,56 @@ begin
   assert changed = 1, 'An unassigned draft must stay editable';
   raise notice 'PASS 16c: an unassigned draft is still editable';
 end $$;
+
+-- ---- Case 17: a listening practice can be set, and reaches only that class --
+-- Listening assignments pin a listening_library id directly (no per-org clone,
+-- unlike reading). Needs migration 20260808170000.
+set local role postgres;
+insert into public.listening_library (id, part, difficulty, topic, content)
+values ('44444444-0000-0000-0000-000000000001', 1, 3, 'Museum booking', '{}'::jsonb);
+insert into public.assignments (id, organization_id, group_id, kind, title, listening_library_id)
+values ('55555555-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        '99999999-9999-9999-9999-999999999999', 'listening', 'Listening part 1',
+        '44444444-0000-0000-0000-000000000001');
+set local role authenticated;
+
+-- The group's student sees both assignments now (the writing one from case 8).
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  select count(*) into seen from public.assignments;
+  assert seen = 2, format('Group member should see 2 assignments; saw %s', seen);
+  raise notice 'PASS 17a: a listening assignment reaches the class';
+end $$;
+
+-- A student in the org but not in that group still sees nothing.
+set local request.jwt.claims = '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}';
+do $$
+declare seen int;
+begin
+  -- Student A2 was re-added to Group A in case 11, so scope by the listening row.
+  select count(*) into seen from public.assignments
+   where listening_library_id = '44444444-0000-0000-0000-000000000001'
+     and group_id <> '99999999-9999-9999-9999-999999999999';
+  assert seen = 0, format('BREACH: listening assignment leaked to %s other group(s)', seen);
+  raise notice 'PASS 17b: it reaches no other class';
+end $$;
+
+-- Exactly one content column, still enforced.
+set local role postgres;
+do $$
+begin
+  begin
+    insert into public.assignments (organization_id, group_id, kind, title, prompt_id, listening_library_id)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '99999999-9999-9999-9999-999999999999',
+            'listening', 'Two kinds at once', 'bbbbbbbb-0000-0000-0000-000000000001',
+            '44444444-0000-0000-0000-000000000001');
+    raise exception 'BREACH: an assignment carried two kinds of content';
+  exception when check_violation then
+    raise notice 'PASS 17c: an assignment still carries exactly one piece of content';
+  end;
+end $$;
+set local role authenticated;
 
 rollback;  -- discards all seed data and resets role/claims
