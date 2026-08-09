@@ -1,5 +1,6 @@
 import { AssignToClass } from "@/components/console/assign-to-class";
 import { requireOrgUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 import { ListeningClient } from "./listening-client";
 
@@ -17,14 +18,27 @@ export default async function ListenPage({
   searchParams: Promise<{ item?: string }>;
 }) {
   // Staff browse and play the same practices their class does.
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
+  // Only a teacher gets the bench — a center_admin doesn't set practice, which
+  // is the same rule assignPractice enforces server-side.
+  const isTeacher = profile.role === "teacher";
+  let groups: { id: string; name: string }[] = [];
+  if (isTeacher) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("groups")
+      .select("id, name")
+      .eq("teacher_id", profile.id)
+      .order("name");
+    groups = (data ?? []) as { id: string; name: string }[];
+  }
   // ?item=<library id> opens that practice directly — set by the client when a
   // practice is opened, and by the assignment link a student follows.
   const { item } = await searchParams;
 
   return (
     <>
-      <ListeningClient initialLibraryId={item} />
+      <ListeningClient initialLibraryId={item} isTeacher={isTeacher} groups={groups} />
       {item ? <AssignToClass kind="listening" contentId={item} /> : null}
     </>
   );

@@ -8,6 +8,7 @@ import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } 
 import { AiGenerateButton, AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { clientEnv } from "@/lib/env";
+import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 import { createClient } from "@/lib/supabase/client";
 
 import { TRAP_EXPLAIN } from "./trap-explain";
@@ -345,7 +346,17 @@ const LEVEL_STYLE: Record<number, { bg: string; fg: string; ring: string }> = {
 
 // ---- Top-level ---------------------------------------------------------------
 
-export function ListeningClient({ initialLibraryId }: { initialLibraryId?: string }) {
+export function ListeningClient({
+  initialLibraryId,
+  isTeacher = false,
+  groups = [],
+}: {
+  initialLibraryId?: string;
+  /** Teachers get the practice bench: a generated item lands as a card with
+   *  Start and Attach, instead of dropping them straight into the runner. */
+  isTeacher?: boolean;
+  groups?: { id: string; name: string }[];
+}) {
   // Opening a library practice writes its id into the URL. Two things need
   // that: a teacher's "set this to a class" control (server-rendered from the
   // query string), and a student following an assignment link straight to the
@@ -357,6 +368,11 @@ export function ListeningClient({ initialLibraryId }: { initialLibraryId?: strin
   const [view, setView] = useState<RenderView | null>(null);
   const [source, setSource] = useState<Source>("library");
   const [busy, setBusy] = useState<string | null>(null); // library id | "mine:<id>" | "generate"
+  // A teacher's freshly generated item, held here rather than opened. `libraryId`
+  // fills in once it has been promoted, which is what makes it assignable.
+  const [fresh, setFresh] = useState<RenderView | null>(null);
+  const [attachId, setAttachId] = useState<string | null>(null);
+  const [attaching, setAttaching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -437,23 +453,81 @@ export function ListeningClient({ initialLibraryId }: { initialLibraryId?: strin
     }
   }, []);
 
-  const generate = useCallback(async (difficulty: number) => {
-    setBusy("generate");
+  const generate = useCallback(
+    async (difficulty: number) => {
+      setBusy("generate");
+      setError(null);
+      try {
+        setSource("mine");
+        // No part is sent — the engine draws a random format, like the real exam.
+        const v = await callEngine<RenderView>("generate", { difficulty });
+        // A learner generated this to sit it, so open it. A teacher generated it
+        // to look at and set, so it becomes a card instead.
+        if (isTeacher) setFresh(v);
+        else setView(v);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Generation failed — please try again.");
+      } finally {
+        setBusy(null);
+      }
+    },
+    [isTeacher],
+  );
+
+  /**
+   * Make a generated item assignable. It lives in `listening_items` (this org),
+   * but an assignment references `listening_library` — so the engine clones it
+   * into the center's own library first. See docs/engine-changes-2026-08-09.md;
+   * until that endpoint ships this surfaces the engine's error rather than
+   * pretending the attach worked.
+   */
+  const attachFresh = useCallback(async () => {
+    if (!fresh || attaching) return;
+    setAttaching(true);
     setError(null);
     try {
-      setSource("mine");
-      // No part is sent — the engine draws a random format, like the real exam.
-      setView(await callEngine<RenderView>("generate", { difficulty }));
+      const { library_id } = await callEngine<{ library_id: string }>("promote", {
+        item_id: fresh.id,
+      });
+      setAttachId(library_id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Generation failed — please try again.");
+      setError(
+        e instanceof Error
+          ? `Couldn't prepare this for a class: ${e.message}`
+          : "Couldn't prepare this for a class.",
+      );
     } finally {
-      setBusy(null);
+      setAttaching(false);
     }
-  }, []);
+  }, [fresh, attaching]);
 
   if (view) return <Runner view={view} source={source} onExit={() => setView(null)} />;
   return (
-    <Hub
+    <>
+      {fresh ? (
+        <FreshPractice
+          view={fresh}
+          canAttach={groups.length > 0}
+          attaching={attaching}
+          onStart={() => {
+            setSource("mine");
+            setView(fresh);
+          }}
+          onAttach={() => void attachFresh()}
+          onDismiss={() => setFresh(null)}
+        />
+      ) : null}
+      {attachId ? (
+        <PracticeModal title="Attach to a class" onClose={() => setAttachId(null)}>
+          <AttachForm
+            kind="listening"
+            contentId={attachId}
+            groups={groups}
+            onDone={() => setAttachId(null)}
+          />
+        </PracticeModal>
+      ) : null}
+      <Hub
       tab={tab}
       setTab={setTab}
       catalogue={catalogue}
@@ -463,7 +537,118 @@ export function ListeningClient({ initialLibraryId }: { initialLibraryId?: strin
       onOpen={open}
       onOpenMine={openMine}
       onGenerate={generate}
-    />
+      />
+    </>
+  );
+}
+
+/** The teacher's just-generated item: read it, sit it, or set it to a class. */
+function FreshPractice({
+  view,
+  canAttach,
+  attaching,
+  onStart,
+  onAttach,
+  onDismiss,
+}: {
+  view: RenderView;
+  canAttach: boolean;
+  attaching: boolean;
+  onStart: () => void;
+  onAttach: () => void;
+  onDismiss: () => void;
+}) {
+  const parts = view.kind === "test" ? "Full test · 4 parts" : `Part ${view.part ?? "?"}`;
+  return (
+    <div style={{ padding: "20px 24px 0", fontFamily: SANS }}>
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid #ECEAF2",
+          borderRadius: 16,
+          padding: 18,
+          display: "flex",
+          gap: 16,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ minWidth: 220, flex: 1 }}>
+          <div
+            style={{
+              fontSize: 11.5,
+              letterSpacing: ".08em",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              color: INDIGO,
+            }}
+          >
+            Just generated
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: INK, margin: "4px 0 3px" }}>
+            {view.topic || "Listening practice"}
+          </div>
+          <div style={{ fontSize: 13, color: "#5A6076" }}>
+            {parts}
+            {view.difficulty ? ` · Level ${view.difficulty}` : ""}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={onStart}
+            style={{
+              background: "#fff",
+              border: "1px solid #ECEAF2",
+              borderRadius: 10,
+              padding: "10px 16px",
+              fontFamily: SANS,
+              fontSize: 13.5,
+              fontWeight: 600,
+              color: INK,
+              cursor: "pointer",
+            }}
+          >
+            Start
+          </button>
+          <button
+            type="button"
+            onClick={onAttach}
+            disabled={!canAttach || attaching}
+            title={canAttach ? undefined : "Create a class first"}
+            style={{
+              background: INDIGO,
+              color: "#fff",
+              border: 0,
+              borderRadius: 10,
+              padding: "10px 16px",
+              fontFamily: SANS,
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: !canAttach || attaching ? "not-allowed" : "pointer",
+              opacity: !canAttach || attaching ? 0.55 : 1,
+            }}
+          >
+            {attaching ? "Preparing…" : "Attach"}
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dismiss"
+            style={{
+              background: "none",
+              border: 0,
+              color: "#8A8FA0",
+              cursor: "pointer",
+              fontSize: 18,
+              padding: "0 4px",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

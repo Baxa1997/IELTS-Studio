@@ -301,7 +301,7 @@ export function TeacherPractice({
 
       {/* ── modal 1: level + preference ──────────────────────────────────── */}
       {setupOpen ? (
-        <Modal title="New practice" onClose={() => setSetupOpen(false)}>
+        <PracticeModal title="New practice" onClose={() => setSetupOpen(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {taskTypes.length > 1 ? (
               <div>
@@ -425,33 +425,35 @@ export function TeacherPractice({
               </button>
             </div>
           </div>
-        </Modal>
+        </PracticeModal>
       ) : null}
 
       {/* ── modal 2: attach to classes ───────────────────────────────────── */}
       {attachFor ? (
-        <Modal title="Attach to a class" onClose={() => setAttachFor(null)}>
+        <PracticeModal title="Attach to a class" onClose={() => setAttachFor(null)}>
           <AttachForm
             kind={kind}
-            card={attachFor}
+            contentId={attachFor.id}
             groups={groups}
             onDone={() => setAttachFor(null)}
           />
-        </Modal>
+        </PracticeModal>
       ) : null}
     </section>
   );
 }
 
 /** Class picker + optional deadline, posting the same action the runner uses. */
-function AttachForm({
+export function AttachForm({
   kind,
-  card,
+  contentId,
   groups,
   onDone,
 }: {
-  kind: "writing" | "reading";
-  card: PracticeCard;
+  kind: "writing" | "reading" | "listening";
+  /** The row the assignment will point at — a prompt, a reading test, or a
+   *  promoted listening library item. */
+  contentId: string;
   groups: { id: string; name: string }[];
   onDone: () => void;
 }) {
@@ -460,7 +462,7 @@ function AttachForm({
   return (
     <form action={formAction} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <input type="hidden" name="kind" value={kind} />
-      <input type="hidden" name="content_id" value={card.id} />
+      <input type="hidden" name="content_id" value={contentId} />
 
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.5 }}>
         Everyone in the class gets this exact practice, so their bands compare. It is published
@@ -588,7 +590,7 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Modal({
+export function PracticeModal({
   title,
   onClose,
   children,
