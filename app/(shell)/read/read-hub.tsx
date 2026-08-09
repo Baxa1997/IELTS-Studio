@@ -418,7 +418,7 @@ function TestTile({
             Attach
           </button>
           {href ? (
-            <Link href={href} style={{ ...cardActionBase, ...cardActionGhost }}>
+            <Link href={href} style={{ ...cardActionBase, ...cardActionStart }}>
               {practised ? "Retake" : "Start"}
             </Link>
           ) : (
@@ -428,7 +428,7 @@ function TestTile({
               disabled={loading}
               style={{
                 ...cardActionBase,
-                ...cardActionGhost,
+                ...cardActionStart,
                 cursor: loading ? "wait" : "pointer",
               }}
             >
@@ -471,10 +471,13 @@ const cardActionBase: React.CSSProperties = {
   textDecoration: "none",
   whiteSpace: "nowrap",
 };
-const cardActionGhost: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #ECEAF2",
-  color: INDIGO,
+/** Start is green — the "go" action, and the one colour on the card that isn't
+ *  already used by a badge or the Attach button, so the two never read as the
+ *  same control. Reuses the hub's existing EMERALD rather than a fourth blue. */
+const cardActionStart: React.CSSProperties = {
+  background: EMERALD,
+  border: 0,
+  color: "#fff",
   cursor: "pointer",
 };
 
