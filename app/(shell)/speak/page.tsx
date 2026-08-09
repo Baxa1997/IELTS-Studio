@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { requireOrgUser } from "@/lib/auth";
+import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { type OrgPlan, planTier } from "@/lib/billing/plans";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,7 +15,11 @@ interface GradedResult {
   criteria?: Record<string, { band?: number }>;
 }
 
-function toItem(t: string, kind: "mock" | "practice", r: GradedResult | null): SpeakProgressItem | null {
+function toItem(
+  t: string,
+  kind: "mock" | "practice",
+  r: GradedResult | null,
+): SpeakProgressItem | null {
   if (!r || typeof r.overall_band !== "number" || r.non_attempt) return null;
   const pick = (k: string) => {
     const b = r.criteria?.[k]?.band;
@@ -40,6 +44,10 @@ export default async function SpeakPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { profile } = await requireOrgUser();
+  // Center students practise what they were set. The menu already hides this
+  // hub for them; this is the half that actually enforces it, because a URL is
+  // not a menu. Their assignment links point at the RUNNERS, which stay open.
+  if (isHomeworkOnlyStudent(profile)) redirect("/assignments");
   if (profile.role !== "student") redirect("/console");
   // ?card=<library_id> — the revision loop: "practise this card again" from a
   // report deep-links straight into quick practice with that exact cue card.
@@ -72,8 +80,12 @@ export default async function SpeakPage({
       .limit(6),
   ]);
   const progress = [
-    ...(mocks ?? []).map((m) => toItem(m.started_at as string, "mock", m.result as GradedResult | null)),
-    ...(attempts ?? []).map((a) => toItem(a.created_at as string, "practice", a.result as GradedResult | null)),
+    ...(mocks ?? []).map((m) =>
+      toItem(m.started_at as string, "mock", m.result as GradedResult | null),
+    ),
+    ...(attempts ?? []).map((a) =>
+      toItem(a.created_at as string, "practice", a.result as GradedResult | null),
+    ),
   ]
     .filter((x): x is SpeakProgressItem => x !== null)
     .sort((a, b) => a.t.localeCompare(b.t))
@@ -88,7 +100,12 @@ export default async function SpeakPage({
       // added 2026-07-29). Older rows simply show the date.
       const who = (m.metrics as { examiner?: string } | null)?.examiner;
       return r && typeof r.overall_band === "number"
-        ? { id: m.id as string, t: m.started_at as string, band: r.overall_band, who: typeof who === "string" ? who : null }
+        ? {
+            id: m.id as string,
+            t: m.started_at as string,
+            band: r.overall_band,
+            who: typeof who === "string" ? who : null,
+          }
         : null;
     })
     .filter((x): x is { id: string; t: string; band: number; who: string | null } => x !== null)
@@ -106,7 +123,7 @@ export default async function SpeakPage({
         headline: typeof r.headline === "string" ? r.headline : "",
       };
     })
-    .filter((l) => l.minutes > 0.2);   // hide instantly-abandoned connections
+    .filter((l) => l.minutes > 0.2); // hide instantly-abandoned connections
 
   // The mock allowance, mirroring the engine's own gate (quota.py
   // PLAN_FULL_MOCK_LIMITS + ensure_full_mock_quota) so the hub never promises a

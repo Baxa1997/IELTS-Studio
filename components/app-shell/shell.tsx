@@ -50,6 +50,7 @@ export function AppShell({
   role,
   variant = "learner",
   navCounts,
+  homeworkOnly = false,
   showAssignments = false,
   pendingAssignments = 0,
   home,
@@ -69,6 +70,8 @@ export function AppShell({
   variant?: "learner" | "console";
   /** Counts shown beside the console's nav items (teachers/groups/students). */
   navCounts?: Record<string, number>;
+  /** Center student: the Practice section is dropped from their menu. */
+  homeworkOnly?: boolean;
   /** Student is in a center group, so the Assignments nav item is relevant. */
   showAssignments?: boolean;
   /** Unfinished homework — shown as a count badge on that nav item. */
@@ -281,6 +284,7 @@ export function AppShell({
               showAssignments={showAssignments}
               pendingAssignments={pendingAssignments}
               counts={navCounts}
+              homeworkOnly={homeworkOnly}
             />
           </div>
 

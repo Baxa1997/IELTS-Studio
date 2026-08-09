@@ -6,7 +6,7 @@ import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
@@ -59,6 +59,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
     >
       <AppShell
         role={profile.role}
+        homeworkOnly={isHomeworkOnlyStudent(profile)}
         home={roleHome(profile.role)}
         name={profile.full_name ?? user.email ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}

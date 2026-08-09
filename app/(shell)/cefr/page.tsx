@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { requireOrgUser } from "@/lib/auth";
+import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 
 import { MultilevelClient } from "./multilevel-client";
 
@@ -16,6 +16,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function CefrPage() {
   const { profile } = await requireOrgUser();
+  // Center students practise what they were set. The menu already hides this
+  // hub for them; this is the half that actually enforces it, because a URL is
+  // not a menu. Their assignment links point at the RUNNERS, which stay open.
+  if (isHomeworkOnlyStudent(profile)) redirect("/assignments");
   if (profile.role !== "student") redirect("/console");
   return <MultilevelClient />;
 }

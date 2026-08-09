@@ -158,27 +158,33 @@ const SUPER_ADMIN: Section[] = [
 /** Only students who actually belong to a center group get an Assignments link —
  *  a solo B2C learner has nothing to put behind it. `pending` is the count of
  *  homework they haven't finished; it rides the existing badge slot. */
-function sectionsFor(role: string, showAssignments: boolean, pending: number): Section[] {
+function sectionsFor(
+  role: string,
+  showAssignments: boolean,
+  pending: number,
+  homeworkOnly: boolean,
+): Section[] {
   if (role === "super_admin") return SUPER_ADMIN;
   if (role !== "student") return role === "center_admin" ? ADMIN : TEACHER;
   if (!showAssignments) return STUDENT;
   const [home, ...rest] = STUDENT;
-  return [
-    {
-      ...home,
-      items: [
-        home.items[0],
-        {
-          label: "Assignments",
-          href: "/assignments",
-          icon: ClipboardCheck,
-          badge: pending > 0 ? String(pending) : undefined,
-        },
-        ...home.items.slice(1),
-      ],
-    },
-    ...rest,
-  ];
+  const withAssignments: Section = {
+    ...home,
+    items: [
+      home.items[0],
+      {
+        label: "Assignments",
+        href: "/assignments",
+        icon: ClipboardCheck,
+        badge: pending > 0 ? String(pending) : undefined,
+      },
+      ...home.items.slice(1),
+    ],
+  };
+  // A center student practises what they were set. Dropping the Practice
+  // section is the visible half of that; the hubs also redirect (see
+  // isHomeworkOnlyStudent), because a menu is not a permission.
+  return homeworkOnly ? [withAssignments] : [withAssignments, ...rest];
 }
 
 /**
@@ -209,15 +215,18 @@ export function SidebarNav({
   showAssignments = false,
   pendingAssignments = 0,
   counts,
+  homeworkOnly = false,
 }: {
   role: string;
   showAssignments?: boolean;
   pendingAssignments?: number;
+  /** Center student: no browsable practice, only what was set. */
+  homeworkOnly?: boolean;
   /** Tallies keyed by an item's `countKey` — the console's nav counts. */
   counts?: Record<string, number>;
 }) {
   const pathname = usePathname();
-  const sections = sectionsFor(role, showAssignments, pendingAssignments);
+  const sections = sectionsFor(role, showAssignments, pendingAssignments, homeworkOnly);
   const all = sections.flatMap((s) => s.items);
   // Single active item = the longest href the path falls under.
   const activeHref = all

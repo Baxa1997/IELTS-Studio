@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { AssignToClass } from "@/components/console/assign-to-class";
-import { requireOrgUser } from "@/lib/auth";
+import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 import { ListeningClient } from "./listening-client";
@@ -35,6 +36,10 @@ export default async function ListenPage({
   // ?item=<library id> opens that practice directly — set by the client when a
   // practice is opened, and by the assignment link a student follows.
   const { item } = await searchParams;
+  // This route is both the hub and the player: ?item=<id> opens one practice,
+  // which is exactly what an assignment link does. So a center student is sent
+  // away from the browsable hub but can still open what they were set.
+  if (!item && isHomeworkOnlyStudent(profile)) redirect("/assignments");
 
   return (
     <>

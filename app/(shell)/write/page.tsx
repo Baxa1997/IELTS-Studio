@@ -1,4 +1,5 @@
-import { requireOrgUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { pitchDifficulty } from "@/lib/plan/types";
@@ -18,6 +19,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function WritePage() {
   const { profile } = await requireOrgUser();
+  // Center students practise what they were set. The menu already hides this
+  // hub for them; this is the half that actually enforces it, because a URL is
+  // not a menu. Their assignment links point at the RUNNERS, which stay open.
+  if (isHomeworkOnlyStudent(profile)) redirect("/assignments");
   // Staff browse the same library the class does — a teacher previews a prompt by
   // doing what the student will do, not through a console mock-up of it. They
   // have no study plan, so the plan-shaped bits below fall back to defaults.

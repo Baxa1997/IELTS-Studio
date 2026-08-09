@@ -27,6 +27,24 @@ export interface Session {
   profile: Profile | null;
 }
 
+/**
+ * A student who belongs to a CENTER practises what their teacher set them, and
+ * nothing else — no browsable hubs, no self-serve generation. Owner decision,
+ * 2026-08-09; it reverses the 2026-08-07 rule that a center student was an
+ * ordinary learner.
+ *
+ * Scoped to `kind === 'center'` on purpose. A solo B2C learner has no teacher,
+ * so the same restriction would leave them with nothing to practise — the
+ * "never make a learner depend on a teacher" principle in CLAUDE.md still holds
+ * for them, which is who it was written for.
+ *
+ * The org kind rides on the session already (see getSession), so this costs
+ * nothing to check on every guarded route.
+ */
+export function isHomeworkOnlyStudent(profile: Profile | null): boolean {
+  return profile?.role === "student" && profile.org.kind === "center";
+}
+
 /** Where a role lands after authenticating. */
 export function roleHome(role: AppRole): "/admin" | "/dashboard" | "/console" {
   if (role === "super_admin") return "/admin";

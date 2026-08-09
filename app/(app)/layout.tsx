@@ -6,7 +6,7 @@ import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
-import { requireOrgUser, roleHome } from "@/lib/auth";
+import { isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
 import { loadNavCounts } from "@/lib/console/nav";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -80,6 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     >
       <AppShell
         role={profile.role}
+        homeworkOnly={isHomeworkOnlyStudent(profile)}
         variant={isStaff ? "console" : "learner"}
         navCounts={navCounts}
         showAssignments={showAssignments}
