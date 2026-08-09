@@ -3,6 +3,7 @@ import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 
+import { CreateGroupForm } from "./groups/group-forms";
 import { InviteMemberPanel } from "./groups/invite-member-panel";
 import { AddTeacherPanel } from "./teachers/add-teacher-panel";
 
@@ -20,7 +21,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const isAdmin = profile.role === "center_admin";
 
   // Groups feed both slide-overs: enrolling picks one, inviting targets one.
-  const { groups } = await loadGroups(profile);
+  const { groups, teachers } = await loadGroups(profile);
 
   return (
     <div className="cn-root">
@@ -39,6 +40,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
         }
         teacherPanel={isAdmin ? <AddTeacherPanel /> : undefined}
         invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
+        groupPanel={<CreateGroupForm teachers={teachers} canAssignTeacher={isAdmin} />}
       >
         {children}
       </ConsoleChrome>

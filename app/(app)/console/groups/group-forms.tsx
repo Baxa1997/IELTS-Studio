@@ -19,8 +19,14 @@ const FIELD =
 
 const initial: GroupFormState = {};
 
-/** Create a group. An admin picks the teacher; a teacher always owns the class
- *  they create, so they get no picker. */
+/**
+ * Create a group. An admin picks the teacher; a teacher always owns the class
+ * they create, so they get no picker.
+ *
+ * Laid out for the slide-over it lives in: stacked, every control full width.
+ * The old side-by-side `flex-wrap` row is what broke the add-teacher form once
+ * a 460px drawer narrowed it, and this form has the same shape.
+ */
 export function CreateGroupForm({
   teachers,
   canAssignTeacher,
@@ -31,30 +37,33 @@ export function CreateGroupForm({
   const [state, formAction, pending] = useActionState(createGroup, initial);
 
   return (
-    <form action={formAction} className="space-y-3">
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-48 flex-1 space-y-2">
-          <Label htmlFor="group-name">Group name</Label>
-          <Input id="group-name" name="name" placeholder="IELTS evening — Sept" required />
-        </div>
-        {canAssignTeacher ? (
-          <div className="w-48 space-y-2">
-            <Label htmlFor="group-teacher">Teacher</Label>
-            <select id="group-teacher" name="teacher_id" className={FIELD} defaultValue="">
-              <option value="">Unassigned</option>
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
-        <Button type="submit" disabled={pending}>
-          {pending ? "Creating…" : "Create group"}
-        </Button>
+    <form action={formAction} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="group-name">Group name</Label>
+        <Input id="group-name" name="name" placeholder="IELTS evening — Sept" required />
       </div>
+      {canAssignTeacher ? (
+        <div className="space-y-2">
+          <Label htmlFor="group-teacher">Teacher</Label>
+          <select id="group-teacher" name="teacher_id" className={FIELD} defaultValue="">
+            <option value="">Unassigned</option>
+            {teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-muted-foreground text-xs">
+            {teachers.length === 0
+              ? "No teachers yet — you can create the class now and assign one later."
+              : "You can leave this unassigned and set it later."}
+          </p>
+        </div>
+      ) : null}
       <FormMessage state={state} />
+      <Button type="submit" disabled={pending} className="w-full">
+        {pending ? "Creating…" : "Create group"}
+      </Button>
     </form>
   );
 }

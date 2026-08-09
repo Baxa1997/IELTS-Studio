@@ -6,10 +6,7 @@ import {
   Avatar,
   Bar,
   BODY,
-  BtnLink,
   Card,
-  CardHead,
-  CardNote,
   cardStyle,
   Chip,
   FAINT,
@@ -20,17 +17,14 @@ import {
   SANS,
   SERIF,
   SOFT,
-  Stack,
   Tag,
   type Tone,
 } from "@/components/console/crm-ui";
+import { PanelButton } from "@/components/console/console-chrome";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
-
-import { CreateGroupForm } from "./group-forms";
-import { InviteMemberPanel } from "./invite-member-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +72,7 @@ export default async function GroupsPage({
   const filter: FilterKey = (sp.filter && sp.filter in FILTERS ? sp.filter : "all") as FilterKey;
 
   const supabase = await createClient();
-  const [{ groups, teachers }, report, membersRes, ratesRes] = await Promise.all([
+  const [{ groups }, report, membersRes, ratesRes] = await Promise.all([
     loadGroups(profile),
     loadCenterReport({ role: profile.role, profileId: profile.id }),
     supabase.from("group_members").select("group_id, student_id"),
@@ -137,11 +131,7 @@ export default async function GroupsPage({
             ? `${groups.length} class${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
             : "The classes assigned to you — set practice here and read the results."
         }
-        actions={
-          <BtnLink href="#new-group" variant="green">
-            + New group
-          </BtnLink>
-        }
+        actions={<PanelButton panel="group">+ New group</PanelButton>}
       />
 
       <div
@@ -160,7 +150,9 @@ export default async function GroupsPage({
             active={filter === k}
           >
             {FILTERS[k].label}
-            <span style={{ opacity: 0.7, marginLeft: 6 }}>{cards.filter(FILTERS[k].test).length}</span>
+            <span style={{ opacity: 0.7, marginLeft: 6 }}>
+              {cards.filter(FILTERS[k].test).length}
+            </span>
           </Chip>
         ))}
         <form method="GET" style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
@@ -175,53 +167,29 @@ export default async function GroupsPage({
         </form>
       </div>
 
-      <Stack>
-        {shown.length > 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: 14,
-            }}
-          >
-            {shown.map((g) => (
-              <GroupCard key={g.id} group={g} />
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <p style={{ fontFamily: SANS, fontSize: 13.5, color: SOFT, margin: 0 }}>
-              {cards.length === 0
-                ? isAdmin
-                  ? "No groups yet — use + New group above."
-                  : "No groups assigned to you yet."
-                : "No class matches that filter."}
-            </p>
-          </Card>
-        )}
-
-        <Card id="new-group">
-          <CardHead title="Create a group" />
-          <CardNote>
-            {!isAdmin
-              ? "Your own class — you'll be its teacher, and you add the students."
-              : teachers.length === 0
-                ? "No teachers yet — invite one below, then assign them here."
-                : "Assign a teacher now or later."}
-          </CardNote>
-          <CreateGroupForm teachers={teachers} canAssignTeacher={isAdmin} />
-        </Card>
-
+      {shown.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {shown.map((g) => (
+            <GroupCard key={g.id} group={g} />
+          ))}
+        </div>
+      ) : (
         <Card>
-          <CardHead title="Invite people" />
-          <CardNote>
-            {isAdmin
-              ? "Invite a teacher, or a student straight into a group. They join your center only — no other center can see them."
-              : "Invite a student into one of your groups."}
-          </CardNote>
-          <InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />
+          <p style={{ fontFamily: SANS, fontSize: 13.5, color: SOFT, margin: 0 }}>
+            {cards.length === 0
+              ? isAdmin
+                ? "No groups yet — use + New group above to create the first one."
+                : "No groups assigned to you yet."
+              : "No class matches that filter."}
+          </p>
         </Card>
-      </Stack>
+      )}
     </div>
   );
 }
@@ -297,7 +265,9 @@ function GroupCard({ group: g }: { group: Card_ }) {
       <div style={{ marginBottom: 14 }}>
         <Bar
           pct={g.completionPct ?? 0}
-          fill={(g.completionPct ?? 0) >= 60 ? GREEN : (g.completionPct ?? 0) >= 30 ? AMBER : "#D9D6CE"}
+          fill={
+            (g.completionPct ?? 0) >= 60 ? GREEN : (g.completionPct ?? 0) >= 30 ? AMBER : "#D9D6CE"
+          }
         />
       </div>
 
@@ -311,14 +281,8 @@ function GroupCard({ group: g }: { group: Card_ }) {
         }}
       >
         <Stat label="Avg band" value={g.averageBand?.toFixed(1) ?? "—"} />
-        <Stat
-          label="Completion"
-          value={g.completionPct == null ? "—" : `${g.completionPct}%`}
-        />
-        <Stat
-          label="Attendance"
-          value={g.attendancePct == null ? "—" : `${g.attendancePct}%`}
-        />
+        <Stat label="Completion" value={g.completionPct == null ? "—" : `${g.completionPct}%`} />
+        <Stat label="Attendance" value={g.attendancePct == null ? "—" : `${g.attendancePct}%`} />
       </div>
     </Link>
   );

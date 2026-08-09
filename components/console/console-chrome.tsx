@@ -43,7 +43,7 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export type ConsolePanel = "enrol" | "teacher" | "invite";
+export type ConsolePanel = "enrol" | "teacher" | "invite" | "group";
 
 /**
  * Lets a page open one of the chrome's panels. A page is a server component, so
@@ -97,6 +97,7 @@ export function ConsoleChrome({
   enrolPanel,
   teacherPanel,
   invitePanel,
+  groupPanel,
   children,
 }: {
   userName: string;
@@ -105,10 +106,11 @@ export function ConsoleChrome({
   enrolPanel?: React.ReactNode;
   teacherPanel?: React.ReactNode;
   invitePanel?: React.ReactNode;
+  groupPanel?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [panel, setPanel] = useState<null | "enrol" | "teacher" | "invite">(null);
+  const [panel, setPanel] = useState<null | ConsolePanel>(null);
   const close = () => setPanel(null);
 
   useEffect(() => {
@@ -254,6 +256,17 @@ export function ConsoleChrome({
           onClose={close}
         >
           {teacherPanel}
+        </SlideOver>
+      ) : null}
+
+      {panel === "group" && groupPanel ? (
+        <SlideOver
+          eyebrow="Classes"
+          title="Create a group"
+          note="A class is where practice is set and bands are compared."
+          onClose={close}
+        >
+          {groupPanel}
         </SlideOver>
       ) : null}
 
