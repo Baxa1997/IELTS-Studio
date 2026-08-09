@@ -26,33 +26,42 @@
 -- The reserved owner of the 45 shared, QA'd tests. A fixed uuid rather than a
 -- lookup so app, engine and SQL can all name the same thing without a join.
 -- (Reading's equivalent is …111b; this is …111c.)
-do $$
-declare
-  library_org constant uuid := '00000000-0000-4000-8000-00000000111c';
-begin
-  -- A real organizations row, so the FK below has something to point at. Marked
-  -- `personal`/`active` because those columns are NOT NULL and no other kind
-  -- describes "nobody's center"; nothing ever signs into it.
-  insert into public.organizations (id, name, kind, status, plan, billing_enforced)
-  values (library_org, 'Listening library', 'personal', 'active', 'free', false)
-  on conflict (id) do nothing;
+-- Plain statements, not a DO block: plpgsql caches plans, so adding a column
+-- and then UPDATE-ing it in the same block can fail on a stale plan. Flat SQL
+-- runs each step against the catalog as it stands.
 
-  alter table public.listening_library
-    add column if not exists organization_id uuid references public.organizations (id) on delete cascade;
+-- The owning org row, so the FK below has something to point at. Deliberately
+-- the same shape as ensureReadingLibraryOrg() in lib/reading/service.ts: id,
+-- name, slug, plan 'enterprise'. `kind` and `status` keep their defaults
+-- ('personal', 'active') — nothing ever signs into this org, so the only thing
+-- that matters is that it exists.
+--   'enterprise' because org_plan is ('trial','starter','pro','enterprise').
+--   There is no 'free'; a library org must never look quota-limited anyway.
+insert into public.organizations (id, name, slug, plan)
+values (
+  '00000000-0000-4000-8000-00000000111c',
+  'IELTS Listening Library',
+  'ielts-listening-library',
+  'enterprise'
+)
+on conflict (id) do nothing;
 
-  -- Everything that exists today IS the shared catalogue.
-  update public.listening_library
-     set organization_id = library_org
-   where organization_id is null;
+alter table public.listening_library
+  add column if not exists organization_id uuid
+    references public.organizations (id) on delete cascade;
 
-  alter table public.listening_library
-    alter column organization_id set not null;
+-- Cloned rows record where they came from, so a center can tell its own
+-- generated content apart from the shared set at a glance.
+alter table public.listening_library
+  add column if not exists source_item_id uuid;
 
-  -- Cloned rows record where they came from, so a center can tell its own
-  -- generated content apart from the shared set at a glance.
-  alter table public.listening_library
-    add column if not exists source_item_id uuid;
-end $$;
+-- Everything that exists today IS the shared catalogue.
+update public.listening_library
+   set organization_id = '00000000-0000-4000-8000-00000000111c'
+ where organization_id is null;
+
+alter table public.listening_library
+  alter column organization_id set not null;
 
 create index if not exists listening_library_org_idx
   on public.listening_library (organization_id, part, difficulty);
