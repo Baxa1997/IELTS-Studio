@@ -118,8 +118,21 @@ const TEACHER: Section[] = [
       { label: "Overview", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
-      { label: "Practice", href: "/console/practices", icon: SquarePen },
       { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+    ],
+  },
+  /* A teacher's practice IS the learner's practice — the same /write, /read and
+     /listen screens a student uses, not a console copy of them. The only staff
+     addition lives on those pages: "attach to a class", which publishes the
+     content and sets it as homework in one step (see assignPractice). There is
+     no separate console library in the menu because previewing a prompt should
+     mean doing exactly what the student will do. */
+  {
+    title: "Practice",
+    items: [
+      { label: "Writing", href: "/write", icon: SquarePen },
+      { label: "Reading", href: "/read", icon: BookOpen },
+      { label: "Listening", href: "/listen", icon: Headphones },
     ],
   },
   {
