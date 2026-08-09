@@ -18,7 +18,7 @@ import {
   StatTile,
   TINT,
 } from "@/components/console/page-ui";
-import { requireOrgUser } from "@/lib/auth";
+import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadPractices, type PracticeRow, type PracticeTab } from "@/lib/console/practices";
 import { TASK2_CATEGORY_LABELS, type Task2Category } from "@/lib/prompts/types";
 
@@ -30,24 +30,27 @@ const TABS: { key: PracticeTab; label: string; blurb: string }[] = [
   { key: "archived", label: "Archived", blurb: "Retired, but kept — students' graded work points at it." },
 ];
 
-/** Everything a teacher has made, and what became of it. */
+/**
+ * Everything a teacher has made, and what became of it.
+ *
+ * Teacher-only, by design. A practice library belongs to whoever teaches the
+ * class; a center_admin has no use for a list of drafts they cannot publish and
+ * would never assign, and sees results through Reports and the group pages.
+ */
 export default async function PracticesPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { profile } = await requireOrgUser();
-  if (profile.role === "student") redirect("/dashboard");
+  if (profile.role !== "teacher") redirect(roleHome(profile.role));
 
   const sp = await searchParams;
   const tab: PracticeTab = TABS.some((t) => t.key === sp.tab)
     ? (sp.tab as PracticeTab)
     : "published";
 
-  // Practice is a teaching decision: a center_admin reads the library, a teacher
-  // makes it.
-  const canCreate = profile.role === "teacher";
-  const all = await loadPractices({ role: profile.role, profileId: profile.id });
+  const all = await loadPractices({ profileId: profile.id });
   const rows = all.filter((p) => p.tab === tab);
   const count = (key: PracticeTab) => all.filter((p) => p.tab === key).length;
 
@@ -56,11 +59,7 @@ export default async function PracticesPage({
       <PageHead
         eyebrow="Practice"
         title="Your practice library"
-        subtitle={
-          profile.role === "center_admin"
-            ? "Every prompt and test your center has made, and how the classes did on it."
-            : "Everything you've made, and how your classes did on it."
-        }
+        subtitle="Everything you've made, and how your classes did on it."
       />
 
       <StatRow>
@@ -76,37 +75,30 @@ export default async function PracticesPage({
         ))}
       </StatRow>
 
-      {canCreate ? (
-        <Panel
-          title="Make a new practice"
-          description="You get the same screens your students do — generate it, work through it if you like, then set it to a class from the button on that page."
-        >
-          <List>
-            <Row first>
-              <RowText title="Writing" meta="Generate a Task 2 prompt, or pick one from the library." />
-              <RowLink href="/write">Open writing →</RowLink>
-            </Row>
-            <Row>
-              <RowText title="Reading" meta="A full test or a single passage, from the shared library." />
-              <RowLink href="/read">Open reading →</RowLink>
-            </Row>
-            <Row>
-              <RowText title="Listening" meta="Cambridge-style parts and full tests." />
-              <RowLink href="/listen">Open listening →</RowLink>
-            </Row>
-          </List>
-        </Panel>
-      ) : null}
+      <Panel
+        title="Make a new practice"
+        description="You get the same screens your students do — generate it, work through it if you like, then set it to a class from the button on that page."
+      >
+        <List>
+          <Row first>
+            <RowText title="Writing" meta="Generate a Task 2 prompt, or pick one from the library." />
+            <RowLink href="/write">Open writing →</RowLink>
+          </Row>
+          <Row>
+            <RowText title="Reading" meta="A full test or a single passage, from the shared library." />
+            <RowLink href="/read">Open reading →</RowLink>
+          </Row>
+          <Row>
+            <RowText title="Listening" meta="Cambridge-style parts and full tests." />
+            <RowLink href="/listen">Open listening →</RowLink>
+          </Row>
+        </List>
+      </Panel>
 
       <Panel title={TABS.find((t) => t.key === tab)!.label} description={TABS.find((t) => t.key === tab)!.blurb}>
         <List>
           {rows.map((p, i) => (
-            <PracticeListRow
-              key={`${p.kind}-${p.id}`}
-              practice={p}
-              first={i === 0}
-              canManage={canCreate}
-            />
+            <PracticeListRow key={`${p.kind}-${p.id}`} practice={p} first={i === 0} />
           ))}
           {rows.length === 0 ? (
             <EmptyRow>
@@ -123,15 +115,7 @@ export default async function PracticesPage({
   );
 }
 
-function PracticeListRow({
-  practice,
-  first,
-  canManage,
-}: {
-  practice: PracticeRow;
-  first: boolean;
-  canManage: boolean;
-}) {
+function PracticeListRow({ practice, first }: { practice: PracticeRow; first: boolean }) {
   const meta = [
     practice.kind === "reading"
       ? "Reading"
@@ -197,7 +181,7 @@ function PracticeListRow({
       </span>
 
       <span style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
-        {canManage && practice.kind === "writing" ? (
+        {practice.kind === "writing" ? (
           <PracticeRowActions promptId={practice.id} archived={practice.tab === "archived"} />
         ) : null}
         {/* "Open" is the real runner, not a console preview: the only honest way

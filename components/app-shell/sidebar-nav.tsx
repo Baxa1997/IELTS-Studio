@@ -81,7 +81,8 @@ const ADMIN: Section[] = [
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap },
       { label: "Groups", href: "/console/groups", icon: Users },
       { label: "Students", href: "/console/students", icon: UserRound },
-      { label: "Practice", href: "/console/practices", icon: SquarePen },
+      // No Practice: the library is the teacher's. An admin runs people,
+      // billing and reports, and sees results through Reports and the groups.
       { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
       { label: "Billing", href: "/console/billing", icon: CreditCard },
     ],

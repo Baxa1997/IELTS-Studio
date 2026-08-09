@@ -42,28 +42,22 @@ const TAB_OF: Record<string, PracticeTab> = {
 };
 
 /**
- * A teacher's library is their own work; a center_admin sees the center's.
- * `writing_prompts` is readable org-wide by any staff member, so the narrowing
- * is done here — it is a scoping choice, not a security boundary (the content
- * is the center's either way; whose list it belongs on is the question).
+ * A teacher's library is their own work — only what they made. `writing_prompts`
+ * is readable org-wide by any staff member, so the narrowing happens here; it is
+ * a scoping choice, not a security boundary (the content belongs to the center
+ * either way — whose list it appears on is the question).
  */
-export async function loadPractices(opts: {
-  role: string;
-  profileId: string;
-}): Promise<PracticeRow[]> {
+export async function loadPractices(opts: { profileId: string }): Promise<PracticeRow[]> {
   const supabase = await createClient();
-  const isAdmin = opts.role === "center_admin";
-
-  let promptQuery = supabase
-    .from("writing_prompts")
-    .select("id, prompt_text, category, topic_family, difficulty, status, created_at, created_by")
-    .eq("task_type", "task2")
-    .order("created_at", { ascending: false })
-    .limit(200);
-  if (!isAdmin) promptQuery = promptQuery.eq("created_by", opts.profileId);
 
   const [promptsRes, testsRes, assignmentsRes] = await Promise.all([
-    promptQuery,
+    supabase
+      .from("writing_prompts")
+      .select("id, prompt_text, category, topic_family, difficulty, status, created_at, created_by")
+      .eq("task_type", "task2")
+      .eq("created_by", opts.profileId)
+      .order("created_at", { ascending: false })
+      .limit(200),
     // Reading tests are cloned into the org when they're assigned, so every row
     // here is already published by definition — there is no reading draft.
     supabase
