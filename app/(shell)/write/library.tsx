@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
+import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
 // These live with the full-screen runner in the (studio) group; the hub library
@@ -73,6 +74,8 @@ export function WritingLibrary({
   library,
   practised,
   pitchBand,
+  isTeacher = false,
+  groups = [],
 }: {
   library: LibraryPrompt[];
   /** Prompt ids the learner has already attempted — badged + filterable, but every
@@ -80,8 +83,14 @@ export function WritingLibrary({
   practised: string[];
   /** The band generated tasks are tuned to (computed from the learner's level). */
   pitchBand: number;
+  /** Teachers get Attach on every card, not only on what they just generated. */
+  isTeacher?: boolean;
+  groups?: { id: string; name: string }[];
 }) {
   const router = useRouter();
+  // The prompt a teacher is setting to a class. assignPractice approves a
+  // still-pending prompt as part of assigning, so a library id goes straight in.
+  const [attachId, setAttachId] = useState<string | null>(null);
   const [tab, setTab] = useState<string>("check_own");
   // Remember the active tab across navigation. Generating a topic sends you to the
   // (studio) runner and back, which remounts AppShell (it lives in a different route
@@ -875,6 +884,14 @@ export function WritingLibrary({
                   done={done.has(p.id)}
                   busy={busy}
                   onOpen={() => open(p.id, numById.get(p.id))}
+                  attach={
+                    isTeacher
+                      ? {
+                          onAttach: () => setAttachId(p.id),
+                          disabled: groups.length === 0,
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -883,6 +900,17 @@ export function WritingLibrary({
       )}
 
       {gradingModal ? <GradingModal /> : null}
+
+      {attachId ? (
+        <PracticeModal title="Attach to a class" onClose={() => setAttachId(null)}>
+          <AttachForm
+            kind="writing"
+            contentId={attachId}
+            groups={groups}
+            onDone={() => setAttachId(null)}
+          />
+        </PracticeModal>
+      ) : null}
 
       <LegalFooter note="AI-generated prompts in the IELTS Writing format. Not affiliated with or endorsed by IELTS®." />
     </div>
@@ -1210,24 +1238,26 @@ function PromptCard({
   done,
   busy,
   onOpen,
+  attach,
 }: {
   p: LibraryPrompt;
   num: number;
   done: boolean;
   busy: boolean;
   onOpen: () => void;
+  /** Teacher only. Its presence splits the footer into Attach + Start, and
+   *  turns the card from one big <button> into a plain container — a button
+   *  inside a button is invalid, and the outer target would eat the Attach. */
+  attach?: { onAttach: () => void; disabled: boolean };
 }) {
   const meta = estMeta(p.task_type);
   const topic = p.topic_family && p.topic_family !== "custom" ? p.topic_family : null;
 
   return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={() => {
-        if (!busy) onOpen();
-      }}
-      className="lp-hover"
+    <CardBox
+      attach={attach}
+      busy={busy}
+      onOpen={onOpen}
       style={{
         ...cardStyle,
         width: "100%",
@@ -1236,7 +1266,6 @@ function PromptCard({
         display: "flex",
         flexDirection: "column",
         gap: 11,
-        textAlign: "left",
         fontFamily: SANS,
         cursor: busy ? "default" : "pointer",
         opacity: busy ? 0.7 : 1,
@@ -1277,12 +1306,93 @@ function PromptCard({
 
       <Divider />
 
-      <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
-      >
-        <span style={metaText}>{meta}</span>
-        <StartAction practised={done} />
-      </div>
+      {attach ? (
+        <>
+          <div style={{ ...metaText, marginTop: -2 }}>{meta}</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={attach.onAttach}
+              disabled={attach.disabled}
+              title={attach.disabled ? "Create a class first" : undefined}
+              style={{
+                ...cardAction,
+                background: INDIGO,
+                border: 0,
+                color: "#fff",
+                cursor: attach.disabled ? "not-allowed" : "pointer",
+                opacity: attach.disabled ? 0.45 : 1,
+              }}
+            >
+              Attach
+            </button>
+            <button
+              type="button"
+              onClick={onOpen}
+              disabled={busy}
+              style={{ ...cardAction, background: "#1F8A53", border: 0, color: "#fff" }}
+            >
+              {done ? "Retake" : "Start"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <span style={metaText}>{meta}</span>
+          <StartAction practised={done} />
+        </div>
+      )}
+    </CardBox>
+  );
+}
+
+/** The two equal actions in a teacher card's footer. */
+const cardAction: React.CSSProperties = {
+  flex: 1,
+  borderRadius: 10,
+  padding: "9px 12px",
+  fontFamily: SANS,
+  fontSize: 13.5,
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+/**
+ * The card's outer element. A student's is one big <button>; a teacher's has to
+ * be a plain container, because it carries two real controls of its own.
+ */
+function CardBox({
+  attach,
+  busy,
+  onOpen,
+  style,
+  children,
+}: {
+  attach?: { onAttach: () => void; disabled: boolean };
+  busy: boolean;
+  onOpen: () => void;
+  style: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  if (attach) return <div style={style}>{children}</div>;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={() => {
+        if (!busy) onOpen();
+      }}
+      className="lp-hover"
+      style={{ ...style, textAlign: "left" }}
+    >
+      {children}
     </button>
   );
 }

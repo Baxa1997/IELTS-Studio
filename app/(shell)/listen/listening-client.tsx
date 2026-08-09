@@ -1,6 +1,15 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } from "lucide-react";
@@ -396,25 +405,28 @@ export function ListeningClient({
     };
   }, [view]); // refresh progress after exiting a practice
 
-  const open = useCallback(async (item: LibraryItem) => {
-    if (item.locked) {
-      setError(
-        "You’ve used all 5 free practice unlocks for Listening — upgrade to Pro to open the full library.",
-      );
-      return;
-    }
-    setBusy(item.id);
-    setError(null);
-    try {
-      setSource("library");
-      setView(await callEngine<RenderView>("library/render", { library_id: item.id }));
-      router.replace(`/listen?item=${item.id}`, { scroll: false });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not open this practice.");
-    } finally {
-      setBusy(null);
-    }
-  }, [router]);
+  const open = useCallback(
+    async (item: LibraryItem) => {
+      if (item.locked) {
+        setError(
+          "You’ve used all 5 free practice unlocks for Listening — upgrade to Pro to open the full library.",
+        );
+        return;
+      }
+      setBusy(item.id);
+      setError(null);
+      try {
+        setSource("library");
+        setView(await callEngine<RenderView>("library/render", { library_id: item.id }));
+        router.replace(`/listen?item=${item.id}`, { scroll: false });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not open this practice.");
+      } finally {
+        setBusy(null);
+      }
+    },
+    [router],
+  );
 
   // /listen?item=<library id> — how an assignment deep-links to the exact
   // practice a class was set. Runs once; after that the hub behaves normally.
@@ -481,25 +493,28 @@ export function ListeningClient({
    * until that endpoint ships this surfaces the engine's error rather than
    * pretending the attach worked.
    */
-  const attachFresh = useCallback(async () => {
-    if (!fresh || attaching) return;
-    setAttaching(true);
-    setError(null);
-    try {
-      const { library_id } = await callEngine<{ library_id: string }>("promote", {
-        item_id: fresh.id,
-      });
-      setAttachId(library_id);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? `Couldn't prepare this for a class: ${e.message}`
-          : "Couldn't prepare this for a class.",
-      );
-    } finally {
-      setAttaching(false);
-    }
-  }, [fresh, attaching]);
+  const promoteThenAttach = useCallback(
+    async (itemId: string) => {
+      if (attaching) return;
+      setAttaching(true);
+      setError(null);
+      try {
+        const { library_id } = await callEngine<{ library_id: string }>("promote", {
+          item_id: itemId,
+        });
+        setAttachId(library_id);
+      } catch (e) {
+        setError(
+          e instanceof Error
+            ? `Couldn't prepare this for a class: ${e.message}`
+            : "Couldn't prepare this for a class.",
+        );
+      } finally {
+        setAttaching(false);
+      }
+    },
+    [attaching],
+  );
 
   if (view) return <Runner view={view} source={source} onExit={() => setView(null)} />;
   return (
@@ -513,7 +528,7 @@ export function ListeningClient({
             setSource("mine");
             setView(fresh);
           }}
-          onAttach={() => void attachFresh()}
+          onAttach={() => void promoteThenAttach(fresh.id)}
           onDismiss={() => setFresh(null)}
         />
       ) : null}
@@ -528,15 +543,31 @@ export function ListeningClient({
         </PracticeModal>
       ) : null}
       <Hub
-      tab={tab}
-      setTab={setTab}
-      catalogue={catalogue}
-      mine={mine}
-      busy={busy}
-      error={error}
-      onOpen={open}
-      onOpenMine={openMine}
-      onGenerate={generate}
+        tab={tab}
+        setTab={setTab}
+        catalogue={catalogue}
+        mine={mine}
+        busy={busy}
+        error={error}
+        onOpen={open}
+        onOpenMine={openMine}
+        onGenerate={generate}
+        // A library item IS a listening_library row, so it can be assigned as
+        // it stands. A generated one lives in listening_items and has to be
+        // cloned into the center's library first — hence the two factories.
+        attachLibrary={
+          isTeacher
+            ? (id) => ({ onAttach: () => setAttachId(id), disabled: groups.length === 0 })
+            : undefined
+        }
+        attachMine={
+          isTeacher
+            ? (id) => ({
+                onAttach: () => void promoteThenAttach(id),
+                disabled: groups.length === 0 || attaching,
+              })
+            : undefined
+        }
       />
     </>
   );
@@ -664,6 +695,8 @@ function Hub({
   onOpen,
   onOpenMine,
   onGenerate,
+  attachLibrary,
+  attachMine,
 }: {
   tab: HubTab;
   setTab: (t: HubTab) => void;
@@ -674,6 +707,11 @@ function Hub({
   onOpen: (item: LibraryItem) => void;
   onOpenMine: (id: string) => void;
   onGenerate: (difficulty: number) => void;
+  /** Attach for a LIBRARY item — assignable as-is, it is already a
+   *  listening_library row. */
+  attachLibrary?: (id: string) => AttachSlot | undefined;
+  /** Attach for a GENERATED item — needs the engine's promote step first. */
+  attachMine?: (id: string) => AttachSlot | undefined;
 }) {
   // Tab 1: FULL tests only (part 0). Tab 2: single-recording quick practices.
   const tests = useMemo(
@@ -843,6 +881,7 @@ function Hub({
                   loading={busy === it.id}
                   disabled={!!busy}
                   onOpen={() => onOpen(it)}
+                  attach={attachLibrary?.(it.id)}
                 />
               ))}
             </Grid>
@@ -872,6 +911,7 @@ function Hub({
                     loading={busy === `mine:${it.id}`}
                     disabled={!!busy}
                     onOpen={() => onOpenMine(it.id)}
+                    attach={attachMine?.(it.id)}
                   />
                 ))}
               </Grid>
@@ -894,6 +934,7 @@ function Hub({
                     loading={busy === it.id}
                     disabled={!!busy}
                     onOpen={() => onOpen(it)}
+                    attach={attachLibrary?.(it.id)}
                   />
                 ))}
               </Grid>
@@ -1073,30 +1114,132 @@ function TypeTags({ part, variant, layout }: { part: number; variant?: string; l
 }
 
 /** A FULL 4-part test card ("Practice test N" — 40 questions). */
-function TestCard({
-  it,
-  loading,
-  disabled,
+
+/** What a teacher's card needs for its Attach action. */
+type AttachSlot = { onAttach: () => void; disabled: boolean };
+
+/**
+ * The card's outer element. A student's card is one big <button> — the whole
+ * surface opens the practice. A teacher's carries two actions, so it cannot be:
+ * a button inside a button is invalid, and the outer target would swallow
+ * Attach. Same visuals either way.
+ */
+function CardBox({
+  attach,
   onOpen,
+  disabled,
+  style,
+  children,
 }: {
-  it: LibraryItem & { seq: number };
-  loading: boolean;
-  disabled: boolean;
+  attach?: AttachSlot;
   onOpen: () => void;
+  disabled: boolean;
+  style: React.CSSProperties;
+  children: React.ReactNode;
 }) {
-  const done = it.best_score != null;
+  if (attach) return <div style={style}>{children}</div>;
   return (
     <button
       type="button"
       onClick={onOpen}
       disabled={disabled}
       className="lp-hover"
+      style={{ ...style, textAlign: "left", cursor: disabled ? "default" : "pointer" }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Footer: the meta line and Start for a student; Attach + Start for a teacher. */
+function CardFoot({
+  meta,
+  attach,
+  onOpen,
+  loading,
+  locked,
+  done,
+}: {
+  meta: string;
+  attach?: AttachSlot;
+  onOpen: () => void;
+  loading: boolean;
+  locked?: boolean;
+  done?: boolean;
+}) {
+  if (!attach) {
+    return (
+      <div style={rowBetween}>
+        <span style={metaText}>{meta}</span>
+        <StartAction loading={loading} locked={!!locked} done={!!done} />
+      </div>
+    );
+  }
+  const act: React.CSSProperties = {
+    flex: 1,
+    borderRadius: 10,
+    padding: "9px 12px",
+    fontFamily: SANS,
+    fontSize: 13.5,
+    fontWeight: 600,
+    cursor: "pointer",
+  };
+  return (
+    <>
+      <div style={{ ...metaText, marginBottom: 10 }}>{meta}</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          type="button"
+          onClick={attach.onAttach}
+          disabled={attach.disabled}
+          title={attach.disabled ? "Create a class first" : undefined}
+          style={{
+            ...act,
+            background: INDIGO,
+            border: 0,
+            color: "#fff",
+            cursor: attach.disabled ? "not-allowed" : "pointer",
+            opacity: attach.disabled ? 0.45 : 1,
+          }}
+        >
+          Attach
+        </button>
+        <button
+          type="button"
+          onClick={onOpen}
+          disabled={loading}
+          style={{ ...act, background: "#1F8A53", border: 0, color: "#fff" }}
+        >
+          {loading ? "Opening…" : done ? "Retake" : "Start"}
+        </button>
+      </div>
+    </>
+  );
+}
+
+function TestCard({
+  it,
+  loading,
+  disabled,
+  onOpen,
+  attach,
+}: {
+  it: LibraryItem & { seq: number };
+  loading: boolean;
+  disabled: boolean;
+  onOpen: () => void;
+  attach?: AttachSlot;
+}) {
+  const done = it.best_score != null;
+  return (
+    <CardBox
+      attach={attach}
+      onOpen={onOpen}
+      disabled={disabled}
       style={{
         ...cardStyle,
         width: "100%",
-        textAlign: "left",
         fontFamily: SANS,
-        cursor: disabled ? "default" : "pointer",
         opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1,
       }}
     >
@@ -1114,11 +1257,15 @@ function TestCard({
         <span style={{ ...cardSub, display: "block" }}>4 parts · 40 questions · band score</span>
       </div>
       <Divider />
-      <div style={rowBetween}>
-        <span style={metaText}>≈ 35 min · replay anytime</span>
-        <StartAction loading={loading} locked={it.locked} done={done} />
-      </div>
-    </button>
+      <CardFoot
+        meta={"≈ 35 min · replay anytime"}
+        attach={attach}
+        onOpen={onOpen}
+        loading={loading}
+        locked={it.locked}
+        done={done}
+      />
+    </CardBox>
   );
 }
 
@@ -1128,25 +1275,24 @@ function QuickCard({
   loading,
   disabled,
   onOpen,
+  attach,
 }: {
   it: LibraryItem & { seq: number };
   loading: boolean;
   disabled: boolean;
   onOpen: () => void;
+  attach?: AttachSlot;
 }) {
   const done = it.best_score != null;
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <CardBox
+      attach={attach}
+      onOpen={onOpen}
       disabled={disabled}
-      className="lp-hover"
       style={{
         ...cardStyle,
         width: "100%",
-        textAlign: "left",
         fontFamily: SANS,
-        cursor: disabled ? "default" : "pointer",
         opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1,
       }}
     >
@@ -1175,11 +1321,15 @@ function QuickCard({
       </div>
       <TypeTags part={it.part} variant={it.variant} layout={it.layout} />
       <Divider />
-      <div style={rowBetween}>
-        <span style={metaText}>10 questions · replay anytime</span>
-        <StartAction loading={loading} locked={it.locked} done={done} />
-      </div>
-    </button>
+      <CardFoot
+        meta={"10 questions · replay anytime"}
+        attach={attach}
+        onOpen={onOpen}
+        loading={loading}
+        locked={it.locked}
+        done={done}
+      />
+    </CardBox>
   );
 }
 
@@ -1189,27 +1339,26 @@ function MineCard({
   loading,
   disabled,
   onOpen,
+  attach,
 }: {
   it: MineItem & { seq: number };
   loading: boolean;
   disabled: boolean;
   onOpen: () => void;
+  attach?: AttachSlot;
 }) {
   const when = it.created_at
     ? new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
     : "";
   return (
-    <button
-      type="button"
-      onClick={onOpen}
+    <CardBox
+      attach={attach}
+      onOpen={onOpen}
       disabled={disabled}
-      className="lp-hover"
       style={{
         ...cardStyle,
         width: "100%",
-        textAlign: "left",
         fontFamily: SANS,
-        cursor: disabled ? "default" : "pointer",
         opacity: disabled && !loading ? 0.7 : 1,
       }}
     >
@@ -1236,30 +1385,13 @@ function MineCard({
       </div>
       <TypeTags part={it.part} variant={it.variant} layout={it.layout} />
       <Divider />
-      <div style={rowBetween}>
-        <span style={metaText}>{when ? `Generated ${when}` : "Saved to your account"}</span>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            color: INDIGO,
-            fontSize: 14,
-            fontWeight: 600,
-          }}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="animate-spin" size={14} /> Opening…
-            </>
-          ) : (
-            <>
-              Open <ArrowRight size={14} />
-            </>
-          )}
-        </span>
-      </div>
-    </button>
+      <CardFoot
+        meta={when ? `Generated ${when}` : "Saved to your account"}
+        attach={attach}
+        onOpen={onOpen}
+        loading={loading}
+      />
+    </CardBox>
   );
 }
 
@@ -1613,7 +1745,6 @@ function Runner({
     : player.duration > 0
       ? player.duration
       : 480;
-
 
   const partIdx = partViews.findIndex((p) => p.part === currentPart);
   // Parts are freely navigable: a tab click mid-test loads that part's own
@@ -2308,7 +2439,6 @@ type PlayerApi = {
   seekTo: (fraction: number) => void;
 };
 
-
 /** Subscribe this component to the playback position. Only components that call
  *  this re-render on a tick. */
 function usePlayerTick(player: PlayerApi): PlayerTick {
@@ -2319,11 +2449,7 @@ function usePlayerTick(player: PlayerApi): PlayerTick {
  *  the runner itself stays out of the tick path. Mirrors the pre-store math. */
 function derivePlayerPos(p: PlayerApi, t: PlayerTick) {
   const isPause = p.seg?.kind === "pause";
-  const countdown = isPause
-    ? t.pauseLeft > 0
-      ? t.pauseLeft
-      : (p.seg as PauseSeg).seconds
-    : 0;
+  const countdown = isPause ? (t.pauseLeft > 0 ? t.pauseLeft : (p.seg as PauseSeg).seconds) : 0;
   const before = p.idx > 0 ? p.durs.slice(0, p.idx).reduce((a, b) => a + (b || 0), 0) : 0;
   const within =
     p.seg?.kind === "audio"
@@ -2696,7 +2822,17 @@ function useSegmentPlayer(segments: Segment[], onFinished?: () => void): PlayerA
  *  mute. Seeking drives the real segment player; grab the playhead and drop it. */
 /** The whole-exam countdown chip. Isolated so ONLY this chip re-renders on a
  *  playback tick — it is the one thing in Runner's chrome that needs the time. */
-function ExamClock({ player, isTest, beforeSecs, total }: { player: PlayerApi; isTest: boolean; beforeSecs: number; total: number }) {
+function ExamClock({
+  player,
+  isTest,
+  beforeSecs,
+  total,
+}: {
+  player: PlayerApi;
+  isTest: boolean;
+  beforeSecs: number;
+  total: number;
+}) {
   const t = usePlayerTick(player);
   const { elapsed } = derivePlayerPos(player, t);
   return <>{fmtClock(Math.max(0, total - (isTest ? beforeSecs + elapsed : elapsed)))}</>;
@@ -5450,4 +5586,3 @@ function ReviewPanel({ grade }: { grade: Grade }) {
     </div>
   );
 }
-

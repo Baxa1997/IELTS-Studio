@@ -1,11 +1,15 @@
-
 import { TeacherPractice } from "@/components/console/teacher-practice";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { pitchDifficulty } from "@/lib/plan/types";
 import { seedStarterPrompts } from "@/lib/prompts/starter";
-import { DEFAULT_DIFFICULTY, ESSAY_TASK_LABELS, ESSAY_TASK_TYPES, TASK2_CATEGORIES } from "@/lib/prompts/types";
+import {
+  DEFAULT_DIFFICULTY,
+  ESSAY_TASK_LABELS,
+  ESSAY_TASK_TYPES,
+  TASK2_CATEGORIES,
+} from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
 
 import { WritingLibrary, type LibraryPrompt } from "./library";
@@ -30,7 +34,10 @@ export default async function WritePage() {
   const plan = await loadStudyPlan(profile.id);
   if (!plan && !isStaff) return null;
   if (plan) {
-    await seedStarterPrompts({ studentId: profile.id, organizationId: profile.organization_id }, plan);
+    await seedStarterPrompts(
+      { studentId: profile.id, organizationId: profile.organization_id },
+      plan,
+    );
   }
 
   const supabase = await createClient();
@@ -82,18 +89,20 @@ export default async function WritePage() {
   // and start or attach the result — without being dropped into the runner the
   // moment it exists. Only a teacher; a center_admin doesn't set practice.
   let bench: React.ReactNode = null;
+  let teacherGroups: { id: string; name: string }[] = [];
   if (profile.role === "teacher") {
     const { data: myGroups } = await supabase
       .from("groups")
       .select("id, name")
       .eq("teacher_id", profile.id)
       .order("name");
+    teacherGroups = (myGroups ?? []) as { id: string; name: string }[];
     bench = (
       <TeacherPractice
         kind="writing"
         taskTypes={ESSAY_TASK_TYPES.map((t) => ({ value: t, label: ESSAY_TASK_LABELS[t] }))}
         categories={TASK2_CATEGORIES.map((c) => ({ value: c, label: c.replace(/_/g, " ") }))}
-        groups={(myGroups ?? []) as { id: string; name: string }[]}
+        groups={teacherGroups}
         defaultDifficulty={DEFAULT_DIFFICULTY}
       />
     );
@@ -103,7 +112,13 @@ export default async function WritePage() {
   return (
     <>
       {bench ? <div style={{ padding: "18px 20px 0" }}>{bench}</div> : null}
-      <WritingLibrary library={library} practised={practised} pitchBand={pitchBand} />
+      <WritingLibrary
+        library={library}
+        practised={practised}
+        pitchBand={pitchBand}
+        isTeacher={profile.role === "teacher"}
+        groups={teacherGroups}
+      />
     </>
   );
 }
