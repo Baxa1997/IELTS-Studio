@@ -8,6 +8,7 @@ import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "l
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
+import { TASK2_CATEGORIES } from "@/lib/prompts/types";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
 // These live with the full-screen runner in the (studio) group; the hub library
@@ -91,6 +92,12 @@ export function WritingLibrary({
   // The prompt a teacher is setting to a class. assignPractice approves a
   // still-pending prompt as part of assigning, so a library id goes straight in.
   const [attachId, setAttachId] = useState<string | null>(null);
+  // A teacher has no band of their own, so "Generate a topic" asks for the
+  // class's level first instead of silently using the learner default.
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [level, setLevel] = useState(7);
+  const [genCategory, setGenCategory] = useState("");
+  const [preference, setPreference] = useState("");
   const [tab, setTab] = useState<string>("check_own");
   // Remember the active tab across navigation. Generating a topic sends you to the
   // (studio) runner and back, which remounts AppShell (it lives in a different route
@@ -170,6 +177,11 @@ export function WritingLibrary({
 
   async function generate(kind: string) {
     if (busy) return;
+    // Teachers answer the level question first; the modal calls back in here.
+    if (isTeacher && !setupOpen) {
+      setSetupOpen(true);
+      return;
+    }
     setBusy(true);
     setGeneratingKind(kind);
     setMessage(null);
@@ -179,7 +191,21 @@ export function WritingLibrary({
         headers: { "Content-Type": "application/json" },
         // fresh: the explicit "Generate a topic" button always makes a brand-new AI
         // prompt (so it appears, AI-badged and first, in the library afterward).
-        body: JSON.stringify({ taskType: kind, fresh: true }),
+        body: JSON.stringify({
+          taskType: kind,
+          fresh: true,
+          ...(isTeacher
+            ? {
+                difficulty: level,
+                ...(genCategory ? { category: genCategory } : {}),
+                // The composer writes about this, so a teacher's note is a real
+                // instruction rather than a label.
+                ...(preference.trim().length >= 2
+                  ? { topicFamily: preference.trim().slice(0, 50) }
+                  : {}),
+              }
+            : {}),
+        }),
       });
       const body = (await res.json().catch(() => ({}))) as {
         prompt?: { id: string };
@@ -189,6 +215,16 @@ export function WritingLibrary({
         setMessage(body.message ?? "Couldn't generate a topic. Please try again.");
         setBusy(false);
         setGeneratingKind(null);
+        return;
+      }
+      // A learner generated this to write it, so open it. A teacher generated
+      // it to look at and set, so it lands as a card in the library instead —
+      // refreshed rather than pushed, which is the whole point of the change.
+      if (isTeacher) {
+        setSetupOpen(false);
+        setBusy(false);
+        setGeneratingKind(null);
+        router.refresh();
         return;
       }
       router.push(`/write/${body.prompt.id}`); // keep busy until navigation
@@ -901,6 +937,111 @@ export function WritingLibrary({
 
       {gradingModal ? <GradingModal /> : null}
 
+      {setupOpen ? (
+        <PracticeModal title="New practice" onClose={() => setSetupOpen(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label htmlFor="wl-level" style={genLabel}>
+                Level of the class
+              </label>
+              <select
+                id="wl-level"
+                value={level}
+                onChange={(e) => setLevel(Number(e.target.value))}
+                style={genField}
+              >
+                {[4, 5, 6, 7, 8, 9].map((b) => (
+                  <option key={b} value={b}>
+                    Band {b}
+                  </option>
+                ))}
+              </select>
+              <p style={{ fontSize: 12, color: "#8A8FA0", margin: "6px 0 0", lineHeight: 1.5 }}>
+                How demanding the wording and ideas are. A student practising alone gets this
+                pitched from their own measured band — a class has no single band, so you say.
+              </p>
+            </div>
+
+            {tab === "task2" ? (
+              <div>
+                <label htmlFor="wl-cat" style={genLabel}>
+                  Question type <span style={{ color: "#8A8FA0" }}>(optional)</span>
+                </label>
+                <select
+                  id="wl-cat"
+                  value={genCategory}
+                  onChange={(e) => setGenCategory(e.target.value)}
+                  style={genField}
+                >
+                  <option value="">Any — surprise me</option>
+                  {TASK2_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c.replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            <div>
+              <label htmlFor="wl-pref" style={genLabel}>
+                Topic preference <span style={{ color: "#8A8FA0" }}>(optional)</span>
+              </label>
+              <input
+                id="wl-pref"
+                value={preference}
+                onChange={(e) => setPreference(e.target.value)}
+                maxLength={50}
+                placeholder="e.g. urban transport, remote work"
+                style={genField}
+              />
+            </div>
+
+            {message ? (
+              <p style={{ fontSize: 13, color: "#b91c1c", margin: 0 }}>{message}</p>
+            ) : null}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => void generate(tab)}
+                disabled={busy}
+                style={{
+                  flex: 1,
+                  background: INDIGO,
+                  color: "#fff",
+                  border: 0,
+                  borderRadius: 10,
+                  padding: 11,
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: busy ? "wait" : "pointer",
+                  opacity: busy ? 0.7 : 1,
+                }}
+              >
+                {busy ? "Generating…" : "Generate"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSetupOpen(false)}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #ECEAF2",
+                  borderRadius: 10,
+                  padding: "11px 16px",
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </PracticeModal>
+      ) : null}
+
       {attachId ? (
         <PracticeModal title="Attach to a class" onClose={() => setAttachId(null)}>
           <AttachForm
@@ -1352,6 +1493,23 @@ function PromptCard({
     </CardBox>
   );
 }
+
+const genLabel: React.CSSProperties = {
+  display: "block",
+  fontFamily: SANS,
+  fontSize: 12.5,
+  color: "#56556A",
+  marginBottom: 5,
+};
+const genField: React.CSSProperties = {
+  width: "100%",
+  border: "1px solid #CFCABC",
+  borderRadius: 9,
+  padding: "10px 11px",
+  fontFamily: SANS,
+  fontSize: 13.5,
+  background: "#fff",
+};
 
 /** The two equal actions in a teacher card's footer. */
 const cardAction: React.CSSProperties = {

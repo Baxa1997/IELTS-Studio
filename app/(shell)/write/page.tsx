@@ -1,15 +1,9 @@
-import { TeacherPractice } from "@/components/console/teacher-practice";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { pitchDifficulty } from "@/lib/plan/types";
 import { seedStarterPrompts } from "@/lib/prompts/starter";
-import {
-  DEFAULT_DIFFICULTY,
-  ESSAY_TASK_LABELS,
-  ESSAY_TASK_TYPES,
-  TASK2_CATEGORIES,
-} from "@/lib/prompts/types";
+import { DEFAULT_DIFFICULTY } from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
 
 import { WritingLibrary, type LibraryPrompt } from "./library";
@@ -85,40 +79,26 @@ export default async function WritePage() {
       })
     : DEFAULT_DIFFICULTY;
 
-  // A teacher gets a bench above the library: say the class's level, generate,
-  // and start or attach the result — without being dropped into the runner the
-  // moment it exists. Only a teacher; a center_admin doesn't set practice.
-  let bench: React.ReactNode = null;
+  // Own classes only — a teacher can attach to the classes they run, which is
+  // the rule assignPractice enforces server-side too.
   let teacherGroups: { id: string; name: string }[] = [];
   if (profile.role === "teacher") {
-    const { data: myGroups } = await supabase
+    const { data } = await supabase
       .from("groups")
       .select("id, name")
       .eq("teacher_id", profile.id)
       .order("name");
-    teacherGroups = (myGroups ?? []) as { id: string; name: string }[];
-    bench = (
-      <TeacherPractice
-        kind="writing"
-        taskTypes={ESSAY_TASK_TYPES.map((t) => ({ value: t, label: ESSAY_TASK_LABELS[t] }))}
-        categories={TASK2_CATEGORIES.map((c) => ({ value: c, label: c.replace(/_/g, " ") }))}
-        groups={teacherGroups}
-        defaultDifficulty={DEFAULT_DIFFICULTY}
-      />
-    );
+    teacherGroups = (data ?? []) as { id: string; name: string }[];
   }
 
   // The shell (sidebar + header) is owned by the (shell) layout.
   return (
-    <>
-      {bench ? <div style={{ padding: "18px 20px 0" }}>{bench}</div> : null}
-      <WritingLibrary
-        library={library}
-        practised={practised}
-        pitchBand={pitchBand}
-        isTeacher={profile.role === "teacher"}
-        groups={teacherGroups}
-      />
-    </>
+    <WritingLibrary
+      library={library}
+      practised={practised}
+      pitchBand={pitchBand}
+      isTeacher={profile.role === "teacher"}
+      groups={teacherGroups}
+    />
   );
 }
