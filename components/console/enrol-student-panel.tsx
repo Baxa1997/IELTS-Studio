@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
+import { useConsolePanels } from "@/components/console/console-chrome";
 
 /**
  * The design's "Enrol a student" slide-over: one form that creates the account
@@ -46,13 +47,25 @@ export interface EnrolGroup {
 export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
   const [state, formAction, pending] = useActionState(addStudentAccount, {} as AddStudentState);
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
-  const [copied, setCopied] = useState(false);
+  const { finish } = useConsolePanels();
 
-  async function copy(login: string, password: string) {
-    await navigator.clipboard.writeText(`Login: ${login}\nPassword: ${password}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
+  // On success the drawer closes and the banner takes over. It MUST carry the
+  // credentials: the password is generated once and never shown again, so
+  // closing without them would leave an account nobody can sign into.
+  // The ref keeps a re-render from firing this twice for the same student.
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    const made = state.created;
+    if (!made || reported.current === made.login) return;
+    reported.current = made.login;
+    finish({
+      title: `${made.name} is enrolled`,
+      body: made.email
+        ? `Sign-in details sent to ${made.email}.`
+        : "No email on file — hand these over in class. There's no email reset, so you reset it if it's lost.",
+      credentials: { login: made.login, password: made.password },
+    });
+  }, [state.created, finish]);
 
   if (groups.length === 0) {
     return (
@@ -73,7 +86,14 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
             <label htmlFor="enrol-name" style={label}>
               Full name
             </label>
-            <input id="enrol-name" name="full_name" required autoComplete="off" placeholder="Malika Abdullaeva" style={field} />
+            <input
+              id="enrol-name"
+              name="full_name"
+              required
+              autoComplete="off"
+              placeholder="Malika Abdullaeva"
+              style={field}
+            />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -110,7 +130,14 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
             <label htmlFor="enrol-email" style={label}>
               Contact email <span style={{ color: FAINT }}>(optional)</span>
             </label>
-            <input id="enrol-email" name="email" type="email" autoComplete="off" placeholder="student@example.com" style={field} />
+            <input
+              id="enrol-email"
+              name="email"
+              type="email"
+              autoComplete="off"
+              placeholder="student@example.com"
+              style={field}
+            />
           </div>
 
           <div>
@@ -161,11 +188,20 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
             </div>
           </div>
 
-          <div style={{ background: "#F7F6F2", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
+          <div
+            style={{
+              background: "#F7F6F2",
+              borderRadius: 10,
+              padding: "12px 14px",
+              fontSize: 12.5,
+              color: MUTED,
+              lineHeight: 1.5,
+            }}
+          >
             They sign in with their <strong>login</strong>, never an email — so an address that
             already has a personal account here is fine. Give one and the sign-in details are sent
-            there; leave it blank and you hand them over in class. Either way you reset the
-            password for them if it&apos;s lost.
+            there; leave it blank and you hand them over in class. Either way you reset the password
+            for them if it&apos;s lost.
           </div>
 
           {state.error ? (
@@ -199,48 +235,6 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
           </div>
         </div>
       </form>
-
-      {state.created ? (
-        <div
-          style={{
-            marginTop: 16,
-            border: "1px solid #CFE6D9",
-            background: "#EAF4EE",
-            borderRadius: 10,
-            padding: 14,
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#16794C" }}>
-            {state.created.name} is enrolled
-          </div>
-          <div style={{ fontSize: 12.5, color: "#16794C", marginTop: 6, lineHeight: 1.6 }}>
-            Login <strong>{state.created.login}</strong>
-            <br />
-            Password <strong>{state.created.password}</strong>
-            <br />
-            {state.created.email
-              ? `Sent to ${state.created.email}`
-              : "No email — hand these over in class."}
-          </div>
-          <button
-            type="button"
-            onClick={() => copy(state.created!.login, state.created!.password)}
-            style={{
-              marginTop: 10,
-              background: "#fff",
-              border: "1px solid #CFE6D9",
-              borderRadius: 7,
-              padding: "6px 11px",
-              fontFamily: "inherit",
-              fontSize: 12,
-              color: "#16794C",
-              cursor: "pointer",
-            }}
-          >
-            {copied ? "Copied" : "Copy credentials"}
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

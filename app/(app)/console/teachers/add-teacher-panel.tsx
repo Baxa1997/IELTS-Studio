@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
+
+import { useConsolePanels } from "@/components/console/console-chrome";
 
 import { addTeacherAccount, type AddStudentState } from "../groups/actions";
 
@@ -41,13 +43,25 @@ const fieldStyle: React.CSSProperties = {
 
 export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
   const [state, formAction, pending] = useActionState(addTeacherAccount, {} as AddStudentState);
-  const [copied, setCopied] = useState(false);
+  const { finish } = useConsolePanels();
 
-  async function copyCredentials(login: string, password: string) {
-    await navigator.clipboard.writeText(`Login: ${login}\nPassword: ${password}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
+  // Same one-time-password rule as enrolling a student: close the drawer, but
+  // only by handing the credentials to the banner.
+  const reported = useRef<string | null>(null);
+  useEffect(() => {
+    const made = state.created;
+    if (!made || reported.current === made.login) return;
+    reported.current = made.login;
+    finish({
+      title: `${made.name} can sign in now`,
+      body:
+        state.emailNote ??
+        (made.email
+          ? `Sign-in details sent to ${made.email}.`
+          : "No email on file, so this login is the only way in — and there's no email reset. Hand it over in person or by Telegram."),
+      credentials: { login: made.login, password: made.password },
+    });
+  }, [state.created, state.emailNote, finish]);
 
   return (
     <div>
@@ -123,10 +137,10 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
               lineHeight: 1.5,
             }}
           >
-            They sign in with their <strong>login</strong>, not an email — so a contact address
-            that already has a personal account on the platform is fine here. It&apos;s only where
-            we send their sign-in details. A teacher runs their own classes and sees only the
-            students in them.
+            They sign in with their <strong>login</strong>, not an email — so a contact address that
+            already has a personal account on the platform is fine here. It&apos;s only where we
+            send their sign-in details. A teacher runs their own classes and sees only the students
+            in them.
           </div>
 
           {state.error ? (
@@ -177,48 +191,6 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
           </div>
         </div>
       </form>
-
-      {state.created ? (
-        <div
-          style={{
-            marginTop: 16,
-            border: "1px solid #CFE6D9",
-            background: "#EAF4EE",
-            borderRadius: 10,
-            padding: 14,
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 600, color: GREEN }}>
-            {state.created.name} can sign in now
-          </div>
-          <div style={{ fontSize: 12.5, color: GREEN, marginTop: 6, lineHeight: 1.6 }}>
-            Login <strong>{state.created.login}</strong>
-            <br />
-            Password <strong>{state.created.password}</strong>
-          </div>
-          <button
-            type="button"
-            onClick={() => copyCredentials(state.created!.login, state.created!.password)}
-            style={{
-              marginTop: 10,
-              background: "#fff",
-              border: "1px solid #CFE6D9",
-              borderRadius: 7,
-              padding: "6px 11px",
-              fontFamily: "inherit",
-              fontSize: 12,
-              color: GREEN,
-              cursor: "pointer",
-            }}
-          >
-            {copied ? "Copied" : "Copy credentials"}
-          </button>
-          <p style={{ fontSize: 11.5, color: MUTED, margin: "10px 0 0", lineHeight: 1.55 }}>
-            {state.emailNote ??
-              "No email on file, so this login is the only way in — and there's no email password reset. Hand it over in person or by Telegram."}
-          </p>
-        </div>
-      ) : null}
     </div>
   );
 }

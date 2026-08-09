@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 /**
  * The console's page chrome, from the "Center Admin CRM" design: a sticky
@@ -46,12 +46,37 @@ function initials(name: string): string {
 export type ConsolePanel = "enrol" | "teacher" | "invite" | "group";
 
 /**
+ * A banner shown at the top of the page after a panel finishes its work.
+ *
+ * `credentials` is the reason this exists at all: a created account's password
+ * is generated once and never shown again, so a panel cannot simply close on
+ * success — the teacher would lose the only copy. The banner carries it out of
+ * the drawer and stays until dismissed.
+ */
+export interface ConsoleFlash {
+  title: string;
+  body?: string;
+  credentials?: { login: string; password: string };
+}
+
+interface PanelApi {
+  open: (panel: ConsolePanel) => void;
+  /** Close whatever panel is open, optionally raising a banner as it goes. */
+  finish: (flash?: ConsoleFlash) => void;
+}
+
+/**
  * Lets a page open one of the chrome's panels. A page is a server component, so
  * it can't hold the open/closed state itself — it renders <PanelButton>, which
  * reads this context. That is what keeps "+ Add teacher" a single button at the
  * top of the Teachers page rather than a second copy of the form inline.
  */
-const PanelContext = createContext<(panel: ConsolePanel) => void>(() => {});
+const PanelContext = createContext<PanelApi>({ open: () => {}, finish: () => {} });
+
+/** For a panel that needs to close itself and report what happened. */
+export function useConsolePanels(): PanelApi {
+  return useContext(PanelContext);
+}
 
 export function PanelButton({
   panel,
@@ -62,7 +87,7 @@ export function PanelButton({
   variant?: "primary" | "ghost";
   children: React.ReactNode;
 }) {
-  const open = useContext(PanelContext);
+  const { open } = useContext(PanelContext);
   const primary = variant === "primary";
   return (
     <button
@@ -111,7 +136,22 @@ export function ConsoleChrome({
 }) {
   const pathname = usePathname();
   const [panel, setPanel] = useState<null | ConsolePanel>(null);
+  const [flash, setFlash] = useState<ConsoleFlash | null>(null);
   const close = () => setPanel(null);
+  // Stable so a panel's effect doesn't re-fire on every chrome render.
+  const api = useMemo<PanelApi>(
+    () => ({
+      open: (p) => {
+        setFlash(null);
+        setPanel(p);
+      },
+      finish: (f) => {
+        setPanel(null);
+        if (f) setFlash(f);
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -133,7 +173,7 @@ export function ConsoleChrome({
   const crumb = CRUMBS.find(([href]) => pathname === href || pathname.startsWith(href + "/"))?.[1];
 
   return (
-    <PanelContext.Provider value={setPanel}>
+    <PanelContext.Provider value={api}>
       <header
         className="cn-topbar"
         style={{
@@ -234,6 +274,7 @@ export function ConsoleChrome({
       </header>
 
       <div className="cn-page" style={{ padding: "26px 28px 60px" }}>
+        {flash ? <FlashBanner flash={flash} onClose={() => setFlash(null)} /> : null}
         {children}
       </div>
 
@@ -284,6 +325,99 @@ export function ConsoleChrome({
   );
 }
 
+/** Success banner. Carries the one-time credentials out of the closed drawer. */
+function FlashBanner({ flash, onClose }: { flash: ConsoleFlash; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    if (!flash.credentials) return;
+    await navigator.clipboard.writeText(
+      `Login: ${flash.credentials.login}\nPassword: ${flash.credentials.password}`,
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div
+      role="status"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 14,
+        background: "#EAF4EE",
+        border: "1px solid #CFE6D9",
+        borderRadius: 12,
+        padding: "14px 16px",
+        marginBottom: 18,
+        flexWrap: "wrap",
+      }}
+    >
+      <div style={{ minWidth: 200, flex: 1 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#16794C" }}>{flash.title}</div>
+        {flash.body ? (
+          <div style={{ fontSize: 12.5, color: "#16794C", marginTop: 3, lineHeight: 1.5 }}>
+            {flash.body}
+          </div>
+        ) : null}
+        {flash.credentials ? (
+          <div
+            style={{
+              fontFamily: "ui-monospace, monospace",
+              fontSize: 12.5,
+              color: "#14532d",
+              marginTop: 8,
+              lineHeight: 1.7,
+            }}
+          >
+            Login <strong>{flash.credentials.login}</strong>
+            <br />
+            Password <strong>{flash.credentials.password}</strong>
+          </div>
+        ) : null}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        {flash.credentials ? (
+          <button
+            type="button"
+            onClick={() => void copy()}
+            style={{
+              background: "#fff",
+              border: "1px solid #CFE6D9",
+              borderRadius: 8,
+              padding: "7px 12px",
+              fontFamily: "inherit",
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: "#16794C",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {copied ? "Copied" : "Copy credentials"}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Dismiss"
+          style={{
+            background: "none",
+            border: 0,
+            color: "#16794C",
+            cursor: "pointer",
+            fontSize: 17,
+            lineHeight: 1,
+            padding: "0 2px",
+          }}
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Right-hand slide-over, 460px, as the design draws it. */
 function SlideOver({
   eyebrow,
@@ -299,7 +433,15 @@ function SlideOver({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", justifyContent: "flex-end" }}>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        display: "flex",
+        justifyContent: "flex-end",
+      }}
+    >
       <button
         aria-label="Close"
         onClick={onClose}
