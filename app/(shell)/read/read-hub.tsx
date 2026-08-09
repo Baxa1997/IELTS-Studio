@@ -88,35 +88,12 @@ export function ReadingHub({
   // own org before writing the assignment.
   const [attachId, setAttachId] = useState<string | null>(null);
 
-  /** Attach control under a card. Rendered as a sibling, never inside — the
-   *  card itself is a <Link>, and a button nested in an anchor is invalid. */
-  const attachSlot = (id: string) =>
-    isTeacher ? (
-      <button
-        type="button"
-        onClick={() => setAttachId(id)}
-        disabled={groups.length === 0}
-        title={groups.length === 0 ? "Create a class first" : undefined}
-        style={{
-          marginTop: 8,
-          width: "100%",
-          // Filled brand indigo, matching the Attach on the writing bench and the
-          // listening card — it is the same action, so it reads the same way.
-          background: "#3B43B5",
-          border: 0,
-          borderRadius: 10,
-          padding: "9px 12px",
-          fontFamily: "inherit",
-          fontSize: 13,
-          fontWeight: 600,
-          color: "#fff",
-          cursor: groups.length === 0 ? "not-allowed" : "pointer",
-          opacity: groups.length === 0 ? 0.45 : 1,
-        }}
-      >
-        Attach to a class
-      </button>
-    ) : null;
+  /** What a teacher's card needs to show its Attach action. Undefined for a
+   *  student, which keeps their card exactly as it was: one big click target. */
+  const attachFor = (id: string) =>
+    isTeacher
+      ? { onAttach: () => setAttachId(id), disabled: groups.length === 0 }
+      : undefined;
 
   async function startLibrary(kind: Tab, id: string, num?: number) {
     if (loadingId) return;
@@ -245,16 +222,15 @@ export function ReadingHub({
               <SectionLabel>Your tests</SectionLabel>
               <Grid>
                 {ownTests.map((t, i) => (
-                  <div key={t.id}>
-                    <TestTile
-                      title={`Practice test ${i + 1}`}
-                      footerLeft={fmtDate(t.createdAt)}
-                      isNew
-                      practised={t.practised}
-                      href={`/read/test/${t.id}?n=${i + 1}`}
-                    />
-                    {attachSlot(t.id)}
-                  </div>
+                  <TestTile
+                    key={t.id}
+                    title={`Practice test ${i + 1}`}
+                    footerLeft={fmtDate(t.createdAt)}
+                    isNew
+                    practised={t.practised}
+                    href={`/read/test/${t.id}?n=${i + 1}`}
+                    attach={attachFor(t.id)}
+                  />
                 ))}
               </Grid>
             </>
@@ -267,17 +243,16 @@ export function ReadingHub({
                 {libraryTests.map((t, i) => {
                   const num = ownTests.length + i + 1;
                   return (
-                    <div key={t.id}>
-                      <TestTile
-                        title={`Practice test ${num}`}
-                        footerLeft={
-                          t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
-                        }
-                        onStart={() => void startLibrary("test", t.id, num)}
-                        loading={loadingId === t.id}
-                      />
-                      {attachSlot(t.id)}
-                    </div>
+                    <TestTile
+                      key={t.id}
+                      title={`Practice test ${num}`}
+                      footerLeft={
+                        t.targetBand != null ? `Around band ${t.targetBand}` : "Mixed levels"
+                      }
+                      onStart={() => void startLibrary("test", t.id, num)}
+                      loading={loadingId === t.id}
+                      attach={attachFor(t.id)}
+                    />
                   );
                 })}
               </Grid>
@@ -370,6 +345,7 @@ function TestTile({
   loading,
   isNew,
   practised,
+  attach,
 }: {
   title: string;
   footerLeft: string;
@@ -378,6 +354,8 @@ function TestTile({
   loading?: boolean;
   isNew?: boolean;
   practised?: boolean;
+  /** Teacher only. Its presence changes the card's anatomy — see below. */
+  attach?: { onAttach: () => void; disabled: boolean };
 }) {
   const body = (
     <>
@@ -401,6 +379,67 @@ function TestTile({
       </div>
     </>
   );
+  // A teacher's card carries two actions, so it CANNOT be one big <Link> —
+  // a button nested in an anchor is invalid, and the whole-card click target
+  // would swallow Attach. The card becomes a plain container and the footer
+  // splits: Attach left, Start right. The date/band line moves up beside the
+  // subtitle, since the footer row is now buttons.
+  if (attach) {
+    return (
+      <div style={tileStyle(practised)}>
+        {isNew && !practised ? <AiCorner /> : null}
+        <div style={rowBetween}>
+          <span style={iconTile}>
+            <Layers size={19} />
+          </span>
+          {practised ? <DoneBadge /> : null}
+        </div>
+        <div>
+          <h4 style={cardTitle}>{title}</h4>
+          <span style={cardSub}>3 passages · 40 questions · band score</span>
+          <div style={{ ...metaText, marginTop: 6 }}>{footerLeft}</div>
+        </div>
+        <Divider />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={attach.onAttach}
+            disabled={attach.disabled}
+            title={attach.disabled ? "Create a class first" : undefined}
+            style={{
+              ...cardActionBase,
+              background: INDIGO,
+              border: 0,
+              color: "#fff",
+              cursor: attach.disabled ? "not-allowed" : "pointer",
+              opacity: attach.disabled ? 0.45 : 1,
+            }}
+          >
+            Attach
+          </button>
+          {href ? (
+            <Link href={href} style={{ ...cardActionBase, ...cardActionGhost }}>
+              {practised ? "Retake" : "Start"}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onStart}
+              disabled={loading}
+              style={{
+                ...cardActionBase,
+                ...cardActionGhost,
+                cursor: loading ? "wait" : "pointer",
+              }}
+            >
+              {loading ? "Opening…" : practised ? "Retake" : "Start"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return href ? (
     <Link href={href} className="lp-hover" style={tileStyle(practised)}>
       {body}
@@ -417,6 +456,27 @@ function TestTile({
     </button>
   );
 }
+
+/** The two equal actions in a teacher card's footer. */
+const cardActionBase: React.CSSProperties = {
+  flex: 1,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: 10,
+  padding: "9px 12px",
+  fontFamily: "inherit",
+  fontSize: 13.5,
+  fontWeight: 600,
+  textDecoration: "none",
+  whiteSpace: "nowrap",
+};
+const cardActionGhost: React.CSSProperties = {
+  background: "#fff",
+  border: "1px solid #ECEAF2",
+  color: INDIGO,
+  cursor: "pointer",
+};
 
 /** A passage card. Link (own) or button (library sample → clones on click). */
 function PassageTile({
