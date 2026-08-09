@@ -101,7 +101,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
 
           <div>
             <label htmlFor="teacher-email" style={labelStyle}>
-              Email <span style={{ color: FAINT }}>(optional — we send the login details)</span>
+              Contact email <span style={{ color: FAINT }}>(optional)</span>
             </label>
             <input
               id="teacher-email"
@@ -123,8 +123,10 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
               lineHeight: 1.5,
             }}
           >
-            A teacher creates their own classes and sees only the students in them — never another
-            teacher&apos;s class, and never billing.
+            They sign in with their <strong>login</strong>, not an email — so a contact address
+            that already has a personal account on the platform is fine here. It&apos;s only where
+            we send their sign-in details. A teacher runs their own classes and sees only the
+            students in them.
           </div>
 
           {state.error ? (

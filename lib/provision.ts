@@ -29,6 +29,12 @@ export interface OrgPlacement {
   role: OrgRole;
   fullName?: string | null;
   username?: string | null;
+  /**
+   * Where to write to them — NOT how they sign in. A center-created account's
+   * auth address is synthetic so it never occupies the global email namespace
+   * (see migration 20260809130000); this is the real inbox.
+   */
+  contactEmail?: string | null;
 }
 
 /**
@@ -99,6 +105,7 @@ export async function placeUserInOrg(
       role: placement.role,
       full_name: placement.fullName ?? null,
       ...(placement.username ? { username: placement.username } : {}),
+      ...(placement.contactEmail !== undefined ? { contact_email: placement.contactEmail } : {}),
     },
     { onConflict: "id" },
   );

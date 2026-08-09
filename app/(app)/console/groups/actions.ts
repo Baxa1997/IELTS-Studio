@@ -50,6 +50,23 @@ const LOGIN_RE = /^[a-z0-9](?:[a-z0-9._-]{1,30}[a-z0-9])$/;
 const NO_MAIL_DOMAIN = "students.engprogress.com";
 
 /**
+ * The auth address for a center-created account. ALWAYS synthetic, never the
+ * person's real one.
+ *
+ * `auth.users.email` is globally unique, so using a real address here would let
+ * a center account claim it forever — which is exactly what stopped a learner
+ * who already practises solo from also being added as a teacher. A center
+ * account signs in by login (resolved to this address server-side in `signIn`),
+ * and the real inbox is kept on `profiles.contact_email` for delivery only.
+ *
+ * The domain has no MX record, so nothing is ever sent here and the account has
+ * no email password reset. The center resets it.
+ */
+function centerAuthEmail(login: string): string {
+  return `${login}@${NO_MAIL_DOMAIN}`;
+}
+
+/**
  * Create a group. A center_admin can create one for any teacher (or leave it
  * unassigned); a teacher creates their own class and always owns it — RLS
  * enforces that independently (groups_teacher_insert requires
@@ -509,8 +526,11 @@ export async function addStudentAccount(
     return { error: "Password must be at least 8 characters." };
   }
 
-  // The email is optional; a student without one signs in by login alone.
-  const email = emailInput || `${login}@${NO_MAIL_DOMAIN}`;
+  // The address they gave is where we WRITE to them; it is never how they sign
+  // in, so it can be an address that already has a personal account on the
+  // platform. See centerAuthEmail above.
+  const contactEmail = emailInput || null;
+  const email = centerAuthEmail(login);
 
   const supabase = await createClient();
   // RLS hides other teachers' groups, so a hit here proves the caller manages it.
@@ -556,7 +576,7 @@ export async function addStudentAccount(
     const already = /already|exists|registered/i.test(createError?.message ?? "");
     return {
       error: already
-        ? `${email} already has an account on the platform. Use a different email or login — moving an existing personal account into a center isn't supported yet.`
+        ? `The login "${login}" is already in use. Pick another one.`
         : (createError?.message ?? "Could not create the account."),
     };
   }
@@ -566,6 +586,7 @@ export async function addStudentAccount(
     role: "student",
     fullName,
     username: login,
+    contactEmail,
   });
   if (placeError) {
     // Roll back the orphaned auth user so the email can be retried cleanly.
@@ -603,14 +624,14 @@ export async function addStudentAccount(
   // A real address means the credentials can be delivered rather than dictated.
   // Never fatal: the teacher still has them on screen to hand over in person.
   let emailNote: string | null = null;
-  if (emailInput) {
+  if (contactEmail) {
     const { data: org } = await supabase
       .from("organizations")
       .select("name")
       .eq("id", profile.organization_id)
       .maybeSingle();
     emailNote = await sendCredentials({
-      to: emailInput,
+      to: contactEmail,
       name: fullName,
       login,
       password,
@@ -620,7 +641,7 @@ export async function addStudentAccount(
 
   revalidatePath(`/console/groups/${groupId}`);
   return {
-    created: { name: fullName, login, email: emailInput || null, password },
+    created: { name: fullName, login, email: contactEmail, password },
     warning: photoWarning ?? undefined,
     emailNote: emailNote ?? undefined,
   };
@@ -727,7 +748,8 @@ export async function addStudentsBulk(
     }
 
     const password = generatePassword();
-    const email = parsed.email || `${login}@${NO_MAIL_DOMAIN}`;
+    const contactEmail = parsed.email || null;
+    const email = centerAuthEmail(login);
 
     const { data: account, error: createError } = await admin.auth.admin.createUser({
       email,
@@ -741,7 +763,7 @@ export async function addStudentsBulk(
       skipped.push({
         line,
         reason: already
-          ? `${email} already has an account on the platform.`
+          ? `The login "${login}" is already in use.`
           : (createError?.message ?? "Could not create the account."),
       });
       continue;
@@ -752,6 +774,7 @@ export async function addStudentsBulk(
       role: "student",
       fullName: parsed.name,
       username: login,
+      contactEmail,
     });
     if (placeError) {
       await admin.auth.admin.deleteUser(account.user.id);
@@ -775,7 +798,7 @@ export async function addStudentsBulk(
     }
 
     loginsThisBatch.add(login);
-    created.push({ name: parsed.name, login, email: parsed.email || null, password });
+    created.push({ name: parsed.name, login, email: contactEmail, password });
   }
 
   revalidatePath(`/console/groups/${groupId}`);
@@ -916,9 +939,10 @@ export async function addTeacherAccount(
     return { error: `The login "${login}" is already taken. Try adding a number, e.g. ${login}2.` };
   }
 
-  // Same rule as students: no address means a synthetic one on a domain with no
-  // mail exchanger, so they sign in by login and cannot reset by email.
-  const email = emailInput || `${login}@${NO_MAIL_DOMAIN}`;
+  // Same rule as students: the auth address is always synthetic, so a teacher
+  // may give the same Gmail they already use for a personal account here.
+  const contactEmail = emailInput || null;
+  const email = centerAuthEmail(login);
 
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
@@ -931,7 +955,7 @@ export async function addTeacherAccount(
     const already = /already|exists|registered/i.test(createError?.message ?? "");
     return {
       error: already
-        ? `${email} already has an account on the platform. Use a different email or login.`
+        ? `The login "${login}" is already in use. Pick another one.`
         : (createError?.message ?? "Could not create the account."),
     };
   }
@@ -941,6 +965,7 @@ export async function addTeacherAccount(
     role: "teacher",
     fullName,
     username: login,
+    contactEmail,
   });
   if (placeError) {
     await admin.auth.admin.deleteUser(created.user.id);
@@ -948,14 +973,14 @@ export async function addTeacherAccount(
   }
 
   let emailNote: string | null = null;
-  if (emailInput) {
+  if (contactEmail) {
     const { data: org } = await supabase
       .from("organizations")
       .select("name")
       .eq("id", profile.organization_id)
       .maybeSingle();
     emailNote = await sendCredentials({
-      to: emailInput,
+      to: contactEmail,
       name: fullName,
       login,
       password,
@@ -965,7 +990,7 @@ export async function addTeacherAccount(
 
   revalidatePath("/console/teachers");
   return {
-    created: { name: fullName, login, email: emailInput || null, password },
+    created: { name: fullName, login, email: contactEmail, password },
     emailNote: emailNote ?? undefined,
   };
 }

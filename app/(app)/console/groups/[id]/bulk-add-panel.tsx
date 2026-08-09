@@ -27,7 +27,7 @@ export function BulkAddPanel({ groupId }: { groupId: string }) {
 
   function credentialsCsv(): string {
     const rows = [
-      ["Name", "Login", "Password", "Email"],
+      ["Name", "Login", "Password", "Contact email"],
       ...created.map((s) => [s.name, s.login, s.password, s.email ?? ""]),
     ];
     return rows.map((r) => r.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(",")).join("\n");
@@ -68,8 +68,9 @@ export function BulkAddPanel({ groupId }: { groupId: string }) {
           />
           <p className="text-muted-foreground text-xs">
             Name only is enough — the login is built from it (<code>dilnoza.r</code>) and passwords
-            are generated. Add a login or an email after a comma to set them yourself. Up to 30 at a
-            time. No email is sent: download the sheet below and hand the details out.
+            are generated. Add a login or a contact email after a comma to set them yourself. Up to
+            30 at a time. Students sign in by login, so a contact address that already has a
+            personal account here is fine.
           </p>
         </div>
         <Button type="submit" disabled={pending}>
@@ -107,7 +108,7 @@ export function BulkAddPanel({ groupId }: { groupId: string }) {
                   <th className="py-1 pr-3 font-medium">Name</th>
                   <th className="py-1 pr-3 font-medium">Login</th>
                   <th className="py-1 pr-3 font-medium">Password</th>
-                  <th className="py-1 font-medium">Email</th>
+                  <th className="py-1 font-medium">Contact email</th>
                 </tr>
               </thead>
               <tbody>

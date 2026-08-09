@@ -11,9 +11,13 @@ import { addStudentAccount, type AddStudentState } from "../actions";
 const initial: AddStudentState = {};
 
 /**
- * Add a student to this group by creating their account outright: name, email,
+ * Add a student to this group by creating their account outright: name, login,
  * and a password (auto-generated unless the teacher sets one). The credentials
- * are shown once, to be handed over in class — nothing is emailed.
+ * are shown once, to be handed over in class.
+ *
+ * The email is a CONTACT address, never a sign-in identity — a center account's
+ * auth address is synthetic, so this may be one that already has a personal
+ * account on the platform (see migration 20260809130000).
  */
 export function AddStudentPanel({ groupId }: { groupId: string }) {
   const [state, formAction, pending] = useActionState(addStudentAccount, initial);
@@ -28,7 +32,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
   return (
     <div className="space-y-3">
       {/* key resets the fields after each successful add, ready for the next student */}
-      <form action={formAction} key={state.created?.email ?? "new"} className="space-y-3">
+      <form action={formAction} key={state.created?.login ?? "new"} className="space-y-3">
         <input type="hidden" name="group_id" value={groupId} />
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-40 flex-1 space-y-2">
@@ -48,7 +52,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
           </div>
           <div className="min-w-44 flex-1 space-y-2">
             <Label htmlFor="student-email">
-              Email <span className="text-muted-foreground font-normal">(optional)</span>
+              Contact email <span className="text-muted-foreground font-normal">(optional)</span>
             </Label>
             <Input
               id="student-email"
@@ -57,7 +61,10 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               autoComplete="off"
               placeholder="student@example.com"
             />
-            <p className="text-muted-foreground text-xs">Emails them the login and password.</p>
+            <p className="text-muted-foreground text-xs">
+              Where we send their login — not how they sign in, so an address that already has a
+              personal account here is fine.
+            </p>
           </div>
           <div className="w-44 space-y-2">
             <Label htmlFor="student-password">Password</Label>

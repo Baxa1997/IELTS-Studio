@@ -108,7 +108,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
 
           <div>
             <label htmlFor="enrol-email" style={label}>
-              Email <span style={{ color: FAINT }}>(optional — we send the login details)</span>
+              Contact email <span style={{ color: FAINT }}>(optional)</span>
             </label>
             <input id="enrol-email" name="email" type="email" autoComplete="off" placeholder="student@example.com" style={field} />
           </div>
@@ -162,9 +162,10 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
           </div>
 
           <div style={{ background: "#F7F6F2", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: MUTED, lineHeight: 1.5 }}>
-            Give an email and the sign-in details are sent there. Leave it blank and the student
-            gets an address that can&apos;t receive mail — you hand the login over in class, and
-            you reset it for them if it&apos;s lost.
+            They sign in with their <strong>login</strong>, never an email — so an address that
+            already has a personal account here is fine. Give one and the sign-in details are sent
+            there; leave it blank and you hand them over in class. Either way you reset the
+            password for them if it&apos;s lost.
           </div>
 
           {state.error ? (
