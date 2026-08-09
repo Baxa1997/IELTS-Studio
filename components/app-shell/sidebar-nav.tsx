@@ -45,6 +45,9 @@ type Item = {
   soon?: boolean;
   /** Small pill shown beside an otherwise-live link, e.g. "PREVIEW" for a UI-only page. */
   badge?: string;
+  /** Key into the `counts` prop — renders the tally quietly at the end of the row
+   *  (the CRM design shows how many teachers/groups/students there are). */
+  countKey?: string;
 };
 type Section = { title?: string; items: Item[] };
 
@@ -76,29 +79,31 @@ const STUDENT: Section[] = [
    line back to restore either. */
 const ADMIN: Section[] = [
   {
+    title: "Center",
     items: [
-      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
-      { label: "Teachers", href: "/console/teachers", icon: GraduationCap },
-      { label: "Groups", href: "/console/groups", icon: Users },
-      { label: "Students", href: "/console/students", icon: UserRound },
-      // No Practice: the library is the teacher's. An admin runs people,
-      // billing and reports, and sees results through Reports and the groups.
-      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
-      { label: "Billing", href: "/console/billing", icon: CreditCard },
+      { label: "Overview", href: "/console", icon: LayoutDashboard },
+      { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
+      { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
+      { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
     ],
   },
+  // No Practice: the library is the teacher's. An admin runs people, billing
+  // and reports, and sees results through Reports and the groups.
+  { title: "Insight", items: [{ label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn }] },
+  { title: "Admin", items: [{ label: "Billing & plan", href: "/console/billing", icon: CreditCard }] },
 ];
 
 const TEACHER: Section[] = [
   {
+    title: "Teaching",
     items: [
-      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
-      { label: "Groups", href: "/console/groups", icon: Users },
-      { label: "Students", href: "/console/students", icon: UserRound },
+      { label: "Overview", href: "/console", icon: LayoutDashboard },
+      { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
+      { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Practice", href: "/console/practices", icon: SquarePen },
-      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
+  { title: "Insight", items: [{ label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn }] },
 ];
 
 /** The platform owner: no organization, so none of the org menus apply. */
@@ -165,10 +170,13 @@ export function SidebarNav({
   role,
   showAssignments = false,
   pendingAssignments = 0,
+  counts,
 }: {
   role: string;
   showAssignments?: boolean;
   pendingAssignments?: number;
+  /** Tallies keyed by an item's `countKey` — the console's nav counts. */
+  counts?: Record<string, number>;
 }) {
   const pathname = usePathname();
   const sections = sectionsFor(role, showAssignments, pendingAssignments);
@@ -203,7 +211,7 @@ export function SidebarNav({
             </div>
           ) : null}
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {section.items.map(({ label, href, icon: Icon, soon, badge }) => {
+            {section.items.map(({ label, href, icon: Icon, soon, badge, countKey }) => {
               if (soon) {
                 return (
                   <span
@@ -270,6 +278,20 @@ export function SidebarNav({
                     className="lp-sb-trail"
                     style={{ display: "flex", alignItems: "center", gap: 6 }}
                   >
+                    {/* A count of zero is still worth showing — "Teachers 0" is
+                        the fact an empty center most needs to see. */}
+                    {countKey && counts?.[countKey] != null ? (
+                      <span
+                        style={{
+                          fontFamily: SANS,
+                          fontSize: 11,
+                          color: RAIL_MUTED,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {counts[countKey].toLocaleString()}
+                      </span>
+                    ) : null}
                     {badge ? (
                       <span
                         style={{

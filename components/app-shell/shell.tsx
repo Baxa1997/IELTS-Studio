@@ -48,6 +48,8 @@ function readCollapsed(fallback: boolean): boolean {
  */
 export function AppShell({
   role,
+  variant = "learner",
+  navCounts,
   showAssignments = false,
   pendingAssignments = 0,
   home,
@@ -62,6 +64,11 @@ export function AppShell({
   children,
 }: {
   role: string;
+  /** "console" swaps the learner chrome for the center CRM brand: flat navy
+   *  rail, cream full-bleed canvas instead of the floating white card. */
+  variant?: "learner" | "console";
+  /** Counts shown beside the console's nav items (teachers/groups/students). */
+  navCounts?: Record<string, number>;
   /** Student is in a center group, so the Assignments nav item is relevant. */
   showAssignments?: boolean;
   /** Unfinished homework — shown as a count badge on that nav item. */
@@ -102,10 +109,12 @@ export function AppShell({
       return next;
     });
 
+  const isConsole = variant === "console";
   const asideClass = [
     "lp-shell-sidebar",
     open ? "lp-shell-sidebar--open" : "",
     collapsed ? "lp-shell-sidebar--collapsed" : "",
+    isConsole ? "lp-shell-sidebar--console" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -271,6 +280,7 @@ export function AppShell({
               role={role}
               showAssignments={showAssignments}
               pendingAssignments={pendingAssignments}
+              counts={navCounts}
             />
           </div>
 
@@ -306,14 +316,23 @@ export function AppShell({
             style={{
               height: "100%",
               overflow: "auto",
-              background: "#fff",
+              // The console's ground is the CRM design's cream, not the learner
+              // app's white card. Set here rather than in CSS so it doesn't
+              // depend on `:has()` reaching a descendant.
+              background: isConsole ? "#F4F3EF" : "#fff",
               borderRadius: 18,
-              border: "1px solid #E9E7F2",
+              border: `1px solid ${isConsole ? "#E4E2DC" : "#E9E7F2"}`,
               boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
             }}
           >
             {quotaBar}
-            <div className={contentClassName ?? "w-full px-4 py-5 sm:px-6 sm:py-6"}>{children}</div>
+            <div
+              className={
+                contentClassName ?? (isConsole ? "cn-page" : "w-full px-4 py-5 sm:px-6 sm:py-6")
+              }
+            >
+              {children}
+            </div>
           </div>
         </main>
       </div>

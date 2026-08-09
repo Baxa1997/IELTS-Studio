@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell/shell";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
 import { requireOrgUser, roleHome } from "@/lib/auth";
+import { loadNavCounts } from "@/lib/console/nav";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
@@ -38,6 +39,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
+  // Staff run the CRM chrome (flat navy rail, cream canvas) and get the nav
+  // tallies with it; students keep the learner shell.
+  const isStaff = profile.role === "center_admin" || profile.role === "teacher";
+  const navCounts = isStaff ? await loadNavCounts(profile) : undefined;
   // Center students (i.e. in a group) get the Assignments nav item; solo B2C
   // learners never see it — RLS returns nothing for them anyway.
   let showAssignments = false;
@@ -67,6 +72,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
       <AppShell
         role={profile.role}
+        variant={isStaff ? "console" : "learner"}
+        navCounts={navCounts}
         showAssignments={showAssignments}
         pendingAssignments={pendingAssignments}
         home={roleHome(profile.role)}

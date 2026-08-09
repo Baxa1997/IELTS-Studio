@@ -699,6 +699,152 @@
   background: #fbfaf4;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CENTER CONSOLE ("Center Admin CRM" brand)
+   Scoped to `.cn-root` — set by app/(app)/console/layout.tsx — so the cream/
+   indigo look never reaches the learner app or the platform super-admin
+   console, which stay on the emerald Option A brand. Tokens and components
+   live in components/console/crm-ui.tsx; only states that need a pseudo-class
+   are here.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The console's cream ground is set on the shell surface itself (shell.tsx,
+   `variant="console"`), not with `:has()` — one source of truth, and no
+   dependency on the selector reaching a descendant. */
+.cn-root {
+  font-family: var(--font-work), system-ui, sans-serif;
+  color: #16162e;
+
+  /* Retune the shadcn token layer for this subtree. The forms inside these
+     pages (add teacher, add student, assign practice, invites) are shared
+     client components built on <Input>/<Button>/<Label>, so they read these
+     variables — redefining them here puts every control on the CRM brand
+     without touching a single form. Outside `.cn-root` the emerald Option A
+     palette is untouched. */
+  --font-sans: var(--font-work);
+  --primary: #4340cb;
+  --primary-foreground: #ffffff;
+  --ring: #4340cb;
+  --border: #e4e2dc;
+  --input: #e4e2dc;
+  --background: #ffffff;
+  --card: #ffffff;
+  --foreground: #16162e;
+  --card-foreground: #16162e;
+  --muted: #f4f3ef;
+  --muted-foreground: #6e6c87;
+  --secondary: #f1f0eb;
+  --secondary-foreground: #4c4a63;
+  --accent: #eeedf8;
+  --accent-foreground: #4340cb;
+  --destructive: #c2453a;
+  --radius: 0.5rem;
+
+  /* And the older console kit (components/console/page-ui.tsx), which still
+     renders the pending-invite list, the assignment report and the student
+     report. Its tokens are `var(--pu-*, <Option A fallback>)`, so defining them
+     here moves those pages onto the CRM brand too — and leaves the platform
+     super-admin console, which uses the same kit, on the fallbacks. */
+  --pu-sans: var(--font-work), system-ui, sans-serif;
+  --pu-serif: var(--font-serif4), Georgia, serif;
+  --pu-indigo: #4340cb;
+  --pu-ink: #16162e;
+  --pu-muted: #6e6c87;
+  --pu-faint: #93919f;
+  --pu-line: #e7e5df;
+  --pu-tint: #eeedf8;
+}
+/* The layout's own gutter — the shell wrapper's padding is overridden here so
+   the console can run the design's 28px rhythm without a prop drill. */
+.cn-page {
+  padding: 26px 28px 60px;
+}
+@media (max-width: 640px) {
+  .cn-page {
+    padding: 18px 16px 48px;
+  }
+}
+
+/* Table + list rows: whole-row hover, matching the design's style-hover. */
+.cn-root .cn-row {
+  transition: background 0.15s ease;
+}
+.cn-root .cn-row:hover {
+  background: #fbfbf9;
+}
+/* Clickable stat tile / group card. */
+.cn-root .cn-kpi,
+.cn-root .cn-tile {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cn-root .cn-kpi:hover,
+.cn-root .cn-tile:hover {
+  border-color: #c9c7e4;
+  box-shadow: 0 6px 20px rgba(20, 19, 58, 0.07);
+}
+.cn-root .cn-btn {
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.cn-root .cn-btn--primary:hover {
+  background: #5350d8;
+}
+.cn-root .cn-btn--green:hover {
+  background: #1c8d5a;
+}
+.cn-root .cn-btn--ghost:hover {
+  background: #faf9f6;
+  border-color: #d4d1c9;
+}
+.cn-root .cn-link,
+.cn-root .cn-back {
+  transition: color 0.15s ease;
+}
+.cn-root .cn-link:hover {
+  color: #2b28a0;
+}
+.cn-root .cn-back:hover {
+  color: #16162e;
+}
+.cn-root .cn-tab {
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.cn-root .cn-tab:hover {
+  color: #4340cb;
+}
+.cn-root .cn-chip {
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.cn-root .cn-chip:hover {
+  border-color: #c9c7e4;
+}
+/* Two-column page splits stack once there isn't room for both. */
+@media (max-width: 960px) {
+  .cn-root .cn-split {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* Console form controls (search, filters, slide-over fields). */
+.cn-root input,
+.cn-root select,
+.cn-root textarea {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cn-root input:focus,
+.cn-root select:focus,
+.cn-root textarea:focus {
+  outline: none;
+  border-color: #4340cb;
+  box-shadow: 0 0 0 3px rgba(67, 64, 203, 0.12);
+}
+
+/* The console rail is the design's flat deep navy, not the learner gradient. */
+.lp-shell-sidebar--console {
+  background: #14133a !important;
+}
+.lp-shell-sidebar--console .lp-sb-section-title {
+  color: #55538a;
+}
+
 /* Brand form inputs (login / auth) */
 .lp-root .lp-input {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;

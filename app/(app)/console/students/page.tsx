@@ -1,26 +1,30 @@
 import { redirect } from "next/navigation";
 
 import {
-  EmptyTableRow,
-  FilterBar,
-  ScrollTable,
-  SearchField,
-  SelectField,
-  TD,
-  TH,
-  THead,
-  TR,
-} from "@/components/admin/table";
-import {
+  AMBER,
+  Card,
+  CardHead,
+  Empty,
+  FAINT,
+  fieldStyle,
+  GREEN,
+  Kpi,
+  KpiRow,
   PageHead,
-  Panel,
-  Pill,
-  RowLink,
-  StatRow,
-  StatTile,
-} from "@/components/console/page-ui";
+  PersonCell,
+  RED,
+  SANS,
+  Table,
+  Tag,
+  TD,
+  THead,
+  Toolbar,
+  TRow,
+} from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudents, type StudentRow } from "@/lib/console/people";
+
+export const dynamic = "force-dynamic";
 
 const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -32,10 +36,21 @@ const SORTS = {
     label: "Recently active",
     cmp: (a: StudentRow, b: StudentRow) => (b.lastActive ?? "").localeCompare(a.lastActive ?? ""),
   },
+  weakest: {
+    label: "Furthest from target",
+    // Unmeasured students sort last: there is no gap to rank them by.
+    cmp: (a: StudentRow, b: StudentRow) => gap(a) - gap(b),
+  },
   name: { label: "Name A–Z", cmp: (a: StudentRow, b: StudentRow) => a.name.localeCompare(b.name) },
 } as const;
 
 type SortKey = keyof typeof SORTS;
+
+/** Distance from the weakest measured skill to target — most negative first. */
+function gap(s: StudentRow): number {
+  if (!s.weakest || s.targetBand == null) return Number.POSITIVE_INFINITY;
+  return s.weakest.band - s.targetBand;
+}
 
 /** The stat cards double as filters — a number you can click is a number you can
  *  check. Each one is just a predicate over the same roster. */
@@ -46,6 +61,8 @@ const CARD_FILTERS = {
 } as const;
 
 type CardFilter = keyof typeof CARD_FILTERS;
+
+const COLS = "2.2fr 1.6fr 1.2fr .8fr .9fr 1.1fr .8fr";
 
 export default async function StudentsPage({
   searchParams,
@@ -90,124 +107,164 @@ export default async function StudentsPage({
 
   const neverPractised = all.filter((s) => s.practiceCount === 0).length;
   const ungrouped = all.filter((s) => s.groups.length === 0).length;
+  const atTarget = all.filter(
+    (s) => s.weakest != null && s.targetBand != null && s.weakest.band >= s.targetBand,
+  ).length;
 
   return (
     <div>
       <PageHead
-        eyebrow="Center"
+        eyebrow="People"
         title="Students"
         subtitle={
           profile.role === "center_admin"
-            ? "Everyone learning at your center, across all classes."
+            ? `${all.length} enrolled across ${groupOptions.length} class${groupOptions.length === 1 ? "" : "es"}.`
             : "The students in the groups you run."
         }
       />
 
-      <StatRow>
-        <StatTile
-          value={all.length}
+      <KpiRow>
+        <Kpi
           label="Students"
-          tone="indigo"
+          value={all.length}
+          sub="click a card to filter the list"
           href="/console/students"
           active={!card}
         />
-        <StatTile
-          value={all.length - neverPractised}
+        <Kpi
           label="Have practised"
+          value={all.length - neverPractised}
           href={cardHref("practised")}
           active={card === "practised"}
         />
-        <StatTile
-          value={neverPractised}
+        <Kpi
           label="Never practised"
+          value={neverPractised}
+          deltaTone="bad"
           href={cardHref("never")}
           active={card === "never"}
         />
         {profile.role === "center_admin" ? (
-          <StatTile
-            value={ungrouped}
+          <Kpi
             label="In no group"
+            value={ungrouped}
             href={cardHref("nogroup")}
             active={card === "nogroup"}
           />
         ) : null}
-      </StatRow>
+        <Kpi label="At or above target" value={atTarget} sub="on their weakest skill" />
+      </KpiRow>
 
-      <Panel
-        title="Roster"
-        description={
-          <>
-            {rows.length} shown{rows.length !== all.length ? ` of ${all.length}` : ""}. Students are
-            added inside a group — open a group to create one.
-          </>
-        }
-      >
-        <FilterBar>
-          {/* Applying a search must not silently drop the card filter above. */}
-          {card ? <input type="hidden" name="filter" value={card} /> : null}
-          <SearchField name="q" label="Search" value={sp.q} placeholder="Name or login…" />
-          <SelectField
-            name="group"
-            label="Group"
-            value={sp.group}
-            options={[
-              { value: "all", label: "All groups" },
-              ...groupOptions.map((g) => ({ value: g.id, label: g.name })),
-              { value: "none", label: "In no group" },
-            ]}
-          />
-          <SelectField
-            name="sort"
-            label="Sort"
-            value={sort}
-            options={Object.entries(SORTS).map(([value, s]) => ({ value, label: s.label }))}
-          />
-        </FilterBar>
+      <Card flush>
+        <CardHead
+          title="Roster"
+          divided
+          note="band shown is the LOWEST measured skill — the one capping them. Nothing is averaged across skills."
+        />
 
-        <ScrollTable maxHeight={560} caption="Scroll for more.">
-          <THead>
-            <TH>Name</TH>
-            <TH>Login</TH>
-            <TH>Group</TH>
-            <TH align="right">Practice</TH>
-            <TH align="right">Last active</TH>
-            <TH />
-          </THead>
-          <tbody>
-            {rows.map((s, i) => (
-              <TR key={s.id} first={i === 0}>
-                <TD>{s.name}</TD>
-                <TD muted>{s.username ?? "—"}</TD>
-                <TD muted>
+        <Toolbar>
+          {/* One GET form drives every control, so a search can't silently drop
+              the card filter above it. */}
+          <form
+            method="GET"
+            style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}
+          >
+            {card ? <input type="hidden" name="filter" value={card} /> : null}
+            <input
+              name="q"
+              defaultValue={sp.q ?? ""}
+              placeholder="Search name or login…"
+              aria-label="Search students"
+              style={{ ...fieldStyle, flex: 1, minWidth: 180, maxWidth: 260 }}
+            />
+            <select name="group" defaultValue={sp.group ?? "all"} aria-label="Group" style={fieldStyle}>
+              <option value="all">All groups</option>
+              {groupOptions.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+              <option value="none">In no group</option>
+            </select>
+            <select name="sort" defaultValue={sort} aria-label="Sort" style={fieldStyle}>
+              {Object.entries(SORTS).map(([value, s]) => (
+                <option key={value} value={value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="cn-btn cn-btn--ghost"
+              style={{ ...fieldStyle, background: "#fff", cursor: "pointer", fontWeight: 500 }}
+            >
+              Apply
+            </button>
+          </form>
+          <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>
+            {rows.length} shown{rows.length !== all.length ? ` of ${all.length}` : ""}
+          </span>
+        </Toolbar>
+
+        <Table cols={COLS} minWidth={860}>
+          <THead
+            cols={COLS}
+            labels={["Student", "Group", "Weakest skill", "Target", "Practice", "Last active", ""]}
+          />
+          {rows.map((s) => {
+            const short = s.weakest ? s.weakest.skill : null;
+            const behind =
+              s.weakest && s.targetBand != null ? s.weakest.band - s.targetBand : null;
+            return (
+              // Roster route, not the group one: a student in no group has a
+              // report too, and this row is the only way to reach it.
+              <TRow key={s.id} cols={COLS} href={`/console/students/${s.id}`}>
+                <PersonCell name={s.name} meta={s.username ?? "no login"} />
+                <TD tone="body">
                   {s.groups.length > 0 ? (
                     s.groups.map((g) => g.name).join(", ")
                   ) : (
-                    <Pill tone="warn">no group</Pill>
+                    <Tag tone="amber">no group</Tag>
                   )}
                 </TD>
-                <TD align="right" numeric muted={s.practiceCount === 0}>
-                  {s.practiceCount}
+                <TD>
+                  {s.weakest ? (
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        color:
+                          behind == null || behind >= 0 ? GREEN : behind >= -1 ? AMBER : RED,
+                      }}
+                    >
+                      {s.weakest.band.toFixed(1)}{" "}
+                      <span style={{ fontWeight: 400, color: FAINT, textTransform: "capitalize" }}>
+                        {short}
+                      </span>
+                    </span>
+                  ) : (
+                    <span style={{ color: FAINT }}>not measured</span>
+                  )}
                 </TD>
-                <TD align="right" numeric muted>
-                  {s.lastActive ? dateFmt(s.lastActive) : "never"}
+                <TD tone="soft">{s.targetBand?.toFixed(1) ?? "—"}</TD>
+                <TD tone={s.practiceCount === 0 ? "faint" : "body"}>{s.practiceCount}</TD>
+                <TD tone="soft">{s.lastActive ? dateFmt(s.lastActive) : "never"}</TD>
+                {/* The whole row is the link, so this is a marker, not an
+                    anchor — an <a> inside an <a> is invalid HTML. */}
+                <TD align="right" tone="faint">
+                  ›
                 </TD>
-                <TD align="right">
-                  {/* Roster route, not the group one: a student in no group has
-                      a report too, and this row is the only way to reach it. */}
-                  <RowLink href={`/console/students/${s.id}`}>Report</RowLink>
-                </TD>
-              </TR>
-            ))}
-            {rows.length === 0 ? (
-              <EmptyTableRow colSpan={6}>
-                {all.length === 0
-                  ? "No students yet. Open a group and add one."
-                  : "Nobody matches those filters."}
-              </EmptyTableRow>
-            ) : null}
-          </tbody>
-        </ScrollTable>
-      </Panel>
+              </TRow>
+            );
+          })}
+          {rows.length === 0 ? (
+            <Empty>
+              {all.length === 0
+                ? "No students yet. Open a group and add one."
+                : "Nobody matches those filters."}
+            </Empty>
+          ) : null}
+        </Table>
+      </Card>
     </div>
   );
 }

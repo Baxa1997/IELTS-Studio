@@ -30,6 +30,18 @@ export interface StudentRow {
   practiceCount: number;
   /** Most recent graded practice of any kind, ISO, or null if they never have. */
   lastActive: string | null;
+  /**
+   * The lowest measured skill and its band — deliberately NOT a mean across
+   * skills. An "overall band" averaged over whichever skills a learner happened
+   * to practise is a number we invented, and this roster has to survive a center
+   * owner checking it against a real result. The weakest skill is both real and
+   * the one thing worth acting on.
+   */
+  weakest: { skill: string; band: number } | null;
+  /** Their target band. The same across skills in practice, so the max is it. */
+  targetBand: number | null;
+  /** How many of the four skills have ever been measured. */
+  measuredSkills: number;
 }
 
 export async function loadTeachers(): Promise<TeacherRow[]> {
@@ -118,15 +130,52 @@ export async function loadStudents(opts: {
   }
   const { data: stats } = await statsQuery;
 
+  // Bands, in one round trip for the whole roster. RLS lets staff read the org's
+  // estimates (see 20260617121100), so no per-student query is needed.
+  const rosterIds = (stats ?? []).map((s) => s.student_id as string);
+  const bands = new Map<string, { skill: string; band: number }[]>();
+  const targets = new Map<string, number>();
+  if (rosterIds.length > 0) {
+    const { data: estimates } = await supabase
+      .from("skill_estimates")
+      .select("student_id, skill, current_band, target_band")
+      .in("student_id", rosterIds);
+    for (const e of (estimates ?? []) as {
+      student_id: string;
+      skill: string;
+      current_band: number | null;
+      target_band: number | null;
+    }[]) {
+      if (e.target_band != null) {
+        targets.set(e.student_id, Math.max(targets.get(e.student_id) ?? 0, Number(e.target_band)));
+      }
+      if (e.current_band == null) continue; // null until first measured
+      bands.set(e.student_id, [
+        ...(bands.get(e.student_id) ?? []),
+        { skill: e.skill, band: Number(e.current_band) },
+      ]);
+    }
+  }
+
   return (stats ?? [])
-    .map((s) => ({
-      id: s.student_id as string,
-      name: (s.full_name as string | null) ?? "Unnamed",
-      username: (s.username as string | null) ?? null,
-      avatarPath: (s.avatar_path as string | null) ?? null,
-      groups: groupsByStudent.get(s.student_id as string) ?? [],
-      practiceCount: (s.practice_count as number | null) ?? 0,
-      lastActive: (s.last_active as string | null) ?? null,
-    }))
+    .map((s) => {
+      const id = s.student_id as string;
+      const measured = bands.get(id) ?? [];
+      const weakest = measured.length
+        ? measured.reduce((lo, m) => (m.band < lo.band ? m : lo))
+        : null;
+      return {
+        id,
+        name: (s.full_name as string | null) ?? "Unnamed",
+        username: (s.username as string | null) ?? null,
+        avatarPath: (s.avatar_path as string | null) ?? null,
+        groups: groupsByStudent.get(id) ?? [],
+        practiceCount: (s.practice_count as number | null) ?? 0,
+        lastActive: (s.last_active as string | null) ?? null,
+        weakest,
+        targetBand: targets.get(id) ?? null,
+        measuredSkills: measured.length,
+      };
+    })
     .sort((a, b) => b.practiceCount - a.practiceCount || a.name.localeCompare(b.name));
 }

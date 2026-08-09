@@ -21,6 +21,8 @@ import { createClient } from "@/lib/supabase/server";
 export interface GroupReportRow {
   id: string;
   name: string;
+  /** Join key for per-teacher roll-ups — names are not unique, ids are. */
+  teacherId: string | null;
   teacherName: string | null;
   students: number;
   assignments: number;
@@ -109,6 +111,7 @@ export async function loadCenterReport(opts: {
       groups: groups.map((g) => ({
         id: g.id,
         name: g.name,
+        teacherId: g.teacher_id,
         teacherName: g.teacher_id ? (staffName.get(g.teacher_id) ?? null) : null,
         students: 0,
         assignments: assignments.filter((a) => a.group_id === g.id).length,
@@ -299,6 +302,7 @@ export async function loadCenterReport(opts: {
     return {
       id: g.id,
       name: g.name,
+      teacherId: g.teacher_id,
       teacherName: g.teacher_id ? (staffName.get(g.teacher_id) ?? null) : null,
       students: members.length,
       assignments: groupAssignments.length,

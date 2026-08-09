@@ -13,14 +13,23 @@ import { ArrowLeft } from "lucide-react";
  * Server components: presentation only, no hooks, no client bundle.
  */
 
-export const SANS = "var(--font-hanken), system-ui, sans-serif";
-export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const INDIGO = "#3B43B5";
-export const INK = "#1A2138";
-export const MUTED = "#5A6076";
-export const FAINT = "#8A8FA0";
-export const LINE = "#ECEAF2";
-export const TINT = "#F4F4FE";
+/**
+ * Every token is a CSS variable with the Option A value as its fallback, so the
+ * value can be overridden per subtree without touching this file. The center
+ * console does exactly that (`.cn-root` in globals.css) to pull the pages still
+ * built on this kit — pending invites, the assignment report, the student
+ * report — onto the CRM brand. Anywhere the `--pu-*` variables are not defined,
+ * which is the platform super-admin console and the two learner pages, these
+ * resolve to the original values.
+ */
+export const SANS = "var(--pu-sans, var(--font-hanken), system-ui, sans-serif)";
+export const SERIF = "var(--pu-serif, var(--font-newsreader), Georgia, serif)";
+export const INDIGO = "var(--pu-indigo, #3B43B5)";
+export const INK = "var(--pu-ink, #1A2138)";
+export const MUTED = "var(--pu-muted, #5A6076)";
+export const FAINT = "var(--pu-faint, #8A8FA0)";
+export const LINE = "var(--pu-line, #ECEAF2)";
+export const TINT = "var(--pu-tint, #F4F4FE)";
 
 export const cardStyle: React.CSSProperties = {
   background: "#fff",

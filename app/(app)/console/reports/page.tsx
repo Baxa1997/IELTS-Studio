@@ -1,21 +1,33 @@
 import { redirect } from "next/navigation";
 
-import { BarList } from "@/components/admin/charts";
-import { EmptyTableRow, ScrollTable, TD, TH, THead, TR } from "@/components/admin/table";
 import {
-  EmptyRow,
+  AMBER,
+  Avatar,
+  Bar,
+  Card,
+  CardHead,
+  CardNote,
+  Columns,
+  Empty,
   FAINT,
-  List,
+  GREEN,
+  INDIGO,
+  Kpi,
+  KpiRow,
+  ListRow,
+  MeterRow,
   PageHead,
-  Panel,
-  Pill,
-  Row,
-  RowLink,
-  RowText,
+  RED,
   SANS,
-  StatRow,
-  StatTile,
-} from "@/components/console/page-ui";
+  Split,
+  Stack,
+  Table,
+  Tag,
+  TD,
+  TextLink,
+  THead,
+  TRow,
+} from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
@@ -45,166 +57,217 @@ export default async function ReportsPage() {
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
   ]);
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
+  const isCenter = report.scope === "center";
 
   const measured = report.skillAverages.filter((s) => s.samples > 0);
+  const topBucket = Math.max(1, ...report.bandBuckets.map((b) => b.value));
+  const topCap = Math.max(1, ...report.writingCaps.map((c) => c.value));
+  const topMiss = Math.max(1, ...report.readingMisses.map((m) => m.value));
+
+  const banded = report.groups.filter((g) => g.averageBand != null);
+  const centerBand = banded.length
+    ? banded.reduce((n, g) => n + (g.averageBand ?? 0), 0) / banded.length
+    : null;
+
+  const COLS = isCenter ? "2fr 1.4fr .8fr .9fr 1.3fr .8fr" : "2fr .8fr .9fr 1.3fr .8fr";
 
   return (
     <div>
       <PageHead
         eyebrow="Reports"
-        title={report.scope === "center" ? centerName : "Your classes"}
+        title={isCenter ? centerName : "Your classes"}
         subtitle="Graded practice from the last 90 days. Listening is scored out of 40, so it sits outside the band figures."
+        actions={<ExportReportButton rows={report.groups} centerName={centerName} />}
       />
 
-      <StatRow>
-        <StatTile value={report.totals.students} label="Students" tone="indigo" />
-        <StatTile value={report.totals.groups} label={report.scope === "center" ? "Classes" : "Your classes"} />
-        <StatTile value={report.totals.gradedPractices} label="Graded practices" />
-        <StatTile value={report.atRisk.length} label="Gone quiet (14 days)" />
-      </StatRow>
+      <KpiRow>
+        <Kpi label="Students" value={report.totals.students} sub="in a class" />
+        <Kpi label={isCenter ? "Classes" : "Your classes"} value={report.totals.groups} />
+        <Kpi label="Graded practices" value={report.totals.gradedPractices} sub="last 90 days" />
+        <Kpi
+          label="Average class band"
+          value={centerBand?.toFixed(1) ?? "—"}
+          sub={banded.length ? `${banded.length} class(es) graded` : "nothing graded yet"}
+        />
+        <Kpi
+          label="Gone quiet"
+          value={report.atRisk.length}
+          deltaTone="bad"
+          sub="no practice in 14 days"
+        />
+      </KpiRow>
 
-      <Panel
-        title="Classes"
-        description="Completion is the share of set practice that has been finished and graded."
-        actions={<ExportReportButton rows={report.groups} centerName={centerName} />}
-      >
-        <ScrollTable maxHeight={420} caption="Scroll for more.">
-          <THead>
-            <TH>Class</TH>
-            {report.scope === "center" ? <TH>Teacher</TH> : null}
-            <TH align="right">Students</TH>
-            <TH align="right">Set</TH>
-            <TH align="right">Completion</TH>
-            <TH align="right">Avg band</TH>
-            <TH />
-          </THead>
-          <tbody>
-            {report.groups.map((g, i) => (
-              <TR key={g.id} first={i === 0}>
-                <TD>{g.name}</TD>
-                {report.scope === "center" ? <TD muted>{g.teacherName ?? "—"}</TD> : null}
-                <TD align="right" numeric>
-                  {g.students}
+      <Stack>
+        <Split>
+          <Card>
+            <CardHead title="Bands awarded" note="every graded writing, reading and speaking practice" />
+            {report.bandBuckets.length > 0 ? (
+              <Columns
+                bars={report.bandBuckets.map((b) => ({
+                  label: b.label,
+                  cap: b.value,
+                  pct: (b.value / topBucket) * 100,
+                  fill: INDIGO,
+                }))}
+                height={150}
+              />
+            ) : (
+              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                Nothing graded in this window yet.
+              </p>
+            )}
+          </Card>
+
+          <Card>
+            <CardHead title="Average by skill" />
+            <CardNote>
+              Rests only on what has actually been graded — never averaged into one overall band.
+            </CardNote>
+            {measured.map((s) => (
+              <MeterRow
+                key={s.skill}
+                label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
+                pct={((s.band ?? 0) / 9) * 100}
+                value={s.band?.toFixed(1) ?? "—"}
+                fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
+                trail={
+                  <span style={{ color: FAINT, width: 74, display: "inline-block", textAlign: "right" }}>
+                    {s.samples} graded
+                  </span>
+                }
+              />
+            ))}
+            {measured.length === 0 ? (
+              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                No graded practice yet.
+              </p>
+            ) : null}
+          </Card>
+        </Split>
+
+        <Card flush>
+          <CardHead
+            title="Group league table"
+            divided
+            note="completion is the share of set practice finished and graded"
+          />
+          <Table cols={COLS} minWidth={isCenter ? 780 : 620}>
+            <THead
+              cols={COLS}
+              labels={
+                isCenter
+                  ? ["Class", "Teacher", "Students", "Avg band", "Completion", "Set"]
+                  : ["Class", "Students", "Avg band", "Completion", "Set"]
+              }
+            />
+            {report.groups.map((g) => (
+              <TRow key={g.id} cols={COLS} href={`/console/groups/${g.id}`}>
+                <TD tone="ink" weight={500}>
+                  {g.name}
                 </TD>
-                <TD align="right" numeric muted={g.assignments === 0}>
-                  {g.assignments}
+                {isCenter ? <TD tone="body">{g.teacherName ?? "—"}</TD> : null}
+                <TD>{g.students}</TD>
+                <TD tone="ink" weight={600}>
+                  {g.averageBand?.toFixed(1) ?? "—"}
                 </TD>
-                <TD align="right" numeric muted={g.completionPct == null}>
-                  {g.completionPct == null ? "—" : `${g.completionPct}%`}
+                <TD>
+                  {g.completionPct == null ? (
+                    <span style={{ color: FAINT }}>—</span>
+                  ) : (
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Bar pct={g.completionPct} width={60} fill={g.completionPct >= 60 ? GREEN : INDIGO} />
+                      <span style={{ fontSize: 12 }}>{g.completionPct}%</span>
+                    </span>
+                  )}
                 </TD>
-                <TD align="right" numeric muted={g.averageBand == null}>
-                  {g.averageBand == null ? "—" : g.averageBand.toFixed(1)}
-                </TD>
-                <TD align="right">
-                  <RowLink href={`/console/groups/${g.id}`}>Open</RowLink>
-                </TD>
-              </TR>
+                <TD tone={g.assignments === 0 ? "faint" : "body"}>{g.assignments}</TD>
+              </TRow>
             ))}
             {report.groups.length === 0 ? (
-              <EmptyTableRow colSpan={report.scope === "center" ? 7 : 6}>
-                No classes yet. Create one and set it some practice.
-              </EmptyTableRow>
+              <Empty>No classes yet. Create one and set it some practice.</Empty>
             ) : null}
-          </tbody>
-        </ScrollTable>
-      </Panel>
+          </Table>
+        </Card>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: 16,
-        }}
-      >
-        <Panel title="Bands awarded" description="Every graded writing, reading and speaking practice.">
-          {report.bandBuckets.length > 0 ? (
-            <BarList rows={report.bandBuckets} />
-          ) : (
-            <List>
-              <EmptyRow>Nothing graded in this window yet.</EmptyRow>
-            </List>
-          )}
-        </Panel>
-
-        <Panel title="Average by skill" description="Rests only on what has actually been graded.">
-          <List>
-            {measured.map((s, i) => (
-              <Row key={s.skill} first={i === 0}>
-                <RowText
-                  title={s.skill}
-                  meta={`${s.samples} graded practice${s.samples === 1 ? "" : "s"}`}
-                />
-                <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, flex: "none" }}>
-                  {s.band?.toFixed(1) ?? "—"}
-                </span>
-              </Row>
-            ))}
-            {measured.length === 0 ? <EmptyRow>No graded practice yet.</EmptyRow> : null}
-          </List>
-        </Panel>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: 16,
-        }}
-      >
-        <Panel
-          title="What caps their writing"
-          description="The lowest criterion on each graded essay — the one thing holding the band down."
-        >
-          {report.writingCaps.length > 0 ? (
-            <BarList rows={report.writingCaps} />
-          ) : (
-            <List>
-              <EmptyRow>No graded essays yet.</EmptyRow>
-            </List>
-          )}
-        </Panel>
-
-        <Panel
-          title="Reading questions most often wrong"
-          description="Total wrong answers by question type, across the classes in scope."
-        >
-          {report.readingMisses.length > 0 ? (
-            <BarList rows={report.readingMisses} color="#B9791A" />
-          ) : (
-            <List>
-              <EmptyRow>No graded reading tests yet.</EmptyRow>
-            </List>
-          )}
-        </Panel>
-      </div>
-
-      <Panel
-        title="Gone quiet"
-        description="No graded practice in the last 14 days. The earliest to stop is first."
-      >
-        <List>
-          {report.atRisk.slice(0, 25).map((s, i) => (
-            <Row key={s.id} first={i === 0}>
-              <RowText
-                title={s.name}
-                meta={s.lastActive ? `last practised ${dateFmt(s.lastActive)}` : "has never practised"}
+        <Split ratio="1fr 1fr">
+          <Card>
+            <CardHead title="What caps their writing" />
+            <CardNote>
+              The lowest criterion on each graded essay — the one thing holding the band down.
+            </CardNote>
+            {report.writingCaps.map((c) => (
+              <MeterRow
+                key={c.label}
+                label={c.label}
+                labelWidth={150}
+                pct={(c.value / topCap) * 100}
+                value={c.value}
+                fill={INDIGO}
               />
-              <span style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
-                {s.lastActive ? null : <Pill tone="warn">never started</Pill>}
-                <RowLink href={`/console/students/${s.id}`}>Report</RowLink>
-              </span>
-            </Row>
+            ))}
+            {report.writingCaps.length === 0 ? (
+              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                No graded essays yet.
+              </p>
+            ) : null}
+          </Card>
+
+          <Card>
+            <CardHead title="Reading questions most often wrong" />
+            <CardNote>
+              Total wrong answers by question type, across the classes in scope.
+            </CardNote>
+            {report.readingMisses.map((m) => (
+              <MeterRow
+                key={m.label}
+                label={m.label}
+                labelWidth={150}
+                pct={(m.value / topMiss) * 100}
+                value={m.value}
+                fill={AMBER}
+              />
+            ))}
+            {report.readingMisses.length === 0 ? (
+              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                No graded reading tests yet.
+              </p>
+            ) : null}
+          </Card>
+        </Split>
+
+        <Card flush>
+          <CardHead
+            title="Gone quiet"
+            divided
+            badge={report.atRisk.length > 0 ? <Tag tone="red">{report.atRisk.length}</Tag> : null}
+            note="no graded practice in the last 14 days — earliest to stop first"
+          />
+          {report.atRisk.slice(0, 25).map((s) => (
+            <ListRow
+              key={s.id}
+              href={`/console/students/${s.id}`}
+              lead={<Avatar name={s.name} size={30} />}
+              title={s.name}
+              meta={s.lastActive ? `last practised ${dateFmt(s.lastActive)}` : "has never practised"}
+              trail={
+                <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {s.lastActive ? null : <Tag tone="amber">never started</Tag>}
+                  <span style={{ fontFamily: SANS, fontSize: 12.5, color: INDIGO }}>Report →</span>
+                </span>
+              }
+            />
           ))}
           {report.atRisk.length === 0 ? (
-            <EmptyRow>Everyone has practised in the last two weeks.</EmptyRow>
+            <Empty>Everyone has practised in the last two weeks.</Empty>
           ) : null}
-        </List>
-        {report.atRisk.length > 25 ? (
-          <p style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, marginTop: 10 }}>
-            Showing 25 of {report.atRisk.length}.
-          </p>
-        ) : null}
-      </Panel>
+          {report.atRisk.length > 25 ? (
+            <div style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, padding: "12px 18px" }}>
+              Showing 25 of {report.atRisk.length}.{" "}
+              <TextLink href="/console/students?sort=idle">See the whole roster →</TextLink>
+            </div>
+          ) : null}
+        </Card>
+      </Stack>
     </div>
   );
 }
