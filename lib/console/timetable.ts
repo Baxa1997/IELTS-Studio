@@ -34,12 +34,23 @@ export const PATTERN_LABEL: Record<SlotPattern, string> = {
   even: "Even days (Tue/Thu/Sat)",
 };
 
+/** A site. A center with one address has none of these, which is fine. */
+export interface Branch {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  active: boolean;
+  roomCount: number;
+}
+
 export interface Room {
   id: string;
   name: string;
   capacity: number | null;
   color: string | null;
   active: boolean;
+  branchId: string | null;
 }
 
 export interface Slot {
@@ -50,6 +61,8 @@ export interface Slot {
   teacherName: string | null;
   roomId: string | null;
   roomName: string | null;
+  /** Derived from the room — a lesson has no branch of its own. */
+  branchId: string | null;
   weekday: number;
   startsAt: string; // HH:MM
   endsAt: string; // HH:MM
@@ -61,6 +74,7 @@ export interface Slot {
 }
 
 export interface Timetable {
+  branches: Branch[];
   rooms: Room[];
   slots: Slot[];
   /** Groups with no slot at all — the timetable's own to-do list. */
@@ -115,10 +129,10 @@ export async function loadTimetable(
 ): Promise<Timetable> {
   const supabase = await createClient();
 
-  const [roomsRes, slotsRes, groupsRes, membersRes, staffRes] = await Promise.all([
+  const [roomsRes, slotsRes, groupsRes, membersRes, staffRes, branchesRes] = await Promise.all([
     supabase
       .from("rooms")
-      .select("id, name, capacity, color, active")
+      .select("id, name, capacity, color, active, branch_id")
       .order("sort", { ascending: true })
       .order("name", { ascending: true }),
     supabase
@@ -129,6 +143,11 @@ export async function loadTimetable(
     supabase.from("groups").select("id, name, teacher_id"),
     supabase.from("group_members").select("group_id"),
     supabase.from("profiles").select("id, full_name").in("role", ["teacher", "center_admin"]),
+    supabase
+      .from("branches")
+      .select("id, name, address, phone, active")
+      .order("sort", { ascending: true })
+      .order("name", { ascending: true }),
   ]);
 
   const sizes = new Map<string, number>();
@@ -149,16 +168,20 @@ export async function loadTimetable(
     teacherId: (g.teacher_id as string | null) ?? null,
   }));
   const groupById = new Map(groupRows.map((g) => [g.id, g]));
-  const roomName = new Map(
-    ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => [
-      r.id as string,
-      r.name as string,
-    ]),
-  );
+  const roomRows = ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    capacity: (r.capacity as number | null) ?? null,
+    color: (r.color as string | null) ?? null,
+    active: Boolean(r.active),
+    branchId: (r.branch_id as string | null) ?? null,
+  }));
+  const roomById = new Map(roomRows.map((r) => [r.id, r]));
 
   let slots: Slot[] = ((slotsRes.data ?? []) as Record<string, unknown>[]).map((s) => {
     const group = groupById.get(s.group_id as string);
     const roomId = (s.room_id as string | null) ?? null;
+    const room = roomId ? roomById.get(roomId) : undefined;
     return {
       id: s.id as string,
       groupId: s.group_id as string,
@@ -166,7 +189,9 @@ export async function loadTimetable(
       teacherId: group?.teacherId ?? null,
       teacherName: group?.teacherId ? (staffName.get(group.teacherId) ?? null) : null,
       roomId,
-      roomName: roomId ? (roomName.get(roomId) ?? null) : null,
+      roomName: room?.name ?? null,
+      // A lesson's site is wherever its room is. No second source of truth.
+      branchId: room?.branchId ?? null,
       weekday: Number(s.weekday ?? 0),
       startsAt: trimTime(String(s.starts_at ?? "00:00")),
       endsAt: trimTime(String(s.ends_at ?? "00:00")),
@@ -227,14 +252,22 @@ export async function loadTimetable(
   const dayStartMin = Math.max(0, floorHalf(Math.min(DEFAULT_OPEN, ...starts)));
   const dayEndMin = Math.min(24 * 60, ceilHalf(Math.max(DEFAULT_CLOSE, ...ends)));
 
+  const roomsPerBranch = new Map<string, number>();
+  for (const room of roomRows) {
+    if (!room.branchId || !room.active) continue;
+    roomsPerBranch.set(room.branchId, (roomsPerBranch.get(room.branchId) ?? 0) + 1);
+  }
+
   return {
-    rooms: ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => ({
-      id: r.id as string,
-      name: r.name as string,
-      capacity: (r.capacity as number | null) ?? null,
-      color: (r.color as string | null) ?? null,
-      active: Boolean(r.active),
+    branches: ((branchesRes.data ?? []) as Record<string, unknown>[]).map((b) => ({
+      id: b.id as string,
+      name: b.name as string,
+      address: (b.address as string | null) ?? null,
+      phone: (b.phone as string | null) ?? null,
+      active: Boolean(b.active),
+      roomCount: roomsPerBranch.get(b.id as string) ?? 0,
     })),
+    rooms: roomRows,
     slots,
     unscheduled,
     clashCount,

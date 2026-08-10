@@ -113,6 +113,58 @@ export async function deleteSlot(_prev: ActionState, formData: FormData): Promis
   return { ok: "Slot removed." };
 }
 
+/* ── branches (filiallar) ─────────────────────────────────────────────────── */
+
+export async function saveBranch(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only the center owner can manage branches." };
+  }
+
+  const name = str(formData, "name");
+  if (!name) return { error: "Give the branch a name." };
+
+  const supabase = await createClient();
+  const id = str(formData, "id") || null;
+  const payload = {
+    organization_id: profile.organization_id,
+    name,
+    address: str(formData, "address") || null,
+    phone: str(formData, "phone") || null,
+    active: str(formData, "active") !== "off",
+  };
+
+  const { error } = id
+    ? await supabase.from("branches").update(payload).eq("id", id)
+    : await supabase.from("branches").insert(payload);
+  if (error) {
+    if (error.code === "23505") return { error: "There is already a branch with that name." };
+    return { error: error.message };
+  }
+
+  revalidatePath("/console/calendar");
+  return { ok: id ? "Branch updated." : `${name} added.` };
+}
+
+export async function deleteBranch(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only the center owner can manage branches." };
+  }
+
+  const id = str(formData, "id");
+  if (!id) return { error: "Nothing to remove." };
+
+  // rooms.branch_id is ON DELETE SET NULL, so the rooms survive and simply stop
+  // belonging to a site — the timetable keeps every lesson in them.
+  const supabase = await createClient();
+  const { error } = await supabase.from("branches").delete().eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/console/calendar");
+  return { ok: "Branch removed. Its rooms are now unassigned." };
+}
+
 export async function saveRoom(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireOrgUser();
   if (profile.role !== "center_admin") return { error: "Only the center owner can manage rooms." };
@@ -132,6 +184,7 @@ export async function saveRoom(_prev: ActionState, formData: FormData): Promise<
     organization_id: profile.organization_id,
     name,
     capacity,
+    branch_id: str(formData, "branch_id") || null,
     color: str(formData, "color") || null,
     active: str(formData, "active") !== "off",
   };
@@ -140,7 +193,9 @@ export async function saveRoom(_prev: ActionState, formData: FormData): Promise<
     ? await supabase.from("rooms").update(payload).eq("id", id)
     : await supabase.from("rooms").insert(payload);
   if (error) {
-    if (error.code === "23505") return { error: "There is already a room with that name." };
+    if (error.code === "23505") {
+      return { error: "That branch already has a room with that name." };
+    }
     return { error: error.message };
   }
 

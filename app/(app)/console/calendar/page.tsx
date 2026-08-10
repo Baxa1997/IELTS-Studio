@@ -16,6 +16,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { describeSlot, loadTimetable, toMinutes, WEEKDAYS } from "@/lib/console/timetable";
 
+import { BranchesManager } from "./branches-manager";
 import { SlotForm } from "./calendar-forms";
 import { RoomsManager } from "./rooms-manager";
 import { type GridRoom, TimetableGrid } from "./timetable-grid";
@@ -53,10 +54,37 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     loadGroups(profile),
   ]);
 
-  const { rooms, slots, unscheduled, clashCount, dayStartMin, dayEndMin } = timetable;
-  const activeRooms = rooms.filter((r) => r.active);
-  const daySlots = slots.filter((s) => s.weekday === day);
+  const { branches, rooms, slots, unscheduled, clashCount, dayStartMin, dayEndMin } = timetable;
+  const openBranches = branches.filter((b) => b.active);
+
+  // Which site are we looking at? Only meaningful once there is more than one:
+  // a single-address center never sees the tabs and never has to choose.
+  const requested = first(sp.branch);
+  const branchId =
+    requested && openBranches.some((b) => b.id === requested)
+      ? requested
+      : requested === "all"
+        ? null
+        : (openBranches[0]?.id ?? null);
+  const showBranchTabs = openBranches.length > 0;
+
+  // Rooms are the columns, so the branch filter is a filter on rooms.
+  const activeRooms = rooms
+    .filter((r) => r.active)
+    .filter((r) => !showBranchTabs || branchId == null || r.branchId === branchId);
+  const roomIdsHere = new Set(activeRooms.map((r) => r.id));
+
+  // Everything on this page counts within the chosen branch — the day tabs, the
+  // hours, the week list. The one deliberate exception is `clashCount`, which
+  // stays center-wide: the room you are booking can be taken by a class at a
+  // branch you are not looking at.
+  const branchSlots = slots.filter(
+    (s) => !showBranchTabs || branchId == null || s.roomId == null || roomIdsHere.has(s.roomId),
+  );
+  const daySlots = branchSlots.filter((s) => s.weekday === day);
   const canEdit = profile.role === "center_admin" || profile.role === "teacher";
+
+  const branchName = new Map(branches.map((b) => [b.id, b.name]));
 
   // Lessons with no room still need a column, or they are invisible.
   const unroomed = daySlots.filter((s) => s.roomId == null);
@@ -64,7 +92,13 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     ...activeRooms.map((room) => ({
       id: room.id,
       name: room.name,
-      meta: room.capacity ? `${room.capacity} seats` : "—",
+      // Viewing every branch at once, the room name alone is ambiguous.
+      meta:
+        branchId == null && room.branchId
+          ? (branchName.get(room.branchId) ?? "—")
+          : room.capacity
+            ? `${room.capacity} seats`
+            : "—",
       color: room.color,
     })),
     ...(unroomed.length > 0 || activeRooms.length === 0
@@ -90,6 +124,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     const base: Record<string, string | undefined> = {
       day: String(day),
       who: mine ? undefined : "all",
+      branch: showBranchTabs ? (branchId ?? "all") : undefined,
       ...patch,
     };
     for (const [key, value] of Object.entries(base)) if (value) params.set(key, value);
@@ -125,13 +160,37 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 width={520}
               >
                 <RoomsManager
+                  branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
+                  defaultBranchId={branchId}
                   rooms={rooms.map((r) => ({
                     id: r.id,
                     name: r.name,
                     capacity: r.capacity,
                     color: r.color,
                     active: r.active,
+                    branchId: r.branchId,
                     lessons: lessonsPerRoom.get(r.id) ?? 0,
+                  }))}
+                />
+              </Drawer>
+            ) : null}
+            {profile.role === "center_admin" ? (
+              <Drawer
+                label={showBranchTabs ? `Branches (${openBranches.length})` : "Branches"}
+                variant="ghost"
+                eyebrow="Timetable"
+                title="Branches"
+                note="The sites you teach at. Each owns its own rooms."
+                width={520}
+              >
+                <BranchesManager
+                  branches={branches.map((b) => ({
+                    id: b.id,
+                    name: b.name,
+                    address: b.address,
+                    phone: b.phone,
+                    active: b.active,
+                    roomCount: b.roomCount,
                   }))}
                 />
               </Drawer>
@@ -139,6 +198,69 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
           </>
         }
       />
+
+      {/* ── the branch tabs ────────────────────────────────────────────────── */}
+      {showBranchTabs ? (
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: 12,
+            paddingBottom: 10,
+            borderBottom: "1px solid #E4E2DC",
+          }}
+        >
+          {openBranches.map((branch) => {
+            const on = branch.id === branchId;
+            return (
+              <a
+                key={branch.id}
+                href={link({ branch: branch.id })}
+                className="cn-tab"
+                style={{
+                  padding: "8px 15px",
+                  fontFamily: SANS,
+                  fontSize: 13.5,
+                  fontWeight: on ? 600 : 500,
+                  textDecoration: "none",
+                  borderRadius: "9px 9px 0 0",
+                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
+                  color: on ? INDIGO : MUTED,
+                  background: on ? "#F2F1FB" : "transparent",
+                }}
+              >
+                {branch.name}
+                <span
+                  style={{ marginLeft: 7, fontSize: 11, color: on ? INDIGO : FAINT, opacity: 0.75 }}
+                >
+                  {branch.roomCount}
+                </span>
+              </a>
+            );
+          })}
+          {openBranches.length > 1 ? (
+            <a
+              href={link({ branch: "all" })}
+              className="cn-tab"
+              style={{
+                padding: "8px 15px",
+                fontFamily: SANS,
+                fontSize: 13.5,
+                fontWeight: branchId == null ? 600 : 500,
+                textDecoration: "none",
+                borderRadius: "9px 9px 0 0",
+                borderBottom: `2px solid ${branchId == null ? INDIGO : "transparent"}`,
+                color: branchId == null ? INDIGO : MUTED,
+                background: branchId == null ? "#F2F1FB" : "transparent",
+              }}
+            >
+              Every branch
+            </a>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* ── the day tabs ───────────────────────────────────────────────────── */}
       <div
@@ -152,7 +274,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       >
         {WEEKDAYS.map((d) => {
           const on = d.index === day;
-          const count = slots.filter((s) => s.weekday === d.index).length;
+          const count = branchSlots.filter((s) => s.weekday === d.index).length;
           return (
             <a
               key={d.index}
@@ -320,15 +442,18 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         ) : null}
 
         <Card>
-          <CardHead title={`Every slot this week`} note={`${slots.length} in total`} />
-          {slots.length === 0 ? (
+          <CardHead
+            title="Every lesson this week"
+            note={`${branchSlots.length} in total${branchId != null ? ` at ${branchName.get(branchId) ?? "this branch"}` : ""}`}
+          />
+          {branchSlots.length === 0 ? (
             <p style={{ fontFamily: SANS, fontSize: 13, color: SOFT, margin: 0, lineHeight: 1.6 }}>
               Nothing scheduled yet. Click any empty cell in the grid above — it opens the form with
               that room, day and time already filled in.
             </p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {slots.map((slot) => (
+              {branchSlots.map((slot) => (
                 <span
                   key={slot.id}
                   style={{

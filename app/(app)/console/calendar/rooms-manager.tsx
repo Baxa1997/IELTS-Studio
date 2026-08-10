@@ -31,15 +31,32 @@ export interface RoomRow {
   capacity: number | null;
   color: string | null;
   active: boolean;
+  branchId: string | null;
   lessons: number;
 }
 
-export function RoomsManager({ rooms }: { rooms: RoomRow[] }) {
+export interface BranchOption {
+  id: string;
+  name: string;
+}
+
+export function RoomsManager({
+  rooms,
+  branches,
+  defaultBranchId,
+}: {
+  rooms: RoomRow[];
+  branches: BranchOption[];
+  /** The branch tab you were on, so a new room lands where you are looking. */
+  defaultBranchId?: string | null;
+}) {
   return (
     <div>
       <RoomEditor
         key={`new-${rooms.length}`}
         suggestedColor={ROOM_COLORS[rooms.length % ROOM_COLORS.length]}
+        branches={branches}
+        defaultBranchId={defaultBranchId}
       />
 
       {rooms.length > 0 ? (
@@ -58,7 +75,12 @@ export function RoomsManager({ rooms }: { rooms: RoomRow[] }) {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {rooms.map((room) => (
-              <RoomEditor key={room.id} room={room} suggestedColor={room.color ?? ROOM_COLORS[0]} />
+              <RoomEditor
+                key={room.id}
+                room={room}
+                suggestedColor={room.color ?? ROOM_COLORS[0]}
+                branches={branches}
+              />
             ))}
           </div>
         </div>
@@ -67,7 +89,17 @@ export function RoomsManager({ rooms }: { rooms: RoomRow[] }) {
   );
 }
 
-function RoomEditor({ room, suggestedColor }: { room?: RoomRow; suggestedColor: string }) {
+function RoomEditor({
+  room,
+  suggestedColor,
+  branches,
+  defaultBranchId,
+}: {
+  room?: RoomRow;
+  suggestedColor: string;
+  branches: BranchOption[];
+  defaultBranchId?: string | null;
+}) {
   const [open, setOpen] = useState(!room);
   const [color, setColor] = useState(room?.color ?? suggestedColor);
   const [state, formAction, pending] = useActionState(saveRoom, {} as ActionState);
@@ -97,6 +129,9 @@ function RoomEditor({ room, suggestedColor }: { room?: RoomRow; suggestedColor: 
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13, color: INK, fontWeight: 500 }}>{room.name}</div>
           <div style={{ fontSize: 11.5, color: FAINT }}>
+            {branches.find((b) => b.id === room.branchId)?.name ??
+              (branches.length > 0 ? "No branch" : null)}
+            {branches.length > 0 ? " · " : ""}
             {room.capacity ? `${room.capacity} seats · ` : ""}
             {room.lessons} lesson{room.lessons === 1 ? "" : "s"} a week
             {room.active ? "" : " · closed"}
@@ -135,6 +170,24 @@ function RoomEditor({ room, suggestedColor }: { room?: RoomRow; suggestedColor: 
     >
       {room ? <input type="hidden" name="id" value={room.id} /> : null}
       <input type="hidden" name="color" value={color} />
+
+      {branches.length > 0 ? (
+        <label style={{ fontSize: 12, color: MUTED, display: "block", marginBottom: 10 }}>
+          Branch
+          <select
+            name="branch_id"
+            defaultValue={room?.branchId ?? defaultBranchId ?? ""}
+            style={{ ...fieldStyle, marginTop: 4 }}
+          >
+            <option value="">No branch</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr .8fr", gap: 10 }}>
         <label style={{ fontSize: 12, color: MUTED }}>
