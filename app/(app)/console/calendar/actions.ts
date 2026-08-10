@@ -72,21 +72,24 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
   if (roomId) {
     const { data: clashes } = await supabase
       .from("lesson_slots")
-      .select("id, starts_at, ends_at, groups:group_id ( name )")
+      .select("id, group_id, starts_at, ends_at")
       .eq("room_id", roomId)
       .eq("weekday", weekday);
-    const overlapping = ((clashes ?? []) as unknown as Record<string, unknown>[]).filter((s) => {
+    const overlapping = ((clashes ?? []) as Record<string, unknown>[]).filter((s) => {
       if (id && s.id === id) return false;
       const from = String(s.starts_at).slice(0, 5);
       const to = String(s.ends_at).slice(0, 5);
       return startsAt < to && from < endsAt;
     });
     if (overlapping.length > 0) {
-      const other = overlapping[0];
-      const group = (Array.isArray(other.groups) ? other.groups[0] : other.groups) as {
-        name?: string;
-      } | null;
-      warning = ` Note: ${group?.name ?? "another class"} is already in that room then.`;
+      // Separate lookup, not an embed: lesson_slots → groups is a composite FK
+      // and PostgREST cannot join through one (see lib/finance/names.ts).
+      const { data: other } = await supabase
+        .from("groups")
+        .select("name")
+        .eq("id", overlapping[0].group_id as string)
+        .maybeSingle();
+      warning = ` Note: ${(other?.name as string) ?? "another class"} is already in that room then.`;
     }
   }
 

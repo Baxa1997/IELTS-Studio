@@ -40,6 +40,7 @@ export function TransactionForm({
   teachers,
   groups,
   currency,
+  defaultAccountId,
   defaultCategoryId,
   presetStudentId,
   presetGroupId,
@@ -53,6 +54,8 @@ export function TransactionForm({
   teachers: Option[];
   groups: Option[];
   currency: string;
+  /** The desk the payment is being taken at — the card you clicked. */
+  defaultAccountId?: string;
   defaultCategoryId?: string;
   presetStudentId?: string;
   presetGroupId?: string;
@@ -94,7 +97,7 @@ export function TransactionForm({
 
         <FieldGrid>
           <Field label="Cash desk">
-            <select name="account_id" required style={fieldStyle}>
+            <select name="account_id" required defaultValue={defaultAccountId} style={fieldStyle}>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}

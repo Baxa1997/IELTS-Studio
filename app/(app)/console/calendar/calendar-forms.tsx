@@ -11,7 +11,7 @@ import {
   useDrawerClose,
 } from "@/components/console/finance-ui";
 
-import { type ActionState, deleteSlot, saveRoom, saveSlot } from "./actions";
+import { type ActionState, deleteSlot, saveSlot } from "./actions";
 
 const WEEKDAYS = [
   { value: 1, label: "Monday" },
@@ -53,16 +53,22 @@ export function SlotForm({
   slot,
   groups,
   rooms,
+  onDone,
 }: {
   slot?: SlotDraft;
   groups: { id: string; name: string; teacherName: string | null }[];
   rooms: { id: string; name: string }[];
+  /** Set when the form sits in the grid's own dialog rather than a Drawer. */
+  onDone?: () => void;
 }) {
   const closeDrawer = useDrawerClose();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const next = await saveSlot(prev, formData);
-      if (next.ok) closeDrawer();
+      if (next.ok) {
+        closeDrawer();
+        onDone?.();
+      }
       return next;
     },
     {} as ActionState,
@@ -176,19 +182,22 @@ export function SlotForm({
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center" }}>
         <SubmitButton pending={pending}>{slot?.id ? "Save slot" : "Add to timetable"}</SubmitButton>
-        {slot?.id ? <DeleteSlotButton id={slot.id} /> : null}
+        {slot?.id ? <DeleteSlotButton id={slot.id} onDone={onDone} /> : null}
       </div>
       <FormMessage state={state} />
     </form>
   );
 }
 
-function DeleteSlotButton({ id }: { id: string }) {
+function DeleteSlotButton({ id, onDone }: { id: string; onDone?: () => void }) {
   const closeDrawer = useDrawerClose();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const next = await deleteSlot(prev, formData);
-      if (next.ok) closeDrawer();
+      if (next.ok) {
+        closeDrawer();
+        onDone?.();
+      }
       return next;
     },
     {} as ActionState,
@@ -219,109 +228,5 @@ function DeleteSlotButton({ id }: { id: string }) {
       </button>
       {state.error ? <span style={{ fontSize: 12, color: "#A63A30" }}> {state.error}</span> : null}
     </form>
-  );
-}
-
-const ROOM_COLORS = ["#4340CB", "#16794C", "#B8791F", "#C2453A", "#6B44A2", "#2F5D8C"];
-
-export function RoomForm({
-  rooms,
-}: {
-  rooms: { id: string; name: string; capacity: number | null; color: string | null }[];
-}) {
-  const closeDrawer = useDrawerClose();
-  const [state, formAction, pending] = useActionState(
-    async (prev: ActionState, formData: FormData) => {
-      const next = await saveRoom(prev, formData);
-      if (next.ok) closeDrawer();
-      return next;
-    },
-    {} as ActionState,
-  );
-  const [color, setColor] = useState(ROOM_COLORS[rooms.length % ROOM_COLORS.length]);
-
-  return (
-    <div>
-      <form action={formAction} key={state.ok ?? "new"}>
-        <input type="hidden" name="color" value={color} />
-        <FieldGrid>
-          <Field label="Room name" span>
-            <input name="name" required placeholder="Toshkent" style={fieldStyle} />
-          </Field>
-          <Field label="Seats" hint="optional">
-            <input name="capacity" type="number" min={0} placeholder="12" style={fieldStyle} />
-          </Field>
-          <Field label="Colour">
-            <div style={{ display: "flex", gap: 6, paddingTop: 6 }}>
-              {ROOM_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-label={`Colour ${c}`}
-                  onClick={() => setColor(c)}
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 6,
-                    background: c,
-                    border: color === c ? "2px solid #16162E" : "1px solid rgba(0,0,0,.1)",
-                    cursor: "pointer",
-                  }}
-                />
-              ))}
-            </div>
-          </Field>
-        </FieldGrid>
-        <div style={{ marginTop: 16 }}>
-          <SubmitButton pending={pending}>Add room</SubmitButton>
-        </div>
-        <FormMessage state={state} />
-      </form>
-
-      {rooms.length > 0 ? (
-        <div style={{ marginTop: 22, borderTop: "1px solid #F0EEE9", paddingTop: 14 }}>
-          <div
-            style={{
-              fontSize: 11,
-              letterSpacing: ".07em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-              color: "#8B8999",
-              marginBottom: 10,
-            }}
-          >
-            Rooms you have
-          </div>
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 0",
-                borderBottom: "1px solid #F5F4F0",
-                fontSize: 13,
-                color: "#16162E",
-              }}
-            >
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 3,
-                  background: room.color ?? "#C9C7E4",
-                  flex: "none",
-                }}
-              />
-              <span>{room.name}</span>
-              <span style={{ marginLeft: "auto", fontSize: 12, color: "#93919F" }}>
-                {room.capacity ? `${room.capacity} seats` : "—"}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
   );
 }

@@ -156,6 +156,7 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
     organization_id: profile.organization_id,
     name,
     kind: str(formData, "kind") || "cash",
+    owner_id: orNull(str(formData, "owner_id")),
     opening_balance_minor: opening,
     active: str(formData, "active") !== "off",
   };
@@ -167,6 +168,68 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
 
   refreshFinance();
   return { ok: id ? "Desk updated." : `${name} added.` };
+}
+
+/**
+ * Ko'chirish — move money from one desk to another.
+ *
+ * Two ledger rows sharing a `transfer_id`, never one "transfer" row. The
+ * center's net position is unchanged by definition (an out and an in of the
+ * same size), the desks' balances both move, and every balance on the page
+ * still comes from the one view. A single signed row would have needed every
+ * balance query to special-case it.
+ */
+export async function transferBetweenAccounts(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const guard = await requireOwner();
+  if ("error" in guard) return guard.error;
+  const { profile } = guard;
+
+  const fromId = str(formData, "from_account_id");
+  const toId = str(formData, "to_account_id");
+  if (!fromId || !toId) return { error: "Pick both desks." };
+  if (fromId === toId) return { error: "Those are the same desk." };
+
+  const settings = await loadFinanceSettings();
+  const amount = parseMoney(str(formData, "amount"), settings.currency);
+  if (amount == null || amount <= 0) return { error: "Enter an amount greater than zero." };
+
+  const occurredOn = isDate(str(formData, "occurred_on")) ? str(formData, "occurred_on") : today();
+  const supabase = await createClient();
+
+  const { data: desks } = await supabase
+    .from("v_finance_account_balances")
+    .select("account_id, name, balance_minor")
+    .in("account_id", [fromId, toId]);
+  const from = ((desks ?? []) as Record<string, unknown>[]).find((d) => d.account_id === fromId);
+  const to = ((desks ?? []) as Record<string, unknown>[]).find((d) => d.account_id === toId);
+  if (!from || !to) return { error: "One of those desks no longer exists." };
+  if (Number(from.balance_minor ?? 0) < amount) {
+    return { error: `${from.name as string} only holds ${Number(from.balance_minor ?? 0)}.` };
+  }
+
+  const transferId = crypto.randomUUID();
+  const note = str(formData, "note") || `Transfer ${from.name as string} → ${to.name as string}`;
+  const base = {
+    organization_id: profile.organization_id,
+    amount_minor: amount,
+    method: "other" as const,
+    occurred_on: occurredOn,
+    transfer_id: transferId,
+    note,
+    created_by: profile.id,
+  };
+
+  const { error } = await supabase.from("finance_transactions").insert([
+    { ...base, account_id: fromId, direction: "out" },
+    { ...base, account_id: toId, direction: "in" },
+  ]);
+  if (error) return { error: error.message };
+
+  refreshFinance();
+  return { ok: `Moved to ${to.name as string}.` };
 }
 
 export async function saveCategory(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -530,10 +593,16 @@ export async function payTeacher(_prev: ActionState, formData: FormData): Promis
 
   const { data: item } = await supabase
     .from("payroll_items")
-    .select("id, teacher_id, net_minor, run:run_id ( period_month )")
+    .select("id, teacher_id, net_minor, run_id")
     .eq("id", itemId)
     .maybeSingle();
   if (!item) return { error: "That payslip no longer exists." };
+
+  const { data: run } = await supabase
+    .from("payroll_runs")
+    .select("period_month")
+    .eq("id", item.run_id as string)
+    .maybeSingle();
 
   const { data: alreadyPaid } = await supabase
     .from("finance_transactions")
@@ -557,10 +626,6 @@ export async function payTeacher(_prev: ActionState, formData: FormData): Promis
     .select("id")
     .eq("slug", "salary")
     .maybeSingle();
-
-  const run = (Array.isArray(item.run) ? item.run[0] : item.run) as {
-    period_month?: string;
-  } | null;
 
   const { error } = await supabase.from("finance_transactions").insert({
     organization_id: profile.organization_id,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
+import { nameMap, peopleMap } from "./names";
 import { monthEnd, monthStart } from "./period";
 import {
   emptyGroupFacts,
@@ -47,9 +48,7 @@ export async function loadAllSalaryRules(): Promise<(SalaryRule & { active: bool
   const supabase = await createClient();
   const { data } = await supabase
     .from("salary_rules")
-    .select(
-      "id, name, scope, group_id, teacher_id, components, floor_minor, cap_minor, active, groups:group_id ( name ), teacher:teacher_id ( full_name )",
-    )
+    .select("id, name, scope, group_id, teacher_id, components, floor_minor, cap_minor, active")
     .order("scope", { ascending: true })
     .order("name", { ascending: true });
 
@@ -68,14 +67,6 @@ export async function loadAllSalaryRules(): Promise<(SalaryRule & { active: bool
 
 /* ── facts ────────────────────────────────────────────────────────────────── */
 
-const unwrapName = (v: unknown): string | null => {
-  const row = (Array.isArray(v) ? v[0] : v) as {
-    full_name?: string | null;
-    name?: string | null;
-  } | null;
-  return row?.full_name ?? row?.name ?? null;
-};
-
 /**
  * Everything the engine needs about one month, for every teacher who owns a
  * class.
@@ -91,15 +82,20 @@ export async function gatherPayrollFacts(periodMonthInput: string): Promise<Teac
 
   const { data: groupRows } = await supabase
     .from("groups")
-    .select("id, name, teacher_id, teacher:teacher_id ( full_name )")
+    .select("id, name, teacher_id")
     .not("teacher_id", "is", null)
     .order("name", { ascending: true });
 
-  const groups = ((groupRows ?? []) as unknown as Record<string, unknown>[]).map((g) => ({
+  const rawGroups = (groupRows ?? []) as Record<string, unknown>[];
+  const teacherName = await peopleMap(
+    supabase,
+    rawGroups.map((g) => g.teacher_id as string),
+  );
+  const groups = rawGroups.map((g) => ({
     id: g.id as string,
     name: g.name as string,
     teacherId: g.teacher_id as string,
-    teacherName: unwrapName(g.teacher) ?? "—",
+    teacherName: teacherName.get(g.teacher_id as string) ?? "—",
   }));
   if (groups.length === 0) return [];
 
@@ -264,7 +260,7 @@ export async function loadPayrollRun(periodMonthInput: string): Promise<PayrollR
     supabase
       .from("payroll_items")
       .select(
-        "id, teacher_id, gross_minor, adjustment_minor, adjustment_note, net_minor, breakdown, teacher:teacher_id ( full_name ), rule:rule_id ( name )",
+        "id, teacher_id, rule_id, gross_minor, adjustment_minor, adjustment_note, net_minor, breakdown",
       )
       .eq("run_id", run.id as string),
     supabase
@@ -280,18 +276,31 @@ export async function loadPayrollRun(periodMonthInput: string): Promise<PayrollR
     paid.set(key, (paid.get(key) ?? 0) + Number(p.amount_minor ?? 0));
   }
 
-  const items: PayrollItemRow[] = ((itemsRes.data ?? []) as unknown as Record<string, unknown>[])
+  const rawItems = (itemsRes.data ?? []) as Record<string, unknown>[];
+  const [teacherName, ruleName] = await Promise.all([
+    peopleMap(
+      supabase,
+      rawItems.map((i) => i.teacher_id as string),
+    ),
+    nameMap(
+      supabase,
+      "salary_rules",
+      rawItems.map((i) => i.rule_id as string | null),
+    ),
+  ]);
+
+  const items: PayrollItemRow[] = rawItems
     .map((i) => ({
       id: i.id as string,
       teacherId: i.teacher_id as string,
-      teacherName: unwrapName(i.teacher) ?? "—",
+      teacherName: teacherName.get(i.teacher_id as string) ?? "—",
       grossMinor: Number(i.gross_minor ?? 0),
       adjustmentMinor: Number(i.adjustment_minor ?? 0),
       adjustmentNote: (i.adjustment_note as string | null) ?? null,
       netMinor: Number(i.net_minor ?? 0),
       paidMinor: paid.get(i.id as string) ?? 0,
       breakdown: Array.isArray(i.breakdown) ? (i.breakdown as PayrollComputation["lines"]) : [],
-      ruleName: unwrapName(i.rule),
+      ruleName: i.rule_id ? (ruleName.get(i.rule_id as string) ?? null) : null,
     }))
     .sort((a, b) => b.netMinor - a.netMinor || a.teacherName.localeCompare(b.teacherName));
 

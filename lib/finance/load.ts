@@ -4,13 +4,18 @@ import { type Profile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 import { DEFAULT_CURRENCY } from "./money";
+import { peopleMap } from "./names";
 import { type Period } from "./period";
 
 /**
  * Reading the money. Every query here is scoped by RLS to the caller's
  * organization AND (for everything but a teacher's own payslip) to the
- * center_admin role — see migration 20260810120000. These loaders re-state the
- * role check only where an empty result would be misread as "no money moved".
+ * center_admin role — see migration 20260810120000.
+ *
+ * NO POSTGREST EMBEDS. Names are fetched separately and joined in memory; the
+ * reason is in `lib/finance/names.ts` and it is not a preference — embeds
+ * through this schema's composite FKs return an error that supabase-js hands
+ * back as an empty result, which renders as a blank page rather than a crash.
  */
 
 /* ── shapes ───────────────────────────────────────────────────────────────── */
@@ -21,14 +26,25 @@ export interface FinanceSettings {
   payrollNote: string | null;
 }
 
+/** A cash desk (kassa): a float held by a named person. */
 export interface AccountBalance {
   id: string;
   name: string;
   kind: string;
   active: boolean;
+  ownerId: string | null;
+  ownerName: string | null;
   balanceMinor: number;
   totalInMinor: number;
   totalOutMinor: number;
+}
+
+/** Cash / card / terminal / QR, summed across every desk for the window. */
+export interface MethodTotal {
+  method: string;
+  inMinor: number;
+  outMinor: number;
+  netMinor: number;
 }
 
 export interface CategoryRow {
@@ -41,17 +57,23 @@ export interface CategoryRow {
 export interface LedgerRow {
   id: string;
   occurredOn: string;
+  /** When it was actually keyed in — the table shows date AND time. */
+  recordedAt: string;
   direction: "in" | "out";
   amountMinor: number;
   method: string;
+  status: string;
   accountId: string;
   accountName: string;
   categoryId: string | null;
   categoryName: string | null;
+  personId: string | null;
   personName: string | null;
   groupName: string | null;
   note: string | null;
   createdByName: string | null;
+  /** Set on both legs of a desk-to-desk transfer. */
+  transferId: string | null;
 }
 
 export interface LedgerFilters {
@@ -63,26 +85,31 @@ export interface LedgerFilters {
   studentId?: string;
   teacherId?: string;
   method?: string;
-  /** Free-text over the note and the person's name. */
+  /** Free text over the note. Names are filtered by picking a person instead. */
   q?: string;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface FinanceOverview {
   settings: FinanceSettings;
   accounts: AccountBalance[];
   categories: CategoryRow[];
+  methodTotals: MethodTotal[];
   rows: LedgerRow[];
-  /** Totals for the window, before any of the list filters narrow it. */
+  /** How many rows match the filters in total, for the pager. */
+  matched: number;
+  page: number;
+  pageSize: number;
+  /** Totals for the window, before the list filters narrow it. */
   periodInMinor: number;
   periodOutMinor: number;
   /** Same window, previous period of equal length — the delta on the KPI. */
   prevInMinor: number;
   prevOutMinor: number;
-  /** Sum of what the filtered list itself shows. */
+  /** Totals of everything matching the current filters, not just this page. */
   filteredInMinor: number;
   filteredOutMinor: number;
-  truncated: boolean;
 }
 
 /* ── settings ─────────────────────────────────────────────────────────────── */
@@ -100,62 +127,67 @@ export async function loadFinanceSettings(): Promise<FinanceSettings> {
   };
 }
 
-/* ── the ledger ───────────────────────────────────────────────────────────── */
+/* ── cash desks ───────────────────────────────────────────────────────────── */
 
-const LEDGER_SELECT = `
-  id, occurred_on, direction, amount_minor, method, note,
-  account_id, category_id, student_id, teacher_id, group_id,
-  finance_accounts:account_id ( name ),
-  finance_categories:category_id ( name ),
-  student:student_id ( full_name ),
-  teacher:teacher_id ( full_name ),
-  author:created_by ( full_name ),
-  groups:group_id ( name )
-`;
+export async function loadAccounts(): Promise<AccountBalance[]> {
+  const supabase = await createClient();
+  const [balancesRes, accountsRes] = await Promise.all([
+    supabase
+      .from("v_finance_account_balances")
+      .select(
+        "account_id, name, kind, active, balance_minor, total_in_minor, total_out_minor, sort",
+      )
+      .order("sort", { ascending: true }),
+    supabase.from("finance_accounts").select("id, owner_id"),
+  ]);
 
-type Joined = { full_name?: string | null; name?: string | null } | null;
-const one = (v: unknown): Joined => (Array.isArray(v) ? ((v[0] ?? null) as Joined) : (v as Joined));
+  const owners = new Map(
+    ((accountsRes.data ?? []) as Record<string, unknown>[]).map((a) => [
+      a.id as string,
+      (a.owner_id as string | null) ?? null,
+    ]),
+  );
+  const ownerName = await peopleMap(supabase, [...owners.values()]);
 
-function toLedgerRow(r: Record<string, unknown>): LedgerRow {
-  const account = one(r.finance_accounts);
-  const category = one(r.finance_categories);
-  const student = one(r.student);
-  const teacher = one(r.teacher);
-  const author = one(r.author);
-  const group = one(r.groups);
-  return {
-    id: r.id as string,
-    occurredOn: r.occurred_on as string,
-    direction: r.direction as "in" | "out",
-    amountMinor: Number(r.amount_minor ?? 0),
-    method: (r.method as string) ?? "cash",
-    accountId: r.account_id as string,
-    accountName: account?.name ?? "—",
-    categoryId: (r.category_id as string | null) ?? null,
-    categoryName: category?.name ?? null,
-    personName: student?.full_name ?? teacher?.full_name ?? null,
-    groupName: group?.name ?? null,
-    note: (r.note as string | null) ?? null,
-    createdByName: author?.full_name ?? null,
-  };
+  return ((balancesRes.data ?? []) as Record<string, unknown>[]).map((a) => {
+    const id = a.account_id as string;
+    const ownerId = owners.get(id) ?? null;
+    return {
+      id,
+      name: a.name as string,
+      kind: a.kind as string,
+      active: Boolean(a.active),
+      ownerId,
+      ownerName: ownerId ? (ownerName.get(ownerId) ?? null) : null,
+      balanceMinor: Number(a.balance_minor ?? 0),
+      totalInMinor: Number(a.total_in_minor ?? 0),
+      totalOutMinor: Number(a.total_out_minor ?? 0),
+    };
+  });
 }
 
+/* ── the ledger ───────────────────────────────────────────────────────────── */
+
+const LEDGER_COLUMNS =
+  "id, occurred_on, created_at, direction, amount_minor, method, status, note, " +
+  "account_id, category_id, student_id, teacher_id, group_id, created_by, transfer_id";
+
 /**
- * The finance home: desk balances, the window's totals, and the filtered
- * ledger.
+ * The finance home: desk balances, the window's totals, and one page of the
+ * filtered ledger.
  *
- * The period totals are computed from a separate, unfiltered-by-list query so
- * the KPI strip keeps meaning "this month" while the table below it is narrowed
- * to one category — a KPI that moves when you filter a table underneath it is a
- * KPI you can't read.
+ * The period totals come from their own unfiltered query so the KPI strip keeps
+ * meaning "this window" while the table below is narrowed to one category — a
+ * KPI that moves when you filter the table under it is a KPI you cannot read.
  */
 export async function loadFinanceOverview(
-  profile: Profile,
+  _profile: Profile,
   filters: LedgerFilters,
 ): Promise<FinanceOverview> {
   const supabase = await createClient();
-  const limit = filters.limit ?? 200;
   const { period } = filters;
+  const pageSize = Math.min(500, Math.max(10, filters.pageSize ?? 50));
+  const page = Math.max(1, filters.page ?? 1);
 
   // Same length, immediately before — so a 7-day window compares to the 7 days
   // before it, not to "last month".
@@ -168,97 +200,153 @@ export async function loadFinanceOverview(
   const prevFrom = new Date(prevTo);
   prevFrom.setUTCDate(prevFrom.getUTCDate() - (spanDays - 1));
 
-  let list = supabase
+  // The list, its count and its totals must agree, so the same narrowing is
+  // applied to both queries. Written as an array of [column, value] pairs
+  // rather than a generic helper because the builder's type is recursive and
+  // threading it through a generic makes the compiler give up.
+  const conditions: [string, string][] = [
+    ["account_id", filters.accountId ?? ""],
+    ["category_id", filters.categoryId ?? ""],
+    ["direction", filters.direction ?? ""],
+    ["group_id", filters.groupId ?? ""],
+    ["student_id", filters.studentId ?? ""],
+    ["teacher_id", filters.teacherId ?? ""],
+    ["method", filters.method ?? ""],
+  ].filter(([, value]) => value !== "") as [string, string][];
+
+  let listQuery = supabase
     .from("finance_transactions")
-    .select(LEDGER_SELECT)
+    .select(LEDGER_COLUMNS, { count: "exact" })
     .gte("occurred_on", period.from)
-    .lte("occurred_on", period.to)
-    .order("occurred_on", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
+    .lte("occurred_on", period.to);
+  let filteredTotalsQuery = supabase
+    .from("finance_transactions")
+    .select("direction, amount_minor")
+    .gte("occurred_on", period.from)
+    .lte("occurred_on", period.to);
+  for (const [column, value] of conditions) {
+    listQuery = listQuery.eq(column, value);
+    filteredTotalsQuery = filteredTotalsQuery.eq(column, value);
+  }
+  if (filters.q) {
+    listQuery = listQuery.ilike("note", `%${filters.q}%`);
+    filteredTotalsQuery = filteredTotalsQuery.ilike("note", `%${filters.q}%`);
+  }
 
-  if (filters.accountId) list = list.eq("account_id", filters.accountId);
-  if (filters.categoryId) list = list.eq("category_id", filters.categoryId);
-  if (filters.direction) list = list.eq("direction", filters.direction);
-  if (filters.groupId) list = list.eq("group_id", filters.groupId);
-  if (filters.studentId) list = list.eq("student_id", filters.studentId);
-  if (filters.teacherId) list = list.eq("teacher_id", filters.teacherId);
-  if (filters.method) list = list.eq("method", filters.method);
-
-  const [settings, accountsRes, categoriesRes, listRes, totalsRes, prevRes] = await Promise.all([
-    loadFinanceSettings(),
-    supabase
-      .from("v_finance_account_balances")
-      .select("account_id, name, kind, active, balance_minor, total_in_minor, total_out_minor")
-      .order("sort", { ascending: true }),
-    supabase
-      .from("finance_categories")
-      .select("id, name, direction, slug")
-      .eq("active", true)
-      .order("direction", { ascending: true })
-      .order("name", { ascending: true }),
-    list,
-    supabase
-      .from("finance_transactions")
-      .select("direction, amount_minor")
-      .gte("occurred_on", period.from)
-      .lte("occurred_on", period.to),
-    supabase
-      .from("finance_transactions")
-      .select("direction, amount_minor")
-      .gte("occurred_on", prevFrom.toISOString().slice(0, 10))
-      .lte("occurred_on", prevTo.toISOString().slice(0, 10)),
-  ]);
+  const [settings, accounts, categoriesRes, listRes, filteredTotalsRes, totalsRes, prevRes] =
+    await Promise.all([
+      loadFinanceSettings(),
+      loadAccounts(),
+      supabase
+        .from("finance_categories")
+        .select("id, name, direction, slug")
+        .eq("active", true)
+        .order("direction", { ascending: true })
+        .order("name", { ascending: true }),
+      listQuery
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1),
+      filteredTotalsQuery,
+      supabase
+        .from("finance_transactions")
+        .select("direction, amount_minor, method")
+        .gte("occurred_on", period.from)
+        .lte("occurred_on", period.to),
+      supabase
+        .from("finance_transactions")
+        .select("direction, amount_minor")
+        .gte("occurred_on", prevFrom.toISOString().slice(0, 10))
+        .lte("occurred_on", prevTo.toISOString().slice(0, 10)),
+    ]);
 
   const sum = (rows: { direction: string; amount_minor: number }[] | null, dir: "in" | "out") =>
     (rows ?? [])
       .filter((r) => r.direction === dir)
       .reduce((a, r) => a + Number(r.amount_minor ?? 0), 0);
 
-  let rows = ((listRes.data ?? []) as unknown as Record<string, unknown>[]).map(toLedgerRow);
-  const truncated = rows.length > limit;
-  if (truncated) rows = rows.slice(0, limit);
+  const raw = (listRes.data ?? []) as unknown as Record<string, unknown>[];
 
-  // Free text is applied in memory: it spans a joined name and a note, which
-  // PostgREST can't `or` across in one filter, and the window is already bounded.
-  if (filters.q) {
-    const needle = filters.q.toLowerCase();
-    rows = rows.filter((r) =>
-      [r.personName, r.note, r.categoryName, r.groupName, r.accountName]
-        .filter(Boolean)
-        .some((v) => (v as string).toLowerCase().includes(needle)),
-    );
+  // One lookup per referenced table, for this page only.
+  const accountName = new Map(accounts.map((a) => [a.id, a.name]));
+  const categoryRows = ((categoriesRes.data ?? []) as Record<string, unknown>[]).map((c) => ({
+    id: c.id as string,
+    name: c.name as string,
+    direction: c.direction as "in" | "out",
+    slug: (c.slug as string | null) ?? null,
+  }));
+  const categoryName = new Map(categoryRows.map((c) => [c.id, c.name]));
+
+  const [people, groupsRes] = await Promise.all([
+    peopleMap(supabase, [
+      ...raw.map((r) => r.student_id as string | null),
+      ...raw.map((r) => r.teacher_id as string | null),
+      ...raw.map((r) => r.created_by as string | null),
+    ]),
+    supabase.from("groups").select("id, name"),
+  ]);
+  const groupName = new Map(
+    ((groupsRes.data ?? []) as Record<string, unknown>[]).map((g) => [
+      g.id as string,
+      g.name as string,
+    ]),
+  );
+
+  const rows: LedgerRow[] = raw.map((r) => {
+    const studentId = (r.student_id as string | null) ?? null;
+    const teacherId = (r.teacher_id as string | null) ?? null;
+    const personId = studentId ?? teacherId;
+    const createdBy = (r.created_by as string | null) ?? null;
+    const categoryId = (r.category_id as string | null) ?? null;
+    const groupId = (r.group_id as string | null) ?? null;
+    return {
+      id: r.id as string,
+      occurredOn: r.occurred_on as string,
+      recordedAt: (r.created_at as string) ?? "",
+      direction: r.direction as "in" | "out",
+      amountMinor: Number(r.amount_minor ?? 0),
+      method: (r.method as string) ?? "cash",
+      status: (r.status as string) ?? "confirmed",
+      accountId: r.account_id as string,
+      accountName: accountName.get(r.account_id as string) ?? "—",
+      categoryId,
+      categoryName: categoryId ? (categoryName.get(categoryId) ?? null) : null,
+      personId,
+      personName: personId ? (people.get(personId) ?? null) : null,
+      groupName: groupId ? (groupName.get(groupId) ?? null) : null,
+      note: (r.note as string | null) ?? null,
+      createdByName: createdBy ? (people.get(createdBy) ?? null) : null,
+      transferId: (r.transfer_id as string | null) ?? null,
+    };
+  });
+
+  // Method cards: cash / card / terminal / QR across the whole window.
+  const byMethod = new Map<string, MethodTotal>();
+  for (const r of (totalsRes.data ?? []) as Record<string, unknown>[]) {
+    const method = (r.method as string) ?? "cash";
+    const current = byMethod.get(method) ?? { method, inMinor: 0, outMinor: 0, netMinor: 0 };
+    const amount = Number(r.amount_minor ?? 0);
+    if (r.direction === "in") current.inMinor += amount;
+    else current.outMinor += amount;
+    current.netMinor = current.inMinor - current.outMinor;
+    byMethod.set(method, current);
   }
 
   return {
     settings,
-    accounts: ((accountsRes.data ?? []) as Record<string, unknown>[]).map((a) => ({
-      id: a.account_id as string,
-      name: a.name as string,
-      kind: a.kind as string,
-      active: Boolean(a.active),
-      balanceMinor: Number(a.balance_minor ?? 0),
-      totalInMinor: Number(a.total_in_minor ?? 0),
-      totalOutMinor: Number(a.total_out_minor ?? 0),
-    })),
-    categories: ((categoriesRes.data ?? []) as Record<string, unknown>[]).map((c) => ({
-      id: c.id as string,
-      name: c.name as string,
-      direction: c.direction as "in" | "out",
-      slug: (c.slug as string | null) ?? null,
-    })),
+    accounts,
+    categories: categoryRows,
+    methodTotals: [...byMethod.values()],
     rows,
+    matched: listRes.count ?? rows.length,
+    page,
+    pageSize,
     periodInMinor: sum(totalsRes.data as never, "in"),
     periodOutMinor: sum(totalsRes.data as never, "out"),
     prevInMinor: sum(prevRes.data as never, "in"),
     prevOutMinor: sum(prevRes.data as never, "out"),
-    filteredInMinor: rows
-      .filter((r) => r.direction === "in")
-      .reduce((a, r) => a + r.amountMinor, 0),
-    filteredOutMinor: rows
-      .filter((r) => r.direction === "out")
-      .reduce((a, r) => a + r.amountMinor, 0),
-    truncated,
+    filteredInMinor: sum(filteredTotalsRes.data as never, "in"),
+    filteredOutMinor: sum(filteredTotalsRes.data as never, "out"),
   };
 }
 
@@ -278,27 +366,37 @@ export async function loadCategoryTotals(
   direction: "in" | "out",
 ): Promise<CategoryTotal[]> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("finance_transactions")
-    .select("amount_minor, category_id, finance_categories:category_id ( name )")
-    .eq("direction", direction)
-    .gte("occurred_on", period.from)
-    .lte("occurred_on", period.to);
+  const [txRes, categoriesRes] = await Promise.all([
+    supabase
+      .from("finance_transactions")
+      .select("amount_minor, category_id")
+      .eq("direction", direction)
+      .gte("occurred_on", period.from)
+      .lte("occurred_on", period.to),
+    supabase.from("finance_categories").select("id, name"),
+  ]);
+
+  const categoryName = new Map(
+    ((categoriesRes.data ?? []) as Record<string, unknown>[]).map((c) => [
+      c.id as string,
+      c.name as string,
+    ]),
+  );
 
   const buckets = new Map<string, CategoryTotal>();
-  for (const r of (data ?? []) as unknown as Record<string, unknown>[]) {
-    const id = (r.category_id as string | null) ?? "none";
-    const name = one(r.finance_categories)?.name ?? "Uncategorised";
-    const current = buckets.get(id) ?? {
-      categoryId: (r.category_id as string | null) ?? null,
-      name,
+  for (const r of (txRes.data ?? []) as Record<string, unknown>[]) {
+    const categoryId = (r.category_id as string | null) ?? null;
+    const key = categoryId ?? "none";
+    const current = buckets.get(key) ?? {
+      categoryId,
+      name: categoryId ? (categoryName.get(categoryId) ?? "Uncategorised") : "Uncategorised",
       amountMinor: 0,
       share: 0,
       count: 0,
     };
     current.amountMinor += Number(r.amount_minor ?? 0);
     current.count += 1;
-    buckets.set(id, current);
+    buckets.set(key, current);
   }
   const rows = [...buckets.values()].sort((a, b) => b.amountMinor - a.amountMinor);
   const total = rows.reduce((a, r) => a + r.amountMinor, 0);
@@ -331,30 +429,41 @@ export async function loadInvoices(opts: {
 
   let query = supabase
     .from("student_invoices")
-    .select(
-      "id, student_id, group_id, period_month, amount_minor, discount_minor, due_on, student:student_id ( full_name ), groups:group_id ( name )",
-    )
+    .select("id, student_id, group_id, period_month, amount_minor, discount_minor, due_on")
     .eq("period_month", opts.periodMonth)
     .eq("voided", false);
   if (opts.groupId) query = query.eq("group_id", opts.groupId);
 
-  const { data: invoices } = await query;
-  const ids = ((invoices ?? []) as Record<string, unknown>[]).map((i) => i.id as string);
+  const { data } = await query;
+  const invoices = (data ?? []) as Record<string, unknown>[];
+  const ids = invoices.map((i) => i.id as string);
 
-  // Settlement per invoice in one pass, rather than the view per row.
-  const paid = new Map<string, number>();
-  if (ids.length > 0) {
-    const { data: settle } = await supabase
-      .from("v_invoice_settlement")
-      .select("invoice_id, paid_minor")
-      .in("invoice_id", ids);
-    for (const s of (settle ?? []) as Record<string, unknown>[]) {
-      paid.set(s.invoice_id as string, Number(s.paid_minor ?? 0));
-    }
-  }
+  const [settleRes, students, groupsRes] = await Promise.all([
+    ids.length > 0
+      ? supabase.from("v_invoice_settlement").select("invoice_id, paid_minor").in("invoice_id", ids)
+      : Promise.resolve({ data: null }),
+    peopleMap(
+      supabase,
+      invoices.map((i) => i.student_id as string),
+    ),
+    supabase.from("groups").select("id, name"),
+  ]);
+
+  const paid = new Map(
+    ((settleRes.data ?? []) as Record<string, unknown>[]).map((s) => [
+      s.invoice_id as string,
+      Number(s.paid_minor ?? 0),
+    ]),
+  );
+  const groupName = new Map(
+    ((groupsRes.data ?? []) as Record<string, unknown>[]).map((g) => [
+      g.id as string,
+      g.name as string,
+    ]),
+  );
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const rows: InvoiceRow[] = ((invoices ?? []) as unknown as Record<string, unknown>[]).map((i) => {
+  const rows: InvoiceRow[] = invoices.map((i) => {
     const due = Number(i.amount_minor ?? 0) - Number(i.discount_minor ?? 0);
     const paidMinor = paid.get(i.id as string) ?? 0;
     const balance = due - paidMinor;
@@ -370,9 +479,9 @@ export async function loadInvoices(opts: {
     return {
       id: i.id as string,
       studentId: i.student_id as string,
-      studentName: one(i.student)?.full_name ?? "—",
+      studentName: students.get(i.student_id as string) ?? "—",
       groupId: i.group_id as string,
-      groupName: one(i.groups)?.name ?? "—",
+      groupName: groupName.get(i.group_id as string) ?? "—",
       periodMonth: i.period_month as string,
       dueMinor: due,
       paidMinor,
@@ -409,23 +518,14 @@ export async function loadDebtors(limit = 50): Promise<DebtorRow[]> {
   const rows = (data ?? []) as Record<string, unknown>[];
   if (rows.length === 0) return [];
 
-  const { data: people } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .in(
-      "id",
-      rows.map((r) => r.student_id as string),
-    );
-  const name = new Map(
-    ((people ?? []) as Record<string, unknown>[]).map((p) => [
-      p.id as string,
-      (p.full_name as string | null) ?? "—",
-    ]),
+  const names = await peopleMap(
+    supabase,
+    rows.map((r) => r.student_id as string),
   );
 
   return rows.map((r) => ({
     studentId: r.student_id as string,
-    studentName: name.get(r.student_id as string) ?? "—",
+    studentName: names.get(r.student_id as string) ?? "—",
     chargedMinor: Number(r.charged_minor ?? 0),
     paidMinor: Number(r.paid_minor ?? 0),
     owedMinor: Number(r.owed_minor ?? 0),

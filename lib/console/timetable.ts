@@ -98,15 +98,16 @@ function slotsCollide(a: Slot, b: Slot): boolean {
 
 /* ── loading ──────────────────────────────────────────────────────────────── */
 
-const unwrap = (v: unknown) =>
-  (Array.isArray(v) ? v[0] : v) as { name?: string | null; full_name?: string | null } | null;
-
 /**
  * The whole week in one read.
  *
  * A teacher sees only their own classes' slots on the grid by default — RLS
  * lets any member of the org read the timetable (a student needs their own),
  * so the narrowing is a product decision made here, not a security boundary.
+ *
+ * No PostgREST embeds anywhere: `lesson_slots` reaches rooms and groups through
+ * composite FKs, which embeds cannot resolve — see `lib/finance/names.ts` for
+ * the full story. Names are fetched separately and joined here.
  */
 export async function loadTimetable(
   profile: Profile,
@@ -114,7 +115,7 @@ export async function loadTimetable(
 ): Promise<Timetable> {
   const supabase = await createClient();
 
-  const [roomsRes, slotsRes, groupsRes, membersRes] = await Promise.all([
+  const [roomsRes, slotsRes, groupsRes, membersRes, staffRes] = await Promise.all([
     supabase
       .from("rooms")
       .select("id, name, capacity, color, active")
@@ -122,13 +123,12 @@ export async function loadTimetable(
       .order("name", { ascending: true }),
     supabase
       .from("lesson_slots")
-      .select(
-        "id, group_id, room_id, weekday, starts_at, ends_at, pattern, rooms:room_id ( name ), groups:group_id ( name, teacher_id, teacher:teacher_id ( full_name ) )",
-      )
+      .select("id, group_id, room_id, weekday, starts_at, ends_at, pattern")
       .order("weekday", { ascending: true })
       .order("starts_at", { ascending: true }),
-    supabase.from("groups").select("id, name, teacher_id, teacher:teacher_id ( full_name )"),
+    supabase.from("groups").select("id, name, teacher_id"),
     supabase.from("group_members").select("group_id"),
+    supabase.from("profiles").select("id, full_name").in("role", ["teacher", "center_admin"]),
   ]);
 
   const sizes = new Map<string, number>();
@@ -137,20 +137,36 @@ export async function loadTimetable(
     sizes.set(key, (sizes.get(key) ?? 0) + 1);
   }
 
-  let slots: Slot[] = ((slotsRes.data ?? []) as unknown as Record<string, unknown>[]).map((s) => {
-    const group = unwrap(s.groups) as {
-      name?: string;
-      teacher_id?: string | null;
-      teacher?: unknown;
-    } | null;
+  const staffName = new Map(
+    ((staffRes.data ?? []) as Record<string, unknown>[]).map((p) => [
+      p.id as string,
+      (p.full_name as string | null) ?? "—",
+    ]),
+  );
+  const groupRows = ((groupsRes.data ?? []) as Record<string, unknown>[]).map((g) => ({
+    id: g.id as string,
+    name: g.name as string,
+    teacherId: (g.teacher_id as string | null) ?? null,
+  }));
+  const groupById = new Map(groupRows.map((g) => [g.id, g]));
+  const roomName = new Map(
+    ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => [
+      r.id as string,
+      r.name as string,
+    ]),
+  );
+
+  let slots: Slot[] = ((slotsRes.data ?? []) as Record<string, unknown>[]).map((s) => {
+    const group = groupById.get(s.group_id as string);
+    const roomId = (s.room_id as string | null) ?? null;
     return {
       id: s.id as string,
       groupId: s.group_id as string,
       groupName: group?.name ?? "—",
-      teacherId: (group?.teacher_id as string | null) ?? null,
-      teacherName: unwrap(group?.teacher)?.full_name ?? null,
-      roomId: (s.room_id as string | null) ?? null,
-      roomName: unwrap(s.rooms)?.name ?? null,
+      teacherId: group?.teacherId ?? null,
+      teacherName: group?.teacherId ? (staffName.get(group.teacherId) ?? null) : null,
+      roomId,
+      roomName: roomId ? (roomName.get(roomId) ?? null) : null,
       weekday: Number(s.weekday ?? 0),
       startsAt: trimTime(String(s.starts_at ?? "00:00")),
       endsAt: trimTime(String(s.ends_at ?? "00:00")),
@@ -182,11 +198,9 @@ export async function loadTimetable(
   }
   const clashCount = slots.filter((s) => s.clashesWith.length > 0).length;
 
-  const allGroups = ((groupsRes.data ?? []) as unknown as Record<string, unknown>[]).map((g) => ({
-    id: g.id as string,
-    name: g.name as string,
-    teacherId: (g.teacher_id as string | null) ?? null,
-    teacherName: unwrap(g.teacher)?.full_name ?? null,
+  const allGroups = groupRows.map((g) => ({
+    ...g,
+    teacherName: g.teacherId ? (staffName.get(g.teacherId) ?? null) : null,
   }));
 
   const mine = opts.mine && profile.role === "teacher";
@@ -198,13 +212,20 @@ export async function loadTimetable(
     .filter((g) => !mine || g.teacherId === profile.id)
     .map((g) => ({ id: g.id, name: g.name, teacherName: g.teacherName }));
 
-  // Fit the grid to the day the center actually runs, with an hour of headroom
-  // either side — an 07:00–22:00 grid for a center that opens at 15:00 is
-  // mostly empty rows.
+  // The grid always covers a full teaching day, and stretches if a lesson falls
+  // outside it. An empty timetable still has to be a GRID — rows you can click
+  // to book something — rather than an empty-state message, which is the whole
+  // difference between a schedule you can edit and a picture of one.
+  //
+  // Bounds snap to the half hour so every row is a clean 30-minute band.
+  const DEFAULT_OPEN = 8 * 60;
+  const DEFAULT_CLOSE = 21 * 60;
   const starts = slots.map((s) => toMinutes(s.startsAt));
   const ends = slots.map((s) => toMinutes(s.endsAt));
-  const dayStartMin = starts.length ? Math.max(0, Math.min(...starts) - 30) : 8 * 60;
-  const dayEndMin = ends.length ? Math.min(24 * 60, Math.max(...ends) + 30) : 21 * 60;
+  const floorHalf = (m: number) => Math.floor(m / 30) * 30;
+  const ceilHalf = (m: number) => Math.ceil(m / 30) * 30;
+  const dayStartMin = Math.max(0, floorHalf(Math.min(DEFAULT_OPEN, ...starts)));
+  const dayEndMin = Math.min(24 * 60, ceilHalf(Math.max(DEFAULT_CLOSE, ...ends)));
 
   return {
     rooms: ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => ({

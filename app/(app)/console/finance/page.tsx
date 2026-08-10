@@ -1,130 +1,120 @@
 import { redirect } from "next/navigation";
 
 import {
-  AMBER,
-  Bar,
-  BtnLink,
   Card,
-  CardHead,
-  Chip,
   Empty,
   FAINT,
   fieldStyle,
   GREEN,
+  HAIR,
   INDIGO,
   INK,
-  Kpi,
-  KpiRow,
   MUTED,
   PageHead,
   RED,
   SANS,
   SOFT,
-  Stack,
   Table,
+  Tag,
   TD,
-  TextLink,
   THead,
-  Toolbar,
   TRow,
 } from "@/components/console/crm-ui";
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
-import {
-  loadCategoryTotals,
-  loadDebtors,
-  loadFinanceOverview,
-  loadFinancePeople,
-} from "@/lib/finance/load";
-import { formatMoney, formatMoneyShort } from "@/lib/finance/money";
-import { loadPayrollRun } from "@/lib/finance/payroll";
-import { monthLabel, monthStart, prettyDate, resolvePeriod, today } from "@/lib/finance/period";
+import { loadFinanceOverview, loadFinancePeople } from "@/lib/finance/load";
+import { formatMoney } from "@/lib/finance/money";
+import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 
+import { DeskForm, TransferForm } from "./desk-forms";
 import { TransactionForm } from "./transaction-form";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Finance, laid out the way the staff already work.
+ *
+ * This follows the reference CRM's structure deliberately, because that
+ * structure encodes how a front desk really runs, and a cleverer layout nobody
+ * recognises is worse than a familiar one:
+ *
+ *   • Across the top, totals BY PAYMENT METHOD — naqd, karta, terminal, QR. A
+ *     method is a property of the payment, not of a desk, so these sum across
+ *     every desk in the window.
+ *   • Down the left, the KASSAS: a float held by a named person, each with its
+ *     own Kirim / Chiqim / Ko'chirish, because money is taken at a desk by
+ *     somebody who answers for it.
+ *   • On the right, the entries, with the filters a director actually asks by —
+ *     which dates, whose payment, which method, which staff member — and a
+ *     pager, because fifty rows is a normal week.
+ *
+ * What is not copied: every filter lives in the URL, so the Excel and PDF
+ * buttons export precisely what is on screen rather than a fixed report.
+ */
+
 const METHOD_LABEL: Record<string, string> = {
-  cash: "Cash",
-  card: "Card",
+  cash: "Naqd · Cash",
+  card: "Karta · Card",
   terminal: "Terminal",
   qr: "QR",
   bank: "Bank",
   other: "Other",
 };
 
-const DESK_TINT: Record<string, string> = {
-  cash: "#16794C",
-  card: "#4340CB",
-  terminal: "#B8791F",
-  qr: "#6B44A2",
-  bank: "#2F5D8C",
-  other: "#6E6C87",
+const METHOD_ORDER = ["cash", "card", "terminal", "qr", "bank", "other"];
+
+const STATUS_TONE: Record<string, "green" | "amber" | "red" | "neutral"> = {
+  confirmed: "green",
+  pending: "amber",
+  cancelled: "red",
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
 const first = (v: string | string[] | undefined): string | undefined =>
   Array.isArray(v) ? v[0] : v;
 
-/**
- * Finance: the center's money on one page.
- *
- * The reference CRM this replaces put four desk totals across the top and a
- * flat transaction table underneath, and left the owner to work out the rest in
- * their head. Three changes earn their place here:
- *
- *  1. The KPI strip answers "how did the month go", not "what is in the till" —
- *     income, expenses, net, each against the same window last period. The desk
- *     balances are still there, but as a second row, because they are a fact
- *     about now rather than a measure of the month.
- *  2. Every filter is a URL. The state of this page is shareable, bookmarkable,
- *     and — the point — exportable: the Excel and PDF buttons carry the exact
- *     filters you are looking at, so the file matches the screen.
- *  3. The right-hand column carries the three questions that make the ledger
- *     actionable: where the money went, who still owes, and what payroll is
- *     about to cost.
- */
 export default async function FinancePage({ searchParams }: { searchParams: SearchParams }) {
   const { profile } = await requireOrgUser();
   if (profile.role !== "center_admin") redirect("/console");
 
   const sp = await searchParams;
-  const period = resolvePeriod({
-    from: first(sp.from),
-    to: first(sp.to),
-    month: first(sp.month),
-  });
+  const period = resolvePeriod({ from: first(sp.from), to: first(sp.to), month: first(sp.month) });
 
-  const direction =
-    first(sp.direction) === "in" || first(sp.direction) === "out"
-      ? (first(sp.direction) as "in" | "out")
-      : undefined;
+  const rawDirection = first(sp.direction);
+  const direction = rawDirection === "in" || rawDirection === "out" ? rawDirection : undefined;
   const accountId = first(sp.account);
   const categoryId = first(sp.category);
-  const groupId = first(sp.group);
+  const studentId = first(sp.student);
+  const teacherId = first(sp.teacher);
+  const method = first(sp.method);
   const q = first(sp.q);
+  const page = Math.max(1, Number(first(sp.page) ?? 1) || 1);
+  const pageSize = Math.min(200, Math.max(10, Number(first(sp.size) ?? 50) || 50));
 
-  const [overview, expenseTotals, debtors, payroll, { groups }, people] = await Promise.all([
-    loadFinanceOverview(profile, { period, direction, accountId, categoryId, groupId, q }),
-    loadCategoryTotals(period, "out"),
-    loadDebtors(6),
-    loadPayrollRun(monthStart(period.from)),
-    loadGroups(profile),
+  const [overview, people, { groups }] = await Promise.all([
+    loadFinanceOverview(profile, {
+      period,
+      direction,
+      accountId,
+      categoryId,
+      studentId,
+      teacherId,
+      method,
+      q,
+      page,
+      pageSize,
+    }),
     loadFinancePeople(),
+    loadGroups(profile),
   ]);
 
-  const { settings, accounts, categories, rows } = overview;
+  const { settings, accounts, categories, rows, methodTotals } = overview;
   const currency = settings.currency;
   const money = (m: number) => formatMoney(m, currency);
-  const net = overview.periodInMinor - overview.periodOutMinor;
-  const prevNet = overview.prevInMinor - overview.prevOutMinor;
-  const cashOnHand = accounts.reduce((a, acc) => a + acc.balanceMinor, 0);
-  const owedTotal = debtors.reduce((a, d) => a + d.owedMinor, 0);
+  const activeDesks = accounts.filter((a) => a.active);
+  const closedDesks = accounts.filter((a) => !a.active);
 
-  // Every link keeps the window and drops only what it changes, so filtering
-  // never silently resets the period you were looking at.
   const query = (patch: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
     const base: Record<string, string | undefined> = {
@@ -133,8 +123,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
       direction,
       account: accountId,
       category: categoryId,
-      group: groupId,
+      student: studentId,
+      teacher: teacherId,
+      method,
       q,
+      size: pageSize === 50 ? undefined : String(pageSize),
+      page: undefined,
       ...patch,
     };
     for (const [key, value] of Object.entries(base)) if (value) params.set(key, value);
@@ -145,173 +139,42 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     const params = new URLSearchParams({ report, format, from: period.from, to: period.to });
     if (accountId) params.set("account", accountId);
     if (categoryId) params.set("category", categoryId);
-    if (groupId) params.set("group", groupId);
     if (direction) params.set("direction", direction);
     return `/api/console/finance/export?${params.toString()}`;
   };
 
-  const thisMonth = monthStart(today());
-  const lastMonth = monthStart(
-    new Date(
-      new Date(`${thisMonth}T00:00:00Z`).setUTCMonth(
-        new Date(`${thisMonth}T00:00:00Z`).getUTCMonth() - 1,
-      ),
-    )
-      .toISOString()
-      .slice(0, 10),
-  );
-
   const incomeCategories = categories.filter((c) => c.direction === "in");
   const expenseCategories = categories.filter((c) => c.direction === "out");
-  const accountOptions = accounts.filter((a) => a.active).map((a) => ({ id: a.id, name: a.name }));
+  const deskOptions = activeDesks.map((a) => ({ id: a.id, name: a.name }));
   const groupOptions = groups.map((g) => ({ id: g.id, name: g.name }));
+  const transferOptions = activeDesks.map((a) => ({
+    id: a.id,
+    name: a.name,
+    balanceLabel: money(a.balanceMinor),
+  }));
 
-  const delta = (now: number, before: number): { text: string; tone: "good" | "bad" | "flat" } => {
-    if (before === 0) return { text: now === 0 ? "—" : "new", tone: "flat" };
-    const pct = Math.round(((now - before) / Math.abs(before)) * 100);
-    return { text: `${pct > 0 ? "+" : ""}${pct}%`, tone: pct >= 0 ? "good" : "bad" };
-  };
-  const incomeDelta = delta(overview.periodInMinor, overview.prevInMinor);
-  const expenseDelta = delta(overview.periodOutMinor, overview.prevOutMinor);
+  const lastPage = Math.max(1, Math.ceil(overview.matched / pageSize));
+  const filterInput: React.CSSProperties = { ...fieldStyle, padding: "7px 9px", width: "auto" };
 
   return (
     <div>
       <PageHead
         eyebrow="Money"
         title="Finance"
-        subtitle={`${period.label} · ${rows.length} entr${rows.length === 1 ? "y" : "ies"} · amounts in ${currency}.`}
+        subtitle={`${period.label} · ${overview.matched} entr${overview.matched === 1 ? "y" : "ies"} · amounts in ${currency}.`}
         actions={
           <>
-            <Drawer
-              label="Record payment"
-              variant="green"
-              eyebrow="Money in"
-              title="Record a payment"
-              note="Tuition, a registration fee, anything that arrives at a desk."
-            >
-              <TransactionForm
-                direction="in"
-                currency={currency}
-                accounts={accountOptions}
-                categories={incomeCategories}
-                students={people.students}
-                teachers={people.teachers}
-                groups={groupOptions}
-                defaultCategoryId={incomeCategories.find((c) => c.slug === "tuition")?.id}
-              />
-            </Drawer>
-            <Drawer
-              label="Record expense"
-              eyebrow="Money out"
-              title="Record an expense"
-              note="Rent, salaries, marketing — anything that leaves a desk."
-            >
-              <TransactionForm
-                direction="out"
-                currency={currency}
-                accounts={accountOptions}
-                categories={expenseCategories}
-                students={people.students}
-                teachers={people.teachers}
-                groups={groupOptions}
-              />
-            </Drawer>
+            <a href={exportHref("xlsx", "ledger")} style={chip} download>
+              Excel
+            </a>
+            <a href={exportHref("pdf", "summary")} style={chip} download>
+              PDF
+            </a>
           </>
         }
       />
 
-      {/* ── period ─────────────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          flexWrap: "wrap",
-          marginBottom: 16,
-        }}
-      >
-        <Chip
-          href={query({ from: thisMonth, to: undefined, month: thisMonth })}
-          active={period.label === monthLabel(thisMonth)}
-        >
-          {monthLabel(thisMonth)}
-        </Chip>
-        <Chip href={`?month=${lastMonth}`} active={period.label === monthLabel(lastMonth)}>
-          {monthLabel(lastMonth)}
-        </Chip>
-        <form
-          method="get"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            marginLeft: "auto",
-            flexWrap: "wrap",
-          }}
-        >
-          {direction ? <input type="hidden" name="direction" value={direction} /> : null}
-          {accountId ? <input type="hidden" name="account" value={accountId} /> : null}
-          <input
-            type="date"
-            name="from"
-            defaultValue={period.from}
-            style={{ ...fieldStyle, padding: "7px 9px" }}
-          />
-          <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>to</span>
-          <input
-            type="date"
-            name="to"
-            defaultValue={period.to}
-            style={{ ...fieldStyle, padding: "7px 9px" }}
-          />
-          <button
-            type="submit"
-            className="cn-btn cn-btn--ghost"
-            style={{
-              background: "#fff",
-              border: "1px solid #E0DED8",
-              borderRadius: 8,
-              padding: "7px 13px",
-              fontFamily: SANS,
-              fontSize: 13,
-              color: INK,
-              cursor: "pointer",
-            }}
-          >
-            Apply
-          </button>
-        </form>
-      </div>
-
-      <KpiRow>
-        <Kpi
-          label="Income"
-          value={money(overview.periodInMinor)}
-          delta={incomeDelta.text}
-          deltaTone={incomeDelta.tone}
-          sub={`vs ${money(overview.prevInMinor)} the period before`}
-          href={query({ direction: direction === "in" ? undefined : "in" })}
-          active={direction === "in"}
-        />
-        <Kpi
-          label="Expenses"
-          value={money(overview.periodOutMinor)}
-          delta={expenseDelta.text}
-          deltaTone={expenseDelta.tone === "good" ? "bad" : "good"}
-          sub={`vs ${money(overview.prevOutMinor)} the period before`}
-          href={query({ direction: direction === "out" ? undefined : "out" })}
-          active={direction === "out"}
-        />
-        <Kpi
-          label="Net"
-          value={money(net)}
-          deltaTone={net >= 0 ? "good" : "bad"}
-          sub={prevNet === net ? "flat on last period" : `${money(prevNet)} last period`}
-        />
-        <Kpi label="Cash on hand" value={money(cashOnHand)} sub="across every desk, right now" />
-      </KpiRow>
-
-      {/* ── desks ──────────────────────────────────────────────────────────── */}
+      {/* ── totals by payment method ───────────────────────────────────────── */}
       <div
         style={{
           display: "grid",
@@ -320,166 +183,441 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           marginBottom: 16,
         }}
       >
-        {accounts
-          .filter((a) => a.active)
-          .map((account) => {
-            const on = accountId === account.id;
-            const tint = DESK_TINT[account.kind] ?? INDIGO;
-            return (
-              <a
-                key={account.id}
-                href={query({ account: on ? undefined : account.id })}
-                className="cn-tile"
+        {METHOD_ORDER.filter(
+          (m) =>
+            methodTotals.some((t) => t.method === m) ||
+            ["cash", "card", "terminal", "qr"].includes(m),
+        ).map((m) => {
+          const total = methodTotals.find((t) => t.method === m);
+          const on = method === m;
+          return (
+            <a
+              key={m}
+              href={query({ method: on ? undefined : m })}
+              className="cn-tile"
+              style={{
+                display: "block",
+                background: on ? "#1D1C4C" : "#215273",
+                border: on ? "2px solid #7FD8A8" : "2px solid transparent",
+                borderRadius: 12,
+                padding: "13px 15px",
+                textDecoration: "none",
+              }}
+            >
+              <div
                 style={{
-                  display: "block",
-                  background: "#fff",
-                  border: `1px solid ${on ? tint : "#E7E5DF"}`,
-                  boxShadow: on ? `0 0 0 1px ${tint}` : undefined,
-                  borderRadius: 12,
-                  padding: "13px 15px",
-                  textDecoration: "none",
-                  borderLeft: `3px solid ${tint}`,
+                  fontFamily: SANS,
+                  fontSize: 12,
+                  color: "rgba(255,255,255,.75)",
+                  marginBottom: 7,
                 }}
               >
-                <div style={{ fontFamily: SANS, fontSize: 12, color: MUTED, marginBottom: 6 }}>
-                  {account.name}
-                </div>
-                <div
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 19,
-                    fontWeight: 600,
-                    color: INK,
-                    letterSpacing: "-.02em",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {money(account.balanceMinor)}
-                </div>
-                <div style={{ fontFamily: SANS, fontSize: 11, color: FAINT, marginTop: 5 }}>
-                  {METHOD_LABEL[account.kind] ?? account.kind} · in{" "}
-                  {formatMoneyShort(account.totalInMinor, currency)} · out{" "}
-                  {formatMoneyShort(account.totalOutMinor, currency)}
-                </div>
-              </a>
-            );
-          })}
+                {METHOD_LABEL[m] ?? m}
+              </div>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 19,
+                  fontWeight: 600,
+                  color: "#fff",
+                  letterSpacing: "-.02em",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {money(total?.netMinor ?? 0)} {currency}
+              </div>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 11,
+                  color: "rgba(255,255,255,.6)",
+                  marginTop: 5,
+                }}
+              >
+                in {money(total?.inMinor ?? 0)} · out {money(total?.outMinor ?? 0)}
+              </div>
+            </a>
+          );
+        })}
       </div>
 
       <div
         className="cn-split"
-        style={{ display: "grid", gridTemplateColumns: "1.5fr .85fr", gap: 16 }}
+        style={{ display: "grid", gridTemplateColumns: "330px 1fr", gap: 16, alignItems: "start" }}
       >
-        {/* ── ledger ───────────────────────────────────────────────────────── */}
-        <Card flush>
-          <CardHead
-            title="Ledger"
-            divided
-            note={`${money(overview.filteredInMinor)} in · ${money(overview.filteredOutMinor)} out`}
-            actions={
-              <>
-                <a
-                  href={exportHref("xlsx", "ledger")}
-                  className="cn-chip"
-                  style={chipStyle}
-                  download
-                >
-                  Excel
-                </a>
-                <a
-                  href={exportHref("pdf", "ledger")}
-                  className="cn-chip"
-                  style={chipStyle}
-                  download
-                >
-                  PDF
-                </a>
-              </>
-            }
-          />
+        {/* ── the desks ────────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Drawer
+            label="+ Add a cash desk"
+            eyebrow="Kassa"
+            title="Add a cash desk"
+            note="A float held by a named person, who answers for what is in it."
+            triggerStyle={{ width: "100%", padding: "10px 15px" }}
+          >
+            <DeskForm staff={people.teachers} currency={currency} />
+          </Drawer>
 
-          <Toolbar>
-            <Chip href={query({ direction: undefined })} active={!direction}>
-              All
-            </Chip>
-            <Chip href={query({ direction: "in" })} active={direction === "in"}>
-              Income
-            </Chip>
-            <Chip href={query({ direction: "out" })} active={direction === "out"}>
-              Expenses
-            </Chip>
-            <form
-              method="get"
-              style={{ display: "flex", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}
-            >
-              <input type="hidden" name="from" value={period.from} />
-              <input type="hidden" name="to" value={period.to} />
-              {direction ? <input type="hidden" name="direction" value={direction} /> : null}
-              <select
-                name="category"
-                defaultValue={categoryId ?? ""}
-                style={{ ...fieldStyle, padding: "7px 9px" }}
-              >
-                <option value="">Every category</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.direction === "in" ? "↓" : "↑"} {c.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="q"
-                defaultValue={q ?? ""}
-                placeholder="Search name or note"
-                style={{ ...fieldStyle, padding: "7px 9px", minWidth: 170 }}
-              />
-              <button
-                type="submit"
-                className="cn-btn cn-btn--ghost"
+          {activeDesks.length === 0 ? (
+            <Card>
+              <Empty>No desks yet. Add one and every payment gets somewhere to land.</Empty>
+            </Card>
+          ) : null}
+
+          {activeDesks.map((desk) => {
+            const on = accountId === desk.id;
+            return (
+              <div
+                key={desk.id}
                 style={{
-                  background: "#fff",
-                  border: "1px solid #E0DED8",
-                  borderRadius: 8,
-                  padding: "7px 13px",
-                  fontFamily: SANS,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  color: INK,
+                  background: on ? "#1D1C4C" : "#215273",
+                  borderRadius: 14,
+                  padding: "15px 16px",
+                  border: on ? "2px solid #7FD8A8" : "2px solid transparent",
                 }}
               >
-                Filter
-              </button>
-            </form>
-          </Toolbar>
+                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontFamily: SANS,
+                        fontSize: 14.5,
+                        fontWeight: 600,
+                        color: "#fff",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {desk.name}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: SANS,
+                        fontSize: 20,
+                        fontWeight: 700,
+                        color: "#fff",
+                        margin: "6px 0 3px",
+                        letterSpacing: "-.02em",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {money(desk.balanceMinor)} {currency}
+                    </div>
+                    <div style={{ fontFamily: SANS, fontSize: 12, color: "rgba(255,255,255,.72)" }}>
+                      {desk.ownerName ?? "No one assigned"}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: "none" }}>
+                    <Drawer
+                      label="+ Kirim"
+                      eyebrow="Money in"
+                      title={`Take a payment — ${desk.name}`}
+                      note="Tuition, a registration fee, anything arriving at this desk."
+                      triggerStyle={{
+                        background: "#1B8A5A",
+                        border: 0,
+                        color: "#fff",
+                        padding: "6px 13px",
+                        fontSize: 12.5,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <TransactionForm
+                        direction="in"
+                        currency={currency}
+                        accounts={deskOptions}
+                        categories={incomeCategories}
+                        students={people.students}
+                        teachers={people.teachers}
+                        groups={groupOptions}
+                        defaultAccountId={desk.id}
+                        defaultCategoryId={incomeCategories.find((c) => c.slug === "tuition")?.id}
+                      />
+                    </Drawer>
+
+                    <Drawer
+                      label="− Chiqim"
+                      eyebrow="Money out"
+                      title={`Record an expense — ${desk.name}`}
+                      note="Rent, salaries, supplies — anything leaving this desk."
+                      triggerStyle={{
+                        background: "#C2453A",
+                        border: 0,
+                        color: "#fff",
+                        padding: "6px 13px",
+                        fontSize: 12.5,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <TransactionForm
+                        direction="out"
+                        currency={currency}
+                        accounts={deskOptions}
+                        categories={expenseCategories}
+                        students={people.students}
+                        teachers={people.teachers}
+                        groups={groupOptions}
+                        defaultAccountId={desk.id}
+                      />
+                    </Drawer>
+
+                    <Drawer
+                      label="Ko'chirish"
+                      eyebrow="Kassa"
+                      title="Move money between desks"
+                      note="Two entries — out of one, into the other."
+                      triggerStyle={{
+                        background: "#5AA9E6",
+                        border: 0,
+                        color: "#0B2239",
+                        padding: "6px 13px",
+                        fontSize: 12.5,
+                        borderRadius: 8,
+                        fontWeight: 600,
+                      }}
+                    >
+                      <TransferForm
+                        accounts={transferOptions}
+                        fromId={desk.id}
+                        currency={currency}
+                      />
+                    </Drawer>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                    marginTop: 12,
+                    paddingTop: 10,
+                    borderTop: "1px solid rgba(255,255,255,.14)",
+                  }}
+                >
+                  <Drawer
+                    label="Edit"
+                    eyebrow="Kassa"
+                    title={desk.name}
+                    note="Rename it, hand it to someone else, or close it."
+                    triggerStyle={{
+                      background: "transparent",
+                      border: "1px solid rgba(255,255,255,.3)",
+                      color: "#fff",
+                      padding: "4px 11px",
+                      fontSize: 12,
+                      borderRadius: 7,
+                      fontWeight: 500,
+                    }}
+                  >
+                    <DeskForm
+                      desk={{
+                        id: desk.id,
+                        name: desk.name,
+                        ownerId: desk.ownerId,
+                        kind: desk.kind,
+                        active: desk.active,
+                      }}
+                      staff={people.teachers}
+                      currency={currency}
+                    />
+                  </Drawer>
+                  <a
+                    href={query({ account: on ? undefined : desk.id })}
+                    className="cn-link"
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 12,
+                      color: "rgba(255,255,255,.85)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    {on ? "Clear filter" : "Show its entries →"}
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+
+          {closedDesks.length > 0 ? (
+            <Card>
+              <div
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 11,
+                  letterSpacing: ".07em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                  color: "#8B8999",
+                  marginBottom: 9,
+                }}
+              >
+                Closed
+              </div>
+              {closedDesks.map((desk) => (
+                <div
+                  key={desk.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    fontFamily: SANS,
+                    fontSize: 12.5,
+                    color: MUTED,
+                    padding: "5px 0",
+                  }}
+                >
+                  <span>{desk.name}</span>
+                  <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {money(desk.balanceMinor)}
+                  </span>
+                </div>
+              ))}
+            </Card>
+          ) : null}
+        </div>
+
+        {/* ── the entries ──────────────────────────────────────────────────── */}
+        <Card flush>
+          <form
+            method="get"
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              padding: "14px 18px",
+              borderBottom: `1px solid ${HAIR}`,
+              alignItems: "center",
+            }}
+          >
+            <input type="date" name="from" defaultValue={period.from} style={filterInput} />
+            <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>—</span>
+            <input type="date" name="to" defaultValue={period.to} style={filterInput} />
+
+            <select name="direction" defaultValue={direction ?? ""} style={filterInput}>
+              <option value="">Every entry</option>
+              <option value="in">Income only</option>
+              <option value="out">Expenses only</option>
+            </select>
+
+            <select name="student" defaultValue={studentId ?? ""} style={filterInput}>
+              <option value="">Any student</option>
+              {people.students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+
+            <select name="method" defaultValue={method ?? ""} style={filterInput}>
+              <option value="">Any method</option>
+              {METHOD_ORDER.map((m) => (
+                <option key={m} value={m}>
+                  {METHOD_LABEL[m]}
+                </option>
+              ))}
+            </select>
+
+            <select name="teacher" defaultValue={teacherId ?? ""} style={filterInput}>
+              <option value="">Any staff member</option>
+              {people.teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+
+            <select name="category" defaultValue={categoryId ?? ""} style={filterInput}>
+              <option value="">Any category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.direction === "in" ? "↓" : "↑"} {c.name}
+                </option>
+              ))}
+            </select>
+
+            <input
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder="Search the note"
+              style={{ ...filterInput, minWidth: 150 }}
+            />
+            {accountId ? <input type="hidden" name="account" value={accountId} /> : null}
+
+            <button
+              type="submit"
+              className="cn-btn cn-btn--primary"
+              style={{
+                background: INDIGO,
+                border: 0,
+                color: "#fff",
+                borderRadius: 8,
+                padding: "8px 15px",
+                fontFamily: SANS,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Apply
+            </button>
+            <a href="/console/finance" style={{ ...chip, padding: "7px 12px" }}>
+              Reset
+            </a>
+          </form>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 18,
+              alignItems: "center",
+              flexWrap: "wrap",
+              padding: "11px 18px",
+              borderBottom: `1px solid ${HAIR}`,
+              background: "#FAFAF8",
+            }}
+          >
+            <span style={{ fontFamily: SANS, fontSize: 13, color: GREEN, fontWeight: 600 }}>
+              ↙ {money(overview.filteredInMinor)}
+            </span>
+            <span style={{ fontFamily: SANS, fontSize: 13, color: RED, fontWeight: 600 }}>
+              ↗ {money(overview.filteredOutMinor)}
+            </span>
+            <span style={{ fontFamily: SANS, fontSize: 13, color: INK, fontWeight: 600 }}>
+              net {money(overview.filteredInMinor - overview.filteredOutMinor)}
+            </span>
+            <span style={{ marginLeft: "auto", fontFamily: SANS, fontSize: 12, color: SOFT }}>
+              Total: {overview.matched}
+            </span>
+          </div>
 
           {rows.length === 0 ? (
             <Empty>
-              Nothing recorded in this window. Change the dates, or record the first payment with
-              the button above.
+              Nothing matches. Widen the dates, clear a filter, or take the first payment from a
+              desk on the left.
             </Empty>
           ) : (
-            <Table cols={LEDGER_COLS} minWidth={720}>
-              <THead cols={LEDGER_COLS} labels={["Date", "What", "Who", "Desk", "Amount"]} />
-              {rows.map((row) => (
-                <TRow key={row.id} cols={LEDGER_COLS}>
-                  <TD tone="soft">{prettyDate(row.occurredOn)}</TD>
+            <Table cols={COLS} minWidth={880}>
+              <THead
+                cols={COLS}
+                labels={["№", "Date", "Who", "What it was for", "Desk", "Amount", "Status"]}
+              />
+              {rows.map((row, i) => (
+                <TRow key={row.id} cols={COLS}>
+                  <TD tone="faint">{(page - 1) * pageSize + i + 1}</TD>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, color: INK }}>
-                      {row.categoryName ?? "Uncategorised"}
+                    <div style={{ fontFamily: SANS, fontSize: 12.5, color: INK }}>
+                      {prettyDate(row.occurredOn)}
                     </div>
-                    {row.note ? (
-                      <div
-                        style={{
-                          fontSize: 11.5,
-                          color: FAINT,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {row.note}
-                      </div>
-                    ) : null}
+                    <div style={{ fontSize: 11, color: FAINT }}>
+                      {row.recordedAt
+                        ? new Date(row.recordedAt).toLocaleTimeString("en-GB", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </div>
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -494,12 +632,30 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                       {row.personName ?? "—"}
                     </div>
                     {row.groupName ? (
-                      <div style={{ fontSize: 11.5, color: FAINT }}>{row.groupName}</div>
+                      <div style={{ fontSize: 11, color: FAINT }}>{row.groupName}</div>
+                    ) : null}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, color: INK, fontSize: 12.5 }}>
+                      {row.categoryName ?? (row.transferId ? "Transfer" : "Uncategorised")}
+                    </div>
+                    {row.note ? (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: FAINT,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {row.note}
+                      </div>
                     ) : null}
                   </div>
                   <TD tone="faint">
                     {row.accountName}
-                    <div style={{ fontSize: 11 }}>{METHOD_LABEL[row.method] ?? row.method}</div>
+                    <div style={{ fontSize: 11 }}>{METHOD_LABEL[row.method]?.split(" · ")[0]}</div>
                   </TD>
                   <div
                     style={{
@@ -513,168 +669,76 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     {row.direction === "in" ? "+" : "−"}
                     {money(row.amountMinor)}
                   </div>
+                  <div>
+                    <Tag tone={STATUS_TONE[row.status] ?? "neutral"}>{row.status}</Tag>
+                  </div>
                 </TRow>
               ))}
             </Table>
           )}
 
-          {overview.truncated ? (
-            <div style={{ padding: "12px 18px", fontFamily: SANS, fontSize: 12, color: FAINT }}>
-              Showing the most recent 200 entries. Narrow the window, or export to see everything.
-            </div>
-          ) : null}
-        </Card>
-
-        {/* ── the three questions ──────────────────────────────────────────── */}
-        <Stack>
-          <Card>
-            <CardHead
-              title="Where it went"
-              note={period.label}
-              actions={<TextLink href={exportHref("pdf", "expenses")}>PDF</TextLink>}
-            />
-            {expenseTotals.length === 0 ? (
-              <p style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, margin: 0 }}>
-                No expenses recorded in this window.
-              </p>
-            ) : (
-              <div>
-                {expenseTotals.slice(0, 6).map((cat) => (
-                  <div key={cat.categoryId ?? cat.name} style={{ marginBottom: 12 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 8,
-                        fontFamily: SANS,
-                        fontSize: 12.5,
-                        marginBottom: 5,
-                      }}
-                    >
-                      <a
-                        href={query({ category: cat.categoryId ?? undefined, direction: "out" })}
-                        className="cn-link"
-                        style={{ color: INK, textDecoration: "none" }}
-                      >
-                        {cat.name}
-                      </a>
-                      <span style={{ color: MUTED, fontVariantNumeric: "tabular-nums" }}>
-                        {money(cat.amountMinor)}
-                      </span>
-                    </div>
-                    <Bar pct={cat.share} fill={cat.share > 40 ? AMBER : INDIGO} />
-                  </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
+              padding: "12px 18px",
+            }}
+          >
+            <form method="get" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input type="hidden" name="from" value={period.from} />
+              <input type="hidden" name="to" value={period.to} />
+              {direction ? <input type="hidden" name="direction" value={direction} /> : null}
+              {accountId ? <input type="hidden" name="account" value={accountId} /> : null}
+              <select name="size" defaultValue={String(pageSize)} style={filterInput}>
+                {[25, 50, 100, 200].map((n) => (
+                  <option key={n} value={n}>
+                    {n} rows
+                  </option>
                 ))}
-              </div>
-            )}
-          </Card>
-
-          <Card flush>
-            <CardHead
-              title="Owed by students"
-              divided
-              note={owedTotal > 0 ? money(owedTotal) : "nothing outstanding"}
-              actions={<TextLink href="/console/finance/invoices">Invoices →</TextLink>}
-            />
-            {debtors.length === 0 ? (
-              <Empty>
-                Everyone is square. Raise this month&apos;s invoices to keep it that way.
-              </Empty>
-            ) : (
-              debtors.map((debtor) => (
-                <div
-                  key={debtor.studentId}
-                  className="cn-row"
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 18px",
-                    borderBottom: "1px solid #F5F4F0",
-                    fontFamily: SANS,
-                    fontSize: 13,
-                  }}
-                >
-                  <span
-                    style={{
-                      color: INK,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {debtor.studentName}
-                  </span>
-                  <span style={{ color: RED, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                    {money(debtor.owedMinor)}
-                  </span>
-                </div>
-              ))
-            )}
-          </Card>
-
-          <Card>
-            <CardHead
-              title="Payroll"
-              note={monthLabel(monthStart(period.from))}
-              actions={<TextLink href="/console/finance/payroll">Open →</TextLink>}
-            />
-            {payroll ? (
-              <>
-                <div
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 24,
-                    fontWeight: 600,
-                    color: INK,
-                    letterSpacing: "-.02em",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {money(payroll.netMinor)}
-                </div>
-                <p
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 12.5,
-                    color: SOFT,
-                    margin: "6px 0 0",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {payroll.items.length} teacher{payroll.items.length === 1 ? "" : "s"} · run is{" "}
-                  <strong style={{ color: payroll.status === "draft" ? AMBER : GREEN }}>
-                    {payroll.status}
-                  </strong>
-                  . Still to pay{" "}
-                  {money(payroll.items.reduce((a, i) => a + (i.netMinor - i.paidMinor), 0))}.
-                </p>
-              </>
-            ) : (
-              <p
+              </select>
+              <button
+                type="submit"
                 style={{
-                  fontFamily: SANS,
-                  fontSize: 12.5,
-                  color: SOFT,
-                  margin: 0,
-                  lineHeight: 1.55,
+                  ...chip,
+                  padding: "7px 11px",
+                  cursor: "pointer",
+                  border: "1px solid #E4E2DC",
                 }}
               >
-                No run for this month yet. Payroll reads the rosters, the registers and the payments
-                you have already recorded — nothing to type in twice.
-              </p>
-            )}
-            <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-              <BtnLink href="/console/finance/payroll" variant="ghost">
-                Run payroll
-              </BtnLink>
-              <BtnLink href="/console/finance/rules" variant="ghost">
-                Salary rules
-              </BtnLink>
+                Set
+              </button>
+            </form>
+
+            <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontFamily: SANS, fontSize: 12, color: SOFT }}>
+                Page {page} of {lastPage}
+              </span>
+              <a href={query({ page: "1" })} style={{ ...chip, opacity: page === 1 ? 0.4 : 1 }}>
+                ⏮
+              </a>
+              <a
+                href={query({ page: String(Math.max(1, page - 1)) })}
+                style={{ ...chip, opacity: page === 1 ? 0.4 : 1 }}
+              >
+                ‹
+              </a>
+              <a
+                href={query({ page: String(Math.min(lastPage, page + 1)) })}
+                style={{ ...chip, opacity: page === lastPage ? 0.4 : 1 }}
+              >
+                ›
+              </a>
+              <a
+                href={query({ page: String(lastPage) })}
+                style={{ ...chip, opacity: page === lastPage ? 0.4 : 1 }}
+              >
+                ⏭
+              </a>
             </div>
-          </Card>
-        </Stack>
+          </div>
+        </Card>
       </div>
 
       <p
@@ -686,23 +750,24 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           lineHeight: 1.6,
         }}
       >
-        Exports carry whatever is on screen — the window, the direction, the category — so the file
-        and the page always agree. Excel keeps raw numbers you can pivot; PDF is the printable
-        version.
+        The cards along the top total by how the money arrived, across every desk. The desks on the
+        left total by where it now sits. A transfer moves the second without changing the first —
+        which is why both exist.
       </p>
     </div>
   );
 }
 
-const LEDGER_COLS = "96px 1.5fr 1.3fr 110px 130px";
+const COLS = "44px 100px 1.2fr 1.5fr 110px 130px 92px";
 
-const chipStyle: React.CSSProperties = {
+const chip: React.CSSProperties = {
   background: "#F4F3EF",
   border: "1px solid #E4E2DC",
   borderRadius: 7,
-  padding: "5px 11px",
+  padding: "6px 11px",
   fontFamily: SANS,
   fontSize: 12,
   color: INK,
   textDecoration: "none",
+  display: "inline-block",
 };

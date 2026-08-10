@@ -75,7 +75,10 @@ export async function gatherReport(opts: {
     period,
     ...filters,
     ...(kind === "expenses" ? { direction: "out" as const } : {}),
-    limit: needsLedger ? 5000 : 1,
+    // An export is not a page: pull the whole window in one go, capped so a
+    // center with years of history can't ask for a 200 MB spreadsheet.
+    page: 1,
+    pageSize: needsLedger ? 500 : 10,
   });
 
   const [expenseByCategory, incomeByCategory, debtors, payroll] = await Promise.all([
@@ -103,9 +106,10 @@ export async function gatherReport(opts: {
     payroll,
     totalInMinor: overview.periodInMinor,
     totalOutMinor: overview.periodOutMinor,
-    openingNote: overview.truncated
-      ? "Truncated at 5000 rows — narrow the period to export the rest."
-      : null,
+    openingNote:
+      needsLedger && overview.matched > overview.rows.length
+        ? `Showing ${overview.rows.length} of ${overview.matched} entries — narrow the period to export the rest.`
+        : null,
   };
 }
 
