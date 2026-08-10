@@ -83,6 +83,13 @@ export interface Timetable {
   /** Earliest start and latest end across the week, so the grid fits the day. */
   dayStartMin: number;
   dayEndMin: number;
+  /**
+   * Queries that came back with an error. supabase-js reports a failed read as
+   * `{ data: null, error }` rather than throwing, so without this a missing
+   * column renders as an empty timetable and looks like lost data. The page
+   * shows these; see `scripts/check-finance-queries.mjs`.
+   */
+  issues: string[];
 }
 
 /* ── time helpers ─────────────────────────────────────────────────────────── */
@@ -149,6 +156,21 @@ export async function loadTimetable(
       .order("sort", { ascending: true })
       .order("name", { ascending: true }),
   ]);
+
+  // Never let a failed read pass for an empty one.
+  const issues: string[] = [];
+  for (const [label, res] of [
+    ["rooms", roomsRes],
+    ["lessons", slotsRes],
+    ["classes", groupsRes],
+    ["students", membersRes],
+    ["staff", staffRes],
+    ["branches", branchesRes],
+  ] as const) {
+    if (!res.error) continue;
+    issues.push(`${label}: ${res.error.message}`);
+    console.error(`[timetable] ${label} query failed`, res.error);
+  }
 
   const sizes = new Map<string, number>();
   for (const m of (membersRes.data ?? []) as Record<string, unknown>[]) {
@@ -273,6 +295,7 @@ export async function loadTimetable(
     clashCount,
     dayStartMin,
     dayEndMin,
+    issues,
   };
 }
 

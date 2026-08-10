@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { type Slot } from "@/lib/console/timetable";
 
-import { SlotForm } from "./calendar-forms";
+import { type RoomOption, SlotForm } from "./calendar-forms";
 
 /**
  * The timetable grid: rooms across, half-hour bands down.
@@ -51,23 +51,50 @@ const toMinutes = (hhmm: string): number => {
 const toHHMM = (m: number): string =>
   `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 
-/** Side-by-side lanes for lessons sharing a room and an hour. */
+/**
+ * Side-by-side lanes for lessons sharing a room and an hour.
+ *
+ * Widths are decided per CLUSTER of touching lessons, not per room: one
+ * double-booking at 08:00 used to squeeze every lesson in that room to half
+ * width for the rest of the day, which read as though the whole column were
+ * double-booked.
+ */
 function laneOf(slots: Slot[]): Map<string, { lane: number; lanes: number }> {
   const sorted = [...slots].sort((a, b) => toMinutes(a.startsAt) - toMinutes(b.startsAt));
-  const laneEnds: number[] = [];
-  const assigned = new Map<string, number>();
-  for (const slot of sorted) {
-    const start = toMinutes(slot.startsAt);
-    let lane = laneEnds.findIndex((end) => end <= start);
-    if (lane === -1) {
-      lane = laneEnds.length;
-      laneEnds.push(0);
+  const out = new Map<string, { lane: number; lanes: number }>();
+
+  let cluster: Slot[] = [];
+  let clusterEnd = -1;
+
+  const flush = () => {
+    if (cluster.length === 0) return;
+    const laneEnds: number[] = [];
+    const lane = new Map<string, number>();
+    for (const slot of cluster) {
+      const start = toMinutes(slot.startsAt);
+      let index = laneEnds.findIndex((end) => end <= start);
+      if (index === -1) {
+        index = laneEnds.length;
+        laneEnds.push(0);
+      }
+      laneEnds[index] = toMinutes(slot.endsAt);
+      lane.set(slot.id, index);
     }
-    laneEnds[lane] = toMinutes(slot.endsAt);
-    assigned.set(slot.id, lane);
+    const lanes = Math.max(1, laneEnds.length);
+    for (const [id, index] of lane) out.set(id, { lane: index, lanes });
+    cluster = [];
+    clusterEnd = -1;
+  };
+
+  for (const slot of sorted) {
+    // A gap means the previous pile-up is over and widths can reset.
+    if (cluster.length > 0 && toMinutes(slot.startsAt) >= clusterEnd) flush();
+    cluster.push(slot);
+    clusterEnd = Math.max(clusterEnd, toMinutes(slot.endsAt));
   }
-  const lanes = Math.max(1, laneEnds.length);
-  return new Map([...assigned].map(([id, lane]) => [id, { lane, lanes }]));
+  flush();
+
+  return out;
 }
 
 type Editing =
@@ -93,7 +120,7 @@ export function TimetableGrid({
   dayStartMin: number;
   dayEndMin: number;
   groups: { id: string; name: string; teacherName: string | null }[];
-  roomOptions: { id: string; name: string }[];
+  roomOptions: RoomOption[];
   canEdit: boolean;
 }) {
   const [editing, setEditing] = useState<Editing | null>(null);

@@ -52,6 +52,28 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
   const id = str(formData, "id") || null;
 
   const supabase = await createClient();
+
+  // An exact repeat of the same class, same day, same hour, same room is not a
+  // deliberate double-booking — it is a double-click, or a form submitted twice
+  // by a nested-form bug. Those are the rows that later read as "2 lessons are
+  // double-booked" and cannot be told apart on the grid. Everything else still
+  // only warns.
+  const { data: twins } = await supabase
+    .from("lesson_slots")
+    .select("id, starts_at, ends_at, room_id")
+    .eq("group_id", groupId)
+    .eq("weekday", weekday);
+  const duplicate = ((twins ?? []) as Record<string, unknown>[]).find(
+    (s) =>
+      s.id !== id &&
+      String(s.starts_at).slice(0, 5) === startsAt &&
+      String(s.ends_at).slice(0, 5) === endsAt &&
+      ((s.room_id as string | null) ?? null) === roomId,
+  );
+  if (duplicate) {
+    return { error: "That class is already on the timetable at that hour, in that room." };
+  }
+
   const payload = {
     organization_id: profile.organization_id,
     group_id: groupId,
@@ -106,10 +128,17 @@ export async function deleteSlot(_prev: ActionState, formData: FormData): Promis
   if (!id) return { error: "Nothing to remove." };
 
   const supabase = await createClient();
+  const { data: slot } = await supabase
+    .from("lesson_slots")
+    .select("group_id")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.from("lesson_slots").delete().eq("id", id);
   if (error) return { error: error.message };
 
   revalidatePath("/console/calendar");
+  if (slot?.group_id) revalidatePath(`/console/groups/${slot.group_id as string}`);
   return { ok: "Slot removed." };
 }
 

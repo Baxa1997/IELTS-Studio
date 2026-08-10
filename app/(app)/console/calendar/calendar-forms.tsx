@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 
 import {
   Field,
@@ -42,12 +42,24 @@ export interface SlotDraft {
   pattern?: "weekly" | "odd" | "even";
 }
 
+/** A bookable room. `branchName` is only set for centers that have branches. */
+export interface RoomOption {
+  id: string;
+  name: string;
+  branchName?: string | null;
+}
+
 /**
  * Add or move one weekly slot.
  *
  * The end time follows the start by whatever duration was last picked, because
  * a center's lessons are all the same length and typing 17:00 after typing
  * 15:30 twenty times is the kind of friction that sends people back to paper.
+ *
+ * The Remove button posts a SECOND action, so it is a second form — and a form
+ * cannot live inside a form. It sits outside this one and the save button
+ * reaches back in by id; nesting them made every Remove click fire the save
+ * action too, with an empty payload.
  */
 export function SlotForm({
   slot,
@@ -57,10 +69,11 @@ export function SlotForm({
 }: {
   slot?: SlotDraft;
   groups: { id: string; name: string; teacherName: string | null }[];
-  rooms: { id: string; name: string }[];
+  rooms: RoomOption[];
   /** Set when the form sits in the grid's own dialog rather than a Drawer. */
   onDone?: () => void;
 }) {
+  const formId = useId();
   const closeDrawer = useDrawerClose();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
@@ -87,10 +100,14 @@ export function SlotForm({
   }
 
   return (
-    <form action={formAction} key={state.ok ?? "new"}>
-      {slot?.id ? <input type="hidden" name="id" value={slot.id} /> : null}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <>
+      <form
+        id={formId}
+        action={formAction}
+        key={state.ok ?? "new"}
+        style={{ display: "flex", flexDirection: "column", gap: 12 }}
+      >
+        {slot?.id ? <input type="hidden" name="id" value={slot.id} /> : null}
         <Field label="Class">
           <select name="group_id" required defaultValue={slot?.groupId ?? ""} style={fieldStyle}>
             <option value="">Pick a class…</option>
@@ -114,11 +131,15 @@ export function SlotForm({
             </select>
           </Field>
           <Field label="Room">
+            {/* Every room in the center, not just the branch being viewed — a
+                class can be moved to the other site, and a room missing from
+                this list would silently save as "no room". */}
             <select name="room_id" defaultValue={slot?.roomId ?? ""} style={fieldStyle}>
               <option value="">No room</option>
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
+                  {r.branchName ? ` — ${r.branchName}` : ""}
                 </option>
               ))}
             </select>
@@ -178,14 +199,16 @@ export function SlotForm({
             <option value="even">Even days (juft kunlar)</option>
           </select>
         </Field>
-      </div>
+      </form>
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center" }}>
-        <SubmitButton pending={pending}>{slot?.id ? "Save slot" : "Add to timetable"}</SubmitButton>
+        <SubmitButton pending={pending} form={formId}>
+          {slot?.id ? "Save slot" : "Add to timetable"}
+        </SubmitButton>
         {slot?.id ? <DeleteSlotButton id={slot.id} onDone={onDone} /> : null}
       </div>
       <FormMessage state={state} />
-    </form>
+    </>
   );
 }
 

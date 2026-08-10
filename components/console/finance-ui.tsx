@@ -91,15 +91,24 @@ export function SubmitButton({
   pending,
   children,
   variant = "primary",
+  form,
 }: {
   pending: boolean;
   children: React.ReactNode;
   variant?: "primary" | "green" | "danger";
+  /**
+   * Submits the form with this id instead of the enclosing one. Needed when a
+   * button has to sit NEXT TO a second form (a delete, say) rather than inside
+   * the first: HTML forbids nesting one form in another, and React reports it
+   * as a hydration error before quietly submitting both.
+   */
+  form?: string;
 }) {
   const background = variant === "green" ? GREEN : variant === "danger" ? RED : INDIGO;
   return (
     <button
       type="submit"
+      form={form}
       disabled={pending}
       className="cn-btn"
       style={{

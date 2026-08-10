@@ -54,24 +54,42 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     loadGroups(profile),
   ]);
 
-  const { branches, rooms, slots, unscheduled, clashCount, dayStartMin, dayEndMin } = timetable;
+  const { branches, rooms, slots, unscheduled, clashCount, dayStartMin, dayEndMin, issues } =
+    timetable;
   const openBranches = branches.filter((b) => b.active);
+  const branchName = new Map(branches.map((b) => [b.id, b.name]));
 
-  // Which site are we looking at? Only meaningful once there is more than one:
-  // a single-address center never sees the tabs and never has to choose.
+  const openRooms = rooms.filter((r) => r.active);
+  const strayRooms = openRooms.filter((r) => r.branchId == null);
+
+  /**
+   * Which site are we looking at?
+   *
+   * The tabs are built from what actually exists, and one of them is "No
+   * branch" whenever a room has not been assigned to a site yet. That tab is
+   * the whole point: adding a first branch used to hide every existing room
+   * (they all still had `branch_id` null) and the timetable looked wiped. A
+   * room can now never fall out of every tab.
+   */
+  const tabs: { key: string; label: string; count: number }[] = [
+    ...openBranches.map((b) => ({ key: b.id, label: b.name, count: b.roomCount })),
+    ...(strayRooms.length > 0 && openBranches.length > 0
+      ? [{ key: "none", label: "No branch", count: strayRooms.length }]
+      : []),
+  ];
+  const showBranchTabs = tabs.length > 0;
   const requested = first(sp.branch);
-  const branchId =
-    requested && openBranches.some((b) => b.id === requested)
+  const scope: string =
+    requested && (requested === "all" || tabs.some((t) => t.key === requested))
       ? requested
-      : requested === "all"
-        ? null
-        : (openBranches[0]?.id ?? null);
-  const showBranchTabs = openBranches.length > 0;
+      : tabs.length === 1
+        ? tabs[0].key
+        : "all";
 
   // Rooms are the columns, so the branch filter is a filter on rooms.
-  const activeRooms = rooms
-    .filter((r) => r.active)
-    .filter((r) => !showBranchTabs || branchId == null || r.branchId === branchId);
+  const activeRooms = openRooms.filter(
+    (r) => scope === "all" || (scope === "none" ? r.branchId == null : r.branchId === scope),
+  );
   const roomIdsHere = new Set(activeRooms.map((r) => r.id));
 
   // Everything on this page counts within the chosen branch — the day tabs, the
@@ -79,12 +97,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   // stays center-wide: the room you are booking can be taken by a class at a
   // branch you are not looking at.
   const branchSlots = slots.filter(
-    (s) => !showBranchTabs || branchId == null || s.roomId == null || roomIdsHere.has(s.roomId),
+    (s) => scope === "all" || s.roomId == null || roomIdsHere.has(s.roomId),
   );
   const daySlots = branchSlots.filter((s) => s.weekday === day);
   const canEdit = profile.role === "center_admin" || profile.role === "teacher";
-
-  const branchName = new Map(branches.map((b) => [b.id, b.name]));
 
   // Lessons with no room still need a column, or they are invisible.
   const unroomed = daySlots.filter((s) => s.roomId == null);
@@ -94,7 +110,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       name: room.name,
       // Viewing every branch at once, the room name alone is ambiguous.
       meta:
-        branchId == null && room.branchId
+        scope === "all" && room.branchId
           ? (branchName.get(room.branchId) ?? "—")
           : room.capacity
             ? `${room.capacity} seats`
@@ -111,7 +127,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     name: g.name,
     teacherName: g.teacherName,
   }));
-  const roomOptions = activeRooms.map((r) => ({ id: r.id, name: r.name }));
+  // Every open room in the center, whichever branch is on screen: a class can
+  // be moved to the other site, and a room missing from the picker would save
+  // silently as "no room".
+  const roomOptions = openRooms.map((r) => ({
+    id: r.id,
+    name: r.name,
+    branchName: r.branchId ? (branchName.get(r.branchId) ?? null) : null,
+  }));
 
   const lessonsPerRoom = new Map<string, number>();
   for (const slot of slots) {
@@ -124,7 +147,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     const base: Record<string, string | undefined> = {
       day: String(day),
       who: mine ? undefined : "all",
-      branch: showBranchTabs ? (branchId ?? "all") : undefined,
+      branch: showBranchTabs ? scope : undefined,
       ...patch,
     };
     for (const [key, value] of Object.entries(base)) if (value) params.set(key, value);
@@ -152,7 +175,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             </Drawer>
             {profile.role === "center_admin" ? (
               <Drawer
-                label={`Rooms (${activeRooms.length})`}
+                label={`Rooms (${openRooms.length})`}
                 variant="ghost"
                 eyebrow="Timetable"
                 title="Rooms"
@@ -161,7 +184,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               >
                 <RoomsManager
                   branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
-                  defaultBranchId={branchId}
+                  defaultBranchId={scope === "all" || scope === "none" ? null : scope}
                   rooms={rooms.map((r) => ({
                     id: r.id,
                     name: r.name,
@@ -176,7 +199,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             ) : null}
             {profile.role === "center_admin" ? (
               <Drawer
-                label={showBranchTabs ? `Branches (${openBranches.length})` : "Branches"}
+                label={
+                  openBranches.length > 0 ? `Branches (${openBranches.length})` : "Add a branch"
+                }
                 variant="ghost"
                 eyebrow="Timetable"
                 title="Branches"
@@ -212,12 +237,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             borderBottom: "1px solid #E4E2DC",
           }}
         >
-          {openBranches.map((branch) => {
-            const on = branch.id === branchId;
+          {[
+            ...tabs,
+            ...(tabs.length > 1 ? [{ key: "all", label: "Every branch", count: -1 }] : []),
+          ].map((tab) => {
+            const on = tab.key === scope;
             return (
               <a
-                key={branch.id}
-                href={link({ branch: branch.id })}
+                key={tab.key}
+                href={link({ branch: tab.key })}
                 className="cn-tab"
                 style={{
                   padding: "8px 15px",
@@ -231,34 +259,22 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                   background: on ? "#F2F1FB" : "transparent",
                 }}
               >
-                {branch.name}
-                <span
-                  style={{ marginLeft: 7, fontSize: 11, color: on ? INDIGO : FAINT, opacity: 0.75 }}
-                >
-                  {branch.roomCount}
-                </span>
+                {tab.label}
+                {tab.count >= 0 ? (
+                  <span
+                    style={{
+                      marginLeft: 7,
+                      fontSize: 11,
+                      color: on ? INDIGO : FAINT,
+                      opacity: 0.75,
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                ) : null}
               </a>
             );
           })}
-          {openBranches.length > 1 ? (
-            <a
-              href={link({ branch: "all" })}
-              className="cn-tab"
-              style={{
-                padding: "8px 15px",
-                fontFamily: SANS,
-                fontSize: 13.5,
-                fontWeight: branchId == null ? 600 : 500,
-                textDecoration: "none",
-                borderRadius: "9px 9px 0 0",
-                borderBottom: `2px solid ${branchId == null ? INDIGO : "transparent"}`,
-                color: branchId == null ? INDIGO : MUTED,
-                background: branchId == null ? "#F2F1FB" : "transparent",
-              }}
-            >
-              Every branch
-            </a>
-          ) : null}
         </div>
       ) : null}
 
@@ -346,6 +362,26 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         ) : null}
       </div>
 
+      {/* A failed read must never pass for an empty timetable. */}
+      {issues.length > 0 ? (
+        <div
+          style={{
+            padding: "11px 14px",
+            marginBottom: 14,
+            background: "#FBEAE8",
+            border: "1px solid #F0D5D1",
+            borderRadius: 11,
+            fontFamily: SANS,
+            fontSize: 12.5,
+            color: "#A63A30",
+            lineHeight: 1.55,
+          }}
+        >
+          <strong>Some of this page could not be loaded</strong>, so what you see below is
+          incomplete — nothing has been lost. {issues.join(" · ")}
+        </div>
+      ) : null}
+
       {clashCount > 0 ? (
         <div
           style={{
@@ -380,8 +416,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             lineHeight: 1.55,
           }}
         >
-          No rooms yet, so the grid has one unassigned column. Add your rooms with the{" "}
-          <strong>Rooms</strong> button above and each becomes a column you can book into.
+          {openRooms.length === 0 ? (
+            <>
+              No rooms yet, so the grid has one unassigned column. Add your rooms with the{" "}
+              <strong>Rooms</strong> button above and each becomes a column you can book into.
+            </>
+          ) : (
+            <>
+              This branch has no open rooms, so there is nothing to book into. Assign a room to it
+              with the <strong>Rooms</strong> button, or pick another branch tab.
+            </>
+          )}
         </div>
       ) : null}
 
@@ -444,7 +489,13 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         <Card>
           <CardHead
             title="Every lesson this week"
-            note={`${branchSlots.length} in total${branchId != null ? ` at ${branchName.get(branchId) ?? "this branch"}` : ""}`}
+            note={`${branchSlots.length} in total${
+              scope === "all"
+                ? ""
+                : scope === "none"
+                  ? " in rooms with no branch"
+                  : ` at ${branchName.get(scope) ?? "this branch"}`
+            }`}
           />
           {branchSlots.length === 0 ? (
             <p style={{ fontFamily: SANS, fontSize: 13, color: SOFT, margin: 0, lineHeight: 1.6 }}>
