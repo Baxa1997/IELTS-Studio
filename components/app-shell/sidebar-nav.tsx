@@ -4,10 +4,12 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Award,
+  Banknote,
   BookA,
   BookOpen,
   Building2,
   CalendarCheck,
+  CalendarRange,
   ChartNoAxesColumn,
   ClipboardCheck,
   CreditCard,
@@ -17,11 +19,14 @@ import {
   LayoutDashboard,
   Megaphone,
   Mic,
+  Receipt,
+  Scale,
   Settings,
   SquarePen,
   Target,
   UserRound,
   Users,
+  Wallet,
 } from "lucide-react";
 
 /**
@@ -89,7 +94,21 @@ const ADMIN: Section[] = [
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
       { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+    ],
+  },
+  /* Money is the owner's alone — a teacher's rail has no Finance section, and
+     the pages redirect as well, because a rail is a hint and RLS is the gate.
+     The one exception is /console/finance/payroll, which a teacher reaches from
+     Teaching → My pay and which shows them exactly one payslip: their own. */
+  {
+    title: "Money",
+    items: [
+      { label: "Finance", href: "/console/finance", icon: Wallet },
+      { label: "Invoices", href: "/console/finance/invoices", icon: Receipt },
+      { label: "Payroll", href: "/console/finance/payroll", icon: Banknote },
+      { label: "Salary rules", href: "/console/finance/rules", icon: Scale },
     ],
   },
   // No Practice: the library is the teacher's. An admin runs people, billing
@@ -118,7 +137,10 @@ const TEACHER: Section[] = [
       { label: "Overview", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
       { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+      // Their own payslip and its working — not the center's payroll.
+      { label: "My pay", href: "/console/finance/payroll", icon: Banknote },
     ],
   },
   /* A teacher's practice IS the learner's practice — the same /write, /read and

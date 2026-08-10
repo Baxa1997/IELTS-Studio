@@ -11,8 +11,9 @@
 -- A failed ASSERT aborts with an error (non-zero exit under ON_ERROR_STOP).
 --
 -- Cases 13-15 need migrations 20260808130000 / 140000 / 150000; case 16 needs
--- 160000 and case 17 needs 170000. Without them you get a missing-relation or
--- invalid-enum error, not a failure.
+-- 160000 and case 17 needs 170000. Cases 18-21 (finance and the timetable) need
+-- 20260810120000. Without them you get a missing-relation or invalid-enum
+-- error, not a failure.
 -- ============================================================================
 begin;
 
@@ -507,5 +508,181 @@ begin
   end;
 end $$;
 set local role authenticated;
+
+-- ---- Case 18: money is the owner's, not the staff's -------------------------
+-- Needs migration 20260810120000. Finance is the one module where a teacher is
+-- NOT a trusted reader: they may see their own payslip and nothing else about
+-- the center's money.
+set local role postgres;
+insert into public.finance_accounts (id, organization_id, name, kind) values
+  ('f1f1f1f1-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Cash A', 'cash'),
+  ('f1f1f1f1-0000-0000-0000-000000000002', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Cash B', 'cash');
+insert into public.student_invoices (id, organization_id, student_id, group_id, period_month, amount_minor) values
+  ('f2f2f2f2-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   '22222222-2222-2222-2222-222222222222', '99999999-9999-9999-9999-999999999999',
+   date_trunc('month', current_date)::date, 550000),
+  ('f2f2f2f2-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   '33333333-3333-3333-3333-333333333333', '99999999-9999-9999-9999-999999999999',
+   date_trunc('month', current_date)::date, 550000);
+insert into public.salary_rules (organization_id, name, scope, components) values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'House rule', 'org',
+   '[{"kind":"revenue_share","percent":40,"of":"collected"}]'::jsonb);
+insert into public.finance_transactions (id, organization_id, account_id, direction, amount_minor, student_id, group_id, invoice_id) values
+  ('f3f3f3f3-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'f1f1f1f1-0000-0000-0000-000000000001', 'in', 550000,
+   '22222222-2222-2222-2222-222222222222', '99999999-9999-9999-9999-999999999999',
+   'f2f2f2f2-0000-0000-0000-000000000001');
+set local role authenticated;
+
+-- Admin A: sees their own center's money, and none of Center B's.
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+do $$
+declare mine int; theirs int; invoices int;
+begin
+  select count(*) into mine   from public.finance_transactions;
+  select count(*) into theirs from public.finance_accounts
+   where organization_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+  select count(*) into invoices from public.student_invoices;
+  assert mine = 1, format('Admin A should see their own ledger; saw %s', mine);
+  assert theirs = 0, 'BREACH: Admin A can read Center B cash desks';
+  assert invoices = 2, format('Admin A should see both invoices; saw %s', invoices);
+  raise notice 'PASS 18a: the owner sees their own money and no one else''s';
+end $$;
+
+-- Teacher A: no ledger, no invoices, no cash desks.
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare tx int; invoices int; accounts int; rules int;
+begin
+  select count(*) into tx       from public.finance_transactions;
+  select count(*) into invoices from public.student_invoices;
+  select count(*) into accounts from public.finance_accounts;
+  select count(*) into rules    from public.salary_rules;
+  assert tx = 0,       format('BREACH: a teacher read %s ledger rows', tx);
+  assert invoices = 0, format('BREACH: a teacher read %s invoices', invoices);
+  assert accounts = 0, format('BREACH: a teacher read %s cash desks', accounts);
+  assert rules = 0,    format('BREACH: a teacher read %s salary rules', rules);
+  raise notice 'PASS 18b: a teacher sees none of the center''s money';
+end $$;
+
+-- ---- Case 19: a student sees their own invoice, and only their own ----------
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare mine int; classmates int; payments int;
+begin
+  select count(*) into mine from public.student_invoices
+   where student_id = '22222222-2222-2222-2222-222222222222';
+  select count(*) into classmates from public.student_invoices
+   where student_id <> '22222222-2222-2222-2222-222222222222';
+  select count(*) into payments from public.finance_transactions;
+  assert mine = 1, format('Student A should see their own invoice; saw %s', mine);
+  assert classmates = 0, format('BREACH: a student read %s classmates'' invoices', classmates);
+  assert payments = 1, format('Student A should see their own receipt; saw %s', payments);
+  raise notice 'PASS 19: a student sees their own bill and their own receipt';
+end $$;
+
+-- A student cannot write one for themselves, however tempting.
+do $$
+begin
+  begin
+    insert into public.student_invoices (organization_id, student_id, group_id, period_month, amount_minor)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222',
+            '99999999-9999-9999-9999-999999999999', (date_trunc('month', current_date) - interval '1 month')::date, 0);
+    raise exception 'BREACH: a student wrote their own invoice';
+  exception when insufficient_privilege then
+    raise notice 'PASS 19b: a student cannot write an invoice';
+  end;
+end $$;
+
+-- ---- Case 20: a teacher reads their own payslip, and nobody else's ----------
+set local role postgres;
+insert into public.payroll_runs (id, organization_id, period_month, status) values
+  ('f4f4f4f4-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   date_trunc('month', current_date)::date, 'approved');
+insert into public.payroll_items (id, organization_id, run_id, teacher_id, gross_minor, net_minor) values
+  ('f5f5f5f5-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'f4f4f4f4-0000-0000-0000-000000000001', '88888888-8888-8888-8888-888888888888', 4000000, 4000000),
+  ('f5f5f5f5-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   'f4f4f4f4-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000001', 9000000, 9000000);
+set local role authenticated;
+
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare seen int; others int;
+begin
+  select count(*) into seen   from public.payroll_items
+   where teacher_id = '88888888-8888-8888-8888-888888888888';
+  select count(*) into others from public.payroll_items
+   where teacher_id <> '88888888-8888-8888-8888-888888888888';
+  assert seen = 1, format('Teacher A should see their own payslip; saw %s', seen);
+  assert others = 0, format('BREACH: a teacher read %s colleague payslip(s)', others);
+  raise notice 'PASS 20a: a teacher sees exactly one payslip — their own';
+end $$;
+
+-- And cannot give themselves a raise.
+do $$
+declare changed int;
+begin
+  update public.payroll_items set net_minor = 99000000
+   where teacher_id = '88888888-8888-8888-8888-888888888888';
+  get diagnostics changed = row_count;
+  assert changed = 0, 'BREACH: a teacher rewrote their own payslip';
+  raise notice 'PASS 20b: a teacher cannot edit their own payslip';
+end $$;
+
+-- ---- Case 21: the timetable is shared inside a center, sealed between them --
+set local role postgres;
+insert into public.rooms (id, organization_id, name) values
+  ('f6f6f6f6-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Room 1');
+insert into public.lesson_slots (id, organization_id, group_id, room_id, weekday, starts_at, ends_at) values
+  ('f7f7f7f7-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+   '99999999-9999-9999-9999-999999999999', 'f6f6f6f6-0000-0000-0000-000000000001', 1, '15:30', '17:00');
+set local role authenticated;
+
+-- A student needs their own timetable, so reading is org-wide by design.
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare slots int;
+begin
+  select count(*) into slots from public.lesson_slots;
+  assert slots = 1, format('A student should see the timetable; saw %s', slots);
+  raise notice 'PASS 21a: the timetable is readable inside the center';
+end $$;
+
+-- Center B sees none of it.
+set local request.jwt.claims = '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}';
+do $$
+declare leaked int;
+begin
+  select count(*) into leaked from public.lesson_slots;
+  assert leaked = 0, format('BREACH: Center B read %s of Center A''s slots', leaked);
+  raise notice 'PASS 21b: the timetable does not cross tenants';
+end $$;
+
+-- A teacher schedules the classes they own — and only those.
+set local request.jwt.claims = '{"sub":"dddddddd-0000-0000-0000-000000000001","role":"authenticated"}';
+do $$
+begin
+  begin
+    insert into public.lesson_slots (organization_id, group_id, weekday, starts_at, ends_at)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '99999999-9999-9999-9999-999999999999',
+            2, '09:00', '10:30');
+    raise exception 'BREACH: a teacher scheduled a class they do not own';
+  exception when insufficient_privilege then
+    raise notice 'PASS 21c: a teacher cannot schedule someone else''s class';
+  end;
+end $$;
+
+set local request.jwt.claims = '{"sub":"88888888-8888-8888-8888-888888888888","role":"authenticated"}';
+do $$
+declare added int;
+begin
+  insert into public.lesson_slots (organization_id, group_id, weekday, starts_at, ends_at)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '99999999-9999-9999-9999-999999999999',
+          3, '09:00', '10:30');
+  get diagnostics added = row_count;
+  assert added = 1, 'The owning teacher must be able to schedule their own class';
+  raise notice 'PASS 21d: the owning teacher schedules their own class';
+end $$;
 
 rollback;  -- discards all seed data and resets role/claims
