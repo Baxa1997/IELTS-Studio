@@ -59,24 +59,31 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 -- Cancelled money never moved, so it must not count towards a desk's balance.
+--
+-- COLUMN ORDER IS LOAD-BEARING. `create or replace view` may only APPEND
+-- columns: slipping `owner_id` in beside `kind` would rename position 5 and
+-- Postgres refuses with "cannot change name of view column". So the original
+-- nine columns keep their exact order and `owner_id` goes on the end, which is
+-- also why this is a replace rather than a drop — a drop would take the grants
+-- with it and leave a window where the view does not exist.
 create or replace view public.v_finance_account_balances with (security_invoker = true) as
   select a.id                as account_id,
          a.organization_id,
          a.name,
          a.kind,
-         a.owner_id,
          a.active,
          a.sort,
          a.opening_balance_minor
            + coalesce(sum(t.amount_minor) filter (where t.direction = 'in'), 0)
            - coalesce(sum(t.amount_minor) filter (where t.direction = 'out'), 0) as balance_minor,
          coalesce(sum(t.amount_minor) filter (where t.direction = 'in'), 0)  as total_in_minor,
-         coalesce(sum(t.amount_minor) filter (where t.direction = 'out'), 0) as total_out_minor
+         coalesce(sum(t.amount_minor) filter (where t.direction = 'out'), 0) as total_out_minor,
+         a.owner_id
     from public.finance_accounts a
     left join public.finance_transactions t
       on t.account_id = a.id and t.status <> 'cancelled'
-   group by a.id, a.organization_id, a.name, a.kind, a.owner_id, a.active, a.sort,
-            a.opening_balance_minor;
+   group by a.id, a.organization_id, a.name, a.kind, a.active, a.sort,
+            a.opening_balance_minor, a.owner_id;
 
 grant select on public.v_finance_account_balances to authenticated;
 
