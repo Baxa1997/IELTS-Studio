@@ -34,8 +34,8 @@ export interface AccountBalance {
   active: boolean;
   ownerId: string | null;
   ownerName: string | null;
-  /** The site this desk stands at. Null for a center that hasn't split its cash. */
-  branchId: string | null;
+  /** The site this desk stands at. Required since 20260810170000. */
+  branchId: string;
   branchName: string | null;
   balanceMinor: number;
   totalInMinor: number;
@@ -58,24 +58,19 @@ export interface BranchTotal {
   netMinor: number;
 }
 
-/**
- * Which branch the page is looking at: a branch id, `"none"` for desks that
- * belong to no site, or `"all"`/undefined for the whole center.
- */
+/** Which branch the page is looking at: a branch id, or `"all"`/undefined. */
 export type BranchScope = string | undefined;
 
 /**
  * The desks a scope covers, or null for "every desk, don't filter".
  *
  * A branch owns desks and a transaction inherits its branch from the desk it
- * passed through (migration 20260810150000), so every branch filter in this
- * file is really a filter on `account_id`.
+ * passed through (migrations 20260810150000 and 20260810170000), so every
+ * branch filter in this file is really a filter on `account_id`.
  */
 export function accountsInScope(accounts: AccountBalance[], scope: BranchScope): string[] | null {
   if (!scope || scope === "all") return null;
-  return accounts
-    .filter((a) => (scope === "none" ? a.branchId == null : a.branchId === scope))
-    .map((a) => a.id);
+  return accounts.filter((a) => a.branchId === scope).map((a) => a.id);
 }
 
 /** Cash / card / terminal / QR, summed across every desk for the window. */
@@ -119,7 +114,7 @@ export interface LedgerRow {
 
 export interface LedgerFilters {
   period: Period;
-  /** A branch id, "none" for desks with no site, or undefined/"all" for every one. */
+  /** A branch id, or undefined/"all" for every site. */
   branch?: BranchScope;
   accountId?: string;
   categoryId?: string;
@@ -219,7 +214,7 @@ export async function loadAccounts(): Promise<AccountBalance[]> {
       active: Boolean(a.active),
       ownerId,
       ownerName: ownerId ? (ownerName.get(ownerId) ?? null) : null,
-      branchId,
+      branchId: branchId ?? "",
       branchName: branchId ? (branchName.get(branchId) ?? null) : null,
       balanceMinor: Number(a.balance_minor ?? 0),
       totalInMinor: Number(a.total_in_minor ?? 0),
@@ -262,7 +257,7 @@ export async function loadBranchTotals(
     .gte("occurred_on", period.from)
     .lte("occurred_on", period.to);
 
-  const branchOf = new Map(accounts.map((a) => [a.id, a.branchId]));
+  const branchOf = new Map(accounts.map((a) => [a.id, a.branchId || null]));
   const buckets = new Map<string, BranchTotal>();
   const bucket = (branchId: string | null, name: string) => {
     const key = branchId ?? "none";

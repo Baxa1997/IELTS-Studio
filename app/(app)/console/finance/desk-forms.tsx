@@ -29,7 +29,7 @@ export function DeskForm({
     id: string;
     name: string;
     ownerId: string | null;
-    branchId: string | null;
+    branchId: string;
     kind: string;
     active: boolean;
   };
@@ -73,14 +73,17 @@ export function DeskForm({
             ))}
           </select>
         </Field>
-        {branches.length > 0 ? (
+        {/* A desk always stands at a branch — that is what makes its takings
+            count towards one. Nothing to decide with a single site, so the
+            field is sent hidden. */}
+        {branches.length > 1 ? (
           <Field label="Branch" hint="every payment taken here counts as that branch's">
             <select
               name="branch_id"
-              defaultValue={desk?.branchId ?? defaultBranchId ?? ""}
+              required
+              defaultValue={desk?.branchId ?? defaultBranchId ?? branches[0]?.id ?? ""}
               style={fieldStyle}
             >
-              <option value="">No branch</option>
               {branches.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}
@@ -88,7 +91,13 @@ export function DeskForm({
               ))}
             </select>
           </Field>
-        ) : null}
+        ) : (
+          <input
+            type="hidden"
+            name="branch_id"
+            value={desk?.branchId ?? defaultBranchId ?? branches[0]?.id ?? ""}
+          />
+        )}
         <FieldGrid>
           <Field label="Holds mostly">
             <select name="kind" defaultValue={desk?.kind ?? "cash"} style={fieldStyle}>

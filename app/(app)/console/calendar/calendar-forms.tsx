@@ -33,10 +33,20 @@ function addMinutes(time: string, minutes: number): string {
 const sameDays = (a: number[], b: readonly number[]) =>
   a.length === b.length && [...a].sort().join() === [...b].sort().join();
 
-/** A bookable room. `branchName` is only set for centers that have branches. */
+/** A bookable room. Every room is at exactly one branch. */
 export interface RoomOption {
   id: string;
   name: string;
+  branchId: string;
+  branchName?: string | null;
+}
+
+/** A class, and the site it is taught at. */
+export interface GroupOption {
+  id: string;
+  name: string;
+  teacherName: string | null;
+  branchId: string;
   branchName?: string | null;
 }
 
@@ -74,7 +84,7 @@ export function SlotForm({
   onDone,
 }: {
   slot?: SlotDraft;
-  groups: { id: string; name: string; teacherName: string | null }[];
+  groups: GroupOption[];
   rooms: RoomOption[];
   /** Set when the form sits in the grid's own dialog rather than a Drawer. */
   onDone?: () => void;
@@ -102,6 +112,15 @@ export function SlotForm({
   const [days, setDays] = useState<number[]>(slot?.weekdays?.length ? slot.weekdays : [1]);
   const [startsAt, setStartsAt] = useState(slot?.startsAt ?? "15:30");
   const [endsAt, setEndsAt] = useState(slot?.endsAt ?? "17:00");
+  const [groupId, setGroupId] = useState(slot?.groupId ?? "");
+
+  // A class is taught at one branch and can only be booked into rooms there —
+  // the database enforces it, so the picker must not offer anything else. Room
+  // choice therefore follows the class, and clearing the class clears it.
+  const branchId = groups.find((g) => g.id === groupId)?.branchId ?? null;
+  const roomsHere = branchId ? rooms.filter((r) => r.branchId === branchId) : [];
+  const [roomId, setRoomId] = useState(slot?.roomId ?? "");
+  const roomValue = roomsHere.some((r) => r.id === roomId) ? roomId : "";
 
   const toggleDay = (day: number) =>
     setDays((current) =>
@@ -137,7 +156,13 @@ export function SlotForm({
         ))}
 
         <Field label="Class">
-          <select name="group_id" required defaultValue={slot?.groupId ?? ""} style={fieldStyle}>
+          <select
+            name="group_id"
+            required
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            style={fieldStyle}
+          >
             <option value="">Pick a class…</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
@@ -265,16 +290,27 @@ export function SlotForm({
           ))}
         </div>
 
-        <Field label="Room" hint="every day of the lesson goes in this room">
-          {/* Every room in the center, not just the branch being viewed — a
-              class can be moved to the other site, and a room missing from
-              this list would silently save as "no room". */}
-          <select name="room_id" defaultValue={slot?.roomId ?? ""} style={fieldStyle}>
+        <Field
+          label="Room"
+          hint={
+            !groupId
+              ? "pick the class first — rooms depend on its branch"
+              : roomsHere.length === 0
+                ? `no rooms at ${groups.find((g) => g.id === groupId)?.branchName ?? "that branch"} yet`
+                : "every day of the lesson goes in this room"
+          }
+        >
+          <select
+            name="room_id"
+            value={roomValue}
+            onChange={(e) => setRoomId(e.target.value)}
+            disabled={!groupId}
+            style={{ ...fieldStyle, opacity: groupId ? 1 : 0.6 }}
+          >
             <option value="">No room</option>
-            {rooms.map((r) => (
+            {roomsHere.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
-                {r.branchName ? ` — ${r.branchName}` : ""}
               </option>
             ))}
           </select>

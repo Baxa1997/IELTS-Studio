@@ -29,9 +29,12 @@ const initial: GroupFormState = {};
  */
 export function CreateGroupForm({
   teachers,
+  branches,
   canAssignTeacher,
 }: {
   teachers: { id: string; name: string }[];
+  /** The center's sites. There is always at least one. */
+  branches: { id: string; name: string }[];
   canAssignTeacher: boolean;
 }) {
   const [state, formAction, pending] = useActionState(createGroup, initial);
@@ -42,6 +45,32 @@ export function CreateGroupForm({
         <Label htmlFor="group-name">Group name</Label>
         <Input id="group-name" name="name" placeholder="IELTS evening — Sept" required />
       </div>
+      {/* One branch means no decision to make: send it silently and keep the
+          form short. Two or more and the choice is real, because it decides
+          which rooms the class can be booked into. */}
+      {branches.length > 1 ? (
+        <div className="space-y-2">
+          <Label htmlFor="group-branch">Branch</Label>
+          <select
+            id="group-branch"
+            name="branch_id"
+            className={FIELD}
+            defaultValue={branches[0]?.id ?? ""}
+            required
+          >
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-muted-foreground text-xs">
+            The class can only be timetabled into rooms at this branch.
+          </p>
+        </div>
+      ) : (
+        <input type="hidden" name="branch_id" value={branches[0]?.id ?? ""} />
+      )}
       {canAssignTeacher ? (
         <div className="space-y-2">
           <Label htmlFor="group-teacher">Teacher</Label>
@@ -125,13 +154,7 @@ export function DeleteGroupButton({ groupId }: { groupId: string }) {
 }
 
 /** Remove one student from a group (their account and history are untouched). */
-export function RemoveMemberButton({
-  groupId,
-  studentId,
-}: {
-  groupId: string;
-  studentId: string;
-}) {
+export function RemoveMemberButton({ groupId, studentId }: { groupId: string; studentId: string }) {
   const [state, formAction, pending] = useActionState(removeMember, initial);
 
   return (

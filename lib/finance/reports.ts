@@ -78,7 +78,7 @@ export async function gatherReport(opts: {
     categoryId?: string;
     groupId?: string;
     direction?: "in" | "out";
-    /** A branch id, "none", or undefined for the whole center. */
+    /** A branch id, or undefined for the whole center. */
     branch?: string;
   };
 }): Promise<ReportData> {
@@ -117,9 +117,7 @@ export async function gatherReport(opts: {
 
   const branchLabel = wholeCenter
     ? null
-    : filters.branch === "none"
-      ? "Desks with no branch"
-      : (overview.branches.find((b) => b.id === filters.branch)?.name ?? null);
+    : (overview.branches.find((b) => b.id === filters.branch)?.name ?? null);
 
   return {
     kind,

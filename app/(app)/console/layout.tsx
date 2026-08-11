@@ -21,7 +21,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const isAdmin = profile.role === "center_admin";
 
   // Groups feed both slide-overs: enrolling picks one, inviting targets one.
-  const { groups, teachers } = await loadGroups(profile);
+  const { groups, teachers, branches } = await loadGroups(profile);
 
   return (
     <div className="cn-root">
@@ -40,7 +40,9 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
         }
         teacherPanel={isAdmin ? <AddTeacherPanel /> : undefined}
         invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
-        groupPanel={<CreateGroupForm teachers={teachers} canAssignTeacher={isAdmin} />}
+        groupPanel={
+          <CreateGroupForm teachers={teachers} branches={branches} canAssignTeacher={isAdmin} />
+        }
       >
         {children}
       </ConsoleChrome>

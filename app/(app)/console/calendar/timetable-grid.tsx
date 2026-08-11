@@ -5,7 +5,7 @@ import { useState } from "react";
 import { type Slot } from "@/lib/console/timetable";
 import { describeDays } from "@/lib/console/timetable-days";
 
-import { type RoomOption, SlotForm } from "./calendar-forms";
+import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
 
 /**
  * The timetable grid: rooms across, half-hour bands down.
@@ -138,7 +138,7 @@ export function TimetableGrid({
   weekdayLabel: string;
   dayStartMin: number;
   dayEndMin: number;
-  groups: { id: string; name: string; teacherName: string | null }[];
+  groups: GroupOption[];
   roomOptions: RoomOption[];
   canEdit: boolean;
 }) {

@@ -49,7 +49,7 @@ export interface RoomRow {
   capacity: number | null;
   color: string | null;
   active: boolean;
-  branchId: string | null;
+  branchId: string;
   lessons: number;
 }
 
@@ -147,9 +147,9 @@ function RoomEditor({
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13, color: INK, fontWeight: 500 }}>{room.name}</div>
           <div style={{ fontSize: 11.5, color: FAINT }}>
-            {branches.find((b) => b.id === room.branchId)?.name ??
-              (branches.length > 0 ? "No branch" : null)}
-            {branches.length > 0 ? " · " : ""}
+            {branches.length > 1
+              ? `${branches.find((b) => b.id === room.branchId)?.name ?? "—"} · `
+              : ""}
             {room.capacity ? `${room.capacity} seats · ` : ""}
             {room.lessons} lesson{room.lessons === 1 ? "" : "s"} a week
             {room.active ? "" : " · closed"}
@@ -189,15 +189,19 @@ function RoomEditor({
       {room ? <input type="hidden" name="id" value={room.id} /> : null}
       <input type="hidden" name="color" value={color} />
 
-      {branches.length > 0 ? (
+      {/* A room is always at a branch. With one branch there is nothing to
+          decide, so the field is sent hidden and the form stays short. Moving a
+          room to another branch un-rooms any lesson whose class is at the old
+          one — the lesson survives, it just needs a new room. */}
+      {branches.length > 1 ? (
         <label style={{ fontSize: 12, color: MUTED, display: "block", marginBottom: 10 }}>
           Branch
           <select
             name="branch_id"
-            defaultValue={room?.branchId ?? defaultBranchId ?? ""}
+            required
+            defaultValue={room?.branchId ?? defaultBranchId ?? branches[0]?.id ?? ""}
             style={{ ...fieldStyle, marginTop: 4 }}
           >
-            <option value="">No branch</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -205,7 +209,13 @@ function RoomEditor({
             ))}
           </select>
         </label>
-      ) : null}
+      ) : (
+        <input
+          type="hidden"
+          name="branch_id"
+          value={room?.branchId ?? defaultBranchId ?? branches[0]?.id ?? ""}
+        />
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr .8fr", gap: 10 }}>
         <label style={{ fontSize: 12, color: MUTED }}>

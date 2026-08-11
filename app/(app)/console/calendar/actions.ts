@@ -52,9 +52,12 @@ function readWeekdays(formData: FormData): number[] {
  * and a scheduler that refuses is a scheduler people stop using. The grid shows
  * the collision instead, in red, on both blocks.
  *
- * The one thing refused outright is the same class twice in the same room at
- * the same hour, which is never a plan; the database refuses it too, via the
- * unique indexes in migration 20260810160000.
+ * The one thing refused outright is a class booked over itself, which is never
+ * a plan. The database refuses it too — an EXCLUDE constraint over (class, day,
+ * overlapping hours) added in 20260810170000 — so it cannot arrive by any other
+ * route either. A room at a different branch from the class is likewise refused
+ * by a trigger; the form only offers rooms at the right branch, so nobody
+ * should ever see it.
  */
 export async function saveSlot(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireOrgUser();
@@ -139,7 +142,7 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
         drop.map((row) => row.id),
       )
       .select("id");
-    if (error) return { error: error.message };
+    if (error) return { error: explain(error) };
     if ((data ?? []).length === 0) return { error: notAllowed("remove those days from") };
   }
 
@@ -152,7 +155,7 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
         keep.map((row) => row.id),
       )
       .select("id");
-    if (error) return { error: error.message };
+    if (error) return { error: explain(error) };
     if ((data ?? []).length === 0) return { error: notAllowed("change") };
   }
 
@@ -162,12 +165,7 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
       .from("lesson_slots")
       .insert(add.map((weekday) => ({ ...base, weekday, series_id: newSeries })))
       .select("id");
-    if (error) {
-      if (error.code === "23505") {
-        return { error: "That class is already on the timetable at that hour, in that room." };
-      }
-      return { error: error.message };
-    }
+    if (error) return { error: explain(error) };
     if ((data ?? []).length === 0) return { error: notAllowed("add to") };
   }
 
@@ -253,6 +251,26 @@ async function clashWarning(
   return ` Note: ${(other?.name as string) ?? "another class"} is already in that room then.`;
 }
 
+/**
+ * Turn the database's own guards into sentences.
+ *
+ * These are backstops, not the main path — the form pre-checks both — but a
+ * constraint that fires must still explain itself rather than leaking
+ * "23P01" at whoever is trying to book a lesson.
+ */
+function explain(error: { code?: string; message: string }): string {
+  if (error.code === "23P01") {
+    return "This class already has a lesson at that hour on one of those days. One class cannot be in two places at once.";
+  }
+  if (error.code === "23514" && /branch/i.test(error.message)) {
+    return "That room is at a different branch from the class. Pick a room at the class's branch, or move the class.";
+  }
+  if (error.code === "23505") {
+    return "That lesson is already on the timetable.";
+  }
+  return error.message;
+}
+
 /** The message for a write RLS silently discarded. */
 function notAllowed(verb: string): string {
   return `Nothing changed — you may not ${verb} this class's timetable. Ask the center owner, or reload the page if it was just deleted.`;
@@ -327,13 +345,18 @@ export async function saveRoom(_prev: ActionState, formData: FormData): Promise<
     return { error: "Capacity has to be a whole number." };
   }
 
+  // Every room is at a branch. The form always sends one (hidden when the
+  // center has a single site), so an empty value means a stale page.
+  const branchId = str(formData, "branch_id");
+  if (!branchId) return { error: "Pick the branch this room is at." };
+
   const supabase = await createClient();
   const id = str(formData, "id") || null;
   const payload = {
     organization_id: profile.organization_id,
     name,
     capacity,
-    branch_id: str(formData, "branch_id") || null,
+    branch_id: branchId,
     color: str(formData, "color") || null,
     active: str(formData, "active") !== "off",
   };

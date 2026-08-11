@@ -10,7 +10,11 @@ import { uploadAvatar } from "@/lib/console/avatars";
 import { sendEmail } from "@/lib/email/send";
 import { notifyAssignment } from "@/lib/notifications/send";
 import { serverEnv } from "@/lib/env";
-import { generateWritingPrompt, reviewWritingPrompt, PromptServiceError } from "@/lib/prompts/service";
+import {
+  generateWritingPrompt,
+  reviewWritingPrompt,
+  PromptServiceError,
+} from "@/lib/prompts/service";
 import { placeUserInOrg } from "@/lib/provision";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota, PLAN_SEAT_LIMITS, type OrgPlan } from "@/lib/quota";
@@ -88,11 +92,18 @@ export async function createGroup(
       ? profile.id
       : String(formData.get("teacher_id") ?? "").trim() || null;
 
+  // Every class is taught at a branch, and its lessons may only be booked into
+  // rooms there (migration 20260810170000). A center always has at least one,
+  // so a single-site center never sees this field.
+  const branchId = String(formData.get("branch_id") ?? "").trim();
+  if (!branchId) return { error: "Pick the branch this class is taught at." };
+
   const supabase = await createClient();
   const { error } = await supabase.from("groups").insert({
     organization_id: profile.organization_id,
     name,
     teacher_id: teacherId,
+    branch_id: branchId,
     created_by: profile.id,
   });
   if (error) {
@@ -741,9 +752,16 @@ export async function addStudentsBulk(
       break;
     }
 
-    const login = await resolveLogin(admin, parsed.login ?? loginFromName(parsed.name), loginsThisBatch);
+    const login = await resolveLogin(
+      admin,
+      parsed.login ?? loginFromName(parsed.name),
+      loginsThisBatch,
+    );
     if (!login) {
-      skipped.push({ line, reason: "Every login built from this name is taken. Give one explicitly." });
+      skipped.push({
+        line,
+        reason: "Every login built from this name is taken. Give one explicitly.",
+      });
       continue;
     }
 
@@ -812,7 +830,9 @@ export async function addStudentsBulk(
 
 /** `Name`, `Name, login`, `Name, email`, `Name, login, email` — in any order
  *  after the name, comma- or tab-separated (a paste from a spreadsheet). */
-function parseRosterLine(line: string): { name: string; login: string | null; email: string } | null {
+function parseRosterLine(
+  line: string,
+): { name: string; login: string | null; email: string } | null {
   const parts = line
     .split(/[\t,;]/)
     .map((p) => p.trim())
@@ -847,10 +867,43 @@ function loginFromName(name: string): string {
 }
 
 const CYRILLIC: Record<string, string> = {
-  а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "yo", ж: "j", з: "z", и: "i",
-  й: "y", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t",
-  у: "u", ф: "f", х: "x", ц: "ts", ч: "ch", ш: "sh", щ: "sh", ъ: "", ы: "i", ь: "",
-  э: "e", ю: "yu", я: "ya", ў: "o", қ: "q", ғ: "g", ҳ: "h",
+  а: "a",
+  б: "b",
+  в: "v",
+  г: "g",
+  д: "d",
+  е: "e",
+  ё: "yo",
+  ж: "j",
+  з: "z",
+  и: "i",
+  й: "y",
+  к: "k",
+  л: "l",
+  м: "m",
+  н: "n",
+  о: "o",
+  п: "p",
+  р: "r",
+  с: "s",
+  т: "t",
+  у: "u",
+  ф: "f",
+  х: "x",
+  ц: "ts",
+  ч: "ch",
+  ш: "sh",
+  щ: "sh",
+  ъ: "",
+  ы: "i",
+  ь: "",
+  э: "e",
+  ю: "yu",
+  я: "ya",
+  ў: "o",
+  қ: "q",
+  ғ: "g",
+  ҳ: "h",
 };
 
 function transliterate(s: string): string {
@@ -1051,10 +1104,7 @@ type RlsClient = Awaited<ReturnType<typeof createClient>>;
  *  oversubscribe by issuing links it hasn't spent yet. Skipped entirely while
  *  the org is unmetered (`billing_enforced = false` — centers, for now; see
  *  migration 20260807150000). */
-async function seatLimitError(
-  supabase: RlsClient,
-  organizationId: string,
-): Promise<string | null> {
+async function seatLimitError(supabase: RlsClient, organizationId: string): Promise<string | null> {
   const { data: org } = await supabase
     .from("organizations")
     .select("plan, billing_enforced")

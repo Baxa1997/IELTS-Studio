@@ -9,7 +9,16 @@ export interface GroupSummary {
   name: string;
   teacherId: string | null;
   teacherName: string | null;
+  /** The site this class is taught at. Required since 20260810170000. */
+  branchId: string;
+  branchName: string | null;
   memberCount: number;
+}
+
+/** The sites a class can belong to. */
+export interface BranchOption {
+  id: string;
+  name: string;
 }
 
 export interface StaffOption {
@@ -41,23 +50,36 @@ export interface GroupDetail {
  */
 export async function loadGroups(
   profile: Profile,
-): Promise<{ groups: GroupSummary[]; teachers: StaffOption[] }> {
+): Promise<{ groups: GroupSummary[]; teachers: StaffOption[]; branches: BranchOption[] }> {
   const supabase = await createClient();
 
   let groupQuery = supabase
     .from("groups")
-    .select("id, name, teacher_id")
+    .select("id, name, teacher_id, branch_id")
     .order("name", { ascending: true });
   if (profile.role === "teacher") groupQuery = groupQuery.eq("teacher_id", profile.id);
 
-  const [groupsRes, staffRes] = await Promise.all([
+  const [groupsRes, staffRes, branchesRes] = await Promise.all([
     groupQuery,
     supabase.from("profiles").select("id, full_name, role").in("role", ["teacher", "center_admin"]),
+    supabase
+      .from("branches")
+      .select("id, name")
+      .eq("active", true)
+      .order("sort", { ascending: true })
+      .order("name", { ascending: true }),
   ]);
 
   const groups = groupsRes.data ?? [];
   const staff = staffRes.data ?? [];
-  const staffName = new Map(staff.map((s) => [s.id as string, (s.full_name as string | null) ?? "—"]));
+  const branches = ((branchesRes.data ?? []) as Record<string, unknown>[]).map((b) => ({
+    id: b.id as string,
+    name: b.name as string,
+  }));
+  const branchName = new Map(branches.map((b) => [b.id, b.name]));
+  const staffName = new Map(
+    staff.map((s) => [s.id as string, (s.full_name as string | null) ?? "—"]),
+  );
 
   // One grouped count query instead of N: fetch the visible membership rows for
   // these groups and tally in memory (a center's rosters are small).
@@ -80,11 +102,14 @@ export async function loadGroups(
       name: g.name as string,
       teacherId: (g.teacher_id as string | null) ?? null,
       teacherName: g.teacher_id ? (staffName.get(g.teacher_id as string) ?? null) : null,
+      branchId: g.branch_id as string,
+      branchName: branchName.get(g.branch_id as string) ?? null,
       memberCount: counts.get(g.id as string) ?? 0,
     })),
     teachers: staff
       .filter((s) => s.role === "teacher")
       .map((s) => ({ id: s.id as string, name: (s.full_name as string | null) ?? "—" })),
+    branches,
   };
 }
 

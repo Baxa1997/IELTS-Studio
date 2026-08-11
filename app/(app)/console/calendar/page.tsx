@@ -66,45 +66,33 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
 
   const openRooms = rooms.filter((r) => r.active);
-  const strayRooms = openRooms.filter((r) => r.branchId == null);
 
   /**
    * Which site are we looking at?
    *
-   * The tabs are built from what actually exists, and one of them is "No
-   * branch" whenever a room has not been assigned to a site yet. That tab is
-   * the whole point: adding a first branch used to hide every existing room
-   * (they all still had `branch_id` null) and the timetable looked wiped. A
-   * room can now never fall out of every tab.
+   * Every room and every class belongs to a branch (migration 20260810170000),
+   * so the tabs are simply the branches — there is no "No branch" case left to
+   * carry. A center with one site sees no tab row at all: it has exactly one
+   * branch, and choosing between one thing is not a choice.
    */
-  const tabs: { key: string; label: string; count: number }[] = [
-    ...openBranches.map((b) => ({ key: b.id, label: b.name, count: b.roomCount })),
-    ...(strayRooms.length > 0 && openBranches.length > 0
-      ? [{ key: "none", label: "No branch", count: strayRooms.length }]
-      : []),
-  ];
-  const showBranchTabs = tabs.length > 0;
+  const tabs = openBranches.map((b) => ({ key: b.id, label: b.name, count: b.roomCount }));
+  const showBranchTabs = tabs.length > 1;
   const requested = first(sp.branch);
   const scope: string =
     requested && (requested === "all" || tabs.some((t) => t.key === requested))
       ? requested
-      : tabs.length === 1
-        ? tabs[0].key
-        : "all";
+      : (tabs[0]?.key ?? "all");
 
   // Rooms are the columns, so the branch filter is a filter on rooms.
-  const activeRooms = openRooms.filter(
-    (r) => scope === "all" || (scope === "none" ? r.branchId == null : r.branchId === scope),
-  );
-  const roomIdsHere = new Set(activeRooms.map((r) => r.id));
+  const activeRooms = openRooms.filter((r) => scope === "all" || r.branchId === scope);
 
   // Everything on this page counts within the chosen branch — the day tabs, the
   // hours, the week list. The one deliberate exception is `conflicts`, which
   // stays center-wide: the room you are booking can be taken by a class at a
   // branch you are not looking at.
-  const branchSlots = slots.filter(
-    (s) => scope === "all" || s.roomId == null || roomIdsHere.has(s.roomId),
-  );
+  // Scoped by the CLASS's branch, so a lesson whose room was deleted still
+  // appears under the site that teaches it instead of in all of them.
+  const branchSlots = slots.filter((s) => scope === "all" || s.branchId === scope);
   const daySlots = branchSlots.filter((s) => s.weekday === day);
   const weekLessons = bySeries(branchSlots);
   const canEdit = profile.role === "center_admin" || profile.role === "teacher";
@@ -118,7 +106,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       name: room.name,
       // Viewing every branch at once, the room name alone is ambiguous.
       meta:
-        scope === "all" && room.branchId
+        scope === "all"
           ? (branchName.get(room.branchId) ?? "—")
           : room.capacity
             ? `${room.capacity} seats`
@@ -130,18 +118,21 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       : []),
   ];
 
+  // Classes carry their branch, so the form can offer only the rooms that class
+  // is allowed into. The database enforces the same rule (lesson_slots_branch_
+  // guard); this is what stops the user meeting it.
   const groupOptions = groups.map((g) => ({
     id: g.id,
     name: g.name,
     teacherName: g.teacherName,
+    branchId: g.branchId,
+    branchName: g.branchName,
   }));
-  // Every open room in the center, whichever branch is on screen: a class can
-  // be moved to the other site, and a room missing from the picker would save
-  // silently as "no room".
   const roomOptions = openRooms.map((r) => ({
     id: r.id,
     name: r.name,
-    branchName: r.branchId ? (branchName.get(r.branchId) ?? null) : null,
+    branchId: r.branchId,
+    branchName: branchName.get(r.branchId) ?? null,
   }));
 
   const lessonsPerRoom = new Map<string, number>();
@@ -192,7 +183,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               >
                 <RoomsManager
                   branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
-                  defaultBranchId={scope === "all" || scope === "none" ? null : scope}
+                  defaultBranchId={scope === "all" ? (openBranches[0]?.id ?? null) : scope}
                   rooms={rooms.map((r) => ({
                     id: r.id,
                     name: r.name,
@@ -250,21 +241,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             ...(tabs.length > 1 ? [{ key: "all", label: "Every branch", count: -1 }] : []),
           ].map((tab) => {
             const on = tab.key === scope;
-            // "No branch" is a to-do, not a place. Tinted amber and explained,
-            // so it reads as "these still need assigning" rather than as a
-            // fourth site — and it disappears the moment none are left.
-            const todo = tab.key === "none";
-            const accent = todo ? "#8A6420" : INDIGO;
             return (
               <a
                 key={tab.key}
                 href={link({ branch: tab.key })}
                 className="cn-tab"
-                title={
-                  todo
-                    ? `${tab.count} room${tab.count === 1 ? "" : "s"} not yet in a branch. Open Rooms and pick one for each — this tab goes away when none are left.`
-                    : undefined
-                }
                 style={{
                   padding: "8px 15px",
                   fontFamily: SANS,
@@ -272,9 +253,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                   fontWeight: on ? 600 : 500,
                   textDecoration: "none",
                   borderRadius: "9px 9px 0 0",
-                  borderBottom: `2px solid ${on ? accent : "transparent"}`,
-                  color: on ? accent : todo ? "#8A6420" : MUTED,
-                  background: on ? (todo ? "#FDF9F1" : "#F2F1FB") : "transparent",
+                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
+                  color: on ? INDIGO : MUTED,
+                  background: on ? "#F2F1FB" : "transparent",
                 }}
               >
                 {tab.label}
@@ -283,7 +264,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     style={{
                       marginLeft: 7,
                       fontSize: 11,
-                      color: on ? accent : FAINT,
+                      color: on ? INDIGO : FAINT,
                       opacity: 0.75,
                     }}
                   >
@@ -533,11 +514,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
           <CardHead
             title="Every lesson this week"
             note={`${weekLessons.length} lesson${weekLessons.length === 1 ? "" : "s"}, ${branchSlots.length} meeting${branchSlots.length === 1 ? "" : "s"}${
-              scope === "all"
-                ? ""
-                : scope === "none"
-                  ? " in rooms with no branch"
-                  : ` at ${branchName.get(scope) ?? "this branch"}`
+              scope === "all" ? "" : ` at ${branchName.get(scope) ?? "this branch"}`
             }`}
           />
           {weekLessons.length === 0 ? (

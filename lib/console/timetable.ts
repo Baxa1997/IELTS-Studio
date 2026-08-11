@@ -68,7 +68,8 @@ export interface Room {
   capacity: number | null;
   color: string | null;
   active: boolean;
-  branchId: string | null;
+  /** Required since 20260810170000 — every room is at exactly one site. */
+  branchId: string;
 }
 
 export interface Slot {
@@ -84,8 +85,13 @@ export interface Slot {
   roomId: string | null;
   roomName: string | null;
   roomCapacity: number | null;
-  /** Derived from the room — a lesson has no branch of its own. */
-  branchId: string | null;
+  /**
+   * Taken from the CLASS, not the room. Both always have one and the two are
+   * kept equal by a database trigger, but a lesson can be temporarily roomless
+   * (its room was deleted, or moved to another site) and it still belongs to
+   * the branch that teaches it.
+   */
+  branchId: string;
   weekday: number;
   startsAt: string; // HH:MM
   endsAt: string; // HH:MM
@@ -163,7 +169,7 @@ export async function loadTimetable(
       .select("id, series_id, group_id, room_id, weekday, starts_at, ends_at")
       .order("weekday", { ascending: true })
       .order("starts_at", { ascending: true }),
-    supabase.from("groups").select("id, name, teacher_id"),
+    supabase.from("groups").select("id, name, teacher_id, branch_id"),
     supabase.from("group_members").select("group_id"),
     supabase.from("profiles").select("id, full_name").in("role", ["teacher", "center_admin"]),
     supabase
@@ -204,6 +210,7 @@ export async function loadTimetable(
     id: g.id as string,
     name: g.name as string,
     teacherId: (g.teacher_id as string | null) ?? null,
+    branchId: g.branch_id as string,
   }));
   const groupById = new Map(groupRows.map((g) => [g.id, g]));
   const roomRows = ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => ({
@@ -212,7 +219,7 @@ export async function loadTimetable(
     capacity: (r.capacity as number | null) ?? null,
     color: (r.color as string | null) ?? null,
     active: Boolean(r.active),
-    branchId: (r.branch_id as string | null) ?? null,
+    branchId: r.branch_id as string,
   }));
   const roomById = new Map(roomRows.map((r) => [r.id, r]));
 
@@ -246,8 +253,7 @@ export async function loadTimetable(
       roomId,
       roomName: room?.name ?? null,
       roomCapacity: room?.capacity ?? null,
-      // A lesson's site is wherever its room is. No second source of truth.
-      branchId: room?.branchId ?? null,
+      branchId: group?.branchId ?? "",
       weekday: Number(s.weekday ?? 0),
       startsAt: trimTime(String(s.starts_at ?? "00:00")),
       endsAt: trimTime(String(s.ends_at ?? "00:00")),
@@ -350,7 +356,7 @@ export async function loadTimetable(
 
   const roomsPerBranch = new Map<string, number>();
   for (const room of roomRows) {
-    if (!room.branchId || !room.active) continue;
+    if (!room.active) continue;
     roomsPerBranch.set(room.branchId, (roomsPerBranch.get(room.branchId) ?? 0) + 1);
   }
 

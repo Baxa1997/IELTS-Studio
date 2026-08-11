@@ -92,9 +92,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   const page = Math.max(1, Number(first(sp.page) ?? 1) || 1);
   const pageSize = Math.min(200, Math.max(10, Number(first(sp.size) ?? 50) || 50));
 
-  // A branch id, "none" for desks belonging to no site, "all" for the center.
-  // Validated below against what actually exists, so a stale link can't hide
-  // every desk.
+  // A branch id, or "all" for the whole center. Validated below against the
+  // branches that actually exist, so a stale link can't hide every desk.
   const branchParam = first(sp.branch);
 
   const [overview, people, { groups }] = await Promise.all([
@@ -120,43 +119,29 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   const money = (m: number) => formatMoney(m, currency);
 
   /**
-   * The branch tabs, built from what exists.
+   * The branch tabs.
    *
-   * "No branch" appears whenever a desk has not been assigned to a site — the
-   * same rule as the timetable, and for the same reason: a desk that belongs
-   * to no tab is money that has vanished from the screen. Every center starts
-   * there, since desks predate branches.
+   * Every desk is at a branch (migration 20260810170000), so the tabs are the
+   * branches and nothing else — there is no "No branch" case left. A center
+   * with one site sees no tab row: it has exactly one branch, so there is
+   * nothing to pick between, and "Whole center" would mean the same thing.
    */
   const openBranches = branches.filter((b) => b.active);
-  const strayDesks = accounts.filter((a) => a.active && a.branchId == null);
-  const tabs: { key: string; label: string; count: number }[] = [
-    ...openBranches.map((b) => ({
-      key: b.id,
-      label: b.name,
-      count: accounts.filter((a) => a.active && a.branchId === b.id).length,
-    })),
-    ...(strayDesks.length > 0 && openBranches.length > 0
-      ? [{ key: "none", label: "No branch", count: strayDesks.length }]
-      : []),
-  ];
-  const showBranchTabs = tabs.length > 0;
+  const tabs = openBranches.map((b) => ({
+    key: b.id,
+    label: b.name,
+    count: accounts.filter((a) => a.active && a.branchId === b.id).length,
+  }));
+  const showBranchTabs = tabs.length > 1;
   const scope =
     branchParam && (branchParam === "all" || tabs.some((t) => t.key === branchParam))
       ? branchParam
-      : tabs.length === 1
-        ? tabs[0].key
-        : "all";
-  const inScope = (accountBranchId: string | null) =>
-    scope === "all" || (scope === "none" ? accountBranchId == null : accountBranchId === scope);
+      : (tabs[0]?.key ?? "all");
+  const inScope = (accountBranchId: string | null) => scope === "all" || accountBranchId === scope;
 
   const activeDesks = accounts.filter((a) => a.active && inScope(a.branchId));
   const closedDesks = accounts.filter((a) => !a.active && inScope(a.branchId));
-  const scopeLabel =
-    scope === "all"
-      ? null
-      : scope === "none"
-        ? "desks with no branch"
-        : (tabs.find((t) => t.key === scope)?.label ?? null);
+  const scopeLabel = scope === "all" ? null : (tabs.find((t) => t.key === scope)?.label ?? null);
 
   // The per-branch P&L only means anything when you are looking at all of them.
   const branchTotals =
@@ -243,21 +228,11 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             ...(tabs.length > 1 ? [{ key: "all", label: "Whole center", count: -1 }] : []),
           ].map((tab) => {
             const on = tab.key === scope;
-            // "No branch" is a to-do, not a place: these desks have not been
-            // put at a site yet, so their money cannot be counted against one.
-            // Tinted amber, and gone the moment none are left.
-            const todo = tab.key === "none";
-            const accent = todo ? "#8A6420" : INDIGO;
             return (
               <a
                 key={tab.key}
                 href={query({ branch: tab.key, page: undefined })}
                 className="cn-tab"
-                title={
-                  todo
-                    ? `${tab.count} desk${tab.count === 1 ? "" : "s"} not yet at a branch, so their takings count towards no site. Open a desk and pick one — this tab goes away when none are left.`
-                    : undefined
-                }
                 style={{
                   padding: "8px 15px",
                   fontFamily: SANS,
@@ -265,9 +240,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                   fontWeight: on ? 600 : 500,
                   textDecoration: "none",
                   borderRadius: "9px 9px 0 0",
-                  borderBottom: `2px solid ${on ? accent : "transparent"}`,
-                  color: on ? accent : todo ? "#8A6420" : MUTED,
-                  background: on ? (todo ? "#FDF9F1" : "#F2F1FB") : "transparent",
+                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
+                  color: on ? INDIGO : MUTED,
+                  background: on ? "#F2F1FB" : "transparent",
                 }}
               >
                 {tab.label}
@@ -276,7 +251,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     style={{
                       marginLeft: 7,
                       fontSize: 11,
-                      color: on ? accent : FAINT,
+                      color: on ? INDIGO : FAINT,
                       opacity: 0.75,
                     }}
                   >
@@ -314,8 +289,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           >
             {branchTotals.map((b) => (
               <a
-                key={b.branchId ?? "none"}
-                href={query({ branch: b.branchId ?? "none", page: undefined })}
+                key={b.branchId ?? "unassigned"}
+                href={query({ branch: b.branchId ?? "all", page: undefined })}
                 className="cn-tile"
                 style={{
                   display: "block",
@@ -432,7 +407,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               staff={people.teachers}
               currency={currency}
               branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
-              defaultBranchId={scope === "all" || scope === "none" ? null : scope}
+              defaultBranchId={scope === "all" ? (openBranches[0]?.id ?? null) : scope}
             />
           </Drawer>
 
