@@ -8,13 +8,13 @@
  */
 
 export const WEEKDAYS = [
-  { index: 0, short: "Sun", long: "Sunday", uz: "Yak" },
-  { index: 1, short: "Mon", long: "Monday", uz: "Du" },
-  { index: 2, short: "Tue", long: "Tuesday", uz: "Se" },
-  { index: 3, short: "Wed", long: "Wednesday", uz: "Chor" },
-  { index: 4, short: "Thu", long: "Thursday", uz: "Pa" },
-  { index: 5, short: "Fri", long: "Friday", uz: "Ju" },
-  { index: 6, short: "Sat", long: "Saturday", uz: "Sha" },
+  { index: 0, short: "Sun", long: "Sunday" },
+  { index: 1, short: "Mon", long: "Monday" },
+  { index: 2, short: "Tue", long: "Tuesday" },
+  { index: 3, short: "Wed", long: "Wednesday" },
+  { index: 4, short: "Thu", long: "Thursday" },
+  { index: 5, short: "Fri", long: "Friday" },
+  { index: 6, short: "Sat", long: "Saturday" },
 ] as const;
 
 /**
@@ -33,16 +33,26 @@ export const DAY_PRESETS = [
   { key: "weekend", label: "Dam olish", note: "Sat · Sun", days: [6, 0] },
 ] as const;
 
-/** "Toq kunlar" when the days match a preset, otherwise "Mon · Wed". */
+/**
+ * "Mon · Wed · Fri", or "Mon–Sat" for a run of consecutive days.
+ *
+ * English, in the reading order of the week, and never the preset's name. The
+ * preset buttons keep their Uzbek labels because "toq kunlar" is the thing the
+ * center sells; a block on the grid has to say which days it actually is.
+ */
 export function describeDays(days: number[]): string {
-  const sorted = [...new Set(days)].sort((a, b) => a - b);
-  const preset = DAY_PRESETS.find(
-    (p) =>
-      p.days.length === sorted.length &&
-      [...p.days].sort((a, b) => a - b).every((d, i) => d === sorted[i]),
+  const sorted = [...new Set(days)].sort(
+    (a, b) => WEEK_ORDER.indexOf(a as never) - WEEK_ORDER.indexOf(b as never),
   );
-  if (preset) return preset.label;
-  return sorted.map((d) => WEEKDAYS[d]?.short ?? "?").join(" · ");
+  if (sorted.length === 7) return "Every day";
+  const name = (d: number) => WEEKDAYS[d]?.short ?? "?";
+  const consecutive = sorted.every(
+    (d, i) =>
+      i === 0 || WEEK_ORDER.indexOf(d as never) === WEEK_ORDER.indexOf(sorted[i - 1] as never) + 1,
+  );
+  if (sorted.length > 2 && consecutive)
+    return `${name(sorted[0])}–${name(sorted[sorted.length - 1])}`;
+  return sorted.map(name).join(" · ");
 }
 
 /**

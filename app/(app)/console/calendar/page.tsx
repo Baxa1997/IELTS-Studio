@@ -440,14 +440,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     fontWeight: on ? 600 : 500,
                     textDecoration: "none",
                     border: `1px solid ${on ? INDIGO : isToday ? "#B9B7E8" : "#E4E2DC"}`,
-                    background: on ? INDIGO : "#F4F3EF",
+                    background: on ? INDIGO : "#fff",
                     color: on ? "#fff" : "#4C4A63",
                     display: "flex",
                     alignItems: "baseline",
                     gap: 6,
                   }}
                 >
-                  <span>{d.uz}</span>
+                  <span>{d.short}</span>
                   <span
                     style={{
                       fontSize: 11.5,

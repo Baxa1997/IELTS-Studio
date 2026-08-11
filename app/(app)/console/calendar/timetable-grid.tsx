@@ -396,8 +396,9 @@ export function TimetableGrid({
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {slot.studentCount} o&apos;quvchi
-                            {slot.roomCapacity != null ? ` / ${slot.roomCapacity}` : ""}
+                            {slot.studentCount}
+                            {slot.roomCapacity != null ? ` / ${slot.roomCapacity}` : ""} student
+                            {slot.studentCount === 1 ? "" : "s"}
                             {slot.overCapacityBy > 0 ? " ⚠" : ""}
                           </div>
                           <div

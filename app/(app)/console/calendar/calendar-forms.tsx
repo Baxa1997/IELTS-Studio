@@ -232,7 +232,7 @@ export function SlotForm({
                     cursor: "pointer",
                   }}
                 >
-                  {d.uz}
+                  {d.short}
                 </button>
               );
             })}
