@@ -2,8 +2,11 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
+import { loadFinanceSettings } from "./load";
 import { nameMap, peopleMap } from "./names";
 import { monthEnd, monthStart } from "./period";
+import { loadLessonDates } from "./schedule";
+import { chargeClass, teacherBillForClass } from "./tuition";
 import {
   emptyGroupFacts,
   type GroupFacts,
@@ -82,7 +85,7 @@ export async function gatherPayrollFacts(periodMonthInput: string): Promise<Teac
 
   const { data: groupRows } = await supabase
     .from("groups")
-    .select("id, name, teacher_id")
+    .select("id, name, teacher_id, teacher_rate_minor")
     .not("teacher_id", "is", null)
     .order("name", { ascending: true });
 
@@ -96,6 +99,7 @@ export async function gatherPayrollFacts(periodMonthInput: string): Promise<Teac
     name: g.name as string,
     teacherId: g.teacher_id as string,
     teacherName: teacherName.get(g.teacher_id as string) ?? "—",
+    teacherRateMinor: g.teacher_rate_minor == null ? null : Number(g.teacher_rate_minor),
   }));
   if (groups.length === 0) return [];
 
@@ -135,11 +139,45 @@ export async function gatherPayrollFacts(periodMonthInput: string): Promise<Teac
   // Roster as it stood at the end of the month. There is no leave date on
   // group_members, so a student who left mid-month still counts — the honest
   // limitation, and the reason `paid` and `attended` headcounts exist.
+  const roster = new Map<string, { studentId: string; joinedOn: string | null }[]>();
   for (const m of (membersRes.data ?? []) as Record<string, unknown>[]) {
     const joined = String(m.joined_at ?? "").slice(0, 10);
     if (joined && joined > to) continue;
-    const f = facts.get(m.group_id as string);
-    if (f) f.studentsEnrolled += 1;
+    const gid = m.group_id as string;
+    const f = facts.get(gid);
+    if (!f) continue;
+    f.studentsEnrolled += 1;
+    if (!roster.has(gid)) roster.set(gid, []);
+    roster.get(gid)!.push({ studentId: m.student_id as string, joinedOn: joined || null });
+  }
+
+  // What each class's own teacher rate comes to, prorated by the lessons each
+  // student was there for. Measured here rather than in the engine because it
+  // needs the timetable and the center's fallback figure — the engine stays a
+  // pure function over facts.
+  const [lessonDates, settings] = await Promise.all([
+    loadLessonDates(groupIds, from),
+    loadFinanceSettings(),
+  ]);
+  for (const g of groups) {
+    const f = facts.get(g.id);
+    if (!f) continue;
+    const dates = lessonDates.get(g.id) ?? [];
+    f.teacherRateMinor = g.teacherRateMinor;
+    f.lessonsPlanned = dates.length > 0 ? dates.length : settings.lessonsPerMonth;
+    if (g.teacherRateMinor == null) continue;
+    const bill = teacherBillForClass(
+      chargeClass({
+        members: roster.get(g.id) ?? [],
+        monthlyFeeMinor: null,
+        teacherRateMinor: g.teacherRateMinor,
+        lessonDates: dates,
+        month: from,
+        fallbackLessons: settings.lessonsPerMonth,
+      }),
+    );
+    f.classRatePayMinor = bill.amountMinor;
+    f.studentsProrated = bill.studentsProrated;
   }
 
   const payers = new Map<string, Set<string>>();

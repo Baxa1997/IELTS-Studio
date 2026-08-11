@@ -44,6 +44,7 @@ const GREEN = "#16794C";
 const KIND_LABEL: Record<SalaryComponentKind, string> = {
   fixed: "Base salary",
   per_student: "Per student",
+  group_rate: "The class's own rate",
   revenue_share: "Share of tuition",
   per_lesson: "Per lesson taught",
   per_student_lesson: "Per student per lesson",
@@ -55,6 +56,8 @@ const KIND_LABEL: Record<SalaryComponentKind, string> = {
 const KIND_HINT: Record<SalaryComponentKind, string> = {
   fixed: "A flat monthly amount, paid once however many classes they teach.",
   per_student: "An amount per head, counted per class.",
+  group_rate:
+    "Whatever teacher rate is set on each class, prorated by the lessons each student was enrolled for. The default \u2014 you only need a rule for something else.",
   revenue_share: "A percentage of what each of their classes collected.",
   per_lesson: "An amount for every register marked.",
   per_student_lesson: "An amount per student who actually attended, per lesson.",
@@ -69,6 +72,8 @@ function blank(kind: SalaryComponentKind): SalaryComponent {
       return { kind, amountMinor: 0 };
     case "per_student":
       return { kind, amountMinor: 0, count: "enrolled" };
+    case "group_rate":
+      return { kind };
     case "revenue_share":
       return { kind, percent: 40, of: "collected" };
     case "per_lesson":
@@ -152,6 +157,9 @@ export function RuleBuilder({
   const [simCollectedPct, setSimCollectedPct] = useState(90);
   const [simLessons, setSimLessons] = useState(12);
   const [simAttendancePct, setSimAttendancePct] = useState(85);
+  // Only read by the class-rate component, which takes its number from the
+  // class rather than from the rule.
+  const [simRate, setSimRate] = useState("200000");
 
   const money = (m: number) => formatMoney(m, currency);
 
@@ -194,6 +202,12 @@ export function RuleBuilder({
             lessonsHeld: simLessons,
             studentLessons: attended,
             attendanceMarks: marks,
+            // The simulator has no real class behind it, so the class-rate
+            // component previews against a full month of every simulated head.
+            teacherRateMinor: simRate === "" ? null : parseMoney(simRate, currency),
+            lessonsPlanned: simLessons,
+            studentsProrated: simStudents,
+            classRatePayMinor: simStudents * (parseMoney(simRate, currency) ?? 0),
           },
         ],
       },
@@ -209,6 +223,7 @@ export function RuleBuilder({
     simCollectedPct,
     simLessons,
     simAttendancePct,
+    simRate,
   ]);
 
   const sentence = components
@@ -423,6 +438,11 @@ export function RuleBuilder({
               max={100}
             />
             <SimField label="Lessons held" value={simLessons} onChange={setSimLessons} />
+            <SimField
+              label={`Class teacher rate (${currency})`}
+              value={Number(simRate) || 0}
+              onChange={(v) => setSimRate(String(v))}
+            />
             <SimField
               label="Attendance %"
               value={simAttendancePct}

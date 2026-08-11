@@ -24,6 +24,8 @@ export interface FinanceSettings {
   currency: string;
   invoiceDueDay: number;
   payrollNote: string | null;
+  /** Lessons assumed in a month for a class with nothing on the timetable. */
+  lessonsPerMonth: number;
 }
 
 /** A cash desk (kassa): a float held by a named person, standing at a branch. */
@@ -158,12 +160,13 @@ export async function loadFinanceSettings(): Promise<FinanceSettings> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("finance_settings")
-    .select("currency, invoice_due_day, payroll_note")
+    .select("currency, invoice_due_day, payroll_note, lessons_per_month")
     .maybeSingle();
   return {
     currency: (data?.currency as string) ?? DEFAULT_CURRENCY,
     invoiceDueDay: (data?.invoice_due_day as number) ?? 5,
     payrollNote: (data?.payroll_note as string | null) ?? null,
+    lessonsPerMonth: (data?.lessons_per_month as number | null) ?? 12,
   };
 }
 

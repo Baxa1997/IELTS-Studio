@@ -8,6 +8,8 @@ import { headers } from "next/headers";
 import { requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
 import { sendEmail } from "@/lib/email/send";
+import { loadFinanceSettings } from "@/lib/finance/load";
+import { parseMoney } from "@/lib/finance/money";
 import { notifyAssignment } from "@/lib/notifications/send";
 import { serverEnv } from "@/lib/env";
 import {
@@ -71,6 +73,21 @@ function centerAuthEmail(login: string): string {
 }
 
 /**
+ * A money field that is allowed to be blank.
+ *
+ * Blank is `null` and means "not priced", which is a real and different answer
+ * from zero — a class with no fee raises no invoices, a class priced at zero
+ * raises invoices for nothing. Anything unparseable comes back as `"invalid"`
+ * so the caller refuses the whole form rather than quietly storing null.
+ */
+function readFee(formData: FormData, field: string, currency: string): number | null | "invalid" {
+  const raw = String(formData.get(field) ?? "").trim();
+  if (raw === "") return null;
+  const value = parseMoney(raw, currency);
+  return value == null || value < 0 ? "invalid" : value;
+}
+
+/**
  * Create a group. A center_admin can create one for any teacher (or leave it
  * unassigned); a teacher creates their own class and always owns it — RLS
  * enforces that independently (groups_teacher_insert requires
@@ -98,6 +115,16 @@ export async function createGroup(
   const branchId = String(formData.get("branch_id") ?? "").trim();
   if (!branchId) return { error: "Pick the branch this class is taught at." };
 
+  // Both prices are the owner's business, so a teacher creating their own class
+  // never sends them — the fields aren't on their form and are ignored if they
+  // are. Priced at creation rather than later because an unpriced class is the
+  // one that silently invoices nobody all month.
+  const settings = await loadFinanceSettings();
+  const fee = readFee(formData, "monthly_fee", settings.currency);
+  const rate = readFee(formData, "teacher_rate", settings.currency);
+  if (fee === "invalid") return { error: "That isn't a valid monthly fee." };
+  if (rate === "invalid") return { error: "That isn't a valid teacher rate." };
+
   const supabase = await createClient();
   const { error } = await supabase.from("groups").insert({
     organization_id: profile.organization_id,
@@ -105,6 +132,9 @@ export async function createGroup(
     teacher_id: teacherId,
     branch_id: branchId,
     created_by: profile.id,
+    ...(profile.role === "center_admin"
+      ? { monthly_fee_minor: fee, teacher_rate_minor: rate }
+      : {}),
   });
   if (error) {
     return {

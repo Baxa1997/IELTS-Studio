@@ -76,6 +76,23 @@ const perStudent = z.object({
   count: z.enum(COUNT_BASIS).default("enrolled"),
 });
 
+/**
+ * Pay whatever rate is written on the class itself, prorated by the lessons
+ * each student was actually enrolled for.
+ *
+ * This is the DEFAULT arrangement and carries no numbers of its own — the rate
+ * lives on `groups.teacher_rate_minor`, beside the fee the student pays, which
+ * is where an owner expects to change it. `per_student` above is the older,
+ * blunter version: one rate for every class the rule covers, whole heads only.
+ * Keep both. A center paying 200 000 a head everywhere wants `per_student`; a
+ * center whose IELTS class pays 250 000 and whose kids club pays 120 000 wants
+ * this, and would otherwise need a rule per class.
+ */
+const groupRate = z.object({
+  kind: z.literal("group_rate"),
+  label,
+});
+
 const revenueShare = z.object({
   kind: z.literal("revenue_share"),
   label,
@@ -128,6 +145,7 @@ const attendanceBonus = z.object({
 export const salaryComponentSchema = z.discriminatedUnion("kind", [
   fixed,
   perStudent,
+  groupRate,
   revenueShare,
   perLesson,
   perStudentLesson,
@@ -215,6 +233,30 @@ export interface GroupFacts {
   studentLessons: number;
   /** Every mark, including absences. The denominator of the attendance rate. */
   attendanceMarks: number;
+  /** The rate written on the class: what the teacher earns per student per
+   *  month. Null when the class has not been priced on the teacher's side. */
+  teacherRateMinor: number | null;
+  /** Lessons the class is timetabled to hold this month — the proration
+   *  denominator, and 0 when nothing is booked. */
+  lessonsPlanned: number;
+  /**
+   * Headcount weighted by how much of the month each student was enrolled for:
+   * eleven full students and one who joined at the halfway point is 11.5.
+   *
+   * Reported as a fraction because that is what the money says. A payslip
+   * claiming 12 students while paying for 11.5 is the kind of small lie that
+   * costs an argument later.
+   */
+  studentsProrated: number;
+  /**
+   * What `teacherRateMinor` comes to across the class, summed per student and
+   * rounded once each.
+   *
+   * Carried as a measured fact rather than recomputed from the fraction above:
+   * rounding a fractional headcount back into money reintroduces the drift that
+   * per-student rounding exists to avoid.
+   */
+  classRatePayMinor: number;
 }
 
 export interface TeacherFacts {
@@ -235,8 +277,32 @@ export function emptyGroupFacts(groupId: string, groupName: string): GroupFacts 
     lessonsHeld: 0,
     studentLessons: 0,
     attendanceMarks: 0,
+    teacherRateMinor: null,
+    lessonsPlanned: 0,
+    studentsProrated: 0,
+    classRatePayMinor: 0,
   };
 }
+
+/**
+ * The arrangement a class falls back on when no rule mentions it: pay the rate
+ * written on the class.
+ *
+ * A synthetic rule rather than a special case in the engine, so it produces an
+ * ordinary explainable line and the payslip reads the same either way. Its id
+ * is empty on purpose — `payroll_items.rule_id` is a real foreign key, and this
+ * rule has no row to point at.
+ */
+export const CLASS_RATE_RULE: SalaryRule = {
+  id: "",
+  name: "The rate set on each class",
+  scope: "org",
+  groupId: null,
+  teacherId: null,
+  components: [{ kind: "group_rate" }],
+  floorMinor: null,
+  capMinor: null,
+};
 
 function headcount(g: GroupFacts, basis: CountBasis): number {
   if (basis === "paid") return g.studentsPaid;
@@ -356,6 +422,8 @@ function defaultLabel(c: SalaryComponent): string {
       return "Base salary";
     case "per_student":
       return `Per student (${c.count})`;
+    case "group_rate":
+      return "Per student, at the class's own rate";
     case "revenue_share":
       return `${c.percent}% of tuition ${c.of}`;
     case "per_lesson":
@@ -383,11 +451,36 @@ function evaluateGroupComponent(
     label: defaultLabel(c),
     groupId: group.groupId,
     groupName: group.groupName,
-    ruleId: rule.id,
+    // Empty on the synthetic class-rate rule, which has no row to reference.
+    ruleId: rule.id || undefined,
     ruleName: rule.name,
   } as const;
 
   switch (c.kind) {
+    case "group_rate": {
+      if (group.teacherRateMinor == null) {
+        return {
+          ...base,
+          basisValue: 0,
+          basisUnit: "students",
+          amountMinor: 0,
+          note: `${group.groupName} has no teacher rate yet — set one on the class, or give this teacher a pay rule.`,
+        };
+      }
+      const short = group.studentsEnrolled - group.studentsProrated;
+      return {
+        ...base,
+        basisValue: group.studentsProrated,
+        basisUnit: "students",
+        rateMinor: group.teacherRateMinor,
+        amountMinor: group.classRatePayMinor,
+        note:
+          short > 0.01
+            ? `${group.studentsEnrolled} enrolled, part-month joiners counted by their lessons out of ${group.lessonsPlanned}.`
+            : undefined,
+      };
+    }
+
     case "per_student": {
       const n = headcount(group, c.count);
       return {
@@ -573,9 +666,14 @@ export function computeTeacherPay(facts: TeacherFacts, rules: SalaryRule[]): Pay
 
   const teacherRule = resolveRule(rules, facts.teacherId, null);
 
-  // Group-level: each class under the rule that resolves for it.
+  // Group-level: each class under the rule that resolves for it, and where no
+  // rule does, the rate written on the class itself. A center that has priced
+  // its classes never has to visit the rules page at all; one that has set up
+  // rules keeps them, because an explicit rule always wins over the fallback.
   for (const group of facts.groups) {
-    const rule = resolveRule(rules, facts.teacherId, group.groupId);
+    const rule =
+      resolveRule(rules, facts.teacherId, group.groupId) ??
+      (group.teacherRateMinor != null ? CLASS_RATE_RULE : undefined);
     if (!rule) continue;
     for (const c of rule.components) {
       if (componentLevel(c.kind) !== "group") continue;
@@ -629,9 +727,12 @@ export function computeTeacherPay(facts: TeacherFacts, rules: SalaryRule[]): Pay
     teacherName: facts.teacherName,
     lines,
     grossMinor: gross,
-    ruleId: teacherRule?.id,
-    ruleName: teacherRule?.name,
-    unruled: lines.length === 0 && !teacherRule,
+    ruleId: teacherRule?.id || undefined,
+    ruleName: teacherRule?.name ?? (lines.length > 0 ? CLASS_RATE_RULE.name : undefined),
+    // "Unruled" now means nothing paid them at all — no rule, and no class they
+    // teach carries a rate. That is a setup problem the owner has to fix; a
+    // teacher whose classes are priced is simply paid.
+    unruled: lines.length === 0,
   };
 }
 
@@ -651,6 +752,8 @@ export function describeComponent(c: SalaryComponent, money: (minor: number) => 
       return `${money(c.amountMinor)} base salary each month`;
     case "per_student":
       return `${money(c.amountMinor)} per ${c.count === "enrolled" ? "enrolled" : c.count === "paid" ? "paying" : "attending"} student`;
+    case "group_rate":
+      return "the per-student rate set on each class, by the lesson";
     case "revenue_share":
       return `${c.percent}% of tuition ${c.of === "collected" ? "collected" : "invoiced"}`;
     case "per_lesson":

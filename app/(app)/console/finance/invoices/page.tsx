@@ -67,16 +67,21 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
     loadGroups(profile),
     supabase.from("finance_accounts").select("id, name").eq("active", true).order("sort"),
     supabase.from("finance_categories").select("id, name, slug").eq("direction", "in"),
-    supabase.from("groups").select("id, monthly_fee_minor"),
+    supabase.from("groups").select("id, monthly_fee_minor, teacher_rate_minor"),
   ]);
 
   const currency = settings.currency;
   const money = (m: number) => formatMoney(m, currency);
 
-  const feeOf = new Map(
+  // Both prices of a class, so the pricing drawer can show what is already set
+  // on each side rather than only the student's half.
+  const priceOf = new Map(
     ((feesRes.data ?? []) as Record<string, unknown>[]).map((g) => [
       g.id as string,
-      g.monthly_fee_minor == null ? null : Number(g.monthly_fee_minor),
+      {
+        fee: g.monthly_fee_minor == null ? null : Number(g.monthly_fee_minor),
+        rate: g.teacher_rate_minor == null ? null : Number(g.teacher_rate_minor),
+      },
     ]),
   );
 
@@ -107,13 +112,16 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
   const tuitionCategory = categories.find((c) => c.slug === "tuition")?.id;
 
   const groupsForForms = groups.map((g) => {
-    const fee = feeOf.get(g.id) ?? null;
+    const price = priceOf.get(g.id);
+    const fee = price?.fee ?? null;
+    const rate = price?.rate ?? null;
     return {
       id: g.id,
       name: g.name,
       students: g.memberCount,
       feeLabel: fee == null ? "no fee set" : `${money(fee)}/month`,
       feeMajor: fee == null ? "" : money(fee),
+      rateMajor: rate == null ? "" : money(rate),
     };
   });
 

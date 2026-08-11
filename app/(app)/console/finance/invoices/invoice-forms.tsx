@@ -11,7 +11,7 @@ import {
   useDrawerClose,
 } from "@/components/console/finance-ui";
 
-import { type ActionState, generateInvoices, setGroupFee } from "../actions";
+import { type ActionState, generateInvoices, setGroupPricing } from "../actions";
 
 /** Charge a whole class for a month, from the fee already on the class. */
 export function GenerateInvoicesForm({
@@ -85,18 +85,18 @@ export function GenerateInvoicesForm({
   );
 }
 
-/** The monthly price of a seat, stored on the class. */
+/** Both prices of a seat — what the student pays, what the teacher earns. */
 export function GroupFeeForm({
   groups,
   currency,
 }: {
-  groups: { id: string; name: string; feeMajor: string }[];
+  groups: { id: string; name: string; feeMajor: string; rateMajor: string }[];
   currency: string;
 }) {
   const closeDrawer = useDrawerClose();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
-      const next = await setGroupFee(prev, formData);
+      const next = await setGroupPricing(prev, formData);
       if (next.ok) closeDrawer();
       return next;
     },
@@ -111,17 +111,32 @@ export function GroupFeeForm({
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
-                {g.feeMajor ? ` — currently ${g.feeMajor}` : " — no fee set"}
+                {g.feeMajor ? ` — student ${g.feeMajor}` : " — no fee set"}
+                {g.rateMajor ? ` · teacher ${g.rateMajor}` : ""}
               </option>
             ))}
           </select>
         </Field>
-        <Field label={`Monthly fee (${currency})`} hint="leave blank to clear it">
-          <input name="fee" inputMode="numeric" placeholder="550 000" style={fieldStyle} />
-        </Field>
+        <FieldGrid>
+          <Field label={`Student pays (${currency})`} hint="per month">
+            <input name="fee" inputMode="numeric" placeholder="550 000" style={fieldStyle} />
+          </Field>
+          <Field label={`Teacher earns (${currency})`} hint="per student, per month">
+            <input
+              name="teacher_rate"
+              inputMode="numeric"
+              placeholder="200 000"
+              style={fieldStyle}
+            />
+          </Field>
+        </FieldGrid>
       </div>
+      <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
+        Both are for a full month. A student who joins part-way through is charged for the lessons
+        left, and the teacher is paid for the same ones — leave either blank to clear it.
+      </p>
       <div style={{ marginTop: 16 }}>
-        <SubmitButton pending={pending}>Save fee</SubmitButton>
+        <SubmitButton pending={pending}>Save pricing</SubmitButton>
       </div>
       <FormMessage state={state} />
     </form>

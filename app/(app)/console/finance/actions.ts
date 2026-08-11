@@ -8,6 +8,8 @@ import { parseMoney } from "@/lib/finance/money";
 import { gatherPayrollFacts, loadSalaryRules } from "@/lib/finance/payroll";
 import { isDate, monthStart, today } from "@/lib/finance/period";
 import { computePayroll, salaryComponentsSchema } from "@/lib/finance/salary";
+import { loadLessonDatesFor } from "@/lib/finance/schedule";
+import { prorate } from "@/lib/finance/tuition";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -262,7 +264,19 @@ export async function saveCategory(_prev: ActionState, formData: FormData): Prom
 /* ── tuition ──────────────────────────────────────────────────────────────── */
 
 /** The price of a seat in this class, remembered so invoicing is one click. */
-export async function setGroupFee(_prev: ActionState, formData: FormData): Promise<ActionState> {
+/**
+ * Both of a class's prices, saved together.
+ *
+ * Together on purpose: they are two halves of one decision ("a seat costs
+ * 550 000 and the teacher gets 200 000 of it"), and a center that could save
+ * one without seeing the other kept raising the tuition and forgetting the
+ * teacher's side. Either may be left blank — blank means "not priced", which
+ * stops that side invoicing or paying rather than doing it for zero.
+ */
+export async function setGroupPricing(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
   const guard = await requireOwner();
   if ("error" in guard) return guard.error;
 
@@ -270,19 +284,37 @@ export async function setGroupFee(_prev: ActionState, formData: FormData): Promi
   if (!groupId) return { error: "Pick a class." };
 
   const settings = await loadFinanceSettings();
-  const raw = str(formData, "fee");
-  const fee = raw === "" ? null : parseMoney(raw, settings.currency);
-  if (raw !== "" && (fee == null || fee < 0)) return { error: "That isn't a valid monthly fee." };
+  const money = (field: string): number | null | "invalid" => {
+    const raw = str(formData, field);
+    if (raw === "") return null;
+    const value = parseMoney(raw, settings.currency);
+    return value == null || value < 0 ? "invalid" : value;
+  };
+
+  const fee = money("fee");
+  const rate = money("teacher_rate");
+  if (fee === "invalid") return { error: "That isn't a valid monthly fee." };
+  if (rate === "invalid") return { error: "That isn't a valid teacher rate." };
+  if (fee != null && rate != null && rate > fee) {
+    return {
+      error: "The teacher's rate is more than the student pays — check the two figures.",
+    };
+  }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  // RLS-filtered updates report success with zero rows, so prove a row changed.
+  const { data, error } = await supabase
     .from("groups")
-    .update({ monthly_fee_minor: fee })
-    .eq("id", groupId);
+    .update({ monthly_fee_minor: fee, teacher_rate_minor: rate })
+    .eq("id", groupId)
+    .select("id");
   if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That class could not be updated." };
 
   refreshFinance();
-  return { ok: fee == null ? "Fee cleared." : "Monthly fee saved." };
+  revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath("/console/groups");
+  return { ok: fee == null && rate == null ? "Pricing cleared." : "Pricing saved." };
 }
 
 /**
@@ -326,12 +358,13 @@ export async function generateInvoices(
 
   const { data: members } = await supabase
     .from("group_members")
-    .select("student_id")
+    .select("student_id, joined_at")
     .eq("group_id", groupId);
-  const studentIds = ((members ?? []) as Record<string, unknown>[]).map(
-    (m) => m.student_id as string,
-  );
-  if (studentIds.length === 0) return { error: "Nobody is enrolled in that class yet." };
+  const roster = ((members ?? []) as Record<string, unknown>[]).map((m) => ({
+    studentId: m.student_id as string,
+    joinedOn: m.joined_at ? String(m.joined_at).slice(0, 10) : null,
+  }));
+  if (roster.length === 0) return { error: "Nobody is enrolled in that class yet." };
 
   const { data: existing } = await supabase
     .from("student_invoices")
@@ -342,28 +375,47 @@ export async function generateInvoices(
     ((existing ?? []) as Record<string, unknown>[]).map((r) => r.student_id as string),
   );
 
-  const toCreate = studentIds.filter((id) => !already.has(id));
+  const toCreate = roster.filter((m) => !already.has(m.studentId));
   if (toCreate.length === 0) {
     return { ok: "Everyone in that class is already invoiced for this month." };
   }
 
+  // Whoever joined after the 1st is charged for the lessons that were left, not
+  // the whole month. The denominator is the class's real timetable, so a
+  // Mon/Wed/Fri class divides by its own 12 or 13 rather than by 30 days.
+  const lessonDates = await loadLessonDatesFor(groupId, month);
   const dueOn = `${month.slice(0, 7)}-${String(settings.invoiceDueDay).padStart(2, "0")}`;
-  const { error } = await supabase.from("student_invoices").insert(
-    toCreate.map((studentId) => ({
+  const rows = toCreate.map((m) => {
+    const p = prorate({
+      fullMinor: amount,
+      lessonDates,
+      joinedOn: m.joinedOn,
+      month,
+      fallbackLessons: settings.lessonsPerMonth,
+    });
+    return {
       organization_id: profile.organization_id,
-      student_id: studentId,
+      student_id: m.studentId,
       group_id: groupId,
       period_month: month,
-      amount_minor: amount,
+      amount_minor: p.amountMinor,
+      lessons_billed: p.billed,
+      lessons_planned: p.planned,
       due_on: dueOn,
       created_by: profile.id,
-    })),
-  );
+      note: p.partial ? `Joined ${m.joinedOn} — ${p.billed} of ${p.planned} lessons.` : null,
+    };
+  });
+
+  const { error } = await supabase.from("student_invoices").insert(rows);
   if (error) return { error: error.message };
 
   refreshFinance();
+  const partial = rows.filter((r) => r.lessons_billed < r.lessons_planned).length;
   return {
-    ok: `${toCreate.length} invoice${toCreate.length === 1 ? "" : "s"} raised for ${group.name as string}.`,
+    ok:
+      `${rows.length} invoice${rows.length === 1 ? "" : "s"} raised for ${group.name as string}` +
+      (partial > 0 ? `, ${partial} of them part-month for joining late.` : "."),
   };
 }
 
@@ -411,8 +463,15 @@ export async function runPayroll(_prev: ActionState, formData: FormData): Promis
   const [facts, rules] = await Promise.all([gatherPayrollFacts(month), loadSalaryRules()]);
   if (facts.length === 0)
     return { error: "No class has a teacher assigned, so there is nothing to pay." };
-  if (rules.length === 0) {
-    return { error: "No pay rule exists yet — set one up under Salary rules first." };
+  // A center that priced its classes needs no rules at all — the rate on the
+  // class is the arrangement. Only refuse when neither exists, because that is
+  // the case where the run would silently pay everyone nothing.
+  const anyClassRate = facts.some((f) => f.groups.some((g) => g.teacherRateMinor != null));
+  if (rules.length === 0 && !anyClassRate) {
+    return {
+      error:
+        "Nothing says what to pay yet — put a teacher rate on your classes, or set up a salary rule.",
+    };
   }
 
   const computed = computePayroll(facts, rules);

@@ -1,5 +1,8 @@
 import { getSession } from "@/lib/auth";
+import { loadFinanceSettings } from "@/lib/finance/load";
 import { buildPdf } from "@/lib/finance/pdf";
+import { loadPayrollMonths } from "@/lib/finance/payroll-months";
+import { payrollMonthsSheets } from "@/lib/finance/payroll-sheet";
 import { resolvePeriod } from "@/lib/finance/period";
 import {
   gatherReport,
@@ -41,6 +44,43 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const url = new URL(req.url);
+  const supabaseForOrg = await createClient();
+  const { data: orgRow } = await supabaseForOrg
+    .from("organizations")
+    .select("name")
+    .eq("id", session.profile.organization_id)
+    .maybeSingle();
+  const organizationName = (orgRow?.name as string) ?? "Center";
+
+  // The multi-month payroll grid is its own shape — a column per month rather
+  // than a period — so it is served before the single-period machinery below
+  // rather than bent into it.
+  const monthsParam = url.searchParams.get("months");
+  if (monthsParam) {
+    const months = monthsParam
+      .split(",")
+      .map((m) => m.trim())
+      .filter((m) => /^\d{4}-\d{2}(-\d{2})?$/.test(m))
+      .map((m) => (m.length === 7 ? `${m}-01` : m));
+    if (months.length === 0) return fail(400, "No valid months given.");
+
+    const settings = await loadFinanceSettings();
+    const data = await loadPayrollMonths(months);
+    const sheets = payrollMonthsSheets(data, {
+      organizationName,
+      currency: settings.currency,
+      generatedAt: new Date().toISOString().slice(0, 10),
+    });
+    const book = buildWorkbook(sheets, {
+      moneyDigits: minorDigits(settings.currency) === 0 ? 0 : 2,
+    });
+    const span =
+      data.columns.length > 0
+        ? `${data.columns[0].month.slice(0, 7)}_${data.columns[data.columns.length - 1].month.slice(0, 7)}`
+        : "empty";
+    return file(book, `teacher-pay-${span}.xlsx`, "xlsx");
+  }
+
   const kind = (url.searchParams.get("report") ?? "summary") as ReportKind;
   if (!(kind in REPORT_LABEL)) return fail(400, "Unknown report.");
   const format = url.searchParams.get("format") === "pdf" ? "pdf" : "xlsx";
@@ -51,17 +91,10 @@ export async function GET(req: Request): Promise<Response> {
     month: url.searchParams.get("month") ?? undefined,
   });
 
-  const supabase = await createClient();
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("name")
-    .eq("id", session.profile.organization_id)
-    .maybeSingle();
-
   const data = await gatherReport({
     kind,
     profile: session.profile,
-    organizationName: (org?.name as string) ?? "Center",
+    organizationName,
     period,
     filters: {
       branch: url.searchParams.get("branch") ?? undefined,
@@ -79,7 +112,10 @@ export async function GET(req: Request): Promise<Response> {
           moneyDigits: minorDigits(data.currency) === 0 ? 0 : 2,
         });
 
-  const filename = reportFilename(data, format);
+  return file(body, reportFilename(data, format), format);
+}
+
+function file(body: Buffer, filename: string, format: "pdf" | "xlsx"): Response {
   return new Response(new Uint8Array(body), {
     headers: {
       "Content-Type":

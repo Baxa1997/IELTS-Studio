@@ -35,6 +35,7 @@ import { monthLabel, monthStart, recentMonths, today } from "@/lib/finance/perio
 import { basisSuffix, type PayrollLine } from "@/lib/finance/salary";
 import { createClient } from "@/lib/supabase/server";
 
+import { MonthsExport } from "./months-export";
 import {
   AdjustPayslipForm,
   PayrollStatusForm,
@@ -186,6 +187,17 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
         basePath="/console/finance/payroll"
         history={history}
       />
+
+      <Card>
+        <CardHead
+          title="Several months at once"
+          note="The teachers-by-months sheet, with what is still owed on each."
+        />
+        <MonthsExport
+          months={months.map((m) => ({ value: m, label: monthLabel(m) }))}
+          saved={history.map((h) => h.periodMonth)}
+        />
+      </Card>
 
       <KpiRow>
         <Kpi label="Gross" value={money(gross)} sub="what the rules produced" />

@@ -2,6 +2,7 @@ import { ConsoleChrome } from "@/components/console/console-chrome";
 import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
+import { loadFinanceSettings } from "@/lib/finance/load";
 
 import { CreateGroupForm } from "./groups/group-forms";
 import { InviteMemberPanel } from "./groups/invite-member-panel";
@@ -21,7 +22,12 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const isAdmin = profile.role === "center_admin";
 
   // Groups feed both slide-overs: enrolling picks one, inviting targets one.
-  const { groups, teachers, branches } = await loadGroups(profile);
+  // The currency comes along because a new class is priced as it is created,
+  // and only the owner sees those fields.
+  const [{ groups, teachers, branches }, settings] = await Promise.all([
+    loadGroups(profile),
+    isAdmin ? loadFinanceSettings() : Promise.resolve(null),
+  ]);
 
   return (
     <div className="cn-root">
@@ -41,7 +47,16 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
         teacherPanel={isAdmin ? <AddTeacherPanel /> : undefined}
         invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
         groupPanel={
-          <CreateGroupForm teachers={teachers} branches={branches} canAssignTeacher={isAdmin} />
+          <CreateGroupForm
+            teachers={teachers}
+            branches={branches}
+            canAssignTeacher={isAdmin}
+            pricing={
+              settings
+                ? { currency: settings.currency, lessonsPerMonth: settings.lessonsPerMonth }
+                : null
+            }
+          />
         }
       >
         {children}

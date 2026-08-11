@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatMoney, parseMoney } from "@/lib/finance/money";
 
 import {
   assignTeacher,
@@ -31,11 +32,15 @@ export function CreateGroupForm({
   teachers,
   branches,
   canAssignTeacher,
+  pricing,
 }: {
   teachers: { id: string; name: string }[];
   /** The center's sites. There is always at least one. */
   branches: { id: string; name: string }[];
   canAssignTeacher: boolean;
+  /** Shown to the owner only — a teacher doesn't set their own rate. Null hides
+   *  the two money fields entirely. */
+  pricing: { currency: string; lessonsPerMonth: number } | null;
 }) {
   const [state, formAction, pending] = useActionState(createGroup, initial);
 
@@ -89,11 +94,90 @@ export function CreateGroupForm({
           </p>
         </div>
       ) : null}
+      {pricing ? (
+        <FeeFields currency={pricing.currency} lessonsPerMonth={pricing.lessonsPerMonth} />
+      ) : null}
       <FormMessage state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Creating…" : "Create group"}
       </Button>
     </form>
+  );
+}
+
+/**
+ * The two prices of a class, with the per-lesson figure worked out as you type.
+ *
+ * The preview is the point. A center owner thinks in "200 000 a head" but pays
+ * a late joiner by the lesson, and until they can see that 200 000 over twelve
+ * lessons is 16 667 each, the two numbers feel like different systems. Showing
+ * it here — against the class's real lesson count once it is timetabled — means
+ * the arithmetic on the payslip is never a surprise.
+ *
+ * `lessonsPerMonth` is the center's house assumption; a class that has been
+ * timetabled is billed on its real bookings instead, which is why this says
+ * "about".
+ */
+function FeeFields({ currency, lessonsPerMonth }: { currency: string; lessonsPerMonth: number }) {
+  const [fee, setFee] = useState("");
+  const [rate, setRate] = useState("");
+
+  const perLesson = (input: string): string | null => {
+    const minor = parseMoney(input, currency);
+    if (minor == null || minor <= 0) return null;
+    return `${formatMoney(Math.round(minor / lessonsPerMonth), currency)} per lesson`;
+  };
+
+  const feePerLesson = perLesson(fee);
+  const ratePerLesson = perLesson(rate);
+  const feeMinor = parseMoney(fee, currency);
+  const rateMinor = parseMoney(rate, currency);
+  const upsideDown = feeMinor != null && rateMinor != null && rateMinor > feeMinor;
+
+  return (
+    <div className="space-y-3 rounded-lg border p-3">
+      <p className="text-sm font-medium">Money</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="group-fee">Student pays ({currency})</Label>
+          <Input
+            id="group-fee"
+            name="monthly_fee"
+            inputMode="numeric"
+            placeholder="550 000"
+            value={fee}
+            onChange={(e) => setFee(e.target.value)}
+          />
+          <p className="text-muted-foreground text-xs">
+            {feePerLesson ? `about ${feePerLesson}` : "per month, per student"}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="group-rate">Teacher earns ({currency})</Label>
+          <Input
+            id="group-rate"
+            name="teacher_rate"
+            inputMode="numeric"
+            placeholder="200 000"
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+          />
+          <p className="text-muted-foreground text-xs">
+            {ratePerLesson ? `about ${ratePerLesson}` : "per student, per month"}
+          </p>
+        </div>
+      </div>
+      {upsideDown ? (
+        <p className="text-destructive text-xs" role="alert">
+          The teacher earns more per student than the student pays — check the two figures.
+        </p>
+      ) : (
+        <p className="text-muted-foreground text-xs">
+          A student who joins part-way through the month is charged for the lessons that are left,
+          and the teacher is paid for the same ones. Leave either blank to decide later.
+        </p>
+      )}
+    </div>
   );
 }
 
