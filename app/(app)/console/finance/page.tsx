@@ -243,11 +243,21 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             ...(tabs.length > 1 ? [{ key: "all", label: "Whole center", count: -1 }] : []),
           ].map((tab) => {
             const on = tab.key === scope;
+            // "No branch" is a to-do, not a place: these desks have not been
+            // put at a site yet, so their money cannot be counted against one.
+            // Tinted amber, and gone the moment none are left.
+            const todo = tab.key === "none";
+            const accent = todo ? "#8A6420" : INDIGO;
             return (
               <a
                 key={tab.key}
                 href={query({ branch: tab.key, page: undefined })}
                 className="cn-tab"
+                title={
+                  todo
+                    ? `${tab.count} desk${tab.count === 1 ? "" : "s"} not yet at a branch, so their takings count towards no site. Open a desk and pick one — this tab goes away when none are left.`
+                    : undefined
+                }
                 style={{
                   padding: "8px 15px",
                   fontFamily: SANS,
@@ -255,9 +265,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                   fontWeight: on ? 600 : 500,
                   textDecoration: "none",
                   borderRadius: "9px 9px 0 0",
-                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
-                  color: on ? INDIGO : MUTED,
-                  background: on ? "#F2F1FB" : "transparent",
+                  borderBottom: `2px solid ${on ? accent : "transparent"}`,
+                  color: on ? accent : todo ? "#8A6420" : MUTED,
+                  background: on ? (todo ? "#FDF9F1" : "#F2F1FB") : "transparent",
                 }}
               >
                 {tab.label}
@@ -266,7 +276,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     style={{
                       marginLeft: 7,
                       fontSize: 11,
-                      color: on ? INDIGO : FAINT,
+                      color: on ? accent : FAINT,
                       opacity: 0.75,
                     }}
                   >

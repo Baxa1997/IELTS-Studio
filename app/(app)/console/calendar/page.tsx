@@ -60,7 +60,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     loadGroups(profile),
   ]);
 
-  const { branches, rooms, slots, unscheduled, clashCount, dayStartMin, dayEndMin, issues } =
+  const { branches, rooms, slots, unscheduled, conflicts, dayStartMin, dayEndMin, issues } =
     timetable;
   const openBranches = branches.filter((b) => b.active);
   const branchName = new Map(branches.map((b) => [b.id, b.name]));
@@ -99,7 +99,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   const roomIdsHere = new Set(activeRooms.map((r) => r.id));
 
   // Everything on this page counts within the chosen branch — the day tabs, the
-  // hours, the week list. The one deliberate exception is `clashCount`, which
+  // hours, the week list. The one deliberate exception is `conflicts`, which
   // stays center-wide: the room you are booking can be taken by a class at a
   // branch you are not looking at.
   const branchSlots = slots.filter(
@@ -170,7 +170,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       <PageHead
         eyebrow="Time"
         title="Timetable"
-        subtitle={`${WEEKDAYS[day].long} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${clashCount > 0 ? ` · ${clashCount} clash${clashCount === 1 ? "" : "es"} this week` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
+        subtitle={`${WEEKDAYS[day].long} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"} this week` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
         actions={
           <>
             <Drawer
@@ -250,11 +250,21 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             ...(tabs.length > 1 ? [{ key: "all", label: "Every branch", count: -1 }] : []),
           ].map((tab) => {
             const on = tab.key === scope;
+            // "No branch" is a to-do, not a place. Tinted amber and explained,
+            // so it reads as "these still need assigning" rather than as a
+            // fourth site — and it disappears the moment none are left.
+            const todo = tab.key === "none";
+            const accent = todo ? "#8A6420" : INDIGO;
             return (
               <a
                 key={tab.key}
                 href={link({ branch: tab.key })}
                 className="cn-tab"
+                title={
+                  todo
+                    ? `${tab.count} room${tab.count === 1 ? "" : "s"} not yet in a branch. Open Rooms and pick one for each — this tab goes away when none are left.`
+                    : undefined
+                }
                 style={{
                   padding: "8px 15px",
                   fontFamily: SANS,
@@ -262,9 +272,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                   fontWeight: on ? 600 : 500,
                   textDecoration: "none",
                   borderRadius: "9px 9px 0 0",
-                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
-                  color: on ? INDIGO : MUTED,
-                  background: on ? "#F2F1FB" : "transparent",
+                  borderBottom: `2px solid ${on ? accent : "transparent"}`,
+                  color: on ? accent : todo ? "#8A6420" : MUTED,
+                  background: on ? (todo ? "#FDF9F1" : "#F2F1FB") : "transparent",
                 }}
               >
                 {tab.label}
@@ -273,7 +283,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     style={{
                       marginLeft: 7,
                       fontSize: 11,
-                      color: on ? INDIGO : FAINT,
+                      color: on ? accent : FAINT,
                       opacity: 0.75,
                     }}
                   >
@@ -390,7 +400,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         </div>
       ) : null}
 
-      {clashCount > 0 ? (
+      {/* One line per collision, each naming the classes and linking to the
+          day it is on. A count on its own ("2 lessons are double-booked") sends
+          the reader hunting through seven tabs for a problem it will not
+          describe. */}
+      {conflicts.length > 0 ? (
         <div
           style={{
             padding: "11px 14px",
@@ -404,9 +418,30 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             lineHeight: 1.55,
           }}
         >
-          {clashCount} lesson{clashCount === 1 ? " is" : "s are"} double-booked this week — the same
-          room or the same teacher at an overlapping hour. They are outlined in red; click one to
-          move it.
+          <strong>
+            {conflicts.length} clash{conflicts.length === 1 ? "" : "es"} this week
+          </strong>
+          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+            {conflicts.map((c) => (
+              <li key={`${c.slotIds.join("-")}`} style={{ marginTop: 2 }}>
+                {c.label}{" "}
+                {c.weekday === day ? (
+                  <span style={{ opacity: 0.75 }}>Outlined in red below.</span>
+                ) : (
+                  <a href={link({ day: String(c.weekday) })} style={{ color: "#A63A30" }}>
+                    Show {WEEKDAYS[c.weekday].long} →
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+          {conflicts.some((c) => c.reason === "self") ? (
+            <p style={{ margin: "8px 0 0" }}>
+              A class booked twice at once is always a mistake — open either block and remove it.
+              Two <em>different</em> classes sharing a room or a teacher is only a warning; leave it
+              if it is deliberate.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

@@ -516,14 +516,23 @@ export function TimetableGrid({
                   lineHeight: 1.5,
                 }}
               >
-                Same{" "}
-                {editing.slot.clashReason === "both"
-                  ? "room and teacher"
-                  : editing.slot.clashReason === "room"
-                    ? "room"
-                    : "teacher"}{" "}
-                as {editing.slot.clashWithNames.join(", ")}. Move one, or leave it if the
-                double-booking is deliberate.
+                {editing.slot.clashReason === "self" ? (
+                  <>
+                    This class is booked twice at this hour — it cannot be in two places at once.
+                    Remove one of them.
+                  </>
+                ) : (
+                  <>
+                    Same{" "}
+                    {editing.slot.clashReason === "both"
+                      ? "room and teacher"
+                      : editing.slot.clashReason === "room"
+                        ? "room"
+                        : "teacher"}{" "}
+                    as {editing.slot.clashWithNames.join(", ")}. Move one, or leave it if the
+                    double-booking is deliberate.
+                  </>
+                )}
               </p>
             ) : null}
 

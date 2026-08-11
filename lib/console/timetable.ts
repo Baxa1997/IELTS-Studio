@@ -30,6 +30,28 @@ import { describeDays, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
 // Shared with the client form, which cannot import a `server-only` module.
 export { DAY_PRESETS, describeDays, toHHMM, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
 
+/**
+ * Why two lessons cannot both happen.
+ *
+ * `self` is separated from the rest because it is a different KIND of problem.
+ * A room shared by two classes, or a teacher wanted by two classes, is a
+ * judgement call the center is allowed to make — small groups share rooms, a
+ * senior teacher covers the first half hour. One class booked over ITSELF is
+ * never a decision; it is a mis-click, and saying "the same room or the same
+ * teacher" about it sends the reader looking for a conflict that isn't there.
+ */
+export type ClashReason = "self" | "room" | "teacher" | "both";
+
+/** One collision, named well enough to act on without hunting for it. */
+export interface Conflict {
+  weekday: number;
+  startsAt: string;
+  reason: ClashReason;
+  /** A whole sentence: who, where, when. */
+  label: string;
+  slotIds: string[];
+}
+
 /** A site. A center with one address has none of these, which is fine. */
 export interface Branch {
   id: string;
@@ -70,7 +92,7 @@ export interface Slot {
   studentCount: number;
   /** Ids of the other slots this one collides with. */
   clashesWith: string[];
-  clashReason: "room" | "teacher" | "both" | null;
+  clashReason: ClashReason | null;
   /** "Room 2 · Aziza Karimova" — who else wants this hour, for the tooltip. */
   clashWithNames: string[];
   /** Set when the class has more students than the room has seats. */
@@ -83,7 +105,8 @@ export interface Timetable {
   slots: Slot[];
   /** Groups with no slot at all — the timetable's own to-do list. */
   unscheduled: { id: string; name: string; teacherName: string | null }[];
-  clashCount: number;
+  /** One entry per collision, not per lesson involved in one. */
+  conflicts: Conflict[];
   /** Earliest start and latest end across the week, so the grid fits the day. */
   dayStartMin: number;
   dayEndMin: number;
@@ -242,16 +265,30 @@ export async function loadTimetable(
   // Clashes are computed across the WHOLE center before any narrowing: a
   // teacher filtered to their own classes still needs to know the room they
   // booked is taken by someone else's.
+  //
+  // Counted as CONFLICTS, one per colliding pair. Counting the lessons caught
+  // up in them reported a single mistake as "2 lessons are double-booked",
+  // which reads like two separate problems to go and find.
+  const conflicts: Conflict[] = [];
   for (let i = 0; i < slots.length; i++) {
     for (let j = i + 1; j < slots.length; j++) {
       const a = slots[i];
       const b = slots[j];
       if (!slotsCollide(a, b)) continue;
+
+      const sameClass = a.groupId === b.groupId;
       const sameRoom = a.roomId != null && a.roomId === b.roomId;
       const sameTeacher = a.teacherId != null && a.teacherId === b.teacherId;
-      if (!sameRoom && !sameTeacher) continue;
-      const reason: Slot["clashReason"] =
-        sameRoom && sameTeacher ? "both" : sameRoom ? "room" : "teacher";
+      if (!sameClass && !sameRoom && !sameTeacher) continue;
+
+      const reason: ClashReason = sameClass
+        ? "self"
+        : sameRoom && sameTeacher
+          ? "both"
+          : sameRoom
+            ? "room"
+            : "teacher";
+
       a.clashesWith.push(b.id);
       b.clashesWith.push(a.id);
       a.clashReason = a.clashReason && a.clashReason !== reason ? "both" : reason;
@@ -260,9 +297,27 @@ export async function loadTimetable(
       // on and a red border you learn to ignore.
       a.clashWithNames.push(`${b.groupName} ${b.startsAt}–${b.endsAt}`);
       b.clashWithNames.push(`${a.groupName} ${a.startsAt}–${a.endsAt}`);
+
+      const day = WEEKDAYS[a.weekday]?.long ?? "—";
+      const when = `${day} ${a.startsAt}`;
+      const where = [a.roomName, b.roomName].filter(Boolean);
+      conflicts.push({
+        weekday: a.weekday,
+        startsAt: a.startsAt,
+        reason,
+        slotIds: [a.id, b.id],
+        label: sameClass
+          ? `${a.groupName} is booked twice on ${when}${
+              where.length === 2 && a.roomId !== b.roomId ? ` — ${where.join(" and ")}` : ""
+            }.`
+          : reason === "room"
+            ? `${a.roomName} holds ${a.groupName} and ${b.groupName} on ${when}.`
+            : reason === "teacher"
+              ? `${a.teacherName ?? "One teacher"} has ${a.groupName} and ${b.groupName} on ${when}.`
+              : `${a.groupName} and ${b.groupName} want ${a.roomName} and ${a.teacherName ?? "the same teacher"} on ${when}.`,
+      });
     }
   }
-  const clashCount = slots.filter((s) => s.clashesWith.length > 0).length;
 
   const allGroups = groupRows.map((g) => ({
     ...g,
@@ -311,7 +366,9 @@ export async function loadTimetable(
     rooms: roomRows,
     slots,
     unscheduled,
-    clashCount,
+    conflicts: conflicts.sort(
+      (a, b) => a.weekday - b.weekday || a.startsAt.localeCompare(b.startsAt),
+    ),
     dayStartMin,
     dayEndMin,
     issues,
