@@ -122,9 +122,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
    * The branch tabs.
    *
    * Every desk is at a branch (migration 20260810170000), so the tabs are the
-   * branches and nothing else — there is no "No branch" case left. A center
-   * with one site sees no tab row: it has exactly one branch, so there is
-   * nothing to pick between, and "Whole center" would mean the same thing.
+   * branches and nothing else — there is no "No branch" case left. The row
+   * shows even for a single branch, because it names whose money is on screen;
+   * "Whole center" only joins it once there is more than one site to total.
    */
   const openBranches = branches.filter((b) => b.active);
   const tabs = openBranches.map((b) => ({
@@ -132,7 +132,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     label: b.name,
     count: accounts.filter((a) => a.active && a.branchId === b.id).length,
   }));
-  const showBranchTabs = tabs.length > 1;
+  const showBranchTabs = tabs.length > 0;
   const scope =
     branchParam && (branchParam === "all" || tabs.some((t) => t.key === branchParam))
       ? branchParam

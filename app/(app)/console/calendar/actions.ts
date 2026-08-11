@@ -268,6 +268,9 @@ function explain(error: { code?: string; message: string }): string {
   if (error.code === "23505") {
     return "That lesson is already on the timetable.";
   }
+  if (error.code === "23503") {
+    return "Something still belongs to this — move it first.";
+  }
   return error.message;
 }
 
@@ -320,16 +323,36 @@ export async function deleteBranch(_prev: ActionState, formData: FormData): Prom
   const id = str(formData, "id");
   if (!id) return { error: "Nothing to remove." };
 
-  // rooms.branch_id and finance_accounts.branch_id are both ON DELETE SET NULL,
-  // so the rooms and the cash desks survive and simply stop belonging to a site.
   const supabase = await createClient();
+
+  // Rooms, classes and desks are all ON DELETE RESTRICT, so the database would
+  // stop this anyway — but it would stop it with a foreign-key error naming a
+  // constraint. Counting first turns that into an instruction.
+  const [roomsRes, groupsRes, desksRes] = await Promise.all([
+    supabase.from("rooms").select("id").eq("branch_id", id),
+    supabase.from("groups").select("id").eq("branch_id", id),
+    supabase.from("finance_accounts").select("id").eq("branch_id", id),
+  ]);
+  const holding = [
+    [(roomsRes.data ?? []).length, "room"],
+    [(groupsRes.data ?? []).length, "class", "es"],
+    [(desksRes.data ?? []).length, "cash desk"],
+  ]
+    .filter(([n]) => (n as number) > 0)
+    .map(([n, word, plural]) => `${n} ${word}${(n as number) === 1 ? "" : (plural ?? "s")}`);
+  if (holding.length > 0) {
+    return {
+      error: `Still has ${holding.join(", ")}. Move them to another branch first — deleting the branch would leave them nowhere.`,
+    };
+  }
+
   const { data, error } = await supabase.from("branches").delete().eq("id", id).select("id");
-  if (error) return { error: error.message };
+  if (error) return { error: explain(error) };
   if ((data ?? []).length === 0) return { error: notAllowed("remove from") };
 
   revalidatePath("/console/calendar");
   revalidatePath("/console/finance");
-  return { ok: "Branch removed. Its rooms and desks are now unassigned." };
+  return { ok: "Branch removed." };
 }
 
 export async function saveRoom(_prev: ActionState, formData: FormData): Promise<ActionState> {

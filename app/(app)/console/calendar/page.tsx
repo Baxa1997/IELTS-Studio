@@ -72,11 +72,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
    *
    * Every room and every class belongs to a branch (migration 20260810170000),
    * so the tabs are simply the branches — there is no "No branch" case left to
-   * carry. A center with one site sees no tab row at all: it has exactly one
-   * branch, and choosing between one thing is not a choice.
+   * carry. The row is shown even for a single branch: it is the label that says
+   * WHICH site the grid below belongs to, and a timetable that does not name
+   * its building is the thing a second branch quietly breaks.
    */
   const tabs = openBranches.map((b) => ({ key: b.id, label: b.name, count: b.roomCount }));
-  const showBranchTabs = tabs.length > 1;
+  const showBranchTabs = tabs.length > 0;
   const requested = first(sp.branch);
   const scope: string =
     requested && (requested === "all" || tabs.some((t) => t.key === requested))
@@ -223,342 +224,393 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         }
       />
 
-      {/* ── the branch tabs ────────────────────────────────────────────────── */}
-      {showBranchTabs ? (
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            flexWrap: "wrap",
-            alignItems: "center",
-            marginBottom: 12,
-            paddingBottom: 10,
-            borderBottom: "1px solid #E4E2DC",
-          }}
-        >
-          {[
-            ...tabs,
-            ...(tabs.length > 1 ? [{ key: "all", label: "Every branch", count: -1 }] : []),
-          ].map((tab) => {
-            const on = tab.key === scope;
-            return (
-              <a
-                key={tab.key}
-                href={link({ branch: tab.key })}
-                className="cn-tab"
-                style={{
-                  padding: "8px 15px",
-                  fontFamily: SANS,
-                  fontSize: 13.5,
-                  fontWeight: on ? 600 : 500,
-                  textDecoration: "none",
-                  borderRadius: "9px 9px 0 0",
-                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
-                  color: on ? INDIGO : MUTED,
-                  background: on ? "#F2F1FB" : "transparent",
-                }}
-              >
-                {tab.label}
-                {tab.count >= 0 ? (
-                  <span
-                    style={{
-                      marginLeft: 7,
-                      fontSize: 11,
-                      color: on ? INDIGO : FAINT,
-                      opacity: 0.75,
-                    }}
-                  >
-                    {tab.count}
-                  </span>
-                ) : null}
-              </a>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {/* ── the day tabs ───────────────────────────────────────────────────── */}
-      <div
-        style={{
-          display: "flex",
-          gap: 6,
-          flexWrap: "wrap",
-          alignItems: "center",
-          marginBottom: 14,
-        }}
-      >
-        {WEEKDAYS.map((d) => {
-          const on = d.index === day;
-          const count = branchSlots.filter((s) => s.weekday === d.index).length;
-          return (
-            <a
-              key={d.index}
-              href={link({ day: String(d.index) })}
-              className="cn-chip"
-              style={{
-                borderRadius: 10,
-                padding: "9px 16px",
-                fontFamily: SANS,
-                fontSize: 13.5,
-                fontWeight: on ? 600 : 500,
-                textDecoration: "none",
-                border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
-                background: on ? INDIGO : "#F4F3EF",
-                color: on ? "#fff" : "#4C4A63",
-              }}
-            >
-              {d.uz}
-              {count > 0 ? (
-                <span
-                  style={{
-                    marginLeft: 7,
-                    fontSize: 11,
-                    color: on ? "rgba(255,255,255,.75)" : FAINT,
-                  }}
-                >
-                  {count}
-                </span>
-              ) : null}
-            </a>
-          );
-        })}
-
-        {profile.role === "teacher" ? (
-          <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-            <a
-              href={link({ who: undefined })}
-              className="cn-chip"
-              style={{
-                borderRadius: 20,
-                padding: "7px 14px",
-                fontFamily: SANS,
-                fontSize: 12.5,
-                textDecoration: "none",
-                border: `1px solid ${mine ? INDIGO : "#E4E2DC"}`,
-                background: mine ? INDIGO : "#fff",
-                color: mine ? "#fff" : "#4C4A63",
-              }}
-            >
-              My classes
-            </a>
-            <a
-              href={link({ who: "all" })}
-              className="cn-chip"
-              style={{
-                borderRadius: 20,
-                padding: "7px 14px",
-                fontFamily: SANS,
-                fontSize: 12.5,
-                textDecoration: "none",
-                border: `1px solid ${!mine ? INDIGO : "#E4E2DC"}`,
-                background: !mine ? INDIGO : "#fff",
-                color: !mine ? "#fff" : "#4C4A63",
-              }}
-            >
-              Whole center
-            </a>
-          </div>
-        ) : null}
-      </div>
-
-      {/* A failed read must never pass for an empty timetable. */}
-      {issues.length > 0 ? (
-        <div
-          style={{
-            padding: "11px 14px",
-            marginBottom: 14,
-            background: "#FBEAE8",
-            border: "1px solid #F0D5D1",
-            borderRadius: 11,
-            fontFamily: SANS,
-            fontSize: 12.5,
-            color: "#A63A30",
-            lineHeight: 1.55,
-          }}
-        >
-          <strong>Some of this page could not be loaded</strong>, so what you see below is
-          incomplete — nothing has been lost. {issues.join(" · ")}
-        </div>
-      ) : null}
-
-      {/* One line per collision, each naming the classes and linking to the
-          day it is on. A count on its own ("2 lessons are double-booked") sends
-          the reader hunting through seven tabs for a problem it will not
-          describe. */}
-      {conflicts.length > 0 ? (
-        <div
-          style={{
-            padding: "11px 14px",
-            marginBottom: 14,
-            background: "#FBEAE8",
-            border: "1px solid #F0D5D1",
-            borderRadius: 11,
-            fontFamily: SANS,
-            fontSize: 12.5,
-            color: "#A63A30",
-            lineHeight: 1.55,
-          }}
-        >
-          <strong>
-            {conflicts.length} clash{conflicts.length === 1 ? "" : "es"} this week
-          </strong>
-          <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-            {conflicts.map((c) => (
-              <li key={`${c.slotIds.join("-")}`} style={{ marginTop: 2 }}>
-                {c.label}{" "}
-                {c.weekday === day ? (
-                  <span style={{ opacity: 0.75 }}>Outlined in red below.</span>
-                ) : (
-                  <a href={link({ day: String(c.weekday) })} style={{ color: "#A63A30" }}>
-                    Show {WEEKDAYS[c.weekday].long} →
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-          {conflicts.some((c) => c.reason === "self") ? (
-            <p style={{ margin: "8px 0 0" }}>
-              A class booked twice at once is always a mistake — open either block and remove it.
-              Two <em>different</em> classes sharing a room or a teacher is only a warning; leave it
-              if it is deliberate.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {activeRooms.length === 0 ? (
-        <div
-          style={{
-            padding: "11px 14px",
-            marginBottom: 14,
-            background: "#FDF9F1",
-            border: "1px solid #E8D9BE",
-            borderRadius: 11,
-            fontFamily: SANS,
-            fontSize: 12.5,
-            color: "#8A6420",
-            lineHeight: 1.55,
-          }}
-        >
-          {openRooms.length === 0 ? (
-            <>
-              No rooms yet, so the grid has one unassigned column. Add your rooms with the{" "}
-              <strong>Rooms</strong> button above and each becomes a column you can book into.
-            </>
-          ) : (
-            <>
-              This branch has no open rooms, so there is nothing to book into. Assign a room to it
-              with the <strong>Rooms</strong> button, or pick another branch tab.
-            </>
-          )}
-        </div>
-      ) : null}
-
-      <Card flush style={{ overflow: "hidden" }}>
-        <TimetableGrid
-          rooms={gridRooms}
-          slots={daySlots}
-          weekday={day}
-          weekdayLabel={WEEKDAYS[day].long}
-          dayStartMin={dayStartMin}
-          dayEndMin={dayEndMin}
-          groups={groupOptions}
-          roomOptions={roomOptions}
-          canEdit={canEdit}
-        />
-      </Card>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
-        {unscheduled.length > 0 ? (
-          <Card>
-            <CardHead
-              title="Not on the timetable"
-              note={`${unscheduled.length} class${unscheduled.length === 1 ? "" : "es"} with no slot at all`}
-            />
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {unscheduled.map((group) => (
-                <Drawer
-                  key={group.id}
-                  label={
-                    <span>
-                      {group.name}
-                      <span style={{ color: "#93919F", marginLeft: 6, fontWeight: 400 }}>
-                        {group.teacherName ?? "no teacher"}
-                      </span>
-                    </span>
-                  }
-                  variant="ghost"
-                  eyebrow="Timetable"
-                  title={group.name}
-                  note="Put this class on the timetable."
-                  triggerStyle={{
-                    borderRadius: 20,
-                    padding: "7px 13px",
-                    fontSize: 12.5,
-                    fontWeight: 500,
-                    whiteSpace: "normal",
-                  }}
-                >
-                  <SlotForm
-                    slot={{ groupId: group.id, weekdays: [day] }}
-                    groups={groupOptions}
-                    rooms={roomOptions}
-                  />
-                </Drawer>
-              ))}
-            </div>
-          </Card>
-        ) : null}
-
+      {/* ── nothing can exist before a branch does ─────────────────────────── */}
+      {openBranches.length === 0 ? (
         <Card>
           <CardHead
-            title="Every lesson this week"
-            note={`${weekLessons.length} lesson${weekLessons.length === 1 ? "" : "s"}, ${branchSlots.length} meeting${branchSlots.length === 1 ? "" : "s"}${
-              scope === "all" ? "" : ` at ${branchName.get(scope) ?? "this branch"}`
-            }`}
+            title="Create a branch first"
+            note="Rooms, classes and cash desks all belong to one"
           />
-          {weekLessons.length === 0 ? (
-            <p style={{ fontFamily: SANS, fontSize: 13, color: SOFT, margin: 0, lineHeight: 1.6 }}>
-              Nothing scheduled yet. Click any empty cell in the grid above — it opens the form with
-              that room, day and time already filled in.
-            </p>
-          ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {/* One chip per LESSON, not per day: a toq kunlar class listed
-                  three times reads as three classes. */}
-              {weekLessons.map((slot) => (
-                <span
-                  key={slot.seriesId}
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 12,
-                    color: slot.clashesWith.length > 0 ? "#A63A30" : MUTED,
-                    background: "#F4F3EF",
-                    border: "1px solid #E4E2DC",
-                    borderRadius: 8,
-                    padding: "5px 10px",
-                  }}
-                >
-                  <strong style={{ color: INK }}>{slot.groupName}</strong> · {describeSeries(slot)}
-                </span>
-              ))}
-            </div>
-          )}
           <p
             style={{
               fontFamily: SANS,
-              fontSize: 12,
-              color: FAINT,
-              margin: "14px 0 0",
+              fontSize: 13,
+              color: SOFT,
+              margin: "0 0 16px",
               lineHeight: 1.6,
+              maxWidth: 560,
             }}
           >
-            A lesson is its <strong>set of days</strong>: a Mon/Wed/Fri course is one entry you edit
-            once, stored as the three meetings you can see on the grid. Clashes and over-full rooms
-            are flagged, never blocked — a deliberate double-booking is still a plan.
+            A branch is the address you teach at. Every room is in one, every class is taught at
+            one, and every payment is taken at one — so there is nothing to put on a timetable until
+            the first one exists. Most centers have exactly one and never think about it again.
           </p>
+          {profile.role === "center_admin" ? (
+            <Drawer
+              label="Create the first branch"
+              eyebrow="Timetable"
+              title="Branches"
+              note="The sites you teach at. Each owns its own rooms."
+              width={520}
+            >
+              <BranchesManager branches={[]} />
+            </Drawer>
+          ) : (
+            <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: 0 }}>
+              Ask the center owner to add one.
+            </p>
+          )}
         </Card>
-      </div>
+      ) : (
+        <>
+          {/* ── the branch tabs ────────────────────────────────────────────────── */}
+          {showBranchTabs ? (
+            <div
+              style={{
+                display: "flex",
+                gap: 4,
+                flexWrap: "wrap",
+                alignItems: "center",
+                marginBottom: 12,
+                paddingBottom: 10,
+                borderBottom: "1px solid #E4E2DC",
+              }}
+            >
+              {[
+                ...tabs,
+                ...(tabs.length > 1 ? [{ key: "all", label: "Every branch", count: -1 }] : []),
+              ].map((tab) => {
+                const on = tab.key === scope;
+                return (
+                  <a
+                    key={tab.key}
+                    href={link({ branch: tab.key })}
+                    className="cn-tab"
+                    style={{
+                      padding: "8px 15px",
+                      fontFamily: SANS,
+                      fontSize: 13.5,
+                      fontWeight: on ? 600 : 500,
+                      textDecoration: "none",
+                      borderRadius: "9px 9px 0 0",
+                      borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
+                      color: on ? INDIGO : MUTED,
+                      background: on ? "#F2F1FB" : "transparent",
+                    }}
+                  >
+                    {tab.label}
+                    {tab.count >= 0 ? (
+                      <span
+                        style={{
+                          marginLeft: 7,
+                          fontSize: 11,
+                          color: on ? INDIGO : FAINT,
+                          opacity: 0.75,
+                        }}
+                      >
+                        {tab.count}
+                      </span>
+                    ) : null}
+                  </a>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {/* ── the day tabs ───────────────────────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              flexWrap: "wrap",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            {WEEKDAYS.map((d) => {
+              const on = d.index === day;
+              const count = branchSlots.filter((s) => s.weekday === d.index).length;
+              return (
+                <a
+                  key={d.index}
+                  href={link({ day: String(d.index) })}
+                  className="cn-chip"
+                  style={{
+                    borderRadius: 10,
+                    padding: "9px 16px",
+                    fontFamily: SANS,
+                    fontSize: 13.5,
+                    fontWeight: on ? 600 : 500,
+                    textDecoration: "none",
+                    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                    background: on ? INDIGO : "#F4F3EF",
+                    color: on ? "#fff" : "#4C4A63",
+                  }}
+                >
+                  {d.uz}
+                  {count > 0 ? (
+                    <span
+                      style={{
+                        marginLeft: 7,
+                        fontSize: 11,
+                        color: on ? "rgba(255,255,255,.75)" : FAINT,
+                      }}
+                    >
+                      {count}
+                    </span>
+                  ) : null}
+                </a>
+              );
+            })}
+
+            {profile.role === "teacher" ? (
+              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                <a
+                  href={link({ who: undefined })}
+                  className="cn-chip"
+                  style={{
+                    borderRadius: 20,
+                    padding: "7px 14px",
+                    fontFamily: SANS,
+                    fontSize: 12.5,
+                    textDecoration: "none",
+                    border: `1px solid ${mine ? INDIGO : "#E4E2DC"}`,
+                    background: mine ? INDIGO : "#fff",
+                    color: mine ? "#fff" : "#4C4A63",
+                  }}
+                >
+                  My classes
+                </a>
+                <a
+                  href={link({ who: "all" })}
+                  className="cn-chip"
+                  style={{
+                    borderRadius: 20,
+                    padding: "7px 14px",
+                    fontFamily: SANS,
+                    fontSize: 12.5,
+                    textDecoration: "none",
+                    border: `1px solid ${!mine ? INDIGO : "#E4E2DC"}`,
+                    background: !mine ? INDIGO : "#fff",
+                    color: !mine ? "#fff" : "#4C4A63",
+                  }}
+                >
+                  Whole center
+                </a>
+              </div>
+            ) : null}
+          </div>
+
+          {/* A failed read must never pass for an empty timetable. */}
+          {issues.length > 0 ? (
+            <div
+              style={{
+                padding: "11px 14px",
+                marginBottom: 14,
+                background: "#FBEAE8",
+                border: "1px solid #F0D5D1",
+                borderRadius: 11,
+                fontFamily: SANS,
+                fontSize: 12.5,
+                color: "#A63A30",
+                lineHeight: 1.55,
+              }}
+            >
+              <strong>Some of this page could not be loaded</strong>, so what you see below is
+              incomplete — nothing has been lost. {issues.join(" · ")}
+            </div>
+          ) : null}
+
+          {/* One line per collision, each naming the classes and linking to the
+          day it is on. A count on its own ("2 lessons are double-booked") sends
+          the reader hunting through seven tabs for a problem it will not
+          describe. */}
+          {conflicts.length > 0 ? (
+            <div
+              style={{
+                padding: "11px 14px",
+                marginBottom: 14,
+                background: "#FBEAE8",
+                border: "1px solid #F0D5D1",
+                borderRadius: 11,
+                fontFamily: SANS,
+                fontSize: 12.5,
+                color: "#A63A30",
+                lineHeight: 1.55,
+              }}
+            >
+              <strong>
+                {conflicts.length} clash{conflicts.length === 1 ? "" : "es"} this week
+              </strong>
+              <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                {conflicts.map((c) => (
+                  <li key={`${c.slotIds.join("-")}`} style={{ marginTop: 2 }}>
+                    {c.label}{" "}
+                    {c.weekday === day ? (
+                      <span style={{ opacity: 0.75 }}>Outlined in red below.</span>
+                    ) : (
+                      <a href={link({ day: String(c.weekday) })} style={{ color: "#A63A30" }}>
+                        Show {WEEKDAYS[c.weekday].long} →
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {conflicts.some((c) => c.reason === "self") ? (
+                <p style={{ margin: "8px 0 0" }}>
+                  A class booked twice at once is always a mistake — open either block and remove
+                  it. Two <em>different</em> classes sharing a room or a teacher is only a warning;
+                  leave it if it is deliberate.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {activeRooms.length === 0 ? (
+            <div
+              style={{
+                padding: "11px 14px",
+                marginBottom: 14,
+                background: "#FDF9F1",
+                border: "1px solid #E8D9BE",
+                borderRadius: 11,
+                fontFamily: SANS,
+                fontSize: 12.5,
+                color: "#8A6420",
+                lineHeight: 1.55,
+              }}
+            >
+              {openRooms.length === 0 ? (
+                <>
+                  No rooms yet, so the grid has one unassigned column. Add your rooms with the{" "}
+                  <strong>Rooms</strong> button above and each becomes a column you can book into.
+                </>
+              ) : (
+                <>
+                  This branch has no open rooms, so there is nothing to book into. Assign a room to
+                  it with the <strong>Rooms</strong> button, or pick another branch tab.
+                </>
+              )}
+            </div>
+          ) : null}
+
+          <Card flush style={{ overflow: "hidden" }}>
+            <TimetableGrid
+              rooms={gridRooms}
+              slots={daySlots}
+              weekday={day}
+              weekdayLabel={WEEKDAYS[day].long}
+              dayStartMin={dayStartMin}
+              dayEndMin={dayEndMin}
+              groups={groupOptions}
+              roomOptions={roomOptions}
+              canEdit={canEdit}
+            />
+          </Card>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+            {unscheduled.length > 0 ? (
+              <Card>
+                <CardHead
+                  title="Not on the timetable"
+                  note={`${unscheduled.length} class${unscheduled.length === 1 ? "" : "es"} with no slot at all`}
+                />
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {unscheduled.map((group) => (
+                    <Drawer
+                      key={group.id}
+                      label={
+                        <span>
+                          {group.name}
+                          <span style={{ color: "#93919F", marginLeft: 6, fontWeight: 400 }}>
+                            {group.teacherName ?? "no teacher"}
+                          </span>
+                        </span>
+                      }
+                      variant="ghost"
+                      eyebrow="Timetable"
+                      title={group.name}
+                      note="Put this class on the timetable."
+                      triggerStyle={{
+                        borderRadius: 20,
+                        padding: "7px 13px",
+                        fontSize: 12.5,
+                        fontWeight: 500,
+                        whiteSpace: "normal",
+                      }}
+                    >
+                      <SlotForm
+                        slot={{ groupId: group.id, weekdays: [day] }}
+                        groups={groupOptions}
+                        rooms={roomOptions}
+                      />
+                    </Drawer>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+
+            <Card>
+              <CardHead
+                title="Every lesson this week"
+                note={`${weekLessons.length} lesson${weekLessons.length === 1 ? "" : "s"}, ${branchSlots.length} meeting${branchSlots.length === 1 ? "" : "s"}${
+                  scope === "all" ? "" : ` at ${branchName.get(scope) ?? "this branch"}`
+                }`}
+              />
+              {weekLessons.length === 0 ? (
+                <p
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 13,
+                    color: SOFT,
+                    margin: 0,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Nothing scheduled yet. Click any empty cell in the grid above — it opens the form
+                  with that room, day and time already filled in.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {/* One chip per LESSON, not per day: a toq kunlar class listed
+                  three times reads as three classes. */}
+                  {weekLessons.map((slot) => (
+                    <span
+                      key={slot.seriesId}
+                      style={{
+                        fontFamily: SANS,
+                        fontSize: 12,
+                        color: slot.clashesWith.length > 0 ? "#A63A30" : MUTED,
+                        background: "#F4F3EF",
+                        border: "1px solid #E4E2DC",
+                        borderRadius: 8,
+                        padding: "5px 10px",
+                      }}
+                    >
+                      <strong style={{ color: INK }}>{slot.groupName}</strong> ·{" "}
+                      {describeSeries(slot)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 12,
+                  color: FAINT,
+                  margin: "14px 0 0",
+                  lineHeight: 1.6,
+                }}
+              >
+                A lesson is its <strong>set of days</strong>: a Mon/Wed/Fri course is one entry you
+                edit once, stored as the three meetings you can see on the grid. Clashes and
+                over-full rooms are flagged, never blocked — a deliberate double-booking is still a
+                plan.
+              </p>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }
