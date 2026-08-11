@@ -15,7 +15,7 @@ import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
  *  1. THE GRID IS ALWAYS THERE. An empty timetable renders as empty half-hour
  *     cells, not as an empty-state message. You cannot book a lesson on a
  *     paragraph of text.
- *  2. EVERY EMPTY CELL IS A BUTTON. Clicking 15:30 under "Toshkent" opens the
+ *  2. EVERY EMPTY CELL IS A BUTTON. Clicking 15:30 under "Room 1" opens the
  *     form with that room, that day and that time already filled in — which is
  *     the only reason to draw a grid rather than list the slots.
  *  3. ONE dialog for the whole grid. A hundred cells cannot each own a modal;

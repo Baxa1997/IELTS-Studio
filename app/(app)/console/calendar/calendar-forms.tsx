@@ -71,7 +71,7 @@ export interface SlotDraft {
 /**
  * Add or change one lesson.
  *
- * THE DAYS ARE THE POINT. A center sells "toq kunlar 15:30" — Mon, Wed and Fri
+ * THE DAYS ARE THE POINT. A center sells "odd days, 15:30" — Mon, Wed and Fri
  * as one purchase — so the form takes a SET of days and writes one row per day,
  * tied by a series id. The old form took a single weekday plus a "repeats"
  * dropdown, which stored the same fact twice and let it contradict itself; a

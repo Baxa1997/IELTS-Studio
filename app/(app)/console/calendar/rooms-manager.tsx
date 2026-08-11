@@ -224,7 +224,7 @@ function RoomEditor({
             name="name"
             required
             defaultValue={room?.name}
-            placeholder="Toshkent"
+            placeholder="Room 1"
             style={{ ...fieldStyle, marginTop: 4 }}
           />
         </label>

@@ -43,9 +43,9 @@ export const dynamic = "force-dynamic";
  *   • Across the top, totals BY PAYMENT METHOD — naqd, karta, terminal, QR. A
  *     method is a property of the payment, not of a desk, so these sum across
  *     every desk in the window.
- *   • Down the left, the KASSAS: a float held by a named person, each with its
- *     own Kirim / Chiqim / Ko'chirish, because money is taken at a desk by
- *     somebody who answers for it.
+ *   • Down the left, the CASH DESKS — kassa, in the CRM this copies: a float
+ *     held by a named person, each with its own take / spend / transfer,
+ *     because money is taken at a desk by somebody who answers for it.
  *   • On the right, the entries, with the filters a director actually asks by —
  *     which dates, whose payment, which method, which staff member — and a
  *     pager, because fifty rows is a normal week.
@@ -55,8 +55,8 @@ export const dynamic = "force-dynamic";
  */
 
 const METHOD_LABEL: Record<string, string> = {
-  cash: "Naqd · Cash",
-  card: "Karta · Card",
+  cash: "Cash",
+  card: "Card",
   terminal: "Terminal",
   qr: "QR",
   bank: "Bank",
@@ -401,7 +401,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Drawer
             label="+ Add a cash desk"
-            eyebrow="Kassa"
+            eyebrow="Cash desk"
             title="Add a cash desk"
             note="A float held by a named person, who answers for what is in it."
             triggerStyle={{ width: "100%", padding: "10px 15px" }}
@@ -469,7 +469,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: "none" }}>
                     <Drawer
-                      label="+ Kirim"
+                      label="+ Take"
                       eyebrow="Money in"
                       title={`Take a payment — ${desk.name}`}
                       note="Tuition, a registration fee, anything arriving at this desk."
@@ -496,7 +496,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     </Drawer>
 
                     <Drawer
-                      label="− Chiqim"
+                      label="− Spend"
                       eyebrow="Money out"
                       title={`Record an expense — ${desk.name}`}
                       note="Rent, salaries, supplies — anything leaving this desk."
@@ -522,8 +522,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     </Drawer>
 
                     <Drawer
-                      label="Ko'chirish"
-                      eyebrow="Kassa"
+                      label="Transfer"
+                      eyebrow="Cash desk"
                       title="Move money between desks"
                       note="Two entries — out of one, into the other."
                       triggerStyle={{
@@ -557,7 +557,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                 >
                   <Drawer
                     label="Edit"
-                    eyebrow="Kassa"
+                    eyebrow="Cash desk"
                     title={desk.name}
                     note="Rename it, hand it to someone else, or close it."
                     triggerStyle={{

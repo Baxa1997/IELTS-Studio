@@ -131,7 +131,7 @@ export function DeskForm({
   );
 }
 
-/** Ko'chirish: move a float from one desk to another. */
+/** Transfer: move a float from one desk to another. */
 export function TransferForm({
   accounts,
   fromId,

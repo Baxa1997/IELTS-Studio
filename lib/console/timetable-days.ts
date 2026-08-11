@@ -20,25 +20,29 @@ export const WEEKDAYS = [
 /**
  * The rhythms a center actually sells, as day sets.
  *
- * These are presets on the form, not a stored type — picking "Toq kunlar"
- * ticks Mon/Wed/Fri and the rows that get written are three ordinary days.
- * That is the whole point: the preset is a shortcut for the human, never a
- * second version of the truth for the database. The column that used to store
- * it could contradict the weekday beside it, and did.
+ * These are presets on the form, not a stored type — picking "Odd days" ticks
+ * Mon/Wed/Fri and the rows that get written are three ordinary days. That is
+ * the whole point: the preset is a shortcut for the human, never a second
+ * version of the truth for the database. The column that used to store it
+ * could contradict the weekday beside it, and did.
+ *
+ * The labels are the Uzbek market's own terms translated — "toq kunlar" is
+ * literally odd days, "juft kunlar" even days. They read in English until the
+ * app is properly translated, at which point these are four strings to look up
+ * rather than four hard-coded words in one language.
  */
 export const DAY_PRESETS = [
-  { key: "odd", label: "Toq kunlar", note: "Mon · Wed · Fri", days: [1, 3, 5] },
-  { key: "even", label: "Juft kunlar", note: "Tue · Thu · Sat", days: [2, 4, 6] },
-  { key: "daily", label: "Har kuni", note: "Mon–Sat", days: [1, 2, 3, 4, 5, 6] },
-  { key: "weekend", label: "Dam olish", note: "Sat · Sun", days: [6, 0] },
+  { key: "odd", label: "Odd days", note: "Mon · Wed · Fri", days: [1, 3, 5] },
+  { key: "even", label: "Even days", note: "Tue · Thu · Sat", days: [2, 4, 6] },
+  { key: "daily", label: "Every weekday", note: "Mon–Sat", days: [1, 2, 3, 4, 5, 6] },
+  { key: "weekend", label: "Weekend", note: "Sat · Sun", days: [6, 0] },
 ] as const;
 
 /**
  * "Mon · Wed · Fri", or "Mon–Sat" for a run of consecutive days.
  *
- * English, in the reading order of the week, and never the preset's name. The
- * preset buttons keep their Uzbek labels because "toq kunlar" is the thing the
- * center sells; a block on the grid has to say which days it actually is.
+ * In the reading order of the week, and never the preset's name: a block on
+ * the grid has to say which days it actually is.
  */
 export function describeDays(days: number[]): string {
   const sorted = [...new Set(days)].sort(

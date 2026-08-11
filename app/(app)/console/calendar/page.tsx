@@ -199,7 +199,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               label="Add a lesson"
               eyebrow="Timetable"
               title="Schedule a class"
-              note="Pick the days it meets — toq kunlar is one lesson, not three. Or just click an empty cell in the grid."
+              note="Pick the days it meets — Mon/Wed/Fri is one lesson, not three. Or just click an empty cell in the grid."
             >
               <SlotForm groups={groupOptions} rooms={roomOptions} slot={{ weekdays: [day] }} />
             </Drawer>
@@ -591,7 +591,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 </p>
               ) : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {/* One chip per LESSON, not per day: a toq kunlar class listed
+                  {/* One chip per LESSON, not per day: a Mon/Wed/Fri class listed
                   three times reads as three classes. */}
                   {weekLessons.map((slot) => (
                     <span

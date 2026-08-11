@@ -142,7 +142,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
           name="name"
           required
           defaultValue={branch?.name}
-          placeholder="Chilonzor"
+          placeholder="City centre"
           style={{ ...fieldStyle, marginTop: 4 }}
         />
       </label>
@@ -153,7 +153,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
           <input
             name="address"
             defaultValue={branch?.address ?? ""}
-            placeholder="Bunyodkor ko'chasi 12"
+            placeholder="12 Main Street"
             style={{ ...fieldStyle, marginTop: 4 }}
           />
         </label>

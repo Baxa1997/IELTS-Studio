@@ -9,7 +9,7 @@ import { addDays, describeDays, toMinutes, trimTime, WEEKDAYS } from "./timetabl
  * The timetable: which class meets when, where, and with whom.
  *
  * A slot is a WEEKLY repeat, not a calendar event. Centers here run courses on
- * a fixed rhythm — Mon/Wed/Fri or Tue/Thu/Sat, "toq" and "juft" kunlar — for
+ * a fixed rhythm — Mon/Wed/Fri or Tue/Thu/Sat, odd and even days — for
  * months at a time, so a recurring weekly row is both how the staff think about
  * it and a hundredth of the rows a materialised calendar would need.
  *
@@ -245,7 +245,7 @@ export async function loadTimetable(
   const slotRows = (slotsRes.data ?? []) as Record<string, unknown>[];
 
   // Which days each series runs. Built before the slots so every day of a
-  // lesson can show the whole rhythm — "Toq kunlar" on a Monday block tells
+  // lesson can show the whole rhythm — "Mon · Wed · Fri" on a Monday block tells
   // the reader more than "Monday" does.
   const daysInSeries = new Map<string, number[]>();
   for (const s of slotRows) {
@@ -429,7 +429,7 @@ export function describeSlot(slot: Slot): string {
   return `${day} ${slot.startsAt}–${slot.endsAt}${room}`;
 }
 
-/** "Toq kunlar 15:30–17:00 · Room 2" — the whole lesson, once. */
+/** "Mon · Wed · Fri 15:30–17:00 · Room 2" — the whole lesson, once. */
 export function describeSeries(slot: Slot): string {
   const room = slot.roomName ? ` · ${slot.roomName}` : "";
   return `${describeDays(slot.seriesDays)} ${slot.startsAt}–${slot.endsAt}${room}`;

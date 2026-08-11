@@ -151,15 +151,19 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
   const opening = parseMoney(str(formData, "opening") || "0", settings.currency) ?? 0;
   const id = orNull(str(formData, "id"));
 
+  // The desk's branch is what makes its money belong to a site — every
+  // transaction inherits its branch from here, and nowhere else — so it is
+  // required. The form always sends one; an empty value means a stale page.
+  const branchId = str(formData, "branch_id");
+  if (!branchId) return { error: "Pick the branch this desk stands at." };
+
   const supabase = await createClient();
   const payload = {
     organization_id: profile.organization_id,
     name,
     kind: str(formData, "kind") || "cash",
     owner_id: orNull(str(formData, "owner_id")),
-    // The desk's branch is what makes its money belong to a site — every
-    // transaction inherits its branch from here, and nowhere else.
-    branch_id: orNull(str(formData, "branch_id")),
+    branch_id: branchId,
     opening_balance_minor: opening,
     active: str(formData, "active") !== "off",
   };
@@ -174,7 +178,7 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
 }
 
 /**
- * Ko'chirish — move money from one desk to another.
+ * Transfer — move money from one desk to another.
  *
  * Two ledger rows sharing a `transfer_id`, never one "transfer" row. The
  * center's net position is unchanged by definition (an out and an in of the
