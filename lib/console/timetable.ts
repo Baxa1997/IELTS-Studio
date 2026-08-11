@@ -3,36 +3,32 @@ import "server-only";
 import { type Profile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
+import { describeDays, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
+
 /**
  * The timetable: which class meets when, where, and with whom.
  *
  * A slot is a WEEKLY repeat, not a calendar event. Centers here run courses on
- * a fixed pattern — Mon/Wed/Fri or Tue/Thu/Sat, "toq" and "juft" days — and
- * describing that as a recurring slot per weekday is both how the staff think
- * about it and a hundredth of the rows a materialised calendar would need.
+ * a fixed rhythm — Mon/Wed/Fri or Tue/Thu/Sat, "toq" and "juft" kunlar — for
+ * months at a time, so a recurring weekly row is both how the staff think about
+ * it and a hundredth of the rows a materialised calendar would need.
+ *
+ * ONE ROW PER DAY THE CLASS ACTUALLY MEETS, tied by `series_id`.
+ *
+ * That is the correction made in migration 20260810160000, and it matters. The
+ * table used to carry a `pattern` column beside the weekday, so a single row
+ * claimed to mean "Mon/Wed/Fri" while sitting on Wednesday — invisible on the
+ * Monday and Friday tabs, and free to contradict itself ("Tuesday, odd days").
+ * Now the grid shows exactly what is stored, and a lesson that meets three
+ * times a week is three rows the app edits, moves and deletes as one.
  *
  * The one thing a paper timetable cannot do, and the reason this is worth
  * building rather than photographing a whiteboard: it knows when two classes
  * want the same room, or one teacher is booked twice at once.
  */
 
-export const WEEKDAYS = [
-  { index: 0, short: "Sun", long: "Sunday", uz: "Yak" },
-  { index: 1, short: "Mon", long: "Monday", uz: "Du" },
-  { index: 2, short: "Tue", long: "Tuesday", uz: "Se" },
-  { index: 3, short: "Wed", long: "Wednesday", uz: "Chor" },
-  { index: 4, short: "Thu", long: "Thursday", uz: "Pa" },
-  { index: 5, short: "Fri", long: "Friday", uz: "Ju" },
-  { index: 6, short: "Sat", long: "Saturday", uz: "Sha" },
-] as const;
-
-export type SlotPattern = "weekly" | "odd" | "even";
-
-export const PATTERN_LABEL: Record<SlotPattern, string> = {
-  weekly: "Every week",
-  odd: "Odd days (Mon/Wed/Fri)",
-  even: "Even days (Tue/Thu/Sat)",
-};
+// Shared with the client form, which cannot import a `server-only` module.
+export { DAY_PRESETS, describeDays, toHHMM, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
 
 /** A site. A center with one address has none of these, which is fine. */
 export interface Branch {
@@ -55,22 +51,30 @@ export interface Room {
 
 export interface Slot {
   id: string;
+  /** Every day of this lesson shares it — the unit the staff edit. */
+  seriesId: string;
+  /** All weekdays in the series, this one included. */
+  seriesDays: number[];
   groupId: string;
   groupName: string;
   teacherId: string | null;
   teacherName: string | null;
   roomId: string | null;
   roomName: string | null;
+  roomCapacity: number | null;
   /** Derived from the room — a lesson has no branch of its own. */
   branchId: string | null;
   weekday: number;
   startsAt: string; // HH:MM
   endsAt: string; // HH:MM
-  pattern: SlotPattern;
   studentCount: number;
   /** Ids of the other slots this one collides with. */
   clashesWith: string[];
   clashReason: "room" | "teacher" | "both" | null;
+  /** "Room 2 · Aziza Karimova" — who else wants this hour, for the tooltip. */
+  clashWithNames: string[];
+  /** Set when the class has more students than the room has seats. */
+  overCapacityBy: number;
 }
 
 export interface Timetable {
@@ -92,28 +96,17 @@ export interface Timetable {
   issues: string[];
 }
 
-/* ── time helpers ─────────────────────────────────────────────────────────── */
+/* ── clashes ──────────────────────────────────────────────────────────────── */
 
-export const toMinutes = (hhmm: string): number => {
-  const [h, m] = hhmm.split(":");
-  return Number(h) * 60 + Number(m);
-};
-
-export const toHHMM = (minutes: number): string =>
-  `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-
-/** `09:00:00` from Postgres, `09:00` from a form — both land as `09:00`. */
-export const trimTime = (t: string): string => t.slice(0, 5);
-
-/** Two patterns can only collide if they share a day of the fortnight. */
-function patternsOverlap(a: SlotPattern, b: SlotPattern): boolean {
-  if (a === "weekly" || b === "weekly") return true;
-  return a === b;
-}
-
+/**
+ * Two lessons collide when they are on the same day and their hours overlap.
+ *
+ * That is the whole rule now. It used to need pattern arithmetic on top —
+ * "does Mon/Wed/Fri share a day with Tue/Thu/Sat" — which was both a source of
+ * wrong answers and impossible to explain to the person reading the red box.
+ */
 function slotsCollide(a: Slot, b: Slot): boolean {
   if (a.weekday !== b.weekday) return false;
-  if (!patternsOverlap(a.pattern, b.pattern)) return false;
   return toMinutes(a.startsAt) < toMinutes(b.endsAt) && toMinutes(b.startsAt) < toMinutes(a.endsAt);
 }
 
@@ -144,7 +137,7 @@ export async function loadTimetable(
       .order("name", { ascending: true }),
     supabase
       .from("lesson_slots")
-      .select("id, group_id, room_id, weekday, starts_at, ends_at, pattern")
+      .select("id, series_id, group_id, room_id, weekday, starts_at, ends_at")
       .order("weekday", { ascending: true })
       .order("starts_at", { ascending: true }),
     supabase.from("groups").select("id, name, teacher_id"),
@@ -200,27 +193,49 @@ export async function loadTimetable(
   }));
   const roomById = new Map(roomRows.map((r) => [r.id, r]));
 
-  let slots: Slot[] = ((slotsRes.data ?? []) as Record<string, unknown>[]).map((s) => {
+  const slotRows = (slotsRes.data ?? []) as Record<string, unknown>[];
+
+  // Which days each series runs. Built before the slots so every day of a
+  // lesson can show the whole rhythm — "Toq kunlar" on a Monday block tells
+  // the reader more than "Monday" does.
+  const daysInSeries = new Map<string, number[]>();
+  for (const s of slotRows) {
+    const key = (s.series_id as string | null) ?? (s.id as string);
+    const days = daysInSeries.get(key) ?? [];
+    days.push(Number(s.weekday ?? 0));
+    daysInSeries.set(key, days);
+  }
+
+  let slots: Slot[] = slotRows.map((s) => {
     const group = groupById.get(s.group_id as string);
     const roomId = (s.room_id as string | null) ?? null;
     const room = roomId ? roomById.get(roomId) : undefined;
+    const seriesId = (s.series_id as string | null) ?? (s.id as string);
+    const studentCount = sizes.get(s.group_id as string) ?? 0;
     return {
       id: s.id as string,
+      seriesId,
+      seriesDays: [...(daysInSeries.get(seriesId) ?? [])].sort((a, b) => a - b),
       groupId: s.group_id as string,
       groupName: group?.name ?? "—",
       teacherId: group?.teacherId ?? null,
       teacherName: group?.teacherId ? (staffName.get(group.teacherId) ?? null) : null,
       roomId,
       roomName: room?.name ?? null,
+      roomCapacity: room?.capacity ?? null,
       // A lesson's site is wherever its room is. No second source of truth.
       branchId: room?.branchId ?? null,
       weekday: Number(s.weekday ?? 0),
       startsAt: trimTime(String(s.starts_at ?? "00:00")),
       endsAt: trimTime(String(s.ends_at ?? "00:00")),
-      pattern: (s.pattern as SlotPattern) ?? "weekly",
-      studentCount: sizes.get(s.group_id as string) ?? 0,
+      studentCount,
       clashesWith: [],
       clashReason: null,
+      clashWithNames: [],
+      // A class of 20 in a room of 12 is a problem the schedule can see coming
+      // and the wall chart cannot.
+      overCapacityBy:
+        room?.capacity != null && studentCount > room.capacity ? studentCount - room.capacity : 0,
     };
   });
 
@@ -241,6 +256,10 @@ export async function loadTimetable(
       b.clashesWith.push(a.id);
       a.clashReason = a.clashReason && a.clashReason !== reason ? "both" : reason;
       b.clashReason = b.clashReason && b.clashReason !== reason ? "both" : reason;
+      // Naming the other class is the difference between a warning you can act
+      // on and a red border you learn to ignore.
+      a.clashWithNames.push(`${b.groupName} ${b.startsAt}–${b.endsAt}`);
+      b.clashWithNames.push(`${a.groupName} ${a.startsAt}–${a.endsAt}`);
     }
   }
   const clashCount = slots.filter((s) => s.clashesWith.length > 0).length;
@@ -304,11 +323,21 @@ export function slotsForGroup(timetable: Timetable, groupId: string): Slot[] {
   return timetable.slots.filter((s) => s.groupId === groupId);
 }
 
-/** "Mon 15:30–17:00 · Room 2" — one slot in a sentence. */
+/** "Mon 15:30–17:00 · Room 2" — one day of a lesson in a sentence. */
 export function describeSlot(slot: Slot): string {
   const day = WEEKDAYS[slot.weekday]?.short ?? "—";
   const room = slot.roomName ? ` · ${slot.roomName}` : "";
-  const pattern =
-    slot.pattern === "weekly" ? "" : slot.pattern === "odd" ? " (odd days)" : " (even days)";
-  return `${day} ${slot.startsAt}–${slot.endsAt}${room}${pattern}`;
+  return `${day} ${slot.startsAt}–${slot.endsAt}${room}`;
+}
+
+/** "Toq kunlar 15:30–17:00 · Room 2" — the whole lesson, once. */
+export function describeSeries(slot: Slot): string {
+  const room = slot.roomName ? ` · ${slot.roomName}` : "";
+  return `${describeDays(slot.seriesDays)} ${slot.startsAt}–${slot.endsAt}${room}`;
+}
+
+/** One entry per lesson rather than per day, for lists that shouldn't repeat. */
+export function bySeries(slots: Slot[]): Slot[] {
+  const seen = new Set<string>();
+  return slots.filter((s) => (seen.has(s.seriesId) ? false : (seen.add(s.seriesId), true)));
 }

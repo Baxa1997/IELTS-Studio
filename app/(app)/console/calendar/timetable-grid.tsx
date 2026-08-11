@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { type Slot } from "@/lib/console/timetable";
+import { describeDays } from "@/lib/console/timetable-days";
 
 import { type RoomOption, SlotForm } from "./calendar-forms";
 
@@ -97,6 +98,24 @@ function laneOf(slots: Slot[]): Map<string, { lane: number; lanes: number }> {
   return out;
 }
 
+/** The most-used lesson length on the grid, or 90 minutes for an empty one. */
+function commonLength(slots: Slot[]): number {
+  const tally = new Map<number, number>();
+  for (const slot of slots) {
+    const length = toMinutes(slot.endsAt) - toMinutes(slot.startsAt);
+    if (length > 0) tally.set(length, (tally.get(length) ?? 0) + 1);
+  }
+  let best = 90;
+  let bestCount = 0;
+  for (const [length, count] of tally) {
+    if (count > bestCount) {
+      best = length;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
 type Editing =
   | { kind: "slot"; slot: Slot }
   | { kind: "new"; roomId: string | null; startsAt: string; endsAt: string };
@@ -124,6 +143,11 @@ export function TimetableGrid({
   canEdit: boolean;
 }) {
   const [editing, setEditing] = useState<Editing | null>(null);
+
+  // How long a lesson is HERE. Clicking an empty 09:00 cell should offer the
+  // length this center actually teaches, not a number I picked: a school of
+  // 60-minute lessons should never have to correct 10:30 to 10:00 every time.
+  const defaultLength = commonLength(slots);
 
   const bands: number[] = [];
   for (let m = dayStartMin; m < dayEndMin; m += 30) bands.push(m);
@@ -242,7 +266,7 @@ export function TimetableGrid({
                         kind: "new",
                         roomId: room.id,
                         startsAt: toHHMM(minute),
-                        endsAt: toHHMM(Math.min(dayEndMin, minute + 90)),
+                        endsAt: toHHMM(Math.min(dayEndMin, minute + defaultLength)),
                       })
                     }
                     className="cn-cell"
@@ -278,11 +302,24 @@ export function TimetableGrid({
                   const tint = room.color ?? tintFor(slot.groupName);
                   const clashed = slot.clashesWith.length > 0;
                   const tall = rowSpan >= 3;
+                  // Everything the block cannot fit, on hover — the fastest way
+                  // to read a packed column without opening anything.
+                  const title = [
+                    `${slot.groupName} · ${slot.startsAt}–${slot.endsAt}`,
+                    describeDays(slot.seriesDays),
+                    slot.teacherName ?? "No teacher",
+                    `${slot.studentCount} student${slot.studentCount === 1 ? "" : "s"}${
+                      slot.roomCapacity != null ? ` of ${slot.roomCapacity} seats` : ""
+                    }`,
+                    ...(slot.overCapacityBy > 0 ? [`⚠ ${slot.overCapacityBy} over capacity`] : []),
+                    ...(clashed ? [`⚠ clashes with ${slot.clashWithNames.join(", ")}`] : []),
+                  ].join("\n");
 
                   return (
                     <button
                       key={slot.id}
                       type="button"
+                      title={title}
                       onClick={() => setEditing({ kind: "slot", slot })}
                       style={{
                         gridColumn: col + 2,
@@ -304,8 +341,24 @@ export function TimetableGrid({
                         display: "block",
                       }}
                     >
-                      <div style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.95 }}>
-                        {slot.startsAt} - {slot.endsAt}
+                      <div
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          opacity: 0.95,
+                          display: "flex",
+                          gap: 5,
+                          alignItems: "center",
+                        }}
+                      >
+                        <span>
+                          {slot.startsAt} - {slot.endsAt}
+                        </span>
+                        {clashed || slot.overCapacityBy > 0 ? (
+                          <span aria-hidden style={{ fontSize: 11 }}>
+                            ⚠
+                          </span>
+                        ) : null}
                       </div>
                       <div
                         style={{
@@ -343,16 +396,14 @@ export function TimetableGrid({
                               whiteSpace: "nowrap",
                             }}
                           >
-                            Xona: {slot.roomName ?? "—"}
+                            {slot.studentCount} o&apos;quvchi
+                            {slot.roomCapacity != null ? ` / ${slot.roomCapacity}` : ""}
+                            {slot.overCapacityBy > 0 ? " ⚠" : ""}
                           </div>
                           <div
                             style={{ fontSize: 11, color: "rgba(255,255,255,.7)", marginTop: 1 }}
                           >
-                            {slot.pattern === "odd"
-                              ? "Toq kunlar"
-                              : slot.pattern === "even"
-                                ? "Juft kunlar"
-                                : "Har hafta"}
+                            {describeDays(slot.seriesDays)}
                           </div>
                         </>
                       ) : null}
@@ -420,8 +471,12 @@ export function TimetableGrid({
                 </h2>
                 <p style={{ margin: 0, fontSize: 13, color: "#6E6C87", lineHeight: 1.5 }}>
                   {editing.kind === "slot"
-                    ? `${weekdayLabel} ${editing.slot.startsAt}–${editing.slot.endsAt}${
+                    ? `${describeDays(editing.slot.seriesDays)} ${editing.slot.startsAt}–${editing.slot.endsAt}${
                         editing.slot.roomName ? ` · ${editing.slot.roomName}` : ""
+                      }${
+                        editing.slot.seriesDays.length > 1
+                          ? ` · editing all ${editing.slot.seriesDays.length} days`
+                          : ""
                       }`
                     : `${weekdayLabel} ${editing.startsAt}, ${
                         rooms.find((r) => r.id === editing.roomId)?.name ?? "no room"
@@ -461,35 +516,54 @@ export function TimetableGrid({
                   lineHeight: 1.5,
                 }}
               >
-                Clashes with {editing.slot.clashesWith.length} other slot
-                {editing.slot.clashesWith.length === 1 ? "" : "s"} — same{" "}
+                Same{" "}
                 {editing.slot.clashReason === "both"
                   ? "room and teacher"
                   : editing.slot.clashReason === "room"
                     ? "room"
-                    : "teacher"}
-                , overlapping time.
+                    : "teacher"}{" "}
+                as {editing.slot.clashWithNames.join(", ")}. Move one, or leave it if the
+                double-booking is deliberate.
+              </p>
+            ) : null}
+
+            {editing.kind === "slot" && editing.slot.overCapacityBy > 0 ? (
+              <p
+                style={{
+                  margin: "0 0 14px",
+                  padding: "9px 11px",
+                  background: "#FDF9F1",
+                  borderRadius: 9,
+                  fontSize: 12.5,
+                  color: "#8A6420",
+                  lineHeight: 1.5,
+                }}
+              >
+                {editing.slot.studentCount} students in a room with {editing.slot.roomCapacity}{" "}
+                seats — {editing.slot.overCapacityBy} too many.
               </p>
             ) : null}
 
             <SlotForm
               key={
-                editing.kind === "slot" ? editing.slot.id : `${editing.roomId}-${editing.startsAt}`
+                editing.kind === "slot"
+                  ? editing.slot.seriesId
+                  : `${editing.roomId}-${editing.startsAt}`
               }
               slot={
                 editing.kind === "slot"
                   ? {
                       id: editing.slot.id,
+                      seriesId: editing.slot.seriesId,
                       groupId: editing.slot.groupId,
                       roomId: editing.slot.roomId,
-                      weekday: editing.slot.weekday,
+                      weekdays: editing.slot.seriesDays,
                       startsAt: editing.slot.startsAt,
                       endsAt: editing.slot.endsAt,
-                      pattern: editing.slot.pattern,
                     }
                   : {
                       roomId: editing.roomId,
-                      weekday,
+                      weekdays: [weekday],
                       startsAt: editing.startsAt,
                       endsAt: editing.endsAt,
                     }

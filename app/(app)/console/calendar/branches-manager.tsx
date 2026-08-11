@@ -1,10 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteBranch, saveBranch } from "./actions";
+
+/** Same reason as the rooms panel: the drawer stays open, so ask the router. */
+function useRefreshingAction(
+  action: (prev: ActionState, formData: FormData) => Promise<ActionState>,
+) {
+  const router = useRouter();
+  return useActionState(async (prev: ActionState, formData: FormData) => {
+    const next = await action(prev, formData);
+    if (next.ok) router.refresh();
+    return next;
+  }, {} as ActionState);
+}
 
 /**
  * Branches (filiallar): the sites a center runs.
@@ -67,7 +80,7 @@ export function BranchesManager({ branches }: { branches: BranchRow[] }) {
 
 function BranchEditor({ branch }: { branch?: BranchRow }) {
   const [open, setOpen] = useState(!branch);
-  const [state, formAction, pending] = useActionState(saveBranch, {} as ActionState);
+  const [state, formAction, pending] = useRefreshingAction(saveBranch);
 
   if (branch && !open) {
     return (
@@ -194,7 +207,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
 }
 
 function DeleteBranchButton({ id, name, rooms }: { id: string; name: string; rooms: number }) {
-  const [state, formAction, pending] = useActionState(deleteBranch, {} as ActionState);
+  const [state, formAction, pending] = useRefreshingAction(deleteBranch);
   return (
     <form
       action={formAction}

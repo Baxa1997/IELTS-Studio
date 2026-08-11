@@ -14,7 +14,13 @@ import {
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
-import { describeSlot, loadTimetable, toMinutes, WEEKDAYS } from "@/lib/console/timetable";
+import {
+  bySeries,
+  describeSeries,
+  loadTimetable,
+  toMinutes,
+  WEEKDAYS,
+} from "@/lib/console/timetable";
 
 import { BranchesManager } from "./branches-manager";
 import { SlotForm } from "./calendar-forms";
@@ -100,7 +106,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     (s) => scope === "all" || s.roomId == null || roomIdsHere.has(s.roomId),
   );
   const daySlots = branchSlots.filter((s) => s.weekday === day);
+  const weekLessons = bySeries(branchSlots);
   const canEdit = profile.role === "center_admin" || profile.role === "teacher";
+  const overFull = daySlots.filter((s) => s.overCapacityBy > 0).length;
 
   // Lessons with no room still need a column, or they are invisible.
   const unroomed = daySlots.filter((s) => s.roomId == null);
@@ -162,16 +170,16 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       <PageHead
         eyebrow="Time"
         title="Timetable"
-        subtitle={`${WEEKDAYS[day].long} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${clashCount > 0 ? ` · ${clashCount} clash${clashCount === 1 ? "" : "es"} this week` : ""}.`}
+        subtitle={`${WEEKDAYS[day].long} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${clashCount > 0 ? ` · ${clashCount} clash${clashCount === 1 ? "" : "es"} this week` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
         actions={
           <>
             <Drawer
               label="Add a lesson"
               eyebrow="Timetable"
               title="Schedule a class"
-              note="A weekly repeat — the same class, the same hour, every week. Or just click an empty cell in the grid."
+              note="Pick the days it meets — toq kunlar is one lesson, not three. Or just click an empty cell in the grid."
             >
-              <SlotForm groups={groupOptions} rooms={roomOptions} slot={{ weekday: day }} />
+              <SlotForm groups={groupOptions} rooms={roomOptions} slot={{ weekdays: [day] }} />
             </Drawer>
             {profile.role === "center_admin" ? (
               <Drawer
@@ -476,7 +484,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                   }}
                 >
                   <SlotForm
-                    slot={{ groupId: group.id, weekday: day }}
+                    slot={{ groupId: group.id, weekdays: [day] }}
                     groups={groupOptions}
                     rooms={roomOptions}
                   />
@@ -489,7 +497,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         <Card>
           <CardHead
             title="Every lesson this week"
-            note={`${branchSlots.length} in total${
+            note={`${weekLessons.length} lesson${weekLessons.length === 1 ? "" : "s"}, ${branchSlots.length} meeting${branchSlots.length === 1 ? "" : "s"}${
               scope === "all"
                 ? ""
                 : scope === "none"
@@ -497,16 +505,18 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                   : ` at ${branchName.get(scope) ?? "this branch"}`
             }`}
           />
-          {branchSlots.length === 0 ? (
+          {weekLessons.length === 0 ? (
             <p style={{ fontFamily: SANS, fontSize: 13, color: SOFT, margin: 0, lineHeight: 1.6 }}>
               Nothing scheduled yet. Click any empty cell in the grid above — it opens the form with
               that room, day and time already filled in.
             </p>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {branchSlots.map((slot) => (
+              {/* One chip per LESSON, not per day: a toq kunlar class listed
+                  three times reads as three classes. */}
+              {weekLessons.map((slot) => (
                 <span
-                  key={slot.id}
+                  key={slot.seriesId}
                   style={{
                     fontFamily: SANS,
                     fontSize: 12,
@@ -517,7 +527,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     padding: "5px 10px",
                   }}
                 >
-                  <strong style={{ color: INK }}>{slot.groupName}</strong> · {describeSlot(slot)}
+                  <strong style={{ color: INK }}>{slot.groupName}</strong> · {describeSeries(slot)}
                 </span>
               ))}
             </div>
@@ -531,9 +541,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               lineHeight: 1.6,
             }}
           >
-            One row per weekly repeat: a Mon/Wed/Fri course is a single Monday slot with the{" "}
-            <strong>toq kunlar</strong> pattern, not three entries. Clashes are flagged, never
-            blocked — a deliberate double-booking is still a plan.
+            A lesson is its <strong>set of days</strong>: a Mon/Wed/Fri course is one entry you edit
+            once, stored as the three meetings you can see on the grid. Clashes and over-full rooms
+            are flagged, never blocked — a deliberate double-booking is still a plan.
           </p>
         </Card>
       </div>

@@ -1,10 +1,28 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteRoom, saveRoom } from "./actions";
+
+/**
+ * `revalidatePath` refreshes the server tree, but this panel lives inside a
+ * drawer that stays open across the write, so the list behind it can render
+ * from the payload React already had. Asking the router directly is what makes
+ * a rename show up the moment it is saved.
+ */
+function useRefreshingAction(
+  action: (prev: ActionState, formData: FormData) => Promise<ActionState>,
+) {
+  const router = useRouter();
+  return useActionState(async (prev: ActionState, formData: FormData) => {
+    const next = await action(prev, formData);
+    if (next.ok) router.refresh();
+    return next;
+  }, {} as ActionState);
+}
 
 /**
  * Rooms: add, rename, recolour, close, delete.
@@ -102,7 +120,7 @@ function RoomEditor({
 }) {
   const [open, setOpen] = useState(!room);
   const [color, setColor] = useState(room?.color ?? suggestedColor);
-  const [state, formAction, pending] = useActionState(saveRoom, {} as ActionState);
+  const [state, formAction, pending] = useRefreshingAction(saveRoom);
 
   if (room && !open) {
     return (
@@ -268,7 +286,7 @@ function RoomEditor({
 }
 
 function DeleteRoomButton({ id, name, lessons }: { id: string; name: string; lessons: number }) {
-  const [state, formAction, pending] = useActionState(deleteRoom, {} as ActionState);
+  const [state, formAction, pending] = useRefreshingAction(deleteRoom);
   return (
     <form
       action={formAction}

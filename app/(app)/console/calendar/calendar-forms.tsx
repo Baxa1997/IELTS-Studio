@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useId, useState } from "react";
 
 import {
@@ -10,21 +11,18 @@ import {
   SubmitButton,
   useDrawerClose,
 } from "@/components/console/finance-ui";
+// From `timetable-days`, not `timetable`: the loader is server-only and
+// importing it from a client component drags `server-only` into the browser
+// bundle. The day list and the presets live apart precisely so both can use them.
+import { DAY_PRESETS, WEEKDAYS } from "@/lib/console/timetable-days";
 
 import { type ActionState, deleteSlot, saveSlot } from "./actions";
 
-const WEEKDAYS = [
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-  { value: 0, label: "Sunday" },
-];
-
 /** Common lesson lengths, so the end time fills itself in. */
-const DURATIONS = [60, 90, 120, 180];
+const DURATIONS = [45, 60, 90, 120];
+
+const MUTED = "#6E6C87";
+const INDIGO = "#4340CB";
 
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
@@ -32,15 +30,8 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
-export interface SlotDraft {
-  id?: string;
-  groupId?: string;
-  roomId?: string | null;
-  weekday?: number;
-  startsAt?: string;
-  endsAt?: string;
-  pattern?: "weekly" | "odd" | "even";
-}
+const sameDays = (a: number[], b: readonly number[]) =>
+  a.length === b.length && [...a].sort().join() === [...b].sort().join();
 
 /** A bookable room. `branchName` is only set for centers that have branches. */
 export interface RoomOption {
@@ -49,17 +40,32 @@ export interface RoomOption {
   branchName?: string | null;
 }
 
+export interface SlotDraft {
+  /** One row. Present when editing a single day of an existing lesson. */
+  id?: string;
+  /** The lesson all those rows belong to. */
+  seriesId?: string;
+  groupId?: string;
+  roomId?: string | null;
+  /** Every day this lesson meets. A new lesson starts with the cell you clicked. */
+  weekdays?: number[];
+  startsAt?: string;
+  endsAt?: string;
+}
+
 /**
- * Add or move one weekly slot.
+ * Add or change one lesson.
+ *
+ * THE DAYS ARE THE POINT. A center sells "toq kunlar 15:30" — Mon, Wed and Fri
+ * as one purchase — so the form takes a SET of days and writes one row per day,
+ * tied by a series id. The old form took a single weekday plus a "repeats"
+ * dropdown, which stored the same fact twice and let it contradict itself; a
+ * Mon/Wed/Fri class showed up on Wednesday only and staff re-entered the other
+ * two days by hand.
  *
  * The end time follows the start by whatever duration was last picked, because
  * a center's lessons are all the same length and typing 17:00 after typing
  * 15:30 twenty times is the kind of friction that sends people back to paper.
- *
- * The Remove button posts a SECOND action, so it is a second form — and a form
- * cannot live inside a form. It sits outside this one and the save button
- * reaches back in by id; nesting them made every Remove click fire the save
- * action too, with an empty payload.
  */
 export function SlotForm({
   slot,
@@ -74,11 +80,17 @@ export function SlotForm({
   onDone?: () => void;
 }) {
   const formId = useId();
+  const router = useRouter();
   const closeDrawer = useDrawerClose();
+
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const next = await saveSlot(prev, formData);
       if (next.ok) {
+        // revalidatePath refreshes the server tree, but this component may be
+        // torn down by the close below before that lands. Asking the router
+        // explicitly is what makes the grid redraw the moment you hit save.
+        router.refresh();
         closeDrawer();
         onDone?.();
       }
@@ -87,17 +99,29 @@ export function SlotForm({
     {} as ActionState,
   );
 
+  const [days, setDays] = useState<number[]>(slot?.weekdays?.length ? slot.weekdays : [1]);
   const [startsAt, setStartsAt] = useState(slot?.startsAt ?? "15:30");
   const [endsAt, setEndsAt] = useState(slot?.endsAt ?? "17:00");
 
+  const toggleDay = (day: number) =>
+    setDays((current) =>
+      current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort(),
+    );
+
   if (groups.length === 0) {
     return (
-      <p style={{ fontSize: 13, color: "#6E6C87", margin: 0, lineHeight: 1.55 }}>
-        There are no classes to schedule yet. Create one first — a slot is a class meeting, not a
+      <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.55 }}>
+        There are no classes to schedule yet. Create one first — a lesson is a class meeting, not a
         free-standing event.
       </p>
     );
   }
+
+  const perWeek = days.length;
+  const minutes =
+    Number(endsAt.slice(0, 2)) * 60 +
+    Number(endsAt.slice(3)) -
+    (Number(startsAt.slice(0, 2)) * 60 + Number(startsAt.slice(3)));
 
   return (
     <>
@@ -107,7 +131,11 @@ export function SlotForm({
         key={state.ok ?? "new"}
         style={{ display: "flex", flexDirection: "column", gap: 12 }}
       >
-        {slot?.id ? <input type="hidden" name="id" value={slot.id} /> : null}
+        {slot?.seriesId ? <input type="hidden" name="series_id" value={slot.seriesId} /> : null}
+        {days.map((day) => (
+          <input key={day} type="hidden" name="weekdays" value={day} />
+        ))}
+
         <Field label="Class">
           <select name="group_id" required defaultValue={slot?.groupId ?? ""} style={fieldStyle}>
             <option value="">Pick a class…</option>
@@ -120,31 +148,74 @@ export function SlotForm({
           </select>
         </Field>
 
-        <FieldGrid>
-          <Field label="Day">
-            <select name="weekday" defaultValue={String(slot?.weekday ?? 1)} style={fieldStyle}>
-              {WEEKDAYS.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Room">
-            {/* Every room in the center, not just the branch being viewed — a
-                class can be moved to the other site, and a room missing from
-                this list would silently save as "no room". */}
-            <select name="room_id" defaultValue={slot?.roomId ?? ""} style={fieldStyle}>
-              <option value="">No room</option>
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                  {r.branchName ? ` — ${r.branchName}` : ""}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </FieldGrid>
+        {/* ── which days ─────────────────────────────────────────────────── */}
+        <div>
+          <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>Days it meets</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+            {DAY_PRESETS.map((preset) => {
+              const on = sameDays(days, preset.days);
+              return (
+                <button
+                  key={preset.key}
+                  type="button"
+                  onClick={() => setDays([...preset.days])}
+                  title={preset.note}
+                  className="cn-chip"
+                  style={{
+                    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                    background: on ? "#F2F1FB" : "#F4F3EF",
+                    color: on ? INDIGO : "#4C4A63",
+                    borderRadius: 20,
+                    padding: "5px 12px",
+                    fontFamily: "inherit",
+                    fontSize: 12,
+                    fontWeight: on ? 600 : 400,
+                    cursor: "pointer",
+                  }}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {WEEKDAYS.map((d) => {
+              const on = days.includes(d.index);
+              return (
+                <button
+                  key={d.index}
+                  type="button"
+                  onClick={() => toggleDay(d.index)}
+                  aria-pressed={on}
+                  title={d.long}
+                  style={{
+                    width: 42,
+                    height: 34,
+                    borderRadius: 9,
+                    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                    background: on ? INDIGO : "#fff",
+                    color: on ? "#fff" : "#4C4A63",
+                    fontFamily: "inherit",
+                    fontSize: 12.5,
+                    fontWeight: on ? 600 : 400,
+                    cursor: "pointer",
+                  }}
+                >
+                  {d.uz}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 11.5, color: "#93919F", margin: "7px 0 0", lineHeight: 1.5 }}>
+            {perWeek === 0
+              ? "Pick at least one day."
+              : `${perWeek} lesson${perWeek === 1 ? "" : "s"} a week${
+                  minutes > 0
+                    ? ` · ${((perWeek * minutes) / 60).toFixed(((perWeek * minutes) / 60) % 1 ? 1 : 0)} hours`
+                    : ""
+                }. One row per day, edited together.`}
+          </p>
+        </div>
 
         <FieldGrid>
           <Field label="Starts">
@@ -170,54 +241,89 @@ export function SlotForm({
         </FieldGrid>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {DURATIONS.map((minutes) => (
+          {DURATIONS.map((length) => (
             <button
-              key={minutes}
+              key={length}
               type="button"
-              onClick={() => setEndsAt(addMinutes(startsAt, minutes))}
+              onClick={() => setEndsAt(addMinutes(startsAt, length))}
               className="cn-chip"
               style={{
-                border: "1px solid #E4E2DC",
-                background: "#F4F3EF",
+                border: `1px solid ${minutes === length ? INDIGO : "#E4E2DC"}`,
+                background: minutes === length ? "#F2F1FB" : "#F4F3EF",
+                color: minutes === length ? INDIGO : "#4C4A63",
                 borderRadius: 20,
                 padding: "5px 12px",
                 fontFamily: "inherit",
                 fontSize: 12,
-                color: "#4C4A63",
                 cursor: "pointer",
               }}
             >
-              {minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`}
+              {length >= 60
+                ? `${length / 60}h${length % 60 ? ` ${length % 60}m` : ""}`
+                : `${length}m`}
             </button>
           ))}
         </div>
 
-        <Field label="Repeats" hint="odd = Mon/Wed/Fri, even = Tue/Thu/Sat">
-          <select name="pattern" defaultValue={slot?.pattern ?? "weekly"} style={fieldStyle}>
-            <option value="weekly">Every week, this day only</option>
-            <option value="odd">Odd days (toq kunlar)</option>
-            <option value="even">Even days (juft kunlar)</option>
+        <Field label="Room" hint="every day of the lesson goes in this room">
+          {/* Every room in the center, not just the branch being viewed — a
+              class can be moved to the other site, and a room missing from
+              this list would silently save as "no room". */}
+          <select name="room_id" defaultValue={slot?.roomId ?? ""} style={fieldStyle}>
+            <option value="">No room</option>
+            {rooms.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+                {r.branchName ? ` — ${r.branchName}` : ""}
+              </option>
+            ))}
           </select>
         </Field>
       </form>
 
       <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center" }}>
         <SubmitButton pending={pending} form={formId}>
-          {slot?.id ? "Save slot" : "Add to timetable"}
+          {slot?.seriesId ? "Save lesson" : "Add to timetable"}
         </SubmitButton>
-        {slot?.id ? <DeleteSlotButton id={slot.id} onDone={onDone} /> : null}
+        {slot?.seriesId ? (
+          <RemoveLesson
+            id={slot.id}
+            seriesId={slot.seriesId}
+            days={slot.weekdays?.length ?? 1}
+            onDone={onDone}
+          />
+        ) : null}
       </div>
       <FormMessage state={state} />
     </>
   );
 }
 
-function DeleteSlotButton({ id, onDone }: { id: string; onDone?: () => void }) {
+/**
+ * Removing: this day, or the whole lesson.
+ *
+ * Both are offered because both happen — a class that stopped meeting on
+ * Saturdays has not stopped. A single-day lesson shows only one button, since
+ * "this day" and "all days" would be the same thing.
+ */
+function RemoveLesson({
+  id,
+  seriesId,
+  days,
+  onDone,
+}: {
+  id?: string;
+  seriesId: string;
+  days: number;
+  onDone?: () => void;
+}) {
+  const router = useRouter();
   const closeDrawer = useDrawerClose();
   const [state, formAction, pending] = useActionState(
     async (prev: ActionState, formData: FormData) => {
       const next = await deleteSlot(prev, formData);
       if (next.ok) {
+        router.refresh();
         closeDrawer();
         onDone?.();
       }
@@ -225,31 +331,45 @@ function DeleteSlotButton({ id, onDone }: { id: string; onDone?: () => void }) {
     },
     {} as ActionState,
   );
+
+  const linkStyle: React.CSSProperties = {
+    background: "none",
+    border: 0,
+    color: "#A63A30",
+    fontFamily: "inherit",
+    fontSize: 13,
+    cursor: "pointer",
+    padding: 0,
+  };
+
   return (
     <form
       action={formAction}
       onSubmit={(e) => {
-        if (!window.confirm("Remove this slot from the timetable?")) e.preventDefault();
+        const wholeSeries =
+          (e.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "series";
+        const message =
+          wholeSeries && days > 1
+            ? `Remove this lesson from all ${days} days?`
+            : "Remove this lesson from the timetable?";
+        if (!window.confirm(message)) e.preventDefault();
       }}
-      style={{ display: "inline" }}
+      style={{ display: "inline-flex", gap: 12, alignItems: "center" }}
     >
-      <input type="hidden" name="id" value={id} />
-      <button
-        type="submit"
-        disabled={pending}
-        style={{
-          background: "none",
-          border: 0,
-          color: "#A63A30",
-          fontFamily: "inherit",
-          fontSize: 13,
-          cursor: "pointer",
-          padding: 0,
-        }}
-      >
-        {pending ? "Removing…" : "Remove"}
+      {id ? <input type="hidden" name="id" value={id} /> : null}
+      <input type="hidden" name="series_id" value={seriesId} />
+
+      {id && days > 1 ? (
+        <button type="submit" name="scope" value="day" disabled={pending} style={linkStyle}>
+          {pending ? "…" : "Remove this day"}
+        </button>
+      ) : null}
+      <button type="submit" name="scope" value="series" disabled={pending} style={linkStyle}>
+        {pending ? "Removing…" : days > 1 ? `Remove all ${days} days` : "Remove"}
       </button>
-      {state.error ? <span style={{ fontSize: 12, color: "#A63A30" }}> {state.error}</span> : null}
+      {state.error ? (
+        <span style={{ fontSize: 12, color: "#A63A30", fontWeight: 500 }}>{state.error}</span>
+      ) : null}
     </form>
   );
 }

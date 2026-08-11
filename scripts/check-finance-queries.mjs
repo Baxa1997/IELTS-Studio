@@ -33,7 +33,7 @@ const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 });
 
 const probes = [
-  ["timetable · slots", "lesson_slots", "id, group_id, room_id, weekday, starts_at, ends_at, pattern"],
+  ["timetable · slots", "lesson_slots", "id, series_id, group_id, room_id, weekday, starts_at, ends_at"],
   ["timetable · rooms", "rooms", "id, name, capacity, color, active, branch_id"],
   ["timetable · branches", "branches", "id, name, address, phone, active, sort"],
   ["timetable · groups", "groups", "id, name, teacher_id"],
