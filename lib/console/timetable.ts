@@ -3,7 +3,7 @@ import "server-only";
 import { type Profile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-import { describeDays, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
+import { addDays, describeDays, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
 
 /**
  * The timetable: which class meets when, where, and with whom.
@@ -28,7 +28,21 @@ import { describeDays, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
  */
 
 // Shared with the client form, which cannot import a `server-only` module.
-export { DAY_PRESETS, describeDays, toHHMM, toMinutes, trimTime, WEEKDAYS } from "./timetable-days";
+export {
+  addDays,
+  DAY_PRESETS,
+  datesOfWeek,
+  describeDays,
+  isoDate,
+  orderedWeekdays,
+  startOfWeek,
+  toHHMM,
+  toMinutes,
+  trimTime,
+  WEEK_ORDER,
+  WEEKDAYS,
+  weekLabel,
+} from "./timetable-days";
 
 /**
  * Why two lessons cannot both happen.
@@ -95,6 +109,9 @@ export interface Slot {
   weekday: number;
   startsAt: string; // HH:MM
   endsAt: string; // HH:MM
+  /** The term this lesson runs for. `null` end = until further notice. */
+  effectiveFrom: string;
+  effectiveTo: string | null;
   studentCount: number;
   /** Ids of the other slots this one collides with. */
   clashesWith: string[];
@@ -154,7 +171,7 @@ function slotsCollide(a: Slot, b: Slot): boolean {
  */
 export async function loadTimetable(
   profile: Profile,
-  opts: { mine?: boolean } = {},
+  opts: { mine?: boolean; week?: string } = {},
 ): Promise<Timetable> {
   const supabase = await createClient();
 
@@ -166,7 +183,9 @@ export async function loadTimetable(
       .order("name", { ascending: true }),
     supabase
       .from("lesson_slots")
-      .select("id, series_id, group_id, room_id, weekday, starts_at, ends_at")
+      .select(
+        "id, series_id, group_id, room_id, weekday, starts_at, ends_at, effective_from, effective_to",
+      )
       .order("weekday", { ascending: true })
       .order("starts_at", { ascending: true }),
     supabase.from("groups").select("id, name, teacher_id, branch_id"),
@@ -257,6 +276,8 @@ export async function loadTimetable(
       weekday: Number(s.weekday ?? 0),
       startsAt: trimTime(String(s.starts_at ?? "00:00")),
       endsAt: trimTime(String(s.ends_at ?? "00:00")),
+      effectiveFrom: (s.effective_from as string) ?? "",
+      effectiveTo: (s.effective_to as string | null) ?? null,
       studentCount,
       clashesWith: [],
       clashReason: null,
@@ -268,9 +289,24 @@ export async function loadTimetable(
     };
   });
 
+  // A lesson only exists in the weeks it actually runs. `effective_from` /
+  // `effective_to` have been on the table since the beginning and were never
+  // read, which is why every week looked identical; a course that finished in
+  // October should stop appearing in November rather than being deleted, or
+  // last term's timetable is lost.
+  if (opts.week) {
+    const weekEnd = addDays(opts.week, 6);
+    slots = slots.filter(
+      (s) =>
+        (!s.effectiveFrom || s.effectiveFrom <= weekEnd) &&
+        (s.effectiveTo == null || s.effectiveTo >= opts.week!),
+    );
+  }
+
   // Clashes are computed across the WHOLE center before any narrowing: a
   // teacher filtered to their own classes still needs to know the room they
-  // booked is taken by someone else's.
+  // booked is taken by someone else's. Within the visible week only — two
+  // courses in different terms never meet.
   //
   // Counted as CONFLICTS, one per colliding pair. Counting the lessons caught
   // up in them reported a single mistake as "2 lessons are double-booked",

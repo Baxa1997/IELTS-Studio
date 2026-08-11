@@ -569,6 +569,8 @@ export function TimetableGrid({
                       weekdays: editing.slot.seriesDays,
                       startsAt: editing.slot.startsAt,
                       endsAt: editing.slot.endsAt,
+                      effectiveFrom: editing.slot.effectiveFrom,
+                      effectiveTo: editing.slot.effectiveTo,
                     }
                   : {
                       roomId: editing.roomId,

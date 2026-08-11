@@ -77,6 +77,18 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
   const roomId = str(formData, "room_id") || null;
   const seriesId = str(formData, "series_id") || null;
 
+  // The term. `effective_to` is what lets the week picker mean something: a
+  // course that finished stops appearing in later weeks instead of being
+  // deleted, so last term's timetable survives to be looked at.
+  const DATE = /^\d{4}-\d{2}-\d{2}$/;
+  const effectiveFrom = str(formData, "effective_from");
+  const effectiveTo = str(formData, "effective_to") || null;
+  if (effectiveFrom && !DATE.test(effectiveFrom)) return { error: "Use a date like 2026-09-01." };
+  if (effectiveTo && !DATE.test(effectiveTo)) return { error: "Use a date like 2026-12-31." };
+  if (effectiveFrom && effectiveTo && effectiveTo < effectiveFrom) {
+    return { error: "The lesson cannot stop before it starts." };
+  }
+
   const supabase = await createClient();
 
   // ── what is already there ────────────────────────────────────────────────
@@ -131,6 +143,8 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
     room_id: roomId,
     starts_at: startsAt,
     ends_at: endsAt,
+    ...(effectiveFrom ? { effective_from: effectiveFrom } : {}),
+    effective_to: effectiveTo,
   };
 
   if (drop.length > 0) {

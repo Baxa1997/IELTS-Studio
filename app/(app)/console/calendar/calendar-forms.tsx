@@ -14,7 +14,7 @@ import {
 // From `timetable-days`, not `timetable`: the loader is server-only and
 // importing it from a client component drags `server-only` into the browser
 // bundle. The day list and the presets live apart precisely so both can use them.
-import { DAY_PRESETS, WEEKDAYS } from "@/lib/console/timetable-days";
+import { DAY_PRESETS, orderedWeekdays } from "@/lib/console/timetable-days";
 
 import { type ActionState, deleteSlot, saveSlot } from "./actions";
 
@@ -29,6 +29,8 @@ function addMinutes(time: string, minutes: number): string {
   const total = Math.min(23 * 60 + 59, h * 60 + m + minutes);
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const sameDays = (a: number[], b: readonly number[]) =>
   a.length === b.length && [...a].sort().join() === [...b].sort().join();
@@ -61,6 +63,9 @@ export interface SlotDraft {
   weekdays?: number[];
   startsAt?: string;
   endsAt?: string;
+  /** The term it runs for. No end date means "until further notice". */
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
 }
 
 /**
@@ -113,6 +118,7 @@ export function SlotForm({
   const [startsAt, setStartsAt] = useState(slot?.startsAt ?? "15:30");
   const [endsAt, setEndsAt] = useState(slot?.endsAt ?? "17:00");
   const [groupId, setGroupId] = useState(slot?.groupId ?? "");
+  const [runsTo, setRunsTo] = useState(slot?.effectiveTo ?? "");
 
   // A class is taught at one branch and can only be booked into rooms there —
   // the database enforces it, so the picker must not offer anything else. Room
@@ -204,7 +210,7 @@ export function SlotForm({
             })}
           </div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-            {WEEKDAYS.map((d) => {
+            {orderedWeekdays().map((d) => {
               const on = days.includes(d.index);
               return (
                 <button
@@ -289,6 +295,30 @@ export function SlotForm({
             </button>
           ))}
         </div>
+
+        {/* The term. This is what the week picker reads: a course that ends in
+            October stops appearing in November instead of having to be deleted,
+            so last term's timetable is still there to look at. */}
+        <FieldGrid>
+          <Field label="Runs from">
+            <input
+              type="date"
+              name="effective_from"
+              defaultValue={slot?.effectiveFrom || todayISO()}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Until" hint={runsTo ? "last week it runs" : "no end date"}>
+            <input
+              type="date"
+              name="effective_to"
+              value={runsTo}
+              min={slot?.effectiveFrom || undefined}
+              onChange={(e) => setRunsTo(e.target.value)}
+              style={fieldStyle}
+            />
+          </Field>
+        </FieldGrid>
 
         <Field
           label="Room"

@@ -45,6 +45,54 @@ export function describeDays(days: number[]): string {
   return sorted.map((d) => WEEKDAYS[d]?.short ?? "?").join(" · ");
 }
 
+/**
+ * The order a week is read in here: Monday first, Sunday last.
+ *
+ * The indexes stay JS `getDay()` numbers — 0 is Sunday — because that is what
+ * the database stores and what `new Date().getDay()` returns. This is display
+ * order only. A center that teaches Mon–Sat and rests on Sunday should not have
+ * to look past its day off to find Monday.
+ */
+export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+
+export const orderedWeekdays = () => WEEK_ORDER.map((index) => WEEKDAYS[index]);
+
+/* ── dates ────────────────────────────────────────────────────────────────── */
+
+/** `2026-08-11`, in UTC, matching how every other date in this app is stored. */
+export const isoDate = (d: Date): string => d.toISOString().slice(0, 10);
+
+export const addDays = (iso: string, days: number): string => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return isoDate(d);
+};
+
+/** The Monday on or before a date — the week a timetable page is showing. */
+export function startOfWeek(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  const back = (d.getUTCDay() + 6) % 7; // Sunday counts as the 7th day, not the 1st
+  return addDays(iso, -back);
+}
+
+/** The seven dates of a week, in `WEEK_ORDER`, keyed by weekday index. */
+export function datesOfWeek(monday: string): Map<number, string> {
+  return new Map(WEEK_ORDER.map((index, offset) => [index, addDays(monday, offset)]));
+}
+
+/** `11 – 17 Aug` / `28 Jul – 3 Aug`, the label above the day tabs. */
+export function weekLabel(monday: string): string {
+  const end = addDays(monday, 6);
+  const fmt = (iso: string, withMonth: boolean) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+      day: "numeric",
+      ...(withMonth ? { month: "short" } : {}),
+      timeZone: "UTC",
+    });
+  const sameMonth = monday.slice(0, 7) === end.slice(0, 7);
+  return `${fmt(monday, !sameMonth)} – ${fmt(end, true)}`;
+}
+
 export const toMinutes = (hhmm: string): number => {
   const [h, m] = hhmm.split(":");
   return Number(h) * 60 + Number(m);

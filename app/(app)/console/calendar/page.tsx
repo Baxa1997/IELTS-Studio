@@ -15,11 +15,17 @@ import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import {
+  addDays,
   bySeries,
+  datesOfWeek,
   describeSeries,
+  isoDate,
   loadTimetable,
+  orderedWeekdays,
+  startOfWeek,
   toMinutes,
   WEEKDAYS,
+  weekLabel,
 } from "@/lib/console/timetable";
 
 import { BranchesManager } from "./branches-manager";
@@ -50,13 +56,28 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   if (profile.role === "student") redirect("/dashboard");
 
   const sp = await searchParams;
+
+  // Which week, and which day of it. A slot is a weekly repeat, so the week
+  // only changes WHICH lessons are running (a course that ended in October is
+  // not on November's grid) — but that is exactly the question staff ask when
+  // they look at a date, and answering it is why the picker is here.
+  const today = isoDate(new Date());
+  const weekParam = first(sp.week);
+  const week = startOfWeek(/^\d{4}-\d{2}-\d{2}$/.test(weekParam ?? "") ? weekParam! : today);
+  const thisWeek = startOfWeek(today);
+  const dates = datesOfWeek(week);
+
   const dayParam = Number(first(sp.day));
   const day =
-    Number.isInteger(dayParam) && dayParam >= 0 && dayParam <= 6 ? dayParam : new Date().getDay();
+    Number.isInteger(dayParam) && dayParam >= 0 && dayParam <= 6
+      ? dayParam
+      : week === thisWeek
+        ? new Date().getDay()
+        : 1; // another week opens on its Monday, not on "the same weekday as today"
   const mine = first(sp.who) !== "all" && profile.role === "teacher";
 
   const [timetable, { groups }] = await Promise.all([
-    loadTimetable(profile, { mine }),
+    loadTimetable(profile, { mine, week }),
     loadGroups(profile),
   ]);
 
@@ -146,6 +167,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     const params = new URLSearchParams();
     const base: Record<string, string | undefined> = {
       day: String(day),
+      week: week === thisWeek ? undefined : week,
       who: mine ? undefined : "all",
       branch: showBranchTabs ? scope : undefined,
       ...patch,
@@ -162,7 +184,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
       <PageHead
         eyebrow="Time"
         title="Timetable"
-        subtitle={`${WEEKDAYS[day].long} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"} this week` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
+        subtitle={`${WEEKDAYS[day].long} ${new Date(`${dates.get(day) ?? week}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"} this week` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
         actions={
           <>
             <Drawer
@@ -317,6 +339,73 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             </div>
           ) : null}
 
+          {/* ── which week ─────────────────────────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              flexWrap: "wrap",
+              marginBottom: 10,
+            }}
+          >
+            <a href={link({ week: addDays(week, -7) })} className="cn-chip" style={weekBtn}>
+              ‹
+            </a>
+            <div
+              style={{
+                fontFamily: SANS,
+                fontSize: 13.5,
+                fontWeight: 600,
+                color: INK,
+                minWidth: 118,
+                textAlign: "center",
+              }}
+            >
+              {weekLabel(week)}
+            </div>
+            <a href={link({ week: addDays(week, 7) })} className="cn-chip" style={weekBtn}>
+              ›
+            </a>
+            {week === thisWeek ? (
+              <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>this week</span>
+            ) : (
+              <a
+                href={link({ week: undefined, day: undefined })}
+                className="cn-chip"
+                style={weekBtn}
+              >
+                Today
+              </a>
+            )}
+
+            {/* Jump straight to a date. A GET form rather than a date-picker
+                component: the whole page is already URL-driven, so the browser's
+                own control is the smallest thing that works. */}
+            <form method="get" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="date"
+                name="week"
+                defaultValue={dates.get(day) ?? week}
+                aria-label="Jump to a week"
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 12.5,
+                  padding: "6px 9px",
+                  borderRadius: 8,
+                  border: "1px solid #E4E2DC",
+                  background: "#fff",
+                  color: "#4C4A63",
+                }}
+              />
+              {showBranchTabs ? <input type="hidden" name="branch" value={scope} /> : null}
+              {mine ? null : <input type="hidden" name="who" value="all" />}
+              <button type="submit" className="cn-chip" style={{ ...weekBtn, cursor: "pointer" }}>
+                Go
+              </button>
+            </form>
+          </div>
+
           {/* ── the day tabs ───────────────────────────────────────────────────── */}
           <div
             style={{
@@ -327,36 +416,56 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               marginBottom: 14,
             }}
           >
-            {WEEKDAYS.map((d) => {
+            {orderedWeekdays().map((d) => {
               const on = d.index === day;
               const count = branchSlots.filter((s) => s.weekday === d.index).length;
+              const date = dates.get(d.index) ?? "";
+              const isToday = date === today;
               return (
                 <a
                   key={d.index}
                   href={link({ day: String(d.index) })}
                   className="cn-chip"
+                  title={new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    timeZone: "UTC",
+                  })}
                   style={{
                     borderRadius: 10,
-                    padding: "9px 16px",
+                    padding: "7px 14px",
                     fontFamily: SANS,
                     fontSize: 13.5,
                     fontWeight: on ? 600 : 500,
                     textDecoration: "none",
-                    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                    border: `1px solid ${on ? INDIGO : isToday ? "#B9B7E8" : "#E4E2DC"}`,
                     background: on ? INDIGO : "#F4F3EF",
                     color: on ? "#fff" : "#4C4A63",
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 6,
                   }}
                 >
-                  {d.uz}
+                  <span>{d.uz}</span>
+                  <span
+                    style={{
+                      fontSize: 11.5,
+                      fontVariantNumeric: "tabular-nums",
+                      color: on ? "rgba(255,255,255,.8)" : isToday ? INDIGO : FAINT,
+                      fontWeight: isToday ? 700 : 400,
+                    }}
+                  >
+                    {date.slice(8)}
+                  </span>
                   {count > 0 ? (
                     <span
                       style={{
-                        marginLeft: 7,
                         fontSize: 11,
                         color: on ? "rgba(255,255,255,.75)" : FAINT,
                       }}
                     >
-                      {count}
+                      · {count}
                     </span>
                   ) : null}
                 </a>
@@ -614,3 +723,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     </div>
   );
 }
+
+const weekBtn: React.CSSProperties = {
+  borderRadius: 8,
+  padding: "6px 11px",
+  fontFamily: SANS,
+  fontSize: 12.5,
+  textDecoration: "none",
+  border: "1px solid #E4E2DC",
+  background: "#fff",
+  color: "#4C4A63",
+  lineHeight: 1.4,
+};
