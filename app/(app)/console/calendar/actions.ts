@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireOrgUser } from "@/lib/auth";
+import { WEEKDAYS } from "@/lib/console/timetable-days";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -89,22 +90,30 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
     }
   }
 
-  // Another row of THIS class already sitting where we are about to write —
-  // excluding our own series, which we are allowed to overwrite.
+  // ── the one thing that is never a plan ───────────────────────────────────
+  // A class cannot be in two places at once. Two DIFFERENT classes sharing a
+  // room is a warning (centers split rooms on purpose); the same class booked
+  // over itself is a mistake every time, whether the second booking is in the
+  // same room or another one. Checked against overlapping hours, not identical
+  // ones, so 09:00–10:30 catches an existing 10:00–11:00.
   const { data: twins } = await supabase
     .from("lesson_slots")
     .select("id, series_id, weekday, starts_at, ends_at, room_id")
     .eq("group_id", groupId)
     .in("weekday", weekdays);
-  const duplicate = ((twins ?? []) as Record<string, unknown>[]).find(
-    (s) =>
-      (s.series_id as string) !== seriesId &&
-      String(s.starts_at).slice(0, 5) === startsAt &&
-      String(s.ends_at).slice(0, 5) === endsAt &&
-      ((s.room_id as string | null) ?? null) === roomId,
-  );
-  if (duplicate) {
-    return { error: "That class is already on the timetable at that hour, in that room." };
+  const selfOverlap = ((twins ?? []) as Record<string, unknown>[]).find((s) => {
+    if ((s.series_id as string) === seriesId) return false;
+    const from = String(s.starts_at).slice(0, 5);
+    const to = String(s.ends_at).slice(0, 5);
+    return startsAt < to && from < endsAt;
+  });
+  if (selfOverlap) {
+    const day = WEEKDAYS[Number(selfOverlap.weekday)]?.long ?? "that day";
+    const from = String(selfOverlap.starts_at).slice(0, 5);
+    const to = String(selfOverlap.ends_at).slice(0, 5);
+    return {
+      error: `This class already meets ${day} ${from}–${to}. One class cannot be in two places at once — move or remove that lesson first.`,
+    };
   }
 
   // ── reconcile the series to the days that were ticked ────────────────────
