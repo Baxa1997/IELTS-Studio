@@ -23,7 +23,7 @@ import {
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
-import { loadFinanceOverview, loadFinancePeople } from "@/lib/finance/load";
+import { loadBranchTotals, loadFinanceOverview, loadFinancePeople } from "@/lib/finance/load";
 import { formatMoney } from "@/lib/finance/money";
 import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 
@@ -92,9 +92,15 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   const page = Math.max(1, Number(first(sp.page) ?? 1) || 1);
   const pageSize = Math.min(200, Math.max(10, Number(first(sp.size) ?? 50) || 50));
 
+  // A branch id, "none" for desks belonging to no site, "all" for the center.
+  // Validated below against what actually exists, so a stale link can't hide
+  // every desk.
+  const branchParam = first(sp.branch);
+
   const [overview, people, { groups }] = await Promise.all([
     loadFinanceOverview(profile, {
       period,
+      branch: branchParam,
       direction,
       accountId,
       categoryId,
@@ -109,17 +115,61 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     loadGroups(profile),
   ]);
 
-  const { settings, accounts, categories, rows, methodTotals } = overview;
+  const { settings, accounts, branches, categories, rows, methodTotals } = overview;
   const currency = settings.currency;
   const money = (m: number) => formatMoney(m, currency);
-  const activeDesks = accounts.filter((a) => a.active);
-  const closedDesks = accounts.filter((a) => !a.active);
+
+  /**
+   * The branch tabs, built from what exists.
+   *
+   * "No branch" appears whenever a desk has not been assigned to a site — the
+   * same rule as the timetable, and for the same reason: a desk that belongs
+   * to no tab is money that has vanished from the screen. Every center starts
+   * there, since desks predate branches.
+   */
+  const openBranches = branches.filter((b) => b.active);
+  const strayDesks = accounts.filter((a) => a.active && a.branchId == null);
+  const tabs: { key: string; label: string; count: number }[] = [
+    ...openBranches.map((b) => ({
+      key: b.id,
+      label: b.name,
+      count: accounts.filter((a) => a.active && a.branchId === b.id).length,
+    })),
+    ...(strayDesks.length > 0 && openBranches.length > 0
+      ? [{ key: "none", label: "No branch", count: strayDesks.length }]
+      : []),
+  ];
+  const showBranchTabs = tabs.length > 0;
+  const scope =
+    branchParam && (branchParam === "all" || tabs.some((t) => t.key === branchParam))
+      ? branchParam
+      : tabs.length === 1
+        ? tabs[0].key
+        : "all";
+  const inScope = (accountBranchId: string | null) =>
+    scope === "all" || (scope === "none" ? accountBranchId == null : accountBranchId === scope);
+
+  const activeDesks = accounts.filter((a) => a.active && inScope(a.branchId));
+  const closedDesks = accounts.filter((a) => !a.active && inScope(a.branchId));
+  const scopeLabel =
+    scope === "all"
+      ? null
+      : scope === "none"
+        ? "desks with no branch"
+        : (tabs.find((t) => t.key === scope)?.label ?? null);
+
+  // The per-branch P&L only means anything when you are looking at all of them.
+  const branchTotals =
+    scope === "all" && openBranches.length > 0
+      ? await loadBranchTotals(period, accounts, branches)
+      : [];
 
   const query = (patch: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
     const base: Record<string, string | undefined> = {
       from: period.from,
       to: period.to,
+      branch: showBranchTabs ? scope : undefined,
       direction,
       account: accountId,
       category: categoryId,
@@ -137,6 +187,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
 
   const exportHref = (format: "xlsx" | "pdf", report: string) => {
     const params = new URLSearchParams({ report, format, from: period.from, to: period.to });
+    if (showBranchTabs && scope !== "all") params.set("branch", scope);
     if (accountId) params.set("account", accountId);
     if (categoryId) params.set("category", categoryId);
     if (direction) params.set("direction", direction);
@@ -161,7 +212,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
       <PageHead
         eyebrow="Money"
         title="Finance"
-        subtitle={`${period.label} · ${overview.matched} entr${overview.matched === 1 ? "y" : "ies"} · amounts in ${currency}.`}
+        subtitle={`${period.label} · ${overview.matched} entr${overview.matched === 1 ? "y" : "ies"}${scopeLabel ? ` · ${scopeLabel}` : ""} · amounts in ${currency}.`}
         actions={
           <>
             <a href={exportHref("xlsx", "ledger")} style={chip} download>
@@ -173,6 +224,119 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           </>
         }
       />
+
+      {/* ── the branch tabs ────────────────────────────────────────────────── */}
+      {showBranchTabs ? (
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            flexWrap: "wrap",
+            alignItems: "center",
+            marginBottom: 14,
+            paddingBottom: 10,
+            borderBottom: `1px solid ${HAIR}`,
+          }}
+        >
+          {[
+            ...tabs,
+            ...(tabs.length > 1 ? [{ key: "all", label: "Whole center", count: -1 }] : []),
+          ].map((tab) => {
+            const on = tab.key === scope;
+            return (
+              <a
+                key={tab.key}
+                href={query({ branch: tab.key, page: undefined })}
+                className="cn-tab"
+                style={{
+                  padding: "8px 15px",
+                  fontFamily: SANS,
+                  fontSize: 13.5,
+                  fontWeight: on ? 600 : 500,
+                  textDecoration: "none",
+                  borderRadius: "9px 9px 0 0",
+                  borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
+                  color: on ? INDIGO : MUTED,
+                  background: on ? "#F2F1FB" : "transparent",
+                }}
+              >
+                {tab.label}
+                {tab.count >= 0 ? (
+                  <span
+                    style={{
+                      marginLeft: 7,
+                      fontSize: 11,
+                      color: on ? INDIGO : FAINT,
+                      opacity: 0.75,
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                ) : null}
+              </a>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* ── what each site made ────────────────────────────────────────────── */}
+      {branchTotals.length > 1 ? (
+        <Card style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              fontFamily: SANS,
+              fontSize: 11,
+              letterSpacing: ".07em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              color: "#8B8999",
+              marginBottom: 11,
+            }}
+          >
+            By branch · {period.label}
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {branchTotals.map((b) => (
+              <a
+                key={b.branchId ?? "none"}
+                href={query({ branch: b.branchId ?? "none", page: undefined })}
+                className="cn-tile"
+                style={{
+                  display: "block",
+                  textDecoration: "none",
+                  border: `1px solid ${HAIR}`,
+                  borderRadius: 11,
+                  padding: "11px 13px",
+                  background: "#FAFAF8",
+                }}
+              >
+                <div style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED }}>{b.name}</div>
+                <div
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: b.netMinor < 0 ? RED : INK,
+                    margin: "4px 0 3px",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {money(b.netMinor)}
+                </div>
+                <div style={{ fontFamily: SANS, fontSize: 11, color: FAINT }}>
+                  in {money(b.inMinor)} · out {money(b.outMinor)}
+                </div>
+              </a>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       {/* ── totals by payment method ───────────────────────────────────────── */}
       <div
@@ -254,7 +418,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             note="A float held by a named person, who answers for what is in it."
             triggerStyle={{ width: "100%", padding: "10px 15px" }}
           >
-            <DeskForm staff={people.teachers} currency={currency} />
+            <DeskForm
+              staff={people.teachers}
+              currency={currency}
+              branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
+              defaultBranchId={scope === "all" || scope === "none" ? null : scope}
+            />
           </Drawer>
 
           {activeDesks.length === 0 ? (
@@ -305,6 +474,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     </div>
                     <div style={{ fontFamily: SANS, fontSize: 12, color: "rgba(255,255,255,.72)" }}>
                       {desk.ownerName ?? "No one assigned"}
+                      {/* Only worth the space when several sites are on screen. */}
+                      {scope === "all" && desk.branchName ? ` · ${desk.branchName}` : ""}
                     </div>
                   </div>
 
@@ -416,11 +587,13 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                         id: desk.id,
                         name: desk.name,
                         ownerId: desk.ownerId,
+                        branchId: desk.branchId,
                         kind: desk.kind,
                         active: desk.active,
                       }}
                       staff={people.teachers}
                       currency={currency}
+                      branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
                     />
                   </Drawer>
                   <a
@@ -544,6 +717,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               style={{ ...filterInput, minWidth: 150 }}
             />
             {accountId ? <input type="hidden" name="account" value={accountId} /> : null}
+            {showBranchTabs ? <input type="hidden" name="branch" value={scope} /> : null}
 
             <button
               type="submit"
@@ -562,7 +736,11 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             >
               Apply
             </button>
-            <a href="/console/finance" style={{ ...chip, padding: "7px 12px" }}>
+            {/* A branch is context, not a filter, so Reset keeps it. */}
+            <a
+              href={showBranchTabs ? `/console/finance?branch=${scope}` : "/console/finance"}
+              style={{ ...chip, padding: "7px 12px" }}
+            >
               Reset
             </a>
           </form>
@@ -691,6 +869,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               <input type="hidden" name="to" value={period.to} />
               {direction ? <input type="hidden" name="direction" value={direction} /> : null}
               {accountId ? <input type="hidden" name="account" value={accountId} /> : null}
+              {showBranchTabs ? <input type="hidden" name="branch" value={scope} /> : null}
               <select name="size" defaultValue={String(pageSize)} style={filterInput}>
                 {[25, 50, 100, 200].map((n) => (
                   <option key={n} value={n}>

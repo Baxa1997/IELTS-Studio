@@ -3,8 +3,11 @@ import "server-only";
 import { type Profile } from "@/lib/auth";
 
 import {
+  accountsInScope,
+  type BranchTotal,
   type CategoryTotal,
   type DebtorRow,
+  loadBranchTotals,
   loadCategoryTotals,
   loadDebtors,
   loadFinanceOverview,
@@ -55,6 +58,10 @@ export interface ReportData {
   expenseByCategory: CategoryTotal[];
   debtors: DebtorRow[];
   payroll: PayrollRunRow | null;
+  /** Which site this report covers, or null for the whole center. */
+  branchLabel: string | null;
+  /** Income/expense per site. Only gathered when the report covers them all. */
+  branchTotals: BranchTotal[];
   totalInMinor: number;
   totalOutMinor: number;
   openingNote: string | null;
@@ -66,7 +73,14 @@ export async function gatherReport(opts: {
   profile: Profile;
   organizationName: string;
   period: Period;
-  filters?: { accountId?: string; categoryId?: string; groupId?: string; direction?: "in" | "out" };
+  filters?: {
+    accountId?: string;
+    categoryId?: string;
+    groupId?: string;
+    direction?: "in" | "out";
+    /** A branch id, "none", or undefined for the whole center. */
+    branch?: string;
+  };
 }): Promise<ReportData> {
   const { kind, period, filters = {} } = opts;
 
@@ -81,16 +95,31 @@ export async function gatherReport(opts: {
     pageSize: needsLedger ? 500 : 10,
   });
 
-  const [expenseByCategory, incomeByCategory, debtors, payroll] = await Promise.all([
+  // The category breakdowns have to be narrowed to the same site as the ledger,
+  // or the summary's parts won't add up to its total.
+  const scopedIds = accountsInScope(overview.accounts, filters.branch);
+  const wholeCenter = scopedIds == null;
+
+  const [expenseByCategory, incomeByCategory, debtors, payroll, branchTotals] = await Promise.all([
     kind === "summary" || kind === "expenses"
-      ? loadCategoryTotals(period, "out")
+      ? loadCategoryTotals(period, "out", scopedIds)
       : Promise.resolve([]),
-    kind === "summary" ? loadCategoryTotals(period, "in") : Promise.resolve([]),
+    kind === "summary" ? loadCategoryTotals(period, "in", scopedIds) : Promise.resolve([]),
     kind === "summary" || kind === "debtors" ? loadDebtors(200) : Promise.resolve([]),
     kind === "summary" || kind === "payroll"
       ? loadPayrollRun(monthStart(period.from))
       : Promise.resolve(null),
+    // Splitting by site is only a question when the report covers every site.
+    wholeCenter && overview.branches.some((b) => b.active)
+      ? loadBranchTotals(period, overview.accounts, overview.branches)
+      : Promise.resolve([]),
   ]);
+
+  const branchLabel = wholeCenter
+    ? null
+    : filters.branch === "none"
+      ? "Desks with no branch"
+      : (overview.branches.find((b) => b.id === filters.branch)?.name ?? null);
 
   return {
     kind,
@@ -104,6 +133,8 @@ export async function gatherReport(opts: {
     expenseByCategory,
     debtors,
     payroll,
+    branchLabel,
+    branchTotals,
     totalInMinor: overview.periodInMinor,
     totalOutMinor: overview.periodOutMinor,
     openingNote:
@@ -154,6 +185,7 @@ export function reportToSheets(data: ReportData): Sheet[] {
   const notes = [
     `${data.organization} — ${REPORT_LABEL[data.kind]}`,
     `Period: ${data.period.label} (${data.period.from} to ${data.period.to})`,
+    ...(data.branchLabel ? [`Branch: ${data.branchLabel}`] : []),
     `Currency: ${data.currency}. Exported ${data.generatedOn} by ${data.generatedBy}.`,
     ...(data.openingNote ? [data.openingNote] : []),
   ];
@@ -176,6 +208,33 @@ export function reportToSheets(data: ReportData): Sheet[] {
         ["Payroll (this month, net)", major(data.payroll?.netMinor ?? 0)],
         ["Outstanding student balances", major(data.debtors.reduce((a, d) => a + d.owedMinor, 0))],
         ["Transactions", data.rows.length],
+      ],
+    });
+  }
+
+  // Per-site P&L. Straight after the summary because for a multi-branch center
+  // it IS the summary — "which site is carrying the other" is the first
+  // question the owner asks the spreadsheet.
+  if (data.branchTotals.length > 1) {
+    sheets.push({
+      name: "By branch",
+      columns: [
+        { header: "Branch", width: 26 },
+        { header: `Income (${data.currency})`, width: 20, type: "money" },
+        { header: `Expenses (${data.currency})`, width: 20, type: "money" },
+        { header: `Net (${data.currency})`, width: 20, type: "money" },
+      ],
+      rows: data.branchTotals.map((b) => [
+        b.name,
+        major(b.inMinor),
+        major(b.outMinor),
+        major(b.netMinor),
+      ]),
+      totals: [
+        "Total",
+        major(data.branchTotals.reduce((a, b) => a + b.inMinor, 0)),
+        major(data.branchTotals.reduce((a, b) => a + b.outMinor, 0)),
+        major(data.branchTotals.reduce((a, b) => a + b.netMinor, 0)),
       ],
     });
   }
@@ -231,6 +290,7 @@ export function reportToSheets(data: ReportData): Sheet[] {
         { header: "Category", width: 22 },
         { header: "Who", width: 24 },
         { header: "Class", width: 20 },
+        { header: "Branch", width: 18 },
         { header: "Account", width: 14 },
         { header: "Method", width: 13 },
         { header: `Amount (${data.currency})`, width: 18, type: "money" },
@@ -243,6 +303,7 @@ export function reportToSheets(data: ReportData): Sheet[] {
         r.categoryName ?? "Uncategorised",
         r.personName ?? "",
         r.groupName ?? "",
+        r.branchName ?? "",
         r.accountName,
         METHOD_LABEL[r.method] ?? r.method,
         // Expenses are written negative so a single column sums to the net.
@@ -252,6 +313,7 @@ export function reportToSheets(data: ReportData): Sheet[] {
       ]),
       totals: [
         "Total",
+        "",
         "",
         "",
         "",
@@ -366,6 +428,31 @@ export function reportToPdf(data: ReportData): PdfDocument {
   const money = (m: number) => formatMoney(m, data.currency);
   const net = data.totalInMinor - data.totalOutMinor;
   const tables: PdfTable[] = [];
+
+  if (data.branchTotals.length > 1) {
+    tables.push({
+      title: "By branch",
+      note: "Every payment and expense counts against the site whose desk it passed through.",
+      columns: [
+        { header: "Branch", width: 4 },
+        { header: "Income", width: 2.2, align: "right" },
+        { header: "Expenses", width: 2.2, align: "right" },
+        { header: `Net (${data.currency})`, width: 2.4, align: "right" },
+      ],
+      rows: data.branchTotals.map((b) => [
+        b.name,
+        money(b.inMinor),
+        money(b.outMinor),
+        money(b.netMinor),
+      ]),
+      totals: [
+        "Whole center",
+        money(data.branchTotals.reduce((a, b) => a + b.inMinor, 0)),
+        money(data.branchTotals.reduce((a, b) => a + b.outMinor, 0)),
+        money(data.branchTotals.reduce((a, b) => a + b.netMinor, 0)),
+      ],
+    });
+  }
 
   if (data.incomeByCategory.length > 0) {
     tables.push({
@@ -511,11 +598,12 @@ export function reportToPdf(data: ReportData): PdfDocument {
   return {
     organization: data.organization,
     title: REPORT_LABEL[data.kind],
-    subtitle: data.period.label,
+    subtitle: data.branchLabel ? `${data.period.label} · ${data.branchLabel}` : data.period.label,
     meta: [
       `Generated ${prettyDate(data.generatedOn)}`,
       `By ${data.generatedBy}`,
       `Amounts in ${data.currency}`,
+      ...(data.branchLabel ? [`Branch: ${data.branchLabel}`] : []),
     ],
     stats:
       data.kind === "payroll"
@@ -538,18 +626,22 @@ export function reportToPdf(data: ReportData): PdfDocument {
             { label: "Transactions", value: String(data.rows.length || "—") },
           ],
     tables,
-    footer: `${data.organization} · ${REPORT_LABEL[data.kind]} · ${data.period.from} to ${data.period.to} · generated by ${data.generatedBy}. Internal management report — not a tax filing.`,
+    footer: `${data.organization}${data.branchLabel ? ` (${data.branchLabel})` : ""} · ${REPORT_LABEL[data.kind]} · ${data.period.from} to ${data.period.to} · generated by ${data.generatedBy}. Internal management report — not a tax filing.`,
   };
 }
 
-/** `ideal-education-expenses-2026-08.xlsx` */
+/** `ideal-education-chilonzor-expenses-2026-08-01_2026-08-31.xlsx` */
 export function reportFilename(data: ReportData, extension: string): string {
-  const slug = data.organization
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 40);
-  return `${slug || "center"}-${data.kind}-${data.period.from}_${data.period.to}.${extension}`;
+  const slugify = (text: string, max: number) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, max);
+  const slug = slugify(data.organization, 40);
+  // Two branches' reports must not land in Downloads under the same name.
+  const branch = data.branchLabel ? `-${slugify(data.branchLabel, 24)}` : "";
+  return `${slug || "center"}${branch}-${data.kind}-${data.period.from}_${data.period.to}.${extension}`;
 }
 
 /** A CSV of any sheet, for the people who just want the raw rows. */

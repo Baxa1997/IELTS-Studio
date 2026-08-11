@@ -22,10 +22,23 @@ export function DeskForm({
   desk,
   staff,
   currency,
+  branches = [],
+  defaultBranchId,
 }: {
-  desk?: { id: string; name: string; ownerId: string | null; kind: string; active: boolean };
+  desk?: {
+    id: string;
+    name: string;
+    ownerId: string | null;
+    branchId: string | null;
+    kind: string;
+    active: boolean;
+  };
   staff: { id: string; name: string }[];
   currency: string;
+  /** Only rendered for a center that has branches. */
+  branches?: { id: string; name: string }[];
+  /** The branch tab you were on, so a new desk lands where you are looking. */
+  defaultBranchId?: string | null;
 }) {
   const closeDrawer = useDrawerClose();
   const [state, formAction, pending] = useActionState(
@@ -60,6 +73,22 @@ export function DeskForm({
             ))}
           </select>
         </Field>
+        {branches.length > 0 ? (
+          <Field label="Branch" hint="every payment taken here counts as that branch's">
+            <select
+              name="branch_id"
+              defaultValue={desk?.branchId ?? defaultBranchId ?? ""}
+              style={fieldStyle}
+            >
+              <option value="">No branch</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
         <FieldGrid>
           <Field label="Holds mostly">
             <select name="kind" defaultValue={desk?.kind ?? "cash"} style={fieldStyle}>

@@ -34,7 +34,8 @@ const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 
 const probes = [
   ["timetable · slots", "lesson_slots", "id, group_id, room_id, weekday, starts_at, ends_at, pattern"],
-  ["timetable · rooms", "rooms", "id, name, capacity, color, active"],
+  ["timetable · rooms", "rooms", "id, name, capacity, color, active, branch_id"],
+  ["timetable · branches", "branches", "id, name, address, phone, active, sort"],
   ["timetable · groups", "groups", "id, name, teacher_id"],
   ["timetable · staff", "profiles", "id, full_name"],
   [
@@ -42,7 +43,7 @@ const probes = [
     "finance_transactions",
     "id, occurred_on, created_at, direction, amount_minor, method, status, note, account_id, category_id, student_id, teacher_id, group_id, created_by, transfer_id",
   ],
-  ["desks", "finance_accounts", "id, owner_id, name, kind, active"],
+  ["desks", "finance_accounts", "id, owner_id, branch_id, name, kind, active"],
   ["desk balances view", "v_finance_account_balances", "account_id, name, kind, active, balance_minor, sort"],
   ["categories", "finance_categories", "id, name, direction, slug"],
   ["invoices", "student_invoices", "id, student_id, group_id, period_month, amount_minor, discount_minor, due_on"],

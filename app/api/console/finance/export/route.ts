@@ -64,6 +64,7 @@ export async function GET(req: Request): Promise<Response> {
     organizationName: (org?.name as string) ?? "Center",
     period,
     filters: {
+      branch: url.searchParams.get("branch") ?? undefined,
       accountId: url.searchParams.get("account") ?? undefined,
       categoryId: url.searchParams.get("category") ?? undefined,
       groupId: url.searchParams.get("group") ?? undefined,

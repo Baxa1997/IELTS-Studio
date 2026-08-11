@@ -26,7 +26,7 @@ export interface FinanceSettings {
   payrollNote: string | null;
 }
 
-/** A cash desk (kassa): a float held by a named person. */
+/** A cash desk (kassa): a float held by a named person, standing at a branch. */
 export interface AccountBalance {
   id: string;
   name: string;
@@ -34,9 +34,48 @@ export interface AccountBalance {
   active: boolean;
   ownerId: string | null;
   ownerName: string | null;
+  /** The site this desk stands at. Null for a center that hasn't split its cash. */
+  branchId: string | null;
+  branchName: string | null;
   balanceMinor: number;
   totalInMinor: number;
   totalOutMinor: number;
+}
+
+/** A site, for the finance branch tabs. */
+export interface BranchLite {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
+/** Income, expenses and net for one site over the window. */
+export interface BranchTotal {
+  branchId: string | null;
+  name: string;
+  inMinor: number;
+  outMinor: number;
+  netMinor: number;
+}
+
+/**
+ * Which branch the page is looking at: a branch id, `"none"` for desks that
+ * belong to no site, or `"all"`/undefined for the whole center.
+ */
+export type BranchScope = string | undefined;
+
+/**
+ * The desks a scope covers, or null for "every desk, don't filter".
+ *
+ * A branch owns desks and a transaction inherits its branch from the desk it
+ * passed through (migration 20260810150000), so every branch filter in this
+ * file is really a filter on `account_id`.
+ */
+export function accountsInScope(accounts: AccountBalance[], scope: BranchScope): string[] | null {
+  if (!scope || scope === "all") return null;
+  return accounts
+    .filter((a) => (scope === "none" ? a.branchId == null : a.branchId === scope))
+    .map((a) => a.id);
 }
 
 /** Cash / card / terminal / QR, summed across every desk for the window. */
@@ -65,6 +104,8 @@ export interface LedgerRow {
   status: string;
   accountId: string;
   accountName: string;
+  /** Derived from the desk — a transaction has no branch of its own. */
+  branchName: string | null;
   categoryId: string | null;
   categoryName: string | null;
   personId: string | null;
@@ -78,6 +119,8 @@ export interface LedgerRow {
 
 export interface LedgerFilters {
   period: Period;
+  /** A branch id, "none" for desks with no site, or undefined/"all" for every one. */
+  branch?: BranchScope;
   accountId?: string;
   categoryId?: string;
   direction?: "in" | "out";
@@ -93,7 +136,9 @@ export interface LedgerFilters {
 
 export interface FinanceOverview {
   settings: FinanceSettings;
+  /** Every desk in the center, whatever the branch scope — the tabs need them all. */
   accounts: AccountBalance[];
+  branches: BranchLite[];
   categories: CategoryRow[];
   methodTotals: MethodTotal[];
   rows: LedgerRow[];
@@ -131,27 +176,42 @@ export async function loadFinanceSettings(): Promise<FinanceSettings> {
 
 export async function loadAccounts(): Promise<AccountBalance[]> {
   const supabase = await createClient();
-  const [balancesRes, accountsRes] = await Promise.all([
+  const [balancesRes, accountsRes, branchesRes] = await Promise.all([
     supabase
       .from("v_finance_account_balances")
       .select(
         "account_id, name, kind, active, balance_minor, total_in_minor, total_out_minor, sort",
       )
       .order("sort", { ascending: true }),
-    supabase.from("finance_accounts").select("id, owner_id"),
+    supabase.from("finance_accounts").select("id, owner_id, branch_id"),
+    supabase.from("branches").select("id, name"),
   ]);
 
-  const owners = new Map(
+  const desks = new Map(
     ((accountsRes.data ?? []) as Record<string, unknown>[]).map((a) => [
       a.id as string,
-      (a.owner_id as string | null) ?? null,
+      {
+        ownerId: (a.owner_id as string | null) ?? null,
+        branchId: (a.branch_id as string | null) ?? null,
+      },
     ]),
   );
-  const ownerName = await peopleMap(supabase, [...owners.values()]);
+  const branchName = new Map(
+    ((branchesRes.data ?? []) as Record<string, unknown>[]).map((b) => [
+      b.id as string,
+      b.name as string,
+    ]),
+  );
+  const ownerName = await peopleMap(
+    supabase,
+    [...desks.values()].map((d) => d.ownerId),
+  );
 
   return ((balancesRes.data ?? []) as Record<string, unknown>[]).map((a) => {
     const id = a.account_id as string;
-    const ownerId = owners.get(id) ?? null;
+    const desk = desks.get(id);
+    const ownerId = desk?.ownerId ?? null;
+    const branchId = desk?.branchId ?? null;
     return {
       id,
       name: a.name as string,
@@ -159,11 +219,74 @@ export async function loadAccounts(): Promise<AccountBalance[]> {
       active: Boolean(a.active),
       ownerId,
       ownerName: ownerId ? (ownerName.get(ownerId) ?? null) : null,
+      branchId,
+      branchName: branchId ? (branchName.get(branchId) ?? null) : null,
       balanceMinor: Number(a.balance_minor ?? 0),
       totalInMinor: Number(a.total_in_minor ?? 0),
       totalOutMinor: Number(a.total_out_minor ?? 0),
     };
   });
+}
+
+/** The site list, for the finance branch tabs. */
+export async function loadBranches(): Promise<BranchLite[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("branches")
+    .select("id, name, active")
+    .order("sort", { ascending: true })
+    .order("name", { ascending: true });
+  return ((data ?? []) as Record<string, unknown>[]).map((b) => ({
+    id: b.id as string,
+    name: b.name as string,
+    active: Boolean(b.active),
+  }));
+}
+
+/**
+ * Income and expenses per site for the window — the per-branch P&L.
+ *
+ * Grouped in memory from (account_id, direction, amount) because the branch is
+ * a property of the desk, not of the row; the alternative is a view that has to
+ * be kept in step with every filter the page grows.
+ */
+export async function loadBranchTotals(
+  period: Period,
+  accounts: AccountBalance[],
+  branches: BranchLite[],
+): Promise<BranchTotal[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("finance_transactions")
+    .select("account_id, direction, amount_minor")
+    .gte("occurred_on", period.from)
+    .lte("occurred_on", period.to);
+
+  const branchOf = new Map(accounts.map((a) => [a.id, a.branchId]));
+  const buckets = new Map<string, BranchTotal>();
+  const bucket = (branchId: string | null, name: string) => {
+    const key = branchId ?? "none";
+    const existing = buckets.get(key);
+    if (existing) return existing;
+    const created: BranchTotal = { branchId, name, inMinor: 0, outMinor: 0, netMinor: 0 };
+    buckets.set(key, created);
+    return created;
+  };
+  // Every open branch appears even at zero — "Yunusobod took nothing this week"
+  // is the answer the owner is looking for, and a missing row doesn't say it.
+  for (const b of branches.filter((b) => b.active)) bucket(b.id, b.name);
+
+  for (const r of (data ?? []) as Record<string, unknown>[]) {
+    const branchId = branchOf.get(r.account_id as string) ?? null;
+    const name = branchId ? (branches.find((b) => b.id === branchId)?.name ?? "—") : "No branch";
+    const row = bucket(branchId, name);
+    const amount = Number(r.amount_minor ?? 0);
+    if (r.direction === "in") row.inMinor += amount;
+    else row.outMinor += amount;
+    row.netMinor = row.inMinor - row.outMinor;
+  }
+
+  return [...buckets.values()].sort((a, b) => b.netMinor - a.netMinor);
 }
 
 /* ── the ledger ───────────────────────────────────────────────────────────── */
@@ -188,6 +311,11 @@ export async function loadFinanceOverview(
   const { period } = filters;
   const pageSize = Math.min(500, Math.max(10, filters.pageSize ?? 50));
   const page = Math.max(1, filters.page ?? 1);
+
+  // The desks come first because the branch filter is expressed in terms of
+  // them: money belongs to the site whose till it passed through.
+  const [accounts, branches] = await Promise.all([loadAccounts(), loadBranches()]);
+  const scopedAccountIds = accountsInScope(accounts, filters.branch);
 
   // Same length, immediately before — so a 7-day window compares to the 7 days
   // before it, not to "last month".
@@ -224,6 +352,25 @@ export async function loadFinanceOverview(
     .select("direction, amount_minor")
     .gte("occurred_on", period.from)
     .lte("occurred_on", period.to);
+  // The window totals and the previous-window comparison are branch-scoped too,
+  // or the KPI strip would answer a different question from the table below it.
+  let windowTotalsQuery = supabase
+    .from("finance_transactions")
+    .select("direction, amount_minor, method")
+    .gte("occurred_on", period.from)
+    .lte("occurred_on", period.to);
+  let prevTotalsQuery = supabase
+    .from("finance_transactions")
+    .select("direction, amount_minor")
+    .gte("occurred_on", prevFrom.toISOString().slice(0, 10))
+    .lte("occurred_on", prevTo.toISOString().slice(0, 10));
+
+  if (scopedAccountIds) {
+    listQuery = listQuery.in("account_id", scopedAccountIds);
+    filteredTotalsQuery = filteredTotalsQuery.in("account_id", scopedAccountIds);
+    windowTotalsQuery = windowTotalsQuery.in("account_id", scopedAccountIds);
+    prevTotalsQuery = prevTotalsQuery.in("account_id", scopedAccountIds);
+  }
   for (const [column, value] of conditions) {
     listQuery = listQuery.eq(column, value);
     filteredTotalsQuery = filteredTotalsQuery.eq(column, value);
@@ -233,10 +380,9 @@ export async function loadFinanceOverview(
     filteredTotalsQuery = filteredTotalsQuery.ilike("note", `%${filters.q}%`);
   }
 
-  const [settings, accounts, categoriesRes, listRes, filteredTotalsRes, totalsRes, prevRes] =
+  const [settings, categoriesRes, listRes, filteredTotalsRes, totalsRes, prevRes] =
     await Promise.all([
       loadFinanceSettings(),
-      loadAccounts(),
       supabase
         .from("finance_categories")
         .select("id, name, direction, slug")
@@ -248,16 +394,8 @@ export async function loadFinanceOverview(
         .order("created_at", { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1),
       filteredTotalsQuery,
-      supabase
-        .from("finance_transactions")
-        .select("direction, amount_minor, method")
-        .gte("occurred_on", period.from)
-        .lte("occurred_on", period.to),
-      supabase
-        .from("finance_transactions")
-        .select("direction, amount_minor")
-        .gte("occurred_on", prevFrom.toISOString().slice(0, 10))
-        .lte("occurred_on", prevTo.toISOString().slice(0, 10)),
+      windowTotalsQuery,
+      prevTotalsQuery,
     ]);
 
   const sum = (rows: { direction: string; amount_minor: number }[] | null, dir: "in" | "out") =>
@@ -269,6 +407,7 @@ export async function loadFinanceOverview(
 
   // One lookup per referenced table, for this page only.
   const accountName = new Map(accounts.map((a) => [a.id, a.name]));
+  const accountBranch = new Map(accounts.map((a) => [a.id, a.branchName]));
   const categoryRows = ((categoriesRes.data ?? []) as Record<string, unknown>[]).map((c) => ({
     id: c.id as string,
     name: c.name as string,
@@ -309,6 +448,7 @@ export async function loadFinanceOverview(
       status: (r.status as string) ?? "confirmed",
       accountId: r.account_id as string,
       accountName: accountName.get(r.account_id as string) ?? "—",
+      branchName: accountBranch.get(r.account_id as string) ?? null,
       categoryId,
       categoryName: categoryId ? (categoryName.get(categoryId) ?? null) : null,
       personId,
@@ -335,6 +475,7 @@ export async function loadFinanceOverview(
   return {
     settings,
     accounts,
+    branches,
     categories: categoryRows,
     methodTotals: [...byMethod.values()],
     rows,
@@ -364,15 +505,20 @@ export interface CategoryTotal {
 export async function loadCategoryTotals(
   period: Period,
   direction: "in" | "out",
+  /** Desks to count, from `accountsInScope`. Null means the whole center. */
+  accountIds?: string[] | null,
 ): Promise<CategoryTotal[]> {
   const supabase = await createClient();
+  let txQuery = supabase
+    .from("finance_transactions")
+    .select("amount_minor, category_id")
+    .eq("direction", direction)
+    .gte("occurred_on", period.from)
+    .lte("occurred_on", period.to);
+  if (accountIds) txQuery = txQuery.in("account_id", accountIds);
+
   const [txRes, categoriesRes] = await Promise.all([
-    supabase
-      .from("finance_transactions")
-      .select("amount_minor, category_id")
-      .eq("direction", direction)
-      .gte("occurred_on", period.from)
-      .lte("occurred_on", period.to),
+    txQuery,
     supabase.from("finance_categories").select("id, name"),
   ]);
 

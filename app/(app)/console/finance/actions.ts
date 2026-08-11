@@ -157,6 +157,9 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
     name,
     kind: str(formData, "kind") || "cash",
     owner_id: orNull(str(formData, "owner_id")),
+    // The desk's branch is what makes its money belong to a site — every
+    // transaction inherits its branch from here, and nowhere else.
+    branch_id: orNull(str(formData, "branch_id")),
     opening_balance_minor: opening,
     active: str(formData, "active") !== "off",
   };
