@@ -94,9 +94,7 @@ export default async function AssignmentReportPage({
               </Row>
             );
           })}
-          {report.rows.length === 0 ? (
-            <EmptyRow>This group has no students yet.</EmptyRow>
-          ) : null}
+          {report.rows.length === 0 ? <EmptyRow>This group has no students yet.</EmptyRow> : null}
         </List>
       </Panel>
 

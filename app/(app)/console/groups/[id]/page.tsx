@@ -31,6 +31,7 @@ import {
   THead,
   TRow,
 } from "@/components/console/crm-ui";
+import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
@@ -50,6 +51,7 @@ import { TelegramPanel } from "./telegram-panel";
 import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
+import { StudentsManager } from "./students-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -696,22 +698,47 @@ export default async function GroupDetailPage({
       {/* ── manage ──────────────────────────────────────────────────────────── */}
       {tab === "manage" ? (
         <Stack>
+          {/* The roster leads, and the two ways of adding to it are buttons on
+              top of it. The old layout opened with two permanently-expanded
+              forms and never showed who was already in the class. */}
           <Card>
-            <CardHead title="Add a student" />
-            <CardNote>
-              Creates the account outright. Give an email and their login is sent there; leave it
-              blank and hand the details over in class.
-            </CardNote>
-            <AddStudentPanel groupId={group.id} />
-          </Card>
-
-          <Card>
-            <CardHead title="Add a whole class" />
-            <CardNote>
-              Paste the register, one student per line. Logins and passwords are generated, and you
-              get a sheet to hand out.
-            </CardNote>
-            <BulkAddPanel groupId={group.id} />
+            <CardHead
+              title={`Students (${group.members.length})`}
+              note="Everyone here signs in with their own login — that is how homework is handed in and graded."
+              actions={
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <Drawer
+                    label="+ Add student"
+                    eyebrow="Roster"
+                    title="Add a student"
+                    note="Type their name. The login and password are made for you and shown once."
+                  >
+                    <AddStudentPanel groupId={group.id} />
+                  </Drawer>
+                  <Drawer
+                    label="Import a list"
+                    eyebrow="Roster"
+                    variant="ghost"
+                    width={620}
+                    title="Add a whole class"
+                    note="Upload the Excel or CSV register you already keep, or paste the names."
+                  >
+                    <BulkAddPanel groupId={group.id} />
+                  </Drawer>
+                </div>
+              }
+            />
+            <StudentsManager
+              groupId={group.id}
+              students={group.members.map((m) => ({
+                id: m.id,
+                name: m.name,
+                login: m.login,
+                contactEmail: m.contactEmail,
+                joinedAt: m.joinedAt,
+                photoUrl: m.photoUrl,
+              }))}
+            />
           </Card>
 
           {/* Only the class's own teacher sets practice — see createAssignment. */}

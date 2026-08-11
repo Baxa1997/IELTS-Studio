@@ -555,8 +555,10 @@ export async function addStudentAccount(
 
   if (!groupId) return { error: "Missing group." };
   if (!fullName) return { error: "Enter the student's name." };
-  if (!login) return { error: "Enter a login for the student." };
-  if (!LOGIN_RE.test(login)) {
+  // A login is only asked for when the teacher wants a particular one. Left
+  // blank it is built from the name below, the same way the bulk path does it —
+  // a teacher adding a class should be typing names, not inventing usernames.
+  if (login && !LOGIN_RE.test(login)) {
     return {
       error:
         "A login must be 3–32 characters: letters, digits, and . _ - in the middle (no spaces).",
@@ -571,7 +573,6 @@ export async function addStudentAccount(
   // in, so it can be an address that already has a personal account on the
   // platform. See centerAuthEmail above.
   const contactEmail = emailInput || null;
-  const email = centerAuthEmail(login);
 
   const supabase = await createClient();
   // RLS hides other teachers' groups, so a hit here proves the caller manages it.
@@ -592,18 +593,33 @@ export async function addStudentAccount(
   const admin = createAdminClient();
 
   // Logins are global (the sign-in box can't know which center you belong to
-  // until you're in), so check before creating an auth user we'd have to undo.
-  const { data: taken } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("username", login)
-    .maybeSingle();
-  if (taken) {
-    return { error: `The login "${login}" is already taken. Try adding a number, e.g. ${login}2.` };
+  // until you're in). A login the teacher TYPED must be honoured or refused —
+  // silently handing them `aziz.karimov2` when they asked for `aziz.karimov`
+  // means the credentials they already wrote on the board are wrong. One
+  // derived from the name has no such promise attached, so it may take a suffix.
+  let resolved: string | null;
+  if (login) {
+    const { data: taken } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("username", login)
+      .maybeSingle();
+    if (taken) {
+      return {
+        error: `The login "${login}" is already taken. Try adding a number, e.g. ${login}2.`,
+      };
+    }
+    resolved = login;
+  } else {
+    resolved = await resolveLogin(admin, loginFromName(fullName), new Set());
+    if (!resolved) {
+      return { error: "Every login built from that name is taken. Type one yourself." };
+    }
   }
+  const finalLogin = resolved;
 
   const { data: created, error: createError } = await admin.auth.admin.createUser({
-    email,
+    email: centerAuthEmail(finalLogin),
     password,
     email_confirm: true,
     // Kept as the record of who this user is, and read by getSession. It does
@@ -617,7 +633,7 @@ export async function addStudentAccount(
     const already = /already|exists|registered/i.test(createError?.message ?? "");
     return {
       error: already
-        ? `The login "${login}" is already in use. Pick another one.`
+        ? `The login "${finalLogin}" is already in use. Pick another one.`
         : (createError?.message ?? "Could not create the account."),
     };
   }
@@ -626,7 +642,7 @@ export async function addStudentAccount(
     organizationId: profile.organization_id,
     role: "student",
     fullName,
-    username: login,
+    username: finalLogin,
     contactEmail,
   });
   if (placeError) {
@@ -674,17 +690,99 @@ export async function addStudentAccount(
     emailNote = await sendCredentials({
       to: contactEmail,
       name: fullName,
-      login,
+      login: finalLogin,
       password,
       centerName: (org?.name as string | null) ?? "your center",
     });
   }
 
   revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath("/console/students");
   return {
-    created: { name: fullName, login, email: contactEmail, password },
+    created: { name: fullName, login: finalLogin, email: contactEmail, password },
     warning: photoWarning ?? undefined,
     emailNote: emailNote ?? undefined,
+  };
+}
+
+export interface ResetPasswordState {
+  error?: string;
+  /** The new password, shown once. Never retrievable again. */
+  done?: { studentId: string; name: string; login: string; password: string };
+}
+
+/**
+ * Give a student a new password.
+ *
+ * THIS IS NOT A CONVENIENCE — it is the only reset that exists for most center
+ * students. Their auth address is synthetic and on a domain with no mail
+ * exchanger (see `centerAuthEmail`), so "forgot password" over email cannot
+ * reach them. Without this, a student who forgets their password is locked out
+ * of their own homework permanently and the center's answer is to create a
+ * second account, splitting their history in two.
+ *
+ * Service-role, so the caller's right to manage this group is proved first:
+ * RLS hides other teachers' groups, so reading the membership back through the
+ * caller's own client is the check.
+ */
+export async function resetStudentPassword(
+  _prev: ResetPasswordState,
+  formData: FormData,
+): Promise<ResetPasswordState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can reset a student's password." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  if (!groupId || !studentId) return { error: "Missing student." };
+
+  const supabase = await createClient();
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, teacher_id")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "Group not found." };
+  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
+    return { error: "You can only manage students in your own groups." };
+  }
+  // Membership read through the caller's client, so RLS confirms this student
+  // really is in a group they can see rather than any id they cared to post.
+  const { data: member } = await supabase
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", groupId)
+    .eq("student_id", studentId)
+    .maybeSingle();
+  if (!member) return { error: "That student isn't in this class." };
+
+  const admin = createAdminClient();
+  const { data: student } = await admin
+    .from("profiles")
+    .select("full_name, username, role, organization_id")
+    .eq("id", studentId)
+    .maybeSingle();
+  if (!student || student.organization_id !== profile.organization_id) {
+    return { error: "That student isn't in your center." };
+  }
+  // Staff accounts are reset from the teachers page by an admin, never from a
+  // class roster — a teacher must not be able to take over a colleague's login.
+  if (student.role !== "student") return { error: "That account isn't a student." };
+
+  const password = generatePassword();
+  const { error } = await admin.auth.admin.updateUserById(studentId, { password });
+  if (error) return { error: error.message };
+
+  revalidatePath(`/console/groups/${groupId}`);
+  return {
+    done: {
+      studentId,
+      name: (student.full_name as string | null) ?? "This student",
+      login: (student.username as string | null) ?? "—",
+      password,
+    },
   };
 }
 

@@ -29,6 +29,11 @@ export interface StaffOption {
 export interface GroupMemberRow {
   id: string;
   name: string;
+  /** How they sign in. Center students have no email, so this is the identity
+   *  a teacher reads out and the one a password reset is against. */
+  login: string | null;
+  /** Where credentials are delivered, when they gave a real address. */
+  contactEmail: string | null;
   joinedAt: string;
   /** Signed URL for their photo, or null when they don't have one. */
   photoUrl: string | null;
@@ -142,15 +147,19 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
   const memberRows = membersRes.data ?? [];
   const studentIds = memberRows.map((m) => m.student_id as string);
   const names = new Map<string, string>();
+  const logins = new Map<string, string>();
+  const emails = new Map<string, string>();
   const photos = new Map<string, string>();
   if (studentIds.length > 0) {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_path")
+      .select("id, full_name, avatar_path, username, contact_email")
       .in("id", studentIds);
     const rows = profiles ?? [];
     for (const p of rows) {
       names.set(p.id as string, (p.full_name as string | null) ?? "—");
+      logins.set(p.id as string, (p.username as string | null) ?? "");
+      emails.set(p.id as string, (p.contact_email as string | null) ?? "");
     }
     // One signing call for the whole roster.
     const signed = await signAvatars(rows.map((p) => (p.avatar_path as string | null) ?? null));
@@ -168,6 +177,8 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
     members: memberRows.map((m) => ({
       id: m.student_id as string,
       name: names.get(m.student_id as string) ?? "—",
+      login: logins.get(m.student_id as string) || null,
+      contactEmail: emails.get(m.student_id as string) || null,
       joinedAt: m.joined_at as string,
       photoUrl: photos.get(m.student_id as string) ?? null,
     })),

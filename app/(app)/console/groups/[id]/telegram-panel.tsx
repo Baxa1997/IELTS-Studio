@@ -30,10 +30,7 @@ export function TelegramPanel({
   /** e.g. "EngProgressBot" — what they search for in Telegram. */
   botUsername: string | null;
 }) {
-  const [startState, startAction, starting] = useActionState(
-    startTelegramLink,
-    {} as ActionState,
-  );
+  const [startState, startAction, starting] = useActionState(startTelegramLink, {} as ActionState);
   const [unlinkState, unlinkAction, unlinking] = useActionState(unlinkTelegram, {} as ActionState);
 
   if (!botUsername) {
@@ -163,8 +160,8 @@ export function TelegramPanel({
       </form>
 
       <p style={{ fontSize: 11.5, color: FAINT, margin: "12px 0 0", lineHeight: 1.55 }}>
-        Posts say a new practice exists and link to it — never a student&apos;s name, band or
-        score. Anyone in the channel can read it.
+        Posts say a new practice exists and link to it — never a student&apos;s name, band or score.
+        Anyone in the channel can read it.
       </p>
     </div>
   );

@@ -11,17 +11,25 @@ import { addStudentAccount, type AddStudentState } from "../actions";
 const initial: AddStudentState = {};
 
 /**
- * Add a student to this group by creating their account outright: name, login,
- * and a password (auto-generated unless the teacher sets one). The credentials
- * are shown once, to be handed over in class.
+ * Add one student: type their name.
  *
- * The email is a CONTACT address, never a sign-in identity — a center account's
+ * THE NAME IS THE ONLY REQUIRED FIELD, and that is the whole design. The
+ * account is not optional — homework on this platform hangs off a student id,
+ * so there is no student without one — but the teacher should never have to
+ * INVENT one. The login is derived from the name (`dilnoza.r`, de-duplicated
+ * against every login on the platform) and the password is generated, both
+ * server-side, and both are shown once afterwards to hand over.
+ *
+ * Everything else is behind "More options" because it is rare: a login the
+ * center has already promised the student, a password they chose, a photo. The
+ * email is a CONTACT address, never a sign-in identity — a center account's
  * auth address is synthetic, so this may be one that already has a personal
  * account on the platform (see migration 20260809130000).
  */
 export function AddStudentPanel({ groupId }: { groupId: string }) {
   const [state, formAction, pending] = useActionState(addStudentAccount, initial);
   const [copied, setCopied] = useState(false);
+  const [more, setMore] = useState(false);
 
   async function copyCredentials(login: string, password: string) {
     await navigator.clipboard.writeText(`Login: ${login}\nPassword: ${password}`);
@@ -34,23 +42,23 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
       {/* key resets the fields after each successful add, ready for the next student */}
       <form action={formAction} key={state.created?.login ?? "new"} className="space-y-3">
         <input type="hidden" name="group_id" value={groupId} />
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-40 flex-1 space-y-2">
+        <div className="space-y-3">
+          <div className="space-y-2">
             <Label htmlFor="student-name">Full name</Label>
-            <Input id="student-name" name="full_name" autoComplete="off" required />
-          </div>
-          <div className="min-w-40 flex-1 space-y-2">
-            <Label htmlFor="student-login">Login</Label>
             <Input
-              id="student-login"
-              name="login"
+              id="student-name"
+              name="full_name"
               autoComplete="off"
-              placeholder="aziz.karimov"
-              pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,30}[A-Za-z0-9]"
+              placeholder="Aziza Karimova"
               required
             />
+            <p className="text-muted-foreground text-xs">
+              That&apos;s all we need. A login and password are made for them and shown here once
+              you add them.
+            </p>
           </div>
-          <div className="min-w-44 flex-1 space-y-2">
+
+          <div className="space-y-2">
             <Label htmlFor="student-email">
               Contact email <span className="text-muted-foreground font-normal">(optional)</span>
             </Label>
@@ -62,33 +70,57 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               placeholder="student@example.com"
             />
             <p className="text-muted-foreground text-xs">
-              Where we send their login — not how they sign in, so an address that already has a
-              personal account here is fine.
+              Give one and their login is emailed to them. It is not how they sign in, so an address
+              that already has a personal account here is fine.
             </p>
           </div>
-          <div className="w-44 space-y-2">
-            <Label htmlFor="student-password">Password</Label>
-            <Input
-              id="student-password"
-              name="password"
-              autoComplete="off"
-              placeholder="Auto-generate"
-              minLength={8}
-            />
-          </div>
-          <div className="w-56 space-y-2">
-            <Label htmlFor="student-photo">
-              Photo <span className="text-muted-foreground font-normal">(optional)</span>
-            </Label>
-            <Input
-              id="student-photo"
-              name="photo"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="h-8 py-0.5 text-xs file:mr-2 file:h-6 file:rounded file:border file:px-2 file:text-xs"
-            />
-          </div>
-          <Button type="submit" disabled={pending}>
+
+          {/* Rare enough to fold away, real enough to keep: a center that has
+              already told a student their login has to be able to honour it. */}
+          <button
+            type="button"
+            onClick={() => setMore((v) => !v)}
+            className="text-muted-foreground text-xs underline"
+          >
+            {more ? "Fewer options" : "Set the login, password or photo myself"}
+          </button>
+
+          {more ? (
+            <div className="space-y-3 rounded-lg border p-3">
+              <div className="space-y-2">
+                <Label htmlFor="student-login">Login</Label>
+                <Input
+                  id="student-login"
+                  name="login"
+                  autoComplete="off"
+                  placeholder="built from the name"
+                  pattern="[A-Za-z0-9][A-Za-z0-9._\-]{1,30}[A-Za-z0-9]"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="student-password">Password</Label>
+                <Input
+                  id="student-password"
+                  name="password"
+                  autoComplete="off"
+                  placeholder="Auto-generate"
+                  minLength={8}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="student-photo">Photo</Label>
+                <Input
+                  id="student-photo"
+                  name="photo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="h-8 py-0.5 text-xs file:mr-2 file:h-6 file:rounded file:border file:px-2 file:text-xs"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <Button type="submit" disabled={pending} className="w-full">
             {pending ? "Creating…" : "Add student"}
           </Button>
         </div>

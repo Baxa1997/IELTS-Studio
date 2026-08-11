@@ -106,7 +106,10 @@ export function AssignPanel({
       </div>
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={pending || (kind === "reading" && libraryTests.length === 0)}>
+        <Button
+          type="submit"
+          disabled={pending || (kind === "reading" && libraryTests.length === 0)}
+        >
           {pending ? "Preparing…" : "Assign to group"}
         </Button>
         {kind === "writing" ? (

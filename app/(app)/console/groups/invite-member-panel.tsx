@@ -106,7 +106,12 @@ export function InviteMemberPanel({
           </p>
           <div className="flex items-center gap-2">
             <Input readOnly value={state.inviteUrl} className="font-mono text-xs" />
-            <Button type="button" variant="outline" size="sm" onClick={() => copy(state.inviteUrl!)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => copy(state.inviteUrl!)}
+            >
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
