@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   AMBER,
   Card,
@@ -423,7 +425,7 @@ function MonthStrip({
         const on = m === active;
         const status = statusOf.get(m);
         return (
-          <a
+          <Link
             key={m}
             href={`${basePath}?month=${m}`}
             className="cn-chip"
@@ -451,7 +453,7 @@ function MonthStrip({
                 ●
               </span>
             ) : null}
-          </a>
+          </Link>
         );
       })}
     </div>

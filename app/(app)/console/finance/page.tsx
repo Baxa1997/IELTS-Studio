@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
@@ -200,6 +201,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
         subtitle={`${period.label} · ${overview.matched} entr${overview.matched === 1 ? "y" : "ies"}${scopeLabel ? ` · ${scopeLabel}` : ""} · amounts in ${currency}.`}
         actions={
           <>
+            {/* Plain anchors: these fetch a FILE. next/link would try to
+                client-navigate to the route handler instead of downloading. */}
             <a href={exportHref("xlsx", "ledger")} style={chip} download>
               Excel
             </a>
@@ -229,7 +232,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           ].map((tab) => {
             const on = tab.key === scope;
             return (
-              <a
+              <Link
                 key={tab.key}
                 href={query({ branch: tab.key, page: undefined })}
                 className="cn-tab"
@@ -258,7 +261,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     {tab.count}
                   </span>
                 ) : null}
-              </a>
+              </Link>
             );
           })}
         </div>
@@ -288,7 +291,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             }}
           >
             {branchTotals.map((b) => (
-              <a
+              <Link
                 key={b.branchId ?? "unassigned"}
                 href={query({ branch: b.branchId ?? "all", page: undefined })}
                 className="cn-tile"
@@ -317,7 +320,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                 <div style={{ fontFamily: SANS, fontSize: 11, color: FAINT }}>
                   in {money(b.inMinor)} · out {money(b.outMinor)}
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </Card>
@@ -340,7 +343,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
           const total = methodTotals.find((t) => t.method === m);
           const on = method === m;
           return (
-            <a
+            <Link
               key={m}
               href={query({ method: on ? undefined : m })}
               className="cn-tile"
@@ -385,7 +388,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               >
                 in {money(total?.inMinor ?? 0)} · out {money(total?.outMinor ?? 0)}
               </div>
-            </a>
+            </Link>
           );
         })}
       </div>
@@ -581,7 +584,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                       branches={openBranches.map((b) => ({ id: b.id, name: b.name }))}
                     />
                   </Drawer>
-                  <a
+                  <Link
                     href={query({ account: on ? undefined : desk.id })}
                     className="cn-link"
                     style={{
@@ -592,7 +595,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     }}
                   >
                     {on ? "Clear filter" : "Show its entries →"}
-                  </a>
+                  </Link>
                 </div>
               </div>
             );
@@ -722,12 +725,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               Apply
             </button>
             {/* A branch is context, not a filter, so Reset keeps it. */}
-            <a
+            <Link
               href={showBranchTabs ? `/console/finance?branch=${scope}` : "/console/finance"}
               style={{ ...chip, padding: "7px 12px" }}
             >
               Reset
-            </a>
+            </Link>
           </form>
 
           <div
@@ -879,27 +882,27 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               <span style={{ fontFamily: SANS, fontSize: 12, color: SOFT }}>
                 Page {page} of {lastPage}
               </span>
-              <a href={query({ page: "1" })} style={{ ...chip, opacity: page === 1 ? 0.4 : 1 }}>
+              <Link href={query({ page: "1" })} style={{ ...chip, opacity: page === 1 ? 0.4 : 1 }}>
                 ⏮
-              </a>
-              <a
+              </Link>
+              <Link
                 href={query({ page: String(Math.max(1, page - 1)) })}
                 style={{ ...chip, opacity: page === 1 ? 0.4 : 1 }}
               >
                 ‹
-              </a>
-              <a
+              </Link>
+              <Link
                 href={query({ page: String(Math.min(lastPage, page + 1)) })}
                 style={{ ...chip, opacity: page === lastPage ? 0.4 : 1 }}
               >
                 ›
-              </a>
-              <a
+              </Link>
+              <Link
                 href={query({ page: String(lastPage) })}
                 style={{ ...chip, opacity: page === lastPage ? 0.4 : 1 }}
               >
                 ⏭
-              </a>
+              </Link>
             </div>
           </div>
         </Card>

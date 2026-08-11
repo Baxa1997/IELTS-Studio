@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
@@ -180,7 +181,10 @@ export default async function AttendancePage({
         />
       </KpiRow>
 
-      <div className="cn-split" style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16 }}>
+      <div
+        className="cn-split"
+        style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16 }}
+      >
         {/* ── the classes ─────────────────────────────────────────────────── */}
         <Card flush style={{ alignSelf: "start" }}>
           <div
@@ -202,7 +206,7 @@ export default async function AttendancePage({
             const on = g.id === activeId;
             const mark = session?.state === "marked" ? GREEN : AMBER;
             return (
-              <a
+              <Link
                 key={g.id}
                 href={href({ group: g.id })}
                 className="cn-row"
@@ -216,7 +220,14 @@ export default async function AttendancePage({
                   color: "inherit",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
                   <span
                     style={{
                       fontFamily: SANS,
@@ -238,7 +249,7 @@ export default async function AttendancePage({
                   {g.teacherName ?? "No teacher"} ·{" "}
                   {session?.state === "marked" ? "Marked" : "Register open"}
                 </div>
-              </a>
+              </Link>
             );
           })}
           {groups.length === 0 ? <Empty>No classes yet.</Empty> : null}
@@ -255,7 +266,9 @@ export default async function AttendancePage({
                   note={`${prettyDate(date)} · ${group.teacherName ?? "no teacher"}`}
                   badge={
                     sessionOf.get(group.id)?.state === "marked" ? (
-                      <span style={{ fontFamily: SANS, fontSize: 11.5, color: GREEN, fontWeight: 600 }}>
+                      <span
+                        style={{ fontFamily: SANS, fontSize: 11.5, color: GREEN, fontWeight: 600 }}
+                      >
                         Saved
                       </span>
                     ) : null

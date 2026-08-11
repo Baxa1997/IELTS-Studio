@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
@@ -23,7 +24,6 @@ import {
   loadTimetable,
   orderedWeekdays,
   startOfWeek,
-  toMinutes,
   WEEKDAYS,
   weekLabel,
 } from "@/lib/console/timetable";
@@ -31,7 +31,8 @@ import {
 import { BranchesManager } from "./branches-manager";
 import { SlotForm } from "./calendar-forms";
 import { RoomsManager } from "./rooms-manager";
-import { type GridRoom, TimetableGrid } from "./timetable-grid";
+import { type GridRoom } from "./timetable-grid";
+import { WeekBoard } from "./week-board";
 
 export const dynamic = "force-dynamic";
 
@@ -115,13 +116,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   // Scoped by the CLASS's branch, so a lesson whose room was deleted still
   // appears under the site that teaches it instead of in all of them.
   const branchSlots = slots.filter((s) => scope === "all" || s.branchId === scope);
-  const daySlots = branchSlots.filter((s) => s.weekday === day);
   const weekLessons = bySeries(branchSlots);
   const canEdit = profile.role === "center_admin" || profile.role === "teacher";
-  const overFull = daySlots.filter((s) => s.overCapacityBy > 0).length;
+  const overFull = branchSlots.filter((s) => s.overCapacityBy > 0).length;
 
-  // Lessons with no room still need a column, or they are invisible.
-  const unroomed = daySlots.filter((s) => s.roomId == null);
+  // The grid's columns. The "No room" column is NOT added here: whether one is
+  // needed depends on the day, which the client board owns.
   const gridRooms: GridRoom[] = [
     ...activeRooms.map((room) => ({
       id: room.id,
@@ -135,9 +135,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             : "—",
       color: room.color,
     })),
-    ...(unroomed.length > 0 || activeRooms.length === 0
-      ? [{ id: null, name: "No room", meta: "unassigned", color: "#8B8999" }]
-      : []),
   ];
 
   // Classes carry their branch, so the form can offer only the rooms that class
@@ -176,15 +173,26 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     return `?${params.toString()}`;
   };
 
-  const dayHours =
-    daySlots.reduce((a, s) => a + (toMinutes(s.endsAt) - toMinutes(s.startsAt)), 0) / 60;
+  // The teacher's own filter DOES need the server — it changes which lessons
+  // are loaded — so it stays a link, handed to the client board to place.
+  const teacherFilter =
+    profile.role === "teacher" ? (
+      <div style={{ display: "flex", gap: 6 }}>
+        <Link href={link({ who: undefined })} className="cn-chip" style={toggle(mine)}>
+          My classes
+        </Link>
+        <Link href={link({ who: "all" })} className="cn-chip" style={toggle(!mine)}>
+          Whole center
+        </Link>
+      </div>
+    ) : null;
 
   return (
     <div>
       <PageHead
         eyebrow="Time"
         title="Timetable"
-        subtitle={`${WEEKDAYS[day].long} ${new Date(`${dates.get(day) ?? week}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })} · ${daySlots.length} lesson${daySlots.length === 1 ? "" : "s"} · ${dayHours.toFixed(dayHours % 1 === 0 ? 0 : 1)} hours${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"} this week` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
+        subtitle={`${weekLabel(week)}${week === thisWeek ? " · this week" : ""} · ${branchSlots.length} lesson${branchSlots.length === 1 ? "" : "s"}${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"}` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
         actions={
           <>
             <Drawer
@@ -304,7 +312,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               ].map((tab) => {
                 const on = tab.key === scope;
                 return (
-                  <a
+                  <Link
                     key={tab.key}
                     href={link({ branch: tab.key })}
                     className="cn-tab"
@@ -333,7 +341,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                         {tab.count}
                       </span>
                     ) : null}
-                  </a>
+                  </Link>
                 );
               })}
             </div>
@@ -349,9 +357,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               marginBottom: 10,
             }}
           >
-            <a href={link({ week: addDays(week, -7) })} className="cn-chip" style={weekBtn}>
+            <Link href={link({ week: addDays(week, -7) })} className="cn-chip" style={weekBtn}>
               ‹
-            </a>
+            </Link>
             <div
               style={{
                 fontFamily: SANS,
@@ -364,19 +372,19 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             >
               {weekLabel(week)}
             </div>
-            <a href={link({ week: addDays(week, 7) })} className="cn-chip" style={weekBtn}>
+            <Link href={link({ week: addDays(week, 7) })} className="cn-chip" style={weekBtn}>
               ›
-            </a>
+            </Link>
             {week === thisWeek ? (
               <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>this week</span>
             ) : (
-              <a
+              <Link
                 href={link({ week: undefined, day: undefined })}
                 className="cn-chip"
                 style={weekBtn}
               >
                 Today
-              </a>
+              </Link>
             )}
 
             {/* Jump straight to a date. A GET form rather than a date-picker
@@ -404,110 +412,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 Go
               </button>
             </form>
-          </div>
-
-          {/* ── the day tabs ───────────────────────────────────────────────────── */}
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              flexWrap: "wrap",
-              alignItems: "center",
-              marginBottom: 14,
-            }}
-          >
-            {orderedWeekdays().map((d) => {
-              const on = d.index === day;
-              const count = branchSlots.filter((s) => s.weekday === d.index).length;
-              const date = dates.get(d.index) ?? "";
-              const isToday = date === today;
-              return (
-                <a
-                  key={d.index}
-                  href={link({ day: String(d.index) })}
-                  className="cn-chip"
-                  title={new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    timeZone: "UTC",
-                  })}
-                  style={{
-                    borderRadius: 10,
-                    padding: "7px 14px",
-                    fontFamily: SANS,
-                    fontSize: 13.5,
-                    fontWeight: on ? 600 : 500,
-                    textDecoration: "none",
-                    border: `1px solid ${on ? INDIGO : isToday ? "#B9B7E8" : "#E4E2DC"}`,
-                    background: on ? INDIGO : "#fff",
-                    color: on ? "#fff" : "#4C4A63",
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: 6,
-                  }}
-                >
-                  <span>{d.short}</span>
-                  <span
-                    style={{
-                      fontSize: 11.5,
-                      fontVariantNumeric: "tabular-nums",
-                      color: on ? "rgba(255,255,255,.8)" : isToday ? INDIGO : FAINT,
-                      fontWeight: isToday ? 700 : 400,
-                    }}
-                  >
-                    {date.slice(8)}
-                  </span>
-                  {count > 0 ? (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: on ? "rgba(255,255,255,.75)" : FAINT,
-                      }}
-                    >
-                      · {count}
-                    </span>
-                  ) : null}
-                </a>
-              );
-            })}
-
-            {profile.role === "teacher" ? (
-              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-                <a
-                  href={link({ who: undefined })}
-                  className="cn-chip"
-                  style={{
-                    borderRadius: 20,
-                    padding: "7px 14px",
-                    fontFamily: SANS,
-                    fontSize: 12.5,
-                    textDecoration: "none",
-                    border: `1px solid ${mine ? INDIGO : "#E4E2DC"}`,
-                    background: mine ? INDIGO : "#fff",
-                    color: mine ? "#fff" : "#4C4A63",
-                  }}
-                >
-                  My classes
-                </a>
-                <a
-                  href={link({ who: "all" })}
-                  className="cn-chip"
-                  style={{
-                    borderRadius: 20,
-                    padding: "7px 14px",
-                    fontFamily: SANS,
-                    fontSize: 12.5,
-                    textDecoration: "none",
-                    border: `1px solid ${!mine ? INDIGO : "#E4E2DC"}`,
-                    background: !mine ? INDIGO : "#fff",
-                    color: !mine ? "#fff" : "#4C4A63",
-                  }}
-                >
-                  Whole center
-                </a>
-              </div>
-            ) : null}
           </div>
 
           {/* A failed read must never pass for an empty timetable. */}
@@ -558,9 +462,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     {c.weekday === day ? (
                       <span style={{ opacity: 0.75 }}>Outlined in red below.</span>
                     ) : (
-                      <a href={link({ day: String(c.weekday) })} style={{ color: "#A63A30" }}>
+                      <Link href={link({ day: String(c.weekday) })} style={{ color: "#A63A30" }}>
                         Show {WEEKDAYS[c.weekday].long} →
-                      </a>
+                      </Link>
                     )}
                   </li>
                 ))}
@@ -603,19 +507,25 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             </div>
           ) : null}
 
-          <Card flush style={{ overflow: "hidden" }}>
-            <TimetableGrid
-              rooms={gridRooms}
-              slots={daySlots}
-              weekday={day}
-              weekdayLabel={WEEKDAYS[day].long}
-              dayStartMin={dayStartMin}
-              dayEndMin={dayEndMin}
-              groups={groupOptions}
-              roomOptions={roomOptions}
-              canEdit={canEdit}
-            />
-          </Card>
+          <WeekBoard
+            key={`${week}-${scope}-${mine}`}
+            days={orderedWeekdays().map((d) => ({
+              index: d.index,
+              short: d.short,
+              long: d.long,
+              date: dates.get(d.index) ?? "",
+            }))}
+            today={today}
+            initialDay={day}
+            rooms={gridRooms}
+            slots={branchSlots}
+            dayStartMin={dayStartMin}
+            dayEndMin={dayEndMin}
+            groups={groupOptions}
+            roomOptions={roomOptions}
+            canEdit={canEdit}
+            filter={teacherFilter}
+          />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
             {unscheduled.length > 0 ? (
@@ -735,3 +645,17 @@ const weekBtn: React.CSSProperties = {
   color: "#4C4A63",
   lineHeight: 1.4,
 };
+
+/** The teacher's two-state filter chip. */
+function toggle(on: boolean): React.CSSProperties {
+  return {
+    borderRadius: 20,
+    padding: "7px 14px",
+    fontFamily: SANS,
+    fontSize: 12.5,
+    textDecoration: "none",
+    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+    background: on ? INDIGO : "#fff",
+    color: on ? "#fff" : "#4C4A63",
+  };
+}
