@@ -169,12 +169,20 @@ export async function sendAnnouncement(
   // joined the channel — often parents, who have no account at all.
   let channels = 0;
   if (formData.get("telegram") === "on") {
-    channels = await sendAnnouncementTelegram({
-      organizationId: profile.organization_id,
-      groupIds: audience === "group" && groupId ? [groupId] : [],
-      subject,
-      body,
-    });
+    // The composer names every destination and sends back the ticked ones.
+    // An empty list here means "post nowhere", NOT "post everywhere" — the
+    // earlier version treated it as everywhere, so a message meant for one
+    // class could land in five channels.
+    const picked = formData.getAll("telegram_groups").map(String).filter(Boolean);
+    const groupIds = audience === "group" && groupId ? [groupId] : picked;
+    if (groupIds.length > 0) {
+      channels = await sendAnnouncementTelegram({
+        organizationId: profile.organization_id,
+        groupIds,
+        subject,
+        body,
+      });
+    }
   }
 
   revalidatePath("/console/announcements");

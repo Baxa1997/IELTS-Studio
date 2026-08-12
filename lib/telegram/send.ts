@@ -138,22 +138,22 @@ export async function notifyAssignmentTelegram(args: {
  */
 export async function sendAnnouncementTelegram(args: {
   organizationId: string;
-  /** Empty means every linked class in the center. */
+  /** The classes to post into. EMPTY MEANS NOWHERE — never "everywhere". */
   groupIds: string[];
   subject: string;
   body: string;
 }): Promise<number> {
-  if (!telegramConfigured()) return 0;
+  if (!telegramConfigured() || args.groupIds.length === 0) return 0;
 
   try {
     const admin = createAdminClient();
-    let query = admin
+    const query = admin
       .from("telegram_links")
       .select("chat_id, group_id")
       .eq("organization_id", args.organizationId)
       .not("verified_at", "is", null)
-      .not("chat_id", "is", null);
-    if (args.groupIds.length > 0) query = query.in("group_id", args.groupIds);
+      .not("chat_id", "is", null)
+      .in("group_id", args.groupIds);
 
     const { data } = await query;
     const rows = (data ?? []) as { chat_id: number; group_id: string }[];

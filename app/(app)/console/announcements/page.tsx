@@ -148,7 +148,12 @@ export default async function AnnouncementsPage() {
               students: g.memberCount,
               hasChannel: linked.has(g.id),
             }))}
-            channelCount={linked.size}
+            // Only classes with a VERIFIED channel — the composer lists these
+            // by name so the sender picks the destinations rather than
+            // trusting "all of them".
+            channels={telegramClasses
+              .filter((c) => c.channel)
+              .map((c) => ({ groupId: c.id, groupName: c.name, chatTitle: c.channel! }))}
           />
         </Card>
 

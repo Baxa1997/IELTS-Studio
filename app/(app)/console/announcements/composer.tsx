@@ -9,6 +9,7 @@ import { useActionFeedback } from "@/components/console/toast";
 const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
+const FAINT = "#93919F";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -37,12 +38,12 @@ type Audience = "everyone" | "students" | "teachers" | "group";
 export function AnnouncementComposer({
   counts,
   groups,
-  channelCount,
+  channels,
 }: {
   counts: { everyone: number; students: number; teachers: number };
   groups: { id: string; name: string; students: number; hasChannel: boolean }[];
-  /** Verified Telegram channels across the center. 0 hides the toggle. */
-  channelCount: number;
+  /** Classes with a verified channel, named. Empty hides the whole section. */
+  channels: { groupId: string; groupName: string; chatTitle: string }[];
 }) {
   const [state, formAction, pending] = useActionState(sendAnnouncement, {} as ActionState);
   // Keeps the composer open — you often send two in a row — and the banner at
@@ -51,6 +52,11 @@ export function AnnouncementComposer({
   const [audience, setAudience] = useState<Audience>("everyone");
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const [toTelegram, setToTelegram] = useState(false);
+  // Which channels this post goes to. Named and ticked, never implied: the
+  // first version posted to "every linked channel" whenever the audience was
+  // not one class, so there was no way to write to two classes out of five —
+  // and no way to see where a post had gone until it had gone there.
+  const [picked, setPicked] = useState<string[]>(() => channels.map((c) => c.groupId));
 
   const options: { value: Audience; label: string }[] = [
     { value: "everyone", label: "Everyone" },
@@ -62,10 +68,16 @@ export function AnnouncementComposer({
   const chosen = groups.find((g) => g.id === groupId);
   const reach = audience === "group" ? (chosen?.students ?? 0) : counts[audience];
 
-  // How many channels this send would actually post to, so the toggle promises
-  // only what it can deliver: one class means one channel, everything else
-  // means every linked class.
-  const channelsHit = audience === "group" ? (chosen?.hasChannel ? 1 : 0) : channelCount;
+  // Writing to ONE class pins the channel to that class — posting a
+  // class-specific message into another class's channel is never what was
+  // meant. Any wider audience picks its own destinations.
+  const locked = audience === "group";
+  const targets = locked
+    ? channels.filter((c) => c.groupId === groupId)
+    : channels.filter((c) => picked.includes(c.groupId));
+
+  const toggleChannel = (id: string) =>
+    setPicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>
@@ -151,45 +163,104 @@ export function AnnouncementComposer({
       {/* A second delivery, not a replacement: the bell reaches every account,
           Telegram reaches whoever joined the channel — usually the parents,
           who have no account here at all. */}
-      {channelCount > 0 ? (
-        <label
+      {channels.length > 0 ? (
+        <div
           style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 9,
             marginTop: 14,
-            padding: "10px 12px",
-            borderRadius: 9,
-            border: `1px solid ${toTelegram && channelsHit > 0 ? "#B7E0F5" : "#E4E2DC"}`,
-            background: toTelegram && channelsHit > 0 ? "#F2FAFE" : "#fff",
-            cursor: "pointer",
+            borderRadius: 10,
+            border: `1px solid ${toTelegram ? "#B7E0F5" : "#E4E2DC"}`,
+            background: toTelegram ? "#F7FCFF" : "#fff",
+            overflow: "hidden",
           }}
         >
-          <input
-            type="checkbox"
-            name="telegram"
-            checked={toTelegram}
-            onChange={(e) => setToTelegram(e.target.checked)}
-            style={{ marginTop: 2 }}
-          />
-          <FiSend size={15} color="#229ED9" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
-          <span>
-            <span style={{ display: "block", fontSize: 13, color: INK }}>
-              Post it to Telegram as well
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 9,
+              padding: "10px 12px",
+              cursor: "pointer",
+            }}
+          >
+            <input
+              type="checkbox"
+              name="telegram"
+              checked={toTelegram}
+              onChange={(e) => setToTelegram(e.target.checked)}
+              style={{ marginTop: 2 }}
+            />
+            <FiSend size={15} color="#229ED9" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
+            <span>
+              <span style={{ display: "block", fontSize: 13, color: INK }}>
+                Post it to Telegram as well
+              </span>
+              <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 2 }}>
+                {channels.length} channel{channels.length === 1 ? "" : "s"} connected — the parents
+                are usually there.
+              </span>
             </span>
-            <span style={{ display: "block", fontSize: 11.5, color: "#93919F", marginTop: 2 }}>
-              {channelsHit === 0
-                ? "This class has no channel connected — see the Telegram tab."
-                : `Goes to ${channelsHit} connected channel${channelsHit === 1 ? "" : "s"}, where the parents are.`}
-            </span>
-          </span>
-        </label>
+          </label>
+
+          {toTelegram ? (
+            <div style={{ borderTop: "1px solid #DDEEF8", padding: "9px 12px 11px" }}>
+              <span style={{ ...label, marginBottom: 7 }}>
+                {locked ? "Goes to this class's channel" : "Choose the channels"}
+              </span>
+
+              {channels.map((c) => {
+                const on = locked ? c.groupId === groupId : picked.includes(c.groupId);
+                return (
+                  <label
+                    key={c.groupId}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "5px 0",
+                      cursor: locked ? "default" : "pointer",
+                      opacity: locked && !on ? 0.4 : 1,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      name="telegram_groups"
+                      value={c.groupId}
+                      checked={on}
+                      disabled={locked}
+                      onChange={() => toggleChannel(c.groupId)}
+                    />
+                    <span style={{ fontSize: 12.5, color: INK }}>{c.groupName}</span>
+                    <span style={{ fontSize: 11.5, color: FAINT }}>→ {c.chatTitle}</span>
+                  </label>
+                );
+              })}
+
+              {/* A locked pick is not submitted by a disabled checkbox, so the
+                  class's own channel is sent as a hidden field instead. */}
+              {locked && chosen?.hasChannel ? (
+                <input type="hidden" name="telegram_groups" value={groupId} />
+              ) : null}
+
+              {targets.length === 0 ? (
+                <p style={{ fontSize: 11.5, color: "#A63A30", margin: "7px 0 0" }}>
+                  {locked
+                    ? "This class has no channel connected — connect one on the class page."
+                    : "Pick at least one channel, or untick Telegram."}
+                </p>
+              ) : (
+                <p style={{ fontSize: 11.5, color: FAINT, margin: "7px 0 0", lineHeight: 1.5 }}>
+                  Posting to {targets.map((t) => t.chatTitle).join(", ")}.
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
         <button
           type="submit"
-          disabled={pending || reach === 0}
+          disabled={pending || reach === 0 || (toTelegram && targets.length === 0)}
           className="cn-btn cn-btn--primary"
           style={{
             flex: 1,
