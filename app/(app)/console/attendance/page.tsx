@@ -152,7 +152,6 @@ export default async function AttendancePage({
   return (
     <div>
       <PageHead
-        eyebrow="Daily"
         title="Attendance"
         subtitle={`${prettyDate(date)} · ${groups.length} class${groups.length === 1 ? "" : "es"} · ${open} register${open === 1 ? "" : "s"} still open.`}
         actions={
@@ -289,10 +288,10 @@ export default async function AttendancePage({
             )}
           </Card>
 
-          <p style={{ fontFamily: SANS, fontSize: 12, color: FAINT, margin: 0, lineHeight: 1.6 }}>
+          {/* <p style={{ fontFamily: SANS, fontSize: 12, color: FAINT, margin: 0, lineHeight: 1.6 }}>
             One register per class per day. Saving again corrects the same one rather than adding a
             second, and a late arrival still counts as attended in the rate.
-          </p>
+          </p> */}
         </Stack>
       </div>
     </div>

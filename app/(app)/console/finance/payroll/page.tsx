@@ -141,8 +141,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
   return (
     <div>
       <PageHead
-        back={{ href: "/console/finance", label: "Finance" }}
-        eyebrow="Money"
+        // back={{ href: "/console/finance", label: "Finance" }}
         title="Salary"
         subtitle={
           run

@@ -196,7 +196,6 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   return (
     <div>
       <PageHead
-        eyebrow="Money"
         title="Finance"
         subtitle={`${period.label} · ${overview.matched} entr${overview.matched === 1 ? "y" : "ies"}${scopeLabel ? ` · ${scopeLabel}` : ""} · amounts in ${currency}.`}
         actions={
@@ -908,7 +907,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
         </Card>
       </div>
 
-      <p
+      {/* <p
         style={{
           fontFamily: SANS,
           fontSize: 12,
@@ -920,7 +919,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
         The cards along the top total by how the money arrived, across every desk. The desks on the
         left total by where it now sits. A transfer moves the second without changing the first —
         which is why both exist.
-      </p>
+      </p> */}
     </div>
   );
 }

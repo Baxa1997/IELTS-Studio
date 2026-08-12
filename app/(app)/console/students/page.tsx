@@ -32,8 +32,14 @@ const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 const SORTS = {
-  practice: { label: "Most practice", cmp: (a: StudentRow, b: StudentRow) => b.practiceCount - a.practiceCount },
-  idle: { label: "Least practice", cmp: (a: StudentRow, b: StudentRow) => a.practiceCount - b.practiceCount },
+  practice: {
+    label: "Most practice",
+    cmp: (a: StudentRow, b: StudentRow) => b.practiceCount - a.practiceCount,
+  },
+  idle: {
+    label: "Least practice",
+    cmp: (a: StudentRow, b: StudentRow) => a.practiceCount - b.practiceCount,
+  },
   recent: {
     label: "Recently active",
     cmp: (a: StudentRow, b: StudentRow) => (b.lastActive ?? "").localeCompare(a.lastActive ?? ""),
@@ -118,13 +124,13 @@ export default async function StudentsPage({
   return (
     <div>
       <PageHead
-        eyebrow="People"
+        eyebrow=""
         title="Students"
-        subtitle={
-          profile.role === "center_admin"
-            ? `${all.length} enrolled across ${groupOptions.length} class${groupOptions.length === 1 ? "" : "es"}.`
-            : "The students in the groups you run."
-        }
+        // subtitle={
+        //   profile.role === "center_admin"
+        //     ? `${all.length} enrolled across ${groupOptions.length} class${groupOptions.length === 1 ? "" : "es"}.`
+        //     : "The students in the groups you run."
+        // }
         actions={<PanelButton panel="enrol">+ Enrol student</PanelButton>}
       />
 
@@ -165,12 +171,6 @@ export default async function StudentsPage({
       </KpiRow>
 
       <Card flush>
-        <CardHead
-          title="Roster"
-          divided
-          note="band shown is the LOWEST measured skill — the one capping them. Nothing is averaged across skills."
-        />
-
         <Toolbar>
           {/* One GET form drives every control, so a search can't silently drop
               the card filter above it. */}
@@ -186,7 +186,12 @@ export default async function StudentsPage({
               aria-label="Search students"
               style={{ ...fieldStyle, flex: 1, minWidth: 180, maxWidth: 260 }}
             />
-            <select name="group" defaultValue={sp.group ?? "all"} aria-label="Group" style={fieldStyle}>
+            <select
+              name="group"
+              defaultValue={sp.group ?? "all"}
+              aria-label="Group"
+              style={fieldStyle}
+            >
               <option value="all">All groups</option>
               {groupOptions.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -222,8 +227,7 @@ export default async function StudentsPage({
           />
           {rows.map((s) => {
             const short = s.weakest ? s.weakest.skill : null;
-            const behind =
-              s.weakest && s.targetBand != null ? s.weakest.band - s.targetBand : null;
+            const behind = s.weakest && s.targetBand != null ? s.weakest.band - s.targetBand : null;
             return (
               // Roster route, not the group one: a student in no group has a
               // report too, and this row is the only way to reach it.
@@ -241,8 +245,7 @@ export default async function StudentsPage({
                     <span
                       style={{
                         fontWeight: 600,
-                        color:
-                          behind == null || behind >= 0 ? GREEN : behind >= -1 ? AMBER : RED,
+                        color: behind == null || behind >= 0 ? GREEN : behind >= -1 ? AMBER : RED,
                       }}
                     >
                       {s.weakest.band.toFixed(1)}{" "}

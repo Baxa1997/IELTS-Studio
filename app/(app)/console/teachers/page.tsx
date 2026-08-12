@@ -32,7 +32,10 @@ export const dynamic = "force-dynamic";
 const SORTS = {
   load: { label: "load", cmp: (a: Row, b: Row) => b.students - a.students },
   band: { label: "band", cmp: (a: Row, b: Row) => (b.band ?? -1) - (a.band ?? -1) },
-  attendance: { label: "attendance", cmp: (a: Row, b: Row) => (b.attendance ?? -1) - (a.attendance ?? -1) },
+  attendance: {
+    label: "attendance",
+    cmp: (a: Row, b: Row) => (b.attendance ?? -1) - (a.attendance ?? -1),
+  },
   name: { label: "name", cmp: (a: Row, b: Row) => a.name.localeCompare(b.name) },
 } as const;
 type SortKey = keyof typeof SORTS;
@@ -146,7 +149,7 @@ export default async function TeachersPage({
       <PageHead
         eyebrow="Staff"
         title="Teachers"
-        subtitle={`${teachers.length} on staff · each teacher sees only the groups assigned to them.`}
+        // subtitle={`${teachers.length} on staff · each teacher sees only the groups assigned to them.`}
         actions={<PanelButton panel="teacher">+ Add teacher</PanelButton>}
       />
 
@@ -154,7 +157,9 @@ export default async function TeachersPage({
         <Kpi
           label="Teachers"
           value={teachers.length}
-          sub={mean(allBands) != null ? `avg band ${mean(allBands)?.toFixed(1)}` : "nothing graded yet"}
+          sub={
+            mean(allBands) != null ? `avg band ${mean(allBands)?.toFixed(1)}` : "nothing graded yet"
+          }
         />
         <Kpi
           label="Groups they run"
@@ -164,109 +169,116 @@ export default async function TeachersPage({
         <Kpi
           label="Students covered"
           value={totalStudents}
-          sub={centerStudents > 0 ? `${Math.round((totalStudents / centerStudents) * 100)}% of the center` : "no students yet"}
+          sub={
+            centerStudents > 0
+              ? `${Math.round((totalStudents / centerStudents) * 100)}% of the center`
+              : "no students yet"
+          }
         />
         <Kpi
           label="Without a group"
           value={withoutGroups}
           deltaTone="bad"
-          sub={withoutGroups > 0 ? (teachers.find((t) => t.groups === 0)?.name ?? "") : "everyone teaching"}
+          sub={
+            withoutGroups > 0
+              ? (teachers.find((t) => t.groups === 0)?.name ?? "")
+              : "everyone teaching"
+          }
         />
       </KpiRow>
 
-        <Card flush>
-          <CardHead
-            title="Your teachers"
-            divided
-            note="students counted here are the ones each teacher can actually see"
-          />
-          <Toolbar>
-            {/* Plain GET form — no client bundle for a filter this small. */}
-            <form
-              method="GET"
-              style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}
-            >
-              <input
-                name="q"
-                defaultValue={sp.q ?? ""}
-                placeholder="Search teacher…"
-                aria-label="Search teacher"
-                style={{ ...fieldStyle, flex: 1, minWidth: 170, maxWidth: 260 }}
-              />
-              <select name="sort" defaultValue={sort} aria-label="Sort" style={fieldStyle}>
-                {Object.entries(SORTS).map(([value, o]) => (
-                  <option key={value} value={value}>
-                    Sort: {o.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="cn-btn cn-btn--ghost"
-                style={{ ...fieldStyle, background: "#fff", cursor: "pointer", fontWeight: 500 }}
-              >
-                Apply
-              </button>
-            </form>
-            <span style={{ fontFamily: SANS, fontSize: 12, color: "#93919F" }}>
-              {rows.length} shown{rows.length !== teachers.length ? ` of ${teachers.length}` : ""}
-            </span>
-          </Toolbar>
-
-          <Table cols={COLS} minWidth={760}>
-            <THead
-              cols={COLS}
-              labels={["Teacher", "Groups", "Students", "Avg band", "Attendance", "Status", ""]}
+      <Card flush>
+        {/* <CardHead
+          title="Your teachers"
+          divided
+          note="students counted here are the ones each teacher can actually see"
+        /> */}
+        <Toolbar>
+          {/* Plain GET form — no client bundle for a filter this small. */}
+          <form
+            method="GET"
+            style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}
+          >
+            <input
+              name="q"
+              defaultValue={sp.q ?? ""}
+              placeholder="Search teacher…"
+              aria-label="Search teacher"
+              style={{ ...fieldStyle, flex: 1, minWidth: 170, maxWidth: 260 }}
             />
-            {rows.map((t) => {
-              const { band, attendance } = t;
-              return (
-                <TRow key={t.id} cols={COLS}>
-                  <PersonCell name={t.name} meta={t.username ?? "no login"} />
-                  <TD>{t.groups || "—"}</TD>
-                  <TD tone={t.students === 0 ? "faint" : "body"}>{t.students || "—"}</TD>
-                  <TD tone="ink" weight={600}>
-                    {band?.toFixed(1) ?? "—"}
-                  </TD>
-                  <TD>
-                    {attendance == null ? (
-                      <span style={{ color: "#93919F" }}>—</span>
-                    ) : (
-                      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Bar
-                          pct={attendance}
-                          width={54}
-                          fill={attendance >= 90 ? GREEN : attendance >= 80 ? AMBER : "#E0A9A3"}
-                        />
-                        <span style={{ fontSize: 12 }}>{Math.round(attendance)}%</span>
-                      </span>
-                    )}
-                  </TD>
-                  <TD>
-                    {t.groups === 0 ? (
-                      <Tag tone="amber">No class yet</Tag>
-                    ) : t.students === 0 ? (
-                      <Tag tone="neutral">No students</Tag>
-                    ) : (
-                      <Tag tone="green">Active</Tag>
-                    )}
-                  </TD>
-                  <TD align="right" tone="faint">
-                    ⋯
-                  </TD>
-                </TRow>
-              );
-            })}
-            {rows.length === 0 ? (
-              <Empty>
-                {teachers.length === 0
-                  ? "No teachers yet. Use + Add teacher above and they can start building classes."
-                  : "Nobody matches that search."}
-              </Empty>
-            ) : null}
-          </Table>
-        </Card>
+            <select name="sort" defaultValue={sort} aria-label="Sort" style={fieldStyle}>
+              {Object.entries(SORTS).map(([value, o]) => (
+                <option key={value} value={value}>
+                  Sort: {o.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="cn-btn cn-btn--ghost"
+              style={{ ...fieldStyle, background: "#fff", cursor: "pointer", fontWeight: 500 }}
+            >
+              Apply
+            </button>
+          </form>
+          <span style={{ fontFamily: SANS, fontSize: 12, color: "#93919F" }}>
+            {rows.length} shown{rows.length !== teachers.length ? ` of ${teachers.length}` : ""}
+          </span>
+        </Toolbar>
 
+        <Table cols={COLS} minWidth={760}>
+          <THead
+            cols={COLS}
+            labels={["Teacher", "Groups", "Students", "Avg band", "Attendance", "Status", ""]}
+          />
+          {rows.map((t) => {
+            const { band, attendance } = t;
+            return (
+              <TRow key={t.id} cols={COLS}>
+                <PersonCell name={t.name} meta={t.username ?? "no login"} />
+                <TD>{t.groups || "—"}</TD>
+                <TD tone={t.students === 0 ? "faint" : "body"}>{t.students || "—"}</TD>
+                <TD tone="ink" weight={600}>
+                  {band?.toFixed(1) ?? "—"}
+                </TD>
+                <TD>
+                  {attendance == null ? (
+                    <span style={{ color: "#93919F" }}>—</span>
+                  ) : (
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Bar
+                        pct={attendance}
+                        width={54}
+                        fill={attendance >= 90 ? GREEN : attendance >= 80 ? AMBER : "#E0A9A3"}
+                      />
+                      <span style={{ fontSize: 12 }}>{Math.round(attendance)}%</span>
+                    </span>
+                  )}
+                </TD>
+                <TD>
+                  {t.groups === 0 ? (
+                    <Tag tone="amber">No class yet</Tag>
+                  ) : t.students === 0 ? (
+                    <Tag tone="neutral">No students</Tag>
+                  ) : (
+                    <Tag tone="green">Active</Tag>
+                  )}
+                </TD>
+                <TD align="right" tone="faint">
+                  ⋯
+                </TD>
+              </TRow>
+            );
+          })}
+          {rows.length === 0 ? (
+            <Empty>
+              {teachers.length === 0
+                ? "No teachers yet. Use + Add teacher above and they can start building classes."
+                : "Nobody matches that search."}
+            </Empty>
+          ) : null}
+        </Table>
+      </Card>
     </div>
   );
 }

@@ -190,7 +190,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   return (
     <div>
       <PageHead
-        eyebrow="Time"
         title="Timetable"
         subtitle={`${weekLabel(week)}${week === thisWeek ? " · this week" : ""} · ${branchSlots.length} lesson${branchSlots.length === 1 ? "" : "s"}${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"}` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}
         actions={

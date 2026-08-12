@@ -136,7 +136,6 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
     <div>
       <PageHead
         back={{ href: "/console/finance", label: "Finance" }}
-        eyebrow="Money"
         title="Invoices"
         subtitle={`${monthLabel(month)} · ${invoices.length} charge${invoices.length === 1 ? "" : "s"} · ${collectedPct}% collected.`}
         actions={

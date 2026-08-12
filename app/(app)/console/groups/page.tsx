@@ -33,10 +33,10 @@ export const dynamic = "force-dynamic";
 const FILTERS = {
   all: { label: "All", test: () => true },
   running: {
-    label: "Running",
+    label: "Active",
     test: (g: Card_) => g.teacherName != null && g.assignments > 0,
   },
-  nopractice: { label: "No practice set", test: (g: Card_) => g.assignments === 0 },
+  // nopractice: { label: "No practice set", test: (g: Card_) => g.assignments === 0 },
   noteacher: { label: "No teacher", test: (g: Card_) => g.teacherName == null },
 } as const;
 
@@ -126,21 +126,24 @@ export default async function GroupsPage({
       <PageHead
         eyebrow="Classes"
         title="Groups"
-        subtitle={
-          isAdmin
-            ? `${groups.length} class${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
-            : "The classes assigned to you — set practice here and read the results."
-        }
+        // subtitle={
+        //   isAdmin
+        //     ? `${groups.length} class${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
+        //     : "The classes assigned to you — set practice here and read the results."
+        // }
         actions={<PanelButton panel="group">+ New group</PanelButton>}
       />
 
       <div
         style={{
           display: "flex",
-          gap: 8,
+          gap: 4,
           marginBottom: 16,
           alignItems: "center",
           flexWrap: "wrap",
+          // background: "#fff",
+          // padding: 6,
+          // borderRadius: 6,
         }}
       >
         {(Object.keys(FILTERS) as FilterKey[]).map((k) => (
@@ -201,7 +204,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
       ? { label: "No teacher", tone: "red" }
       : g.assignments === 0
         ? { label: "No practice", tone: "amber" }
-        : { label: "Running", tone: "green" };
+        : { label: "Active", tone: "green" };
 
   return (
     <Link
