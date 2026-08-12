@@ -994,6 +994,15 @@ export async function resetStudentPassword(
   const studentId = String(formData.get("student_id") ?? "").trim();
   if (!groupId || !studentId) return { error: "Missing student." };
 
+  // A chosen password, or blank to generate one. Centers teaching children ask
+  // for this constantly: a nine-year-old can be told "your password is
+  // dolphin7" and cannot be told "kR4t-9Qmz". Same 8-character floor as account
+  // creation — memorable is fine, guessable in three tries is not.
+  const chosen = String(formData.get("password") ?? "").trim();
+  if (chosen && chosen.length < 8) {
+    return { error: "A password needs at least 8 characters." };
+  }
+
   const supabase = await createClient();
   const { data: group } = await supabase
     .from("groups")
@@ -1027,7 +1036,7 @@ export async function resetStudentPassword(
   // class roster — a teacher must not be able to take over a colleague's login.
   if (student.role !== "student") return { error: "That account isn't a student." };
 
-  const password = generatePassword();
+  const password = chosen || generatePassword();
   const { error } = await admin.auth.admin.updateUserById(studentId, { password });
   if (error) return { error: error.message };
 
