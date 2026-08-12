@@ -13,7 +13,6 @@ import {
   GREEN,
   INDIGO,
   INK,
-  ListRow,
   MeterRow,
   MUTED,
   PageHead,
@@ -24,12 +23,10 @@ import {
   Table,
   Tag,
   TD,
-  TextLink,
   THead,
   TRow,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
-import { loadNewWork } from "@/lib/console/new-work";
 import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
 import { loadCenterReport } from "@/lib/console/reports";
@@ -43,26 +40,63 @@ export const dynamic = "force-dynamic";
 const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
+/** Days since, for the "gone quiet" tag. */
+function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+
+/** Two weeks with nothing marked is the point at which a teacher should ring. */
+const QUIET_DAYS = 14;
+
 /**
- * The report a center owner actually pays for: which classes are working, where
- * the marks go, and who has stopped.
+ * The affordance at the end of a clickable row.
  *
- * Everything is graded work from the last 90 days. Listening is scored, not
- * banded, so it never enters the band figures — and no "overall band" is
- * averaged across skills, because a number like that would be ours, not IELTS's.
+ * Deliberately NOT a TextLink: `TRow href` already wraps the whole row in an
+ * anchor, and an anchor inside an anchor is invalid HTML — React warns on
+ * hydration and the inner link stops working in some browsers. The row is the
+ * link; this is just the arrow that says so.
+ */
+function OpenArrow() {
+  return <span style={{ fontFamily: SANS, fontSize: 12.5, color: INDIGO }}>Open →</span>;
+}
+
+/**
+ * Step one of three: WHO.
+ *
+ * WHAT THIS PAGE IS FOR. A teacher sets homework, the students do it, and the
+ * grader writes a full report on each piece. The only question this page has to
+ * answer is "who has handed in, and who hasn't" — everything else is one click
+ * away:
+ *
+ *   Reports (who) → a student (their homework, newest first, with dates)
+ *                 → one piece (band, what capped it, the marked-up work)
+ *
+ * WHY IT IS TWO LISTS AND A DRAWER. It used to be nine analytics panels — a
+ * band histogram, a monthly trend, per-skill means, capping criteria, missed
+ * question types, a class table, an at-risk list, a KPI row and a stack of
+ * finding cards. Every panel was accurate; the page as a whole answered
+ * nothing, because a teacher opening it on a Tuesday evening wants a list of
+ * names, not a dashboard. The charts are still here, under "Show the working",
+ * for the once-a-term conversation they are actually good for.
+ *
+ * EVERY STUDENT APPEARS EXACTLY ONCE. "Has stopped" is a tag on a row, not a
+ * third list — a name in two places makes a roster impossible to count.
+ *
+ * Everything is the last 90 days. Listening is scored rather than banded, so it
+ * never enters the band figures, and no "overall band" is averaged across
+ * skills, because a number like that would be ours, not IELTS's.
  */
 export default async function ReportsPage() {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 
   const supabase = await createClient();
-  const [report, orgRes, overview, newWork] = await Promise.all([
+  const [report, orgRes, overview] = await Promise.all([
     loadCenterReport({ role: profile.role, profileId: profile.id }),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
     loadWorkOverview(profile),
-    loadNewWork(),
   ]);
-  const { recent: recentWork, students } = overview;
+  const { students, unopenedCount } = overview;
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const isCenter = report.scope === "center";
 
@@ -73,14 +107,32 @@ export default async function ReportsPage() {
 
   const findings = buildFindings(report);
 
-  // Rows whose work this teacher has not opened. Counted off the hrefs actually
-  // on the page, not off the whole inbox: an alert offering to show you three
-  // hand-ins must not scroll you to a table holding one.
-  const newHere = recentWork.filter((w) => w.reportHref && newWork.hrefs.has(w.reportHref)).length;
+  // Newest hand-in first: this list is read top-down as "what came in".
+  const handedIn = students
+    .filter((s) => s.done > 0)
+    .sort((a, b) => (b.lastGraded ?? "").localeCompare(a.lastGraded ?? ""));
 
-  const STUDENT_COLS = "1.6fr 1.2fr .9fr 1.2fr 1fr .8fr";
-  const WORK_COLS = "1.6fr 1.2fr .8fr 1fr .9fr";
+  // The same people, filtered to those with work nobody has opened — this is
+  // what the Alerts menu names, so a teacher gets "who did their homework"
+  // without reading the page behind it.
+  const newByStudent = handedIn
+    .filter((s) => s.unopened > 0)
+    .map((s) => ({
+      studentId: s.studentId,
+      name: s.name,
+      groupName: s.groupName,
+      count: s.unopened,
+      when: s.lastGraded,
+      href: s.reportHref,
+    }));
 
+  // Longest silence first: this one is read as "who to chase".
+  const waiting = students
+    .filter((s) => s.done === 0)
+    .sort((a, b) => (a.lastActive ?? "").localeCompare(b.lastActive ?? ""));
+
+  const IN_COLS = "1.7fr 1.1fr 1.1fr .8fr 1fr .8fr";
+  const WAIT_COLS = "1.8fr 1.2fr 1.2fr 1fr .8fr";
   const COLS = isCenter ? "2fr 1.4fr .8fr .9fr 1.3fr .8fr" : "2fr .8fr .9fr 1.3fr .8fr";
 
   return (
@@ -88,124 +140,73 @@ export default async function ReportsPage() {
       <PageHead
         eyebrow="Reports"
         title={isCenter ? centerName : "Your students"}
-        subtitle={`${report.totals.students} students · ${report.totals.groups} classes · ${report.totals.gradedPractices} graded in the last 90 days.`}
+        subtitle={`${report.totals.students} students · ${report.totals.groups} classes · ${report.totals.gradedPractices} marked in the last 90 days.`}
         actions={
           <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* THE ANSWERS, one control wide. These used to be a stack of cards
+            {/* THE WARNINGS, one control wide. These used to be a stack of cards
                 that pushed the students below the fold on every visit. */}
-            <ReportAlerts findings={findings} newWork={newHere} newWorkHref="#handed-in" />
+            <ReportAlerts
+              findings={findings}
+              newByStudent={newByStudent}
+              newWorkHref="#handed-in"
+            />
             <ExportReportButton rows={report.groups} centerName={centerName} />
           </span>
         }
       />
 
       <Stack>
-        <Card flush>
-          <CardHead
-            title="Every student"
-            divided
-            note="least done first — the ones to chase are at the top"
-          />
-          {students.length > 0 ? (
-            <Table cols={STUDENT_COLS} minWidth={760}>
-              <THead
-                cols={STUDENT_COLS}
-                labels={["Student", "Class", "Latest band", "Done", "Last active", ""]}
-              />
-              {students.map((st) => (
-                <TRow key={st.studentId} cols={STUDENT_COLS}>
-                  <TD tone="ink" weight={500}>
-                    {st.name}
-                  </TD>
-                  <TD tone="soft">{st.groupName ?? "—"}</TD>
-                  <TD tone="ink" weight={600}>
-                    {st.latestBand?.toFixed(1) ?? <span style={{ color: FAINT }}>—</span>}
-                  </TD>
-                  <TD>
-                    <span style={{ color: st.done === 0 ? RED : INK, fontWeight: 600 }}>
-                      {st.done}
-                    </span>
-                    {st.unfinished > 0 ? (
-                      <span style={{ color: FAINT, fontSize: 12 }}>
-                        {" "}
-                        · {st.unfinished} unfinished
-                      </span>
-                    ) : null}
-                  </TD>
-                  <TD tone="soft">{st.lastActive ? dateFmt(st.lastActive) : "never"}</TD>
-                  <TD align="right">
-                    <TextLink href={st.reportHref}>Report →</TextLink>
-                  </TD>
-                </TRow>
-              ))}
-            </Table>
-          ) : (
-            <Empty>No students in your classes yet.</Empty>
-          )}
-        </Card>
-
+        {/* ── 1. who has handed in ─────────────────────────────────────────── */}
         <Card flush id="handed-in">
           <CardHead
-            title="What students handed in"
+            title="Handed in"
             divided
-            badge={newHere > 0 ? <Tag tone="indigo">{newHere} new</Tag> : null}
-            note={
-              newHere > 0
-                ? "newest first — NEW means nobody has opened it yet"
-                : "newest first — open any one to read the same feedback the student got"
-            }
+            badge={unopenedCount > 0 ? <Tag tone="red">{unopenedCount} new</Tag> : null}
+            note="newest first — open a student to see every piece they did, with the marking"
           />
-          {recentWork.length > 0 ? (
-            <Table cols={WORK_COLS} minWidth={720}>
-              <THead cols={WORK_COLS} labels={["Student", "Skill", "Result", "When", ""]} />
-              {recentWork.map((w) => {
-                const unopened = w.reportHref != null && newWork.hrefs.has(w.reportHref);
+          {handedIn.length > 0 ? (
+            <Table cols={IN_COLS} minWidth={780}>
+              <THead
+                cols={IN_COLS}
+                labels={["Student", "Class", "Handed in", "Band", "Last", ""]}
+              />
+              {handedIn.map((s) => {
+                const quiet = s.lastGraded ? daysSince(s.lastGraded) : null;
+                const gone = quiet != null && quiet >= QUIET_DAYS;
                 return (
-                  <TRow key={`${w.skill}-${w.id}`} cols={WORK_COLS}>
+                  <TRow key={s.studentId} cols={IN_COLS} href={s.reportHref}>
                     <TD tone="ink" weight={500}>
-                      {unopened ? (
-                        <span
-                          aria-label="not opened yet"
-                          style={{
-                            display: "inline-block",
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            background: RED,
-                            marginRight: 7,
-                            verticalAlign: 2,
-                          }}
-                        />
-                      ) : null}
-                      {w.studentName}
+                      <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+                        <Avatar name={s.name} size={26} />
+                        <span style={{ minWidth: 0 }}>{s.name}</span>
+                        {s.unopened > 0 ? <Tag tone="red">{s.unopened} new</Tag> : null}
+                      </span>
                     </TD>
-                    <TD>
-                      <span style={{ textTransform: "capitalize" }}>{w.skill}</span>
-                      {w.assigned ? (
-                        <span style={{ marginLeft: 7 }}>
-                          <Tag tone="indigo">homework</Tag>
+                    <TD tone="soft">{s.groupName ?? "—"}</TD>
+                    <TD tone="body">
+                      <strong style={{ color: INK }}>{s.done}</strong>
+                      {s.homeworkDone > 0 ? (
+                        <span style={{ color: FAINT, fontSize: 12 }}>
+                          {" "}
+                          · {s.homeworkDone} homework
                         </span>
-                      ) : null}
-                      {unopened ? (
-                        <span style={{ marginLeft: 7 }}>
-                          <Tag tone="red">new</Tag>
-                        </span>
-                      ) : null}
+                      ) : (
+                        <span style={{ color: FAINT, fontSize: 12 }}> · none set</span>
+                      )}
                     </TD>
                     <TD tone="ink" weight={600}>
-                      {w.band != null
-                        ? w.band.toFixed(1)
-                        : (w.score ?? (
-                            <span style={{ color: FAINT, fontWeight: 400 }}>grading…</span>
-                          ))}
+                      {s.latestBand?.toFixed(1) ?? <span style={{ color: FAINT }}>—</span>}
                     </TD>
-                    <TD tone="soft">{dateFmt(w.when)}</TD>
+                    <TD tone="soft">
+                      {s.lastGraded ? dateFmt(s.lastGraded) : "—"}
+                      {gone ? (
+                        <span style={{ marginLeft: 7 }}>
+                          <Tag tone="amber">quiet {quiet}d</Tag>
+                        </span>
+                      ) : null}
+                    </TD>
                     <TD align="right">
-                      {w.reportHref ? (
-                        <TextLink href={w.reportHref}>Full feedback →</TextLink>
-                      ) : (
-                        <span style={{ color: FAINT, fontSize: 12 }}>not finished</span>
-                      )}
+                      <OpenArrow />
                     </TD>
                   </TRow>
                 );
@@ -213,12 +214,63 @@ export default async function ReportsPage() {
             </Table>
           ) : (
             <Empty>
-              Nothing handed in yet. Once a student finishes a practice it appears here with its
-              feedback.
+              Nothing has been handed in yet. Set a class some practice and it lands here as soon as
+              it is marked.
             </Empty>
           )}
         </Card>
 
+        {/* ── 2. who hasn't ────────────────────────────────────────────────── */}
+        <Card flush id="waiting">
+          <CardHead
+            title="Nothing back yet"
+            divided
+            badge={waiting.length > 0 ? <Tag tone="amber">{waiting.length}</Tag> : null}
+            note="students in your classes with no marked work — longest silence first"
+          />
+          {waiting.length > 0 ? (
+            <Table cols={WAIT_COLS} minWidth={700}>
+              <THead
+                cols={WAIT_COLS}
+                labels={["Student", "Class", "Started but unfinished", "Last seen", ""]}
+              />
+              {waiting.map((s) => (
+                <TRow key={s.studentId} cols={WAIT_COLS} href={s.reportHref}>
+                  <TD tone="ink" weight={500}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+                      <Avatar name={s.name} size={26} />
+                      <span style={{ minWidth: 0 }}>{s.name}</span>
+                    </span>
+                  </TD>
+                  <TD tone="soft">{s.groupName ?? "—"}</TD>
+                  <TD tone="body">
+                    {s.unfinished > 0 ? (
+                      <span style={{ color: AMBER }}>
+                        {s.unfinished} {s.unfinished === 1 ? "attempt" : "attempts"}
+                      </span>
+                    ) : (
+                      <span style={{ color: FAINT }}>nothing started</span>
+                    )}
+                  </TD>
+                  <TD tone="soft">
+                    {s.lastActive ? (
+                      dateFmt(s.lastActive)
+                    ) : (
+                      <span style={{ color: RED }}>never signed in to practise</span>
+                    )}
+                  </TD>
+                  <TD align="right">
+                    <OpenArrow />
+                  </TD>
+                </TRow>
+              ))}
+            </Table>
+          ) : (
+            <Empty>Everyone in your classes has work back. Nothing to chase.</Empty>
+          )}
+        </Card>
+
+        {/* ── the evidence, folded away ────────────────────────────────────── */}
         <details>
           <summary
             style={{
@@ -229,192 +281,163 @@ export default async function ReportsPage() {
               marginBottom: 10,
             }}
           >
-            Show the working — band spread, trend and skill averages
+            Show the working — classes, band spread, and what keeps capping them
           </summary>
-          <Split>
-            <Card>
-              <CardHead
-                title="Bands awarded"
-                note="every graded writing, reading and speaking practice"
-              />
-              {report.bandBuckets.length > 0 ? (
-                <Columns
-                  bars={report.bandBuckets.map((b) => ({
-                    label: b.label,
-                    cap: b.value,
-                    pct: (b.value / topBucket) * 100,
-                    fill: INDIGO,
-                  }))}
-                  height={150}
-                />
-              ) : (
-                <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                  Nothing graded in this window yet.
-                </p>
-              )}
-            </Card>
 
-            <Card>
-              <CardHead title="Average by skill" />
-              <CardNote>
-                Rests only on what has actually been graded — never averaged into one overall band.
-              </CardNote>
-              {measured.map((s) => (
-                <MeterRow
-                  key={s.skill}
-                  label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
-                  pct={((s.band ?? 0) / 9) * 100}
-                  value={s.band?.toFixed(1) ?? "—"}
-                  fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
-                  trail={
-                    <span
-                      style={{
-                        color: FAINT,
-                        width: 74,
-                        display: "inline-block",
-                        textAlign: "right",
-                      }}
-                    >
-                      {s.samples} graded
-                    </span>
+          <Stack>
+            <Card flush>
+              <CardHead
+                title="Classes"
+                divided
+                note="completion is the share of set practice finished and marked"
+              />
+              <Table cols={COLS} minWidth={isCenter ? 780 : 620}>
+                <THead
+                  cols={COLS}
+                  labels={
+                    isCenter
+                      ? ["Class", "Teacher", "Students", "Avg band", "Completion", "Set"]
+                      : ["Class", "Students", "Avg band", "Completion", "Set"]
                   }
                 />
-              ))}
-              {measured.length === 0 ? (
-                <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                  No graded practice yet.
-                </p>
-              ) : null}
+                {report.groups.map((g) => (
+                  <TRow key={g.id} cols={COLS} href={`/console/groups/${g.id}`}>
+                    <TD tone="ink" weight={500}>
+                      {g.name}
+                    </TD>
+                    {isCenter ? <TD tone="body">{g.teacherName ?? "—"}</TD> : null}
+                    <TD>{g.students}</TD>
+                    <TD tone="ink" weight={600}>
+                      {g.averageBand?.toFixed(1) ?? "—"}
+                    </TD>
+                    <TD>
+                      {g.completionPct == null ? (
+                        <span style={{ color: FAINT }}>—</span>
+                      ) : (
+                        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Bar
+                            pct={g.completionPct}
+                            width={60}
+                            fill={g.completionPct >= 60 ? GREEN : INDIGO}
+                          />
+                          <span style={{ fontSize: 12 }}>{g.completionPct}%</span>
+                        </span>
+                      )}
+                    </TD>
+                    <TD tone={g.assignments === 0 ? "faint" : "body"}>{g.assignments}</TD>
+                  </TRow>
+                ))}
+                {report.groups.length === 0 ? (
+                  <Empty>No classes yet. Create one and set it some practice.</Empty>
+                ) : null}
+              </Table>
             </Card>
-          </Split>
+
+            <Split>
+              <Card>
+                <CardHead
+                  title="Bands awarded"
+                  note="every marked writing, reading and speaking practice"
+                />
+                {report.bandBuckets.length > 0 ? (
+                  <Columns
+                    bars={report.bandBuckets.map((b) => ({
+                      label: b.label,
+                      cap: b.value,
+                      pct: (b.value / topBucket) * 100,
+                      fill: INDIGO,
+                    }))}
+                    height={150}
+                  />
+                ) : (
+                  <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                    Nothing marked in this window yet.
+                  </p>
+                )}
+              </Card>
+
+              <Card>
+                <CardHead title="Average by skill" />
+                <CardNote>
+                  Rests only on what has actually been marked — never averaged into one overall
+                  band.
+                </CardNote>
+                {measured.map((s) => (
+                  <MeterRow
+                    key={s.skill}
+                    label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
+                    pct={((s.band ?? 0) / 9) * 100}
+                    value={s.band?.toFixed(1) ?? "—"}
+                    fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
+                    trail={
+                      <span
+                        style={{
+                          color: FAINT,
+                          width: 74,
+                          display: "inline-block",
+                          textAlign: "right",
+                        }}
+                      >
+                        {s.samples} marked
+                      </span>
+                    }
+                  />
+                ))}
+                {measured.length === 0 ? (
+                  <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                    No marked practice yet.
+                  </p>
+                ) : null}
+              </Card>
+            </Split>
+
+            <Split ratio="1fr 1fr">
+              <Card>
+                <CardHead title="What caps their writing" />
+                <CardNote>
+                  The lowest criterion on each marked essay — the one thing holding the band down.
+                </CardNote>
+                {report.writingCaps.map((c) => (
+                  <MeterRow
+                    key={c.label}
+                    label={c.label}
+                    labelWidth={150}
+                    pct={(c.value / topCap) * 100}
+                    value={c.value}
+                    fill={INDIGO}
+                  />
+                ))}
+                {report.writingCaps.length === 0 ? (
+                  <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                    No marked essays yet.
+                  </p>
+                ) : null}
+              </Card>
+
+              <Card>
+                <CardHead title="Reading questions most often wrong" />
+                <CardNote>
+                  Total wrong answers by question type, across the classes in scope.
+                </CardNote>
+                {report.readingMisses.map((m) => (
+                  <MeterRow
+                    key={m.label}
+                    label={m.label}
+                    labelWidth={150}
+                    pct={(m.value / topMiss) * 100}
+                    value={m.value}
+                    fill={AMBER}
+                  />
+                ))}
+                {report.readingMisses.length === 0 ? (
+                  <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                    No marked reading tests yet.
+                  </p>
+                ) : null}
+              </Card>
+            </Split>
+          </Stack>
         </details>
-
-        <Card flush>
-          <CardHead
-            title="Classes"
-            divided
-            note="completion is the share of set practice finished and graded"
-          />
-          <Table cols={COLS} minWidth={isCenter ? 780 : 620}>
-            <THead
-              cols={COLS}
-              labels={
-                isCenter
-                  ? ["Class", "Teacher", "Students", "Avg band", "Completion", "Set"]
-                  : ["Class", "Students", "Avg band", "Completion", "Set"]
-              }
-            />
-            {report.groups.map((g) => (
-              <TRow key={g.id} cols={COLS} href={`/console/groups/${g.id}`}>
-                <TD tone="ink" weight={500}>
-                  {g.name}
-                </TD>
-                {isCenter ? <TD tone="body">{g.teacherName ?? "—"}</TD> : null}
-                <TD>{g.students}</TD>
-                <TD tone="ink" weight={600}>
-                  {g.averageBand?.toFixed(1) ?? "—"}
-                </TD>
-                <TD>
-                  {g.completionPct == null ? (
-                    <span style={{ color: FAINT }}>—</span>
-                  ) : (
-                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Bar
-                        pct={g.completionPct}
-                        width={60}
-                        fill={g.completionPct >= 60 ? GREEN : INDIGO}
-                      />
-                      <span style={{ fontSize: 12 }}>{g.completionPct}%</span>
-                    </span>
-                  )}
-                </TD>
-                <TD tone={g.assignments === 0 ? "faint" : "body"}>{g.assignments}</TD>
-              </TRow>
-            ))}
-            {report.groups.length === 0 ? (
-              <Empty>No classes yet. Create one and set it some practice.</Empty>
-            ) : null}
-          </Table>
-        </Card>
-
-        <Split ratio="1fr 1fr">
-          <Card>
-            <CardHead title="What caps their writing" />
-            <CardNote>
-              The lowest criterion on each graded essay — the one thing holding the band down.
-            </CardNote>
-            {report.writingCaps.map((c) => (
-              <MeterRow
-                key={c.label}
-                label={c.label}
-                labelWidth={150}
-                pct={(c.value / topCap) * 100}
-                value={c.value}
-                fill={INDIGO}
-              />
-            ))}
-            {report.writingCaps.length === 0 ? (
-              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                No graded essays yet.
-              </p>
-            ) : null}
-          </Card>
-
-          <Card>
-            <CardHead title="Reading questions most often wrong" />
-            <CardNote>Total wrong answers by question type, across the classes in scope.</CardNote>
-            {report.readingMisses.map((m) => (
-              <MeterRow
-                key={m.label}
-                label={m.label}
-                labelWidth={150}
-                pct={(m.value / topMiss) * 100}
-                value={m.value}
-                fill={AMBER}
-              />
-            ))}
-            {report.readingMisses.length === 0 ? (
-              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                No graded reading tests yet.
-              </p>
-            ) : null}
-          </Card>
-        </Split>
-
-        <Card flush id="needs-attention">
-          <CardHead
-            title="Needs attention"
-            divided
-            badge={report.atRisk.length > 0 ? <Tag tone="red">{report.atRisk.length}</Tag> : null}
-            note="no graded practice in the last 14 days — earliest to stop first"
-          />
-          {report.atRisk.slice(0, 25).map((s) => (
-            <ListRow
-              key={s.id}
-              href={`/console/students/${s.id}`}
-              lead={<Avatar name={s.name} size={30} />}
-              title={s.name}
-              meta={
-                s.lastActive ? `last practised ${dateFmt(s.lastActive)}` : "has never practised"
-              }
-              trail={
-                <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  {s.lastActive ? null : <Tag tone="amber">never started</Tag>}
-                  <span style={{ fontFamily: SANS, fontSize: 12.5, color: INDIGO }}>Report →</span>
-                </span>
-              }
-            />
-          ))}
-          {report.atRisk.length === 0 ? (
-            <Empty>Everyone has practised in the last two weeks.</Empty>
-          ) : null}
-          {report.atRisk.length > 25 ? (
-            <div style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT, padding: "12px 18px" }}>
-              Showing 25 of {report.atRisk.length}.{" "}
-              <TextLink href="/console/students?sort=idle">See the whole roster →</TextLink>
-            </div>
-          ) : null}
-        </Card>
       </Stack>
     </div>
   );

@@ -37,23 +37,47 @@ const GREEN = "#16794C";
 const AMBER = "#B8791F";
 const RED = "#C2453A";
 
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+/** One student who has handed work in that nobody has opened. */
+export interface NewByStudent {
+  studentId: string;
+  name: string;
+  groupName: string | null;
+  /** Unopened pieces. */
+  count: number;
+  /** When the latest of them was marked. */
+  when: string | null;
+  /** Their homework list — step two of the drill-down. */
+  href: string;
+}
+
 export function ReportAlerts({
   findings,
-  /** Handed-in work this teacher has not opened yet. */
-  newWork,
-  /** Where "see them" jumps to — the hand-ins table. */
+  /** Who has handed in work nobody has opened, newest first. */
+  newByStudent,
+  /** Where the overflow line jumps to — the hand-ins table. */
   newWorkHref,
 }: {
   findings: Finding[];
-  newWork: number;
+  newByStudent: NewByStudent[];
   newWorkHref: string;
 }) {
   const [open, setOpen] = useState(false);
 
-  const needsDoing = findings.filter((f) => f.tone !== "good").length + (newWork > 0 ? 1 : 0);
+  const newWork = newByStudent.reduce((n, s) => n + s.count, 0);
+  // People, not pieces. Three essays from one student is one person to look at,
+  // and a badge that says 3 sends a teacher looking for three names.
+  const needsDoing = findings.filter((f) => f.tone !== "good").length + newByStudent.length;
   const anyBad = findings.some((f) => f.tone === "bad");
   const badge = anyBad ? RED : newWork > 0 ? INDIGO : AMBER;
   const clear = needsDoing === 0;
+
+  // Long lists get a tail rather than a scroll race with the findings below.
+  const SHOWN = 6;
+  const shown = newByStudent.slice(0, SHOWN);
+  const hidden = newByStudent.length - shown.length;
 
   return (
     <div style={{ position: "relative" }}>
@@ -159,29 +183,63 @@ export function ReportAlerts({
             </div>
 
             <div style={{ maxHeight: 420, overflowY: "auto" }}>
-              {/* New work comes first: it is the only item that decays — an
-                  unopened essay matters most on the day it arrives. */}
-              {newWork > 0 ? (
+              {/* WHO, BY NAME. The point of this menu is to answer "did anyone
+                  do the homework I set last night" without reading the page
+                  behind it — so it names them. Each one opens that student's
+                  homework list, and the piece itself is one click further. */}
+              {shown.length > 0 ? (
+                <div
+                  style={{
+                    padding: "8px 14px 6px",
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    letterSpacing: ".04em",
+                    textTransform: "uppercase",
+                    color: INDIGO,
+                    background: "#F7F7FD",
+                  }}
+                >
+                  <FiInbox size={12} style={{ marginRight: 6, verticalAlign: -2 }} aria-hidden />
+                  Handed in — not opened yet
+                </div>
+              ) : null}
+
+              {shown.map((s) => (
                 <Link
-                  href={newWorkHref}
+                  key={s.studentId}
+                  href={s.href}
                   onClick={() => setOpen(false)}
                   style={{ ...itemStyle, borderTop: "none", background: "#F7F7FD" }}
                 >
                   <span style={{ ...dotStyle, background: INDIGO, marginTop: 5 }} />
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <span style={headlineStyle}>
-                      <FiInbox
-                        size={13}
-                        style={{ marginRight: 6, verticalAlign: -2 }}
-                        aria-hidden
-                      />
-                      {newWork} new {newWork === 1 ? "hand-in" : "hand-ins"} you haven&apos;t opened
-                    </span>
+                    <span style={headlineStyle}>{s.name}</span>
                     <span style={detailStyle}>
-                      Marked and waiting. Opening one clears it from here.
+                      {s.count} {s.count === 1 ? "piece" : "pieces"} marked
+                      {s.groupName ? ` · ${s.groupName}` : ""}
+                      {s.when ? ` · ${shortDate(s.when)}` : ""}
                     </span>
                   </span>
-                  <span style={actionStyle}>See them →</span>
+                  <span style={actionStyle}>Open →</span>
+                </Link>
+              ))}
+
+              {hidden > 0 ? (
+                <Link
+                  href={newWorkHref}
+                  onClick={() => setOpen(false)}
+                  style={{
+                    ...itemStyle,
+                    borderTop: "none",
+                    background: "#F7F7FD",
+                    paddingTop: 6,
+                    paddingBottom: 12,
+                  }}
+                >
+                  <span style={{ ...dotStyle, background: "transparent" }} />
+                  <span style={{ ...actionStyle, flex: 1, textAlign: "left" }}>
+                    and {hidden} more →
+                  </span>
                 </Link>
               ) : null}
 

@@ -118,7 +118,7 @@ export function buildFindings(report: CenterReport): Finding[] {
           ? `${never} of them ${never === 1 ? "has" : "have"} never started at all — worth checking they can sign in.`
           : "They were active before, so something changed. Listed below.",
       tone: "bad",
-      action: { label: "See who", href: "#needs-attention" },
+      action: { label: "See who", href: "#waiting" },
     });
   } else if (totals.students > 0 && totals.gradedPractices > 0) {
     // Guarded on there being graded work at all. An empty at-risk list in a

@@ -2,6 +2,7 @@ import "server-only";
 
 import { type Profile } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
+import { loadNewWork } from "@/lib/console/new-work";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -54,15 +55,25 @@ export interface StudentSummary {
   latestBand: number | null;
   /** Finished and graded in the window. */
   done: number;
+  /** How many of those were homework rather than their own practice. */
+  homeworkDone: number;
   /** Started but not finished — the number that explains a low `done`. */
   unfinished: number;
+  /** Graded work this teacher has not opened. Drives the "new" badge. */
+  unopened: number;
   lastActive: string | null;
+  /** When they last handed something in that got marked. */
+  lastGraded: string | null;
   reportHref: string;
 }
 
 export interface WorkOverview {
   recent: RecentWorkRow[];
   students: StudentSummary[];
+  /** Report links whose work nobody has opened yet. */
+  unopenedHrefs: Set<string>;
+  /** Total unopened pieces across every student on the page. */
+  unopenedCount: number;
 }
 
 /**
@@ -73,7 +84,7 @@ export interface WorkOverview {
  * would double every round trip to show two arrangements of one answer.
  */
 export async function loadWorkOverview(profile: Profile, limit = 30): Promise<WorkOverview> {
-  const recent = await loadRecentWork(profile, 500);
+  const [recent, newWork] = await Promise.all([loadRecentWork(profile, 500), loadNewWork()]);
 
   // Which class each student belongs to, for the row's second line. A student
   // in two of a teacher's classes shows the first — the report link covers both.
@@ -102,18 +113,28 @@ export async function loadWorkOverview(profile: Profile, limit = 30): Promise<Wo
       groupName: cls.name,
       latestBand: null,
       done: 0,
+      homeworkDone: 0,
       unfinished: 0,
+      unopened: 0,
       lastActive: null,
+      lastGraded: null,
       reportHref: `/console/groups/${cls.id}/students/${studentId}`,
     });
   }
+  let unopenedCount = 0;
   for (const w of recent) {
     const row = byStudent.get(w.studentId);
     if (!row) continue;
     row.name = w.studentName;
     if (w.state === "graded") {
       row.done += 1;
+      if (w.assigned) row.homeworkDone += 1;
       if (row.latestBand == null && w.band != null) row.latestBand = w.band;
+      if (!row.lastGraded || w.when > row.lastGraded) row.lastGraded = w.when;
+      if (w.reportHref && newWork.hrefs.has(w.reportHref)) {
+        row.unopened += 1;
+        unopenedCount += 1;
+      }
     } else {
       row.unfinished += 1;
     }
@@ -125,7 +146,12 @@ export async function loadWorkOverview(profile: Profile, limit = 30): Promise<Wo
     (a, b) => a.done - b.done || (a.lastActive ?? "").localeCompare(b.lastActive ?? ""),
   );
 
-  return { recent: recent.slice(0, limit), students };
+  return {
+    recent: recent.slice(0, limit),
+    students,
+    unopenedHrefs: newWork.hrefs,
+    unopenedCount,
+  };
 }
 
 export async function loadRecentWork(profile: Profile, limit = 30): Promise<RecentWorkRow[]> {
