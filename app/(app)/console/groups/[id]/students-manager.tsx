@@ -10,26 +10,24 @@ import {
 } from "../actions";
 
 /**
- * The class list, as a list.
+ * The class, as one table.
  *
- * WHAT THIS REPLACED, AND WHY. The Manage tab used to open with two forms —
- * "Add a student" and "Add a whole class" — both permanently expanded, both
- * asking for a login and a password, and neither showing who was already in the
- * class. The page answered "how do I add someone" three times and "who is in
- * this class" not at all, which is the wrong way round: the roster is the thing
- * you came to look at, and adding is an occasional action on it.
- *
- * So: the students are the page, and the two ways of adding are buttons above
- * them.
+ * WHAT THIS REPLACED. The group page had SIX tabs, two of which — "Roster" and
+ * "Manage" — both listed the same students: one with their bands, one with two
+ * permanently-expanded forms for adding more. Nowhere did it just show you the
+ * class. Now there is one Students tab, this table is it, and the two ways of
+ * adding are a button and a menu above it.
  *
  * EVERY STUDENT HAS AN ACCOUNT, AND THAT IS NOT OPTIONAL. Homework on this
  * platform IS the account — an essay, its band and its feedback all hang off a
- * student id, and there is no version of "hand work in" that works without one.
- * What IS optional is the teacher ever thinking about it: the login is built
- * from the name and the password is generated, so adding a student is typing a
- * name. This column exists so the credentials can be read back out later, and
- * the reset beside it exists because a center student's address is synthetic —
- * they cannot reset their own password by email, so their teacher does it here.
+ * student id, and there is no version of "hand work in" without one. What is
+ * optional is the teacher ever thinking about it: the login is built from the
+ * name and the password is generated. The login shows here so it can be read
+ * back out, and Reset password exists because a center student's address is
+ * synthetic — they cannot reset their own by email, so their teacher does it.
+ *
+ * A grid per row rather than one `<table>`: revealing a new password has to put
+ * a full-width strip under a single row, which a shared column grid can't do.
  */
 
 const INK = "#16162E";
@@ -37,7 +35,11 @@ const MUTED = "#6E6C87";
 const FAINT = "#93919F";
 const LINE = "#EAE8E1";
 const GREEN = "#16794C";
+const AMBER = "#9A6B00";
 const RED = "#B3261E";
+const INDIGO = "#4340CB";
+
+const COLS = "minmax(200px, 2.4fr) 1.1fr .6fr .8fr 1fr auto";
 
 export interface StudentRow {
   id: string;
@@ -46,6 +48,12 @@ export interface StudentRow {
   contactEmail: string | null;
   joinedAt: string;
   photoUrl: string | null;
+  /** Their lowest measured band, and in which skill. Null = never graded. */
+  weakestSkill: string | null;
+  weakestBand: number | null;
+  targetBand: number | null;
+  practice30d: number;
+  lastActive: string | null;
 }
 
 export function StudentsManager({
@@ -58,30 +66,45 @@ export function StudentsManager({
   if (students.length === 0) {
     return (
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.6 }}>
-        Nobody in this class yet. Add them one at a time, or upload the register you already have —
+        Nobody in this class yet. Add them one at a time, or import the register you already keep —
         logins and passwords are made for you.
       </p>
     );
   }
 
   return (
-    <div>
-      {students.map((s, i) => (
-        <StudentLine key={s.id} groupId={groupId} student={s} first={i === 0} />
-      ))}
+    <div style={{ overflowX: "auto" }}>
+      <div style={{ minWidth: 820 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: COLS,
+            gap: 12,
+            padding: "0 0 8px",
+            borderBottom: `1px solid ${LINE}`,
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: FAINT,
+            textTransform: "uppercase",
+            letterSpacing: ".04em",
+          }}
+        >
+          <span>Student</span>
+          <span>Weakest skill</span>
+          <span>Target</span>
+          <span>30-day practice</span>
+          <span>Last active</span>
+          <span />
+        </div>
+        {students.map((s) => (
+          <StudentLine key={s.id} groupId={groupId} student={s} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function StudentLine({
-  groupId,
-  student,
-  first,
-}: {
-  groupId: string;
-  student: StudentRow;
-  first: boolean;
-}) {
+function StudentLine({ groupId, student }: { groupId: string; student: StudentRow }) {
   const [reset, resetAction, resetting] = useActionState(
     resetStudentPassword,
     {} as ResetPasswordState,
@@ -93,6 +116,11 @@ function StudentLine({
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const behind =
+    student.weakestBand != null && student.targetBand != null
+      ? student.weakestBand - student.targetBand
+      : null;
+
   async function copy(text: string) {
     await navigator.clipboard.writeText(text);
     setCopied(true);
@@ -100,27 +128,64 @@ function StudentLine({
   }
 
   return (
-    <div style={{ borderTop: first ? "none" : `1px solid ${LINE}`, padding: "11px 0" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <Avatar name={student.name} photoUrl={student.photoUrl} />
-
-        <div style={{ minWidth: 160, flex: 1 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{student.name}</div>
-          <div style={{ fontSize: 11.5, color: FAINT, marginTop: 1 }}>
-            {student.login ? (
-              <code style={{ fontFamily: "ui-monospace, monospace" }}>{student.login}</code>
-            ) : (
-              "no login"
-            )}
-            {student.contactEmail ? ` · ${student.contactEmail}` : " · no email"}
-          </div>
-        </div>
-
-        <span style={{ fontSize: 12, color: FAINT, whiteSpace: "nowrap" }}>
-          joined {new Date(student.joinedAt).toLocaleDateString()}
+    <div style={{ borderBottom: `1px solid ${LINE}`, padding: "10px 0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: COLS, gap: 12, alignItems: "center" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <Avatar name={student.name} photoUrl={student.photoUrl} />
+          <span style={{ minWidth: 0 }}>
+            <span
+              style={{
+                display: "block",
+                fontSize: 13.5,
+                fontWeight: 600,
+                color: INK,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {student.name}
+            </span>
+            <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 1 }}>
+              {student.login ? (
+                <code style={{ fontFamily: "ui-monospace, monospace" }}>{student.login}</code>
+              ) : (
+                "no login"
+              )}
+              {student.contactEmail ? ` · ${student.contactEmail}` : ""}
+            </span>
+          </span>
         </span>
 
-        <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+        <span style={{ fontSize: 13 }}>
+          {student.weakestBand != null ? (
+            <span
+              style={{
+                fontWeight: 600,
+                color: behind == null || behind >= 0 ? GREEN : behind >= -1 ? AMBER : RED,
+              }}
+            >
+              {student.weakestBand.toFixed(1)}{" "}
+              <span style={{ fontWeight: 400, color: FAINT, textTransform: "capitalize" }}>
+                {student.weakestSkill}
+              </span>
+            </span>
+          ) : (
+            <span style={{ color: FAINT }}>not measured</span>
+          )}
+        </span>
+
+        <span style={{ fontSize: 13, color: MUTED }}>{student.targetBand?.toFixed(1) ?? "—"}</span>
+
+        <span style={{ fontSize: 13, color: student.practice30d === 0 ? FAINT : INK }}>
+          {student.practice30d}
+        </span>
+
+        <span style={{ fontSize: 12.5, color: MUTED }}>
+          {student.lastActive ? new Date(student.lastActive).toLocaleDateString() : "never"}
+        </span>
+
+        <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
           <a href={`/console/groups/${groupId}/students/${student.id}`} style={linkStyle}>
             Report
           </a>
@@ -128,13 +193,13 @@ function StudentLine({
           <form action={resetAction}>
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="student_id" value={student.id} />
-            <button type="submit" disabled={resetting} style={quietStyle}>
-              {resetting ? "Resetting…" : "Reset password"}
+            <button type="submit" disabled={resetting} style={quietStyle} title="New password">
+              {resetting ? "…" : "Reset"}
             </button>
           </form>
 
-          {/* Two clicks, because the roster is where a mis-click costs someone
-              their place in the class. The account and its work survive. */}
+          {/* Two clicks, because on a class list a mis-click costs someone their
+              place in the class. The account and its work survive either way. */}
           {confirming ? (
             <form action={removeAction} style={{ display: "flex", gap: 6 }}>
               <input type="hidden" name="group_id" value={groupId} />
@@ -144,7 +209,7 @@ function StudentLine({
                 disabled={removing}
                 style={{ ...quietStyle, color: RED, borderColor: "#F2C9C4" }}
               >
-                {removing ? "Removing…" : "Really remove"}
+                {removing ? "…" : "Confirm"}
               </button>
               <button type="button" onClick={() => setConfirming(false)} style={quietStyle}>
                 Cancel
@@ -155,7 +220,7 @@ function StudentLine({
               Remove
             </button>
           )}
-        </div>
+        </span>
       </div>
 
       {removal.error ? (
@@ -163,7 +228,6 @@ function StudentLine({
           {removal.error}
         </p>
       ) : null}
-
       {reset.error ? (
         <p style={{ fontSize: 12, color: RED, margin: "6px 0 0" }} role="alert">
           {reset.error}
@@ -212,6 +276,268 @@ function StudentLine({
   );
 }
 
+/* ── the toolbar ──────────────────────────────────────────────────────────── */
+
+/**
+ * The file menu beside "Add student": export what is here, or import more.
+ *
+ * One button for both because they are the same job in two directions, and a
+ * roster screen with four top-level buttons stops reading as a roster. Export
+ * runs entirely in the browser off the rows already on screen — no round trip,
+ * and nothing to keep in step with what you are looking at.
+ */
+export function RosterFileMenu({
+  students,
+  groupName,
+  children,
+}: {
+  students: StudentRow[];
+  groupName: string;
+  /** The import form, rendered inside the modal. */
+  children: React.ReactNode;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+
+  function exportCsv() {
+    const rows = [
+      [
+        "Name",
+        "Login",
+        "Contact email",
+        "Joined",
+        "Weakest band",
+        "Skill",
+        "Target",
+        "30-day practice",
+        "Last active",
+      ],
+      ...students.map((s) => [
+        s.name,
+        s.login ?? "",
+        s.contactEmail ?? "",
+        s.joinedAt.slice(0, 10),
+        s.weakestBand?.toFixed(1) ?? "",
+        s.weakestSkill ?? "",
+        s.targetBand?.toFixed(1) ?? "",
+        String(s.practice30d),
+        s.lastActive?.slice(0, 10) ?? "",
+      ]),
+    ];
+    const csv = rows
+      .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    // A BOM, or Excel reads Cyrillic names as mojibake.
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${groupName.replace(/[^\w\s-]/g, "").trim() || "class"}-students.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setMenuOpen(false);
+  }
+
+  return (
+    <span style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        onClick={() => setMenuOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-label="Import or export the class list"
+        title="Import or export"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          background: "#fff",
+          border: "1px solid #E0DED8",
+          borderRadius: 9,
+          padding: "8px 12px",
+          fontFamily: "inherit",
+          fontSize: 13.5,
+          color: INK,
+          cursor: "pointer",
+        }}
+      >
+        <FileIcon />
+        <Caret />
+      </button>
+
+      {menuOpen ? (
+        <>
+          {/* Catches the click that dismisses the menu, so it closes on any
+              outside click without a document-level listener. */}
+          <span
+            onClick={() => setMenuOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 40 }}
+          />
+          <span
+            role="menu"
+            style={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              right: 0,
+              zIndex: 41,
+              minWidth: 210,
+              background: "#fff",
+              border: `1px solid ${LINE}`,
+              borderRadius: 10,
+              boxShadow: "0 10px 30px rgba(22,22,46,.12)",
+              padding: 5,
+              display: "block",
+            }}
+          >
+            <MenuItem
+              onClick={() => {
+                setMenuOpen(false);
+                setImportOpen(true);
+              }}
+              title="Import students"
+              note="From Excel or CSV"
+            />
+            <MenuItem
+              onClick={exportCsv}
+              title="Export this list"
+              note={`${students.length} student${students.length === 1 ? "" : "s"} as CSV`}
+              disabled={students.length === 0}
+            />
+          </span>
+        </>
+      ) : null}
+
+      {importOpen ? <Modal onClose={() => setImportOpen(false)}>{children}</Modal> : null}
+    </span>
+  );
+}
+
+function MenuItem({
+  onClick,
+  title,
+  note,
+  disabled,
+}: {
+  onClick: () => void;
+  title: string;
+  note: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      disabled={disabled}
+      className="cn-chip"
+      style={{
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        background: "transparent",
+        border: 0,
+        borderRadius: 7,
+        padding: "8px 10px",
+        fontFamily: "inherit",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      <span style={{ display: "block", fontSize: 13, color: INK, fontWeight: 500 }}>{title}</span>
+      <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 1 }}>{note}</span>
+    </button>
+  );
+}
+
+/**
+ * A centred modal, not a slide-over.
+ *
+ * Importing is a review step — a table of guessed columns you check before
+ * forty accounts exist — and a 460px drawer cannot show a table. Everything
+ * else on this page stays a drawer.
+ */
+function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 70,
+        background: "rgba(22,22,46,.35)",
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "center",
+        padding: "6vh 16px",
+        overflowY: "auto",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Import students"
+        style={{
+          width: "min(720px, 100%)",
+          background: "#fff",
+          borderRadius: 14,
+          padding: 20,
+          boxShadow: "0 24px 60px rgba(22,22,46,.24)",
+          textAlign: "left",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+          <h2 style={{ margin: 0, fontSize: 17, color: INK }}>Import students</h2>
+          <span style={{ fontSize: 12.5, color: FAINT }}>
+            Upload the register you already keep, or paste the names.
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              marginLeft: "auto",
+              background: "transparent",
+              border: 0,
+              fontSize: 20,
+              lineHeight: 1,
+              color: MUTED,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── bits ─────────────────────────────────────────────────────────────────── */
+
+function FileIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path
+        d="M9.2 1.5H4.5A1.5 1.5 0 0 0 3 3v10a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 13V5.3L9.2 1.5Z"
+        stroke={INDIGO}
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M9 1.7V5.5h3.8" stroke={INDIGO} strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Caret() {
+  return (
+    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden>
+      <path d="M2 4l3 3 3-3" stroke={MUTED} strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
   const initials = name
     .split(/\s+/)
@@ -228,7 +554,7 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
       alt=""
       width={30}
       height={30}
-      style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover" }}
+      style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
     />
   ) : (
     <span
@@ -236,9 +562,10 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
       style={{
         width: 30,
         height: 30,
+        flexShrink: 0,
         borderRadius: "50%",
         background: "#EDEBFB",
-        color: "#4340CB",
+        color: INDIGO,
         fontSize: 11.5,
         fontWeight: 600,
         display: "inline-flex",
@@ -265,7 +592,7 @@ const quietStyle: React.CSSProperties = {
 
 const linkStyle: React.CSSProperties = {
   ...quietStyle,
-  color: "#4340CB",
+  color: INDIGO,
   textDecoration: "none",
   display: "inline-block",
 };

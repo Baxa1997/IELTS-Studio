@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
 import {
-  AMBER,
   Bar,
   Card,
   CardHead,
@@ -16,7 +15,6 @@ import {
   KindBadge,
   LINE,
   ListRow,
-  MeterRow,
   PageHead,
   PersonCell,
   RED,
@@ -44,21 +42,20 @@ import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { AssignTeacherForm, DeleteGroupButton, RemoveMemberButton } from "../group-forms";
+import { AssignTeacherForm, DeleteGroupButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { TelegramPanel } from "./telegram-panel";
 import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
-import { StudentsManager } from "./students-manager";
+import { RosterFileMenu, StudentsManager } from "./students-manager";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["roster", "practice", "progress", "attendance", "money", "manage"] as const;
+const TABS = ["students", "practice", "attendance", "money"] as const;
 type Tab = (typeof TABS)[number];
 
-const ROSTER_COLS = "2.2fr 1.2fr .8fr 1.2fr 1.2fr .7fr";
 const MONEY_COLS = "2fr 1.4fr 1.1fr 1.1fr 1.1fr";
 const KIND_LABEL: Record<string, string> = { writing: "W", reading: "R", listening: "L" };
 
@@ -77,7 +74,9 @@ export default async function GroupDetailPage({
 
   const { id } = await params;
   const sp = await searchParams;
-  const tab: Tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "roster";
+  const tab: Tab = (TABS as readonly string[]).includes(sp.tab ?? "")
+    ? (sp.tab as Tab)
+    : "students";
 
   const group = await loadGroupDetail(id);
   if (!group) notFound();
@@ -206,8 +205,29 @@ export default async function GroupDetailPage({
       ? Math.round((totalCompleted / (assignments.length * group.members.length)) * 100)
       : null;
 
+  // The class list, learning data and account data joined into one shape —
+  // both the table and the CSV export read this, so what you download is
+  // exactly what you were looking at.
+  const studentRows = group.members.map((m) => {
+    const weakest = weakestOf(m.id);
+    const act = activity.get(m.id);
+    return {
+      id: m.id,
+      name: m.name,
+      login: m.login,
+      contactEmail: m.contactEmail,
+      joinedAt: m.joinedAt,
+      photoUrl: m.photoUrl,
+      weakestSkill: weakest?.skill ?? null,
+      weakestBand: weakest?.band ?? null,
+      targetBand: targets.get(m.id) ?? null,
+      practice30d: act?.count30d ?? 0,
+      lastActive: act?.lastActive ?? null,
+    };
+  });
+
   const tabHref = (t: Tab) =>
-    t === "roster" ? `/console/groups/${id}` : `/console/groups/${id}?tab=${t}`;
+    t === "students" ? `/console/groups/${id}` : `/console/groups/${id}?tab=${t}`;
 
   return (
     <div>
@@ -222,9 +242,50 @@ export default async function GroupDetailPage({
           </>
         }
         actions={
-          <TextLink href={`/console/groups/${id}?tab=manage`}>
-            Add students & set practice →
-          </TextLink>
+          <Drawer
+            label="Settings"
+            variant="ghost"
+            eyebrow={group.name}
+            title="Class settings"
+            note="The things you set once: who teaches it, where it announces, whether it exists."
+          >
+            <div style={{ display: "grid", gap: 20 }}>
+              <section>
+                <h3 style={settingsHeading}>Invite link</h3>
+                <p style={settingsNote}>
+                  They join {group.name} automatically when they accept it. Adding students directly
+                  is usually faster.
+                </p>
+                <InviteMemberPanel fixedGroupId={group.id} canInviteTeachers={false} />
+              </section>
+
+              <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
+                <h3 style={settingsHeading}>Telegram channel</h3>
+                <p style={settingsNote}>
+                  Announce new practice where the class already talks. One channel per class.
+                </p>
+                <TelegramPanel
+                  groupId={group.id}
+                  linked={telegramLinked}
+                  botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
+                />
+              </section>
+
+              {isAdmin ? (
+                <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
+                  <h3 style={settingsHeading}>Teacher</h3>
+                  <AssignTeacherForm
+                    groupId={group.id}
+                    teacherId={group.teacherId}
+                    teachers={teachers}
+                  />
+                  <div style={{ borderTop: `1px solid ${LINE}`, marginTop: 18, paddingTop: 16 }}>
+                    <DeleteGroupButton groupId={group.id} />
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          </Drawer>
         }
       />
 
@@ -257,194 +318,100 @@ export default async function GroupDetailPage({
         />
       </KpiRow>
 
+      {/* Four tabs, from six. "Roster" and "Manage" both listed the same
+          students and neither just showed the class; they are one Students tab
+          now, and the single Progress card folded into its columns. */}
       <Tabs
         tabs={[
-          { href: tabHref("roster"), label: "Roster", active: tab === "roster" },
+          { href: tabHref("students"), label: "Students", active: tab === "students" },
           {
             href: tabHref("practice"),
             label: `Practice (${assignments.length})`,
             active: tab === "practice",
           },
-          { href: tabHref("progress"), label: "Progress", active: tab === "progress" },
           { href: tabHref("attendance"), label: "Attendance", active: tab === "attendance" },
           ...(moneyData
             ? [{ href: tabHref("money"), label: "Money", active: tab === "money" }]
             : []),
-          { href: tabHref("manage"), label: "Manage", active: tab === "manage" },
         ]}
       />
 
-      {/* ── roster ──────────────────────────────────────────────────────────── */}
-      {tab === "roster" ? (
-        <Card flush>
-          <Table cols={ROSTER_COLS} minWidth={780}>
-            <THead
-              cols={ROSTER_COLS}
-              labels={["Student", "Weakest skill", "Target", "Practice (30d)", "Last active", ""]}
+      {tab === "practice" ? (
+        <Stack>
+          {/* Setting practice lives with the practice, not on a separate admin
+              tab — it used to be two clicks away from the list it changes.
+              Only the class's own teacher may set it; see createAssignment. */}
+          {group.teacherId === profile.id ? (
+            <Card>
+              <CardHead title="Assign practice" />
+              <CardNote>
+                Everyone in the group gets the same prompt or test, so their results are comparable.
+                You can also set practice from the Writing, Reading or Listening screens themselves.
+              </CardNote>
+              <AssignPanel groupId={group.id} libraryTests={libraryTests} />
+            </Card>
+          ) : null}
+
+          <Card flush>
+            <CardHead
+              title="Practice set for this class"
+              divided
+              note="everyone gets identical content, so the bands compare"
             />
-            {group.members.map((m) => {
-              const act = activity.get(m.id);
-              const weakest = weakestOf(m.id);
-              const target = targets.get(m.id) ?? null;
-              const behind = weakest && target != null ? weakest.band - target : null;
+            {assignments.map((a) => {
+              const pct =
+                group.members.length > 0
+                  ? Math.round((a.completed / group.members.length) * 100)
+                  : 0;
               return (
-                <TRow key={m.id} cols={ROSTER_COLS}>
-                  <PersonCell
-                    name={m.name}
-                    photoUrl={m.photoUrl}
-                    meta={`joined ${new Date(m.joinedAt).toLocaleDateString()}`}
-                  />
-                  <TD>
-                    {weakest ? (
-                      <span
+                <ListRow
+                  key={a.id}
+                  href={`/console/groups/${group.id}/assignments/${a.id}`}
+                  lead={
+                    <KindBadge
+                      tone={
+                        a.kind === "writing" ? "indigo" : a.kind === "reading" ? "green" : "amber"
+                      }
+                    >
+                      {KIND_LABEL[a.kind] ?? "?"}
+                    </KindBadge>
+                  }
+                  title={a.title}
+                  meta={
+                    <>
+                      <span style={{ textTransform: "capitalize" }}>{a.kind}</span> · set{" "}
+                      {new Date(a.createdAt).toLocaleDateString()}
+                      {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
+                    </>
+                  }
+                  trail={
+                    <div style={{ width: 170 }}>
+                      <div
                         style={{
-                          fontWeight: 600,
-                          color: behind == null || behind >= 0 ? GREEN : behind >= -1 ? AMBER : RED,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontFamily: SANS,
+                          fontSize: 11.5,
+                          color: SOFT,
+                          marginBottom: 5,
                         }}
                       >
-                        {weakest.band.toFixed(1)}{" "}
-                        <span
-                          style={{ fontWeight: 400, color: FAINT, textTransform: "capitalize" }}
-                        >
-                          {weakest.skill}
+                        <span>
+                          {a.completed}/{group.members.length} submitted
                         </span>
-                      </span>
-                    ) : (
-                      <span style={{ color: FAINT }}>not measured</span>
-                    )}
-                  </TD>
-                  <TD tone="soft">{target?.toFixed(1) ?? "—"}</TD>
-                  <TD tone={(act?.count30d ?? 0) === 0 ? "faint" : "body"}>{act?.count30d ?? 0}</TD>
-                  <TD tone="soft">
-                    {act?.lastActive
-                      ? new Date(act.lastActive).toLocaleDateString()
-                      : "never practised"}
-                  </TD>
-                  <TD align="right">
-                    <span style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                      <TextLink href={`/console/groups/${group.id}/students/${m.id}`}>
-                        Report
-                      </TextLink>
-                      <RemoveMemberButton groupId={group.id} studentId={m.id} />
-                    </span>
-                  </TD>
-                </TRow>
+                        <span>{pct}%</span>
+                      </div>
+                      <Bar pct={pct} fill={pct >= 60 ? GREEN : INDIGO} />
+                    </div>
+                  }
+                />
               );
             })}
-            {group.members.length === 0 ? (
-              <Empty>No students yet — add them from the Manage tab.</Empty>
+            {assignments.length === 0 ? (
+              <Empty>Nothing assigned yet — set the first one above.</Empty>
             ) : null}
-          </Table>
-        </Card>
-      ) : null}
-
-      {/* ── practice ────────────────────────────────────────────────────────── */}
-      {tab === "practice" ? (
-        <Card flush>
-          <CardHead
-            title="Practice set for this class"
-            divided
-            note="everyone gets identical content, so the bands compare"
-          />
-          {assignments.map((a) => {
-            const pct =
-              group.members.length > 0 ? Math.round((a.completed / group.members.length) * 100) : 0;
-            return (
-              <ListRow
-                key={a.id}
-                href={`/console/groups/${group.id}/assignments/${a.id}`}
-                lead={
-                  <KindBadge
-                    tone={
-                      a.kind === "writing" ? "indigo" : a.kind === "reading" ? "green" : "amber"
-                    }
-                  >
-                    {KIND_LABEL[a.kind] ?? "?"}
-                  </KindBadge>
-                }
-                title={a.title}
-                meta={
-                  <>
-                    <span style={{ textTransform: "capitalize" }}>{a.kind}</span> · set{" "}
-                    {new Date(a.createdAt).toLocaleDateString()}
-                    {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
-                  </>
-                }
-                trail={
-                  <div style={{ width: 170 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontFamily: SANS,
-                        fontSize: 11.5,
-                        color: SOFT,
-                        marginBottom: 5,
-                      }}
-                    >
-                      <span>
-                        {a.completed}/{group.members.length} submitted
-                      </span>
-                      <span>{pct}%</span>
-                    </div>
-                    <Bar pct={pct} fill={pct >= 60 ? GREEN : INDIGO} />
-                  </div>
-                }
-              />
-            );
-          })}
-          {assignments.length === 0 ? (
-            <Empty>Nothing assigned yet — set the first practice from the Manage tab.</Empty>
-          ) : null}
-        </Card>
-      ) : null}
-
-      {/* ── progress ────────────────────────────────────────────────────────── */}
-      {tab === "progress" ? (
-        <Card>
-          <CardHead title="Distance to target" />
-          <CardNote>
-            Each student&apos;s weakest measured skill against their own target. The bar is the band
-            itself on the 0–9 scale; the figure on the right is how far short they are.
-          </CardNote>
-          {measuredMembers.map((m) => {
-            const w = m.weakest as { skill: string; band: number };
-            const behind = m.target != null ? w.band - m.target : null;
-            return (
-              <MeterRow
-                key={m.id}
-                label={m.name}
-                labelWidth={150}
-                pct={(w.band / 9) * 100}
-                value={w.band.toFixed(1)}
-                fill={behind == null || behind >= 0 ? GREEN : behind >= -1 ? AMBER : RED}
-                trail={
-                  <span
-                    style={{
-                      color: behind == null ? FAINT : behind >= 0 ? GREEN : RED,
-                      fontWeight: 600,
-                      width: 96,
-                      display: "inline-block",
-                      textAlign: "right",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {behind == null
-                      ? w.skill
-                      : behind >= 0
-                        ? `at target · ${w.skill}`
-                        : `${behind.toFixed(1)} · ${w.skill}`}
-                  </span>
-                }
-              />
-            );
-          })}
-          {measuredMembers.length === 0 ? (
-            <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-              Nobody in this class has a graded band yet. Set some practice and it fills in.
-            </p>
-          ) : null}
-        </Card>
+          </Card>
+        </Stack>
       ) : null}
 
       {/* ── attendance ──────────────────────────────────────────────────────── */}
@@ -696,11 +663,9 @@ export default async function GroupDetailPage({
       ) : null}
 
       {/* ── manage ──────────────────────────────────────────────────────────── */}
-      {tab === "manage" ? (
+      {/* ── students ────────────────────────────────────────────────────────── */}
+      {tab === "students" ? (
         <Stack>
-          {/* The roster leads, and the two ways of adding to it are buttons on
-              top of it. The old layout opened with two permanently-expanded
-              forms and never showed who was already in the class. */}
           <Card>
             <CardHead
               title={`Students (${group.members.length})`}
@@ -709,54 +674,22 @@ export default async function GroupDetailPage({
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <Drawer
                     label="+ Add student"
-                    eyebrow="Roster"
+                    eyebrow="Class list"
                     title="Add a student"
                     note="Type their name. The login and password are made for you and shown once."
                   >
                     <AddStudentPanel groupId={group.id} />
                   </Drawer>
-                  <Drawer
-                    label="Import a list"
-                    eyebrow="Roster"
-                    variant="ghost"
-                    width={620}
-                    title="Add a whole class"
-                    note="Upload the Excel or CSV register you already keep, or paste the names."
-                  >
+                  {/* Import and export behind one file button: the same job in
+                      two directions, and a roster with four top-level buttons
+                      stops reading as a roster. */}
+                  <RosterFileMenu students={studentRows} groupName={group.name}>
                     <BulkAddPanel groupId={group.id} />
-                  </Drawer>
+                  </RosterFileMenu>
                 </div>
               }
             />
-            <StudentsManager
-              groupId={group.id}
-              students={group.members.map((m) => ({
-                id: m.id,
-                name: m.name,
-                login: m.login,
-                contactEmail: m.contactEmail,
-                joinedAt: m.joinedAt,
-                photoUrl: m.photoUrl,
-              }))}
-            />
-          </Card>
-
-          {/* Only the class's own teacher sets practice — see createAssignment. */}
-          {group.teacherId === profile.id ? (
-            <Card>
-              <CardHead title="Assign practice" />
-              <CardNote>
-                Everyone in the group gets the same prompt or test, so their results are comparable.
-                You can also set practice from the Writing, Reading or Listening screens themselves.
-              </CardNote>
-              <AssignPanel groupId={group.id} libraryTests={libraryTests} />
-            </Card>
-          ) : null}
-
-          <Card>
-            <CardHead title="Invite a student to this group" />
-            <CardNote>They join {group.name} automatically when they accept the link.</CardNote>
-            <InviteMemberPanel fixedGroupId={group.id} canInviteTeachers={false} />
+            <StudentsManager groupId={group.id} students={studentRows} />
           </Card>
 
           {group.pendingInvites.length > 0 ? (
@@ -777,34 +710,24 @@ export default async function GroupDetailPage({
               ))}
             </Card>
           ) : null}
-
-          <Card>
-            <CardHead title="Telegram channel" />
-            <CardNote>
-              Announce new practice where the class already talks. One channel per class.
-            </CardNote>
-            <TelegramPanel
-              groupId={group.id}
-              linked={telegramLinked}
-              botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
-            />
-          </Card>
-
-          {isAdmin ? (
-            <Card>
-              <CardHead title="Group settings" />
-              <AssignTeacherForm
-                groupId={group.id}
-                teacherId={group.teacherId}
-                teachers={teachers}
-              />
-              <div style={{ borderTop: `1px solid ${LINE}`, marginTop: 18, paddingTop: 16 }}>
-                <DeleteGroupButton groupId={group.id} />
-              </div>
-            </Card>
-          ) : null}
         </Stack>
       ) : null}
     </div>
   );
 }
+
+const settingsHeading: React.CSSProperties = {
+  margin: "0 0 6px",
+  fontFamily: SANS,
+  fontSize: 13.5,
+  fontWeight: 600,
+  color: INK,
+};
+
+const settingsNote: React.CSSProperties = {
+  margin: "0 0 10px",
+  fontFamily: SANS,
+  fontSize: 12.5,
+  color: SOFT,
+  lineHeight: 1.55,
+};
