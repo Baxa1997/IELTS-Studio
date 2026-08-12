@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import {
   AMBER,
   Card,
-  CardHead,
   Empty,
   FAINT,
   fieldStyle,

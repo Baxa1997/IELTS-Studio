@@ -50,7 +50,11 @@ export default async function CohortPage() {
       {/* Seats + AI usage. */}
       <section className="grid gap-3 sm:grid-cols-3">
         <Meter label="Seats used" used={seats.used} limit={seats.limit} />
-        <Meter label="AI gradings this month" used={gradingThisMonth.used} limit={gradingThisMonth.limit} />
+        <Meter
+          label="AI gradings this month"
+          used={gradingThisMonth.used}
+          limit={gradingThisMonth.limit}
+        />
         <div className="rounded-lg border p-4">
           <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
             AI calls this month
@@ -84,10 +88,17 @@ function BandLiftHero({
         <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
           Average band lift
         </p>
-        <p className={cn("mt-1 text-5xl font-semibold tabular-nums", overall != null && overall > 0 && "text-emerald-600 dark:text-emerald-400")}>
+        <p
+          className={cn(
+            "mt-1 text-5xl font-semibold tabular-nums",
+            overall != null && overall > 0 && "text-emerald-600 dark:text-emerald-400",
+          )}
+        >
           {overall == null ? "—" : signed(overall)}
         </p>
-        <p className="text-muted-foreground mt-1 text-sm">since each student&apos;s diagnostic baseline</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          since each student&apos;s diagnostic baseline
+        </p>
         <div className="mt-3 flex gap-4 text-sm">
           <span>
             <span className="text-muted-foreground">Reading </span>
@@ -126,20 +137,27 @@ function TrendBars({ trend }: { trend: TrendPoint[] }) {
       <div className="flex items-end gap-2" style={{ height: 96 }}>
         {trend.map((t) => (
           <div key={t.weekStartISO} className="flex flex-1 flex-col items-center justify-end gap-1">
-            <span className="text-[10px] tabular-nums leading-none">
+            <span className="text-[10px] leading-none tabular-nums">
               {t.avgBand != null ? t.avgBand.toFixed(1) : ""}
             </span>
             <div
               className={cn("w-full rounded-t", t.avgBand != null ? "bg-primary" : "bg-muted")}
               style={{ height: `${t.avgBand != null ? height(t.avgBand) : 4}%` }}
-              title={t.avgBand != null ? `${t.label}: ${t.avgBand.toFixed(1)} (${t.count})` : `${t.label}: no data`}
+              title={
+                t.avgBand != null
+                  ? `${t.label}: ${t.avgBand.toFixed(1)} (${t.count})`
+                  : `${t.label}: no data`
+              }
             />
           </div>
         ))}
       </div>
       <div className="mt-1 flex gap-2">
         {trend.map((t) => (
-          <span key={t.weekStartISO} className="text-muted-foreground flex-1 text-center text-[10px]">
+          <span
+            key={t.weekStartISO}
+            className="text-muted-foreground flex-1 text-center text-[10px]"
+          >
             {t.label}
           </span>
         ))}
@@ -240,7 +258,9 @@ function Roster({ rows }: { rows: StudentRow[] }) {
                     <LiftBadge value={r.avgLift} />
                   </td>
                   <td className="text-muted-foreground px-3 py-2 tabular-nums">{r.submissions}</td>
-                  <td className="text-muted-foreground px-3 py-2">{lastActiveLabel(r.lastActiveISO)}</td>
+                  <td className="text-muted-foreground px-3 py-2">
+                    {lastActiveLabel(r.lastActiveISO)}
+                  </td>
                   <td className="px-3 py-2">
                     <StatusBadge status={r.status} reason={r.statusReason} />
                   </td>
@@ -274,13 +294,23 @@ function LiftBadge({ value, subtle }: { value: number | null; subtle?: boolean }
       : value < 0
         ? "text-destructive"
         : "text-muted-foreground";
-  return <span className={cn("tabular-nums", subtle ? "text-xs" : "text-sm font-medium", cls)}>{signed(value)}</span>;
+  return (
+    <span className={cn("tabular-nums", subtle ? "text-xs" : "text-sm font-medium", cls)}>
+      {signed(value)}
+    </span>
+  );
 }
 
 const STATUS_META: Record<CohortStatus, { label: string; cls: string }> = {
-  improving: { label: "Improving", cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+  improving: {
+    label: "Improving",
+    cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  },
   steady: { label: "Steady", cls: "border-border bg-muted/50 text-foreground" },
-  stuck: { label: "Needs attention", cls: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  stuck: {
+    label: "Needs attention",
+    cls: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+  },
   not_started: { label: "Not started", cls: "border-border text-muted-foreground" },
 };
 
@@ -288,7 +318,9 @@ function StatusBadge({ status, reason }: { status: CohortStatus; reason: string 
   const m = STATUS_META[status];
   return (
     <span className="flex flex-col">
-      <span className={cn("w-fit rounded-full border px-2 py-0.5 text-xs font-medium", m.cls)}>{m.label}</span>
+      <span className={cn("w-fit rounded-full border px-2 py-0.5 text-xs font-medium", m.cls)}>
+        {m.label}
+      </span>
       <span className="text-muted-foreground mt-0.5 text-[11px]">{reason}</span>
     </span>
   );

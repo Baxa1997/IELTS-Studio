@@ -12,6 +12,7 @@ import {
 } from "@/components/console/finance-ui";
 
 import { type ActionState, saveAccount, transferBetweenAccounts } from "./actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * A kassa is a float held by a named person. That is the whole reason the form
@@ -49,6 +50,9 @@ export function DeskForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>
@@ -150,6 +154,9 @@ export function TransferForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   if (accounts.length < 2) {
     return (

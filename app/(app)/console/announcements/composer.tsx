@@ -3,12 +3,18 @@
 import { useActionState, useState } from "react";
 
 import { sendAnnouncement, type ActionState } from "../center-actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
 
-const label: React.CSSProperties = { fontSize: 12, color: MUTED, display: "block", marginBottom: 6 };
+const label: React.CSSProperties = {
+  fontSize: 12,
+  color: MUTED,
+  display: "block",
+  marginBottom: 6,
+};
 const field: React.CSSProperties = {
   width: "100%",
   border: "1px solid #CFCABC",
@@ -35,6 +41,7 @@ export function AnnouncementComposer({
   groups: { id: string; name: string; students: number }[];
 }) {
   const [state, formAction, pending] = useActionState(sendAnnouncement, {} as ActionState);
+  useActionFeedback(state);
   const [audience, setAudience] = useState<Audience>("everyone");
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
 
@@ -46,9 +53,7 @@ export function AnnouncementComposer({
   ];
 
   const reach =
-    audience === "group"
-      ? (groups.find((g) => g.id === groupId)?.students ?? 0)
-      : counts[audience];
+    audience === "group" ? (groups.find((g) => g.id === groupId)?.students ?? 0) : counts[audience];
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>

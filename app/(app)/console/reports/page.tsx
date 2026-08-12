@@ -100,7 +100,10 @@ export default async function ReportsPage() {
       <Stack>
         <Split>
           <Card>
-            <CardHead title="Bands awarded" note="every graded writing, reading and speaking practice" />
+            <CardHead
+              title="Bands awarded"
+              note="every graded writing, reading and speaking practice"
+            />
             {report.bandBuckets.length > 0 ? (
               <Columns
                 bars={report.bandBuckets.map((b) => ({
@@ -131,7 +134,9 @@ export default async function ReportsPage() {
                 value={s.band?.toFixed(1) ?? "—"}
                 fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
                 trail={
-                  <span style={{ color: FAINT, width: 74, display: "inline-block", textAlign: "right" }}>
+                  <span
+                    style={{ color: FAINT, width: 74, display: "inline-block", textAlign: "right" }}
+                  >
                     {s.samples} graded
                   </span>
                 }
@@ -175,7 +180,11 @@ export default async function ReportsPage() {
                     <span style={{ color: FAINT }}>—</span>
                   ) : (
                     <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Bar pct={g.completionPct} width={60} fill={g.completionPct >= 60 ? GREEN : INDIGO} />
+                      <Bar
+                        pct={g.completionPct}
+                        width={60}
+                        fill={g.completionPct >= 60 ? GREEN : INDIGO}
+                      />
                       <span style={{ fontSize: 12 }}>{g.completionPct}%</span>
                     </span>
                   )}
@@ -214,9 +223,7 @@ export default async function ReportsPage() {
 
           <Card>
             <CardHead title="Reading questions most often wrong" />
-            <CardNote>
-              Total wrong answers by question type, across the classes in scope.
-            </CardNote>
+            <CardNote>Total wrong answers by question type, across the classes in scope.</CardNote>
             {report.readingMisses.map((m) => (
               <MeterRow
                 key={m.label}
@@ -248,7 +255,9 @@ export default async function ReportsPage() {
               href={`/console/students/${s.id}`}
               lead={<Avatar name={s.name} size={30} />}
               title={s.name}
-              meta={s.lastActive ? `last practised ${dateFmt(s.lastActive)}` : "has never practised"}
+              meta={
+                s.lastActive ? `last practised ${dateFmt(s.lastActive)}` : "has never practised"
+              }
               trail={
                 <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   {s.lastActive ? null : <Tag tone="amber">never started</Tag>}

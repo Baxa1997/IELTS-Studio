@@ -7,7 +7,13 @@ const INDIGO = "#3B43B5";
 
 /** Downloads the group table as CSV — the shape a center owner pastes into a
  *  board report or a parent update. Built client-side; no round trip. */
-export function ExportReportButton({ rows, centerName }: { rows: GroupReportRow[]; centerName: string }) {
+export function ExportReportButton({
+  rows,
+  centerName,
+}: {
+  rows: GroupReportRow[];
+  centerName: string;
+}) {
   function download() {
     const table = [
       ["Group", "Teacher", "Students", "Assignments", "Completion %", "Average band"],

@@ -30,6 +30,7 @@ import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 
 import { DeskForm, TransferForm } from "./desk-forms";
 import { TransactionForm } from "./transaction-form";
+import { DownloadLink } from "@/components/console/file-links";
 
 export const dynamic = "force-dynamic";
 
@@ -200,14 +201,18 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
         subtitle={`${period.label} · ${overview.matched} entr${overview.matched === 1 ? "y" : "ies"}${scopeLabel ? ` · ${scopeLabel}` : ""} · amounts in ${currency}.`}
         actions={
           <>
-            {/* Plain anchors: these fetch a FILE. next/link would try to
-                client-navigate to the route handler instead of downloading. */}
-            <a href={exportHref("xlsx", "ledger")} style={chip} download>
-              Excel
-            </a>
-            <a href={exportHref("pdf", "summary")} style={chip} download>
-              PDF
-            </a>
+            <DownloadLink
+              href={exportHref("xlsx", "ledger")}
+              format="xlsx"
+              label="Ledger"
+              title="Every entry in this period, as a spreadsheet"
+            />
+            <DownloadLink
+              href={exportHref("pdf", "summary")}
+              format="pdf"
+              label="Summary"
+              title="This period on one page, as a PDF"
+            />
           </>
         }
       />

@@ -12,6 +12,7 @@ import {
 } from "@/components/console/finance-ui";
 
 import { type ActionState, recordTransaction } from "./actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * Record money in, or money out.
@@ -72,6 +73,9 @@ export function TransactionForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   const [studentId, setStudentId] = useState(presetStudentId ?? "");
   const today = new Date().toISOString().slice(0, 10);

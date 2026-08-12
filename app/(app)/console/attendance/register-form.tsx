@@ -165,7 +165,11 @@ export function RegisterForm({
               <div style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{s.name}</div>
               <div style={{ fontSize: 11.5, color: "#93919F" }}>{s.meta}</div>
             </div>
-            <div style={{ display: "flex", gap: 6 }} role="group" aria-label={`Attendance for ${s.name}`}>
+            <div
+              style={{ display: "flex", gap: 6 }}
+              role="group"
+              aria-label={`Attendance for ${s.name}`}
+            >
               {OPTIONS.map((o) => {
                 const on = value === o.value;
                 return (

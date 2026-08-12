@@ -15,7 +15,13 @@ const initial: OverrideState = {};
  * success the action revalidates the page, so the header re-renders with the new
  * band and "Teacher override" badge; we also confirm inline.
  */
-export function OverrideForm({ gradingId, currentBand }: { gradingId: string; currentBand: number }) {
+export function OverrideForm({
+  gradingId,
+  currentBand,
+}: {
+  gradingId: string;
+  currentBand: number;
+}) {
   const [state, formAction, pending] = useActionState(overrideGradingAction, initial);
 
   return (
@@ -44,7 +50,8 @@ export function OverrideForm({ gradingId, currentBand }: { gradingId: string; cu
 
       <div className="space-y-1.5">
         <label htmlFor="comment" className="text-sm font-medium">
-          Comment <span className="text-muted-foreground font-normal">(becomes a calibration anchor)</span>
+          Comment{" "}
+          <span className="text-muted-foreground font-normal">(becomes a calibration anchor)</span>
         </label>
         <textarea
           id="comment"

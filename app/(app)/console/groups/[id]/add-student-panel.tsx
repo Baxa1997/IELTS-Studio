@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { addStudentAccount, type AddStudentState } from "../actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const initial: AddStudentState = {};
 
@@ -28,6 +29,8 @@ const initial: AddStudentState = {};
  */
 export function AddStudentPanel({ groupId }: { groupId: string }) {
   const [state, formAction, pending] = useActionState(addStudentAccount, initial);
+  // Stays open on success: the generated password is shown once, below.
+  useActionFeedback(state, { keepOpen: true });
   const [copied, setCopied] = useState(false);
   const [more, setMore] = useState(false);
 

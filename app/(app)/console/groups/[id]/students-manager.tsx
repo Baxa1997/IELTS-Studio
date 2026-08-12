@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { FaFileCsv, FaFileExcel } from "react-icons/fa6";
+import { FiChevronDown, FiKey, FiUserMinus, FiUserPlus } from "react-icons/fi";
 
 import {
   type GroupFormState,
@@ -8,6 +10,7 @@ import {
   resetStudentPassword,
   type ResetPasswordState,
 } from "../actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * The class, as one table.
@@ -109,10 +112,13 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
     resetStudentPassword,
     {} as ResetPasswordState,
   );
+  // Never closes anything: the new password is shown once, right here.
+  useActionFeedback(reset, { keepOpen: true });
   // `removeMember` takes (prevState, formData), so it has to be driven through
   // useActionState — passed straight to `<form action>` it would receive the
   // FormData as its first argument and silently do nothing.
   const [removal, removeAction, removing] = useActionState(removeMember, {} as GroupFormState);
+  useActionFeedback(removal, { keepOpen: true });
   const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -193,8 +199,14 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
           <form action={resetAction}>
             <input type="hidden" name="group_id" value={groupId} />
             <input type="hidden" name="student_id" value={student.id} />
-            <button type="submit" disabled={resetting} style={quietStyle} title="New password">
-              {resetting ? "…" : "Reset"}
+            <button
+              type="submit"
+              disabled={resetting}
+              style={quietStyle}
+              title="Give them a new password"
+            >
+              <FiKey size={13} aria-hidden />
+              {resetting ? "Resetting…" : "Password"}
             </button>
           </form>
 
@@ -207,16 +219,24 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
               <button
                 type="submit"
                 disabled={removing}
-                style={{ ...quietStyle, color: RED, borderColor: "#F2C9C4" }}
+                style={{ ...quietStyle, ...dangerStyle }}
+                title={`Remove ${student.name} from this class`}
               >
-                {removing ? "…" : "Confirm"}
+                <FiUserMinus size={13} aria-hidden />
+                {removing ? "Removing…" : "Confirm"}
               </button>
               <button type="button" onClick={() => setConfirming(false)} style={quietStyle}>
                 Cancel
               </button>
             </form>
           ) : (
-            <button type="button" onClick={() => setConfirming(true)} style={quietStyle}>
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              style={{ ...quietStyle, color: RED }}
+              title="Remove from this class"
+            >
+              <FiUserMinus size={13} aria-hidden />
               Remove
             </button>
           )}
@@ -279,25 +299,29 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
 /* ── the toolbar ──────────────────────────────────────────────────────────── */
 
 /**
- * The file menu beside "Add student": export what is here, or import more.
+ * One button over the class list, with the three things you can do to it.
  *
- * One button for both because they are the same job in two directions, and a
- * roster screen with four top-level buttons stops reading as a roster. Export
- * runs entirely in the browser off the rows already on screen — no round trip,
- * and nothing to keep in step with what you are looking at.
+ * A single entry point rather than a row of buttons. "Add one", "import a
+ * list" and "export the list" are the same job at different scales, and a
+ * roster screen that opens with three competing primary buttons reads as a
+ * toolbar rather than as a class. The menu also gives each one room for a
+ * sentence saying what it does, which a button label cannot.
  */
-export function RosterFileMenu({
+export function RosterToolbar({
   students,
   groupName,
-  children,
+  addForm,
+  importForm,
 }: {
   students: StudentRow[];
   groupName: string;
-  /** The import form, rendered inside the modal. */
-  children: React.ReactNode;
+  /** The single-student form, rendered in a drawer-sized modal. */
+  addForm: React.ReactNode;
+  /** The Excel/CSV import, which needs the width of a table. */
+  importForm: React.ReactNode;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
+  const [open, setOpen] = useState<"add" | "import" | null>(null);
 
   function exportCsv() {
     const rows = [
@@ -328,7 +352,7 @@ export function RosterFileMenu({
       .map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))
       .join("\n");
     // A BOM, or Excel reads Cyrillic names as mojibake.
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -345,24 +369,24 @@ export function RosterFileMenu({
         onClick={() => setMenuOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        aria-label="Import or export the class list"
-        title="Import or export"
         style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 6,
-          background: "#fff",
-          border: "1px solid #E0DED8",
+          gap: 7,
+          background: INDIGO,
+          border: 0,
           borderRadius: 9,
-          padding: "8px 12px",
+          padding: "8px 14px",
           fontFamily: "inherit",
           fontSize: 13.5,
-          color: INK,
+          fontWeight: 600,
+          color: "#fff",
           cursor: "pointer",
         }}
       >
-        <FileIcon />
-        <Caret />
+        <FiUserPlus size={15} aria-hidden />
+        Add student
+        <FiChevronDown size={13} aria-hidden style={{ opacity: 0.85 }} />
       </button>
 
       {menuOpen ? (
@@ -380,44 +404,70 @@ export function RosterFileMenu({
               top: "calc(100% + 6px)",
               right: 0,
               zIndex: 41,
-              minWidth: 210,
+              minWidth: 268,
               background: "#fff",
               border: `1px solid ${LINE}`,
-              borderRadius: 10,
-              boxShadow: "0 10px 30px rgba(22,22,46,.12)",
+              borderRadius: 11,
+              boxShadow: "0 14px 36px rgba(22,22,46,.14)",
               padding: 5,
               display: "block",
             }}
           >
             <MenuItem
+              icon={<FiUserPlus size={16} color={INDIGO} />}
+              title="Add a single student"
+              note="Type a name — login and password are made for you"
               onClick={() => {
                 setMenuOpen(false);
-                setImportOpen(true);
+                setOpen("add");
               }}
-              title="Import students"
-              note="From Excel or CSV"
             />
             <MenuItem
+              icon={<FaFileExcel size={16} color="#1D6F42" />}
+              title="Import from Excel"
+              note="Upload the .xlsx or CSV register you already keep"
+              onClick={() => {
+                setMenuOpen(false);
+                setOpen("import");
+              }}
+            />
+            <MenuItem
+              icon={<FaFileCsv size={16} color="#0F6CBD" />}
+              title="Export list as CSV"
+              note={`${students.length} student${students.length === 1 ? "" : "s"}, opens in Excel`}
               onClick={exportCsv}
-              title="Export this list"
-              note={`${students.length} student${students.length === 1 ? "" : "s"} as CSV`}
               disabled={students.length === 0}
             />
           </span>
         </>
       ) : null}
 
-      {importOpen ? <Modal onClose={() => setImportOpen(false)}>{children}</Modal> : null}
+      {open ? (
+        <Modal
+          onClose={() => setOpen(null)}
+          title={open === "add" ? "Add a student" : "Import students"}
+          note={
+            open === "add"
+              ? "The login and password are generated and shown once you add them."
+              : "Upload the register you already keep, or paste the names."
+          }
+          width={open === "add" ? 520 : 720}
+        >
+          {open === "add" ? addForm : importForm}
+        </Modal>
+      ) : null}
     </span>
   );
 }
 
 function MenuItem({
+  icon,
   onClick,
   title,
   note,
   disabled,
 }: {
+  icon: React.ReactNode;
   onClick: () => void;
   title: string;
   note: string;
@@ -431,20 +481,27 @@ function MenuItem({
       disabled={disabled}
       className="cn-chip"
       style={{
-        display: "block",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
         width: "100%",
         textAlign: "left",
         background: "transparent",
         border: 0,
-        borderRadius: 7,
-        padding: "8px 10px",
+        borderRadius: 8,
+        padding: "9px 10px",
         fontFamily: "inherit",
         cursor: disabled ? "default" : "pointer",
         opacity: disabled ? 0.45 : 1,
       }}
     >
-      <span style={{ display: "block", fontSize: 13, color: INK, fontWeight: 500 }}>{title}</span>
-      <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 1 }}>{note}</span>
+      <span aria-hidden style={{ display: "inline-flex", marginTop: 1, flexShrink: 0 }}>
+        {icon}
+      </span>
+      <span>
+        <span style={{ display: "block", fontSize: 13, color: INK, fontWeight: 500 }}>{title}</span>
+        <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 1 }}>{note}</span>
+      </span>
     </button>
   );
 }
@@ -456,7 +513,19 @@ function MenuItem({
  * forty accounts exist — and a 460px drawer cannot show a table. Everything
  * else on this page stays a drawer.
  */
-function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+function Modal({
+  onClose,
+  title,
+  note,
+  width,
+  children,
+}: {
+  onClose: () => void;
+  title: string;
+  note: string;
+  width: number;
+  children: React.ReactNode;
+}) {
   return (
     <div
       onClick={onClose}
@@ -476,9 +545,9 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Import students"
+        aria-label={title}
         style={{
-          width: "min(720px, 100%)",
+          width: `min(${width}px, 100%)`,
           background: "#fff",
           borderRadius: 14,
           padding: 20,
@@ -487,10 +556,8 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
-          <h2 style={{ margin: 0, fontSize: 17, color: INK }}>Import students</h2>
-          <span style={{ fontSize: 12.5, color: FAINT }}>
-            Upload the register you already keep, or paste the names.
-          </span>
+          <h2 style={{ margin: 0, fontSize: 17, color: INK }}>{title}</h2>
+          <span style={{ fontSize: 12.5, color: FAINT }}>{note}</span>
           <button
             type="button"
             onClick={onClose}
@@ -514,29 +581,7 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
   );
 }
 
-/* ── bits ─────────────────────────────────────────────────────────────────── */
-
-function FileIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M9.2 1.5H4.5A1.5 1.5 0 0 0 3 3v10a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 13 13V5.3L9.2 1.5Z"
-        stroke={INDIGO}
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      <path d="M9 1.7V5.5h3.8" stroke={INDIGO} strokeWidth="1.2" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Caret() {
-  return (
-    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden>
-      <path d="M2 4l3 3 3-3" stroke={MUTED} strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-}
+/* ── bits ──────────────────────────────────────────────────────────────── */
 
 function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
   const initials = name
@@ -579,6 +624,9 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
 }
 
 const quietStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
   background: "#fff",
   border: `1px solid ${LINE}`,
   borderRadius: 7,
@@ -588,6 +636,22 @@ const quietStyle: React.CSSProperties = {
   color: MUTED,
   cursor: "pointer",
   whiteSpace: "nowrap",
+};
+
+/**
+ * Destructive, and looking it — but only once confirmed.
+ *
+ * The FIRST click is a red-lettered outline button, not a filled red one. A
+ * filled danger button sitting on every row of a class list turns the whole
+ * table into a wall of alarm, and the thing it removes is reversible (the
+ * account and its work survive). The filled treatment is earned by the second
+ * click, which is the one that actually does something.
+ */
+const dangerStyle: React.CSSProperties = {
+  background: "#B3261E",
+  borderColor: "#B3261E",
+  color: "#fff",
+  fontWeight: 600,
 };
 
 const linkStyle: React.CSSProperties = {

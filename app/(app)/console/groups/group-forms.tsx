@@ -16,6 +16,7 @@ import {
   removeMember,
   type GroupFormState,
 } from "./actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const FIELD =
   "border-input h-8 w-full min-w-0 rounded-lg border bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50";
@@ -48,6 +49,7 @@ export function CreateGroupForm({
   pricing: { currency: string; lessonsPerMonth: number } | null;
 }) {
   const [state, formAction, pending] = useActionState(createGroup, initial);
+  useActionFeedback(state);
   // The branch decides which rooms the schedule may offer, so the picker has to
   // know what is currently selected rather than reading it at submit time.
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");

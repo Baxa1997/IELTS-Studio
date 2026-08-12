@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { formatMoney, parseMoney } from "@/lib/finance/money";
 
 import { type ActionState, setGroupPricing } from "../../finance/actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * The two prices of this class, edited in place on the class itself.
@@ -50,6 +51,7 @@ export function PricingPanel({
   rateMajor: string;
 }) {
   const [state, formAction, pending] = useActionState(setGroupPricing, {} as ActionState);
+  useActionFeedback(state);
   const [fee, setFee] = useState(feeMajor);
   const [rate, setRate] = useState(rateMajor);
 

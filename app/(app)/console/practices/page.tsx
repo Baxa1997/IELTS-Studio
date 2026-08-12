@@ -25,9 +25,17 @@ import { TASK2_CATEGORY_LABELS, type Task2Category } from "@/lib/prompts/types";
 import { PracticeRowActions } from "./practice-row-actions";
 
 const TABS: { key: PracticeTab; label: string; blurb: string }[] = [
-  { key: "drafts", label: "Drafts", blurb: "Generated, not yet published. Only staff can see these." },
+  {
+    key: "drafts",
+    label: "Drafts",
+    blurb: "Generated, not yet published. Only staff can see these.",
+  },
   { key: "published", label: "Published", blurb: "Ready to set to a class." },
-  { key: "archived", label: "Archived", blurb: "Retired, but kept — students' graded work points at it." },
+  {
+    key: "archived",
+    label: "Archived",
+    blurb: "Retired, but kept — students' graded work points at it.",
+  },
 ];
 
 /**
@@ -81,11 +89,17 @@ export default async function PracticesPage({
       >
         <List>
           <Row first>
-            <RowText title="Writing" meta="Generate a Task 2 prompt, or pick one from the library." />
+            <RowText
+              title="Writing"
+              meta="Generate a Task 2 prompt, or pick one from the library."
+            />
             <RowLink href="/write">Open writing →</RowLink>
           </Row>
           <Row>
-            <RowText title="Reading" meta="A full test or a single passage, from the shared library." />
+            <RowText
+              title="Reading"
+              meta="A full test or a single passage, from the shared library."
+            />
             <RowLink href="/read">Open reading →</RowLink>
           </Row>
           <Row>
@@ -95,7 +109,10 @@ export default async function PracticesPage({
         </List>
       </Panel>
 
-      <Panel title={TABS.find((t) => t.key === tab)!.label} description={TABS.find((t) => t.key === tab)!.blurb}>
+      <Panel
+        title={TABS.find((t) => t.key === tab)!.label}
+        description={TABS.find((t) => t.key === tab)!.blurb}
+      >
         <List>
           {rows.map((p, i) => (
             <PracticeListRow key={`${p.kind}-${p.id}`} practice={p} first={i === 0} />
@@ -187,9 +204,7 @@ function PracticeListRow({ practice, first }: { practice: PracticeRow; first: bo
         {/* "Open" is the real runner, not a console preview: the only honest way
             to see a practice is the screen the student sees. */}
         <RowLink
-          href={
-            practice.kind === "writing" ? `/write/${practice.id}` : `/read/test/${practice.id}`
-          }
+          href={practice.kind === "writing" ? `/write/${practice.id}` : `/read/test/${practice.id}`}
         >
           Open →
         </RowLink>

@@ -50,7 +50,7 @@ import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
 import { SchedulePanel } from "./schedule-panel";
-import { RosterFileMenu, StudentsManager } from "./students-manager";
+import { RosterToolbar, StudentsManager } from "./students-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -730,22 +730,12 @@ export default async function GroupDetailPage({
               title={`Students (${group.members.length})`}
               note="Everyone here signs in with their own login — that is how homework is handed in and graded."
               actions={
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Drawer
-                    label="+ Add student"
-                    eyebrow="Class list"
-                    title="Add a student"
-                    note="Type their name. The login and password are made for you and shown once."
-                  >
-                    <AddStudentPanel groupId={group.id} />
-                  </Drawer>
-                  {/* Import and export behind one file button: the same job in
-                      two directions, and a roster with four top-level buttons
-                      stops reading as a roster. */}
-                  <RosterFileMenu students={studentRows} groupName={group.name}>
-                    <BulkAddPanel groupId={group.id} />
-                  </RosterFileMenu>
-                </div>
+                <RosterToolbar
+                  students={studentRows}
+                  groupName={group.name}
+                  addForm={<AddStudentPanel groupId={group.id} />}
+                  importForm={<BulkAddPanel groupId={group.id} />}
+                />
               }
             />
             <StudentsManager groupId={group.id} students={studentRows} />

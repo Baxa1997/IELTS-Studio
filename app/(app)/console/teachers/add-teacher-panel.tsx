@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { useConsolePanels } from "@/components/console/console-chrome";
 
 import { addTeacherAccount, type AddStudentState } from "../groups/actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * Create a teacher account on the spot — name, login, password. Email is
@@ -43,6 +44,8 @@ const fieldStyle: React.CSSProperties = {
 
 export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
   const [state, formAction, pending] = useActionState(addTeacherAccount, {} as AddStudentState);
+  // Stays open: the generated password is shown once, below.
+  useActionFeedback(state, { keepOpen: true });
   const { finish } = useConsolePanels();
 
   // Same one-time-password rule as enrolling a student: close the drawer, but

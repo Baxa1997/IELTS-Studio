@@ -8,7 +8,12 @@ const GREEN = "#16794C";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
 
-const label: React.CSSProperties = { fontSize: 12, color: MUTED, display: "block", marginBottom: 5 };
+const label: React.CSSProperties = {
+  fontSize: 12,
+  color: MUTED,
+  display: "block",
+  marginBottom: 5,
+};
 const field: React.CSSProperties = {
   width: "100%",
   border: "1px solid #CFCABC",
@@ -45,7 +50,14 @@ export function CenterProfileForm({
         <label htmlFor="center-name" style={label}>
           Center name
         </label>
-        <input id="center-name" name="name" defaultValue={name} required minLength={2} style={field} />
+        <input
+          id="center-name"
+          name="name"
+          defaultValue={name}
+          required
+          minLength={2}
+          style={field}
+        />
       </div>
       <div style={{ marginBottom: 12 }}>
         <label htmlFor="center-email" style={label}>

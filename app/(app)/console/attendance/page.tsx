@@ -7,7 +7,6 @@ import {
   Card,
   CardHead,
   Empty,
-  FAINT,
   GREEN,
   INDIGO,
   initials,

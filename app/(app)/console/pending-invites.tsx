@@ -60,7 +60,9 @@ function InviteRow({ invite, first }: { invite: PendingInvite; first: boolean })
         fontSize: 14.5,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14 }}
+      >
         <span style={{ minWidth: 0 }}>
           <span
             style={{

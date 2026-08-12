@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const INDIGO = "#3B43B5";
 const INK = "#1A2138";
@@ -25,6 +26,7 @@ export function AssignToClassPanel({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(assignPractice, {} as PracticeFormState);
+  useActionFeedback(state);
 
   return (
     <div
@@ -53,7 +55,14 @@ export function AssignToClassPanel({
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              style={{ border: "none", background: "none", color: MUTED, cursor: "pointer", fontSize: 16, lineHeight: 1 }}
+              style={{
+                border: "none",
+                background: "none",
+                color: MUTED,
+                cursor: "pointer",
+                fontSize: 16,
+                lineHeight: 1,
+              }}
             >
               ×
             </button>
@@ -68,7 +77,16 @@ export function AssignToClassPanel({
 
             <div style={{ display: "grid", gap: 6, maxHeight: 168, overflowY: "auto" }}>
               {groups.map((g) => (
-                <label key={g.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: INK }}>
+                <label
+                  key={g.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13.5,
+                    color: INK,
+                  }}
+                >
                   <input type="checkbox" name="group_ids" value={g.id} />
                   {g.name}
                 </label>

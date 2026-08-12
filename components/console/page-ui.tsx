@@ -76,7 +76,15 @@ export function PageHead({
         </Link>
       ) : null}
 
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
           {media}
           <div style={{ minWidth: 0 }}>
@@ -109,7 +117,15 @@ export function PageHead({
               {title}
             </h1>
             {subtitle ? (
-              <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.55, color: MUTED, margin: "7px 0 0" }}>
+              <p
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 14.5,
+                  lineHeight: 1.55,
+                  color: MUTED,
+                  margin: "7px 0 0",
+                }}
+              >
                 {subtitle}
               </p>
             ) : null}
@@ -161,7 +177,15 @@ export function Panel({
         </header>
       ) : null}
       {description ? (
-        <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "0 0 14px" }}>
+        <p
+          style={{
+            fontFamily: SANS,
+            fontSize: 13.5,
+            lineHeight: 1.55,
+            color: MUTED,
+            margin: "0 0 14px",
+          }}
+        >
           {description}
         </p>
       ) : null}
@@ -242,13 +266,7 @@ export function List({ children }: { children: React.ReactNode }) {
   return <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>{children}</ul>;
 }
 
-export function Row({
-  children,
-  first = false,
-}: {
-  children: React.ReactNode;
-  first?: boolean;
-}) {
+export function Row({ children, first = false }: { children: React.ReactNode; first?: boolean }) {
   return (
     <li
       style={{
@@ -272,7 +290,15 @@ export function Row({
 export function RowText({ title, meta }: { title: React.ReactNode; meta?: React.ReactNode }) {
   return (
     <span style={{ minWidth: 0 }}>
-      <span style={{ display: "block", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span
+        style={{
+          display: "block",
+          fontWeight: 500,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
         {title}
       </span>
       {meta ? (

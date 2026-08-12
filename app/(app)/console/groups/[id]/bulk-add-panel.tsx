@@ -15,6 +15,7 @@ import {
 } from "@/lib/spreadsheet-read";
 
 import { addStudentsBulk, type BulkStudentState } from "../actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const initial: BulkStudentState = {};
 
@@ -35,6 +36,8 @@ Dilnoza Rashidova, dilnoza@example.com`;
  */
 export function BulkAddPanel({ groupId }: { groupId: string }) {
   const [state, formAction, pending] = useActionState(addStudentsBulk, initial);
+  // Stays open: the credentials sheet below is the only copy of these passwords.
+  useActionFeedback(state, { keepOpen: true });
   const [copied, setCopied] = useState(false);
   const created = state.created ?? [];
 

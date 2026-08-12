@@ -113,7 +113,9 @@ export default async function BillingPage() {
                 >
                   Current plan
                 </div>
-                <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700, margin: "6px 0 2px" }}>
+                <div
+                  style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700, margin: "6px 0 2px" }}
+                >
                   {current.name}
                 </div>
                 <div style={{ fontFamily: SANS, fontSize: 13, color: RAIL.light }}>
@@ -327,7 +329,9 @@ function PlanCard({
 
       <div style={{ marginTop: 14 }}>
         {isCurrent ? (
-          <span style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>You&apos;re on this plan.</span>
+          <span style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>
+            You&apos;re on this plan.
+          </span>
         ) : purchasable ? (
           <UpgradeButtons plan={plan} providers={providers} />
         ) : plan === "enterprise" ? (

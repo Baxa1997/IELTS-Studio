@@ -51,7 +51,11 @@ export default async function SettingsPage() {
       .eq("id", profile.organization_id)
       .maybeSingle(),
     supabase.from("profiles").select("id, full_name, role, created_at"),
-    supabase.from("groups").select("id, name, created_at").order("created_at", { ascending: false }).limit(10),
+    supabase
+      .from("groups")
+      .select("id, name, created_at")
+      .order("created_at", { ascending: false })
+      .limit(10),
     supabase
       .from("v_pending_invites")
       .select("email, role, created_at")
@@ -118,10 +122,12 @@ export default async function SettingsPage() {
       at: g.created_at,
       what: `Created the class ${g.name}`,
     })),
-    ...((invitesRes.data ?? []) as { email: string; role: string; created_at: string }[]).map((i) => ({
-      at: i.created_at,
-      what: `Invited ${i.email} as ${i.role}`,
-    })),
+    ...((invitesRes.data ?? []) as { email: string; role: string; created_at: string }[]).map(
+      (i) => ({
+        at: i.created_at,
+        what: `Invited ${i.email} as ${i.role}`,
+      }),
+    ),
     ...((announceRes.data ?? []) as { subject: string; sent_at: string }[]).map((a) => ({
       at: a.sent_at,
       what: `Sent announcement “${a.subject}”`,

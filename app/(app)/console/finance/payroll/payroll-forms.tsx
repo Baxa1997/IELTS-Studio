@@ -18,6 +18,7 @@ import {
   runPayroll,
   setPayrollStatus,
 } from "../actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /** Compute (or recompute) the month. */
 export function RunPayrollForm({
@@ -107,6 +108,9 @@ export function PayTeacherForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>
@@ -181,6 +185,9 @@ export function AdjustPayslipForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>

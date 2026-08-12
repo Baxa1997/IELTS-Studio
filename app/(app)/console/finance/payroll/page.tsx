@@ -42,6 +42,7 @@ import {
   PayTeacherForm,
   RunPayrollForm,
 } from "./payroll-forms";
+import { DownloadLink } from "@/components/console/file-links";
 
 export const dynamic = "force-dynamic";
 
@@ -158,22 +159,16 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
             {run ? <PayrollStatusForm runId={run.id} status={run.status} /> : null}
             {run ? (
               <>
-                <a
+                <DownloadLink
                   href={`/api/console/finance/export?report=payroll&format=xlsx&month=${month}`}
-                  className="cn-chip"
-                  style={chipStyle}
-                  download
-                >
-                  Excel
-                </a>
-                <a
+                  format="xlsx"
+                  title={`${monthLabel(month)} payslips, as a spreadsheet`}
+                />
+                <DownloadLink
                   href={`/api/console/finance/export?report=payroll&format=pdf&month=${month}`}
-                  className="cn-chip"
-                  style={chipStyle}
-                  download
-                >
-                  PDF
-                </a>
+                  format="pdf"
+                  title={`${monthLabel(month)} payslips, as a PDF`}
+                />
               </>
             ) : null}
           </>
@@ -408,17 +403,6 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
 /* ── pieces ───────────────────────────────────────────────────────────────── */
 
 const COLS = "1.5fr 1.2fr 110px 100px 110px 100px 110px 150px";
-
-const chipStyle: React.CSSProperties = {
-  background: "#F4F3EF",
-  border: "1px solid #E4E2DC",
-  borderRadius: 7,
-  padding: "7px 12px",
-  fontFamily: SANS,
-  fontSize: 12.5,
-  color: INK,
-  textDecoration: "none",
-};
 
 function MonthStrip({
   months,

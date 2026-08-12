@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteRoom, saveRoom } from "./actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * `revalidatePath` refreshes the server tree, but this panel lives inside a
@@ -17,11 +18,16 @@ function useRefreshingAction(
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>,
 ) {
   const router = useRouter();
-  return useActionState(async (prev: ActionState, formData: FormData) => {
+  const result = useActionState(async (prev: ActionState, formData: FormData) => {
     const next = await action(prev, formData);
     if (next.ok) router.refresh();
     return next;
   }, {} as ActionState);
+  // One place for every room/branch form: announce the result at the top of the
+  // page. These panels deliberately stay OPEN — you rename three rooms in a row,
+  // and closing after each one would mean reopening the drawer three times.
+  useActionFeedback(result[0], { keepOpen: true });
+  return result;
 }
 
 /**

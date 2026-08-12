@@ -12,6 +12,7 @@ import {
 } from "@/components/console/finance-ui";
 
 import { type ActionState, generateInvoices, setGroupPricing } from "../actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /** Charge a whole class for a month, from the fee already on the class. */
 export function GenerateInvoicesForm({
@@ -32,6 +33,9 @@ export function GenerateInvoicesForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   if (groups.length === 0) {
     return (
@@ -102,6 +106,9 @@ export function GroupFeeForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>

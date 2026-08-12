@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
 import { useConsolePanels } from "@/components/console/console-chrome";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * The design's "Enrol a student" slide-over: one form that creates the account
@@ -46,6 +47,8 @@ export interface EnrolGroup {
 
 export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
   const [state, formAction, pending] = useActionState(addStudentAccount, {} as AddStudentState);
+  // Stays open: the generated password is shown once, below.
+  useActionFeedback(state, { keepOpen: true });
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const { finish } = useConsolePanels();
 

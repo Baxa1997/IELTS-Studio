@@ -17,11 +17,7 @@ import { createClient } from "@/lib/supabase/server";
  * org; a teacher must share a group with the student, and `group_members` under
  * RLS only returns groups they manage — so a non-empty result IS the proof.
  */
-export default async function RosterStudentPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function RosterStudentPage({ params }: { params: Promise<{ id: string }> }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 

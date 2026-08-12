@@ -62,24 +62,32 @@ export default async function ConsolePage() {
   let groupsQuery = supabase.from("groups").select("id");
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
-  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, todayGroupsRes, sessionsRes] =
-    await Promise.all([
-      supabase.from("profiles").select("id, full_name, role"),
-      supabase
-        .from("v_pending_invites")
-        .select("id, email, role, expires_at")
-        .order("created_at", { ascending: false }),
-      groupsQuery,
-      supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
-      // Only ever used as "has any" — RLS already narrows a teacher to their own.
-      supabase.from("assignments").select("id", { count: "exact", head: true }),
-      loadCenterReport({ role: profile.role, profileId: profile.id }),
-      // The design's "Today" panel. There is no timetable, so instead of
-      // inventing session times this lists the classes and whether their
-      // register has been marked — which is the question that panel answers.
-      supabase.from("groups").select("id, name, teacher_id").order("name"),
-      supabase.from("attendance_sessions").select("group_id, state").eq("held_on", todayIso),
-    ]);
+  const [
+    membersRes,
+    invitesRes,
+    groupsRes,
+    orgRes,
+    assignmentsRes,
+    report,
+    todayGroupsRes,
+    sessionsRes,
+  ] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, role"),
+    supabase
+      .from("v_pending_invites")
+      .select("id, email, role, expires_at")
+      .order("created_at", { ascending: false }),
+    groupsQuery,
+    supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
+    // Only ever used as "has any" — RLS already narrows a teacher to their own.
+    supabase.from("assignments").select("id", { count: "exact", head: true }),
+    loadCenterReport({ role: profile.role, profileId: profile.id }),
+    // The design's "Today" panel. There is no timetable, so instead of
+    // inventing session times this lists the classes and whether their
+    // register has been marked — which is the question that panel answers.
+    supabase.from("groups").select("id, name, teacher_id").order("name"),
+    supabase.from("attendance_sessions").select("group_id, state").eq("held_on", todayIso),
+  ]);
 
   const people = membersRes.data ?? [];
   const nameOf = new Map(
@@ -134,11 +142,13 @@ export default async function ConsolePage() {
       r.state,
     ]),
   );
-  const todayClasses = ((todayGroupsRes.data ?? []) as {
-    id: string;
-    name: string;
-    teacher_id: string | null;
-  }[])
+  const todayClasses = (
+    (todayGroupsRes.data ?? []) as {
+      id: string;
+      name: string;
+      teacher_id: string | null;
+    }[]
+  )
     .filter((g) => isAdmin || g.teacher_id === profile.id)
     .slice(0, 6)
     .map((g) => ({
@@ -152,9 +162,7 @@ export default async function ConsolePage() {
   // The four things that have to exist before a center is running. Once they all
   // do, the checklist never comes back — it exists to cure the empty console.
   const steps = [
-    ...(isAdmin
-      ? [{ label: "Add a teacher", href: "/console/teachers", done: teachers > 0 }]
-      : []),
+    ...(isAdmin ? [{ label: "Add a teacher", href: "/console/teachers", done: teachers > 0 }] : []),
     { label: "Create a group", href: "/console/groups", done: groupCount > 0 },
     { label: "Add students", href: "/console/groups", done: students > 0 },
     { label: "Set the first practice", href: "/console/groups", done: assignmentCount > 0 },

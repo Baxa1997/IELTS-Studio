@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { inviteMember, type InviteFormState } from "./actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const FIELD =
   "border-input h-8 w-full min-w-0 rounded-lg border bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50";
@@ -27,6 +28,8 @@ export function InviteMemberPanel({
   canInviteTeachers: boolean;
 }) {
   const [state, formAction, pending] = useActionState(inviteMember, initialState);
+  // Stays open: the invite link is generated here and nowhere else.
+  useActionFeedback(state, { keepOpen: true });
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [copied, setCopied] = useState(false);
 

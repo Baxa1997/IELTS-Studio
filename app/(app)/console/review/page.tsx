@@ -27,8 +27,8 @@ export default async function ReviewQueuePage() {
         </Link>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Review queue</h1>
         <p className="text-muted-foreground">
-          Audit AI gradings, approve generated content, and correct bands. Your corrections
-          become calibration anchors — the grader gets sharper the more you review.
+          Audit AI gradings, approve generated content, and correct bands. Your corrections become
+          calibration anchors — the grader gets sharper the more you review.
         </p>
       </div>
 
@@ -56,7 +56,10 @@ export default async function ReviewQueuePage() {
                   band {g.band.toFixed(1)} · {new Date(g.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <Link href={`/console/grading/${g.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+              <Link
+                href={`/console/grading/${g.id}`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
                 Review
               </Link>
             </li>
@@ -72,7 +75,9 @@ export default async function ReviewQueuePage() {
         <section className="rounded-lg border">
           <div className="border-b px-4 py-3">
             <h2 className="text-base font-medium">Prompts awaiting approval</h2>
-            <p className="text-muted-foreground text-xs">{prompts.length} pending · hidden from students</p>
+            <p className="text-muted-foreground text-xs">
+              {prompts.length} pending · hidden from students
+            </p>
           </div>
           <ul className="divide-y px-4 text-sm">
             {prompts.map((p) => (
@@ -87,7 +92,9 @@ export default async function ReviewQueuePage() {
         <section className="rounded-lg border">
           <div className="border-b px-4 py-3">
             <h2 className="text-base font-medium">Reading awaiting approval</h2>
-            <p className="text-muted-foreground text-xs">{passages.length} pending · low-confidence flagged</p>
+            <p className="text-muted-foreground text-xs">
+              {passages.length} pending · low-confidence flagged
+            </p>
           </div>
           <ul className="divide-y px-4 text-sm">
             {passages.map((p) => (

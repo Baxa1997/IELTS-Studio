@@ -15,7 +15,13 @@ const empty: PracticeFormState = {};
  * there is no preview page any more: "Open" goes to the real runner, which is
  * how a teacher sees exactly what the class will see.
  */
-export function PracticeRowActions({ promptId, archived }: { promptId: string; archived: boolean }) {
+export function PracticeRowActions({
+  promptId,
+  archived,
+}: {
+  promptId: string;
+  archived: boolean;
+}) {
   const [archiveState, archive, archiving] = useActionState(archivePractice, empty);
   const [restoreState, restore, restoring] = useActionState(restorePractice, empty);
   const error = archiveState.error ?? restoreState.error;
@@ -44,13 +50,7 @@ export function PracticeRowActions({ promptId, archived }: { promptId: string; a
             cursor: archiving || restoring ? "default" : "pointer",
           }}
         >
-          {archived
-            ? restoring
-              ? "Restoring…"
-              : "Restore"
-            : archiving
-              ? "Archiving…"
-              : "Archive"}
+          {archived ? (restoring ? "Restoring…" : "Restore") : archiving ? "Archiving…" : "Archive"}
         </button>
       </form>
     </span>

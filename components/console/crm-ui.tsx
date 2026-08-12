@@ -185,7 +185,9 @@ export function PageHead({
               {title}
             </h1>
             {subtitle ? (
-              <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.5, color: MUTED, margin: 0 }}>
+              <p
+                style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.5, color: MUTED, margin: 0 }}
+              >
                 {subtitle}
               </p>
             ) : null}
@@ -279,7 +281,11 @@ export function Kpi({
 
   if (!href) return <div style={style}>{body}</div>;
   return (
-    <Link href={href} className="cn-kpi" style={{ ...style, display: "block", textDecoration: "none" }}>
+    <Link
+      href={href}
+      className="cn-kpi"
+      style={{ ...style, display: "block", textDecoration: "none" }}
+    >
       {body}
     </Link>
   );
@@ -350,7 +356,9 @@ export function CardHead({
       <h2 style={{ ...headingStyle, fontSize: 17 }}>{title}</h2>
       {badge}
       {note ? <span style={{ fontFamily: SANS, fontSize: 12.5, color: SOFT }}>{note}</span> : null}
-      {actions ? <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>{actions}</div> : null}
+      {actions ? (
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>{actions}</div>
+      ) : null}
     </div>
   );
 }
@@ -358,7 +366,9 @@ export function CardHead({
 /** Explanatory line under a CardHead. */
 export function CardNote({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontFamily: SANS, fontSize: 12.5, lineHeight: 1.5, color: SOFT, margin: "0 0 16px" }}>
+    <p
+      style={{ fontFamily: SANS, fontSize: 12.5, lineHeight: 1.5, color: SOFT, margin: "0 0 16px" }}
+    >
       {children}
     </p>
   );
@@ -458,7 +468,12 @@ export function TRow({
     color: INK,
     textDecoration: "none",
   };
-  if (!href) return <div className="cn-row" style={style}>{children}</div>;
+  if (!href)
+    return (
+      <div className="cn-row" style={style}>
+        {children}
+      </div>
+    );
   return (
     <Link href={href} className="cn-row" style={style}>
       {children}
@@ -582,7 +597,12 @@ export function ListRow({
       {trail ? <div style={{ flex: "none" }}>{trail}</div> : null}
     </>
   );
-  if (!href) return <div className="cn-row" style={style}>{body}</div>;
+  if (!href)
+    return (
+      <div className="cn-row" style={style}>
+        {body}
+      </div>
+    );
   return (
     <Link href={href} className="cn-row" style={style}>
       {body}
@@ -591,7 +611,13 @@ export function ListRow({
 }
 
 /** Square badge used as a ListRow `lead` — the design's "W"/"R"/"L" kind chip. */
-export function KindBadge({ children, tone = "indigo" }: { children: React.ReactNode; tone?: Tone }) {
+export function KindBadge({
+  children,
+  tone = "indigo",
+}: {
+  children: React.ReactNode;
+  tone?: Tone;
+}) {
   const { bg, fg } = TINT[tone];
   return (
     <div
@@ -849,10 +875,18 @@ const btnBase: React.CSSProperties = {
   flex: "none",
 };
 
-export function buttonStyle(variant: "primary" | "green" | "ghost" = "primary"): React.CSSProperties {
+export function buttonStyle(
+  variant: "primary" | "green" | "ghost" = "primary",
+): React.CSSProperties {
   if (variant === "primary") return { ...btnBase, background: INDIGO, color: "#fff", border: 0 };
   if (variant === "green") return { ...btnBase, background: GREEN, color: "#fff", border: 0 };
-  return { ...btnBase, background: "#fff", color: INK, border: `1px solid #E0DED8`, fontWeight: 500 };
+  return {
+    ...btnBase,
+    background: "#fff",
+    color: INK,
+    border: `1px solid #E0DED8`,
+    fontWeight: 500,
+  };
 }
 
 export function BtnLink({
@@ -917,11 +951,7 @@ export function TextLink({ href, children }: { href: string; children: React.Rea
 /* ── tabs ─────────────────────────────────────────────────────────────────── */
 
 /** Underlined tab strip (group detail). Tabs are links, so each is a real URL. */
-export function Tabs({
-  tabs,
-}: {
-  tabs: { href: string; label: string; active: boolean }[];
-}) {
+export function Tabs({ tabs }: { tabs: { href: string; label: string; active: boolean }[] }) {
   return (
     <div
       style={{

@@ -337,7 +337,9 @@ function WeaknessCard({
         />
       ))}
       {rows.length === 0 ? (
-        <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>Nothing graded yet.</p>
+        <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+          Nothing graded yet.
+        </p>
       ) : null}
     </Card>
   );

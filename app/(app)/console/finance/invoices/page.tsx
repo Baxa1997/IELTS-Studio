@@ -32,6 +32,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { TransactionForm } from "../transaction-form";
 import { GenerateInvoicesForm, GroupFeeForm } from "./invoice-forms";
+import { DownloadLink } from "@/components/console/file-links";
 
 export const dynamic = "force-dynamic";
 
@@ -157,23 +158,12 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
             >
               <GroupFeeForm groups={groupsForForms} currency={currency} />
             </Drawer>
-            <a
+            <DownloadLink
               href={`/api/console/finance/export?report=debtors&format=xlsx&month=${month}`}
-              className="cn-chip"
-              style={{
-                background: "#F4F3EF",
-                border: "1px solid #E4E2DC",
-                borderRadius: 7,
-                padding: "7px 12px",
-                fontFamily: SANS,
-                fontSize: 12.5,
-                color: INK,
-                textDecoration: "none",
-              }}
-              download
-            >
-              Export balances
-            </a>
+              format="xlsx"
+              label="Debtors"
+              title="Who still owes, as a spreadsheet"
+            />
           </>
         }
       />

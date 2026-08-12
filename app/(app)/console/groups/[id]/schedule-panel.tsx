@@ -6,6 +6,7 @@ import { describeDays } from "@/lib/console/timetable-days";
 
 import { type GroupFormState, setGroupSchedule } from "../actions";
 import { type RoomChoice, ScheduleFields } from "../schedule-fields";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * Change when an existing class meets.
@@ -152,6 +153,7 @@ function ScheduleForm({
   canCancel: boolean;
 }) {
   const [state, formAction, pending] = useActionState(setGroupSchedule, {} as GroupFormState);
+  useActionFeedback(state);
 
   return (
     <form

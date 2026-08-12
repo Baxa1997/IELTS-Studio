@@ -1,10 +1,18 @@
 import Link from "next/link";
+import {
+  FiCalendar,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCornerUpLeft,
+  FiMapPin,
+} from "react-icons/fi";
 import { redirect } from "next/navigation";
 
 import {
   Card,
   CardHead,
   FAINT,
+  GREEN,
   INDIGO,
   INK,
   MUTED,
@@ -296,13 +304,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
           {showBranchTabs ? (
             <div
               style={{
-                display: "flex",
-                gap: 4,
-                flexWrap: "wrap",
+                display: "inline-flex",
                 alignItems: "center",
-                marginBottom: 12,
-                paddingBottom: 10,
-                borderBottom: "1px solid #E4E2DC",
+                gap: 3,
+                marginBottom: 14,
+                padding: 3,
+                borderRadius: 11,
+                background: "#EFEDE7",
+                border: `1px solid ${HAIRLINE}`,
               }}
             >
               {[
@@ -316,25 +325,31 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     href={link({ branch: tab.key })}
                     className="cn-tab"
                     style={{
-                      padding: "8px 15px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 7,
+                      padding: "7px 14px",
                       fontFamily: SANS,
-                      fontSize: 13.5,
+                      fontSize: 13,
                       fontWeight: on ? 600 : 500,
                       textDecoration: "none",
-                      borderRadius: "9px 9px 0 0",
-                      borderBottom: `2px solid ${on ? INDIGO : "transparent"}`,
-                      color: on ? INDIGO : MUTED,
-                      background: on ? "#F2F1FB" : "transparent",
+                      borderRadius: 8,
+                      color: on ? INK : MUTED,
+                      background: on ? "#fff" : "transparent",
+                      boxShadow: on ? "0 1px 3px rgba(22,22,46,.10)" : "none",
                     }}
                   >
+                    <FiMapPin size={13} color={on ? INDIGO : FAINT} aria-hidden />
                     {tab.label}
                     {tab.count >= 0 ? (
                       <span
                         style={{
-                          marginLeft: 7,
                           fontSize: 11,
+                          fontWeight: 600,
                           color: on ? INDIGO : FAINT,
-                          opacity: 0.75,
+                          background: on ? "#EDEBFB" : "#E4E2DC",
+                          borderRadius: 20,
+                          padding: "1px 7px",
                         }}
                       >
                         {tab.count}
@@ -346,50 +361,107 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             </div>
           ) : null}
 
-          {/* ── which week ─────────────────────────────────────────────────────── */}
           <div
             style={{
               display: "flex",
-              gap: 8,
+              gap: 10,
               alignItems: "center",
               flexWrap: "wrap",
-              marginBottom: 10,
+              marginBottom: 12,
             }}
           >
-            <Link href={link({ week: addDays(week, -7) })} className="cn-chip" style={weekBtn}>
-              ‹
-            </Link>
             <div
               style={{
-                fontFamily: SANS,
-                fontSize: 13.5,
-                fontWeight: 600,
-                color: INK,
-                minWidth: 118,
-                textAlign: "center",
+                display: "inline-flex",
+                alignItems: "stretch",
+                border: `1px solid ${HAIRLINE}`,
+                borderRadius: 10,
+                background: "#fff",
+                overflow: "hidden",
+                boxShadow: "0 1px 2px rgba(22,22,46,.04)",
               }}
             >
-              {weekLabel(week)}
+              <Link
+                href={link({ week: addDays(week, -7) })}
+                aria-label="Previous week"
+                className="cn-chip"
+                style={stepBtn}
+              >
+                <FiChevronLeft size={16} aria-hidden />
+              </Link>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "0 14px",
+                  borderLeft: `1px solid ${HAIRLINE}`,
+                  borderRight: `1px solid ${HAIRLINE}`,
+                  fontFamily: SANS,
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  color: INK,
+                  minWidth: 150,
+                  justifyContent: "center",
+                }}
+              >
+                <FiCalendar size={14} color={INDIGO} aria-hidden />
+                {weekLabel(week)}
+              </span>
+              <Link
+                href={link({ week: addDays(week, 7) })}
+                aria-label="Next week"
+                className="cn-chip"
+                style={stepBtn}
+              >
+                <FiChevronRight size={16} aria-hidden />
+              </Link>
             </div>
-            <Link href={link({ week: addDays(week, 7) })} className="cn-chip" style={weekBtn}>
-              ›
-            </Link>
+
             {week === thisWeek ? (
-              <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>this week</span>
+              <span
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: GREEN,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN }}
+                />
+                This week
+              </span>
             ) : (
               <Link
                 href={link({ week: undefined, day: undefined })}
                 className="cn-chip"
                 style={weekBtn}
               >
-                Today
+                <FiCornerUpLeft size={13} aria-hidden style={{ marginRight: 5 }} />
+                Back to today
               </Link>
             )}
 
             {/* Jump straight to a date. A GET form rather than a date-picker
                 component: the whole page is already URL-driven, so the browser's
                 own control is the smallest thing that works. */}
-            <form method="get" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <form
+              method="get"
+              style={{
+                display: "inline-flex",
+                alignItems: "stretch",
+                marginLeft: "auto",
+                border: `1px solid ${HAIRLINE}`,
+                borderRadius: 10,
+                background: "#fff",
+                overflow: "hidden",
+              }}
+            >
               <input
                 type="date"
                 name="week"
@@ -398,16 +470,30 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 style={{
                   fontFamily: SANS,
                   fontSize: 12.5,
-                  padding: "6px 9px",
-                  borderRadius: 8,
-                  border: "1px solid #E4E2DC",
-                  background: "#fff",
-                  color: "#4C4A63",
+                  padding: "7px 10px",
+                  border: 0,
+                  outline: "none",
+                  background: "transparent",
+                  color: INK,
                 }}
               />
               {showBranchTabs ? <input type="hidden" name="branch" value={scope} /> : null}
               {mine ? null : <input type="hidden" name="who" value="all" />}
-              <button type="submit" className="cn-chip" style={{ ...weekBtn, cursor: "pointer" }}>
+              <button
+                type="submit"
+                className="cn-chip"
+                style={{
+                  border: 0,
+                  borderLeft: `1px solid ${HAIRLINE}`,
+                  background: "#FAF9F6",
+                  padding: "0 13px",
+                  fontFamily: SANS,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: INDIGO,
+                  cursor: "pointer",
+                }}
+              >
                 Go
               </button>
             </form>
@@ -633,16 +719,32 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   );
 }
 
+const HAIRLINE = "#E4E2DC";
+
 const weekBtn: React.CSSProperties = {
-  borderRadius: 8,
-  padding: "6px 11px",
+  display: "inline-flex",
+  alignItems: "center",
+  borderRadius: 9,
+  padding: "7px 12px",
   fontFamily: SANS,
   fontSize: 12.5,
   textDecoration: "none",
-  border: "1px solid #E4E2DC",
+  border: `1px solid ${HAIRLINE}`,
   background: "#fff",
   color: "#4C4A63",
   lineHeight: 1.4,
+};
+
+/** A segment of the prev/next group: no border of its own, the group owns it. */
+const stepBtn: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 11px",
+  border: 0,
+  background: "transparent",
+  color: "#4C4A63",
+  textDecoration: "none",
 };
 
 /** The teacher's two-state filter chip. */

@@ -1,5 +1,6 @@
 import { ConsoleChrome } from "@/components/console/console-chrome";
 import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
+import { ToastHost } from "@/components/console/toast";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadFinanceSettings } from "@/lib/finance/load";
@@ -31,37 +32,39 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
 
   return (
     <div className="cn-root">
-      <ConsoleChrome
-        userName={profile.full_name ?? user.email ?? "Account"}
-        windowLabel="Last 90 days"
-        enrolPanel={
-          <EnrolStudentPanel
-            groups={groups.map((g) => ({
-              id: g.id,
-              name: g.name,
-              meta: g.teacherName ?? "No teacher assigned",
-              students: g.memberCount,
-            }))}
-          />
-        }
-        teacherPanel={isAdmin ? <AddTeacherPanel /> : undefined}
-        invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
-        groupPanel={
-          <CreateGroupForm
-            teachers={teachers}
-            branches={branches}
-            rooms={rooms}
-            canAssignTeacher={isAdmin}
-            pricing={
-              settings
-                ? { currency: settings.currency, lessonsPerMonth: settings.lessonsPerMonth }
-                : null
-            }
-          />
-        }
-      >
-        {children}
-      </ConsoleChrome>
+      <ToastHost>
+        <ConsoleChrome
+          userName={profile.full_name ?? user.email ?? "Account"}
+          windowLabel="Last 90 days"
+          enrolPanel={
+            <EnrolStudentPanel
+              groups={groups.map((g) => ({
+                id: g.id,
+                name: g.name,
+                meta: g.teacherName ?? "No teacher assigned",
+                students: g.memberCount,
+              }))}
+            />
+          }
+          teacherPanel={isAdmin ? <AddTeacherPanel /> : undefined}
+          invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
+          groupPanel={
+            <CreateGroupForm
+              teachers={teachers}
+              branches={branches}
+              rooms={rooms}
+              canAssignTeacher={isAdmin}
+              pricing={
+                settings
+                  ? { currency: settings.currency, lessonsPerMonth: settings.lessonsPerMonth }
+                  : null
+              }
+            />
+          }
+        >
+          {children}
+        </ConsoleChrome>
+      </ToastHost>
     </div>
   );
 }

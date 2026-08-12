@@ -53,7 +53,11 @@ export default async function GradingReviewPage({ params }: PageProps) {
       ? supabase.from("profiles").select("full_name").eq("id", essay.student_id).maybeSingle()
       : Promise.resolve({ data: null }),
     essay?.prompt_id
-      ? supabase.from("writing_prompts").select("prompt_text").eq("id", essay.prompt_id).maybeSingle()
+      ? supabase
+          .from("writing_prompts")
+          .select("prompt_text")
+          .eq("id", essay.prompt_id)
+          .maybeSingle()
       : Promise.resolve({ data: null }),
     supabase
       .from("grading_overrides")
@@ -71,7 +75,10 @@ export default async function GradingReviewPage({ params }: PageProps) {
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/console/review" className="text-muted-foreground hover:text-foreground text-sm">
+        <Link
+          href="/console/review"
+          className="text-muted-foreground hover:text-foreground text-sm"
+        >
           ← Review queue
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-3">
@@ -81,13 +88,17 @@ export default async function GradingReviewPage({ params }: PageProps) {
               Teacher override
             </span>
           ) : (
-            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-xs">AI · {grading.model}</span>
+            <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-xs">
+              AI · {grading.model}
+            </span>
           )}
         </div>
         <p className="text-muted-foreground mt-1 text-sm">
           {studentName}
           {grading.version_no ? ` · draft ${grading.version_no}` : ""} · band{" "}
-          <span className="text-foreground font-medium tabular-nums">{Number(grading.overall_band).toFixed(1)}</span>
+          <span className="text-foreground font-medium tabular-nums">
+            {Number(grading.overall_band).toFixed(1)}
+          </span>
         </p>
       </div>
 
@@ -96,23 +107,31 @@ export default async function GradingReviewPage({ params }: PageProps) {
         <div className="space-y-3">
           {promptText ? (
             <section className="rounded-lg border p-4">
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Prompt</p>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                Prompt
+              </p>
               <p className="mt-1 text-sm whitespace-pre-wrap">{promptText}</p>
             </section>
           ) : null}
           <section className="rounded-lg border p-4">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Essay</p>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                Essay
+              </p>
               <p className="text-muted-foreground text-xs">{essay?.word_count ?? 0} words</p>
             </div>
-            <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">{essay?.content ?? "—"}</p>
+            <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
+              {essay?.content ?? "—"}
+            </p>
           </section>
         </div>
 
         {/* The AI verdict + the override. */}
         <div className="space-y-3">
           <section className="rounded-lg border p-4">
-            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">AI breakdown</p>
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              AI breakdown
+            </p>
             <div className="mt-2 space-y-2">
               {CRITERIA.map((key: Criterion) => {
                 const c = criteria[key];
@@ -127,7 +146,9 @@ export default async function GradingReviewPage({ params }: PageProps) {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{CRITERION_LABELS[key]}</span>
-                      <span className="text-sm tabular-nums">{c.band != null ? c.band.toFixed(1) : "—"}</span>
+                      <span className="text-sm tabular-nums">
+                        {c.band != null ? c.band.toFixed(1) : "—"}
+                      </span>
                     </div>
                     {c.what_caps_it ? (
                       <p className="text-muted-foreground mt-1 text-xs">{c.what_caps_it}</p>
@@ -139,16 +160,24 @@ export default async function GradingReviewPage({ params }: PageProps) {
           </section>
 
           <section className="rounded-lg border p-4">
-            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Adjust the band</p>
-            <p className="text-muted-foreground mt-1 mb-3 text-xs">
-              Your correction becomes the authoritative band and feeds the grader&apos;s calibration anchors.
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              Adjust the band
             </p>
-            <OverrideForm gradingId={grading.id as string} currentBand={Number(grading.overall_band)} />
+            <p className="text-muted-foreground mt-1 mb-3 text-xs">
+              Your correction becomes the authoritative band and feeds the grader&apos;s calibration
+              anchors.
+            </p>
+            <OverrideForm
+              gradingId={grading.id as string}
+              currentBand={Number(grading.overall_band)}
+            />
           </section>
 
           {overrides.length > 0 ? (
             <section className="rounded-lg border p-4">
-              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Override history</p>
+              <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                Override history
+              </p>
               <ul className="mt-2 space-y-2">
                 {overrides.map((o, i) => (
                   <li key={i} className="text-sm">

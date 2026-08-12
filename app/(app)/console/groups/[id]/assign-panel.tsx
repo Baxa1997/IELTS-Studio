@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { TASK2_CATEGORIES, TASK2_CATEGORY_LABELS, TOPIC_FAMILIES } from "@/lib/prompts/types";
 
 import { createAssignment, type GroupFormState } from "../actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 const FIELD =
   "border-input h-8 w-full min-w-0 rounded-lg border bg-transparent px-2.5 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50";
@@ -27,6 +28,7 @@ export function AssignPanel({
   libraryTests: { id: string; label: string }[];
 }) {
   const [state, formAction, pending] = useActionState(createAssignment, initial);
+  useActionFeedback(state);
   const [kind, setKind] = useState<"writing" | "reading">("writing");
 
   return (

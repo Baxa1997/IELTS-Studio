@@ -17,6 +17,7 @@ import {
 import { DAY_PRESETS, orderedWeekdays } from "@/lib/console/timetable-days";
 
 import { type ActionState, deleteSlot, saveSlot } from "./actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /** Common lesson lengths, so the end time fills itself in. */
 const DURATIONS = [45, 60, 90, 120];
@@ -113,6 +114,9 @@ export function SlotForm({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   const [days, setDays] = useState<number[]>(slot?.weekdays?.length ? slot.weekdays : [1]);
   const [startsAt, setStartsAt] = useState(slot?.startsAt ?? "15:30");
@@ -397,6 +401,9 @@ function RemoveLesson({
     },
     {} as ActionState,
   );
+  // These already close themselves on success; the hook is here for the
+  // banner at the top of the page, so `keepOpen` avoids a double close.
+  useActionFeedback(state, { keepOpen: true });
 
   const linkStyle: React.CSSProperties = {
     background: "none",

@@ -43,7 +43,10 @@ export function GeneratePromptPanel() {
 
   return (
     <div className="space-y-3">
-      <form action={formAction} className="grid gap-3 sm:grid-cols-[1.4fr_1fr_auto_auto] sm:items-end">
+      <form
+        action={formAction}
+        className="grid gap-3 sm:grid-cols-[1.4fr_1fr_auto_auto] sm:items-end"
+      >
         <div className="space-y-2">
           <Label htmlFor="category">Question type</Label>
           <select id="category" name="category" defaultValue="opinion" className={FIELD}>

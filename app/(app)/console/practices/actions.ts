@@ -7,7 +7,11 @@ import { requireOrgUser } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { notifyAssignment } from "@/lib/notifications/send";
 import { notifyAssignmentTelegram } from "@/lib/telegram/send";
-import { generateWritingPrompt, PromptServiceError, reviewWritingPrompt } from "@/lib/prompts/service";
+import {
+  generateWritingPrompt,
+  PromptServiceError,
+  reviewWritingPrompt,
+} from "@/lib/prompts/service";
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota } from "@/lib/quota";
 import { instantiateLibraryTest } from "@/lib/reading/service";

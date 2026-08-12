@@ -23,7 +23,13 @@ export function ExportCohortButton({ rows, orgName }: { rows: StudentRow[]; orgN
   }
 
   return (
-    <Button type="button" variant="outline" size="sm" onClick={download} disabled={rows.length === 0}>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={download}
+      disabled={rows.length === 0}
+    >
       Export CSV
     </Button>
   );
@@ -91,5 +97,10 @@ function csvCell(value: string): string {
   return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "center";
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "center"
+  );
 }
