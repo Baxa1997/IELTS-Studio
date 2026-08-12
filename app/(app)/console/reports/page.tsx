@@ -29,11 +29,13 @@ import {
   TRow,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
-import { buildFindings, type Finding } from "@/lib/console/report-findings";
+import { loadNewWork } from "@/lib/console/new-work";
+import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
+import { ReportAlerts } from "./alerts-button";
 import { ExportReportButton } from "./export-button";
 
 export const dynamic = "force-dynamic";
@@ -54,10 +56,11 @@ export default async function ReportsPage() {
   if (profile.role === "student") redirect("/dashboard");
 
   const supabase = await createClient();
-  const [report, orgRes, overview] = await Promise.all([
+  const [report, orgRes, overview, newWork] = await Promise.all([
     loadCenterReport({ role: profile.role, profileId: profile.id }),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
     loadWorkOverview(profile),
+    loadNewWork(),
   ]);
   const { recent: recentWork, students } = overview;
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
@@ -68,8 +71,12 @@ export default async function ReportsPage() {
   const topCap = Math.max(1, ...report.writingCaps.map((c) => c.value));
   const topMiss = Math.max(1, ...report.readingMisses.map((m) => m.value));
 
-
   const findings = buildFindings(report);
+
+  // Rows whose work this teacher has not opened. Counted off the hrefs actually
+  // on the page, not off the whole inbox: an alert offering to show you three
+  // hand-ins must not scroll you to a table holding one.
+  const newHere = recentWork.filter((w) => w.reportHref && newWork.hrefs.has(w.reportHref)).length;
 
   const STUDENT_COLS = "1.6fr 1.2fr .9fr 1.2fr 1fr .8fr";
   const WORK_COLS = "1.6fr 1.2fr .8fr 1fr .9fr";
@@ -82,18 +89,15 @@ export default async function ReportsPage() {
         eyebrow="Reports"
         title={isCenter ? centerName : "Your students"}
         subtitle={`${report.totals.students} students · ${report.totals.groups} classes · ${report.totals.gradedPractices} graded in the last 90 days.`}
-        actions={<ExportReportButton rows={report.groups} centerName={centerName} />}
+        actions={
+          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* THE ANSWERS, one control wide. These used to be a stack of cards
+                that pushed the students below the fold on every visit. */}
+            <ReportAlerts findings={findings} newWork={newHere} newWorkHref="#handed-in" />
+            <ExportReportButton rows={report.groups} centerName={centerName} />
+          </span>
+        }
       />
-
-      {/* THE ANSWERS FIRST. Everything below this is evidence; a center owner
-          who reads only the top of the page should still learn what to do. */}
-      {findings.length > 0 ? (
-        <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
-          {findings.map((f, i) => (
-            <FindingCard key={i} finding={f} />
-          ))}
-        </div>
-      ) : null}
 
       <Stack>
         <Card flush>
@@ -140,45 +144,72 @@ export default async function ReportsPage() {
           )}
         </Card>
 
-        <Card flush>
+        <Card flush id="handed-in">
           <CardHead
             title="What students handed in"
             divided
-            note="newest first — open any one to read the same feedback the student got"
+            badge={newHere > 0 ? <Tag tone="indigo">{newHere} new</Tag> : null}
+            note={
+              newHere > 0
+                ? "newest first — NEW means nobody has opened it yet"
+                : "newest first — open any one to read the same feedback the student got"
+            }
           />
           {recentWork.length > 0 ? (
             <Table cols={WORK_COLS} minWidth={720}>
               <THead cols={WORK_COLS} labels={["Student", "Skill", "Result", "When", ""]} />
-              {recentWork.map((w) => (
-                <TRow key={`${w.skill}-${w.id}`} cols={WORK_COLS}>
-                  <TD tone="ink" weight={500}>
-                    {w.studentName}
-                  </TD>
-                  <TD>
-                    <span style={{ textTransform: "capitalize" }}>{w.skill}</span>
-                    {w.assigned ? (
-                      <span style={{ marginLeft: 7 }}>
-                        <Tag tone="indigo">homework</Tag>
-                      </span>
-                    ) : null}
-                  </TD>
-                  <TD tone="ink" weight={600}>
-                    {w.band != null
-                      ? w.band.toFixed(1)
-                      : (w.score ?? (
-                          <span style={{ color: FAINT, fontWeight: 400 }}>grading…</span>
-                        ))}
-                  </TD>
-                  <TD tone="soft">{dateFmt(w.when)}</TD>
-                  <TD align="right">
-                    {w.reportHref ? (
-                      <TextLink href={w.reportHref}>Full feedback →</TextLink>
-                    ) : (
-                      <span style={{ color: FAINT, fontSize: 12 }}>not finished</span>
-                    )}
-                  </TD>
-                </TRow>
-              ))}
+              {recentWork.map((w) => {
+                const unopened = w.reportHref != null && newWork.hrefs.has(w.reportHref);
+                return (
+                  <TRow key={`${w.skill}-${w.id}`} cols={WORK_COLS}>
+                    <TD tone="ink" weight={500}>
+                      {unopened ? (
+                        <span
+                          aria-label="not opened yet"
+                          style={{
+                            display: "inline-block",
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: RED,
+                            marginRight: 7,
+                            verticalAlign: 2,
+                          }}
+                        />
+                      ) : null}
+                      {w.studentName}
+                    </TD>
+                    <TD>
+                      <span style={{ textTransform: "capitalize" }}>{w.skill}</span>
+                      {w.assigned ? (
+                        <span style={{ marginLeft: 7 }}>
+                          <Tag tone="indigo">homework</Tag>
+                        </span>
+                      ) : null}
+                      {unopened ? (
+                        <span style={{ marginLeft: 7 }}>
+                          <Tag tone="red">new</Tag>
+                        </span>
+                      ) : null}
+                    </TD>
+                    <TD tone="ink" weight={600}>
+                      {w.band != null
+                        ? w.band.toFixed(1)
+                        : (w.score ?? (
+                            <span style={{ color: FAINT, fontWeight: 400 }}>grading…</span>
+                          ))}
+                    </TD>
+                    <TD tone="soft">{dateFmt(w.when)}</TD>
+                    <TD align="right">
+                      {w.reportHref ? (
+                        <TextLink href={w.reportHref}>Full feedback →</TextLink>
+                      ) : (
+                        <span style={{ color: FAINT, fontSize: 12 }}>not finished</span>
+                      )}
+                    </TD>
+                  </TRow>
+                );
+              })}
             </Table>
           ) : (
             <Empty>
@@ -385,62 +416,6 @@ export default async function ReportsPage() {
           ) : null}
         </Card>
       </Stack>
-    </div>
-  );
-}
-
-/**
- * One answer, stated plainly.
- *
- * Tone is carried by a single left edge and the headline's weight, not by a
- * filled panel: three stacked coloured blocks read as an alert screen, and most
- * findings are neither good nor bad news — they are just the situation.
- */
-function FindingCard({ finding }: { finding: Finding }) {
-  const accent = finding.tone === "good" ? GREEN : finding.tone === "bad" ? RED : "#C9C6BD";
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
-        background: "#fff",
-        border: "1px solid #E9E7E1",
-        borderLeft: `3px solid ${accent}`,
-        borderRadius: 11,
-        padding: "13px 15px",
-      }}
-    >
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span
-          style={{
-            display: "block",
-            fontFamily: SANS,
-            fontSize: 14,
-            fontWeight: 600,
-            color: INK,
-            lineHeight: 1.4,
-          }}
-        >
-          {finding.headline}
-        </span>
-        <span
-          style={{
-            display: "block",
-            fontFamily: SANS,
-            fontSize: 12.5,
-            color: MUTED,
-            marginTop: 3,
-            lineHeight: 1.5,
-          }}
-        >
-          {finding.detail}
-        </span>
-      </span>
-      {finding.action ? (
-        <TextLink href={finding.action.href}>{finding.action.label} →</TextLink>
-      ) : null}
     </div>
   );
 }

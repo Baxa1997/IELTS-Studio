@@ -93,6 +93,10 @@ export async function loadGroups(profile: Profile): Promise<{
       .eq("active", true)
       .order("name", { ascending: true }),
   ]);
+  // Same reasoning as loadGroupDetail: an empty list is a legitimate answer, so
+  // a rejected query is invisible unless it is logged. Every console page that
+  // scopes itself by class starts here, so one bad column empties all of them.
+  if (groupsRes.error) console.error("[loadGroups] failed:", groupsRes.error.message);
 
   const groups = groupsRes.data ?? [];
   const staff = staffRes.data ?? [];
@@ -148,11 +152,17 @@ export async function loadGroups(profile: Profile): Promise<{
 export async function loadGroupDetail(groupId: string): Promise<GroupDetail | null> {
   const supabase = await createClient();
 
-  const { data: group } = await supabase
+  const { data: group, error } = await supabase
     .from("groups")
     .select("id, name, teacher_id, capacity")
     .eq("id", groupId)
     .maybeSingle();
+  // A null row means "you may not see this class", and the caller turns that
+  // into a 404 — which is right for RLS and badly wrong for anything else. An
+  // unapplied migration makes PostgREST reject the whole select ("column
+  // groups.capacity does not exist"), and swallowing that error rendered a
+  // page-not-found for a class that exists and is yours. Say it out loud.
+  if (error) console.error("[loadGroupDetail] group select failed:", groupId, error.message);
   if (!group) return null;
 
   const [membersRes, invitesRes, teacherRes] = await Promise.all([

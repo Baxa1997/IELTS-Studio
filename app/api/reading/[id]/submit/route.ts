@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
 import { recomputeSkillEstimate } from "@/lib/estimates/service";
+import { notifyGradedToTeachers } from "@/lib/notifications/send";
 import { gradeReadingAttempt, type GradableQuestion } from "@/lib/reading/grade";
 import { READING_DISCLAIMER } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,7 +55,9 @@ export async function POST(req: Request, ctx: RouteContext): Promise<Response> {
   const admin = createAdminClient();
   const { data: rows, error: qErr } = await admin
     .from("reading_questions")
-    .select("id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation")
+    .select(
+      "id, question_type, order_index, prompt, options, answer_key, supporting_sentence, explanation",
+    )
     .eq("passage_id", passageId)
     .eq("organization_id", organizationId)
     .order("order_index", { ascending: true });
@@ -70,22 +73,26 @@ export async function POST(req: Request, ctx: RouteContext): Promise<Response> {
       ? Math.round(durationSeconds)
       : null;
 
-  const { error: insErr } = await admin.from("reading_attempts").insert({
-    organization_id: organizationId,
-    student_id: studentId,
-    passage_id: passageId,
-    answers,
-    raw_score: grade.correctCount,
-    band: grade.band,
-    status: "graded",
-    total_questions: grade.total,
-    correct_count: grade.correctCount,
-    percent: grade.percent,
-    duration_seconds: duration,
-    details: grade.items,
-    type_breakdown: grade.typeBreakdown,
-    submitted_at: new Date().toISOString(),
-  });
+  const { data: attempt, error: insErr } = await admin
+    .from("reading_attempts")
+    .insert({
+      organization_id: organizationId,
+      student_id: studentId,
+      passage_id: passageId,
+      answers,
+      raw_score: grade.correctCount,
+      band: grade.band,
+      status: "graded",
+      total_questions: grade.total,
+      correct_count: grade.correctCount,
+      percent: grade.percent,
+      duration_seconds: duration,
+      details: grade.items,
+      type_breakdown: grade.typeBreakdown,
+      submitted_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
   if (insErr) {
     console.error("[reading/submit] failed to store attempt:", passageId, insErr.message);
     return fail(500, "store_failed");
@@ -98,6 +105,17 @@ export async function POST(req: Request, ctx: RouteContext): Promise<Response> {
   } catch (err) {
     console.error("[reading/submit] estimate recompute failed:", passageId, err);
   }
+
+  // Tell the class's teachers, the same way a marked essay does. Reading is
+  // graded here rather than in `runGrading`, so without this the console's
+  // "new hand-ins" count would only ever mean writing.
+  await notifyGradedToTeachers({
+    organizationId,
+    studentId,
+    href: `/activities/reading/${attempt.id as string}`,
+    skill: "reading",
+    band: grade.band ?? null,
+  });
 
   return NextResponse.json(
     {
@@ -117,7 +135,9 @@ export async function POST(req: Request, ctx: RouteContext): Promise<Response> {
 }
 
 /** Tolerate a missing/garbage body; answers default to empty (all wrong). */
-async function readBody(req: Request): Promise<{ answers: Record<string, string>; durationSeconds?: number }> {
+async function readBody(
+  req: Request,
+): Promise<{ answers: Record<string, string>; durationSeconds?: number }> {
   try {
     const body = (await req.json()) as { answers?: unknown; durationSeconds?: unknown };
     const answers: Record<string, string> = {};
@@ -126,7 +146,8 @@ async function readBody(req: Request): Promise<{ answers: Record<string, string>
         if (typeof v === "string") answers[k] = v;
       }
     }
-    const durationSeconds = typeof body?.durationSeconds === "number" ? body.durationSeconds : undefined;
+    const durationSeconds =
+      typeof body?.durationSeconds === "number" ? body.durationSeconds : undefined;
     return { answers, durationSeconds };
   } catch {
     return { answers: {} };
