@@ -88,9 +88,45 @@ export async function POST(req: Request): Promise<Response> {
 
   // `/start CODE` (deep link) or `/link CODE` (typed), tolerating the @botname
   // suffix Telegram adds in groups.
+  // A bare `/start` in the bot's own chat — what you get by tapping the bot in
+  // search, or by opening the deep link on a device that shows the bot instead
+  // of the group picker. Saying what the bot is for costs one message and saves
+  // the admin guessing whether it is broken.
+  if (/^\/start(?:@\w+)?$/.test(text) && (chat.type === "private" || chat.id > 0)) {
+    await sendMessage(
+      chat.id,
+      "👋 I post class announcements into your center's Telegram groups.\n\n" +
+        "I don't do anything in this chat. To connect a class: open it in the console → " +
+        "<b>Settings → Telegram</b>, press <b>Add to a group</b>, and pick the group there.",
+    );
+    return ok();
+  }
+
   const match = /^\/(?:start|link)(?:@\w+)?\s+([A-Za-z0-9-]{4,20})$/.exec(text);
   if (!match) return ok();
   const code = match[1].toUpperCase();
+
+  // A CLASS CHANNEL IS NEVER A PRIVATE CHAT, and this check is not pedantry —
+  // it is the failure we actually hit. Opening the `?startgroup=` deep link on
+  // a device where Telegram would rather show the bot's own chat lands you in
+  // a private conversation, and pressing Start there sends the same
+  // `/start CODE`. Without this the class binds to one person's DMs: every
+  // announcement goes to them alone, the channel gets nothing, and the app
+  // shows a confident green "Connected" the whole time.
+  //
+  // Private chat ids are positive; groups, supergroups and channels are
+  // negative. `type` is checked first because it says so explicitly, with the
+  // sign as a fallback for updates that omit it.
+  const isPrivate = chat.type === "private" || (chat.type == null && chat.id > 0);
+  if (isPrivate) {
+    await sendMessage(
+      chat.id,
+      "That connected nothing — this is our private chat, not your class channel.\n\n" +
+        "Open the <b>group or channel</b> the class uses, add me to it, and post " +
+        `<code>/link ${escapeHtml(code)}</code> there. The code still works.`,
+    );
+    return ok();
+  }
 
   try {
     const admin = createAdminClient();
