@@ -20,7 +20,6 @@ import {
   Megaphone,
   Mic,
   Receipt,
-  Scale,
   Settings,
   SquarePen,
   Target,
@@ -107,8 +106,10 @@ const ADMIN: Section[] = [
     items: [
       { label: "Finance", href: "/console/finance", icon: Wallet },
       { label: "Invoices", href: "/console/finance/invoices", icon: Receipt },
-      { label: "Payroll", href: "/console/finance/payroll", icon: Banknote },
-      { label: "Salary rules", href: "/console/finance/rules", icon: Scale },
+      // "Salary", not "Payroll": one word for the whole thing. The separate
+      // Salary-rules builder is gone — a class carries the teacher's rate
+      // beside the student's fee, which is where an owner looks for it.
+      { label: "Salary", href: "/console/finance/payroll", icon: Banknote },
     ],
   },
   // No Practice: the library is the teacher's. An admin runs people, billing
@@ -117,7 +118,6 @@ const ADMIN: Section[] = [
     title: "Insight",
     items: [
       { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
-      { label: "Certificates", href: "/console/certificates", icon: Award },
       { label: "Announcements", href: "/console/announcements", icon: Megaphone },
     ],
   },
@@ -159,10 +159,7 @@ const TEACHER: Section[] = [
   },
   {
     title: "Insight",
-    items: [
-      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
-      { label: "Certificates", href: "/console/certificates", icon: Award },
-    ],
+    items: [{ label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn }],
   },
 ];
 

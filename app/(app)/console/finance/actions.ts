@@ -7,7 +7,7 @@ import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
 import { gatherPayrollFacts, loadSalaryRules } from "@/lib/finance/payroll";
 import { isDate, monthStart, today } from "@/lib/finance/period";
-import { computePayroll, salaryComponentsSchema } from "@/lib/finance/salary";
+import { computePayroll } from "@/lib/finance/salary";
 import { loadLessonDatesFor } from "@/lib/finance/schedule";
 import { prorate } from "@/lib/finance/tuition";
 import { createClient } from "@/lib/supabase/server";
@@ -711,125 +711,6 @@ export async function payTeacher(_prev: ActionState, formData: FormData): Promis
   refreshFinance();
   return { ok: "Salary paid and recorded as an expense." };
 }
-
-/* ── salary rules ─────────────────────────────────────────────────────────── */
-
-/**
- * Save a pay rule.
- *
- * The components arrive as a JSON string built by the rule editor, and are
- * validated here with the same schema the engine reads them back through — a
- * rule that can't be evaluated must never reach the database, because the place
- * it would fail is a payslip.
- */
-export async function saveSalaryRule(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const guard = await requireOwner();
-  if ("error" in guard) return guard.error;
-  const { profile } = guard;
-
-  const name = str(formData, "name");
-  if (!name) return { error: "Give the rule a name — it appears on every payslip it produces." };
-
-  const scope = str(formData, "scope");
-  if (!["org", "group", "teacher"].includes(scope))
-    return { error: "Pick who the rule applies to." };
-
-  const groupId = orNull(str(formData, "group_id"));
-  const teacherId = orNull(str(formData, "teacher_id"));
-  if (scope === "group" && !groupId) return { error: "Pick the class this rule is for." };
-  if (scope === "teacher" && !teacherId) return { error: "Pick the teacher this rule is for." };
-
-  let components: unknown;
-  try {
-    components = JSON.parse(str(formData, "components") || "[]");
-  } catch {
-    return { error: "The rule could not be read. Try rebuilding it." };
-  }
-  const parsed = salaryComponentsSchema.safeParse(components);
-  if (!parsed.success) return { error: "One of the rule's parts is incomplete." };
-  if (parsed.data.length === 0)
-    return { error: "A rule needs at least one part, or it pays nothing." };
-
-  const settings = await loadFinanceSettings();
-  const floorRaw = str(formData, "floor");
-  const capRaw = str(formData, "cap");
-  const floor = floorRaw === "" ? null : parseMoney(floorRaw, settings.currency);
-  const cap = capRaw === "" ? null : parseMoney(capRaw, settings.currency);
-  if (floorRaw !== "" && floor == null) return { error: "That isn't a valid minimum." };
-  if (capRaw !== "" && cap == null) return { error: "That isn't a valid ceiling." };
-  if (floor != null && cap != null && cap < floor) {
-    return { error: "The ceiling can't be below the guaranteed minimum." };
-  }
-
-  const payload = {
-    organization_id: profile.organization_id,
-    name,
-    scope,
-    group_id: scope === "org" ? null : groupId,
-    teacher_id: scope === "teacher" ? teacherId : null,
-    components: parsed.data,
-    floor_minor: floor,
-    cap_minor: cap,
-    active: true,
-  };
-
-  const supabase = await createClient();
-  const id = orNull(str(formData, "id"));
-  const { error } = id
-    ? await supabase.from("salary_rules").update(payload).eq("id", id)
-    : await supabase.from("salary_rules").insert(payload);
-  if (error) {
-    // The partial unique indexes are the guard against two active rules
-    // fighting over the same teacher or class.
-    if (error.code === "23505") {
-      return { error: "There is already an active rule for that target. Edit it instead." };
-    }
-    return { error: error.message };
-  }
-
-  revalidatePath("/console/finance/rules");
-  refreshFinance();
-  return { ok: id ? "Rule updated." : "Rule saved. Re-run payroll to apply it." };
-}
-
-export async function setSalaryRuleActive(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const guard = await requireOwner();
-  if ("error" in guard) return guard.error;
-
-  const id = str(formData, "id");
-  if (!id) return { error: "Nothing to change." };
-  const active = str(formData, "active") === "true";
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("salary_rules").update({ active }).eq("id", id);
-  if (error) return { error: error.message };
-
-  revalidatePath("/console/finance/rules");
-  return { ok: active ? "Rule switched on." : "Rule switched off." };
-}
-
-export async function deleteSalaryRule(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const guard = await requireOwner();
-  if ("error" in guard) return guard.error;
-
-  const id = str(formData, "id");
-  if (!id) return { error: "Nothing to delete." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("salary_rules").delete().eq("id", id);
-  if (error) return { error: error.message };
-
-  revalidatePath("/console/finance/rules");
-  return { ok: "Rule deleted. Payslips already computed keep their numbers." };
-}
-
-/* ── settings ─────────────────────────────────────────────────────────────── */
 
 export async function saveFinanceSettings(
   _prev: ActionState,

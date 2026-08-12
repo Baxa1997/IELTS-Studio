@@ -28,7 +28,6 @@ const CRUMBS: [string, string][] = [
   ["/console/students", "Center · Students"],
   ["/console/attendance", "Center · Attendance"],
   ["/console/reports", "Insight · Reports"],
-  ["/console/certificates", "Insight · Certificates"],
   ["/console/announcements", "Insight · Announcements"],
   ["/console/practices", "Teaching · Practice"],
   ["/console/billing", "Admin · Billing & plan"],

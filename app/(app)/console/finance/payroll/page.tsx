@@ -49,7 +49,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 /**
- * Payroll: what each teacher earned, and the arithmetic that says so.
+ * Salary: what each teacher earned, and the arithmetic that says so.
  *
  * The design decision that matters is on the page rather than under it. Every
  * payslip opens to its own working — "40% of 6 000 000 collected in IELTS
@@ -129,7 +129,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
         ) : (
           <Card>
             <Empty>
-              Nothing computed for {monthLabel(month)} yet. Your center runs payroll at the end of
+              Nothing computed for {monthLabel(month)} yet. Your center runs salary at the end of
               the month.
             </Empty>
           </Card>
@@ -143,7 +143,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
       <PageHead
         back={{ href: "/console/finance", label: "Finance" }}
         eyebrow="Money"
-        title="Payroll"
+        title="Salary"
         subtitle={
           run
             ? `${monthLabel(month)} · ${items.length} teacher${items.length === 1 ? "" : "s"} · computed from rosters, registers and payments.`
@@ -200,7 +200,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
       </Card>
 
       <KpiRow>
-        <Kpi label="Gross" value={money(gross)} sub="what the rules produced" />
+        <Kpi label="Gross" value={money(gross)} sub="before your corrections" />
         <Kpi
           label="Adjustments"
           value={adjustments === 0 ? "—" : money(adjustments)}
@@ -229,10 +229,10 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
               maxWidth: 640,
             }}
           >
-            Running payroll reads what the center already recorded — who is on each roster, which
-            registers were marked, and which payments were tagged to which class — and applies the
-            pay rule that resolves for each teacher and each class. Nothing here needs to be typed
-            in twice, and a draft can be recomputed as often as you like.
+            Salary reads what the center already recorded — who is on each roster, when they joined,
+            and how many lessons the class holds this month — and pays each teacher the rate written
+            on their classes. Nothing here needs to be typed in twice, and a draft can be recomputed
+            as often as you like.
           </p>
           <p
             style={{
@@ -243,8 +243,10 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
               lineHeight: 1.6,
             }}
           >
-            Check the arrangement first under{" "}
-            <TextLink href="/console/finance/rules">Salary rules</TextLink>.
+            The rate lives on the class, beside what the student pays — set it under a class&apos;s
+            Money tab, or from <TextLink href="/console/finance/invoices">Invoices</TextLink>. A
+            student who joined part-way through the month is paid for the lessons they were here
+            for.
           </p>
         </Card>
       ) : items.length === 0 ? (
@@ -319,7 +321,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
                       <Drawer
                         label="Adjust"
                         variant="ghost"
-                        eyebrow="Payroll"
+                        eyebrow="Salary"
                         title={item.teacherName}
                         note="A correction the rule cannot know about."
                       >

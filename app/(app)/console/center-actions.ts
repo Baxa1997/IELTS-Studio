@@ -99,62 +99,6 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
   };
 }
 
-/* ── certificates ─────────────────────────────────────────────────────────── */
-
-/** Short, unambiguous verification code: no O/0 or I/1 to mistype. */
-function certificateCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const pick = () =>
-    Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
-  return `${pick()}-${pick()}`;
-}
-
-export async function issueCertificate(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const { profile } = await requireOrgUser();
-  // A certificate is the center's statement, not one teacher's.
-  if (profile.role !== "center_admin") {
-    return { error: "Only a center admin can issue certificates." };
-  }
-
-  const studentId = String(formData.get("student_id") ?? "").trim();
-  const course = String(formData.get("course") ?? "").trim();
-  const bandRaw = String(formData.get("band") ?? "").trim();
-  if (!studentId) return { error: "Pick a student." };
-  if (!course) return { error: "Name the course." };
-
-  const band = bandRaw ? Number(bandRaw) : null;
-  if (band != null && (Number.isNaN(band) || band < 0 || band > 9)) {
-    return { error: "A band is between 0 and 9." };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("certificates").insert({
-    organization_id: profile.organization_id,
-    student_id: studentId,
-    course,
-    band,
-    code: certificateCode(),
-    issued_by: profile.id,
-  });
-  if (error) return { error: error.message };
-
-  await notify({
-    organizationId: profile.organization_id,
-    recipientIds: [studentId],
-    type: "announcement",
-    title: "Your certificate has been issued",
-    body: `${course}${band != null ? ` · Band ${band.toFixed(1)}` : ""}`,
-  });
-
-  revalidatePath("/console/certificates");
-  return { ok: "Certificate issued." };
-}
-
-/* ── announcements ────────────────────────────────────────────────────────── */
-
 export async function sendAnnouncement(
   _prev: ActionState,
   formData: FormData,

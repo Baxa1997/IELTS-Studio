@@ -24,14 +24,17 @@ const dateFmt = (s: string) =>
 /**
  * The learner's own certificates.
  *
- * Staff issue these from /console/certificates; this is the other end of it —
- * the student seeing what they earned, with the code that proves it. RLS on
- * `certificates` already limits a student to `student_id = auth.uid()`, so this
- * needs no filter of its own beyond the query.
+ * The issuing console was removed, but this page stays and the `certificates`
+ * table with it: certificates already handed out must keep resolving, and their
+ * verification codes are printed on paper we do not control. RLS limits a
+ * student to `student_id = auth.uid()`, so this needs no filter of its own.
+ *
+ * Staff have nowhere to go here any more, so they are sent to the console
+ * rather than to a route that no longer exists.
  */
 export default async function StudentCertificatesPage() {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "student") redirect("/console/certificates");
+  if (profile.role !== "student") redirect("/console");
 
   const supabase = await createClient();
   const [certRes, orgRes] = await Promise.all([

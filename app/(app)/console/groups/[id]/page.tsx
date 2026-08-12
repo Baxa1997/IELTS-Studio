@@ -49,6 +49,7 @@ import { TelegramPanel } from "./telegram-panel";
 import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
+import { SchedulePanel } from "./schedule-panel";
 import { RosterFileMenu, StudentsManager } from "./students-manager";
 
 export const dynamic = "force-dynamic";
@@ -118,6 +119,50 @@ export default async function GroupDetailPage({
   // so the whole page is one round of queries.
   const thisMonth = monthStart(today());
   const moneyData = isAdmin ? await loadClassMoney(group.id, thisMonth) : null;
+
+  // ── when the class meets ───────────────────────────────────────────────────
+  // Its own row rather than loadGroups', because a teacher's loadGroups is
+  // narrowed to their classes and this page is already proven to be one of them.
+  const [{ data: groupRow }, { data: slotRows }, { rooms: allRooms }] = await Promise.all([
+    supabase.from("groups").select("branch_id").eq("id", group.id).maybeSingle(),
+    supabase
+      .from("lesson_slots")
+      .select("series_id, weekday, starts_at, ends_at, room_id")
+      .eq("group_id", group.id),
+    loadGroups(profile),
+  ]);
+  // A class can hold SEVERAL independent bookings — the same class at 08:00 and
+  // again at 15:30 is two series, four rows. Grouping by series_id keeps them
+  // apart; a single flattened weekday list would merge two real bookings into
+  // one and lose a time.
+  const slots = (slotRows ?? []) as Record<string, unknown>[];
+  const seriesMap = new Map<
+    string,
+    {
+      seriesId: string;
+      weekdays: number[];
+      startsAt: string;
+      endsAt: string;
+      roomId: string | null;
+    }
+  >();
+  for (const r of slots) {
+    const key = String(r.series_id);
+    const entry = seriesMap.get(key) ?? {
+      seriesId: key,
+      weekdays: [],
+      // Every row in one series shares its time and room, so the first speaks
+      // for all of them.
+      startsAt: String(r.starts_at).slice(0, 5),
+      endsAt: String(r.ends_at).slice(0, 5),
+      roomId: (r.room_id as string | null) ?? null,
+    };
+    entry.weekdays.push(Number(r.weekday));
+    seriesMap.set(key, entry);
+  }
+  const series = [...seriesMap.values()]
+    .map((e) => ({ ...e, weekdays: [...new Set(e.weekdays)].sort() }))
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
   // The class's Telegram channel, if the handshake completed.
   const { data: tgRow } = await supabase
@@ -251,6 +296,20 @@ export default async function GroupDetailPage({
           >
             <div style={{ display: "grid", gap: 20 }}>
               <section>
+                <h3 style={settingsHeading}>When it meets</h3>
+                <p style={settingsNote}>
+                  This fills the timetable, decides what the register offers to mark, and is the
+                  lesson count a part-month fee is divided by.
+                </p>
+                <SchedulePanel
+                  groupId={group.id}
+                  rooms={allRooms}
+                  branchId={(groupRow?.branch_id as string) ?? ""}
+                  series={series}
+                />
+              </section>
+
+              <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
                 <h3 style={settingsHeading}>Invite link</h3>
                 <p style={settingsNote}>
                   They join {group.name} automatically when they accept it. Adding students directly

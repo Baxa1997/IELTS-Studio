@@ -27,6 +27,16 @@ import {
 
 /* ── rules ────────────────────────────────────────────────────────────────── */
 
+/**
+ * Any custom pay rules the center still has.
+ *
+ * The rule BUILDER is gone — a class carries its teacher's rate beside the
+ * student's fee, and that is the arrangement for every center we have. This
+ * loader stays because rules already written are still honoured: a center that
+ * set up a revenue share before the change keeps being paid on it, and
+ * `computeTeacherPay` falls back to the class rate only where no rule speaks.
+ * Nothing can create new ones.
+ */
 export async function loadSalaryRules(): Promise<SalaryRule[]> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -43,28 +53,6 @@ export async function loadSalaryRules(): Promise<SalaryRule[]> {
     components: parseComponents(r.components),
     floorMinor: r.floor_minor == null ? null : Number(r.floor_minor),
     capMinor: r.cap_minor == null ? null : Number(r.cap_minor),
-  }));
-}
-
-/** Rules including the inactive ones, for the rule-management page. */
-export async function loadAllSalaryRules(): Promise<(SalaryRule & { active: boolean })[]> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("salary_rules")
-    .select("id, name, scope, group_id, teacher_id, components, floor_minor, cap_minor, active")
-    .order("scope", { ascending: true })
-    .order("name", { ascending: true });
-
-  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
-    id: r.id as string,
-    name: r.name as string,
-    scope: r.scope as SalaryRule["scope"],
-    groupId: (r.group_id as string | null) ?? null,
-    teacherId: (r.teacher_id as string | null) ?? null,
-    components: parseComponents(r.components),
-    floorMinor: r.floor_minor == null ? null : Number(r.floor_minor),
-    capMinor: r.cap_minor == null ? null : Number(r.cap_minor),
-    active: Boolean(r.active),
   }));
 }
 

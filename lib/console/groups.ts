@@ -21,6 +21,14 @@ export interface BranchOption {
   name: string;
 }
 
+/** A bookable room, carrying its site so the form can offer only the ones the
+ *  chosen branch owns — `lesson_slot_branch_guard` rejects the rest anyway. */
+export interface RoomOption {
+  id: string;
+  name: string;
+  branchId: string;
+}
+
 export interface StaffOption {
   id: string;
   name: string;
@@ -53,9 +61,12 @@ export interface GroupDetail {
  * teacher sees only the groups assigned to them (which is also the only set
  * whose membership RLS lets them read, so the counts stay truthful).
  */
-export async function loadGroups(
-  profile: Profile,
-): Promise<{ groups: GroupSummary[]; teachers: StaffOption[]; branches: BranchOption[] }> {
+export async function loadGroups(profile: Profile): Promise<{
+  groups: GroupSummary[];
+  teachers: StaffOption[];
+  branches: BranchOption[];
+  rooms: RoomOption[];
+}> {
   const supabase = await createClient();
 
   let groupQuery = supabase
@@ -64,7 +75,7 @@ export async function loadGroups(
     .order("name", { ascending: true });
   if (profile.role === "teacher") groupQuery = groupQuery.eq("teacher_id", profile.id);
 
-  const [groupsRes, staffRes, branchesRes] = await Promise.all([
+  const [groupsRes, staffRes, branchesRes, roomsRes] = await Promise.all([
     groupQuery,
     supabase.from("profiles").select("id, full_name, role").in("role", ["teacher", "center_admin"]),
     supabase
@@ -72,6 +83,11 @@ export async function loadGroups(
       .select("id, name")
       .eq("active", true)
       .order("sort", { ascending: true })
+      .order("name", { ascending: true }),
+    supabase
+      .from("rooms")
+      .select("id, name, branch_id")
+      .eq("active", true)
       .order("name", { ascending: true }),
   ]);
 
@@ -115,6 +131,11 @@ export async function loadGroups(
       .filter((s) => s.role === "teacher")
       .map((s) => ({ id: s.id as string, name: (s.full_name as string | null) ?? "—" })),
     branches,
+    rooms: ((roomsRes.data ?? []) as Record<string, unknown>[]).map((r) => ({
+      id: r.id as string,
+      name: r.name as string,
+      branchId: r.branch_id as string,
+    })),
   };
 }
 

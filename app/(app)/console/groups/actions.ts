@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -125,25 +125,254 @@ export async function createGroup(
   if (fee === "invalid") return { error: "That isn't a valid monthly fee." };
   if (rate === "invalid") return { error: "That isn't a valid teacher rate." };
 
+  // Read before the insert: a bad time should refuse the whole form, not leave
+  // a class created and unschedulable.
+  const schedule = readSchedule(formData);
+  if (typeof schedule === "string") return { error: schedule };
+
   const supabase = await createClient();
-  const { error } = await supabase.from("groups").insert({
-    organization_id: profile.organization_id,
-    name,
-    teacher_id: teacherId,
-    branch_id: branchId,
-    created_by: profile.id,
-    ...(profile.role === "center_admin"
-      ? { monthly_fee_minor: fee, teacher_rate_minor: rate }
-      : {}),
-  });
-  if (error) {
+  const { data: created, error } = await supabase
+    .from("groups")
+    .insert({
+      organization_id: profile.organization_id,
+      name,
+      teacher_id: teacherId,
+      branch_id: branchId,
+      created_by: profile.id,
+      ...(profile.role === "center_admin"
+        ? { monthly_fee_minor: fee, teacher_rate_minor: rate }
+        : {}),
+    })
+    .select("id")
+    .single();
+  if (error || !created) {
     return {
-      error: error.code === "23505" ? "A group with that name already exists." : error.message,
+      error:
+        error?.code === "23505"
+          ? "A group with that name already exists."
+          : (error?.message ?? "Could not create the group."),
     };
   }
 
+  // The schedule is what makes the class real: it fills the timetable, it is
+  // the denominator every prorated fee and salary divides by, and it is what
+  // the register offers to mark. A class without one still works — it is just
+  // billed on the center's assumed lesson count until someone books it.
+  let scheduleNote = "";
+  if (schedule) {
+    const failed = await writeSchedule(
+      supabase,
+      profile.organization_id,
+      created.id as string,
+      schedule,
+    );
+    // The class exists either way — say what happened rather than rolling back
+    // a class the teacher has already been told about.
+    scheduleNote = failed
+      ? ` The class was created, but its schedule wasn't saved: ${failed}`
+      : ` ${schedule.weekdays.length} lesson${schedule.weekdays.length === 1 ? "" : "s"} a week added to the timetable.`;
+  }
+
   revalidatePath("/console/groups");
-  return { notice: `Group "${name}" created.` };
+  revalidatePath("/console/calendar");
+  return { notice: `Group "${name}" created.${scheduleNote}` };
+}
+
+/* ── when the class meets ─────────────────────────────────────────────────── */
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** The weekdays ticked on a schedule form, as JS `getDay()` numbers. */
+function readWeekdays(formData: FormData): number[] {
+  return [
+    ...new Set(
+      formData
+        .getAll("weekdays")
+        .map((v) => Number(v))
+        .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6),
+    ),
+  ].sort();
+}
+
+/**
+ * Read a schedule off a form, or `null` when none was filled in.
+ *
+ * Returns a string when it was filled in WRONGLY, so a half-typed schedule
+ * refuses the whole form rather than silently creating a class that meets on no
+ * days — the failure a teacher would only notice a week later when the register
+ * had nothing to mark.
+ */
+function readSchedule(
+  formData: FormData,
+): { weekdays: number[]; startsAt: string; endsAt: string; roomId: string | null } | null | string {
+  const weekdays = readWeekdays(formData);
+  const startsAt = String(formData.get("starts_at") ?? "").trim();
+  const endsAt = String(formData.get("ends_at") ?? "").trim();
+  if (weekdays.length === 0 && !startsAt && !endsAt) return null;
+
+  if (weekdays.length === 0) return "Pick the days this class meets.";
+  if (!TIME_RE.test(startsAt) || !TIME_RE.test(endsAt)) return "Use times like 15:30.";
+  if (endsAt <= startsAt) return "The lesson has to end after it starts.";
+
+  return {
+    weekdays,
+    startsAt,
+    endsAt,
+    roomId: String(formData.get("room_id") ?? "").trim() || null,
+  };
+}
+
+/**
+ * Put a class's weekly schedule on the timetable: ONE ROW PER DAY IT MEETS,
+ * tied together by a `series_id`.
+ *
+ * That shape is not incidental — see migration 20260810160000. A single row
+ * carrying "Mon/Wed/Fri" was drawn on one day only, so two thirds of a class's
+ * lessons were invisible and staff re-added them by hand. The series id is what
+ * lets three rows still be edited and deleted as one thing.
+ *
+ * Reconciles rather than deletes-and-recreates: a day that is still ticked
+ * keeps its row, and therefore its `effective_from` and its id. Dropping and
+ * re-inserting would silently reset the term on every edit.
+ *
+ * SCOPED TO ONE SERIES, ALWAYS. A class can legitimately hold several — the
+ * live data has one running Tue and Wed at 08:00 AND at 15:30, which is four
+ * rows in two independent bookings. An earlier version of this reconciled
+ * every slot on the group into a single series and would have deleted three of
+ * those four. So `seriesId` is required to edit; omit it and a NEW series is
+ * added alongside whatever is already there.
+ */
+async function writeSchedule(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  organizationId: string,
+  groupId: string,
+  schedule: { weekdays: number[]; startsAt: string; endsAt: string; roomId: string | null },
+  seriesIdInput?: string | null,
+): Promise<string | null> {
+  const seriesId = seriesIdInput || randomUUID();
+  const { data: existingRows, error: readError } = await supabase
+    .from("lesson_slots")
+    .select("id, weekday, series_id")
+    .eq("group_id", groupId)
+    .eq("series_id", seriesId);
+  if (readError) return readError.message;
+
+  const existing = (existingRows ?? []) as { id: string; weekday: number; series_id: string }[];
+  const wanted = new Set(schedule.weekdays);
+
+  const drop = existing.filter((r) => !wanted.has(r.weekday)).map((r) => r.id);
+  if (drop.length > 0) {
+    const { error } = await supabase.from("lesson_slots").delete().in("id", drop);
+    if (error) return error.message;
+  }
+
+  const keep = existing.filter((r) => wanted.has(r.weekday));
+  if (keep.length > 0) {
+    const { error } = await supabase
+      .from("lesson_slots")
+      .update({ starts_at: schedule.startsAt, ends_at: schedule.endsAt, room_id: schedule.roomId })
+      .in(
+        "id",
+        keep.map((r) => r.id),
+      );
+    if (error) return error.message;
+  }
+
+  const have = new Set(keep.map((r) => r.weekday));
+  const add = schedule.weekdays.filter((d) => !have.has(d));
+  if (add.length > 0) {
+    const { error } = await supabase.from("lesson_slots").insert(
+      add.map((weekday) => ({
+        organization_id: organizationId,
+        group_id: groupId,
+        room_id: schedule.roomId,
+        series_id: seriesId,
+        weekday,
+        starts_at: schedule.startsAt,
+        ends_at: schedule.endsAt,
+      })),
+    );
+    if (error) return explainSlotError(error);
+  }
+  return null;
+}
+
+/** The two constraints a schedule can trip, in words a teacher can act on. */
+function explainSlotError(error: { code?: string; message: string }): string {
+  if (error.code === "23P01") {
+    return "That clashes with a lesson this class already has at the same hour.";
+  }
+  if (error.code === "23514" || /branch/i.test(error.message)) {
+    return "That room is at a different branch from this class.";
+  }
+  return error.message;
+}
+
+/**
+ * Change when an existing class meets.
+ *
+ * Lives here rather than on the timetable page because the schedule is a
+ * property of the class — "Mon/Wed/Fri 18:00" is how a center describes the
+ * class when it sells it, not something you go to a calendar to look up.
+ */
+export async function setGroupSchedule(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+    return { error: "Only center staff can change the timetable." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  if (!groupId) return { error: "Missing class." };
+
+  const supabase = await createClient();
+  // RLS hides other teachers' groups, so a hit here proves the caller manages it.
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, teacher_id")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "Class not found." };
+  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
+    return { error: "You can only change your own classes." };
+  }
+
+  const schedule = readSchedule(formData);
+  if (typeof schedule === "string") return { error: schedule };
+  const seriesId = String(formData.get("series_id") ?? "").trim() || null;
+
+  // No days at all means "this booking has stopped". Scoped to the series being
+  // edited, never the whole class: a class with a second, separate booking must
+  // not lose it because someone cleared the first.
+  if (schedule == null) {
+    if (!seriesId) return { error: "Pick the days this class meets." };
+    const { data, error } = await supabase
+      .from("lesson_slots")
+      .delete()
+      .eq("group_id", groupId)
+      .eq("series_id", seriesId)
+      .select("id");
+    if (error) return { error: error.message };
+    if (!data || data.length === 0) return { error: "That booking is already gone — reload." };
+    revalidatePath(`/console/groups/${groupId}`);
+    revalidatePath("/console/calendar");
+    return { notice: "Taken off the timetable." };
+  }
+
+  const failed = await writeSchedule(
+    supabase,
+    profile.organization_id,
+    groupId,
+    schedule,
+    seriesId,
+  );
+  if (failed) return { error: failed };
+
+  revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath("/console/calendar");
+  return { notice: "Schedule saved." };
 }
 
 /** Center admin (re)assigns the teacher who owns a group. Passing an empty value

@@ -24,7 +24,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   // Groups feed both slide-overs: enrolling picks one, inviting targets one.
   // The currency comes along because a new class is priced as it is created,
   // and only the owner sees those fields.
-  const [{ groups, teachers, branches }, settings] = await Promise.all([
+  const [{ groups, teachers, branches, rooms }, settings] = await Promise.all([
     loadGroups(profile),
     isAdmin ? loadFinanceSettings() : Promise.resolve(null),
   ]);
@@ -50,6 +50,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
           <CreateGroupForm
             teachers={teachers}
             branches={branches}
+            rooms={rooms}
             canAssignTeacher={isAdmin}
             pricing={
               settings

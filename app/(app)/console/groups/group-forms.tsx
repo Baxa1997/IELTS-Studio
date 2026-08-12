@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatMoney, parseMoney } from "@/lib/finance/money";
 
+import { type RoomChoice, ScheduleFields } from "./schedule-fields";
+
 import {
   assignTeacher,
   createGroup,
@@ -31,18 +33,24 @@ const initial: GroupFormState = {};
 export function CreateGroupForm({
   teachers,
   branches,
+  rooms,
   canAssignTeacher,
   pricing,
 }: {
   teachers: { id: string; name: string }[];
   /** The center's sites. There is always at least one. */
   branches: { id: string; name: string }[];
+  /** Bookable rooms across the center; the schedule offers only this branch's. */
+  rooms: RoomChoice[];
   canAssignTeacher: boolean;
   /** Shown to the owner only — a teacher doesn't set their own rate. Null hides
    *  the two money fields entirely. */
   pricing: { currency: string; lessonsPerMonth: number } | null;
 }) {
   const [state, formAction, pending] = useActionState(createGroup, initial);
+  // The branch decides which rooms the schedule may offer, so the picker has to
+  // know what is currently selected rather than reading it at submit time.
+  const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
 
   return (
     <form action={formAction} className="space-y-4">
@@ -60,7 +68,8 @@ export function CreateGroupForm({
             id="group-branch"
             name="branch_id"
             className={FIELD}
-            defaultValue={branches[0]?.id ?? ""}
+            value={branchId}
+            onChange={(e) => setBranchId(e.target.value)}
             required
           >
             {branches.map((b) => (
@@ -74,7 +83,7 @@ export function CreateGroupForm({
           </p>
         </div>
       ) : (
-        <input type="hidden" name="branch_id" value={branches[0]?.id ?? ""} />
+        <input type="hidden" name="branch_id" value={branchId} />
       )}
       {canAssignTeacher ? (
         <div className="space-y-2">
@@ -94,6 +103,11 @@ export function CreateGroupForm({
           </p>
         </div>
       ) : null}
+      <div className="space-y-3 rounded-lg border p-3">
+        <p className="text-sm font-medium">When it meets</p>
+        <ScheduleFields rooms={rooms} branchId={branchId} />
+      </div>
+
       {pricing ? (
         <FeeFields currency={pricing.currency} lessonsPerMonth={pricing.lessonsPerMonth} />
       ) : null}
