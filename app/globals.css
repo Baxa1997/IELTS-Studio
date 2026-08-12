@@ -139,49 +139,100 @@
    the few things inline styles can't do (media queries, motion).
    =================================================================== */
 @keyframes lp-fillbar {
-  from { width: 0; }
-  to { width: var(--w); }
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--w);
+  }
 }
 @keyframes lp-ringfill {
-  from { stroke-dashoffset: 339; }
-  to { stroke-dashoffset: var(--off); }
+  from {
+    stroke-dashoffset: 339;
+  }
+  to {
+    stroke-dashoffset: var(--off);
+  }
 }
 @keyframes lp-scanmove {
-  0% { top: 0; opacity: 0; }
-  12% { opacity: 1; }
-  88% { opacity: 1; }
-  100% { top: 100%; opacity: 0; }
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
 }
 @keyframes lp-dotpulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(0.65); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.65);
+  }
 }
 @keyframes lp-think {
-  0% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-4px); opacity: 1; }
-  60%, 100% { transform: translateY(0); opacity: 0.4; }
+  0% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
 }
 @keyframes lp-fadeup {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Loading affordances: skeleton shimmer + the per-nav-item pending spinner.
    These exist so a click commits to instant feedback instead of waiting on the
    full dynamic server render (see app/(app)/loading.tsx + sidebar-nav). */
 @keyframes lp-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 .lp-skel {
-  background-image: linear-gradient(90deg, #ECE8DA 0%, #F5F2E8 45%, #ECE8DA 80%);
+  background-image: linear-gradient(90deg, #ece8da 0%, #f5f2e8 45%, #ece8da 80%);
   background-size: 200% 100%;
   animation: lp-shimmer 1.4s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lp-skel { animation: none; }
+  .lp-skel {
+    animation: none;
+  }
 }
-@keyframes lp-spin { to { transform: rotate(360deg); } }
+@keyframes lp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 /* Lives on the dark sidebar rail — white-based so it reads on the dark surface. */
 .lp-nav-spin {
   width: 15px;
@@ -201,10 +252,14 @@
 @keyframes lp-ai-pulse {
   0%,
   100% {
-    box-shadow: 0 10px 22px -12px rgba(59, 67, 181, 0.65), 0 0 0 0 rgba(59, 67, 181, 0);
+    box-shadow:
+      0 10px 22px -12px rgba(59, 67, 181, 0.65),
+      0 0 0 0 rgba(59, 67, 181, 0);
   }
   50% {
-    box-shadow: 0 13px 26px -12px rgba(59, 67, 181, 0.85), 0 0 0 5px rgba(59, 67, 181, 0.1);
+    box-shadow:
+      0 13px 26px -12px rgba(59, 67, 181, 0.85),
+      0 0 0 5px rgba(59, 67, 181, 0.1);
   }
 }
 .lp-ai-pulse {
@@ -276,48 +331,117 @@
    `animation` shorthands keyed to these frames. Reduced-motion is honoured at the
    bottom of this block, independently of `.lp-root`. */
 @keyframes aib-aurora {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
-@keyframes aib-ring-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes aib-ring-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 @keyframes aib-glow {
-  0%, 100% { opacity: 0.65; transform: scale(1); }
-  50% { opacity: 0.12; transform: scale(1.35); }
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.12;
+    transform: scale(1.35);
+  }
 }
 @keyframes aib-spark-a {
-  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.55; }
-  50% { transform: translateY(-11px) scale(1.2); opacity: 1; }
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(-11px) scale(1.2);
+    opacity: 1;
+  }
 }
 @keyframes aib-spark-b {
-  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.4; }
-  50% { transform: translateY(-8px) rotate(18deg); opacity: 0.85; }
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-8px) rotate(18deg);
+    opacity: 0.85;
+  }
 }
 @keyframes aib-spark-c {
-  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.6; }
-  50% { transform: translateY(-14px) scale(1.3); opacity: 1; }
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-14px) scale(1.3);
+    opacity: 1;
+  }
 }
 @keyframes aib-shimmer {
-  0% { transform: translateX(-160%) skewX(-22deg); }
-  100% { transform: translateX(500%) skewX(-22deg); }
+  0% {
+    transform: translateX(-160%) skewX(-22deg);
+  }
+  100% {
+    transform: translateX(500%) skewX(-22deg);
+  }
 }
 @keyframes aib-orb-a {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(22px, -14px) scale(1.05); }
-  66% { transform: translate(-12px, 9px) scale(0.97); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(22px, -14px) scale(1.05);
+  }
+  66% {
+    transform: translate(-12px, 9px) scale(0.97);
+  }
 }
 @keyframes aib-orb-b {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  40% { transform: translate(-18px, 12px) scale(1.04); }
-  70% { transform: translate(14px, -9px) scale(0.98); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-18px, 12px) scale(1.04);
+  }
+  70% {
+    transform: translate(14px, -9px) scale(0.98);
+  }
 }
 @keyframes aib-orb-c {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(10px, -16px); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, -16px);
+  }
 }
 @keyframes aib-live-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.75); }
-  50% { box-shadow: 0 0 0 5px rgba(74, 222, 128, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.75);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(74, 222, 128, 0);
+  }
 }
 /* The dark aurora gradient + background-size are set INLINE by <AiGenerateSection>
    (guaranteed regardless of stylesheet load order); this class only drives the
@@ -325,14 +449,26 @@
 .aib-card {
   animation: aib-aurora 11s ease infinite;
 }
-.aib-cta { transition: transform 0.18s ease, box-shadow 0.18s ease; }
-.aib-cta:hover:not(:disabled) { transform: scale(1.04); box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35); }
-.aib-cta:disabled { cursor: default; }
+.aib-cta {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.aib-cta:hover:not(:disabled) {
+  transform: scale(1.04);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+}
+.aib-cta:disabled {
+  cursor: default;
+}
 
 /* Respect reduced-motion here too — this banner can live outside `.lp-root`. */
 @media (prefers-reduced-motion: reduce) {
   .aib-card,
-  .aib-card * { animation: none !important; transition: none !important; }
+  .aib-card * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ── Study-plan accents (the exam-paced plan page) ────────────────────────────
@@ -341,66 +477,126 @@
    globally (`.lp-root *` at the bottom of this file), and the plan page lives under
    `.lp-root`, so no separate guard is needed here. */
 @keyframes plan-pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(47, 143, 91, 0.6); }
-  50% { box-shadow: 0 0 0 5px rgba(47, 143, 91, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 143, 91, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(47, 143, 91, 0);
+  }
 }
 @keyframes plan-pulse-amber {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(185, 121, 26, 0.55); }
-  50% { box-shadow: 0 0 0 5px rgba(185, 121, 26, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(185, 121, 26, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(185, 121, 26, 0);
+  }
 }
 @keyframes plan-pulse-indigo {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 67, 181, 0.55); }
-  50% { box-shadow: 0 0 0 5px rgba(59, 67, 181, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 67, 181, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(59, 67, 181, 0);
+  }
 }
 @keyframes plan-shimmer {
-  0% { transform: translateX(-140%) skewX(-20deg); }
-  100% { transform: translateX(400%) skewX(-20deg); }
+  0% {
+    transform: translateX(-140%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(400%) skewX(-20deg);
+  }
 }
 
 /* ---- Grading overlay (the "we're marking your essay" modal) ---------------- */
 @keyframes lp-grade-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.985); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes lp-grade-cap {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 /* Spinning conic ring used for the emblem. */
-@keyframes lp-grade-spin { to { transform: rotate(360deg); } }
+@keyframes lp-grade-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .lp-grade-ring {
-  background: conic-gradient(from 90deg, transparent 0deg, rgba(59, 67, 181, 0) 110deg, var(--grade-accent, #3b43b5) 360deg);
+  background: conic-gradient(
+    from 90deg,
+    transparent 0deg,
+    rgba(59, 67, 181, 0) 110deg,
+    var(--grade-accent, #3b43b5) 360deg
+  );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
   animation: lp-grade-spin 1.05s linear infinite;
 }
 /* Indeterminate progress shimmer. */
 @keyframes lp-grade-bar {
-  0% { background-position: 200% 0; }
-  100% { background-position: 0% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
 }
 .lp-grade-bar {
-  background-image: linear-gradient(90deg, #e4e3f7 0%, var(--grade-accent, #3b43b5) 50%, #e4e3f7 100%);
+  background-image: linear-gradient(
+    90deg,
+    #e4e3f7 0%,
+    var(--grade-accent, #3b43b5) 50%,
+    #e4e3f7 100%
+  );
   background-size: 200% 100%;
   animation: lp-grade-bar 1.4s linear infinite;
 }
 
 /* Collapse the multi-column grids and trim nav on narrow screens. */
 @media (max-width: 1024px) {
-  .lp-hero-grid { grid-template-columns: 1fr !important; }
+  .lp-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
   .lp-cols-2,
   .lp-cols-3,
-  .lp-cols-4 { grid-template-columns: 1fr !important; }
-  .lp-nav-links { display: none !important; }
+  .lp-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  .lp-nav-links {
+    display: none !important;
+  }
 }
 @media (max-width: 720px) {
-  .lp-nav-cta-secondary { display: none !important; }
+  .lp-nav-cta-secondary {
+    display: none !important;
+  }
 }
 
 /* Card lift on hover — gives the marketing surfaces an interactive, "real
    product" feel without any JS. */
 .lp-root .lp-hover {
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 .lp-root .lp-hover:hover {
   transform: translateY(-3px);
@@ -423,7 +619,9 @@
   }
 }
 .lp-root .lp-link {
-  transition: gap 0.2s ease, color 0.2s ease;
+  transition:
+    gap 0.2s ease,
+    color 0.2s ease;
 }
 .lp-root .lp-foot-link {
   transition: color 0.2s ease;
@@ -482,7 +680,10 @@
 }
 .lp-sb-section--titled {
   border-top: 1px solid transparent;
-  transition: border-color 0.24s ease, padding 0.28s ease, margin 0.28s ease;
+  transition:
+    border-color 0.24s ease,
+    padding 0.28s ease,
+    margin 0.28s ease;
 }
 /* The EngProgress lockup: full wordmark when expanded, boxed-"P" logomark when the rail
    collapses. The mark is hidden until the desktop media query swaps them. */
@@ -672,7 +873,10 @@
    wash. (Items must NOT set an inline background when resting: inline styles —
    even "transparent" — beat this rule.) */
 .lp-sb-item {
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 .lp-sb-item:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -794,7 +998,9 @@
 /* Clickable stat tile / group card. */
 .cn-root .cn-kpi,
 .cn-root .cn-tile {
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .cn-root .cn-kpi:hover,
 .cn-root .cn-tile:hover {
@@ -802,7 +1008,9 @@
   box-shadow: 0 6px 20px rgba(20, 19, 58, 0.07);
 }
 .cn-root .cn-btn {
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 .cn-root .cn-btn--primary:hover {
   background: #5350d8;
@@ -825,13 +1033,17 @@
   color: #16162e;
 }
 .cn-root .cn-tab {
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 .cn-root .cn-tab:hover {
   color: #4340cb;
 }
 .cn-root .cn-chip {
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 .cn-root .cn-chip:hover {
   border-color: #c9c7e4;
@@ -846,7 +1058,9 @@
 .cn-root input,
 .cn-root select,
 .cn-root textarea {
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .cn-root input:hover:not(:focus),
 .cn-root select:hover:not(:focus),
@@ -867,7 +1081,9 @@
 
 /* Brand form inputs (login / auth) */
 .lp-root .lp-input {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .lp-root .lp-input:focus {
   outline: none;
@@ -878,14 +1094,18 @@
   color: #a8a79a;
 }
 .lp-root .lp-field {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .lp-root .lp-field:focus-within {
   border-color: #3b43b5;
   box-shadow: 0 0 0 3px rgba(59, 67, 181, 0.13);
 }
 .lp-root .lp-ghost-btn {
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 .lp-root .lp-ghost-btn:hover {
   background: #faf9f1;
@@ -982,13 +1202,31 @@
 
 /* Floating "ask the coach" button shown when the drawer is closed. */
 @keyframes lp-fab-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.92); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes lp-fab-ring {
-  0% { box-shadow: 0 14px 30px -12px rgba(59, 67, 181, 0.55), 0 0 0 0 rgba(59, 67, 181, 0.5); }
-  70% { box-shadow: 0 14px 30px -12px rgba(59, 67, 181, 0.55), 0 0 0 16px rgba(59, 67, 181, 0); }
-  100% { box-shadow: 0 14px 30px -12px rgba(59, 67, 181, 0.55), 0 0 0 0 rgba(59, 67, 181, 0); }
+  0% {
+    box-shadow:
+      0 14px 30px -12px rgba(59, 67, 181, 0.55),
+      0 0 0 0 rgba(59, 67, 181, 0.5);
+  }
+  70% {
+    box-shadow:
+      0 14px 30px -12px rgba(59, 67, 181, 0.55),
+      0 0 0 16px rgba(59, 67, 181, 0);
+  }
+  100% {
+    box-shadow:
+      0 14px 30px -12px rgba(59, 67, 181, 0.55),
+      0 0 0 0 rgba(59, 67, 181, 0);
+  }
 }
 .lp-fab {
   animation: lp-fab-in 0.32s ease both;
@@ -1245,5 +1483,25 @@
     transform: none;
     filter: none;
     transition: none;
+  }
+}
+
+/* A quiet "still working" dot, for waits the page cannot predict the end of —
+   the Telegram connect handshake finishes on the server, not in this tab. */
+.cn-root .cn-pulse {
+  animation: cn-pulse 1.4s ease-in-out infinite;
+}
+@keyframes cn-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-root .cn-pulse {
+    animation: none;
   }
 }

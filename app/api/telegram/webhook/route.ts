@@ -17,9 +17,23 @@ export const dynamic = "force-dynamic";
  * updates and binding channels they don't own — this endpoint is necessarily
  * public, so the header is the only thing authenticating it.
  *
- * It handles exactly one command: `/link <CODE>`, posted inside the channel a
- * teacher wants to connect. Matching the code proves the poster can post there,
- * which a typed-in chat id never would.
+ * THREE WAYS A CHAT GETS CONNECTED, in the order a non-technical admin meets
+ * them:
+ *
+ *   1. `/start CODE` — Telegram sends this by itself when the bot is added
+ *      through a `?startgroup=CODE` deep link. The admin taps one button in the
+ *      app, picks a group, and never sees a code at all. This is the path we
+ *      want everyone on.
+ *   2. `/link CODE` — typed by hand. The fallback for a chat the bot is already
+ *      in, or when the deep link was opened on a machine with no Telegram.
+ *   3. Neither — the bot was added some other way. It asks for the code in the
+ *      chat rather than sitting there silently, because a bot that joins and
+ *      says nothing looks broken.
+ *
+ * The code is what carries authority in all three: matching it proves the
+ * person holds a secret the app only shows to staff who manage that class, and
+ * posting it (or adding the bot) proves they can act in that chat. A typed-in
+ * chat id would prove neither.
  *
  * Always answers 200. A non-2xx makes Telegram retry the same update for hours,
  * so failures are logged and swallowed rather than surfaced.
@@ -39,13 +53,42 @@ export async function POST(req: Request): Promise<Response> {
     return ok();
   }
 
+  // ── the bot was added to a chat ─────────────────────────────────────────
+  // A deep link delivers `/start CODE` as well, and that arrives as its own
+  // update — so this only has to cover the case where no code follows.
+  if (update.my_chat_member) {
+    const { chat, new_chat_member: member } = update.my_chat_member;
+    const joined = member?.status === "member" || member?.status === "administrator";
+    if (joined && chat) {
+      // Give the /start update a moment to land first; only prompt if this chat
+      // is still unknown to us a beat later.
+      await new Promise((r) => setTimeout(r, 1200));
+      const admin = createAdminClient();
+      const { data: already } = await admin
+        .from("telegram_links")
+        .select("id")
+        .eq("chat_id", chat.id)
+        .not("verified_at", "is", null)
+        .maybeSingle();
+      if (!already) {
+        await sendMessage(
+          chat.id,
+          "👋 Nearly there. Open the class in your center console → <b>Settings → Telegram</b>, " +
+            "and post the code it shows you here as <code>/link CODE</code>.",
+        );
+      }
+    }
+    return ok();
+  }
+
   const msg = update.message ?? update.channel_post;
   const text = msg?.text?.trim();
   const chat = msg?.chat;
   if (!text || !chat) return ok();
 
-  // `/link CODE`, tolerating the @botname suffix Telegram adds in groups.
-  const match = /^\/link(?:@\w+)?\s+([A-Za-z0-9-]{4,20})$/.exec(text);
+  // `/start CODE` (deep link) or `/link CODE` (typed), tolerating the @botname
+  // suffix Telegram adds in groups.
+  const match = /^\/(?:start|link)(?:@\w+)?\s+([A-Za-z0-9-]{4,20})$/.exec(text);
   if (!match) return ok();
   const code = match[1].toUpperCase();
 
@@ -120,4 +163,8 @@ interface TelegramMessage {
 interface TelegramUpdate {
   message?: TelegramMessage;
   channel_post?: TelegramMessage;
+  my_chat_member?: {
+    chat?: TelegramChat;
+    new_chat_member?: { status?: string };
+  };
 }

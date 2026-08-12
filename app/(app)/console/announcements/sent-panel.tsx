@@ -194,11 +194,10 @@ function SentList({ rows }: { rows: SentRow[] }) {
 /**
  * How to connect a class channel, written for someone holding a phone.
  *
- * The handshake is a security decision, not a UX one: Telegram chat ids are not
- * secret, so a "paste your chat id" box would let anyone who knew one point
- * their class at somebody else's channel. Posting the code inside the channel
- * proves the person doing it can post there. The steps say so, because an
- * unexplained extra step reads as a bug.
+ * Three steps, not five: the deep link on the class page does the adding, the
+ * permissions and the code in one tap. The steps still SAY there is a code and
+ * why, because the manual fallback exists and because a security step nobody
+ * can see is a security step nobody trusts.
  */
 function TelegramGuide({
   classes,
@@ -214,9 +213,9 @@ function TelegramGuide({
     <div style={{ padding: 16, display: "grid", gap: 16 }}>
       {!botUsername ? (
         <p style={note}>
-          Telegram isn&apos;t configured on this platform yet — <code>TELEGRAM_BOT_USERNAME</code>{" "}
-          and the bot token have to be set before channels can be connected. Everything below is
-          what it will look like once they are.
+          Telegram isn&apos;t configured on this platform yet — <code>TELEGRAM_BOT_USERNAME</code>,
+          the bot token and the webhook have to be set before channels can be connected. Everything
+          below is what it will look like once they are.
         </p>
       ) : null}
 
@@ -226,27 +225,28 @@ function TelegramGuide({
           Connect a class channel
         </h3>
         <p style={note}>
-          One channel per class. Announcements you post there reach parents, who usually have no
-          account here at all — which is why this is worth the five minutes.
+          One channel per class. Posts there reach parents, who usually have no account here at all
+          — which is why it is worth the two minutes.
         </p>
         <ol style={steps}>
           <li style={step}>
-            <b>Create a Telegram group or channel</b> for the class, if you haven&apos;t already.
+            <b>Create the Telegram group or channel</b> for the class, if it doesn&apos;t exist.
           </li>
           <li style={step}>
-            <b>Add {botUsername ? `@${botUsername}` : "the center bot"} to it</b> and make it an
-            administrator, so it is allowed to post.
+            <b>Open the class</b> → Settings → Telegram, and press <i>Connect Telegram</i>, then{" "}
+            <i>Add to a group</i>.
           </li>
           <li style={step}>
-            <b>Open the class</b> → Settings → Telegram channel, and press <i>Start connecting</i>.
-            You get a short code.
+            <b>Pick the chat in Telegram.</b> That&apos;s it — the bot is added and connects itself,
+            and the page updates on its own.
           </li>
-          <li style={step}>
-            <b>Post that code in the channel.</b> This is the whole security check: chat ids
-            aren&apos;t secret, so proving you can post there is what proves the channel is yours.
-          </li>
-          <li style={step}>The bot confirms, and the class shows as connected below.</li>
         </ol>
+        <p style={{ ...note, marginTop: 9 }}>
+          The link carries a one-use code that expires in 15 minutes. That code is the security
+          check, not red tape: Telegram chat ids aren&apos;t secret, so without it anyone who
+          guessed one could post into another center&apos;s channel. If Telegram isn&apos;t on the
+          device you&apos;re using, the same panel shows the code to post by hand.
+        </p>
       </section>
 
       <section>
