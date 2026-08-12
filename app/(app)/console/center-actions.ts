@@ -182,6 +182,15 @@ export async function sendAnnouncement(
         subject,
         body,
       });
+      // Asked for and delivered nowhere: the channel was disconnected, or
+      // Telegram refused every send. Saying "Sent" here is the lie that had
+      // someone checking their channel for a post that never left.
+      if (channels === 0) {
+        revalidatePath("/console/announcements");
+        return {
+          ok: `Sent to ${recipientIds.length} in the app, but Telegram delivered nothing — check the class still shows a connected channel.`,
+        };
+      }
     }
   }
 

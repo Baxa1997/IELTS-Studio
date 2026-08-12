@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { FiSend } from "react-icons/fi";
 
@@ -163,6 +164,39 @@ export function AnnouncementComposer({
       {/* A second delivery, not a replacement: the bell reaches every account,
           Telegram reaches whoever joined the channel — usually the parents,
           who have no account here at all. */}
+      {/* NO CHANNELS IS A STATE, NOT AN ABSENCE. Hiding this section when
+          nothing is connected is what made a real send look broken: the sender
+          wrote a post, saw no Telegram option, and reasonably assumed it had
+          gone to the channel anyway. Say it out loud and link to the fix. */}
+      {channels.length === 0 ? (
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 9,
+            padding: "10px 12px",
+            borderRadius: 10,
+            border: "1px dashed #D6D3CA",
+            background: "#FAFAF7",
+          }}
+        >
+          <FiSend size={15} color="#93919F" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
+          <span>
+            <span style={{ display: "block", fontSize: 13, color: MUTED }}>
+              No Telegram channel connected
+            </span>
+            <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 2 }}>
+              This post reaches the app only. Connect a class channel from{" "}
+              <Link href="/console/groups" style={{ color: INDIGO }}>
+                its class page
+              </Link>{" "}
+              → Settings → Telegram to reach parents too.
+            </span>
+          </span>
+        </div>
+      ) : null}
+
       {channels.length > 0 ? (
         <div
           style={{
