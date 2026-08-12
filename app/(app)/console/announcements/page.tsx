@@ -1,44 +1,30 @@
 import { redirect } from "next/navigation";
 
-import {
-  Bar,
-  Card,
-  CardHead,
-  Empty,
-  FAINT,
-  GREEN,
-  Kpi,
-  KpiRow,
-  PageHead,
-  SANS,
-  SOFT,
-  Split,
-  Tag,
-} from "@/components/console/crm-ui";
+import { Card, Empty, PageHead } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { createClient } from "@/lib/supabase/server";
 
 import { AnnouncementComposer } from "./composer";
+import { SentPanel, type SentRow, type TelegramClass } from "./sent-panel";
 
 export const dynamic = "force-dynamic";
 
-const AUDIENCE_LABEL: Record<string, string> = {
-  everyone: "Everyone",
-  students: "All students",
-  teachers: "All teachers",
-  group: "One class",
-};
-
-const dateFmt = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
 /**
- * Announcements: write once, reaches the center in the app.
+ * Announcements: write on the left, see what you sent on the right.
  *
- * "Read" is a real figure, not an open-rate guess — each announcement fans out
- * into `notifications`, and a row there carries `read_at` the moment the person
- * opens it.
+ * THE PAGE DOES NOT SCROLL, AND THAT IS THE POINT. Composing is a two-pane job
+ * — write the message, glance at who it reached last time — and a page that
+ * scrolls means the composer slides off screen while you read the history, so
+ * you lose your place in your own message. The two columns are pinned to the
+ * viewport and each scrolls INSIDE itself, so the compose box is always where
+ * you left it.
+ *
+ * The KPI row that used to sit above them is gone. Four boxes counting students
+ * and teachers told you nothing you could act on while writing to them, and
+ * they were what pushed the composer below the fold in the first place; the two
+ * numbers worth having (how many this reaches, how many read the last one) now
+ * sit on the controls they belong to.
  */
 export default async function AnnouncementsPage() {
   const { profile } = await requireOrgUser();
@@ -46,7 +32,7 @@ export default async function AnnouncementsPage() {
   if (profile.role !== "center_admin") redirect("/console");
 
   const supabase = await createClient();
-  const [sentRes, peopleRes, { groups }] = await Promise.all([
+  const [sentRes, peopleRes, { groups }, linksRes] = await Promise.all([
     supabase
       .from("announcements")
       .select("id, subject, body, audience, recipients, sent_at")
@@ -54,6 +40,7 @@ export default async function AnnouncementsPage() {
       .limit(50),
     supabase.from("profiles").select("id, role"),
     loadGroups(profile),
+    supabase.from("telegram_links").select("group_id, chat_title, verified_at"),
   ]);
 
   const people = peopleRes.data ?? [];
@@ -97,96 +84,82 @@ export default async function AnnouncementsPage() {
     }
   }
 
-  const totalReach = sent.reduce((n, s) => n + s.recipients, 0);
+  const rows: SentRow[] = sent.map((a) => ({
+    id: a.id,
+    subject: a.subject,
+    body: a.body,
+    audience: a.audience,
+    recipients: a.recipients,
+    sentAt: a.sent_at,
+    readPct: readShare.get(a.subject) ?? null,
+  }));
+
+  // Only a VERIFIED link is a channel. A half-finished handshake has no chat to
+  // post to, and showing it as connected is how a center believes it announced
+  // something it did not.
+  const linked = new Map(
+    ((linksRes.data ?? []) as Record<string, unknown>[])
+      .filter((l) => l.verified_at != null)
+      .map((l) => [l.group_id as string, (l.chat_title as string | null) ?? "Channel"]),
+  );
+  const telegramClasses: TelegramClass[] = groups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    students: g.memberCount,
+    channel: linked.get(g.id) ?? null,
+  }));
+
+  const botUsername = process.env.TELEGRAM_BOT_USERNAME ?? null;
 
   return (
-    <div>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        // The console shell's own chrome: a ~54px top bar plus the page's
+        // 26px/60px padding. Pinning to the viewport is what stops the page
+        // scrolling; each column below handles its own overflow.
+        height: "calc(100dvh - 150px)",
+        minHeight: 480,
+      }}
+    >
       <PageHead
         eyebrow="Communication"
         title="Announcements"
-        subtitle="Reaches students and teachers in the app, where every account can be reached."
+        subtitle="Reaches every account in the app; post it to a class Telegram channel too, where the parents are."
       />
 
-      <KpiRow>
-        <Kpi label="Sent" value={sent.length} sub="last 50 shown" />
-        <Kpi label="People reached" value={totalReach.toLocaleString()} sub="across all sends" />
-        <Kpi label="Students" value={counts.students} sub="on the roll" />
-        <Kpi label="Teachers" value={counts.teachers} sub="on staff" />
-      </KpiRow>
-
-      <Split ratio=".9fr 1.1fr">
-        <Card style={{ alignSelf: "start" }}>
-          <CardHead title="New announcement" />
+      <div
+        className="cn-split"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "grid",
+          gridTemplateColumns: "minmax(320px, .85fr) 1.15fr",
+          gap: 16,
+        }}
+      >
+        <Card style={{ overflowY: "auto", minHeight: 0 }}>
           <AnnouncementComposer
             counts={counts}
-            groups={groups.map((g) => ({ id: g.id, name: g.name, students: g.memberCount }))}
+            groups={groups.map((g) => ({
+              id: g.id,
+              name: g.name,
+              students: g.memberCount,
+              hasChannel: linked.has(g.id),
+            }))}
+            channelCount={linked.size}
           />
         </Card>
 
-        <Card flush>
-          <CardHead title="Sent" divided note="read share is measured, not estimated" />
-          {sent.map((a) => {
-            const read = readShare.get(a.subject);
-            return (
-              <div
-                key={a.id}
-                className="cn-row"
-                style={{ padding: "14px 18px", borderBottom: "1px solid #F5F4F0" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 500 }}>
-                    {a.subject}
-                  </div>
-                  <Tag tone="indigo">{AUDIENCE_LABEL[a.audience] ?? a.audience}</Tag>
-                  <span
-                    style={{
-                      marginLeft: "auto",
-                      fontFamily: SANS,
-                      fontSize: 11.5,
-                      color: FAINT,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {dateFmt(a.sent_at)}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 12.5,
-                    color: SOFT,
-                    margin: "6px 0 9px",
-                    lineHeight: 1.5,
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {a.body}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <Bar pct={read ?? 0} fill={GREEN} />
-                  <span
-                    style={{
-                      fontFamily: SANS,
-                      fontSize: 11.5,
-                      color: SOFT,
-                      whiteSpace: "nowrap",
-                      flex: "none",
-                    }}
-                  >
-                    {read == null ? "—" : `${read}% read`} · {a.recipients} sent
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-          {sent.length === 0 ? (
+        {groups.length === 0 && rows.length === 0 ? (
+          <Card style={{ minHeight: 0 }}>
             <Empty>Nothing sent yet. Whatever you write appears here with its read share.</Empty>
-          ) : null}
-        </Card>
-      </Split>
+          </Card>
+        ) : (
+          <SentPanel rows={rows} classes={telegramClasses} botUsername={botUsername} />
+        )}
+      </div>
     </div>
   );
 }

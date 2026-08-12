@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { FiSend } from "react-icons/fi";
 
 import { sendAnnouncement, type ActionState } from "../center-actions";
 import { useActionFeedback } from "@/components/console/toast";
@@ -36,14 +37,20 @@ type Audience = "everyone" | "students" | "teachers" | "group";
 export function AnnouncementComposer({
   counts,
   groups,
+  channelCount,
 }: {
   counts: { everyone: number; students: number; teachers: number };
-  groups: { id: string; name: string; students: number }[];
+  groups: { id: string; name: string; students: number; hasChannel: boolean }[];
+  /** Verified Telegram channels across the center. 0 hides the toggle. */
+  channelCount: number;
 }) {
   const [state, formAction, pending] = useActionState(sendAnnouncement, {} as ActionState);
-  useActionFeedback(state);
+  // Keeps the composer open — you often send two in a row — and the banner at
+  // the top of the page carries the confirmation.
+  useActionFeedback(state, { keepOpen: true });
   const [audience, setAudience] = useState<Audience>("everyone");
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
+  const [toTelegram, setToTelegram] = useState(false);
 
   const options: { value: Audience; label: string }[] = [
     { value: "everyone", label: "Everyone" },
@@ -52,8 +59,13 @@ export function AnnouncementComposer({
     ...(groups.length > 0 ? [{ value: "group" as Audience, label: "One class" }] : []),
   ];
 
-  const reach =
-    audience === "group" ? (groups.find((g) => g.id === groupId)?.students ?? 0) : counts[audience];
+  const chosen = groups.find((g) => g.id === groupId);
+  const reach = audience === "group" ? (chosen?.students ?? 0) : counts[audience];
+
+  // How many channels this send would actually post to, so the toggle promises
+  // only what it can deliver: one class means one channel, everything else
+  // means every linked class.
+  const channelsHit = audience === "group" ? (chosen?.hasChannel ? 1 : 0) : channelCount;
 
   return (
     <form action={formAction} key={state.ok ?? "new"}>
@@ -136,11 +148,42 @@ export function AnnouncementComposer({
         />
       </div>
 
-      {state.error ? (
-        <p style={{ fontSize: 12.5, color: "#A63A30", margin: "12px 0 0" }}>{state.error}</p>
-      ) : null}
-      {state.ok ? (
-        <p style={{ fontSize: 12.5, color: "#16794C", margin: "12px 0 0" }}>{state.ok}</p>
+      {/* A second delivery, not a replacement: the bell reaches every account,
+          Telegram reaches whoever joined the channel — usually the parents,
+          who have no account here at all. */}
+      {channelCount > 0 ? (
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 9,
+            marginTop: 14,
+            padding: "10px 12px",
+            borderRadius: 9,
+            border: `1px solid ${toTelegram && channelsHit > 0 ? "#B7E0F5" : "#E4E2DC"}`,
+            background: toTelegram && channelsHit > 0 ? "#F2FAFE" : "#fff",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            name="telegram"
+            checked={toTelegram}
+            onChange={(e) => setToTelegram(e.target.checked)}
+            style={{ marginTop: 2 }}
+          />
+          <FiSend size={15} color="#229ED9" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
+          <span>
+            <span style={{ display: "block", fontSize: 13, color: INK }}>
+              Post it to Telegram as well
+            </span>
+            <span style={{ display: "block", fontSize: 11.5, color: "#93919F", marginTop: 2 }}>
+              {channelsHit === 0
+                ? "This class has no channel connected — see the Telegram tab."
+                : `Goes to ${channelsHit} connected channel${channelsHit === 1 ? "" : "s"}, where the parents are.`}
+            </span>
+          </span>
+        </label>
       ) : null}
 
       <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -166,9 +209,8 @@ export function AnnouncementComposer({
         </button>
       </div>
       <div style={{ fontSize: 11.5, color: "#93919F", marginTop: 10, lineHeight: 1.55 }}>
-        Reaches {reach} {reach === 1 ? "person" : "people"}. Delivered in the app — a center student
-        may have no email address that can receive mail, so the bell is the only channel that
-        reaches everybody.
+        Reaches {reach} {reach === 1 ? "person" : "people"} in the app. A center student may have no
+        address that can receive mail, so the bell is the one channel that reaches everybody.
       </div>
     </form>
   );

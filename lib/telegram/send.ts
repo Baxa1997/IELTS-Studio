@@ -124,3 +124,52 @@ export async function notifyAssignmentTelegram(args: {
     console.error("[telegram] assignment announce failed:", err);
   }
 }
+
+/**
+ * Post a center announcement to the linked class channels.
+ *
+ * Safe to post in full, unlike assignment notices: an announcement is text the
+ * center wrote for its own people, so there is no student name, band or score
+ * to leak. That is the whole reason this can carry the body while
+ * `notifyAssignmentTelegram` deliberately cannot.
+ *
+ * Returns how many channels took it, so the console can say "and 3 channels"
+ * rather than implying a reach it did not have.
+ */
+export async function sendAnnouncementTelegram(args: {
+  organizationId: string;
+  /** Empty means every linked class in the center. */
+  groupIds: string[];
+  subject: string;
+  body: string;
+}): Promise<number> {
+  if (!telegramConfigured()) return 0;
+
+  try {
+    const admin = createAdminClient();
+    let query = admin
+      .from("telegram_links")
+      .select("chat_id, group_id")
+      .eq("organization_id", args.organizationId)
+      .not("verified_at", "is", null)
+      .not("chat_id", "is", null);
+    if (args.groupIds.length > 0) query = query.in("group_id", args.groupIds);
+
+    const { data } = await query;
+    const rows = (data ?? []) as { chat_id: number; group_id: string }[];
+    if (rows.length === 0) return 0;
+
+    const text = `<b>${escapeHtml(args.subject)}</b>\n\n${escapeHtml(args.body)}`;
+
+    // Sequential: Telegram throttles ~30 messages a second overall, and a
+    // center has tens of channels at most.
+    let delivered = 0;
+    for (const row of rows) {
+      if (await sendMessage(row.chat_id, text)) delivered += 1;
+    }
+    return delivered;
+  } catch (err) {
+    console.error("[telegram] announcement failed:", err);
+    return 0;
+  }
+}

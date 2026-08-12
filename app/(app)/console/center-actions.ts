@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireOrgUser } from "@/lib/auth";
 import { notify } from "@/lib/notifications/send";
 import { createClient } from "@/lib/supabase/server";
+import { sendAnnouncementTelegram } from "@/lib/telegram/send";
 
 /**
  * The center-operations actions: marking a register, issuing a certificate,
@@ -163,9 +164,26 @@ export async function sendAnnouncement(
     body,
   });
 
+  // Optionally the same words in the class channel. A second delivery, not a
+  // replacement: the bell reaches every account, Telegram reaches whoever
+  // joined the channel — often parents, who have no account at all.
+  let channels = 0;
+  if (formData.get("telegram") === "on") {
+    channels = await sendAnnouncementTelegram({
+      organizationId: profile.organization_id,
+      groupIds: audience === "group" && groupId ? [groupId] : [],
+      subject,
+      body,
+    });
+  }
+
   revalidatePath("/console/announcements");
+  const people = `${recipientIds.length} ${recipientIds.length === 1 ? "person" : "people"}`;
   return {
-    ok: `Sent to ${recipientIds.length} ${recipientIds.length === 1 ? "person" : "people"}.`,
+    ok:
+      channels > 0
+        ? `Sent to ${people} in the app, and posted to ${channels} Telegram channel${channels === 1 ? "" : "s"}.`
+        : `Sent to ${people}.`,
   };
 }
 
