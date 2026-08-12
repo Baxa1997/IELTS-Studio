@@ -32,6 +32,7 @@ import {
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { buildFindings, type Finding } from "@/lib/console/report-findings";
+import { loadRecentWork } from "@/lib/console/recent-work";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
@@ -55,9 +56,10 @@ export default async function ReportsPage() {
   if (profile.role === "student") redirect("/dashboard");
 
   const supabase = await createClient();
-  const [report, orgRes] = await Promise.all([
+  const [report, orgRes, recentWork] = await Promise.all([
     loadCenterReport({ role: profile.role, profileId: profile.id }),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
+    loadRecentWork(profile),
   ]);
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const isCenter = report.scope === "center";
@@ -73,6 +75,8 @@ export default async function ReportsPage() {
     : null;
 
   const findings = buildFindings(report);
+
+  const WORK_COLS = "1.6fr 1.2fr .8fr 1fr .9fr";
 
   const COLS = isCenter ? "2fr 1.4fr .8fr .9fr 1.3fr .8fr" : "2fr .8fr .9fr 1.3fr .8fr";
 
@@ -113,6 +117,54 @@ export default async function ReportsPage() {
       ) : null}
 
       <Stack>
+        <Card flush>
+          <CardHead
+            title="What students handed in"
+            divided
+            note="newest first — open any one to read the same feedback the student got"
+          />
+          {recentWork.length > 0 ? (
+            <Table cols={WORK_COLS} minWidth={720}>
+              <THead cols={WORK_COLS} labels={["Student", "Skill", "Result", "When", ""]} />
+              {recentWork.map((w) => (
+                <TRow key={`${w.skill}-${w.id}`} cols={WORK_COLS}>
+                  <TD tone="ink" weight={500}>
+                    {w.studentName}
+                  </TD>
+                  <TD>
+                    <span style={{ textTransform: "capitalize" }}>{w.skill}</span>
+                    {w.assigned ? (
+                      <span style={{ marginLeft: 7 }}>
+                        <Tag tone="indigo">homework</Tag>
+                      </span>
+                    ) : null}
+                  </TD>
+                  <TD tone="ink" weight={600}>
+                    {w.band != null
+                      ? w.band.toFixed(1)
+                      : (w.score ?? (
+                          <span style={{ color: FAINT, fontWeight: 400 }}>grading…</span>
+                        ))}
+                  </TD>
+                  <TD tone="soft">{dateFmt(w.when)}</TD>
+                  <TD align="right">
+                    {w.reportHref ? (
+                      <TextLink href={w.reportHref}>Full feedback →</TextLink>
+                    ) : (
+                      <span style={{ color: FAINT, fontSize: 12 }}>not finished</span>
+                    )}
+                  </TD>
+                </TRow>
+              ))}
+            </Table>
+          ) : (
+            <Empty>
+              Nothing handed in yet. Once a student finishes a practice it appears here with its
+              feedback.
+            </Empty>
+          )}
+        </Card>
+
         <details>
           <summary
             style={{
