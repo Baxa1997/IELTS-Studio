@@ -374,6 +374,7 @@ export async function assignPractice(
     kind,
     title,
     siteUrl: serverEnv.outboundSiteUrl,
+    note: instructions,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 

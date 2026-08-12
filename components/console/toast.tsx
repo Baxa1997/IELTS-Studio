@@ -145,11 +145,26 @@ interface FeedbackState {
  *
  * @param keepOpen for forms whose result must be read before it is lost:
  *                 generated passwords, invite links, credential sheets.
+ * @param onSuccess for panels that own their own open state instead of living
+ *                  in a `Drawer` — `useDrawerClose` is a no-op outside one, so
+ *                  those panels would otherwise sit open over the thing they
+ *                  just changed with no way for this hook to shut them.
  */
-export function useActionFeedback(state: FeedbackState, opts: { keepOpen?: boolean } = {}): void {
+export function useActionFeedback(
+  state: FeedbackState,
+  opts: { keepOpen?: boolean; onSuccess?: () => void } = {},
+): void {
   const toast = useToast();
   const closeDrawer = useDrawerClose();
   const seen = useRef<FeedbackState | null>(null);
+  // Kept in a ref so a caller passing an inline arrow does not re-run the
+  // effect on every render and re-announce a message already on screen. Written
+  // inside an effect, not during render — a ref mutated while rendering is torn
+  // under Strict Mode's double invoke.
+  const onSuccess = useRef(opts.onSuccess);
+  useEffect(() => {
+    onSuccess.current = opts.onSuccess;
+  });
 
   useEffect(() => {
     if (seen.current === state) return;
@@ -158,6 +173,7 @@ export function useActionFeedback(state: FeedbackState, opts: { keepOpen?: boole
     const success = state.ok ?? state.notice;
     if (success) {
       toast(success, "ok");
+      onSuccess.current?.();
       if (!opts.keepOpen) closeDrawer();
       return;
     }

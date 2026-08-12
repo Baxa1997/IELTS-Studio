@@ -101,6 +101,15 @@ function linkOrPlain(url: string, label: string): string {
     : `${escapeHtml(label)}: ${escapeHtml(url)}`;
 }
 
+/** Cut long text at a word boundary rather than mid-word. */
+function trim(text: string, max: number): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}
+
 /** `Friday, 15 August` — long enough to be unambiguous on a phone. */
 function prettyDue(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -146,6 +155,8 @@ export async function notifyAssignmentTelegram(args: {
    * `assignmentsUrl` below.
    */
   siteUrl: string;
+  /** The teacher's note to the class, if they wrote one. */
+  note?: string | null;
   dueAt?: string | null;
 }): Promise<void> {
   if (!telegramConfigured() || args.groupIds.length === 0) return;
@@ -188,6 +199,10 @@ export async function notifyAssignmentTelegram(args: {
         "",
         `${kind.emoji} You have new <b>${kind.noun}</b>:`,
         `<b>${escapeHtml(args.title)}</b>`,
+        // The teacher's own words, quoted so they are visibly theirs rather
+        // than more of our template. Trimmed to keep a notification readable
+        // on a lock screen — the full text is on the assignment itself.
+        ...(args.note ? ["", `💬 <i>${escapeHtml(trim(args.note, 300))}</i>`] : []),
         "",
         `Sign in and open <b>${kind.where}</b> — it is waiting for you there.`,
         args.dueAt

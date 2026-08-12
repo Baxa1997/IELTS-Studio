@@ -742,6 +742,7 @@ export async function createAssignment(
     kind,
     title,
     siteUrl: serverEnv.outboundSiteUrl,
+    note: instructions,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 
