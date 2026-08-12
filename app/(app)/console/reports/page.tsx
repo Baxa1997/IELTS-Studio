@@ -13,8 +13,6 @@ import {
   GREEN,
   INDIGO,
   INK,
-  Kpi,
-  KpiRow,
   ListRow,
   MeterRow,
   MUTED,
@@ -32,7 +30,7 @@ import {
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { buildFindings, type Finding } from "@/lib/console/report-findings";
-import { loadRecentWork } from "@/lib/console/recent-work";
+import { loadWorkOverview } from "@/lib/console/recent-work";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
@@ -56,11 +54,12 @@ export default async function ReportsPage() {
   if (profile.role === "student") redirect("/dashboard");
 
   const supabase = await createClient();
-  const [report, orgRes, recentWork] = await Promise.all([
+  const [report, orgRes, overview] = await Promise.all([
     loadCenterReport({ role: profile.role, profileId: profile.id }),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
-    loadRecentWork(profile),
+    loadWorkOverview(profile),
   ]);
+  const { recent: recentWork, students } = overview;
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const isCenter = report.scope === "center";
 
@@ -69,13 +68,10 @@ export default async function ReportsPage() {
   const topCap = Math.max(1, ...report.writingCaps.map((c) => c.value));
   const topMiss = Math.max(1, ...report.readingMisses.map((m) => m.value));
 
-  const banded = report.groups.filter((g) => g.averageBand != null);
-  const centerBand = banded.length
-    ? banded.reduce((n, g) => n + (g.averageBand ?? 0), 0) / banded.length
-    : null;
 
   const findings = buildFindings(report);
 
+  const STUDENT_COLS = "1.6fr 1.2fr .9fr 1.2fr 1fr .8fr";
   const WORK_COLS = "1.6fr 1.2fr .8fr 1fr .9fr";
 
   const COLS = isCenter ? "2fr 1.4fr .8fr .9fr 1.3fr .8fr" : "2fr .8fr .9fr 1.3fr .8fr";
@@ -84,27 +80,10 @@ export default async function ReportsPage() {
     <div>
       <PageHead
         eyebrow="Reports"
-        title={isCenter ? centerName : "Your classes"}
-        subtitle="Graded practice from the last 90 days. Listening is scored out of 40, so it sits outside the band figures."
+        title={isCenter ? centerName : "Your students"}
+        subtitle={`${report.totals.students} students · ${report.totals.groups} classes · ${report.totals.gradedPractices} graded in the last 90 days.`}
         actions={<ExportReportButton rows={report.groups} centerName={centerName} />}
       />
-
-      <KpiRow>
-        <Kpi label="Students" value={report.totals.students} sub="in a class" />
-        <Kpi label={isCenter ? "Classes" : "Your classes"} value={report.totals.groups} />
-        <Kpi label="Graded practices" value={report.totals.gradedPractices} sub="last 90 days" />
-        <Kpi
-          label="Average class band"
-          value={centerBand?.toFixed(1) ?? "—"}
-          sub={banded.length ? `${banded.length} class(es) graded` : "nothing graded yet"}
-        />
-        <Kpi
-          label="Gone quiet"
-          value={report.atRisk.length}
-          deltaTone="bad"
-          sub="no practice in 14 days"
-        />
-      </KpiRow>
 
       {/* THE ANSWERS FIRST. Everything below this is evidence; a center owner
           who reads only the top of the page should still learn what to do. */}
@@ -117,6 +96,50 @@ export default async function ReportsPage() {
       ) : null}
 
       <Stack>
+        <Card flush>
+          <CardHead
+            title="Every student"
+            divided
+            note="least done first — the ones to chase are at the top"
+          />
+          {students.length > 0 ? (
+            <Table cols={STUDENT_COLS} minWidth={760}>
+              <THead
+                cols={STUDENT_COLS}
+                labels={["Student", "Class", "Latest band", "Done", "Last active", ""]}
+              />
+              {students.map((st) => (
+                <TRow key={st.studentId} cols={STUDENT_COLS}>
+                  <TD tone="ink" weight={500}>
+                    {st.name}
+                  </TD>
+                  <TD tone="soft">{st.groupName ?? "—"}</TD>
+                  <TD tone="ink" weight={600}>
+                    {st.latestBand?.toFixed(1) ?? <span style={{ color: FAINT }}>—</span>}
+                  </TD>
+                  <TD>
+                    <span style={{ color: st.done === 0 ? RED : INK, fontWeight: 600 }}>
+                      {st.done}
+                    </span>
+                    {st.unfinished > 0 ? (
+                      <span style={{ color: FAINT, fontSize: 12 }}>
+                        {" "}
+                        · {st.unfinished} unfinished
+                      </span>
+                    ) : null}
+                  </TD>
+                  <TD tone="soft">{st.lastActive ? dateFmt(st.lastActive) : "never"}</TD>
+                  <TD align="right">
+                    <TextLink href={st.reportHref}>Report →</TextLink>
+                  </TD>
+                </TRow>
+              ))}
+            </Table>
+          ) : (
+            <Empty>No students in your classes yet.</Empty>
+          )}
+        </Card>
+
         <Card flush>
           <CardHead
             title="What students handed in"

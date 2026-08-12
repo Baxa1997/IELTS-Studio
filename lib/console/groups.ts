@@ -13,6 +13,8 @@ export interface GroupSummary {
   branchId: string;
   branchName: string | null;
   memberCount: number;
+  /** Seats. Null = nobody has sized this class. */
+  capacity: number | null;
 }
 
 /** The sites a class can belong to. */
@@ -50,6 +52,7 @@ export interface GroupMemberRow {
 export interface GroupDetail {
   id: string;
   name: string;
+  capacity: number | null;
   teacherId: string | null;
   teacherName: string | null;
   members: GroupMemberRow[];
@@ -71,7 +74,7 @@ export async function loadGroups(profile: Profile): Promise<{
 
   let groupQuery = supabase
     .from("groups")
-    .select("id, name, teacher_id, branch_id")
+    .select("id, name, teacher_id, branch_id, capacity")
     .order("name", { ascending: true });
   if (profile.role === "teacher") groupQuery = groupQuery.eq("teacher_id", profile.id);
 
@@ -126,6 +129,7 @@ export async function loadGroups(profile: Profile): Promise<{
       branchId: g.branch_id as string,
       branchName: branchName.get(g.branch_id as string) ?? null,
       memberCount: counts.get(g.id as string) ?? 0,
+      capacity: (g.capacity as number | null) ?? null,
     })),
     teachers: staff
       .filter((s) => s.role === "teacher")
@@ -146,7 +150,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
 
   const { data: group } = await supabase
     .from("groups")
-    .select("id, name, teacher_id")
+    .select("id, name, teacher_id, capacity")
     .eq("id", groupId)
     .maybeSingle();
   if (!group) return null;
@@ -193,6 +197,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
   return {
     id: group.id as string,
     name: group.name as string,
+    capacity: (group.capacity as number | null) ?? null,
     teacherId: (group.teacher_id as string | null) ?? null,
     teacherName: (teacherRes.data as { full_name: string | null } | null)?.full_name ?? null,
     members: memberRows.map((m) => ({

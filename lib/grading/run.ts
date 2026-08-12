@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { gradeEssay, type EssayGrade, type GradeEssayInput } from "@/lib/ai";
 import { recomputeSkillEstimate } from "@/lib/estimates/service";
+import { notifyGradedToTeachers } from "@/lib/notifications/send";
 
 /**
  * The grade-and-persist core, shared by the request route and the queue drainer
@@ -26,6 +27,19 @@ export class GradingError extends Error {
     this.name = "GradingError";
   }
 }
+
+/**
+ * Criterion codes as a teacher says them. The grader emits `TR`/`CC`/`LR`/`GRA`
+ * because that is what the descriptors use; a notification is not the place to
+ * make someone expand an acronym.
+ */
+const CRITERION_NAME: Record<string, string> = {
+  TR: "Task Response",
+  TA: "Task Achievement",
+  CC: "Coherence & Cohesion",
+  LR: "Lexical Resource",
+  GRA: "Grammar",
+};
 
 export interface GradableEssay {
   id: string;
@@ -116,7 +130,9 @@ export async function runGrading(
       is_teacher_override: false,
       graded_by: null,
     })
-    .select("id, essay_id, overall_band, criteria, score_blocker, band_with_fixes, annotations, model, created_at, version_no")
+    .select(
+      "id, essay_id, overall_band, criteria, score_blocker, band_with_fixes, annotations, model, created_at, version_no",
+    )
     .single();
   if (insErr || !stored) {
     await admin.from("essays").update({ status: "submitted" }).eq("id", essay.id);
@@ -125,7 +141,21 @@ export async function runGrading(
 
   await admin.from("essays").update({ status: "graded" }).eq("id", essay.id);
 
-  // 5) Re-roll the writing estimate (best-effort).
+  // 5) Tell the student's teachers, with the verdict in the message. A teacher
+  //    will not open twenty feedback pages to find out how a class did, so the
+  //    band and the capping criterion travel with the notification and the page
+  //    is there for the working. Best-effort: a notice that fails must never
+  //    undo a grading that is already stored.
+  void notifyGradedToTeachers({
+    organizationId: essay.organization_id,
+    studentId: essay.student_id,
+    href: `/activities/essay/${essay.id}`,
+    skill: "writing",
+    band: grade.overall_band ?? null,
+    capping: CRITERION_NAME[grade.score_blocker?.criterion ?? ""] ?? null,
+  });
+
+  // 6) Re-roll the writing estimate (best-effort).
   try {
     await recomputeSkillEstimate(admin, {
       studentId: essay.student_id,

@@ -45,6 +45,89 @@ export interface RecentWorkRow {
   state: "graded" | "pending";
 }
 
+/** One student, rolled up — the row a teacher scans down. */
+export interface StudentSummary {
+  studentId: string;
+  name: string;
+  groupName: string | null;
+  /** Latest band from graded work, across skills. */
+  latestBand: number | null;
+  /** Finished and graded in the window. */
+  done: number;
+  /** Started but not finished — the number that explains a low `done`. */
+  unfinished: number;
+  lastActive: string | null;
+  reportHref: string;
+}
+
+export interface WorkOverview {
+  recent: RecentWorkRow[];
+  students: StudentSummary[];
+}
+
+/**
+ * Both views of the same fetch: the stream of work, and the per-student
+ * roll-up over it.
+ *
+ * Returned together because they come from identical queries — asking twice
+ * would double every round trip to show two arrangements of one answer.
+ */
+export async function loadWorkOverview(profile: Profile, limit = 30): Promise<WorkOverview> {
+  const recent = await loadRecentWork(profile, 500);
+
+  // Which class each student belongs to, for the row's second line. A student
+  // in two of a teacher's classes shows the first — the report link covers both.
+  const supabase = await createClient();
+  const { groups } = await loadGroups(profile);
+  const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const { data: members } = await supabase
+    .from("group_members")
+    .select("group_id, student_id")
+    .in(
+      "group_id",
+      groups.map((g) => g.id),
+    );
+
+  const classOf = new Map<string, { id: string; name: string }>();
+  for (const m of (members ?? []) as { group_id: string; student_id: string }[]) {
+    if (classOf.has(m.student_id)) continue;
+    classOf.set(m.student_id, { id: m.group_id, name: groupName.get(m.group_id) ?? "—" });
+  }
+
+  const byStudent = new Map<string, StudentSummary>();
+  for (const [studentId, cls] of classOf) {
+    byStudent.set(studentId, {
+      studentId,
+      name: "—",
+      groupName: cls.name,
+      latestBand: null,
+      done: 0,
+      unfinished: 0,
+      lastActive: null,
+      reportHref: `/console/groups/${cls.id}/students/${studentId}`,
+    });
+  }
+  for (const w of recent) {
+    const row = byStudent.get(w.studentId);
+    if (!row) continue;
+    row.name = w.studentName;
+    if (w.state === "graded") {
+      row.done += 1;
+      if (row.latestBand == null && w.band != null) row.latestBand = w.band;
+    } else {
+      row.unfinished += 1;
+    }
+    if (!row.lastActive || w.when > row.lastActive) row.lastActive = w.when;
+  }
+
+  // Whoever needs looking at first: nobody-has-done-anything, then least done.
+  const students = [...byStudent.values()].sort(
+    (a, b) => a.done - b.done || (a.lastActive ?? "").localeCompare(b.lastActive ?? ""),
+  );
+
+  return { recent: recent.slice(0, limit), students };
+}
+
 export async function loadRecentWork(profile: Profile, limit = 30): Promise<RecentWorkRow[]> {
   const supabase = await createClient();
 
@@ -153,8 +236,7 @@ export async function loadRecentWork(profile: Profile, limit = 30): Promise<Rece
       skill: "reading",
       when: String(r.created_at),
       band: r.band == null ? null : Number(r.band),
-      score:
-        r.correct_count == null ? null : `${r.correct_count}/${r.total_questions ?? "?"}`,
+      score: r.correct_count == null ? null : `${r.correct_count}/${r.total_questions ?? "?"}`,
       assigned: assigned.tests.has(r.test_id as string),
       reportHref: done ? `/activities/reading/${r.id as string}` : null,
       state: done ? "graded" : "pending",

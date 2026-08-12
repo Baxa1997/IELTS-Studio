@@ -188,3 +188,82 @@ export async function notifyGradingFailed(args: {
     console.error("[notify] grading-failed teacher fan-out failed:", err);
   }
 }
+
+/**
+ * Tell the teachers that a student's work came back — with the verdict, not
+ * just the fact.
+ *
+ * WHY THE TEACHER GETS MORE THAN THE STUDENT. The student is told "your essay
+ * is ready" and goes to read it; that is the right message for the person who
+ * wrote it. A teacher is not going to open twenty feedback pages to find out
+ * how the class did, so the notification carries the answer — the band and the
+ * criterion that capped it — and the page is there for when they want the
+ * working. Getting the conclusion into the notification is the difference
+ * between a teacher who reads these and one who mutes them.
+ *
+ * Best-effort throughout: a notification that fails must never fail a grading
+ * that has already been written.
+ */
+export async function notifyGradedToTeachers(args: {
+  organizationId: string;
+  studentId: string;
+  href: string;
+  skill: string;
+  band: number | null;
+  /** The criterion holding the work back, when the grader named one. */
+  capping?: string | null;
+  /** True when this content was set as homework, not self-directed practice. */
+  assigned?: boolean;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+
+    // The teachers who own a class this student is in. Not every teacher in the
+    // center: authority over a student follows the class, everywhere else in
+    // this app, and a notification is not the place to widen it.
+    const { data: memberships } = await admin
+      .from("group_members")
+      .select("group_id")
+      .eq("student_id", args.studentId);
+    const groupIds = (memberships ?? []).map((m) => m.group_id as string);
+    if (groupIds.length === 0) return;
+
+    const { data: groups } = await admin
+      .from("groups")
+      .select("teacher_id")
+      .in("id", groupIds)
+      .not("teacher_id", "is", null);
+    const teacherIds = [
+      ...new Set((groups ?? []).map((g) => g.teacher_id as string).filter(Boolean)),
+    ];
+    if (teacherIds.length === 0) return;
+
+    const { data: student } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", args.studentId)
+      .maybeSingle();
+    const who = (student?.full_name as string | null) ?? "A student";
+
+    const verdict = args.band != null ? `Band ${args.band.toFixed(1)}` : "Marked";
+    const body = [
+      verdict,
+      args.capping ? `held back by ${args.capping}` : null,
+      args.assigned ? "· homework" : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    await notify({
+      organizationId: args.organizationId,
+      recipientIds: teacherIds,
+      type: "attempt_graded",
+      title: `${who} finished ${args.skill}`,
+      body,
+      href: args.href,
+      payload: { studentId: args.studentId, band: args.band, skill: args.skill },
+    });
+  } catch (err) {
+    console.error("[notify] teacher grading notice failed:", err);
+  }
+}

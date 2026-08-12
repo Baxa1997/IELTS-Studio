@@ -116,6 +116,12 @@ export async function createGroup(
   const branchId = String(formData.get("branch_id") ?? "").trim();
   if (!branchId) return { error: "Pick the branch this class is taught at." };
 
+  const capacityRaw = String(formData.get("capacity") ?? "").trim();
+  const capacity = capacityRaw === "" ? null : Number(capacityRaw);
+  if (capacity != null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) {
+    return { error: "Class size has to be a whole number between 1 and 500." };
+  }
+
   // Both prices are the owner's business, so a teacher creating their own class
   // never sends them — the fields aren't on their form and are ignored if they
   // are. Priced at creation rather than later because an unpriced class is the
@@ -139,6 +145,7 @@ export async function createGroup(
       name,
       teacher_id: teacherId,
       branch_id: branchId,
+      capacity,
       created_by: profile.id,
       ...(profile.role === "center_admin"
         ? { monthly_fee_minor: fee, teacher_rate_minor: rate }
