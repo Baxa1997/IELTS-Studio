@@ -12,10 +12,12 @@ import {
   FAINT,
   GREEN,
   INDIGO,
+  INK,
   Kpi,
   KpiRow,
   ListRow,
   MeterRow,
+  MUTED,
   PageHead,
   RED,
   SANS,
@@ -29,6 +31,7 @@ import {
   TRow,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
+import { buildFindings, type Finding } from "@/lib/console/report-findings";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
@@ -69,6 +72,8 @@ export default async function ReportsPage() {
     ? banded.reduce((n, g) => n + (g.averageBand ?? 0), 0) / banded.length
     : null;
 
+  const findings = buildFindings(report);
+
   const COLS = isCenter ? "2fr 1.4fr .8fr .9fr 1.3fr .8fr" : "2fr .8fr .9fr 1.3fr .8fr";
 
   return (
@@ -97,62 +102,90 @@ export default async function ReportsPage() {
         />
       </KpiRow>
 
-      <Stack>
-        <Split>
-          <Card>
-            <CardHead
-              title="Bands awarded"
-              note="every graded writing, reading and speaking practice"
-            />
-            {report.bandBuckets.length > 0 ? (
-              <Columns
-                bars={report.bandBuckets.map((b) => ({
-                  label: b.label,
-                  cap: b.value,
-                  pct: (b.value / topBucket) * 100,
-                  fill: INDIGO,
-                }))}
-                height={150}
-              />
-            ) : (
-              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                Nothing graded in this window yet.
-              </p>
-            )}
-          </Card>
+      {/* THE ANSWERS FIRST. Everything below this is evidence; a center owner
+          who reads only the top of the page should still learn what to do. */}
+      {findings.length > 0 ? (
+        <div style={{ display: "grid", gap: 10, marginBottom: 18 }}>
+          {findings.map((f, i) => (
+            <FindingCard key={i} finding={f} />
+          ))}
+        </div>
+      ) : null}
 
-          <Card>
-            <CardHead title="Average by skill" />
-            <CardNote>
-              Rests only on what has actually been graded — never averaged into one overall band.
-            </CardNote>
-            {measured.map((s) => (
-              <MeterRow
-                key={s.skill}
-                label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
-                pct={((s.band ?? 0) / 9) * 100}
-                value={s.band?.toFixed(1) ?? "—"}
-                fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
-                trail={
-                  <span
-                    style={{ color: FAINT, width: 74, display: "inline-block", textAlign: "right" }}
-                  >
-                    {s.samples} graded
-                  </span>
-                }
+      <Stack>
+        <details>
+          <summary
+            style={{
+              fontFamily: SANS,
+              fontSize: 13,
+              color: MUTED,
+              cursor: "pointer",
+              marginBottom: 10,
+            }}
+          >
+            Show the working — band spread, trend and skill averages
+          </summary>
+          <Split>
+            <Card>
+              <CardHead
+                title="Bands awarded"
+                note="every graded writing, reading and speaking practice"
               />
-            ))}
-            {measured.length === 0 ? (
-              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                No graded practice yet.
-              </p>
-            ) : null}
-          </Card>
-        </Split>
+              {report.bandBuckets.length > 0 ? (
+                <Columns
+                  bars={report.bandBuckets.map((b) => ({
+                    label: b.label,
+                    cap: b.value,
+                    pct: (b.value / topBucket) * 100,
+                    fill: INDIGO,
+                  }))}
+                  height={150}
+                />
+              ) : (
+                <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                  Nothing graded in this window yet.
+                </p>
+              )}
+            </Card>
+
+            <Card>
+              <CardHead title="Average by skill" />
+              <CardNote>
+                Rests only on what has actually been graded — never averaged into one overall band.
+              </CardNote>
+              {measured.map((s) => (
+                <MeterRow
+                  key={s.skill}
+                  label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
+                  pct={((s.band ?? 0) / 9) * 100}
+                  value={s.band?.toFixed(1) ?? "—"}
+                  fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
+                  trail={
+                    <span
+                      style={{
+                        color: FAINT,
+                        width: 74,
+                        display: "inline-block",
+                        textAlign: "right",
+                      }}
+                    >
+                      {s.samples} graded
+                    </span>
+                  }
+                />
+              ))}
+              {measured.length === 0 ? (
+                <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
+                  No graded practice yet.
+                </p>
+              ) : null}
+            </Card>
+          </Split>
+        </details>
 
         <Card flush>
           <CardHead
-            title="Group league table"
+            title="Classes"
             divided
             note="completion is the share of set practice finished and graded"
           />
@@ -242,9 +275,9 @@ export default async function ReportsPage() {
           </Card>
         </Split>
 
-        <Card flush>
+        <Card flush id="needs-attention">
           <CardHead
-            title="Gone quiet"
+            title="Needs attention"
             divided
             badge={report.atRisk.length > 0 ? <Tag tone="red">{report.atRisk.length}</Tag> : null}
             note="no graded practice in the last 14 days — earliest to stop first"
@@ -277,6 +310,62 @@ export default async function ReportsPage() {
           ) : null}
         </Card>
       </Stack>
+    </div>
+  );
+}
+
+/**
+ * One answer, stated plainly.
+ *
+ * Tone is carried by a single left edge and the headline's weight, not by a
+ * filled panel: three stacked coloured blocks read as an alert screen, and most
+ * findings are neither good nor bad news — they are just the situation.
+ */
+function FindingCard({ finding }: { finding: Finding }) {
+  const accent = finding.tone === "good" ? GREEN : finding.tone === "bad" ? RED : "#C9C6BD";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+        background: "#fff",
+        border: "1px solid #E9E7E1",
+        borderLeft: `3px solid ${accent}`,
+        borderRadius: 11,
+        padding: "13px 15px",
+      }}
+    >
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span
+          style={{
+            display: "block",
+            fontFamily: SANS,
+            fontSize: 14,
+            fontWeight: 600,
+            color: INK,
+            lineHeight: 1.4,
+          }}
+        >
+          {finding.headline}
+        </span>
+        <span
+          style={{
+            display: "block",
+            fontFamily: SANS,
+            fontSize: 12.5,
+            color: MUTED,
+            marginTop: 3,
+            lineHeight: 1.5,
+          }}
+        >
+          {finding.detail}
+        </span>
+      </span>
+      {finding.action ? (
+        <TextLink href={finding.action.href}>{finding.action.label} →</TextLink>
+      ) : null}
     </div>
   );
 }
