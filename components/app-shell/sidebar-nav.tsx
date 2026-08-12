@@ -53,6 +53,16 @@ type Item = {
   soon?: boolean;
   /** Small pill shown beside an otherwise-live link, e.g. "PREVIEW" for a UI-only page. */
   badge?: string;
+  /**
+   * What the pill means. `good` (the default) is the green "you have things
+   * waiting" used for a student's homework; `alert` is the amber one for work
+   * that has come back and nobody has looked at.
+   *
+   * Two tones rather than one because they ask opposite things of the reader —
+   * green is "here is your list", amber is "someone is waiting on you" — and a
+   * rail where every pill looks identical teaches people to skip all of them.
+   */
+  badgeTone?: "good" | "alert";
   /** Key into the `counts` prop — renders the tally quietly at the end of the row
    *  (the CRM design shows how many teachers/groups/students there are). */
   countKey?: string;
@@ -180,6 +190,30 @@ const SUPER_ADMIN: Section[] = [
   },
 ];
 
+/**
+ * Put the unopened-work count on Reports.
+ *
+ * WHY THE RAIL AND NOT ONLY THE BELL. The bell is a stream — it scrolls away,
+ * and it is read once. "Two students handed in and nobody has looked" is a
+ * standing state, and a standing state belongs on the thing you click to deal
+ * with it. This is the staff mirror of the student's Assignments badge: the
+ * count of what is owed, sitting on the door you go through to clear it.
+ *
+ * The number is DISTINCT STUDENTS, matching the Alerts badge and the list the
+ * page opens with. A rail that says 3 over a page listing one name is worse
+ * than no badge at all.
+ */
+function withReportsBadge(sections: Section[], newWork: number): Section[] {
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.map((item) =>
+      item.href === "/console/reports"
+        ? { ...item, badge: String(newWork), badgeTone: "alert" as const }
+        : item,
+    ),
+  }));
+}
+
 /** Only students who actually belong to a center group get an Assignments link —
  *  a solo B2C learner has nothing to put behind it. `pending` is the count of
  *  homework they haven't finished; it rides the existing badge slot. */
@@ -188,9 +222,14 @@ function sectionsFor(
   showAssignments: boolean,
   pending: number,
   homeworkOnly: boolean,
+  /** Students whose handed-in work nobody has opened — the Reports badge. */
+  newWork: number,
 ): Section[] {
   if (role === "super_admin") return SUPER_ADMIN;
-  if (role !== "student") return role === "center_admin" ? ADMIN : TEACHER;
+  if (role !== "student") {
+    const rail = role === "center_admin" ? ADMIN : TEACHER;
+    return newWork > 0 ? withReportsBadge(rail, newWork) : rail;
+  }
   if (!showAssignments) return STUDENT;
   const [home, ...rest] = STUDENT;
   const withAssignments: Section = {
@@ -269,7 +308,13 @@ export function SidebarNav({
   counts?: Record<string, number>;
 }) {
   const pathname = usePathname();
-  const sections = sectionsFor(role, showAssignments, pendingAssignments, homeworkOnly);
+  const sections = sectionsFor(
+    role,
+    showAssignments,
+    pendingAssignments,
+    homeworkOnly,
+    counts?.newWork ?? 0,
+  );
   const all = sections.flatMap((s) => s.items);
   // Single active item = the longest href the path falls under.
   const activeHref = all
@@ -301,7 +346,7 @@ export function SidebarNav({
             </div>
           ) : null}
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {section.items.map(({ label, href, icon: Icon, soon, badge, countKey }) => {
+            {section.items.map(({ label, href, icon: Icon, soon, badge, badgeTone, countKey }) => {
               if (soon) {
                 return (
                   <span
@@ -389,8 +434,16 @@ export function SidebarNav({
                           fontWeight: 700,
                           fontSize: 10,
                           letterSpacing: ".05em",
-                          color: active ? "rgba(255,255,255,.85)" : "#7CE3AE",
-                          background: active ? "rgba(255,255,255,.16)" : "rgba(91,221,155,.13)",
+                          color: active
+                            ? "rgba(255,255,255,.85)"
+                            : badgeTone === "alert"
+                              ? "#FFC069"
+                              : "#7CE3AE",
+                          background: active
+                            ? "rgba(255,255,255,.16)"
+                            : badgeTone === "alert"
+                              ? "rgba(255,176,74,.15)"
+                              : "rgba(91,221,155,.13)",
                           padding: "2px 7px",
                           borderRadius: 6,
                           flexShrink: 0,

@@ -144,9 +144,15 @@ export async function runGrading(
   // 5) Tell the student's teachers, with the verdict in the message. A teacher
   //    will not open twenty feedback pages to find out how a class did, so the
   //    band and the capping criterion travel with the notification and the page
-  //    is there for the working. Best-effort: a notice that fails must never
-  //    undo a grading that is already stored.
-  void notifyGradedToTeachers({
+  //    is there for the working.
+  //
+  //    AWAITED, NOT FIRE-AND-FORGET. This was `void`ed on the reasoning that a
+  //    failed notice must never undo a stored grading — but that guarantee comes
+  //    from the function's own try/catch, which swallows everything and never
+  //    throws. Not awaiting it buys nothing and costs correctness: a serverless
+  //    invocation is frozen the moment its response is returned, so a promise
+  //    still in flight is simply dropped, and the teacher is never told.
+  await notifyGradedToTeachers({
     organizationId: essay.organization_id,
     studentId: essay.student_id,
     href: `/activities/essay/${essay.id}`,
