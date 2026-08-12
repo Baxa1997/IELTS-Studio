@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
 import { notifyAssignment } from "@/lib/notifications/send";
+import { notifyAssignmentTelegram } from "@/lib/telegram/send";
 import { serverEnv } from "@/lib/env";
 import {
   generateWritingPrompt,
@@ -717,11 +718,30 @@ export async function createAssignment(
   });
   if (error) return { error: error.message };
 
+  const href = promptId ? `/write/${promptId}` : `/read/test/${readingTestId}`;
+
   await notifyAssignment({
     organizationId: profile.organization_id,
     groupIds: [groupId],
     title,
-    href: promptId ? `/write/${promptId}` : `/read/test/${readingTestId}`,
+    href,
+    dueAt: dueAt ? dueAt.toISOString() : null,
+  });
+
+  // The class's Telegram channel gets the same event. There are TWO places
+  // homework is attached to a class — here, and `assignPractice` on the
+  // Writing/Reading/Listening screens — and only the other one announced it.
+  // So whether a class heard about its homework depended on which screen the
+  // teacher happened to use, which is not a rule anyone could have guessed.
+  //
+  // Best-effort, like the bell: a channel that doesn't answer must never
+  // un-set the homework.
+  await notifyAssignmentTelegram({
+    organizationId: profile.organization_id,
+    groupIds: [groupId],
+    kind,
+    title,
+    url: `${serverEnv.siteUrl}${href}`,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 
