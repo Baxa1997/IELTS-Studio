@@ -1,68 +1,51 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FiBell, FiCheckCircle, FiChevronRight, FiClock, FiUsers } from "react-icons/fi";
 
 import {
   AMBER,
-  BtnLink,
   Card,
-  CardHead,
   Empty,
+  FAINT,
   GREEN,
   INDIGO,
-  initials,
   INK,
   Kpi,
   KpiRow,
+  MUTED,
   PageHead,
   SANS,
-  SOFT,
-  Stack,
 } from "@/components/console/crm-ui";
+import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
-import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
-import { createClient } from "@/lib/supabase/server";
+import { loadAttendanceClasses } from "@/lib/console/attendance";
+import { loadAlertSettings } from "@/lib/console/alerts";
 
-import { RegisterForm, type RegisterStudent } from "./register-form";
+import { AlertSettingsForm } from "./alert-settings-form";
+import { DateStrip } from "./date-strip";
 
 export const dynamic = "force-dynamic";
 
-/** Same tint cycle the rest of the console uses, so a person keeps their colour. */
-const AVATARS: [string, string][] = [
-  ["#DEDDF6", "#3B38B0"],
-  ["#E7F1EA", "#16794C"],
-  ["#FBEEE0", "#A9721F"],
-  ["#F7E4E2", "#A63A30"],
-  ["#E4EDF7", "#2F5D8C"],
-  ["#EFE7F5", "#6B44A2"],
-];
-function tintFor(seed: string): [string, string] {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  return AVATARS[Math.abs(h) % AVATARS.length];
-}
-
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-const prettyDate = (s: string) =>
-  new Date(`${s}T00:00:00Z`).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  });
 
 /**
- * Attendance: pick a class on the left, mark the register on the right.
+ * Attendance, step one: which class?
  *
- * There is no timetable in this product — no rooms, no recurring schedule — so
- * the left column lists the classes that exist rather than the sessions due
- * today, and the date is chosen explicitly. That is the honest version of the
- * design's session list: it does the same job (get me to the right register in
- * one click) without pretending to know when a class meets.
+ * WHAT THIS REPLACED. A 300px column of class names beside a register, with the
+ * first class auto-opened. On a teacher with one class that was fine; on a
+ * center with fifteen it was a scrollable list of near-identical rows, and the
+ * register on the right belonged to whichever class happened to sort first —
+ * so the first thing you did was find your class and click it anyway.
+ *
+ * Now the classes ARE the page, and picking one goes to its register. That is
+ * one more click for a teacher with a single class and several fewer for
+ * everyone else, and it makes room for the thing the list never showed: which
+ * classes actually meet today, and which of those still need marking.
  */
 export default async function AttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ group?: string; date?: string }>;
+  searchParams: Promise<{ date?: string }>;
 }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
@@ -71,228 +54,200 @@ export default async function AttendancePage({
   const today = iso(new Date());
   const date = /^\d{4}-\d{2}-\d{2}$/.test(sp.date ?? "") ? (sp.date as string) : today;
 
-  const supabase = await createClient();
-  const { groups } = await loadGroups(profile);
-  const activeId = sp.group && groups.some((g) => g.id === sp.group) ? sp.group : groups[0]?.id;
+  const isAdmin = profile.role === "center_admin";
+  const [classes, alerts] = await Promise.all([
+    loadAttendanceClasses(profile, date),
+    isAdmin ? loadAlertSettings() : Promise.resolve(null),
+  ]);
 
-  // Which classes already have a register for this date — the left column's
-  // state, and the only thing that separates "done" from "still open".
-  const { data: sessions } = await supabase
-    .from("attendance_sessions")
-    .select("id, group_id, state, marked_at")
-    .eq("held_on", date);
-  const sessionOf = new Map(
-    (sessions ?? []).map((s) => [s.group_id as string, s as { id: string; state: string }]),
-  );
-
-  const group = activeId ? await loadGroupDetail(activeId) : null;
-
-  // Marks already recorded for the open class, so re-opening a saved register
-  // shows what was actually put down rather than resetting to all-present.
-  let saved: Record<string, "present" | "late" | "absent"> = {};
-  let attendanceRate = new Map<string, number>();
-  if (group) {
-    const session = sessionOf.get(group.id);
-    const [marksRes, rateRes] = await Promise.all([
-      session
-        ? supabase
-            .from("attendance_marks")
-            .select("student_id, status")
-            .eq("session_id", session.id)
-        : Promise.resolve({ data: null }),
-      group.members.length > 0
-        ? supabase
-            .from("v_student_attendance")
-            .select("student_id, rate_pct")
-            .in(
-              "student_id",
-              group.members.map((m) => m.id),
-            )
-        : Promise.resolve({ data: null }),
-    ]);
-    saved = Object.fromEntries(
-      ((marksRes.data ?? []) as { student_id: string; status: string }[]).map((m) => [
-        m.student_id,
-        m.status as "present" | "late" | "absent",
-      ]),
-    );
-    attendanceRate = new Map(
-      ((rateRes.data ?? []) as { student_id: string; rate_pct: number | null }[]).map((r) => [
-        r.student_id,
-        r.rate_pct ?? 0,
-      ]),
-    );
-  }
-
-  const students: RegisterStudent[] = (group?.members ?? []).map((m) => {
-    const [tint, ink] = tintFor(m.name);
-    const rate = attendanceRate.get(m.id);
-    return {
-      id: m.id,
-      name: m.name,
-      meta: rate != null ? `${rate}% attendance so far` : "no attendance recorded yet",
-      initials: initials(m.name),
-      tint,
-      ink,
-    };
-  });
-
-  const marked = groups.filter((g) => sessionOf.get(g.id)?.state === "marked").length;
-  const open = groups.length - marked;
-
-  const shift = (days: number) => {
-    const d = new Date(`${date}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + days);
-    return iso(d);
-  };
-  const href = (params: { group?: string; date?: string }) =>
-    `/console/attendance?group=${params.group ?? activeId ?? ""}&date=${params.date ?? date}`;
+  const due = classes.filter((c) => c.meetsToday);
+  const outstanding = due.filter((c) => c.state === "open");
+  const marked = classes.filter((c) => c.state === "marked").length;
 
   return (
     <div>
       <PageHead
         title="Attendance"
-        subtitle={`${prettyDate(date)} · ${groups.length} class${groups.length === 1 ? "" : "es"} · ${open} register${open === 1 ? "" : "s"} still open.`}
+        subtitle={
+          due.length > 0
+            ? `${outstanding.length} of ${due.length} register${due.length === 1 ? "" : "s"} still to mark.`
+            : "Nothing is timetabled for this day — you can still mark any class."
+        }
         actions={
-          <>
-            <BtnLink href={href({ date: shift(-1) })} variant="ghost">
-              ◀ Prev
-            </BtnLink>
-            <BtnLink href={href({ date: today })} variant="ghost">
-              Today
-            </BtnLink>
-            <BtnLink href={href({ date: shift(1) })} variant="ghost">
-              Next ▶
-            </BtnLink>
-          </>
+          isAdmin && alerts ? (
+            <Drawer
+              label={
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                  <FiBell size={14} aria-hidden />
+                  Absence alerts
+                </span>
+              }
+              variant="ghost"
+              eyebrow="Attendance"
+              title="Absence alerts"
+              note="Who gets told when a student misses a lesson."
+              width={520}
+            >
+              <AlertSettingsForm settings={alerts} />
+            </Drawer>
+          ) : undefined
         }
       />
 
+      <DateStrip date={date} today={today} />
+
       <KpiRow>
-        <Kpi label="Classes" value={groups.length} sub="you can mark" />
-        <Kpi label="Marked" value={marked} deltaTone="good" sub={`on ${prettyDate(date)}`} />
-        <Kpi label="Still open" value={open} deltaTone={open > 0 ? "bad" : "good"} />
+        <Kpi label="Timetabled today" value={due.length} sub={`of ${classes.length} classes`} />
         <Kpi
-          label="In this register"
-          value={students.length}
-          sub={group ? group.name : "no class selected"}
+          label="Still to mark"
+          value={outstanding.length}
+          deltaTone={outstanding.length > 0 ? "bad" : "good"}
+        />
+        <Kpi label="Marked" value={marked} deltaTone="good" sub="on this day" />
+        <Kpi
+          label="Students covered"
+          value={classes.filter((c) => c.state === "marked").reduce((a, c) => a + c.students, 0)}
+          sub="in the saved registers"
         />
       </KpiRow>
 
-      <div
-        className="cn-split"
-        style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 16 }}
-      >
-        {/* ── the classes ─────────────────────────────────────────────────── */}
-        <Card flush style={{ alignSelf: "start" }}>
-          <div
+      {classes.length === 0 ? (
+        <Card>
+          <Empty>
+            No classes yet — a register belongs to one, so create a class and it appears here.
+          </Empty>
+        </Card>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {classes.map((c) => (
+            <ClassCard key={c.id} cls={c} date={date} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClassCard({
+  cls,
+  date,
+}: {
+  cls: Awaited<ReturnType<typeof loadAttendanceClasses>>[number];
+  date: string;
+}) {
+  const done = cls.state === "marked";
+  // Scheduled-and-unmarked is the only state that needs chasing, so it is the
+  // only one that gets a coloured edge. Everything else stays quiet.
+  const accent = done ? GREEN : cls.meetsToday ? AMBER : "#E4E2DC";
+
+  return (
+    <Link
+      href={`/console/attendance/${cls.id}?date=${date}`}
+      className="cn-row"
+      style={{
+        display: "block",
+        textDecoration: "none",
+        color: "inherit",
+        background: "#fff",
+        border: "1px solid #E9E7E1",
+        borderLeft: `3px solid ${accent}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        boxShadow: "0 1px 2px rgba(22,22,46,.04)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span
             style={{
-              padding: "14px 16px",
-              borderBottom: "1px solid #F0EEE9",
+              display: "block",
               fontFamily: SANS,
-              fontSize: 12,
-              letterSpacing: ".07em",
-              color: "#8B8999",
+              fontSize: 14.5,
               fontWeight: 600,
-              textTransform: "uppercase",
+              color: INK,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            Classes
-          </div>
-          {groups.map((g) => {
-            const session = sessionOf.get(g.id);
-            const on = g.id === activeId;
-            const mark = session?.state === "marked" ? GREEN : AMBER;
-            return (
-              <Link
-                key={g.id}
-                href={href({ group: g.id })}
-                className="cn-row"
-                style={{
-                  display: "block",
-                  padding: "12px 16px",
-                  borderBottom: "1px solid #F5F4F0",
-                  borderLeft: `3px solid ${on ? INDIGO : mark}`,
-                  background: on ? "#F7F7FC" : "#fff",
-                  textDecoration: "none",
-                  color: "inherit",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: SANS,
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: INK,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {g.name}
-                  </span>
-                  <span style={{ fontFamily: SANS, fontSize: 12, color: SOFT, flex: "none" }}>
-                    {g.memberCount}
-                  </span>
-                </div>
-                <div style={{ fontFamily: SANS, fontSize: 11.5, color: "#93919F", marginTop: 3 }}>
-                  {g.teacherName ?? "No teacher"} ·{" "}
-                  {session?.state === "marked" ? "Marked" : "Register open"}
-                </div>
-              </Link>
-            );
-          })}
-          {groups.length === 0 ? <Empty>No classes yet.</Empty> : null}
-        </Card>
-
-        {/* ── the register ────────────────────────────────────────────────── */}
-        <Stack>
-          <Card flush>
-            {group ? (
-              <>
-                <CardHead
-                  title={group.name}
-                  divided
-                  note={`${prettyDate(date)} · ${group.teacherName ?? "no teacher"}`}
-                  badge={
-                    sessionOf.get(group.id)?.state === "marked" ? (
-                      <span
-                        style={{ fontFamily: SANS, fontSize: 11.5, color: GREEN, fontWeight: 600 }}
-                      >
-                        Saved
-                      </span>
-                    ) : null
-                  }
-                />
-                <RegisterForm
-                  key={`${group.id}-${date}`}
-                  groupId={group.id}
-                  heldOn={date}
-                  students={students}
-                  initial={saved}
-                />
-              </>
-            ) : (
-              <Empty>
-                Create a class first — a register belongs to one, and there are none to mark yet.
-              </Empty>
-            )}
-          </Card>
-
-          {/* <p style={{ fontFamily: SANS, fontSize: 12, color: FAINT, margin: 0, lineHeight: 1.6 }}>
-            One register per class per day. Saving again corrects the same one rather than adding a
-            second, and a late arrival still counts as attended in the rate.
-          </p> */}
-        </Stack>
+            {cls.name}
+          </span>
+          <span
+            style={{ display: "block", fontFamily: SANS, fontSize: 12, color: FAINT, marginTop: 2 }}
+          >
+            {cls.teacherName ?? "No teacher"}
+          </span>
+        </span>
+        <FiChevronRight size={16} color={FAINT} aria-hidden style={{ marginTop: 3 }} />
       </div>
-    </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+          marginTop: 12,
+          fontFamily: SANS,
+          fontSize: 12.5,
+          color: MUTED,
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <FiUsers size={13} aria-hidden />
+          {cls.students}
+        </span>
+        {cls.timeLabel ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <FiClock size={13} aria-hidden />
+            {cls.timeLabel}
+          </span>
+        ) : null}
+        {cls.ratePct != null ? <span>{cls.ratePct}% overall</span> : null}
+      </div>
+
+      <div
+        style={{
+          marginTop: 12,
+          paddingTop: 10,
+          borderTop: "1px solid #F2F0EB",
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          fontFamily: SANS,
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: done ? GREEN : cls.meetsToday ? AMBER : FAINT,
+        }}
+      >
+        {done ? (
+          <>
+            <FiCheckCircle size={14} aria-hidden />
+            Marked
+            {cls.presentToday != null ? (
+              <span style={{ fontWeight: 400, color: MUTED }}>
+                — {cls.presentToday} of {cls.students} in
+              </span>
+            ) : null}
+          </>
+        ) : cls.meetsToday ? (
+          <>
+            <FiClock size={14} aria-hidden />
+            Register open
+          </>
+        ) : (
+          <span style={{ fontWeight: 400 }}>Not timetabled today — mark anyway</span>
+        )}
+        <span style={{ marginLeft: "auto", color: INDIGO, fontWeight: 600 }}>
+          {done ? "Review" : "Mark"}
+        </span>
+      </div>
+    </Link>
   );
 }

@@ -265,3 +265,81 @@ export async function unlinkTelegram(_prev: ActionState, formData: FormData): Pr
   revalidatePath(`/console/groups/${groupId}`);
   return { ok: "Disconnected." };
 }
+
+/* ── absence alerts ───────────────────────────────────────────────────────── */
+
+/**
+ * Save the absence-alert rules. SENDS NOTHING — see the migration.
+ *
+ * Stored ahead of the sender on purpose: who is told, after how many absences,
+ * and over which channel is the part a center has opinions about, and it is
+ * worth settling before a provider is chosen. When the sender is built it reads
+ * this row and nothing else.
+ */
+export async function saveAlertSettings(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only the center owner can change alert settings." };
+  }
+
+  const channels = formData
+    .getAll("channels")
+    .map(String)
+    .filter((c) => c === "email" || c === "sms" || c === "telegram");
+
+  const enabled = formData.get("enabled") === "on";
+  const notifyStudent = formData.get("notify_student") === "on";
+  const notifyGuardian = formData.get("notify_guardian") === "on";
+
+  if (enabled && channels.length === 0) {
+    return { error: "Pick at least one channel, or switch alerts off." };
+  }
+  if (enabled && !notifyStudent && !notifyGuardian) {
+    return { error: "Pick who to tell — the student, their guardian, or both." };
+  }
+
+  const after = Number(formData.get("absences_before_alert") ?? 1);
+  if (!Number.isInteger(after) || after < 1 || after > 10) {
+    return { error: "Alert after 1 to 10 absences." };
+  }
+
+  const time = (key: string): string | null => {
+    const raw = String(formData.get(key) ?? "").trim();
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(raw) ? raw : null;
+  };
+  const sender = String(formData.get("sms_sender") ?? "").trim();
+  if (sender.length > 11) {
+    return { error: "An SMS sender name is at most 11 characters." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("attendance_alert_settings")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        enabled,
+        channels,
+        absences_before_alert: after,
+        notify_student: notifyStudent,
+        notify_guardian: notifyGuardian,
+        sms_sender: sender || null,
+        quiet_hours_from: time("quiet_hours_from"),
+        quiet_hours_to: time("quiet_hours_to"),
+      },
+      { onConflict: "organization_id" },
+    )
+    .select("organization_id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Those settings could not be saved." };
+
+  revalidatePath("/console/attendance");
+  return {
+    ok: enabled
+      ? "Alert rules saved. Nothing sends yet — the sender is not built."
+      : "Alerts are off. The rules are kept for when you turn them back on.",
+  };
+}

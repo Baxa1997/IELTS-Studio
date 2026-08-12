@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { saveRegister, type ActionState } from "../center-actions";
+import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * The register itself: one row per student, three states, saved in a single
@@ -46,6 +47,9 @@ export function RegisterForm({
   initial: Record<string, Status>;
 }) {
   const [state, formAction, pending] = useActionState(saveRegister, {} as ActionState);
+  // Stays put: the register you just saved is the thing you want to keep
+  // looking at, and there is no drawer here to close anyway.
+  useActionFeedback(state, { keepOpen: true });
   // Everyone starts present: a register is faster to correct than to fill in.
   const [marks, setMarks] = useState<Record<string, Status>>(() =>
     Object.fromEntries(students.map((s) => [s.id, initial[s.id] ?? "present"])),
