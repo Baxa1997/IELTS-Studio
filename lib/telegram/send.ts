@@ -83,6 +83,24 @@ function assignmentsUrl(siteUrl: string): string {
   return `${siteUrl.replace(/\/+$/, "")}/assignments`;
 }
 
+/**
+ * A tappable link, or the URL in plain sight — never dead text.
+ *
+ * Telegram accepts an `<a>` tag pointing anywhere and then SILENTLY DROPS the
+ * link if the host is not public: `http://localhost:3000/assignments` arrives
+ * as the words "My assignments" in grey, with nothing to tap and no error
+ * anywhere. Verified against the live API. `outboundSiteUrl` should stop that
+ * ever reaching here, but a misconfigured PUBLIC_APP_ORIGIN would too, so the
+ * last line of defence is to print the URL where a student can at least read
+ * and copy it.
+ */
+function linkOrPlain(url: string, label: string): string {
+  const usable = /^https:\/\/[^\s/$.?#].[^\s]*$/i.test(url);
+  return usable
+    ? `<a href="${escapeAttr(url)}">${escapeHtml(label)}</a>`
+    : `${escapeHtml(label)}: ${escapeHtml(url)}`;
+}
+
 /** `Friday, 15 August` — long enough to be unambiguous on a phone. */
 function prettyDue(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -176,7 +194,7 @@ export async function notifyAssignmentTelegram(args: {
           ? `⏰ Please finish it by <b>${escapeHtml(prettyDue(args.dueAt))}</b>.`
           : "⏰ Please do it as soon as you can.",
         "",
-        `👉 <a href="${escapeAttr(assignmentsUrl(args.siteUrl))}">My assignments — EngProgress</a>`,
+        `👉 ${linkOrPlain(assignmentsUrl(args.siteUrl), "My assignments — EngProgress")}`,
       ].join("\n");
 
       // Sequential, not Promise.all: Telegram throttles ~20 messages a minute

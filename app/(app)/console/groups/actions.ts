@@ -741,7 +741,7 @@ export async function createAssignment(
     groupIds: [groupId],
     kind,
     title,
-    siteUrl: serverEnv.siteUrl,
+    siteUrl: serverEnv.outboundSiteUrl,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 
