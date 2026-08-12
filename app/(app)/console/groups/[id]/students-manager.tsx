@@ -112,14 +112,20 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
     resetStudentPassword,
     {} as ResetPasswordState,
   );
-  // Never closes anything: the new password is shown once, right here.
-  useActionFeedback(reset, { keepOpen: true });
+  // Never closes the dialog: the new password is shown inside it, once.
+  // `showResult` is local rather than derived from `reset.done`, because
+  // useActionState keeps its result forever — without this, reopening the
+  // dialog next week would greet you with the password from last time instead
+  // of a form.
+  useActionFeedback(reset, { keepOpen: true, onSuccess: () => setShowResult(true) });
   // `removeMember` takes (prevState, formData), so it has to be driven through
   // useActionState — passed straight to `<form action>` it would receive the
   // FormData as its first argument and silently do nothing.
   const [removal, removeAction, removing] = useActionState(removeMember, {} as GroupFormState);
   useActionFeedback(removal, { keepOpen: true });
   const [confirming, setConfirming] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [showResult, setShowResult] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const behind =
@@ -196,19 +202,19 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
             Report
           </a>
 
-          <form action={resetAction}>
-            <input type="hidden" name="group_id" value={groupId} />
-            <input type="hidden" name="student_id" value={student.id} />
-            <button
-              type="submit"
-              disabled={resetting}
-              style={quietStyle}
-              title="Give them a new password"
-            >
-              <FiKey size={13} aria-hidden />
-              {resetting ? "Resetting…" : "Password"}
-            </button>
-          </form>
+          {/* Opens a dialog rather than resetting on the click. A reset takes
+              effect immediately and locks the student out of the password they
+              have — that deserves a deliberate second step, and it is also
+              where the teacher gets to CHOOSE the password. */}
+          <button
+            type="button"
+            onClick={() => setResetOpen(true)}
+            style={quietStyle}
+            title="Give them a new password"
+          >
+            <FiKey size={13} aria-hidden />
+            Password
+          </button>
 
           {/* Two clicks, because on a class list a mis-click costs someone their
               place in the class. The account and its work survive either way. */}
@@ -248,53 +254,186 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
           {removal.error}
         </p>
       ) : null}
-      {reset.error ? (
-        <p style={{ fontSize: 12, color: RED, margin: "6px 0 0" }} role="alert">
-          {reset.error}
-        </p>
-      ) : null}
-
-      {reset.done ? (
-        <div
-          style={{
-            marginTop: 8,
-            padding: "9px 11px",
-            borderRadius: 8,
-            border: "1px solid #BFE3D0",
-            background: "#F2FAF6",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
+      {resetOpen ? (
+        <Modal
+          onClose={() => {
+            setResetOpen(false);
+            setShowResult(false);
           }}
+          title="New password"
+          note={`For ${student.name}`}
+          width={460}
         >
-          <span style={{ fontSize: 12.5, color: INK }}>
-            New password for {reset.done.name} — it isn&apos;t shown again:
-          </span>
-          <code
-            style={{
-              fontFamily: "ui-monospace, monospace",
-              fontSize: 12.5,
-              background: "#fff",
-              border: `1px solid ${LINE}`,
-              borderRadius: 6,
-              padding: "3px 7px",
-            }}
-          >
-            {reset.done.password}
-          </code>
-          <button
-            type="button"
-            onClick={() => copy(`Login: ${reset.done!.login}\nPassword: ${reset.done!.password}`)}
-            style={{ ...quietStyle, color: GREEN }}
-          >
-            {copied ? "Copied" : "Copy both"}
-          </button>
-        </div>
+          <ResetPasswordForm
+            groupId={groupId}
+            student={student}
+            state={reset}
+            showResult={showResult}
+            action={resetAction}
+            pending={resetting}
+            onCopy={copy}
+            copied={copied}
+          />
+        </Modal>
       ) : null}
     </div>
   );
 }
+
+/**
+ * Give a student a new password — chosen, or generated.
+ *
+ * WHY A TEACHER TYPES IT. This is the only reset most center students have:
+ * their auth address is synthetic and undeliverable, so "forgot password" over
+ * email cannot reach them. And the people who need it most are children, who
+ * can be told "your password is dolphin7" and cannot be told "kR4t-9Qmz". Left
+ * blank it still generates a strong one, which is right for adults.
+ *
+ * The warning is not decoration: the change is immediate, so a student mid-way
+ * through an essay on another device is signed out of the old password from
+ * that moment.
+ */
+function ResetPasswordForm({
+  groupId,
+  student,
+  state,
+  showResult,
+  action,
+  pending,
+  onCopy,
+  copied,
+}: {
+  groupId: string;
+  student: StudentRow;
+  state: ResetPasswordState;
+  /** True only for the reset that just happened in this dialog. */
+  showResult: boolean;
+  action: (formData: FormData) => void;
+  pending: boolean;
+  onCopy: (text: string) => void;
+  copied: boolean;
+}) {
+  if (showResult && state.done) {
+    return (
+      <div style={{ display: "grid", gap: 12 }}>
+        <div
+          style={{
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #BFE3D0",
+            background: "#F2FAF6",
+            display: "grid",
+            gap: 8,
+          }}
+        >
+          <span style={{ fontSize: 12.5, color: MUTED }}>
+            Give these to {state.done.name}. The password is not shown again.
+          </span>
+          <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <code style={credStyle}>{state.done.login}</code>
+            <code style={credStyle}>{state.done.password}</code>
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onCopy(`Login: ${state.done!.login}\nPassword: ${state.done!.password}`)}
+          style={{ ...quietStyle, justifySelf: "start", color: GREEN }}
+        >
+          {copied ? "Copied" : "Copy both"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={action} style={{ display: "grid", gap: 12 }}>
+      <input type="hidden" name="group_id" value={groupId} />
+      <input type="hidden" name="student_id" value={student.id} />
+
+      <div
+        style={{
+          padding: "10px 12px",
+          borderRadius: 9,
+          border: "1px solid #EFD9A8",
+          background: "#FDF6E7",
+          fontSize: 12.5,
+          color: AMBER,
+          lineHeight: 1.5,
+        }}
+      >
+        This takes effect straight away. Their old password stops working, so hand the new one over
+        before they next try to sign in.
+      </div>
+
+      <label style={{ display: "grid", gap: 5 }}>
+        <span style={{ fontSize: 12.5, color: MUTED }}>
+          Login <span style={{ color: FAINT }}>(unchanged)</span>
+        </span>
+        <code style={{ ...credStyle, background: "#F7F6F2" }}>{student.login ?? "—"}</code>
+      </label>
+
+      <label style={{ display: "grid", gap: 5 }}>
+        <span style={{ fontSize: 12.5, color: MUTED }}>New password</span>
+        <input
+          name="password"
+          autoComplete="off"
+          minLength={8}
+          placeholder="Leave blank to generate a strong one"
+          style={{
+            height: 36,
+            borderRadius: 8,
+            border: `1px solid ${LINE}`,
+            padding: "0 10px",
+            fontSize: 13.5,
+            fontFamily: "inherit",
+            color: INK,
+            outline: "none",
+          }}
+        />
+        <span style={{ fontSize: 11.5, color: FAINT }}>
+          At least 8 characters. Something they can remember is fine — a child will be typing it.
+        </span>
+      </label>
+
+      {state.error ? (
+        <p style={{ fontSize: 12.5, color: RED, margin: 0 }} role="alert">
+          {state.error}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={pending}
+        style={{
+          justifySelf: "start",
+          height: 36,
+          padding: "0 16px",
+          borderRadius: 9,
+          border: "none",
+          background: INDIGO,
+          color: "#fff",
+          fontSize: 13.5,
+          fontWeight: 600,
+          fontFamily: "inherit",
+          cursor: pending ? "default" : "pointer",
+          opacity: pending ? 0.6 : 1,
+        }}
+      >
+        {pending ? "Changing…" : "Change password"}
+      </button>
+    </form>
+  );
+}
+
+const credStyle: React.CSSProperties = {
+  fontFamily: "ui-monospace, monospace",
+  fontSize: 13,
+  background: "#fff",
+  border: `1px solid ${LINE}`,
+  borderRadius: 6,
+  padding: "5px 9px",
+  color: INK,
+};
 
 /* ── the toolbar ──────────────────────────────────────────────────────────── */
 

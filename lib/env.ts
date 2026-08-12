@@ -117,7 +117,10 @@ export const serverEnv = {
 
   // ── Vertex AI (backend = "vertex") ──
   get googleCloudProject(): string {
-    return required("GOOGLE_CLOUD_PROJECT", env("GOOGLE_CLOUD_PROJECT") ?? env("GOOGLE_VERTEX_PROJECT"));
+    return required(
+      "GOOGLE_CLOUD_PROJECT",
+      env("GOOGLE_CLOUD_PROJECT") ?? env("GOOGLE_VERTEX_PROJECT"),
+    );
   },
   get googleCloudLocation(): string {
     // Gemini 3.x are global-only; an empty/blank env must default here, not leak
@@ -159,9 +162,9 @@ export const serverEnv = {
       .replace(/^["']|["']$/g, "");
     const hasAllVars = Boolean(
       process.env.GCP_PROJECT_NUMBER &&
-        process.env.GCP_WORKLOAD_IDENTITY_POOL_ID &&
-        process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID &&
-        process.env.GCP_SERVICE_ACCOUNT_EMAIL,
+      process.env.GCP_WORKLOAD_IDENTITY_POOL_ID &&
+      process.env.GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID &&
+      process.env.GCP_SERVICE_ACCOUNT_EMAIL,
     );
     const enabled = flag === "wif" || (Boolean(process.env.VERCEL) && hasAllVars);
     if (!enabled) return null;
@@ -249,6 +252,28 @@ export const serverEnv = {
   /** Public base URL, for building billing return/callback URLs. */
   get siteUrl(): string {
     return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  },
+
+  /**
+   * The URL to put in messages sent OUTSIDE the app — Telegram posts, SMS,
+   * emails to parents.
+   *
+   * Deliberately not `siteUrl`. That one describes where THIS server is
+   * reachable, which during development is localhost — and a localhost link is
+   * worse than no link: Telegram silently strips it, rendering "My assignments"
+   * as dead grey text with no clue anything is wrong (confirmed against the
+   * real API, not assumed). A student always uses the public site regardless of
+   * where the server sending the message happens to run.
+   *
+   * `PUBLIC_APP_ORIGIN` overrides it; otherwise a non-local `siteUrl` is
+   * trusted and a local one falls back to production.
+   */
+  get outboundSiteUrl(): string {
+    const explicit = process.env.PUBLIC_APP_ORIGIN?.trim();
+    if (explicit) return explicit.replace(/\/+$/, "");
+    const site = this.siteUrl.replace(/\/+$/, "");
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(site);
+    return isLocal ? "https://www.engprogress.com" : site;
   },
 };
 

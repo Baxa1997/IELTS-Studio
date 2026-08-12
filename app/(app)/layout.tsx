@@ -6,7 +6,7 @@ import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
-import { isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
+import { contactLabel, isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
 import { loadNavCounts } from "@/lib/console/nav";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -55,7 +55,7 @@ const ROLE_LABEL: Record<string, string> = {
  * render full-screen without this shell.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile } = await requireOrgUser();
+  const { profile } = await requireOrgUser();
 
   // First-run gate: a student without a study plan sees ONLY the full-screen
   // onboarding takeover (no shell, no nav) until they complete it — whatever route
@@ -122,9 +122,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         showAssignments={showAssignments}
         pendingAssignments={pendingAssignments}
         home={roleHome(profile.role)}
-        name={profile.full_name ?? user.email ?? "Account"}
+        name={profile.full_name ?? contactLabel(profile) ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
-        email={user.email}
+        // The real inbox or the login — never the synthetic auth address.
+        email={contactLabel(profile) ?? undefined}
         sidebarFooter={sidebarFooter}
         quotaBar={quotaBar}
         bell={<NotificationBell inbox={inbox} />}

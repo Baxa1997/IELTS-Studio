@@ -727,8 +727,16 @@ export default async function GroupDetailPage({
         <Stack>
           <Card>
             <CardHead
-              title={`Students (${group.members.length})`}
-              note="Everyone here signs in with their own login — that is how homework is handed in and graded."
+              title={
+                group.capacity
+                  ? `Students (${group.members.length}/${group.capacity})`
+                  : `Students (${group.members.length})`
+              }
+              note={
+                group.capacity && group.members.length >= group.capacity
+                  ? `This class is full — ${group.members.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
+                  : "Everyone here signs in with their own login — that is how homework is handed in and graded."
+              }
               actions={
                 <RosterToolbar
                   students={studentRows}

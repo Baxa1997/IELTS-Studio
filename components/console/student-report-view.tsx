@@ -43,6 +43,11 @@ const SKILL_BADGE: Record<string, { text: string; tone: Tone }> = {
 };
 
 const COLS = "1.1fr 1.6fr 1fr .7fr .8fr";
+/** Homework carries a weakness column; self-directed practice does not. */
+const HW_COLS = "1fr 1.7fr 1.4fr .6fr .8fr";
+
+const longDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 /**
  * One student's whole picture, on the CRM design's profile layout: band by
@@ -73,6 +78,12 @@ export function StudentReportView({
     report.homework.assigned > 0
       ? Math.round((report.homework.done / report.homework.assigned) * 100)
       : null;
+
+  // Split rather than tag inside one table. "Did they do what I set?" and "are
+  // they practising on their own?" are different questions, and a Homework tag
+  // buried in a mixed list makes the first one a counting exercise.
+  const homework = report.practices.filter((p) => p.assigned);
+  const ownPractice = report.practices.filter((p) => !p.assigned);
 
   const glance: { k: string; v: string }[] = [
     { k: "Practices in 30 days", v: String(report.recentCount) },
@@ -172,35 +183,78 @@ export function StudentReportView({
             </div>
           </Card>
 
-          {/* ── practice history ──────────────────────────────────────────── */}
-          <Card flush>
+          {/* ── homework: what you set, and how it went ───────────────────── */}
+          <Card flush id="homework">
             <CardHead
-              title="Practice history"
+              title="Homework"
               divided
+              badge={
+                homeworkPct != null ? (
+                  <Tag tone={homeworkPct >= 60 ? "green" : "amber"}>{homeworkPct}%</Tag>
+                ) : null
+              }
               note={
                 report.homework.assigned > 0
-                  ? `${report.homework.done} of ${report.homework.assigned} homework ${report.homework.assigned === 1 ? "task" : "tasks"} done`
-                  : "no homework set"
+                  ? `${report.homework.done} of ${report.homework.assigned} done — newest first`
+                  : "nothing set to this student's class yet"
               }
+            />
+            <Table cols={HW_COLS} minWidth={680}>
+              <THead cols={HW_COLS} labels={["Date", "Task", "What held it back", "Band", ""]} />
+              {homework.map((p) => (
+                <TRow key={`hw-${p.skill}-${p.id}`} cols={HW_COLS}>
+                  <TD tone="soft">{longDate(p.when)}</TD>
+                  <TD>
+                    <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+                      <KindBadge tone={SKILL_BADGE[p.skill].tone}>
+                        {SKILL_BADGE[p.skill].text}
+                      </KindBadge>
+                      <span style={{ color: INK, minWidth: 0 }}>
+                        {p.title ?? SKILL_LABEL[p.skill]}
+                      </span>
+                    </span>
+                  </TD>
+                  <TD tone="body">{p.weakness ?? <span style={{ color: FAINT }}>—</span>}</TD>
+                  <TD tone="ink" weight={600}>
+                    {p.band != null ? p.band.toFixed(1) : (p.score ?? "—")}
+                  </TD>
+                  <TD align="right">
+                    {p.reportHref ? (
+                      <TextLink href={p.reportHref}>Full report →</TextLink>
+                    ) : (
+                      <span style={{ fontSize: 12, color: FAINT }}>Not graded</span>
+                    )}
+                  </TD>
+                </TRow>
+              ))}
+              {homework.length === 0 ? (
+                <Empty>
+                  {report.homework.assigned > 0
+                    ? "Nothing handed in yet."
+                    : "No homework has been set to this student's class."}
+                </Empty>
+              ) : null}
+            </Table>
+          </Card>
+
+          {/* ── their own practice ────────────────────────────────────────── */}
+          <Card flush>
+            <CardHead
+              title="Their own practice"
+              divided
+              note="anything they did that nobody set them"
             />
             <Table cols={COLS} minWidth={620}>
               <THead cols={COLS} labels={["Date", "Practice", "Score", "Band", ""]} />
-              {report.practices.map((p) => {
+              {ownPractice.map((p) => {
                 const badge = SKILL_BADGE[p.skill];
                 return (
                   <TRow key={`${p.skill}-${p.id}`} cols={COLS}>
-                    <TD tone="soft">
-                      {new Date(p.when).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </TD>
+                    <TD tone="soft">{longDate(p.when)}</TD>
                     <TD>
                       <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
                         <KindBadge tone={badge.tone}>{badge.text}</KindBadge>
                         <span style={{ color: INK, minWidth: 0 }}>{SKILL_LABEL[p.skill]}</span>
-                        {p.assigned ? <Tag tone="indigo">Homework</Tag> : null}
                       </span>
                     </TD>
                     <TD tone="soft">{p.score ?? "—"}</TD>
@@ -217,49 +271,17 @@ export function StudentReportView({
                   </TRow>
                 );
               })}
-              {report.practices.length === 0 ? (
-                <Empty>This student hasn&apos;t practised yet.</Empty>
-              ) : null}
+              {ownPractice.length === 0 ? <Empty>Nothing beyond what was set.</Empty> : null}
             </Table>
           </Card>
         </Stack>
 
         <Stack>
           {/* ── homework ──────────────────────────────────────────────────── */}
-          <Card>
-            <CardHead title="Homework" />
-            {homeworkPct == null ? (
-              <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                Nothing has been assigned to this student&apos;s class yet.
-              </p>
-            ) : (
-              <>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
-                  <span
-                    style={{
-                      fontFamily: SANS,
-                      fontSize: 26,
-                      fontWeight: 600,
-                      color: INK,
-                      letterSpacing: "-.02em",
-                    }}
-                  >
-                    {homeworkPct}%
-                  </span>
-                  <span style={{ fontFamily: SANS, fontSize: 12.5, color: SOFT }}>
-                    {report.homework.done} of {report.homework.assigned} finished
-                  </span>
-                </div>
-                <MeterRow
-                  label=""
-                  labelWidth={0}
-                  pct={homeworkPct}
-                  fill={homeworkPct >= 60 ? GREEN : homeworkPct >= 30 ? AMBER : RED}
-                />
-              </>
-            )}
-          </Card>
-
+          {/* The homework completion meter used to live here. It said the same
+              thing as the badge on the Homework table and the "Homework done"
+              line below — three copies of one number, in a column meant for
+              things the table cannot show. */}
           <WeaknessCard
             title="Writing — what caps their band"
             note="The lowest criterion, counted across their graded essays."

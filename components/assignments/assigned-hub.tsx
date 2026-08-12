@@ -163,7 +163,12 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
         flexDirection: "column",
         gap: 11,
         background: a.done ? "#FBFBFE" : "#fff",
-        border: `1px solid ${a.overdue && !a.done ? "#F0D2D2" : LINE}`,
+        // UNFINISHED IS THE URGENT STATE, not just overdue. Most homework is set
+        // without a due date, so keying the red edge to `overdue` meant a
+        // student's outstanding work looked identical to work they had already
+        // handed in — the whole page read as a neutral list.
+        border: `1px solid ${a.done ? LINE : a.overdue ? "#E4A9A4" : "#F0D2D2"}`,
+        borderLeft: `4px solid ${a.done ? "#CFE6D9" : a.overdue ? "#B3261E" : "#E2685C"}`,
         borderRadius: 16,
         padding: 16,
         minHeight: 150,
@@ -185,7 +190,13 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
           <Chip bg="#FDF3E3" fg="#B9791A">
             Due {dateFmt(a.dueAt)}
           </Chip>
-        ) : null}
+        ) : (
+          // No due date is the common case, and it still has to read as
+          // "you owe this" rather than as an item on a menu.
+          <Chip bg="#FDECEC" fg="#b91c1c">
+            To do
+          </Chip>
+        )}
       </div>
 
       <div style={{ flex: 1 }}>
@@ -209,8 +220,8 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
       </div>
 
       <div style={{ height: 1, background: LINE }} />
-      <span style={{ fontSize: 14, fontWeight: 600, color: INDIGO }}>
-        {a.done ? "Open again →" : "Start →"}
+      <span style={{ fontSize: 14, fontWeight: 600, color: a.done ? INDIGO : "#B3261E" }}>
+        {a.done ? "Open again →" : "Start now →"}
       </span>
     </Link>
   );

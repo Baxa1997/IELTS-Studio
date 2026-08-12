@@ -15,6 +15,17 @@ export interface Profile {
   organization_id: string;
   role: Exclude<AppRole, "super_admin">;
   full_name: string | null;
+  /**
+   * How they sign in when they have no email. Center accounts always do.
+   */
+  username: string | null;
+  /**
+   * The REAL inbox, or null. Never `auth.users.email` — that is synthetic for
+   * every center-created account (`login@students.engprogress.com`, a domain
+   * with no mail exchanger), and showing it to a student is showing them an
+   * address that does not exist and cannot receive anything.
+   */
+  contact_email: string | null;
   /** Approval state of the workspace. Personal orgs are always 'active';
    *  centers start 'pending' until a super_admin approves them in /admin. */
   org: { kind: OrgKind; status: OrgStatus };
@@ -86,7 +97,9 @@ export async function getSession(): Promise<Session | null> {
   // FK) so gating on it costs no extra round trip.
   const { data } = await supabase
     .from("profiles")
-    .select("id, organization_id, role, full_name, organizations!inner(kind, status)")
+    .select(
+      "id, organization_id, role, full_name, username, contact_email, organizations!inner(kind, status)",
+    )
     .eq("id", user.id)
     .single();
   if (!data) return null;
@@ -120,4 +133,21 @@ export async function requireSuperAdmin(): Promise<{ user: Session["user"] }> {
   if (!session) redirect("/sign-in");
   if (session.role !== "super_admin") redirect(roleHome(session.role));
   return { user: session.user };
+}
+
+/**
+ * What to show under someone's name: their real address, or their login.
+ *
+ * NEVER `auth.users.email`. A center-created account's auth address is
+ * synthetic — `baha@students.engprogress.com`, on a domain with no mail
+ * exchanger — so putting it in the profile menu tells a student they have an
+ * inbox they do not have, and invites them to try to use it.
+ *
+ * Falling back to the login rather than to nothing is deliberate: it is the
+ * thing they actually type to sign in, so it is worth being able to read it
+ * back off the screen when a teacher asks.
+ */
+export function contactLabel(profile: Pick<Profile, "contact_email" | "username">): string | null {
+  if (profile.contact_email) return profile.contact_email;
+  return profile.username ? `@${profile.username}` : null;
 }

@@ -9,9 +9,23 @@ export interface PracticeRow {
   id: string;
   skill: PracticeSkill;
   when: string;
+  /**
+   * What the teacher called this homework, from the assignment itself. Null for
+   * self-directed practice, which nobody named.
+   */
+  title: string | null;
   /** Band where one exists; listening quick practices may only have a score. */
   band: number | null;
   score: string | null;
+  /**
+   * The one thing that held THIS piece back — the lowest criterion on an essay,
+   * the question type that lost the most marks on a reading test.
+   *
+   * On the row rather than only in the roll-up because "Band 6.0" alone tells a
+   * teacher nothing they can teach from, and making them open every report to
+   * find out is how a report page goes unread.
+   */
+  weakness: string | null;
   /** Homework when this content was assigned to one of their groups. */
   assigned: boolean;
   /**
@@ -89,7 +103,9 @@ export async function loadStudentReport(
         .limit(50),
       supabase
         .from("reading_attempts")
-        .select("id, test_id, band, correct_count, total_questions, type_breakdown, status, created_at")
+        .select(
+          "id, test_id, band, correct_count, total_questions, type_breakdown, status, created_at",
+        )
         .eq("student_id", studentId)
         .order("created_at", { ascending: false })
         .limit(50),
@@ -106,12 +122,23 @@ export async function loadStudentReport(
         .order("started_at", { ascending: false })
         .limit(50),
       // What their groups were told to do — so practice can be split into
-      // homework vs. self-directed.
-      supabase.from("assignments").select("prompt_id, reading_test_id"),
+      // homework vs. self-directed. The title comes along because the teacher
+      // wrote it: "Task 2 — city living" beats "Writing" in a list of six.
+      supabase.from("assignments").select("prompt_id, reading_test_id, title"),
     ]);
 
+  // Content id → the name the teacher gave it. Last one wins if the same
+  // content was set twice; they are the same piece of work either way.
+  const assignedTitle = new Map<string, string>();
+  for (const a of assignmentsRes.data ?? []) {
+    const key = (a.prompt_id ?? a.reading_test_id) as string | null;
+    if (key && a.title) assignedTitle.set(key, a.title as string);
+  }
+
   const assignedPrompts = new Set(
-    (assignmentsRes.data ?? []).map((a) => a.prompt_id as string | null).filter(Boolean) as string[],
+    (assignmentsRes.data ?? [])
+      .map((a) => a.prompt_id as string | null)
+      .filter(Boolean) as string[],
   );
   const assignedTests = new Set(
     (assignmentsRes.data ?? [])
@@ -143,16 +170,16 @@ export async function loadStudentReport(
 
   for (const e of essays) {
     const grading = gradingByEssay.get(e.id as string);
-    if (grading) {
-      const weak = weakestCriterion(grading.criteria);
-      if (weak) writingTally.set(weak, (writingTally.get(weak) ?? 0) + 1);
-    }
+    const weak = grading ? weakestCriterion(grading.criteria) : null;
+    if (weak) writingTally.set(weak, (writingTally.get(weak) ?? 0) + 1);
     practices.push({
       id: e.id as string,
       skill: "writing",
       when: e.created_at as string,
+      title: e.prompt_id ? (assignedTitle.get(e.prompt_id as string) ?? null) : null,
       band: grading?.band ?? null,
       score: null,
+      weakness: weak,
       assigned: e.prompt_id ? assignedPrompts.has(e.prompt_id as string) : false,
       reportHref: grading ? `/activities/essay/${e.id}` : null,
     });
@@ -161,16 +188,22 @@ export async function loadStudentReport(
   // ---- Reading -------------------------------------------------------------
   const readingTally = new Map<string, number>();
   for (const r of readingRes.data ?? []) {
-    for (const [type, wrong] of missedTypes(
+    const missed = missedTypes(
       r.type_breakdown as Record<string, { attempted?: number; correct?: number }> | null,
-    )) {
+    );
+    for (const [type, wrong] of missed) {
       readingTally.set(type, (readingTally.get(type) ?? 0) + wrong);
     }
+    // The type that cost the most marks on this test — the reading equivalent
+    // of a capping criterion.
+    const worstType = missed.sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
     practices.push({
       id: r.id as string,
       skill: "reading",
       when: r.created_at as string,
+      title: r.test_id ? (assignedTitle.get(r.test_id as string) ?? null) : null,
       band: r.band != null ? Number(r.band) : null,
+      weakness: worstType,
       score:
         r.total_questions != null && r.total_questions > 0
           ? `${r.correct_count ?? 0} / ${r.total_questions}`
@@ -188,8 +221,10 @@ export async function loadStudentReport(
       id: l.id as string,
       skill: "listening",
       when: l.created_at as string,
+      title: null,
       band: Number.isFinite(band) ? band : null,
       score: l.max_score ? `${l.score ?? 0} / ${l.max_score}` : null,
+      weakness: null,
       assigned: false,
       reportHref: `/listen/results/${l.id}`,
     });
@@ -203,8 +238,10 @@ export async function loadStudentReport(
       id: s.id as string,
       skill: "speaking",
       when: s.started_at as string,
+      title: null,
       band: Number.isFinite(band) ? band : null,
       score: null,
+      weakness: null,
       assigned: false,
       reportHref: `/speak/mock/${s.id}`,
     });
@@ -254,8 +291,14 @@ export async function loadGroupActivity(
   const [essays, reading, listening, speaking] = await Promise.all([
     supabase.from("essays").select("student_id, created_at").in("student_id", studentIds),
     supabase.from("reading_attempts").select("student_id, created_at").in("student_id", studentIds),
-    supabase.from("listening_attempts").select("student_id, created_at").in("student_id", studentIds),
-    supabase.from("speaking_sessions").select("student_id, started_at").in("student_id", studentIds),
+    supabase
+      .from("listening_attempts")
+      .select("student_id, created_at")
+      .in("student_id", studentIds),
+    supabase
+      .from("speaking_sessions")
+      .select("student_id, started_at")
+      .in("student_id", studentIds),
   ]);
 
   const add = (studentId: string, when: string) => {
@@ -296,6 +339,9 @@ function missedTypes(
 ): [string, number][] {
   if (!breakdown) return [];
   return Object.entries(breakdown)
-    .map(([type, v]) => [type.replaceAll("_", " "), (v?.attempted ?? 0) - (v?.correct ?? 0)] as [string, number])
+    .map(
+      ([type, v]) =>
+        [type.replaceAll("_", " "), (v?.attempted ?? 0) - (v?.correct ?? 0)] as [string, number],
+    )
     .filter(([, wrong]) => wrong > 0);
 }

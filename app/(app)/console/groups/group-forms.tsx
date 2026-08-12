@@ -105,6 +105,24 @@ export function CreateGroupForm({
           </p>
         </div>
       ) : null}
+      <div className="space-y-2">
+        <Label htmlFor="group-capacity">
+          Class size <span className="text-muted-foreground font-normal">(optional)</span>
+        </Label>
+        <Input
+          id="group-capacity"
+          name="capacity"
+          type="number"
+          min={1}
+          max={500}
+          placeholder="18"
+        />
+        <p className="text-muted-foreground text-xs">
+          Seats in the room. The roster warns when it is full but never stops you adding — a
+          nineteenth student in an eighteen-seat class is a decision, not a bug.
+        </p>
+      </div>
+
       <div className="space-y-3 rounded-lg border p-3">
         <p className="text-sm font-medium">When it meets</p>
         <ScheduleFields rooms={rooms} branchId={branchId} />

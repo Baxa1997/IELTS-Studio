@@ -26,7 +26,10 @@ export function AssignToClassPanel({
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(assignPractice, {} as PracticeFormState);
-  useActionFeedback(state);
+  // This panel owns its own `open`, so it is not inside a Drawer and
+  // useDrawerClose cannot reach it — without this it stays sitting over the
+  // runner after a successful attach, looking like nothing happened.
+  useActionFeedback(state, { onSuccess: () => setOpen(false) });
 
   return (
     <div
@@ -105,6 +108,27 @@ export function AssignToClassPanel({
                   fontFamily: SANS,
                   fontSize: 13.5,
                   color: INK,
+                }}
+              />
+            </label>
+
+            {/* The note goes to the students, in the app AND in the class's
+                Telegram post — assignPractice has always read `instructions`,
+                but nothing ever offered the field here. */}
+            <label style={{ display: "grid", gap: 4, fontSize: 12.5, color: MUTED }}>
+              Note for the class (optional)
+              <textarea
+                name="instructions"
+                rows={2}
+                placeholder="Focus on the introduction."
+                style={{
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 9,
+                  padding: "7px 9px",
+                  fontFamily: SANS,
+                  fontSize: 13.5,
+                  color: INK,
+                  resize: "vertical",
                 }}
               />
             </label>

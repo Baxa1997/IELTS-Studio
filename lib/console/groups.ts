@@ -13,6 +13,8 @@ export interface GroupSummary {
   branchId: string;
   branchName: string | null;
   memberCount: number;
+  /** Seats. Null = nobody has sized this class. */
+  capacity: number | null;
 }
 
 /** The sites a class can belong to. */
@@ -50,6 +52,7 @@ export interface GroupMemberRow {
 export interface GroupDetail {
   id: string;
   name: string;
+  capacity: number | null;
   teacherId: string | null;
   teacherName: string | null;
   members: GroupMemberRow[];
@@ -71,7 +74,7 @@ export async function loadGroups(profile: Profile): Promise<{
 
   let groupQuery = supabase
     .from("groups")
-    .select("id, name, teacher_id, branch_id")
+    .select("id, name, teacher_id, branch_id, capacity")
     .order("name", { ascending: true });
   if (profile.role === "teacher") groupQuery = groupQuery.eq("teacher_id", profile.id);
 
@@ -90,6 +93,10 @@ export async function loadGroups(profile: Profile): Promise<{
       .eq("active", true)
       .order("name", { ascending: true }),
   ]);
+  // Same reasoning as loadGroupDetail: an empty list is a legitimate answer, so
+  // a rejected query is invisible unless it is logged. Every console page that
+  // scopes itself by class starts here, so one bad column empties all of them.
+  if (groupsRes.error) console.error("[loadGroups] failed:", groupsRes.error.message);
 
   const groups = groupsRes.data ?? [];
   const staff = staffRes.data ?? [];
@@ -126,6 +133,7 @@ export async function loadGroups(profile: Profile): Promise<{
       branchId: g.branch_id as string,
       branchName: branchName.get(g.branch_id as string) ?? null,
       memberCount: counts.get(g.id as string) ?? 0,
+      capacity: (g.capacity as number | null) ?? null,
     })),
     teachers: staff
       .filter((s) => s.role === "teacher")
@@ -144,11 +152,17 @@ export async function loadGroups(profile: Profile): Promise<{
 export async function loadGroupDetail(groupId: string): Promise<GroupDetail | null> {
   const supabase = await createClient();
 
-  const { data: group } = await supabase
+  const { data: group, error } = await supabase
     .from("groups")
-    .select("id, name, teacher_id")
+    .select("id, name, teacher_id, capacity")
     .eq("id", groupId)
     .maybeSingle();
+  // A null row means "you may not see this class", and the caller turns that
+  // into a 404 — which is right for RLS and badly wrong for anything else. An
+  // unapplied migration makes PostgREST reject the whole select ("column
+  // groups.capacity does not exist"), and swallowing that error rendered a
+  // page-not-found for a class that exists and is yours. Say it out loud.
+  if (error) console.error("[loadGroupDetail] group select failed:", groupId, error.message);
   if (!group) return null;
 
   const [membersRes, invitesRes, teacherRes] = await Promise.all([
@@ -193,6 +207,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
   return {
     id: group.id as string,
     name: group.name as string,
+    capacity: (group.capacity as number | null) ?? null,
     teacherId: (group.teacher_id as string | null) ?? null,
     teacherName: (teacherRes.data as { full_name: string | null } | null)?.full_name ?? null,
     members: memberRows.map((m) => ({

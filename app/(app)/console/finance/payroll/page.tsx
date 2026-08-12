@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import {
   AMBER,
   Card,
@@ -8,7 +6,6 @@ import {
   FAINT,
   GREEN,
   HAIR,
-  INDIGO,
   INK,
   Kpi,
   KpiRow,
@@ -35,6 +32,7 @@ import { monthLabel, monthStart, recentMonths, today } from "@/lib/finance/perio
 import { basisSuffix, type PayrollLine } from "@/lib/finance/salary";
 import { createClient } from "@/lib/supabase/server";
 
+import { MonthPicker } from "./month-picker";
 import { MonthsExport } from "./months-export";
 import {
   AdjustPayslipForm,
@@ -102,7 +100,12 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
           title="My pay"
           subtitle={`${monthLabel(month)} · the working behind the number, not just the number.`}
         />
-        <MonthStrip months={months} active={month} basePath="/console/finance/payroll" />
+        <MonthPicker
+          active={month}
+          basePath="/console/finance/payroll"
+          history={history}
+          thisMonth={monthStart(today())}
+        />
         {mine ? (
           <Card>
             <CardHead
@@ -175,11 +178,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
         }
       />
 
-      <MonthStrip
-        months={months}
+      <MonthPicker
         active={month}
         basePath="/console/finance/payroll"
         history={history}
+        thisMonth={monthStart(today())}
       />
 
       <Card>
@@ -361,39 +364,6 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
               </div>
             ) : null}
           </Card>
-
-          {/* ── the working ──────────────────────────────────────────────── */}
-          <Card>
-            <CardHead
-              title="How each number was reached"
-              note="Every line the rule produced, with what it measured."
-            />
-            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-              {items.map((item) => (
-                <div key={item.id}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      gap: 10,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: INK }}>
-                      {item.teacherName}
-                    </div>
-                    <div style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>
-                      {item.ruleName ?? "no rule"} →{" "}
-                      <strong style={{ color: INK }}>{money(item.netMinor)}</strong>
-                    </div>
-                  </div>
-                  <Payslip lines={item.breakdown} money={money} />
-                  {item.adjustmentMinor !== 0 ? <AdjustmentLine item={item} money={money} /> : null}
-                </div>
-              ))}
-            </div>
-          </Card>
         </Stack>
       )}
     </div>
@@ -403,59 +373,6 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
 /* ── pieces ───────────────────────────────────────────────────────────────── */
 
 const COLS = "1.5fr 1.2fr 110px 100px 110px 100px 110px 150px";
-
-function MonthStrip({
-  months,
-  active,
-  basePath,
-  history,
-}: {
-  months: string[];
-  active: string;
-  basePath: string;
-  history?: { periodMonth: string; status: string }[];
-}) {
-  const statusOf = new Map((history ?? []).map((h) => [h.periodMonth, h.status]));
-  return (
-    <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2 }}>
-      {months.map((m) => {
-        const on = m === active;
-        const status = statusOf.get(m);
-        return (
-          <Link
-            key={m}
-            href={`${basePath}?month=${m}`}
-            className="cn-chip"
-            style={{
-              borderRadius: 20,
-              padding: "7px 14px",
-              fontFamily: SANS,
-              fontSize: 12.5,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-              border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
-              background: on ? INDIGO : "#fff",
-              color: on ? "#fff" : "#4C4A63",
-            }}
-          >
-            {monthLabel(m)}
-            {status ? (
-              <span
-                style={{
-                  marginLeft: 7,
-                  fontSize: 10,
-                  color: on ? "rgba(255,255,255,.8)" : status === "draft" ? AMBER : GREEN,
-                }}
-              >
-                ●
-              </span>
-            ) : null}
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
 
 /** One payslip's lines: what was measured, at what rate, for how much. */
 function Payslip({ lines, money }: { lines: PayrollLine[]; money: (m: number) => string }) {

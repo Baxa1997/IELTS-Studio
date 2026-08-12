@@ -116,6 +116,12 @@ export async function createGroup(
   const branchId = String(formData.get("branch_id") ?? "").trim();
   if (!branchId) return { error: "Pick the branch this class is taught at." };
 
+  const capacityRaw = String(formData.get("capacity") ?? "").trim();
+  const capacity = capacityRaw === "" ? null : Number(capacityRaw);
+  if (capacity != null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) {
+    return { error: "Class size has to be a whole number between 1 and 500." };
+  }
+
   // Both prices are the owner's business, so a teacher creating their own class
   // never sends them — the fields aren't on their form and are ignored if they
   // are. Priced at creation rather than later because an unpriced class is the
@@ -139,6 +145,7 @@ export async function createGroup(
       name,
       teacher_id: teacherId,
       branch_id: branchId,
+      capacity,
       created_by: profile.id,
       ...(profile.role === "center_admin"
         ? { monthly_fee_minor: fee, teacher_rate_minor: rate }
@@ -741,7 +748,8 @@ export async function createAssignment(
     groupIds: [groupId],
     kind,
     title,
-    siteUrl: serverEnv.siteUrl,
+    siteUrl: serverEnv.outboundSiteUrl,
+    note: instructions,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 
@@ -993,6 +1001,15 @@ export async function resetStudentPassword(
   const studentId = String(formData.get("student_id") ?? "").trim();
   if (!groupId || !studentId) return { error: "Missing student." };
 
+  // A chosen password, or blank to generate one. Centers teaching children ask
+  // for this constantly: a nine-year-old can be told "your password is
+  // dolphin7" and cannot be told "kR4t-9Qmz". Same 8-character floor as account
+  // creation — memorable is fine, guessable in three tries is not.
+  const chosen = String(formData.get("password") ?? "").trim();
+  if (chosen && chosen.length < 8) {
+    return { error: "A password needs at least 8 characters." };
+  }
+
   const supabase = await createClient();
   const { data: group } = await supabase
     .from("groups")
@@ -1026,7 +1043,7 @@ export async function resetStudentPassword(
   // class roster — a teacher must not be able to take over a colleague's login.
   if (student.role !== "student") return { error: "That account isn't a student." };
 
-  const password = generatePassword();
+  const password = chosen || generatePassword();
   const { error } = await admin.auth.admin.updateUserById(studentId, { password });
   if (error) return { error: error.message };
 
