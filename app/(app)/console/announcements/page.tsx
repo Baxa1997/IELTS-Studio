@@ -29,7 +29,12 @@ export const dynamic = "force-dynamic";
 export default async function AnnouncementsPage() {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
-  if (profile.role !== "center_admin") redirect("/console");
+
+  // A teacher is the only person who can set a class's homework and the one who
+  // connects its Telegram channel, so shutting them out of telling the class
+  // about it made no sense. They get the page scoped to their own classes;
+  // center-wide audiences stay the owner's (see migration 20260812130000).
+  const isAdmin = profile.role === "center_admin";
 
   const supabase = await createClient();
   const [sentRes, peopleRes, { groups }, linksRes] = await Promise.all([
@@ -38,7 +43,11 @@ export default async function AnnouncementsPage() {
       .select("id, subject, body, audience, recipients, sent_at")
       .order("sent_at", { ascending: false })
       .limit(50),
-    supabase.from("profiles").select("id, role"),
+    // Only the owner needs the center-wide headcounts; a teacher's audience is
+    // always one of their own classes.
+    isAdmin
+      ? supabase.from("profiles").select("id, role")
+      : Promise.resolve({ data: [] as { id: string; role: string }[] }),
     loadGroups(profile),
     supabase.from("telegram_links").select("group_id, chat_title, verified_at"),
   ]);
@@ -126,7 +135,11 @@ export default async function AnnouncementsPage() {
       <PageHead
         eyebrow="Communication"
         title="Announcements"
-        subtitle="Reaches every account in the app; post it to a class Telegram channel too, where the parents are."
+        subtitle={
+          isAdmin
+            ? "Reaches every account in the app; post it to a class Telegram channel too, where the parents are."
+            : "Write to one of your classes. It reaches them in the app, and in the class Telegram channel if one is connected."
+        }
       />
 
       <div
@@ -141,6 +154,7 @@ export default async function AnnouncementsPage() {
       >
         <Card style={{ overflowY: "auto", minHeight: 0 }}>
           <AnnouncementComposer
+            canAnnounceCenterWide={isAdmin}
             counts={counts}
             groups={groups.map((g) => ({
               id: g.id,

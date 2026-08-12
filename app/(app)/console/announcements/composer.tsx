@@ -37,10 +37,13 @@ type Audience = "everyone" | "students" | "teachers" | "group";
  * action will use — so what it promises to reach is what it reaches.
  */
 export function AnnouncementComposer({
+  canAnnounceCenterWide,
   counts,
   groups,
   channels,
 }: {
+  /** False for a teacher: their audience is always one of their own classes. */
+  canAnnounceCenterWide: boolean;
   counts: { everyone: number; students: number; teachers: number };
   groups: { id: string; name: string; students: number; hasChannel: boolean }[];
   /** Classes with a verified channel, named. Empty hides the whole section. */
@@ -50,7 +53,7 @@ export function AnnouncementComposer({
   // Keeps the composer open — you often send two in a row — and the banner at
   // the top of the page carries the confirmation.
   useActionFeedback(state, { keepOpen: true });
-  const [audience, setAudience] = useState<Audience>("everyone");
+  const [audience, setAudience] = useState<Audience>(canAnnounceCenterWide ? "everyone" : "group");
   const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const [toTelegram, setToTelegram] = useState(false);
   // Which channels this post goes to. Named and ticked, never implied: the
@@ -59,12 +62,16 @@ export function AnnouncementComposer({
   // and no way to see where a post had gone until it had gone there.
   const [picked, setPicked] = useState<string[]>(() => channels.map((c) => c.groupId));
 
-  const options: { value: Audience; label: string }[] = [
-    { value: "everyone", label: "Everyone" },
-    { value: "students", label: "All students" },
-    { value: "teachers", label: "All teachers" },
-    ...(groups.length > 0 ? [{ value: "group" as Audience, label: "One class" }] : []),
-  ];
+  // A teacher gets no center-wide chips at all rather than disabled ones: an
+  // option you can see but never use is a question you answer every time.
+  const options: { value: Audience; label: string }[] = canAnnounceCenterWide
+    ? [
+        { value: "everyone", label: "Everyone" },
+        { value: "students", label: "All students" },
+        { value: "teachers", label: "All teachers" },
+        ...(groups.length > 0 ? [{ value: "group" as Audience, label: "One class" }] : []),
+      ]
+    : [{ value: "group", label: "One class" }];
 
   const chosen = groups.find((g) => g.id === groupId);
   const reach = audience === "group" ? (chosen?.students ?? 0) : counts[audience];

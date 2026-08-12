@@ -105,8 +105,9 @@ export async function sendAnnouncement(
   formData: FormData,
 ): Promise<ActionState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin") {
-    return { error: "Only a center admin can send announcements." };
+  const isAdmin = profile.role === "center_admin";
+  if (!isAdmin && profile.role !== "teacher") {
+    return { error: "Only center staff can send announcements." };
   }
 
   const subject = String(formData.get("subject") ?? "").trim();
@@ -121,6 +122,24 @@ export async function sendAnnouncement(
   if (audience === "group" && !groupId) return { error: "Pick which class." };
 
   const supabase = await createClient();
+
+  // A teacher speaks to their own classes; the center speaks to everyone. The
+  // database enforces this too (announcements_write, migration 20260812130000)
+  // — this check exists so a teacher gets a sentence instead of a policy error.
+  if (!isAdmin) {
+    if (audience !== "group" || !groupId) {
+      return { error: "You can announce to one of your classes. Pick the class." };
+    }
+    // RLS hides other teachers' groups, so a hit here proves they own it.
+    const { data: owned } = await supabase
+      .from("groups")
+      .select("id, teacher_id")
+      .eq("id", groupId)
+      .maybeSingle();
+    if (!owned || owned.teacher_id !== profile.id) {
+      return { error: "You can only announce to your own classes." };
+    }
+  }
 
   // Resolve the audience to real people now, so the sent log records who it
   // actually reached rather than a rule that may mean something else later.

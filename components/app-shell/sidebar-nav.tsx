@@ -159,7 +159,13 @@ const TEACHER: Section[] = [
   },
   {
     title: "Insight",
-    items: [{ label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn }],
+    items: [
+      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
+      // Scoped to their own classes. A teacher sets the class's homework and
+      // connects its Telegram channel, so barring them from mentioning it was
+      // the least defensible line in the whole permission split.
+      { label: "Announcements", href: "/console/announcements", icon: Megaphone },
+    ],
   },
 ];
 
