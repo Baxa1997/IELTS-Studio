@@ -741,7 +741,7 @@ export async function createAssignment(
     groupIds: [groupId],
     kind,
     title,
-    url: `${serverEnv.siteUrl}${href}`,
+    siteUrl: serverEnv.siteUrl,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 
@@ -801,6 +801,9 @@ export async function addStudentAccount(
     .trim()
     .toLowerCase();
   const passwordInput = String(formData.get("password") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const guardianName = String(formData.get("guardian_name") ?? "").trim();
+  const guardianPhone = String(formData.get("guardian_phone") ?? "").trim();
 
   if (!groupId) return { error: "Missing group." };
   if (!fullName) return { error: "Enter the student's name." };
@@ -893,6 +896,9 @@ export async function addStudentAccount(
     fullName,
     username: finalLogin,
     contactEmail,
+    phone: phone || null,
+    guardianName: guardianName || null,
+    guardianPhone: guardianPhone || null,
   });
   if (placeError) {
     // Roll back the orphaned auth user so the email can be retried cleanly.

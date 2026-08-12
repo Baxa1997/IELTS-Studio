@@ -69,6 +69,20 @@ function escapeAttr(url: string): string {
   return escapeHtml(url).replace(/"/g, "&quot;");
 }
 
+/**
+ * Where a homework link should point: the student's own assignments page.
+ *
+ * NOT the practice itself, and that is deliberate. A channel is read by parents
+ * and by students who are signed out; a deep link to `/write/<id>` bounces them
+ * through a login and lands on one task, whereas `/assignments` is the list of
+ * everything they owe — which is what someone tapping a homework notice is
+ * actually looking for. It also means one URL to get right instead of three
+ * per-skill shapes, and no id in a public channel.
+ */
+function assignmentsUrl(siteUrl: string): string {
+  return `${siteUrl.replace(/\/+$/, "")}/assignments`;
+}
+
 /** `Friday, 15 August` — long enough to be unambiguous on a phone. */
 function prettyDue(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", {
@@ -90,10 +104,10 @@ export async function sendMessage(chatId: number, html: string): Promise<boolean
   return result != null;
 }
 
-const KIND_LABEL: Record<string, { emoji: string; noun: string }> = {
-  writing: { emoji: "📝", noun: "writing homework" },
-  reading: { emoji: "📖", noun: "reading homework" },
-  listening: { emoji: "🎧", noun: "listening homework" },
+const KIND_LABEL: Record<string, { emoji: string; noun: string; where: string }> = {
+  writing: { emoji: "📝", noun: "writing homework", where: "Writing" },
+  reading: { emoji: "📖", noun: "reading homework", where: "Reading" },
+  listening: { emoji: "🎧", noun: "listening homework", where: "Listening" },
 };
 
 /**
@@ -109,7 +123,11 @@ export async function notifyAssignmentTelegram(args: {
   groupIds: string[];
   kind: string;
   title: string;
-  url: string;
+  /**
+   * The site's base URL. NOT a link to the practice itself — see the note on
+   * `assignmentsUrl` below.
+   */
+  siteUrl: string;
   dueAt?: string | null;
 }): Promise<void> {
   if (!telegramConfigured() || args.groupIds.length === 0) return;
@@ -153,11 +171,12 @@ export async function notifyAssignmentTelegram(args: {
         `${kind.emoji} You have new <b>${kind.noun}</b>:`,
         `<b>${escapeHtml(args.title)}</b>`,
         "",
+        `Sign in and open <b>${kind.where}</b> — it is waiting for you there.`,
         args.dueAt
           ? `⏰ Please finish it by <b>${escapeHtml(prettyDue(args.dueAt))}</b>.`
           : "⏰ Please do it as soon as you can.",
         "",
-        `👉 <a href="${escapeAttr(args.url)}">Open it on EngProgress</a>`,
+        `👉 <a href="${escapeAttr(assignmentsUrl(args.siteUrl))}">My assignments — EngProgress</a>`,
       ].join("\n");
 
       // Sequential, not Promise.all: Telegram throttles ~20 messages a minute

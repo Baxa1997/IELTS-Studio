@@ -35,6 +35,12 @@ export interface OrgPlacement {
    * (see migration 20260809130000); this is the real inbox.
    */
   contactEmail?: string | null;
+  /** The student's own number. Optional — most kids do not have one. */
+  phone?: string | null;
+  /** The parent's name and number. For a child this is the only way to reach
+   *  anyone, and it is what absence alerts fall back to. */
+  guardianName?: string | null;
+  guardianPhone?: string | null;
 }
 
 /**
@@ -106,6 +112,9 @@ export async function placeUserInOrg(
       full_name: placement.fullName ?? null,
       ...(placement.username ? { username: placement.username } : {}),
       ...(placement.contactEmail !== undefined ? { contact_email: placement.contactEmail } : {}),
+      ...(placement.phone !== undefined ? { phone: placement.phone } : {}),
+      ...(placement.guardianName !== undefined ? { guardian_name: placement.guardianName } : {}),
+      ...(placement.guardianPhone !== undefined ? { guardian_phone: placement.guardianPhone } : {}),
     },
     { onConflict: "id" },
   );

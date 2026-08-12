@@ -373,7 +373,7 @@ export async function assignPractice(
     groupIds: targets,
     kind,
     title,
-    url: `${serverEnv.siteUrl}${href}`,
+    siteUrl: serverEnv.siteUrl,
     dueAt: dueAt ? dueAt.toISOString() : null,
   });
 

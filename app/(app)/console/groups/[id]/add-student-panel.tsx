@@ -56,8 +56,8 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               required
             />
             <p className="text-muted-foreground text-xs">
-              That&apos;s all we need. A login and password are made for them and shown here once
-              you add them.
+              That&apos;s all we need — no email required. A login and password are made for them
+              and shown here once you add them.
             </p>
           </div>
 
