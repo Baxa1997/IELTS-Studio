@@ -57,6 +57,28 @@ export function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/**
+ * Escape a URL for use inside `href="…"`.
+ *
+ * `escapeHtml` is not enough here: a quote in an attribute value ends the
+ * attribute, so a title or query string carrying one would break the tag and
+ * Telegram would reject the whole message with a parse error. Rare, and a
+ * silent total failure when it happens.
+ */
+function escapeAttr(url: string): string {
+  return escapeHtml(url).replace(/"/g, "&quot;");
+}
+
+/** `Friday, 15 August` — long enough to be unambiguous on a phone. */
+function prettyDue(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
 export async function sendMessage(chatId: number, html: string): Promise<boolean> {
   const result = await callTelegram("sendMessage", {
     chat_id: chatId,
@@ -68,10 +90,10 @@ export async function sendMessage(chatId: number, html: string): Promise<boolean
   return result != null;
 }
 
-const KIND_LABEL: Record<string, string> = {
-  writing: "📝 New writing practice",
-  reading: "📖 New reading practice",
-  listening: "🎧 New listening practice",
+const KIND_LABEL: Record<string, { emoji: string; noun: string }> = {
+  writing: { emoji: "📝", noun: "writing homework" },
+  reading: { emoji: "📖", noun: "reading homework" },
+  listening: { emoji: "🎧", noun: "listening homework" },
 };
 
 /**
@@ -106,18 +128,41 @@ export async function notifyAssignmentTelegram(args: {
     const rows = (links ?? []) as { chat_id: number; group_id: string }[];
     if (rows.length === 0) return;
 
-    const due = args.dueAt
-      ? `\nDue ${new Date(args.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
-      : "";
-    const text =
-      `<b>${escapeHtml(KIND_LABEL[args.kind] ?? "New practice")}</b>\n` +
-      `${escapeHtml(args.title)}${escapeHtml(due)}\n\n` +
-      `Open it here: ${escapeHtml(args.url)}`;
+    // The class's own name, so the post opens by greeting the people reading
+    // it. Fetched rather than passed in because the callers each know a
+    // different subset — one has the group it just assigned to, the other has
+    // a list — and neither should have to look names up to call this.
+    const { data: groups } = await admin
+      .from("groups")
+      .select("id, name")
+      .in(
+        "id",
+        rows.map((r) => r.group_id),
+      );
+    const nameOf = new Map(
+      ((groups ?? []) as { id: string; name: string }[]).map((g) => [g.id, g.name]),
+    );
 
-    // Sequential, not Promise.all: Telegram throttles ~20 messages a minute to
-    // one chat and ~30 a second overall, and a class list is short enough that
-    // ordering costs nothing.
+    const kind = KIND_LABEL[args.kind] ?? { emoji: "✏️", noun: "homework" };
+
     for (const row of rows) {
+      const who = nameOf.get(row.group_id);
+      const text = [
+        `👋 Hello${who ? ` <b>${escapeHtml(who)}</b>` : ""}!`,
+        "",
+        `${kind.emoji} You have new <b>${kind.noun}</b>:`,
+        `<b>${escapeHtml(args.title)}</b>`,
+        "",
+        args.dueAt
+          ? `⏰ Please finish it by <b>${escapeHtml(prettyDue(args.dueAt))}</b>.`
+          : "⏰ Please do it as soon as you can.",
+        "",
+        `👉 <a href="${escapeAttr(args.url)}">Open it on EngProgress</a>`,
+      ].join("\n");
+
+      // Sequential, not Promise.all: Telegram throttles ~20 messages a minute
+      // to one chat and ~30 a second overall, and a class list is short enough
+      // that ordering costs nothing.
       await sendMessage(row.chat_id, text);
     }
   } catch (err) {
@@ -159,7 +204,10 @@ export async function sendAnnouncementTelegram(args: {
     const rows = (data ?? []) as { chat_id: number; group_id: string }[];
     if (rows.length === 0) return 0;
 
-    const text = `<b>${escapeHtml(args.subject)}</b>\n\n${escapeHtml(args.body)}`;
+    // An announcement is the center's own words, so it is not dressed up the
+    // way a homework notice is — a greeting bolted onto "we are closed Monday"
+    // reads as a template. Subject in bold, body as written, nothing added.
+    const text = `📣 <b>${escapeHtml(args.subject)}</b>\n\n${escapeHtml(args.body)}`;
 
     // Sequential: Telegram throttles ~30 messages a second overall, and a
     // center has tens of channels at most.
