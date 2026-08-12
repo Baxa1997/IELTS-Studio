@@ -199,8 +199,8 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
       }}
     >
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 11px", lineHeight: 1.55 }}>
-        Pick where this class talks. Telegram opens, you choose it from your list, and it connects
-        itself — there is nothing to copy.
+        Pick where this class talks. If Telegram opens a chat with the bot instead of a list of
+        groups, that is the wrong screen — back out and use the manual line below.
       </p>
 
       <div style={{ display: "grid", gap: 8 }}>
@@ -209,6 +209,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
           onOpen={() => setWaiting(true)}
           icon={<FiUsers size={16} color={TELEGRAM} />}
           title="Add to a group"
+          badge="connects itself"
           note="A normal Telegram group the class is already in"
         />
         <TapTarget
@@ -216,7 +217,8 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
           onOpen={() => setWaiting(true)}
           icon={<FiRadio size={16} color={TELEGRAM} />}
           title="Add to a channel"
-          note="A broadcast channel — asks for permission to post"
+          badge="one paste"
+          note="A broadcast channel. Telegram won't send the code for a channel, so the bot asks for it there — paste the line below."
         />
       </div>
 
@@ -274,12 +276,15 @@ function TapTarget({
   onOpen,
   icon,
   title,
+  badge,
   note,
 }: {
   href: string;
   onOpen: () => void;
   icon: React.ReactNode;
   title: string;
+  /** How much work this one is, said before it is chosen rather than after. */
+  badge: string;
   note: string;
 }) {
   return (
@@ -304,8 +309,20 @@ function TapTarget({
         {icon}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 13.5, fontWeight: 600, color: INK }}>
-          {title}
+        <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{title}</span>
+          <span
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              color: TELEGRAM,
+              background: "#E8F5FC",
+              borderRadius: 20,
+              padding: "1px 7px",
+            }}
+          >
+            {badge}
+          </span>
         </span>
         <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 1 }}>{note}</span>
       </span>
