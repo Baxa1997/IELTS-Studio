@@ -59,11 +59,17 @@ export function PlanControls({
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(setAccountPlan, {} as ReviewState);
 
-  // Close once the write lands. The row re-renders from the server with the new
+  // Close once the write lands — the row re-renders from the server with the new
   // plan, so leaving the popover open would show stale inputs over fresh data.
-  useEffect(() => {
-    if (state.notice) setOpen(false);
-  }, [state.notice]);
+  //
+  // Adjusted during render rather than in an effect, the same way the console
+  // chrome closes its panels on navigation: an effect here would set state after
+  // paint and cost a second pass with the popover still open over new data.
+  const [seenNotice, setSeenNotice] = useState<string | undefined>(undefined);
+  if (state.notice && state.notice !== seenNotice) {
+    setSeenNotice(state.notice);
+    setOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;

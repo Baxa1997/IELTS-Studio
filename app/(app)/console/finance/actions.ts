@@ -81,6 +81,21 @@ export async function recordTransaction(
   const occurredOn = str(formData, "occurred_on");
   if (!isDate(occurredOn)) return { error: "Pick a valid date." };
 
+  // Say WHICH thing is wrong with the desk. Without this the insert either
+  // failed on a foreign key ("violates constraint …_account_fk", meaningless at
+  // a front desk) or, when the form had been rendered with a stale desk list,
+  // succeeded against the wrong one.
+  const supabaseCheck = await createClient();
+  const { data: desk } = await supabaseCheck
+    .from("finance_accounts")
+    .select("id, name, active")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (!desk) return { error: "That cash desk no longer exists — reload the page." };
+  if (!desk.active) {
+    return { error: `${desk.name as string} is closed. Re-open it, or pick another desk.` };
+  }
+
   const invoiceId = orNull(str(formData, "invoice_id"));
   let studentId = orNull(str(formData, "student_id"));
   let groupId = orNull(str(formData, "group_id"));
@@ -177,6 +192,71 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
 
   refreshFinance();
   return { ok: id ? "Desk updated." : `${name} added.` };
+}
+
+/**
+ * Remove a cash desk.
+ *
+ * There was no way to do this at all: the drawer offered Open/Closed and
+ * nothing else, so a desk added by mistake stayed on the page forever.
+ *
+ * A desk that has never handled money is deleted outright. A desk that HAS is
+ * closed instead, never deleted — its transactions are the center's ledger, and
+ * `finance_transactions.account_id` points at it. Deleting it would either take
+ * the history with it or orphan every row that proves where the money went. So
+ * the action reports which of the two it did rather than pretending they are
+ * the same thing.
+ */
+export async function deleteAccount(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const guard = await requireOwner();
+  if ("error" in guard) return guard.error;
+
+  const id = str(formData, "id");
+  if (!id) return { error: "Nothing to remove." };
+
+  const supabase = await createClient();
+
+  const { data: desk } = await supabase
+    .from("finance_accounts")
+    .select("id, name")
+    .eq("id", id)
+    .maybeSingle();
+  if (!desk) return { error: "That desk is already gone." };
+  const name = desk.name as string;
+
+  const { count } = await supabase
+    .from("finance_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("account_id", id);
+
+  if ((count ?? 0) > 0) {
+    const { data: closed, error } = await supabase
+      .from("finance_accounts")
+      .update({ active: false })
+      .eq("id", id)
+      .select("id"); // RLS-filtered writes report success without this
+    if (error) return { error: error.message };
+    if (!closed || closed.length === 0) {
+      return { error: "You do not have permission to change that desk." };
+    }
+    refreshFinance();
+    return {
+      ok: `${name} has ${count} entr${count === 1 ? "y" : "ies"} against it, so it was closed rather than deleted — the ledger stays intact.`,
+    };
+  }
+
+  const { data: removed, error } = await supabase
+    .from("finance_accounts")
+    .delete()
+    .eq("id", id)
+    .select("id"); // same: a delete that matches nothing is not an error
+  if (error) return { error: error.message };
+  if (!removed || removed.length === 0) {
+    return { error: "You do not have permission to remove that desk." };
+  }
+
+  refreshFinance();
+  return { ok: `${name} removed.` };
 }
 
 /**

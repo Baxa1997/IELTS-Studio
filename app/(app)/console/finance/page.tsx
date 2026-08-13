@@ -139,7 +139,19 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     branchParam && (branchParam === "all" || tabs.some((t) => t.key === branchParam))
       ? branchParam
       : (tabs[0]?.key ?? "all");
-  const inScope = (accountBranchId: string | null) => scope === "all" || accountBranchId === scope;
+  /**
+   * A desk with NO branch is always in scope.
+   *
+   * Migration 20260810170000 made a branch mandatory, but a desk created before
+   * it still carries none (the loader hands that up as ""). Filtering those out
+   * meant the center's original "Main desk" vanished from the page the moment a
+   * second branch existed — no card, and worse, missing from the desk selector
+   * inside the payment form, so its own "+ Take" posted a different desk or
+   * nothing at all. Money that belongs to no site still belongs to the center,
+   * so it shows everywhere rather than nowhere.
+   */
+  const inScope = (accountBranchId: string | null) =>
+    scope === "all" || !accountBranchId || accountBranchId === scope;
 
   const activeDesks = accounts.filter((a) => a.active && inScope(a.branchId));
   const closedDesks = accounts.filter((a) => !a.active && inScope(a.branchId));
@@ -183,9 +195,23 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
 
   const incomeCategories = categories.filter((c) => c.direction === "in");
   const expenseCategories = categories.filter((c) => c.direction === "out");
-  const deskOptions = activeDesks.map((a) => ({ id: a.id, name: a.name }));
+  /**
+   * Every open desk, not just the ones in the current tab.
+   *
+   * The branch tab decides what you are READING, never where you are allowed to
+   * put money — a front desk taking a payment for the other site is ordinary.
+   * And a filtered list was actively dangerous: the form defaults to the desk
+   * whose button you pressed, so when that desk was out of scope the <select>
+   * silently fell back to its first option and the payment landed somewhere
+   * else entirely.
+   */
+  const openDesks = accounts.filter((a) => a.active);
+  const deskOptions = openDesks.map((a) => ({
+    id: a.id,
+    name: a.branchName && showBranchTabs ? `${a.name} · ${a.branchName}` : a.name,
+  }));
   const groupOptions = groups.map((g) => ({ id: g.id, name: g.name }));
-  const transferOptions = activeDesks.map((a) => ({
+  const transferOptions = openDesks.map((a) => ({
     id: a.id,
     name: a.name,
     balanceLabel: money(a.balanceMinor),
