@@ -135,10 +135,27 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     count: accounts.filter((a) => a.active && a.branchId === b.id).length,
   }));
   const showBranchTabs = tabs.length > 0;
+  /**
+   * Which branch the page SAYS it is showing, and it has to agree with what was
+   * actually queried.
+   *
+   * The overview above ran with the raw `branch` param, so no param means every
+   * desk. This used to default the highlight to the FIRST branch instead, which
+   * made the page open showing the whole center's money under a tab naming one
+   * site — and then the filter row carries `branch` as a hidden field, so
+   * pressing Apply silently narrowed the ledger to that branch without anyone
+   * having chosen a filter. Defaulting to "all" makes the tab tell the truth.
+   *
+   * A single-site center is the exception: its one branch IS every desk, so
+   * highlighting it says the same thing while keeping the tab row meaningful
+   * (there is no "Whole center" tab until a second site exists).
+   */
   const scope =
     branchParam && (branchParam === "all" || tabs.some((t) => t.key === branchParam))
       ? branchParam
-      : (tabs[0]?.key ?? "all");
+      : tabs.length === 1
+        ? tabs[0].key
+        : "all";
   /**
    * A desk with NO branch is always in scope.
    *
