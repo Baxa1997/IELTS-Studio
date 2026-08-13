@@ -13,7 +13,7 @@ import {
   reportToSheets,
 } from "@/lib/finance/reports";
 import { buildWorkbook } from "@/lib/finance/xlsx";
-import { minorDigits } from "@/lib/finance/money";
+import { minorDigits, parseMoney } from "@/lib/finance/money";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -102,6 +102,9 @@ export async function GET(req: Request): Promise<Response> {
       categoryId: url.searchParams.get("category") ?? undefined,
       groupId: url.searchParams.get("group") ?? undefined,
       direction: (url.searchParams.get("direction") as "in" | "out" | null) ?? undefined,
+      // Parsed here rather than passed as text: the report layer deals in minor
+      // units only, exactly like the ledger loader it calls.
+      ...amountBounds(url, (await loadFinanceSettings()).currency),
     },
   });
 
@@ -127,6 +130,25 @@ function file(body: Buffer, filename: string, format: "pdf" | "xlsx"): Response 
       "Cache-Control": "no-store",
     },
   });
+}
+
+/** `?min=550 000&max=1 000 000` → inclusive minor-unit bounds, omitting either
+ *  side that was absent or unparseable. Mirrors the ledger page's filter row. */
+function amountBounds(
+  url: URL,
+  currency: string,
+): { minMinor?: number; maxMinor?: number } {
+  const read = (key: string) => {
+    const raw = url.searchParams.get(key);
+    if (!raw) return undefined;
+    return parseMoney(raw, currency) ?? undefined;
+  };
+  const minMinor = read("min");
+  const maxMinor = read("max");
+  return {
+    ...(minMinor != null ? { minMinor } : {}),
+    ...(maxMinor != null ? { maxMinor } : {}),
+  };
 }
 
 function fail(status: number, message: string): Response {

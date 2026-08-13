@@ -80,6 +80,10 @@ export async function gatherReport(opts: {
     direction?: "in" | "out";
     /** A branch id, or undefined for the whole center. */
     branch?: string;
+    /** Inclusive amount bounds in minor units, mirroring the ledger page's
+     *  filter row so an export matches the screen it was taken from. */
+    minMinor?: number;
+    maxMinor?: number;
   };
 }): Promise<ReportData> {
   const { kind, period, filters = {} } = opts;

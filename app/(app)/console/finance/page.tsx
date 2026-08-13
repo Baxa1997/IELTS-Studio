@@ -24,8 +24,13 @@ import {
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
-import { loadBranchTotals, loadFinanceOverview, loadFinancePeople } from "@/lib/finance/load";
-import { formatMoney } from "@/lib/finance/money";
+import {
+  loadBranchTotals,
+  loadFinanceOverview,
+  loadFinancePeople,
+  loadFinanceSettings,
+} from "@/lib/finance/load";
+import { formatMoney, parseMoney } from "@/lib/finance/money";
 import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 
 import { DeskForm, TransferForm } from "./desk-forms";
@@ -91,6 +96,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   const teacherId = first(sp.teacher);
   const method = first(sp.method);
   const q = first(sp.q);
+  const minRaw = first(sp.min);
+  const maxRaw = first(sp.max);
   const page = Math.max(1, Number(first(sp.page) ?? 1) || 1);
   const pageSize = Math.min(200, Math.max(10, Number(first(sp.size) ?? 50) || 50));
 
@@ -98,10 +105,19 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   // branches that actually exist, so a stale link can't hide every desk.
   const branchParam = first(sp.branch);
 
+  // Amounts are typed in major units ("550 000") and stored in minor ones, so
+  // they are parsed against the center's own currency before any query sees
+  // them — the same single conversion point every write already goes through.
+  const { currency: filterCurrency } = await loadFinanceSettings();
+  const minMinor = minRaw ? (parseMoney(minRaw, filterCurrency) ?? undefined) : undefined;
+  const maxMinor = maxRaw ? (parseMoney(maxRaw, filterCurrency) ?? undefined) : undefined;
+
   const [overview, people, { groups }] = await Promise.all([
     loadFinanceOverview(profile, {
       period,
       branch: branchParam,
+      minMinor,
+      maxMinor,
       direction,
       accountId,
       categoryId,
@@ -193,6 +209,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
       teacher: teacherId,
       method,
       q,
+      min: minRaw,
+      max: maxRaw,
       size: pageSize === 50 ? undefined : String(pageSize),
       page: undefined,
       ...patch,
@@ -207,6 +225,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     if (accountId) params.set("account", accountId);
     if (categoryId) params.set("category", categoryId);
     if (direction) params.set("direction", direction);
+    if (minRaw) params.set("min", minRaw);
+    if (maxRaw) params.set("max", maxRaw);
     return `/api/console/finance/export?${params.toString()}`;
   };
 
@@ -744,6 +764,25 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                 </option>
               ))}
             </select>
+
+            {/* Amount bounds, inclusive. Typed the way the amount box on the
+                payment form is typed — "550 000" — and parsed the same way. */}
+            <input
+              name="min"
+              defaultValue={minRaw ?? ""}
+              inputMode="numeric"
+              placeholder={`From ${currency}`}
+              title="Only entries of at least this much"
+              style={{ ...filterInput, width: 116 }}
+            />
+            <input
+              name="max"
+              defaultValue={maxRaw ?? ""}
+              inputMode="numeric"
+              placeholder={`To ${currency}`}
+              title="Only entries of at most this much"
+              style={{ ...filterInput, width: 116 }}
+            />
 
             <input
               name="q"

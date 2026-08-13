@@ -127,6 +127,13 @@ export interface LedgerFilters {
   method?: string;
   /** Free text over the note. Names are filtered by picking a person instead. */
   q?: string;
+  /**
+   * Amount bounds, INCLUSIVE, in minor units — the same integers the column
+   * stores, so the caller does the parsing once against the center's currency
+   * and nothing here has to know what a decimal looks like.
+   */
+  minMinor?: number;
+  maxMinor?: number;
   page?: number;
   pageSize?: number;
 }
@@ -376,6 +383,17 @@ export async function loadFinanceOverview(
   if (filters.q) {
     listQuery = listQuery.ilike("note", `%${filters.q}%`);
     filteredTotalsQuery = filteredTotalsQuery.ilike("note", `%${filters.q}%`);
+  }
+  // Amount bounds go on the list AND its totals, like every other narrowing
+  // here — the strip under the filter row has to add up to the rows above it.
+  // `!= null` rather than truthiness: 0 is a legitimate bound.
+  if (filters.minMinor != null) {
+    listQuery = listQuery.gte("amount_minor", filters.minMinor);
+    filteredTotalsQuery = filteredTotalsQuery.gte("amount_minor", filters.minMinor);
+  }
+  if (filters.maxMinor != null) {
+    listQuery = listQuery.lte("amount_minor", filters.maxMinor);
+    filteredTotalsQuery = filteredTotalsQuery.lte("amount_minor", filters.maxMinor);
   }
 
   const [settings, categoriesRes, listRes, filteredTotalsRes, totalsRes, prevRes] =
