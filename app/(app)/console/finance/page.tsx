@@ -880,7 +880,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               desk on the left.
             </Empty>
           ) : (
-            <Table cols={COLS}>
+            <Table cols={COLS} minWidth={LEDGER_MIN_WIDTH}>
               <THead
                 cols={COLS}
                 labels={["№", "Date", "Who", "Group", "What it was for", "Desk", "Amount", "Status"]}
@@ -1069,6 +1069,14 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
    the table wider than its card and bring the scrollbar back. */
 const COLS =
   "36px 92px minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,0.9fr) minmax(88px,0.8fr) 84px";
+
+/**
+ * Low enough that a desktop never scrolls, high enough that eight columns stay
+ * readable rather than crushing to initials on a laptop. Below it the wrapper
+ * scrolls — with no visible bar (`.cn-noscrollbar`), which is the point: the
+ * content stays reachable and the chrome stays out of the way.
+ */
+const LEDGER_MIN_WIDTH = 820;
 
 const chip: React.CSSProperties = {
   background: "#F4F3EF",

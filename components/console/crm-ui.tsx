@@ -423,7 +423,7 @@ export function Table({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="cn-noscrollbar" style={{ overflowX: "auto" }}>
       <div style={{ minWidth: minWidth || undefined }} data-cols={cols}>
         {children}
       </div>
@@ -982,6 +982,7 @@ export function TextLink({ href, children }: { href: string; children: React.Rea
 export function Tabs({ tabs }: { tabs: { href: string; label: string; active: boolean }[] }) {
   return (
     <div
+      className="cn-noscrollbar"
       style={{
         display: "flex",
         gap: 4,
