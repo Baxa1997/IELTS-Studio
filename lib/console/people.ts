@@ -1,5 +1,6 @@
 import "server-only";
 
+import { canManagePeople, type AppRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -107,7 +108,10 @@ export async function loadStudents(opts: {
   profileId: string;
 }): Promise<StudentRow[]> {
   const supabase = await createClient();
-  const isAdmin = opts.role === "center_admin";
+  // Whole-center view for the owner AND the administrator. Comparing to
+  // "center_admin" alone would have quietly narrowed an administrator to
+  // "groups you teach", which is none of them — an empty Students page.
+  const isAdmin = canManagePeople(opts.role as AppRole);
 
   const [{ data: groups }, { data: members }] = await Promise.all([
     supabase.from("groups").select("id, name, teacher_id"),

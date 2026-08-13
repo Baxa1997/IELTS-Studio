@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
-import { requireOrgUser } from "@/lib/auth";
+import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
 import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
@@ -99,7 +99,7 @@ export async function createGroup(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can create groups." };
   }
 
@@ -328,7 +328,7 @@ export async function setGroupSchedule(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can change the timetable." };
   }
 
@@ -390,7 +390,11 @@ export async function assignTeacher(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin") return { error: "Only a center admin can assign teachers." };
+  // Scheduling, not hiring: deciding who takes Tuesday's class is the front
+  // desk's job. Adding a teacher to the CENTER stays with the owner (below).
+  if (!canManagePeople(profile.role)) {
+    return { error: "Only center staff can assign teachers to a class." };
+  }
 
   const groupId = String(formData.get("group_id") ?? "").trim();
   if (!groupId) return { error: "Missing group." };
@@ -466,7 +470,7 @@ export async function inviteMember(
   formData: FormData,
 ): Promise<InviteFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can invite members." };
   }
 
@@ -796,7 +800,7 @@ export async function addStudentAccount(
   formData: FormData,
 ): Promise<AddStudentState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can add students." };
   }
 
@@ -993,7 +997,7 @@ export async function resetStudentPassword(
   formData: FormData,
 ): Promise<ResetPasswordState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can reset a student's password." };
   }
 
@@ -1098,7 +1102,7 @@ export async function addStudentsBulk(
   formData: FormData,
 ): Promise<BulkStudentState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can add students." };
   }
 

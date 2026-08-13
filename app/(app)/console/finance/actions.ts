@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOrgUser } from "@/lib/auth";
+import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
 import { gatherPayrollFacts, loadSalaryRules } from "@/lib/finance/payroll";
@@ -41,6 +41,18 @@ async function requireOwner(): Promise<
   return { profile };
 }
 
+/** Anyone who mans the counter: the owner, or an administrator. Taking tuition
+ *  is the only money either of the latter may touch. */
+async function requireFrontDesk(): Promise<
+  { error: ActionState } | { profile: Awaited<ReturnType<typeof requireOrgUser>>["profile"] }
+> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role)) {
+    return { error: { error: "Only center staff can take a payment." } };
+  }
+  return { profile };
+}
+
 const str = (fd: FormData, key: string): string => String(fd.get(key) ?? "").trim();
 const orNull = (value: string): string | null => (value === "" ? null : value);
 
@@ -66,11 +78,16 @@ export async function recordTransaction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const guard = await requireOwner();
+  const direction = str(formData, "direction") === "out" ? "out" : "in";
+
+  // The one exception to rule 1 above: taking money IN is a counter job, so an
+  // administrator gets through here and nowhere else in this file. Money out
+  // stays with the owner. RLS says the same thing (migration 20260813140000),
+  // keyed on `direction` — so this check is the readable error, not the gate.
+  const guard = direction === "in" ? await requireFrontDesk() : await requireOwner();
   if ("error" in guard) return guard.error;
   const { profile } = guard;
 
-  const direction = str(formData, "direction") === "out" ? "out" : "in";
   const settings = await loadFinanceSettings();
   const amount = parseMoney(str(formData, "amount"), settings.currency);
   if (amount == null || amount <= 0) return { error: "Enter an amount greater than zero." };

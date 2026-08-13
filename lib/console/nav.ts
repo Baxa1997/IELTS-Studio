@@ -1,6 +1,6 @@
 import "server-only";
 
-import { type Profile } from "@/lib/auth";
+import { canManagePeople, type Profile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function loadNavCounts(profile: Profile): Promise<Record<string, number>> {
   const supabase = await createClient();
-  const isAdmin = profile.role === "center_admin";
+  const isAdmin = canManagePeople(profile.role);
 
   let groupsQuery = supabase.from("groups").select("id");
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);

@@ -140,6 +140,36 @@ const ADMIN: Section[] = [
   },
 ];
 
+/* The front desk. Runs classes and people, takes tuition, and never sees what
+   the center is worth or what staff are paid — so there is no Money section,
+   no Billing and no Settings. "Take payment" is a purpose-built screen rather
+   than the owner's Finance page with parts hidden: a redacted page still shows
+   its own shape, and one wrong condition leaks a balance. */
+const ADMINISTRATOR: Section[] = [
+  {
+    title: "Center",
+    items: [
+      { label: "Overview", href: "/console", icon: LayoutDashboard },
+      { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
+      { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
+      { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
+      { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+    ],
+  },
+  {
+    title: "Front desk",
+    items: [{ label: "Take payment", href: "/console/payments", icon: Wallet }],
+  },
+  {
+    title: "Insight",
+    items: [
+      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
+      { label: "Announcements", href: "/console/announcements", icon: Megaphone },
+    ],
+  },
+];
+
 const TEACHER: Section[] = [
   {
     title: "Teaching",
@@ -227,7 +257,10 @@ function sectionsFor(
 ): Section[] {
   if (role === "super_admin") return SUPER_ADMIN;
   if (role !== "student") {
-    const rail = role === "center_admin" ? ADMIN : TEACHER;
+    // Named exhaustively, not by elimination. `role === "center_admin" ? ADMIN
+    // : TEACHER` silently handed a brand-new role the teacher's rail.
+    const rail =
+      role === "center_admin" ? ADMIN : role === "administrator" ? ADMINISTRATOR : TEACHER;
     return newWork > 0 ? withReportsBadge(rail, newWork) : rail;
   }
   if (!showAssignments) return STUDENT;
