@@ -31,6 +31,8 @@ export interface Option {
   id: string;
   name: string;
   meta?: string;
+  /** Categories only. `tuition` is the one that demands a student and a class. */
+  slug?: string | null;
 }
 
 export function TransactionForm({
@@ -81,6 +83,15 @@ export function TransactionForm({
   const today = new Date().toISOString().slice(0, 10);
   const income = direction === "in";
 
+  // Tuition must name the student and the class — a payment without them never
+  // clears a balance and pays no teacher (see recordTransaction). The rule
+  // follows the category, so the form has to watch which one is selected.
+  const [categoryId, setCategoryId] = useState(defaultCategoryId ?? "");
+  const isTuition = categories.find((c) => c.id === categoryId)?.slug === "tuition";
+  // An invoice already carries both, and locks the two selects, so requiring
+  // them again would block a form the user cannot fix.
+  const mustName = income && isTuition && !presetInvoiceId;
+
   return (
     <form action={formAction} key={state.ok ?? "new"}>
       <input type="hidden" name="direction" value={direction} />
@@ -123,7 +134,12 @@ export function TransactionForm({
 
         <FieldGrid>
           <Field label="Category">
-            <select name="category_id" defaultValue={defaultCategoryId} style={fieldStyle}>
+            <select
+              name="category_id"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              style={fieldStyle}
+            >
               <option value="">Uncategorised</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -145,15 +161,23 @@ export function TransactionForm({
 
         {income ? (
           <>
-            <Field label="Student" hint="optional, but it is how a balance gets cleared">
+            <Field
+              label={mustName ? "Student *" : "Student"}
+              hint={
+                mustName
+                  ? "required for tuition — it is how their balance gets cleared"
+                  : "optional, but it is how a balance gets cleared"
+              }
+            >
               <select
                 name="student_id"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
                 disabled={Boolean(presetInvoiceId)}
+                required={mustName}
                 style={fieldStyle}
               >
-                <option value="">Nobody in particular</option>
+                <option value="">{mustName ? "Choose a student…" : "Nobody in particular"}</option>
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -162,16 +186,17 @@ export function TransactionForm({
               </select>
             </Field>
             <Field
-              label="For which class"
+              label={mustName ? "For which class *" : "For which class"}
               hint="drives the teacher's share of what this class collected"
             >
               <select
                 name="group_id"
                 defaultValue={presetGroupId ?? ""}
                 disabled={Boolean(presetInvoiceId)}
+                required={mustName}
                 style={fieldStyle}
               >
-                <option value="">Not class-specific</option>
+                <option value="">{mustName ? "Choose a class…" : "Not class-specific"}</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}

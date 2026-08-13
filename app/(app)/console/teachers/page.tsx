@@ -256,7 +256,7 @@ export default async function TeachersPage({
           </span>
         </Toolbar>
 
-        <Table cols={COLS} minWidth={760}>
+        <Table cols={COLS}>
           <THead
             cols={COLS}
             labels={["Teacher", "Subjects", "Groups", "Students", "Avg band", "Attendance", "Status", ""]}

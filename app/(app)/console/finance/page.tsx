@@ -880,10 +880,20 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               desk on the left.
             </Empty>
           ) : (
-            <Table cols={COLS} minWidth={880}>
+            <Table cols={COLS}>
               <THead
                 cols={COLS}
-                labels={["№", "Date", "Who", "What it was for", "Desk", "Amount", "Status"]}
+                labels={["№", "Date", "Who", "Group", "What it was for", "Desk", "Amount", "Status"]}
+                align={[
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  "right",
+                  undefined,
+                ]}
               />
               {rows.map((row, i) => (
                 <TRow key={row.id} cols={COLS}>
@@ -901,22 +911,34 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                         : ""}
                     </div>
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div
+                  {/* Who paid, and which class it was for — two questions, so two
+                      columns. The class used to be a grey sub-line under the
+                      name, which made it read as part of the person rather than
+                      as the thing being paid for. */}
+                  <TD tone="body">
+                    <span
                       style={{
-                        fontSize: 12.5,
-                        color: "#4C4A63",
+                        display: "block",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
                     >
                       {row.personName ?? "—"}
-                    </div>
-                    {row.groupName ? (
-                      <div style={{ fontSize: 11, color: FAINT }}>{row.groupName}</div>
-                    ) : null}
-                  </div>
+                    </span>
+                  </TD>
+                  <TD tone="soft">
+                    <span
+                      style={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.groupName ?? "—"}
+                    </span>
+                  </TD>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 500, color: INK, fontSize: 12.5 }}>
                       {row.categoryName ?? (row.transferId ? "Transfer" : "Uncategorised")}
@@ -1041,7 +1063,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   );
 }
 
-const COLS = "44px 100px 1.2fr 1.5fr 110px 130px 92px";
+/* Elastic everywhere it can be, so the table fits any width and never grows a
+   horizontal scrollbar. `minmax(0, …fr)` rather than bare `…fr` because a grid
+   track's default minimum is its content — one long note would otherwise push
+   the table wider than its card and bring the scrollbar back. */
+const COLS =
+  "36px 92px minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,0.9fr) minmax(88px,0.8fr) 84px";
 
 const chip: React.CSSProperties = {
   background: "#F4F3EF",

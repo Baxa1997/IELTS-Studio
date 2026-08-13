@@ -652,7 +652,7 @@ export default async function GroupDetailPage({
           </KpiRow>
 
           <Card flush>
-            <Table cols={MONEY_COLS} minWidth={760}>
+            <Table cols={MONEY_COLS}>
               <THead
                 cols={MONEY_COLS}
                 labels={["Student", "This month", "Invoiced", "Paid", "Teacher earns"]}

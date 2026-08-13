@@ -219,7 +219,7 @@ export default async function StudentsPage({
           </span>
         </Toolbar>
 
-        <Table cols={COLS} minWidth={860}>
+        <Table cols={COLS}>
           <THead
             cols={COLS}
             labels={["Student", "Group", "Band", "Trend", "Att.", "Last active"]}

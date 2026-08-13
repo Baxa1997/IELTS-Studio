@@ -403,9 +403,19 @@ export function Split({
  * one. Wrapped in an overflow container with a min-width so narrow screens
  * scroll the table instead of crushing it.
  */
+/**
+ * `minWidth` defaults to 0 — no artificial floor.
+ *
+ * It used to default to 720 and most callers passed 760–900, which meant the
+ * table refused to shrink below that and the wrapper grew a horizontal
+ * scrollbar on screens where the columns would have fitted perfectly well. The
+ * wrapper still scrolls when content genuinely cannot fit (fixed-width columns
+ * on a narrow phone), so nothing is ever clipped — the bar just stops appearing
+ * when there is nothing to scroll.
+ */
 export function Table({
   cols,
-  minWidth = 720,
+  minWidth = 0,
   children,
 }: {
   cols: string;
@@ -414,14 +424,30 @@ export function Table({
 }) {
   return (
     <div style={{ overflowX: "auto" }}>
-      <div style={{ minWidth }} data-cols={cols}>
+      <div style={{ minWidth: minWidth || undefined }} data-cols={cols}>
         {children}
       </div>
     </div>
   );
 }
 
-export function THead({ cols, labels }: { cols: string; labels: React.ReactNode[] }) {
+/**
+ * `align` mirrors the `align` you give the body cells, per column.
+ *
+ * Without it a right-aligned amount sat under a left-aligned heading, so the
+ * word "AMOUNT" floated at the far left of a column whose numbers hugged the
+ * right — the two looked like different columns. A heading has to sit over its
+ * own values.
+ */
+export function THead({
+  cols,
+  labels,
+  align,
+}: {
+  cols: string;
+  labels: React.ReactNode[];
+  align?: (("right" | "left") | undefined)[];
+}) {
   return (
     <div
       style={{
@@ -440,7 +466,9 @@ export function THead({ cols, labels }: { cols: string; labels: React.ReactNode[
       }}
     >
       {labels.map((l, i) => (
-        <div key={i}>{l}</div>
+        <div key={i} style={{ textAlign: align?.[i], minWidth: 0 }}>
+          {l}
+        </div>
       ))}
     </div>
   );

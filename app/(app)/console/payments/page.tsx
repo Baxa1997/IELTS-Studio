@@ -155,7 +155,7 @@ export default async function PaymentsPage() {
         {payments.length === 0 ? (
           <Empty>Nothing taken yet this month.</Empty>
         ) : (
-          <Table cols={COLS} minWidth={620}>
+          <Table cols={COLS}>
             <THead cols={COLS} labels={["Date", "Student", "Class", "Method", "Amount"]} />
             <tbody>
               {payments.map((p) => (

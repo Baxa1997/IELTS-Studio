@@ -119,6 +119,30 @@ export async function recordTransaction(
 
   const supabase = await createClient();
 
+  /**
+   * Tuition has to say whose, and for which class.
+   *
+   * Not a style rule — three things downstream are wrong without it. A payment
+   * with no student never clears that student's balance, so they stay a debtor
+   * having paid. A payment with no class contributes nothing to the `collected`
+   * basis the salary engine pays a teacher from. And the row is unreadable a
+   * month later: "600 000, Tuition, Cash" answers none of the questions anyone
+   * asks of it. Other categories are genuinely impersonal — rent has no student
+   * — so the requirement follows the CATEGORY, not the direction.
+   */
+  const categoryId = orNull(str(formData, "category_id"));
+  if (direction === "in" && categoryId && !invoiceId) {
+    const { data: category } = await supabase
+      .from("finance_categories")
+      .select("slug, name")
+      .eq("id", categoryId)
+      .maybeSingle();
+    if (category?.slug === "tuition") {
+      if (!studentId) return { error: "Tuition has to say who paid it. Pick the student." };
+      if (!groupId) return { error: "Pick the class this tuition is for." };
+    }
+  }
+
   // Paying an invoice fills in who and which class from the invoice itself, so
   // the two can never disagree.
   if (invoiceId) {
@@ -138,7 +162,7 @@ export async function recordTransaction(
     direction,
     amount_minor: amount,
     method: str(formData, "method") || "cash",
-    category_id: orNull(str(formData, "category_id")),
+    category_id: categoryId,
     occurred_on: occurredOn,
     student_id: studentId,
     group_id: groupId,
