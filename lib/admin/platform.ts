@@ -1,5 +1,6 @@
 import "server-only";
 
+import { type OrgPlan } from "@/lib/billing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -409,10 +410,58 @@ export interface PlatformUser {
   name: string;
   role: string;
   username: string | null;
+  /** Best address to actually reach this person: the center contact where one
+   *  was given, otherwise the sign-in address. Null when there is neither. */
+  email: string | null;
+  /** True when `email` is a synthetic sign-in address that cannot receive mail
+   *  (`…@students.engprogress.com`) — so the console can say so rather than
+   *  showing an address a support reply would silently bounce off. */
+  emailUndeliverable: boolean;
   orgName: string;
   orgKind: "personal" | "center";
+  orgPlan: OrgPlan;
+  /** Per-org overrides of the plan's monthly allowances. Null = use the plan's
+   *  default. These already existed in the schema; nothing surfaced them. */
+  gradingLimit: number | null;
+  generationLimit: number | null;
+  /** How many profiles share this organization — 1 for an individual learner,
+   *  and the whole roll for anyone in a center. The controls use it to warn
+   *  before a plan change lands on everybody. */
+  orgMemberCount: number;
   createdAt: string;
   practiceCount: number;
+}
+
+/** The domain center-created accounts get when they have no real address; see
+ *  migration 20260809130000. Mail to it goes nowhere by design. */
+const SYNTHETIC_EMAIL_DOMAIN = "@students.engprogress.com";
+
+/**
+ * id → sign-in address, for every auth user.
+ *
+ * `auth.users` is not reachable through PostgREST, which is why the console has
+ * never shown an email and why searching for one found nothing. The Admin API
+ * is the supported way in. It pages, so this drains it rather than trusting one
+ * call — at a few hundred users that is a single request anyway.
+ */
+async function loadAuthEmails(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<Map<string, string>> {
+  const byId = new Map<string, string>();
+  const perPage = 1000;
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) {
+      console.error("[admin/platform] listUsers failed:", error.message);
+      break;
+    }
+    const users = data?.users ?? [];
+    for (const u of users) {
+      if (u.email) byId.set(u.id, u.email);
+    }
+    if (users.length < perPage) break;
+  }
+  return byId;
 }
 
 /**
@@ -422,19 +471,36 @@ export interface PlatformUser {
 export async function loadUsers(query?: string): Promise<PlatformUser[]> {
   const admin = createAdminClient();
 
+  // Emails first: they are needed to DISPLAY a row, and also to search by one.
+  // `auth.users` can't be filtered from here, so an email search resolves to a
+  // set of ids and joins the same `or` as name and login — which keeps the
+  // search running across every account rather than only the newest 500.
+  const emailById = await loadAuthEmails(admin);
+
   let select = admin
     .from("profiles")
-    .select("id, full_name, role, username, organization_id, created_at")
+    .select("id, full_name, role, username, contact_email, organization_id, created_at")
     .order("created_at", { ascending: false })
     .limit(500);
   if (query) {
     const q = `%${query}%`;
-    select = select.or(`full_name.ilike.${q},username.ilike.${q}`);
+    const needle = query.toLowerCase();
+    const ors = [`full_name.ilike.${q}`, `username.ilike.${q}`, `contact_email.ilike.${q}`];
+    // Cap the id list so one broad query (e.g. "@") can't build a URL long
+    // enough for PostgREST to reject. Name/login/contact matching is unaffected.
+    const idMatches = [...emailById.entries()]
+      .filter(([, email]) => email.toLowerCase().includes(needle))
+      .slice(0, 200)
+      .map(([id]) => id);
+    if (idMatches.length > 0) ors.push(`id.in.(${idMatches.join(",")})`);
+    select = select.or(ors.join(","));
   }
 
   const [{ data: profiles }, { data: orgs }] = await Promise.all([
     select,
-    admin.from("organizations").select("id, name, kind"),
+    admin
+      .from("organizations")
+      .select("id, name, kind, plan, grading_monthly_limit, generation_monthly_limit"),
   ]);
 
   const ids = (profiles ?? []).map((p) => p.id);
@@ -456,15 +522,32 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
 
   const orgById = new Map((orgs ?? []).map((o) => [o.id, o]));
 
+  // The roll per organization, so a plan change can say how many people it is
+  // about to affect. Counted over ALL profiles, not the (filtered, capped) page
+  // of rows on screen — a search for one name must still report the true size
+  // of the center behind them.
+  const { data: allMemberships } = await admin.from("profiles").select("organization_id");
+  const memberCount = tally(allMemberships, (m) => m.organization_id as string);
+
   return (profiles ?? []).map((p) => {
     const org = orgById.get(p.organization_id);
+    const authEmail = emailById.get(p.id) ?? null;
+    // A center account's sign-in address is deliberately fake, so the contact
+    // address wins wherever one was given (migration 20260809130000).
+    const email = (p.contact_email as string | null) || authEmail;
     return {
       id: p.id,
       name: p.full_name ?? "Unnamed",
       role: p.role,
       username: p.username,
+      email,
+      emailUndeliverable: Boolean(email && email.endsWith(SYNTHETIC_EMAIL_DOMAIN)),
       orgName: org?.name ?? "—",
       orgKind: (org?.kind ?? "personal") as "personal" | "center",
+      orgPlan: (org?.plan ?? "trial") as OrgPlan,
+      gradingLimit: (org?.grading_monthly_limit as number | null) ?? null,
+      generationLimit: (org?.generation_monthly_limit as number | null) ?? null,
+      orgMemberCount: memberCount.get(p.organization_id) ?? 1,
       createdAt: p.created_at,
       practiceCount: practice.get(p.id) ?? 0,
     };

@@ -149,7 +149,18 @@ export default async function TeachersPage({
         eyebrow="Staff"
         title="Teachers"
         // subtitle={`${teachers.length} on staff · each teacher sees only the groups assigned to them.`}
-        actions={<PanelButton panel="teacher">+ Add teacher</PanelButton>}
+        actions={
+          <>
+            {/* Inviting by link used to be a button in the topbar of every
+                console page. It belongs here: this is the page about staff, so
+                "create the account yourself" and "send them a link" sit side by
+                side, which is the actual choice being made. */}
+            <PanelButton panel="invite" variant="ghost">
+              Invite people
+            </PanelButton>
+            <PanelButton panel="teacher">+ Add teacher</PanelButton>
+          </>
+        }
       />
 
       <KpiRow>

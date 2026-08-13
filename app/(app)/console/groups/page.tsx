@@ -131,7 +131,16 @@ export default async function GroupsPage({
         //     ? `${groups.length} class${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
         //     : "The classes assigned to you — set practice here and read the results."
         // }
-        actions={<PanelButton panel="group">+ New group</PanelButton>}
+        actions={
+          <>
+            {/* The other half of the old topbar pair. A link invite always
+                targets a group, so the page listing them is where it belongs. */}
+            <PanelButton panel="invite" variant="ghost">
+              Invite people
+            </PanelButton>
+            <PanelButton panel="group">+ New group</PanelButton>
+          </>
+        }
       />
 
       <div

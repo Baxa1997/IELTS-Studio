@@ -208,47 +208,14 @@ export function ConsoleChrome({
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#16794C" }} />
             {windowLabel}
           </span>
-          {invitePanel ? (
-            <button
-              type="button"
-              onClick={() => setPanel("invite")}
-              className="cn-btn cn-btn--ghost cn-hide-sm"
-              style={{
-                background: "#fff",
-                border: "1px solid #E0DED8",
-                borderRadius: 8,
-                padding: "7px 11px",
-                fontFamily: "inherit",
-                fontSize: 12.5,
-                color: INK,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Invite people
-            </button>
-          ) : null}
-          {enrolPanel ? (
-            <button
-              type="button"
-              onClick={() => setPanel("enrol")}
-              className="cn-btn cn-btn--primary"
-              style={{
-                background: INDIGO,
-                color: "#fff",
-                border: 0,
-                borderRadius: 8,
-                padding: "8px 14px",
-                fontFamily: "inherit",
-                fontSize: 12.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              + Enrol student
-            </button>
-          ) : null}
+          {/* No global actions live here any more.
+              "+ Enrol student" and "Invite people" used to sit in this bar on
+              EVERY console page, which put "add a student" in front of someone
+              reading the payroll. Both are page actions now: each one lives at
+              the top of the page it belongs to (Students, Teachers, Groups,
+              group detail), where the thing it creates is already on screen.
+              The panels themselves are unchanged — pages open them through
+              <PanelButton>, which is why they are still handed to this chrome. */}
           <div className="cn-hide-sm" style={{ width: 1, height: 24, background: "#E0DED8" }} />
           <div
             className="cn-hide-sm"
