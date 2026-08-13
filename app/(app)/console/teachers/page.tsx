@@ -20,10 +20,13 @@ import {
   TRow,
 } from "@/components/console/crm-ui";
 import { PanelButton } from "@/components/console/console-chrome";
+import { loadSubjects, loadTeacherSubjects } from "@/lib/console/subjects";
 import { requireOrgUser } from "@/lib/auth";
 import { loadTeachers } from "@/lib/console/people";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
+
+import { TeacherSubjectsCell } from "./teacher-subjects-cell";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +53,7 @@ interface Row {
   attendance: number | null;
 }
 
-const COLS = "2.2fr 1fr .8fr .9fr 1.2fr 1fr 40px";
+const COLS = "2fr 1.3fr .7fr .7fr .8fr 1.1fr .9fr 40px";
 
 export default async function TeachersPage({
   searchParams,
@@ -66,13 +69,23 @@ export default async function TeachersPage({
   const sort: SortKey = (sp.sort && sp.sort in SORTS ? sp.sort : "load") as SortKey;
 
   const supabase = await createClient();
-  const [teachers, report, groupsRes, membersRes, ratesRes] = await Promise.all([
-    loadTeachers(),
-    loadCenterReport({ role: profile.role, profileId: profile.id }),
-    supabase.from("groups").select("id, teacher_id"),
-    supabase.from("group_members").select("group_id, student_id"),
-    supabase.from("v_student_attendance").select("student_id, rate_pct"),
-  ]);
+  const [teachers, report, groupsRes, membersRes, ratesRes, subjects, teacherSubjects] =
+    await Promise.all([
+      loadTeachers(),
+      loadCenterReport({ role: profile.role, profileId: profile.id }),
+      supabase.from("groups").select("id, teacher_id"),
+      supabase.from("group_members").select("group_id, student_id"),
+      supabase.from("v_student_attendance").select("student_id, rate_pct"),
+      loadSubjects(),
+      loadTeacherSubjects(),
+    ]);
+
+  // Retired subjects still SHOW on a teacher who has one (the fact is true), but
+  // are not offered when picking — the same rule the group form follows.
+  const subjectChoices = subjects
+    .filter((s) => s.active)
+    .map((s) => ({ id: s.id, name: s.name, color: s.color }));
+  const isOwner = profile.role === "center_admin";
 
   // Attendance rolled up to the teacher: the mean rate of the students in the
   // classes they own. A student in two of their classes counts once.
@@ -239,13 +252,21 @@ export default async function TeachersPage({
         <Table cols={COLS} minWidth={760}>
           <THead
             cols={COLS}
-            labels={["Teacher", "Groups", "Students", "Avg band", "Attendance", "Status", ""]}
+            labels={["Teacher", "Subjects", "Groups", "Students", "Avg band", "Attendance", "Status", ""]}
           />
           {rows.map((t) => {
             const { band, attendance } = t;
             return (
               <TRow key={t.id} cols={COLS}>
                 <PersonCell name={t.name} meta={t.username ?? "no login"} />
+                <TD>
+                  <TeacherSubjectsCell
+                    teacherId={t.id}
+                    subjects={subjectChoices}
+                    selectedIds={teacherSubjects.get(t.id) ?? []}
+                    canEdit={isOwner}
+                  />
+                </TD>
                 <TD>{t.groups || "—"}</TD>
                 <TD tone={t.students === 0 ? "faint" : "body"}>{t.students || "—"}</TD>
                 <TD tone="ink" weight={600}>
