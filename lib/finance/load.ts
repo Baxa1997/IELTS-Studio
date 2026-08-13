@@ -156,6 +156,16 @@ export interface FinanceOverview {
   /** Same window, previous period of equal length — the delta on the KPI. */
   prevInMinor: number;
   prevOutMinor: number;
+  /**
+   * Why the ledger could not be read, or null when it was.
+   *
+   * The list query used to be consumed as `data ?? []`, so ANY failure — a
+   * policy refusing the read, a column that moved, a filter PostgREST rejects —
+   * rendered as a table with nothing in it and no explanation. A desk balance
+   * comes from a view and kept working, so the page could show money arriving
+   * and no entries at all, which is the single most confusing thing it can do.
+   */
+  loadError: string | null;
   /** Totals of everything matching the current filters, not just this page. */
   filteredInMinor: number;
   filteredOutMinor: number;
@@ -419,6 +429,24 @@ export async function loadFinanceOverview(
       .filter((r) => r.direction === dir)
       .reduce((a, r) => a + Number(r.amount_minor ?? 0), 0);
 
+  // Check the error BEFORE falling back to []. Every one of these queries can
+  // fail independently, and the totals strip is built from the other two — so a
+  // failure that goes unreported shows zeros beside a full desk.
+  const loadError =
+    listRes.error?.message ??
+    filteredTotalsRes.error?.message ??
+    totalsRes.error?.message ??
+    null;
+  if (loadError) {
+    console.error("[finance/overview] ledger query failed:", {
+      list: listRes.error,
+      filteredTotals: filteredTotalsRes.error,
+      windowTotals: totalsRes.error,
+      period,
+      branch: filters.branch,
+    });
+  }
+
   const raw = (listRes.data ?? []) as unknown as Record<string, unknown>[];
 
   // One lookup per referenced table, for this page only.
@@ -496,6 +524,7 @@ export async function loadFinanceOverview(
     methodTotals: [...byMethod.values()],
     rows,
     matched: listRes.count ?? rows.length,
+    loadError,
     page,
     pageSize,
     periodInMinor: sum(totalsRes.data as never, "in"),

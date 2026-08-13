@@ -844,7 +844,37 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             </span>
           </div>
 
-          {rows.length === 0 ? (
+          {/* A failed read and an empty result look identical in a table, and
+              they need opposite responses — one is "widen your filters", the
+              other is "something is broken". Say which. */}
+          {overview.loadError ? (
+            <div
+              style={{
+                margin: 18,
+                padding: "14px 16px",
+                borderRadius: 10,
+                border: "1px solid #E4CE9B",
+                background: "#FBF3E2",
+                fontFamily: SANS,
+                fontSize: 13,
+                color: "#7A5410",
+                lineHeight: 1.5,
+              }}
+              role="alert"
+            >
+              <strong>The entries could not be loaded.</strong> Your desk balances are still
+              correct — they come from a different query — so nothing has been lost.
+              <div
+                style={{
+                  marginTop: 6,
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                  fontSize: 12,
+                }}
+              >
+                {overview.loadError}
+              </div>
+            </div>
+          ) : rows.length === 0 ? (
             <Empty>
               Nothing matches. Widen the dates, clear a filter, or take the first payment from a
               desk on the left.
