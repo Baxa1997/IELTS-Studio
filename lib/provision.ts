@@ -22,7 +22,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Admin = SupabaseClient;
 
-export type OrgRole = "student" | "teacher" | "center_admin";
+export type OrgRole = "student" | "teacher" | "administrator" | "center_admin";
 
 export interface OrgPlacement {
   organizationId: string;

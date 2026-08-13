@@ -85,6 +85,26 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
             />
           </div>
 
+          {/* Both staff roles are created the same way — they differ only in
+              what they can reach, and the owner is standing next to whichever
+              one they just hired. Without this the administrator role existed
+              in the database and could be given to nobody. */}
+          <div>
+            <label htmlFor="teacher-role" style={labelStyle}>
+              Role
+            </label>
+            <select id="teacher-role" name="staff_role" defaultValue="teacher" style={fieldStyle}>
+              <option value="teacher">Teacher — their own classes</option>
+              <option value="administrator">
+                Administrator — classes, students and the front desk
+              </option>
+            </select>
+            <p style={{ fontSize: 11.5, color: FAINT, margin: "5px 0 0", lineHeight: 1.45 }}>
+              An administrator runs the center day to day and can take tuition, but never sees
+              payroll, the ledger or billing.
+            </p>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
               <label htmlFor="teacher-login" style={labelStyle}>

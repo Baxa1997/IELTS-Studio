@@ -485,9 +485,11 @@ export async function inviteMember(
   if (!email || !email.includes("@")) return { error: "Enter a valid email address." };
 
   const role = String(formData.get("role") ?? "student");
-  if (role !== "student" && role !== "teacher") return { error: "Choose a valid role." };
-  if (role === "teacher" && profile.role !== "center_admin") {
-    return { error: "Only a center admin can invite teachers." };
+  if (role !== "student" && role !== "teacher" && role !== "administrator") {
+    return { error: "Choose a valid role." };
+  }
+  if (role !== "student" && profile.role !== "center_admin") {
+    return { error: "Only a center admin can invite staff." };
   }
 
   const groupId = String(formData.get("group_id") ?? "").trim() || null;
@@ -1360,7 +1362,15 @@ export async function addTeacherAccount(
 ): Promise<AddStudentState> {
   const { profile } = await requireOrgUser();
   if (profile.role !== "center_admin") {
-    return { error: "Only a center admin can add teachers." };
+    return { error: "Only a center admin can add staff." };
+  }
+
+  // Teacher or administrator — the same account-creation flow, because the two
+  // differ only in what they may reach, and the owner is standing next to
+  // whichever of them they just hired.
+  const staffRole = String(formData.get("staff_role") ?? "teacher").trim();
+  if (staffRole !== "teacher" && staffRole !== "administrator") {
+    return { error: "Choose a valid role." };
   }
 
   const fullName = String(formData.get("full_name") ?? "").trim();
@@ -1372,8 +1382,8 @@ export async function addTeacherAccount(
     .toLowerCase();
   const passwordInput = String(formData.get("password") ?? "").trim();
 
-  if (!fullName) return { error: "Enter the teacher's name." };
-  if (!login) return { error: "Enter a login for the teacher." };
+  if (!fullName) return { error: "Enter their name." };
+  if (!login) return { error: "Enter a login for them." };
   if (!LOGIN_RE.test(login)) {
     return {
       error:
@@ -1410,7 +1420,7 @@ export async function addTeacherAccount(
     email,
     password,
     email_confirm: true,
-    app_metadata: { organization_id: profile.organization_id, role: "teacher" },
+    app_metadata: { organization_id: profile.organization_id, role: staffRole },
     user_metadata: { full_name: fullName },
   });
   if (createError || !created?.user) {
@@ -1424,7 +1434,7 @@ export async function addTeacherAccount(
 
   const { error: placeError } = await placeUserInOrg(admin, created.user.id, {
     organizationId: profile.organization_id,
-    role: "teacher",
+    role: staffRole,
     fullName,
     username: login,
     contactEmail,

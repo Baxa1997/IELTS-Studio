@@ -47,6 +47,7 @@ interface Row {
   id: string;
   name: string;
   username: string | null;
+  role: "teacher" | "administrator";
   groups: number;
   students: number;
   band: number | null;
@@ -132,6 +133,7 @@ export default async function TeachersPage({
     id: t.id,
     name: t.name,
     username: t.username,
+    role: t.role,
     groups: t.groups,
     students: t.students,
     band: mean(stats.get(t.id)?.bands ?? []),
@@ -146,9 +148,14 @@ export default async function TeachersPage({
     )
     .sort(SORTS[sort].cmp);
 
-  const withoutGroups = teachers.filter((t) => t.groups === 0).length;
-  const totalGroups = teachers.reduce((n, t) => n + t.groups, 0);
-  const totalStudents = teachers.reduce((n, t) => n + t.students, 0);
+  // The KPI strip is about TEACHING capacity, so it counts teachers only. An
+  // administrator owns no classes by design; letting them into these figures
+  // would deflate "avg groups each" and, worse, put them in the amber
+  // "Without a group" tile as though something needed fixing.
+  const teaching = teachers.filter((t) => t.role === "teacher");
+  const withoutGroups = teaching.filter((t) => t.groups === 0).length;
+  const totalGroups = teaching.reduce((n, t) => n + t.groups, 0);
+  const totalStudents = teaching.reduce((n, t) => n + t.students, 0);
   const allBands = resolved.map((t) => t.band).filter((b): b is number => b != null);
   // The design's "100% of the center" line: every learner is in somebody's class
   // only when this matches the roll.
@@ -179,7 +186,7 @@ export default async function TeachersPage({
       <KpiRow>
         <Kpi
           label="Teachers"
-          value={teachers.length}
+          value={teaching.length}
           sub={
             mean(allBands) != null ? `avg band ${mean(allBands)?.toFixed(1)}` : "nothing graded yet"
           }
@@ -187,7 +194,7 @@ export default async function TeachersPage({
         <Kpi
           label="Groups they run"
           value={totalGroups}
-          sub={teachers.length ? `avg ${(totalGroups / teachers.length).toFixed(1)} each` : "—"}
+          sub={teaching.length ? `avg ${(totalGroups / teaching.length).toFixed(1)} each` : "—"}
         />
         <Kpi
           label="Students covered"
@@ -204,7 +211,7 @@ export default async function TeachersPage({
           deltaTone="bad"
           sub={
             withoutGroups > 0
-              ? (teachers.find((t) => t.groups === 0)?.name ?? "")
+              ? (teaching.find((t) => t.groups === 0)?.name ?? "")
               : "everyone teaching"
           }
         />
@@ -260,12 +267,16 @@ export default async function TeachersPage({
               <TRow key={t.id} cols={COLS}>
                 <PersonCell name={t.name} meta={t.username ?? "no login"} />
                 <TD>
-                  <TeacherSubjectsCell
-                    teacherId={t.id}
-                    subjects={subjectChoices}
-                    selectedIds={teacherSubjects.get(t.id) ?? []}
-                    canEdit={isOwner}
-                  />
+                  {t.role === "administrator" ? (
+                    <span style={{ color: "#93919F" }}>—</span>
+                  ) : (
+                    <TeacherSubjectsCell
+                      teacherId={t.id}
+                      subjects={subjectChoices}
+                      selectedIds={teacherSubjects.get(t.id) ?? []}
+                      canEdit={isOwner}
+                    />
+                  )}
                 </TD>
                 <TD>{t.groups || "—"}</TD>
                 <TD tone={t.students === 0 ? "faint" : "body"}>{t.students || "—"}</TD>
@@ -287,7 +298,12 @@ export default async function TeachersPage({
                   )}
                 </TD>
                 <TD>
-                  {t.groups === 0 ? (
+                  {/* An administrator has no classes BY DESIGN, so "No class
+                      yet" would read as a problem to fix rather than the role
+                      working correctly. */}
+                  {t.role === "administrator" ? (
+                    <Tag tone="neutral">Administrator</Tag>
+                  ) : t.groups === 0 ? (
                     <Tag tone="amber">No class yet</Tag>
                   ) : t.students === 0 ? (
                     <Tag tone="neutral">No students</Tag>
