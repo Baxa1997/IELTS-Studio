@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { setAccountPlan, type ReviewState } from "../actions";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
@@ -104,28 +105,53 @@ export function PlanControls({
         Manage
       </button>
 
-      {open ? (
-        <>
-          {/* Click-away. Sits under the panel, over everything else. */}
-          <span
-            onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 40, cursor: "default" }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              right: 0,
-              top: "calc(100% + 6px)",
-              zIndex: 41,
-              width: 280,
-              background: "#fff",
-              border: `1px solid ${LINE}`,
-              borderRadius: 10,
-              boxShadow: "0 14px 40px rgba(20,25,50,.16)",
-              padding: 14,
-              textAlign: "left",
-            }}
-          >
+      {/*
+        A PORTAL to <body>, and a centred dialog rather than a popover anchored
+        to the row.
+
+        The row lives inside ScrollTable, which sets maxHeight + overflow:auto —
+        and an ancestor with overflow clips its absolutely-positioned
+        descendants no matter what z-index they carry. The panel was not
+        underneath anything; it was cut off by the scroll box. Raising z-index
+        cannot fix that, so the panel has to leave the box entirely.
+
+        Centred rather than positioned near the button because a fixed popover
+        anchored to a row inside a scrolling table has to be re-measured on
+        every scroll and window resize, and drifts away from its row the moment
+        one is missed. There is nothing to drift from here.
+      */}
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Plan and limits for ${name}`}
+              onClick={() => setOpen(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 1000,
+                background: "rgba(16,18,40,.34)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 20,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "min(320px, 100%)",
+                  maxHeight: "calc(100vh - 40px)",
+                  overflowY: "auto",
+                  background: "#fff",
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 12,
+                  boxShadow: "0 24px 60px rgba(20,25,50,.28)",
+                  padding: 18,
+                  textAlign: "left",
+                }}
+              >
             <div style={{ fontSize: 13.5, fontWeight: 650, color: INK, marginBottom: 2 }}>
               {name}
             </div>
@@ -217,10 +243,28 @@ export function PlanControls({
               >
                 {pending ? "Saving…" : shared ? `Apply to all ${orgMemberCount}` : "Save"}
               </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 8,
+                  background: "#fff",
+                  color: MUTED,
+                  padding: "8px 12px",
+                  fontFamily: "inherit",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
             </form>
-          </div>
-        </>
-      ) : null}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </span>
   );
 }
