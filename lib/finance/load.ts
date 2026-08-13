@@ -127,6 +127,13 @@ export interface LedgerFilters {
   method?: string;
   /** Free text over the note. Names are filtered by picking a person instead. */
   q?: string;
+  /**
+   * Amount bounds, INCLUSIVE, in minor units — the same integers the column
+   * stores, so the caller does the parsing once against the center's currency
+   * and nothing here has to know what a decimal looks like.
+   */
+  minMinor?: number;
+  maxMinor?: number;
   page?: number;
   pageSize?: number;
 }
@@ -149,6 +156,16 @@ export interface FinanceOverview {
   /** Same window, previous period of equal length — the delta on the KPI. */
   prevInMinor: number;
   prevOutMinor: number;
+  /**
+   * Why the ledger could not be read, or null when it was.
+   *
+   * The list query used to be consumed as `data ?? []`, so ANY failure — a
+   * policy refusing the read, a column that moved, a filter PostgREST rejects —
+   * rendered as a table with nothing in it and no explanation. A desk balance
+   * comes from a view and kept working, so the page could show money arriving
+   * and no entries at all, which is the single most confusing thing it can do.
+   */
+  loadError: string | null;
   /** Totals of everything matching the current filters, not just this page. */
   filteredInMinor: number;
   filteredOutMinor: number;
@@ -377,6 +394,17 @@ export async function loadFinanceOverview(
     listQuery = listQuery.ilike("note", `%${filters.q}%`);
     filteredTotalsQuery = filteredTotalsQuery.ilike("note", `%${filters.q}%`);
   }
+  // Amount bounds go on the list AND its totals, like every other narrowing
+  // here — the strip under the filter row has to add up to the rows above it.
+  // `!= null` rather than truthiness: 0 is a legitimate bound.
+  if (filters.minMinor != null) {
+    listQuery = listQuery.gte("amount_minor", filters.minMinor);
+    filteredTotalsQuery = filteredTotalsQuery.gte("amount_minor", filters.minMinor);
+  }
+  if (filters.maxMinor != null) {
+    listQuery = listQuery.lte("amount_minor", filters.maxMinor);
+    filteredTotalsQuery = filteredTotalsQuery.lte("amount_minor", filters.maxMinor);
+  }
 
   const [settings, categoriesRes, listRes, filteredTotalsRes, totalsRes, prevRes] =
     await Promise.all([
@@ -400,6 +428,24 @@ export async function loadFinanceOverview(
     (rows ?? [])
       .filter((r) => r.direction === dir)
       .reduce((a, r) => a + Number(r.amount_minor ?? 0), 0);
+
+  // Check the error BEFORE falling back to []. Every one of these queries can
+  // fail independently, and the totals strip is built from the other two — so a
+  // failure that goes unreported shows zeros beside a full desk.
+  const loadError =
+    listRes.error?.message ??
+    filteredTotalsRes.error?.message ??
+    totalsRes.error?.message ??
+    null;
+  if (loadError) {
+    console.error("[finance/overview] ledger query failed:", {
+      list: listRes.error,
+      filteredTotals: filteredTotalsRes.error,
+      windowTotals: totalsRes.error,
+      period,
+      branch: filters.branch,
+    });
+  }
 
   const raw = (listRes.data ?? []) as unknown as Record<string, unknown>[];
 
@@ -478,6 +524,7 @@ export async function loadFinanceOverview(
     methodTotals: [...byMethod.values()],
     rows,
     matched: listRes.count ?? rows.length,
+    loadError,
     page,
     pageSize,
     periodInMinor: sum(totalsRes.data as never, "in"),

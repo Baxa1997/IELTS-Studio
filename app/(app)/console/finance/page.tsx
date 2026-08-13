@@ -24,8 +24,13 @@ import {
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
-import { loadBranchTotals, loadFinanceOverview, loadFinancePeople } from "@/lib/finance/load";
-import { formatMoney } from "@/lib/finance/money";
+import {
+  loadBranchTotals,
+  loadFinanceOverview,
+  loadFinancePeople,
+  loadFinanceSettings,
+} from "@/lib/finance/load";
+import { formatMoney, parseMoney } from "@/lib/finance/money";
 import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 
 import { DeskForm, TransferForm } from "./desk-forms";
@@ -91,6 +96,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   const teacherId = first(sp.teacher);
   const method = first(sp.method);
   const q = first(sp.q);
+  const minRaw = first(sp.min);
+  const maxRaw = first(sp.max);
   const page = Math.max(1, Number(first(sp.page) ?? 1) || 1);
   const pageSize = Math.min(200, Math.max(10, Number(first(sp.size) ?? 50) || 50));
 
@@ -98,10 +105,19 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   // branches that actually exist, so a stale link can't hide every desk.
   const branchParam = first(sp.branch);
 
+  // Amounts are typed in major units ("550 000") and stored in minor ones, so
+  // they are parsed against the center's own currency before any query sees
+  // them — the same single conversion point every write already goes through.
+  const { currency: filterCurrency } = await loadFinanceSettings();
+  const minMinor = minRaw ? (parseMoney(minRaw, filterCurrency) ?? undefined) : undefined;
+  const maxMinor = maxRaw ? (parseMoney(maxRaw, filterCurrency) ?? undefined) : undefined;
+
   const [overview, people, { groups }] = await Promise.all([
     loadFinanceOverview(profile, {
       period,
       branch: branchParam,
+      minMinor,
+      maxMinor,
       direction,
       accountId,
       categoryId,
@@ -135,11 +151,40 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     count: accounts.filter((a) => a.active && a.branchId === b.id).length,
   }));
   const showBranchTabs = tabs.length > 0;
+  /**
+   * Which branch the page SAYS it is showing, and it has to agree with what was
+   * actually queried.
+   *
+   * The overview above ran with the raw `branch` param, so no param means every
+   * desk. This used to default the highlight to the FIRST branch instead, which
+   * made the page open showing the whole center's money under a tab naming one
+   * site — and then the filter row carries `branch` as a hidden field, so
+   * pressing Apply silently narrowed the ledger to that branch without anyone
+   * having chosen a filter. Defaulting to "all" makes the tab tell the truth.
+   *
+   * A single-site center is the exception: its one branch IS every desk, so
+   * highlighting it says the same thing while keeping the tab row meaningful
+   * (there is no "Whole center" tab until a second site exists).
+   */
   const scope =
     branchParam && (branchParam === "all" || tabs.some((t) => t.key === branchParam))
       ? branchParam
-      : (tabs[0]?.key ?? "all");
-  const inScope = (accountBranchId: string | null) => scope === "all" || accountBranchId === scope;
+      : tabs.length === 1
+        ? tabs[0].key
+        : "all";
+  /**
+   * A desk with NO branch is always in scope.
+   *
+   * Migration 20260810170000 made a branch mandatory, but a desk created before
+   * it still carries none (the loader hands that up as ""). Filtering those out
+   * meant the center's original "Main desk" vanished from the page the moment a
+   * second branch existed — no card, and worse, missing from the desk selector
+   * inside the payment form, so its own "+ Take" posted a different desk or
+   * nothing at all. Money that belongs to no site still belongs to the center,
+   * so it shows everywhere rather than nowhere.
+   */
+  const inScope = (accountBranchId: string | null) =>
+    scope === "all" || !accountBranchId || accountBranchId === scope;
 
   const activeDesks = accounts.filter((a) => a.active && inScope(a.branchId));
   const closedDesks = accounts.filter((a) => !a.active && inScope(a.branchId));
@@ -164,6 +209,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
       teacher: teacherId,
       method,
       q,
+      min: minRaw,
+      max: maxRaw,
       size: pageSize === 50 ? undefined : String(pageSize),
       page: undefined,
       ...patch,
@@ -178,14 +225,30 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
     if (accountId) params.set("account", accountId);
     if (categoryId) params.set("category", categoryId);
     if (direction) params.set("direction", direction);
+    if (minRaw) params.set("min", minRaw);
+    if (maxRaw) params.set("max", maxRaw);
     return `/api/console/finance/export?${params.toString()}`;
   };
 
   const incomeCategories = categories.filter((c) => c.direction === "in");
   const expenseCategories = categories.filter((c) => c.direction === "out");
-  const deskOptions = activeDesks.map((a) => ({ id: a.id, name: a.name }));
+  /**
+   * Every open desk, not just the ones in the current tab.
+   *
+   * The branch tab decides what you are READING, never where you are allowed to
+   * put money — a front desk taking a payment for the other site is ordinary.
+   * And a filtered list was actively dangerous: the form defaults to the desk
+   * whose button you pressed, so when that desk was out of scope the <select>
+   * silently fell back to its first option and the payment landed somewhere
+   * else entirely.
+   */
+  const openDesks = accounts.filter((a) => a.active);
+  const deskOptions = openDesks.map((a) => ({
+    id: a.id,
+    name: a.branchName && showBranchTabs ? `${a.name} · ${a.branchName}` : a.name,
+  }));
   const groupOptions = groups.map((g) => ({ id: g.id, name: g.name }));
-  const transferOptions = activeDesks.map((a) => ({
+  const transferOptions = openDesks.map((a) => ({
     id: a.id,
     name: a.name,
     balanceLabel: money(a.balanceMinor),
@@ -702,6 +765,25 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               ))}
             </select>
 
+            {/* Amount bounds, inclusive. Typed the way the amount box on the
+                payment form is typed — "550 000" — and parsed the same way. */}
+            <input
+              name="min"
+              defaultValue={minRaw ?? ""}
+              inputMode="numeric"
+              placeholder={`From ${currency}`}
+              title="Only entries of at least this much"
+              style={{ ...filterInput, width: 116 }}
+            />
+            <input
+              name="max"
+              defaultValue={maxRaw ?? ""}
+              inputMode="numeric"
+              placeholder={`To ${currency}`}
+              title="Only entries of at most this much"
+              style={{ ...filterInput, width: 116 }}
+            />
+
             <input
               name="q"
               defaultValue={q ?? ""}
@@ -762,16 +844,56 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
             </span>
           </div>
 
-          {rows.length === 0 ? (
+          {/* A failed read and an empty result look identical in a table, and
+              they need opposite responses — one is "widen your filters", the
+              other is "something is broken". Say which. */}
+          {overview.loadError ? (
+            <div
+              style={{
+                margin: 18,
+                padding: "14px 16px",
+                borderRadius: 10,
+                border: "1px solid #E4CE9B",
+                background: "#FBF3E2",
+                fontFamily: SANS,
+                fontSize: 13,
+                color: "#7A5410",
+                lineHeight: 1.5,
+              }}
+              role="alert"
+            >
+              <strong>The entries could not be loaded.</strong> Your desk balances are still
+              correct — they come from a different query — so nothing has been lost.
+              <div
+                style={{
+                  marginTop: 6,
+                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                  fontSize: 12,
+                }}
+              >
+                {overview.loadError}
+              </div>
+            </div>
+          ) : rows.length === 0 ? (
             <Empty>
               Nothing matches. Widen the dates, clear a filter, or take the first payment from a
               desk on the left.
             </Empty>
           ) : (
-            <Table cols={COLS} minWidth={880}>
+            <Table cols={COLS} minWidth={LEDGER_MIN_WIDTH}>
               <THead
                 cols={COLS}
-                labels={["№", "Date", "Who", "What it was for", "Desk", "Amount", "Status"]}
+                labels={["№", "Date", "Who", "Group", "What it was for", "Desk", "Amount", "Status"]}
+                align={[
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  "right",
+                  undefined,
+                ]}
               />
               {rows.map((row, i) => (
                 <TRow key={row.id} cols={COLS}>
@@ -789,22 +911,34 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                         : ""}
                     </div>
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div
+                  {/* Who paid, and which class it was for — two questions, so two
+                      columns. The class used to be a grey sub-line under the
+                      name, which made it read as part of the person rather than
+                      as the thing being paid for. */}
+                  <TD tone="body">
+                    <span
                       style={{
-                        fontSize: 12.5,
-                        color: "#4C4A63",
+                        display: "block",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
                     >
                       {row.personName ?? "—"}
-                    </div>
-                    {row.groupName ? (
-                      <div style={{ fontSize: 11, color: FAINT }}>{row.groupName}</div>
-                    ) : null}
-                  </div>
+                    </span>
+                  </TD>
+                  <TD tone="soft">
+                    <span
+                      style={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {row.groupName ?? "—"}
+                    </span>
+                  </TD>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 500, color: INK, fontSize: 12.5 }}>
                       {row.categoryName ?? (row.transferId ? "Transfer" : "Uncategorised")}
@@ -929,7 +1063,20 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
   );
 }
 
-const COLS = "44px 100px 1.2fr 1.5fr 110px 130px 92px";
+/* Elastic everywhere it can be, so the table fits any width and never grows a
+   horizontal scrollbar. `minmax(0, …fr)` rather than bare `…fr` because a grid
+   track's default minimum is its content — one long note would otherwise push
+   the table wider than its card and bring the scrollbar back. */
+const COLS =
+  "36px 92px minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,0.9fr) minmax(88px,0.8fr) 84px";
+
+/**
+ * Low enough that a desktop never scrolls, high enough that eight columns stay
+ * readable rather than crushing to initials on a laptop. Below it the wrapper
+ * scrolls — with no visible bar (`.cn-noscrollbar`), which is the point: the
+ * content stays reachable and the chrome stays out of the way.
+ */
+const LEDGER_MIN_WIDTH = 820;
 
 const chip: React.CSSProperties = {
   background: "#F4F3EF",

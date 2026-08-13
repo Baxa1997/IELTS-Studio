@@ -46,7 +46,7 @@ interface PassageGroup {
  * with a per-passage score and headed sections.
  */
 export default async function ReadingFeedbackPage({ params }: PageProps) {
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
   const { id } = await params;
   const supabase = await createClient();
 
@@ -55,7 +55,9 @@ export default async function ReadingFeedbackPage({ params }: PageProps) {
     .select("test_id, passage_id, band, percent, correct_count, total_questions, type_breakdown, details, submitted_at")
     .eq("id", id)
     .maybeSingle();
-  if (!attempt) redirect("/activities");
+  // Same reasoning as the essay page: staff have no learner history to
+  // return to, so send them back to the console instead of an empty list.
+  if (!attempt) redirect(profile.role === "student" ? "/activities" : "/console");
 
   const isTest = attempt.test_id != null;
   const items = (attempt.details ?? []) as ReviewRow[];

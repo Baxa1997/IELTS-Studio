@@ -267,7 +267,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
                 </Tag>
               }
             />
-            <Table cols={COLS} minWidth={900}>
+            <Table cols={COLS}>
               <THead
                 cols={COLS}
                 labels={["Teacher", "Rule", "Gross", "Adjust", "Net", "Paid", "Owed", ""]}

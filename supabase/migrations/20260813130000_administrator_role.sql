@@ -1,0 +1,23 @@
+-- ============================================================================
+-- 20260813130000_administrator_role.sql
+-- A fourth org role: `administrator` — the person who runs the front desk.
+--
+-- WHY. `center_admin` was doing two jobs at once: the owner who sets prices,
+-- pays staff and holds the plan, and the manager who fills classes, chases
+-- attendance and takes tuition at the counter. Centers hire the second person
+-- and cannot give them the first person's account, so today they either share
+-- the owner's login or the owner does the front desk themselves.
+--
+-- THE BOUNDARY (owner's decision, 2026-08-13): an administrator runs OPERATIONS
+-- and may take money IN. They cannot see what the center is worth or what staff
+-- are paid — no payroll, no ledger, no invoices, no branches, no billing, no
+-- settings. Money in is a counter job; money out is an owner's.
+--
+-- NOTE: the value is added here and deliberately NOT used in this file.
+-- Postgres refuses a new enum value in the same transaction that adds it, so
+-- every policy that admits it lives in 20260813140000.
+--
+-- Idempotent: safe to re-run in the Supabase SQL editor.
+-- ============================================================================
+
+alter type public.user_role add value if not exists 'administrator';

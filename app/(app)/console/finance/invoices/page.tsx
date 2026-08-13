@@ -274,7 +274,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
             class in one go.
           </Empty>
         ) : (
-          <Table cols={COLS} minWidth={840}>
+          <Table cols={COLS}>
             <THead
               cols={COLS}
               labels={["Student", "Class", "Due", "Paid", "Balance", "Status", ""]}

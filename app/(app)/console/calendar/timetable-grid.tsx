@@ -173,7 +173,7 @@ export function TimetableGrid({
 
   return (
     <>
-      <div style={{ overflowX: "auto" }}>
+      <div className="cn-noscrollbar" style={{ overflowX: "auto" }}>
         <div style={{ minWidth: 120 + rooms.length * 160 }}>
           {/* room headings */}
           <div

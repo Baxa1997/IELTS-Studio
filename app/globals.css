@@ -819,6 +819,26 @@
   }
 }
 
+/* Scrolls, but shows no bar.
+
+   For panes that overflow only occasionally — a wide table on a narrow screen,
+   a long list inside a drawer — where a permanent gutter of scrollbar reads as
+   chrome the layout did not ask for. The overflow itself is untouched: wheel,
+   trackpad, touch, keyboard and programmatic scrolling all still work, and
+   nothing is ever clipped. Only the visual bar is suppressed.
+
+   All three properties are needed: `scrollbar-width` covers Firefox,
+   `-ms-overflow-style` old Edge, and the pseudo-element WebKit. */
+.cn-noscrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.cn-noscrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* Only the main column scrolls — give it a slim Option A scrollbar. */
 .lp-shell-main {
   scrollbar-width: thin;

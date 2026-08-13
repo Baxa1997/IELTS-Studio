@@ -133,6 +133,7 @@ export function ScrollTable({
   return (
     <div>
       <div
+        className="cn-noscrollbar"
         style={{
           maxHeight,
           overflowY: "auto",

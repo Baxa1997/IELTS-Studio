@@ -35,10 +35,16 @@ export function CreateGroupForm({
   teachers,
   branches,
   rooms,
+  subjects,
   canAssignTeacher,
   pricing,
 }: {
-  teachers: { id: string; name: string }[];
+  /** `subjectIds` is which subjects this teacher can take; empty means nobody
+   *  has said, which is treated as "any" rather than "none". */
+  teachers: { id: string; name: string; subjectIds?: string[] }[];
+  /** The center's subject list. Empty until the owner adds one, and then this
+   *  whole field disappears rather than showing an empty select. */
+  subjects?: { id: string; name: string }[];
   /** The center's sites. There is always at least one. */
   branches: { id: string; name: string }[];
   /** Bookable rooms across the center; the schedule offers only this branch's. */
@@ -53,6 +59,15 @@ export function CreateGroupForm({
   // The branch decides which rooms the schedule may offer, so the picker has to
   // know what is currently selected rather than reading it at submit time.
   const [branchId, setBranchId] = useState(branches[0]?.id ?? "");
+  const [subjectId, setSubjectId] = useState("");
+
+  const subjectList = subjects ?? [];
+  // Once a subject is chosen, offer the teachers who can take it — plus anyone
+  // whose subjects were never set, so an unfilled field can't empty the list.
+  const eligibleTeachers = subjectId
+    ? teachers.filter((t) => !t.subjectIds?.length || t.subjectIds.includes(subjectId))
+    : teachers;
+  const narrowed = Boolean(subjectId) && eligibleTeachers.length < teachers.length;
 
   return (
     <form action={formAction} className="space-y-4">
@@ -87,12 +102,31 @@ export function CreateGroupForm({
       ) : (
         <input type="hidden" name="branch_id" value={branchId} />
       )}
+      {subjectList.length > 0 ? (
+        <div className="space-y-2">
+          <Label htmlFor="group-subject">Subject</Label>
+          <select
+            id="group-subject"
+            name="subject_id"
+            className={FIELD}
+            value={subjectId}
+            onChange={(e) => setSubjectId(e.target.value)}
+          >
+            <option value="">Not set</option>
+            {subjectList.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       {canAssignTeacher ? (
         <div className="space-y-2">
           <Label htmlFor="group-teacher">Teacher</Label>
           <select id="group-teacher" name="teacher_id" className={FIELD} defaultValue="">
             <option value="">Unassigned</option>
-            {teachers.map((t) => (
+            {eligibleTeachers.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
@@ -101,7 +135,12 @@ export function CreateGroupForm({
           <p className="text-muted-foreground text-xs">
             {teachers.length === 0
               ? "No teachers yet — you can create the class now and assign one later."
-              : "You can leave this unassigned and set it later."}
+              : /* Narrowing, not hiding: a teacher with no subjects set is still
+                   offered, because "nobody has said what they teach" must not
+                   read as "they teach nothing" and empty the list. */
+                narrowed
+                ? `Showing the ${eligibleTeachers.length} who can take this subject.`
+                : "You can leave this unassigned and set it later."}
           </p>
         </div>
       ) : null}

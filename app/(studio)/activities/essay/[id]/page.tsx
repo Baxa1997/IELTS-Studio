@@ -19,7 +19,12 @@ interface PageProps {
  * student only sees their own essay.
  */
 export default async function EssayFeedbackPage({ params }: PageProps) {
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
+  // Where to send someone who cannot see this piece of work. A learner belongs
+  // back in their own history; a teacher does NOT — /activities is the learner's
+  // page and is empty for staff, so bouncing them there reads as "I am not
+  // allowed to see my student's work" when usually it just is not graded yet.
+  const nowhere = profile.role === "student" ? "/activities" : "/console";
   const { id } = await params;
   const supabase = await createClient();
 
@@ -28,7 +33,7 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
     .select("id, task_type, content, prompt_id")
     .eq("id", id)
     .maybeSingle();
-  if (!essay) redirect("/activities");
+  if (!essay) redirect(nowhere);
 
   const [{ data: grading }, promptRes] = await Promise.all([
     supabase
@@ -44,7 +49,7 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
   ]);
 
   // No grading yet → nothing to show on this dedicated page; back to the list.
-  if (!grading) redirect("/activities");
+  if (!grading) redirect(nowhere);
 
   const taskType = essay.task_type as string;
   const criteria = (grading.criteria ?? {}) as Record<string, CriterionScore>;

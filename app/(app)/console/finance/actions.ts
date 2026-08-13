@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOrgUser } from "@/lib/auth";
+import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
 import { gatherPayrollFacts, loadSalaryRules } from "@/lib/finance/payroll";
@@ -41,6 +41,18 @@ async function requireOwner(): Promise<
   return { profile };
 }
 
+/** Anyone who mans the counter: the owner, or an administrator. Taking tuition
+ *  is the only money either of the latter may touch. */
+async function requireFrontDesk(): Promise<
+  { error: ActionState } | { profile: Awaited<ReturnType<typeof requireOrgUser>>["profile"] }
+> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role)) {
+    return { error: { error: "Only center staff can take a payment." } };
+  }
+  return { profile };
+}
+
 const str = (fd: FormData, key: string): string => String(fd.get(key) ?? "").trim();
 const orNull = (value: string): string | null => (value === "" ? null : value);
 
@@ -66,11 +78,16 @@ export async function recordTransaction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const guard = await requireOwner();
+  const direction = str(formData, "direction") === "out" ? "out" : "in";
+
+  // The one exception to rule 1 above: taking money IN is a counter job, so an
+  // administrator gets through here and nowhere else in this file. Money out
+  // stays with the owner. RLS says the same thing (migration 20260813140000),
+  // keyed on `direction` — so this check is the readable error, not the gate.
+  const guard = direction === "in" ? await requireFrontDesk() : await requireOwner();
   if ("error" in guard) return guard.error;
   const { profile } = guard;
 
-  const direction = str(formData, "direction") === "out" ? "out" : "in";
   const settings = await loadFinanceSettings();
   const amount = parseMoney(str(formData, "amount"), settings.currency);
   if (amount == null || amount <= 0) return { error: "Enter an amount greater than zero." };
@@ -81,11 +98,50 @@ export async function recordTransaction(
   const occurredOn = str(formData, "occurred_on");
   if (!isDate(occurredOn)) return { error: "Pick a valid date." };
 
+  // Say WHICH thing is wrong with the desk. Without this the insert either
+  // failed on a foreign key ("violates constraint …_account_fk", meaningless at
+  // a front desk) or, when the form had been rendered with a stale desk list,
+  // succeeded against the wrong one.
+  const supabaseCheck = await createClient();
+  const { data: desk } = await supabaseCheck
+    .from("finance_accounts")
+    .select("id, name, active")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (!desk) return { error: "That cash desk no longer exists — reload the page." };
+  if (!desk.active) {
+    return { error: `${desk.name as string} is closed. Re-open it, or pick another desk.` };
+  }
+
   const invoiceId = orNull(str(formData, "invoice_id"));
   let studentId = orNull(str(formData, "student_id"));
   let groupId = orNull(str(formData, "group_id"));
 
   const supabase = await createClient();
+
+  /**
+   * Tuition has to say whose, and for which class.
+   *
+   * Not a style rule — three things downstream are wrong without it. A payment
+   * with no student never clears that student's balance, so they stay a debtor
+   * having paid. A payment with no class contributes nothing to the `collected`
+   * basis the salary engine pays a teacher from. And the row is unreadable a
+   * month later: "600 000, Tuition, Cash" answers none of the questions anyone
+   * asks of it. Other categories are genuinely impersonal — rent has no student
+   * — so the requirement follows the CATEGORY, not the direction.
+   */
+  const categoryId = orNull(str(formData, "category_id"));
+  if (direction === "in" && categoryId && !invoiceId) {
+    const { data: category } = await supabase
+      .from("finance_categories")
+      .select("slug, name")
+      .eq("id", categoryId)
+      .maybeSingle();
+    if (category?.slug === "tuition") {
+      if (!studentId) return { error: "Tuition has to say who paid it. Pick the student." };
+      if (!groupId) return { error: "Pick the class this tuition is for." };
+    }
+  }
 
   // Paying an invoice fills in who and which class from the invoice itself, so
   // the two can never disagree.
@@ -106,7 +162,7 @@ export async function recordTransaction(
     direction,
     amount_minor: amount,
     method: str(formData, "method") || "cash",
-    category_id: orNull(str(formData, "category_id")),
+    category_id: categoryId,
     occurred_on: occurredOn,
     student_id: studentId,
     group_id: groupId,
@@ -177,6 +233,71 @@ export async function saveAccount(_prev: ActionState, formData: FormData): Promi
 
   refreshFinance();
   return { ok: id ? "Desk updated." : `${name} added.` };
+}
+
+/**
+ * Remove a cash desk.
+ *
+ * There was no way to do this at all: the drawer offered Open/Closed and
+ * nothing else, so a desk added by mistake stayed on the page forever.
+ *
+ * A desk that has never handled money is deleted outright. A desk that HAS is
+ * closed instead, never deleted — its transactions are the center's ledger, and
+ * `finance_transactions.account_id` points at it. Deleting it would either take
+ * the history with it or orphan every row that proves where the money went. So
+ * the action reports which of the two it did rather than pretending they are
+ * the same thing.
+ */
+export async function deleteAccount(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const guard = await requireOwner();
+  if ("error" in guard) return guard.error;
+
+  const id = str(formData, "id");
+  if (!id) return { error: "Nothing to remove." };
+
+  const supabase = await createClient();
+
+  const { data: desk } = await supabase
+    .from("finance_accounts")
+    .select("id, name")
+    .eq("id", id)
+    .maybeSingle();
+  if (!desk) return { error: "That desk is already gone." };
+  const name = desk.name as string;
+
+  const { count } = await supabase
+    .from("finance_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("account_id", id);
+
+  if ((count ?? 0) > 0) {
+    const { data: closed, error } = await supabase
+      .from("finance_accounts")
+      .update({ active: false })
+      .eq("id", id)
+      .select("id"); // RLS-filtered writes report success without this
+    if (error) return { error: error.message };
+    if (!closed || closed.length === 0) {
+      return { error: "You do not have permission to change that desk." };
+    }
+    refreshFinance();
+    return {
+      ok: `${name} has ${count} entr${count === 1 ? "y" : "ies"} against it, so it was closed rather than deleted — the ledger stays intact.`,
+    };
+  }
+
+  const { data: removed, error } = await supabase
+    .from("finance_accounts")
+    .delete()
+    .eq("id", id)
+    .select("id"); // same: a delete that matches nothing is not an error
+  if (error) return { error: error.message };
+  if (!removed || removed.length === 0) {
+    return { error: "You do not have permission to remove that desk." };
+  }
+
+  refreshFinance();
+  return { ok: `${name} removed.` };
 }
 
 /**

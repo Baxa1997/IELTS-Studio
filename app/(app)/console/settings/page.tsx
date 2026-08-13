@@ -15,9 +15,11 @@ import {
   Tag,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
+import { loadSubjects } from "@/lib/console/subjects";
 import { createClient } from "@/lib/supabase/server";
 
 import { CenterProfileForm } from "./profile-form";
+import { SubjectsManager } from "./subjects-manager";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,7 @@ const when = (iso: string) => {
  * Settings & roles: who can see what, and how the center appears.
  *
  * The roles list is a description of the permission model that actually exists
- * — center_admin, teacher, student — not a configurable ACL. Making it look
+ * — center_admin, administrator, teacher, student — not a configurable ACL. Making it look
  * editable would promise something RLS does not implement, and the three roles
  * are baked into policies across a dozen tables.
  */
@@ -44,6 +46,7 @@ export default async function SettingsPage() {
   if (profile.role !== "center_admin") redirect("/console");
 
   const supabase = await createClient();
+  const subjects = await loadSubjects();
   const [orgRes, peopleRes, groupsRes, invitesRes, announceRes, certRes] = await Promise.all([
     supabase
       .from("organizations")
@@ -93,6 +96,11 @@ export default async function SettingsPage() {
       name: "Center admin",
       count: roleCount("center_admin"),
       can: "Everything in the center: teachers, groups, students, reports, billing, certificates and announcements. Cannot approve or upgrade the center itself.",
+    },
+    {
+      name: "Administrator",
+      count: roleCount("administrator"),
+      can: "Runs the center day to day: classes, students, teachers on classes, the timetable, attendance, reports and taking tuition at the counter. Never payroll, the ledger, invoices, branches, billing or these settings.",
     },
     {
       name: "Teacher",
@@ -189,11 +197,19 @@ export default async function SettingsPage() {
             ))}
             <div style={{ padding: "12px 18px" }}>
               <CardNote>
-                These three are enforced in the database, not in the interface — every table carries
-                a policy that names them. A finer-grained role would be a schema change, not a
+                These are enforced in the database, not in the interface — every table carries a
+                policy that names them. A finer-grained role would be a schema change, not a
                 setting.
               </CardNote>
             </div>
+          </Card>
+
+          <Card>
+            <CardHead
+              title="Subjects"
+              note="what this center teaches — a class carries one, a teacher can take several"
+            />
+            <SubjectsManager subjects={subjects} />
           </Card>
 
           <Card flush>

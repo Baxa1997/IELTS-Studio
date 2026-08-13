@@ -165,7 +165,7 @@ export default async function ReportsPage() {
             note="newest first — open a student to see every piece they did, with the marking"
           />
           {handedIn.length > 0 ? (
-            <Table cols={IN_COLS} minWidth={780}>
+            <Table cols={IN_COLS}>
               <THead
                 cols={IN_COLS}
                 labels={["Student", "Class", "Handed in", "Band", "Last", ""]}
@@ -229,7 +229,7 @@ export default async function ReportsPage() {
             note="students in your classes with no marked work — longest silence first"
           />
           {waiting.length > 0 ? (
-            <Table cols={WAIT_COLS} minWidth={700}>
+            <Table cols={WAIT_COLS}>
               <THead
                 cols={WAIT_COLS}
                 labels={["Student", "Class", "Started but unfinished", "Last seen", ""]}
@@ -291,7 +291,7 @@ export default async function ReportsPage() {
                 divided
                 note="completion is the share of set practice finished and marked"
               />
-              <Table cols={COLS} minWidth={isCenter ? 780 : 620}>
+              <Table cols={COLS}>
                 <THead
                   cols={COLS}
                   labels={

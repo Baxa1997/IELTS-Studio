@@ -23,6 +23,16 @@ export interface AssignmentReportRow {
   score: string | null;
   /** What went wrong: the capping criterion, or the worst question types. */
   weakness: string | null;
+  /**
+   * The learner's OWN feedback page for this piece of work — the marked-up
+   * essay, the per-answer reading explanations, the listening transcript.
+   *
+   * This report used to stop at a band and a capping criterion, which tells a
+   * teacher that Dilnoza is a 6.0 held back by Coherence but not one word she
+   * actually wrote. Null until the work is graded; those four pages gate on RLS
+   * rather than role, so staff and student read the identical page.
+   */
+  reportHref: string | null;
 }
 
 export interface AssignmentReport {
@@ -250,7 +260,7 @@ async function writingRows(
     const essay = byStudent.get(id);
     const grading = essay ? gradingByEssay.get(essay.id) : undefined;
     if (!essay) {
-      return { studentId: id, name: names.get(id) ?? "—", status: "not_started" as const, band: null, score: null, weakness: null };
+      return { studentId: id, name: names.get(id) ?? "—", status: "not_started" as const, band: null, score: null, weakness: null, reportHref: null };
     }
     if (!grading) {
       return {
@@ -260,6 +270,8 @@ async function writingRows(
         band: null,
         score: `${essay.wordCount} words`,
         weakness: null,
+        // Written but not marked — there is no feedback page to open yet.
+        reportHref: null,
       };
     }
     return {
@@ -269,6 +281,7 @@ async function writingRows(
       band: grading.band,
       score: `${essay.wordCount} words`,
       weakness: weakestCriterion(grading.criteria),
+      reportHref: `/activities/essay/${essay.id}`,
     };
   });
 }
@@ -283,7 +296,7 @@ async function readingRows(
 
   const { data: attempts } = await supabase
     .from("reading_attempts")
-    .select("student_id, status, band, correct_count, total_questions, type_breakdown, created_at")
+    .select("id, student_id, status, band, correct_count, total_questions, type_breakdown, created_at")
     .eq("test_id", testId)
     .in("student_id", memberIds)
     .order("created_at", { ascending: true });
@@ -294,10 +307,10 @@ async function readingRows(
   return memberIds.map((id) => {
     const at = byStudent.get(id);
     if (!at) {
-      return { studentId: id, name: names.get(id) ?? "—", status: "not_started" as const, band: null, score: null, weakness: null };
+      return { studentId: id, name: names.get(id) ?? "—", status: "not_started" as const, band: null, score: null, weakness: null, reportHref: null };
     }
     if (at.status !== "graded" || at.band == null) {
-      return { studentId: id, name: names.get(id) ?? "—", status: "in_progress" as const, band: null, score: null, weakness: null };
+      return { studentId: id, name: names.get(id) ?? "—", status: "in_progress" as const, band: null, score: null, weakness: null, reportHref: null };
     }
     return {
       studentId: id,
@@ -306,6 +319,7 @@ async function readingRows(
       band: Number(at.band),
       score: `${at.correct_count ?? 0} / ${at.total_questions ?? 0}`,
       weakness: worstQuestionTypes(at.type_breakdown as Record<string, { attempted?: number; correct?: number }> | null),
+      reportHref: `/activities/reading/${at.id as string}`,
     };
   });
 }
@@ -325,28 +339,29 @@ async function listeningRows(
 
   const { data: attempts } = await supabase
     .from("listening_attempts")
-    .select("student_id, score, max_score, created_at")
+    .select("id, student_id, score, max_score, created_at")
     .eq("library_id", libraryId)
     .in("student_id", memberIds)
     .order("created_at", { ascending: true });
 
-  const byStudent = new Map<string, { score: number | null; max: number | null }>();
+  const byStudent = new Map<string, { id: string; score: number | null; max: number | null }>();
   for (const at of (attempts ?? []) as {
+    id: string;
     student_id: string;
     score: number | null;
     max_score: number | null;
   }[]) {
-    byStudent.set(at.student_id, { score: at.score, max: at.max_score });
+    byStudent.set(at.student_id, { id: at.id, score: at.score, max: at.max_score });
   }
 
   return memberIds.map((id) => {
     const at = byStudent.get(id);
     const name = names.get(id) ?? "—";
     if (!at) {
-      return { studentId: id, name, status: "not_started" as const, band: null, score: null, weakness: null };
+      return { studentId: id, name, status: "not_started" as const, band: null, score: null, weakness: null, reportHref: null };
     }
     if (at.score == null) {
-      return { studentId: id, name, status: "in_progress" as const, band: null, score: null, weakness: null };
+      return { studentId: id, name, status: "in_progress" as const, band: null, score: null, weakness: null, reportHref: null };
     }
     return {
       studentId: id,
@@ -355,6 +370,7 @@ async function listeningRows(
       band: null,
       score: `${at.score} / ${at.max ?? 0}`,
       weakness: null,
+      reportHref: `/listen/results/${at.id}`,
     };
   });
 }

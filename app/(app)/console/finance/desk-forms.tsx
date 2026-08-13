@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   Field,
@@ -11,7 +11,7 @@ import {
   useDrawerClose,
 } from "@/components/console/finance-ui";
 
-import { type ActionState, saveAccount, transferBetweenAccounts } from "./actions";
+import { type ActionState, deleteAccount, saveAccount, transferBetweenAccounts } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
 
 /**
@@ -55,6 +55,7 @@ export function DeskForm({
   useActionFeedback(state, { keepOpen: true });
 
   return (
+    <>
     <form action={formAction} key={state.ok ?? "new"}>
       {desk?.id ? <input type="hidden" name="id" value={desk.id} /> : null}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -132,6 +133,95 @@ export function DeskForm({
       </div>
       <FormMessage state={state} />
     </form>
+    {/* A SIBLING of the form above, never a child: it contains its own <form>
+        and posts to a different action, and a nested form is invalid HTML the
+        browser silently flattens — the delete would have submitted saveAccount. */}
+    {desk ? <DeleteDeskButton id={desk.id} name={desk.name} /> : null}
+    </>
+  );
+}
+
+/**
+ * Remove the desk entirely.
+ *
+ * Deliberately quiet and last: it is the destructive option, and the ordinary
+ * one is the Status select above. The server decides whether this can really
+ * delete — a desk with entries against it is closed instead — so the copy
+ * promises only "remove", and the result says which actually happened.
+ */
+function DeleteDeskButton({ id, name }: { id: string; name: string }) {
+  const [state, formAction, pending] = useActionState(deleteAccount, {} as ActionState);
+  const [confirming, setConfirming] = useState(false);
+  useActionFeedback(state, { keepOpen: true });
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        style={{
+          marginTop: 14,
+          background: "none",
+          border: 0,
+          padding: 0,
+          fontFamily: "inherit",
+          fontSize: 12.5,
+          color: "#C2453A",
+          cursor: "pointer",
+          textDecoration: "underline",
+        }}
+      >
+        Remove this desk
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+      <p style={{ fontSize: 12.5, color: "#5A6076", margin: 0, lineHeight: 1.45 }}>
+        Remove <strong>{name}</strong>? If any money has gone through it, it will be closed
+        instead of deleted so the ledger keeps its history.
+      </p>
+      <div style={{ display: "flex", gap: 8 }}>
+        <form action={formAction}>
+          <input type="hidden" name="id" value={id} />
+          <button
+            type="submit"
+            disabled={pending}
+            style={{
+              background: "#C2453A",
+              border: 0,
+              borderRadius: 8,
+              color: "#fff",
+              padding: "7px 13px",
+              fontFamily: "inherit",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: pending ? "default" : "pointer",
+              opacity: pending ? 0.7 : 1,
+            }}
+          >
+            {pending ? "Removing…" : "Yes, remove it"}
+          </button>
+        </form>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          style={{
+            background: "#fff",
+            border: "1px solid #E0DED8",
+            borderRadius: 8,
+            padding: "7px 13px",
+            fontFamily: "inherit",
+            fontSize: 12.5,
+            cursor: "pointer",
+          }}
+        >
+          Keep it
+        </button>
+      </div>
+      <FormMessage state={state} />
+    </div>
   );
 }
 

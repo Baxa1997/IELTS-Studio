@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireOrgUser } from "@/lib/auth";
+import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { notify } from "@/lib/notifications/send";
 import { createClient } from "@/lib/supabase/server";
 import { sendAnnouncementTelegram } from "@/lib/telegram/send";
@@ -32,7 +32,7 @@ const STATUSES = new Set(["present", "late", "absent"]);
  */
 export async function saveRegister(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can mark attendance." };
   }
 
@@ -266,7 +266,7 @@ export async function startTelegramLink(
   formData: FormData,
 ): Promise<ActionState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can connect a channel." };
   }
   const groupId = String(formData.get("group_id") ?? "").trim();
@@ -302,7 +302,7 @@ export async function startTelegramLink(
 /** Forget a channel. The bot stays in it; it just stops being posted to. */
 export async function unlinkTelegram(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can disconnect a channel." };
   }
   const groupId = String(formData.get("group_id") ?? "").trim();

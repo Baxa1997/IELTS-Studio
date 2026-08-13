@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 /** super_admin is platform-level (in app_metadata, no org); the rest are org-scoped. */
-export type AppRole = "super_admin" | "center_admin" | "teacher" | "student";
+export type AppRole =
+  | "super_admin"
+  | "center_admin"
+  | "administrator"
+  | "teacher"
+  | "student";
 
 export type OrgKind = "personal" | "center";
 export type OrgStatus = "pending" | "active" | "rejected" | "suspended";
@@ -61,6 +66,27 @@ export function roleHome(role: AppRole): "/admin" | "/dashboard" | "/console" {
   if (role === "super_admin") return "/admin";
   if (role === "student") return "/dashboard";
   return "/console";
+}
+
+/**
+ * The two capabilities that split the old `center_admin`, mirroring the SQL
+ * functions of the same names (migration 20260813140000).
+ *
+ * Use these instead of comparing to a role string. A page that asks
+ * `role === "center_admin"` silently excludes an administrator, and a page that
+ * asks `role !== "teacher"` silently includes them — both are how a new role
+ * leaks into places nobody meant it to go. RLS is still the gate; these decide
+ * what to render.
+ */
+
+/** Owns the center: prices, payroll, the ledger, the plan, the settings. */
+export function isOrgOwner(role: AppRole | undefined | null): boolean {
+  return role === "center_admin";
+}
+
+/** Runs the center day to day: classes, rosters, attendance, the front desk. */
+export function canManagePeople(role: AppRole | undefined | null): boolean {
+  return role === "center_admin" || role === "administrator";
 }
 
 /**

@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
-import { requireOrgUser } from "@/lib/auth";
+import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
 import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
@@ -99,7 +99,7 @@ export async function createGroup(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can create groups." };
   }
 
@@ -115,6 +115,10 @@ export async function createGroup(
   // so a single-site center never sees this field.
   const branchId = String(formData.get("branch_id") ?? "").trim();
   if (!branchId) return { error: "Pick the branch this class is taught at." };
+
+  // What the class teaches. Optional: a center that has not set up subjects yet
+  // creates classes exactly as before, and the field is not even rendered.
+  const subjectId = String(formData.get("subject_id") ?? "").trim() || null;
 
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const capacity = capacityRaw === "" ? null : Number(capacityRaw);
@@ -145,6 +149,7 @@ export async function createGroup(
       name,
       teacher_id: teacherId,
       branch_id: branchId,
+      subject_id: subjectId,
       capacity,
       created_by: profile.id,
       ...(profile.role === "center_admin"
@@ -328,7 +333,7 @@ export async function setGroupSchedule(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can change the timetable." };
   }
 
@@ -390,7 +395,11 @@ export async function assignTeacher(
   formData: FormData,
 ): Promise<GroupFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin") return { error: "Only a center admin can assign teachers." };
+  // Scheduling, not hiring: deciding who takes Tuesday's class is the front
+  // desk's job. Adding a teacher to the CENTER stays with the owner (below).
+  if (!canManagePeople(profile.role)) {
+    return { error: "Only center staff can assign teachers to a class." };
+  }
 
   const groupId = String(formData.get("group_id") ?? "").trim();
   if (!groupId) return { error: "Missing group." };
@@ -466,7 +475,7 @@ export async function inviteMember(
   formData: FormData,
 ): Promise<InviteFormState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can invite members." };
   }
 
@@ -476,9 +485,11 @@ export async function inviteMember(
   if (!email || !email.includes("@")) return { error: "Enter a valid email address." };
 
   const role = String(formData.get("role") ?? "student");
-  if (role !== "student" && role !== "teacher") return { error: "Choose a valid role." };
-  if (role === "teacher" && profile.role !== "center_admin") {
-    return { error: "Only a center admin can invite teachers." };
+  if (role !== "student" && role !== "teacher" && role !== "administrator") {
+    return { error: "Choose a valid role." };
+  }
+  if (role !== "student" && profile.role !== "center_admin") {
+    return { error: "Only a center admin can invite staff." };
   }
 
   const groupId = String(formData.get("group_id") ?? "").trim() || null;
@@ -796,7 +807,7 @@ export async function addStudentAccount(
   formData: FormData,
 ): Promise<AddStudentState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can add students." };
   }
 
@@ -993,7 +1004,7 @@ export async function resetStudentPassword(
   formData: FormData,
 ): Promise<ResetPasswordState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can reset a student's password." };
   }
 
@@ -1098,7 +1109,7 @@ export async function addStudentsBulk(
   formData: FormData,
 ): Promise<BulkStudentState> {
   const { profile } = await requireOrgUser();
-  if (profile.role !== "center_admin" && profile.role !== "teacher") {
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
     return { error: "Only center staff can add students." };
   }
 
@@ -1351,7 +1362,15 @@ export async function addTeacherAccount(
 ): Promise<AddStudentState> {
   const { profile } = await requireOrgUser();
   if (profile.role !== "center_admin") {
-    return { error: "Only a center admin can add teachers." };
+    return { error: "Only a center admin can add staff." };
+  }
+
+  // Teacher or administrator — the same account-creation flow, because the two
+  // differ only in what they may reach, and the owner is standing next to
+  // whichever of them they just hired.
+  const staffRole = String(formData.get("staff_role") ?? "teacher").trim();
+  if (staffRole !== "teacher" && staffRole !== "administrator") {
+    return { error: "Choose a valid role." };
   }
 
   const fullName = String(formData.get("full_name") ?? "").trim();
@@ -1363,8 +1382,8 @@ export async function addTeacherAccount(
     .toLowerCase();
   const passwordInput = String(formData.get("password") ?? "").trim();
 
-  if (!fullName) return { error: "Enter the teacher's name." };
-  if (!login) return { error: "Enter a login for the teacher." };
+  if (!fullName) return { error: "Enter their name." };
+  if (!login) return { error: "Enter a login for them." };
   if (!LOGIN_RE.test(login)) {
     return {
       error:
@@ -1401,7 +1420,7 @@ export async function addTeacherAccount(
     email,
     password,
     email_confirm: true,
-    app_metadata: { organization_id: profile.organization_id, role: "teacher" },
+    app_metadata: { organization_id: profile.organization_id, role: staffRole },
     user_metadata: { full_name: fullName },
   });
   if (createError || !created?.user) {
@@ -1415,7 +1434,7 @@ export async function addTeacherAccount(
 
   const { error: placeError } = await placeUserInOrg(admin, created.user.id, {
     organizationId: profile.organization_id,
-    role: "teacher",
+    role: staffRole,
     fullName,
     username: login,
     contactEmail,

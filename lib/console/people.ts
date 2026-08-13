@@ -1,5 +1,6 @@
 import "server-only";
 
+import { canManagePeople, type AppRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -16,6 +17,9 @@ export interface TeacherRow {
   id: string;
   name: string;
   username: string | null;
+  /** Staff, not only teachers — an administrator owns no classes but must still
+   *  be visible to the owner who created them. */
+  role: "teacher" | "administrator";
   groups: number;
   students: number;
 }
@@ -59,7 +63,13 @@ export async function loadTeachers(): Promise<TeacherRow[]> {
   const supabase = await createClient();
 
   const [{ data: profiles }, { data: groups }, { data: members }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, username, role").eq("role", "teacher"),
+    // Administrators too, or an account the owner just created would appear
+    // nowhere in the console. They own no classes, so their teaching columns are
+    // honestly empty rather than absent.
+    supabase
+      .from("profiles")
+      .select("id, full_name, username, role")
+      .in("role", ["teacher", "administrator"]),
     supabase.from("groups").select("id, teacher_id"),
     supabase.from("group_members").select("group_id, student_id"),
   ]);
@@ -86,6 +96,7 @@ export async function loadTeachers(): Promise<TeacherRow[]> {
         id: p.id,
         name: p.full_name ?? "Unnamed",
         username: p.username,
+        role: p.role as "teacher" | "administrator",
         groups: owned.length,
         students: reach.size,
       };
@@ -107,7 +118,10 @@ export async function loadStudents(opts: {
   profileId: string;
 }): Promise<StudentRow[]> {
   const supabase = await createClient();
-  const isAdmin = opts.role === "center_admin";
+  // Whole-center view for the owner AND the administrator. Comparing to
+  // "center_admin" alone would have quietly narrowed an administrator to
+  // "groups you teach", which is none of them — an empty Students page.
+  const isAdmin = canManagePeople(opts.role as AppRole);
 
   const [{ data: groups }, { data: members }] = await Promise.all([
     supabase.from("groups").select("id, name, teacher_id"),
