@@ -55,6 +55,11 @@ as $$ select tsrange(timestamp '2000-01-01' + p_starts, timestamp '2000-01-01' +
 drop index if exists public.lesson_slots_unique_in_room_idx;
 drop index if exists public.lesson_slots_unique_no_room_idx;
 
+-- `duplicate_table` as well as `duplicate_object`: an EXCLUDE constraint is
+-- backed by an index, so re-adding one raises 42P07 ("relation ... already
+-- exists"), which a bare `when duplicate_object` does NOT catch. That made this
+-- one statement the only non-idempotent line in the file — a re-run after any
+-- later step failed would stop dead here.
 do $$ begin
   alter table public.lesson_slots
     add constraint lesson_slots_no_self_overlap
@@ -64,7 +69,7 @@ do $$ begin
       weekday         with =,
       public.slot_span(starts_at, ends_at) with &&
     );
-exception when duplicate_object then null; end $$;
+exception when duplicate_object or duplicate_table then null; end $$;
 
 -- ---------- 3. Every center has at least one branch --------------------------
 
