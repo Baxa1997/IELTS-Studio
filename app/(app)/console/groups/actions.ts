@@ -116,6 +116,10 @@ export async function createGroup(
   const branchId = String(formData.get("branch_id") ?? "").trim();
   if (!branchId) return { error: "Pick the branch this class is taught at." };
 
+  // What the class teaches. Optional: a center that has not set up subjects yet
+  // creates classes exactly as before, and the field is not even rendered.
+  const subjectId = String(formData.get("subject_id") ?? "").trim() || null;
+
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const capacity = capacityRaw === "" ? null : Number(capacityRaw);
   if (capacity != null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) {
@@ -145,6 +149,7 @@ export async function createGroup(
       name,
       teacher_id: teacherId,
       branch_id: branchId,
+      subject_id: subjectId,
       capacity,
       created_by: profile.id,
       ...(profile.role === "center_admin"

@@ -1,8 +1,9 @@
 import { ConsoleChrome } from "@/components/console/console-chrome";
 import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
 import { ToastHost } from "@/components/console/toast";
-import { requireOrgUser } from "@/lib/auth";
+import { canManagePeople, isOrgOwner, requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
+import { loadSubjects, loadTeacherSubjects } from "@/lib/console/subjects";
 import { loadFinanceSettings } from "@/lib/finance/load";
 
 import { CreateGroupForm } from "./groups/group-forms";
@@ -20,15 +21,22 @@ import { AddTeacherPanel } from "./teachers/add-teacher-panel";
  */
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = await requireOrgUser();
-  const isAdmin = profile.role === "center_admin";
+  // Two different questions, and they stopped having the same answer when the
+  // administrator role arrived. `isOwner` gates money and hiring; `canStaff`
+  // gates putting a teacher on a class, which is scheduling.
+  const isAdmin = isOrgOwner(profile.role);
+  const canStaff = canManagePeople(profile.role);
 
   // Groups feed both slide-overs: enrolling picks one, inviting targets one.
   // The currency comes along because a new class is priced as it is created,
   // and only the owner sees those fields.
-  const [{ groups, teachers, branches, rooms }, settings] = await Promise.all([
-    loadGroups(profile),
-    isAdmin ? loadFinanceSettings() : Promise.resolve(null),
-  ]);
+  const [{ groups, teachers, branches, rooms }, settings, subjects, teacherSubjects] =
+    await Promise.all([
+      loadGroups(profile),
+      isAdmin ? loadFinanceSettings() : Promise.resolve(null),
+      loadSubjects(),
+      loadTeacherSubjects(),
+    ]);
 
   return (
     <div className="cn-root">
@@ -50,10 +58,14 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
           invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
           groupPanel={
             <CreateGroupForm
-              teachers={teachers}
+              teachers={teachers.map((t) => ({
+                ...t,
+                subjectIds: teacherSubjects.get(t.id) ?? [],
+              }))}
+              subjects={subjects.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name }))}
               branches={branches}
               rooms={rooms}
-              canAssignTeacher={isAdmin}
+              canAssignTeacher={canStaff}
               pricing={
                 settings
                   ? { currency: settings.currency, lessonsPerMonth: settings.lessonsPerMonth }
