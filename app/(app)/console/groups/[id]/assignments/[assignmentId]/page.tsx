@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -9,6 +10,7 @@ import {
   Panel,
   Pill,
   Row,
+  RowLink,
   RowText,
   SANS,
   StatRow,
@@ -70,7 +72,17 @@ export default async function AssignmentReportPage({
             return (
               <Row key={r.studentId} first={i === 0}>
                 <RowText
-                  title={r.name}
+                  title={
+                    /* The name opens everything this student has ever done;
+                       "See their work" opens this one piece. Two different
+                       questions a teacher asks from the same row. */
+                    <Link
+                      href={`/console/groups/${report.groupId}/students/${r.studentId}`}
+                      style={{ color: "inherit", textDecoration: "none" }}
+                    >
+                      {r.name}
+                    </Link>
+                  }
                   meta={
                     <>
                       <Pill tone={status.tone}>{status.label}</Pill>
@@ -79,17 +91,23 @@ export default async function AssignmentReportPage({
                     </>
                   }
                 />
-                <span
-                  style={{
-                    flex: "none",
-                    fontFamily: SANS,
-                    fontWeight: 700,
-                    fontSize: 17,
-                    fontVariantNumeric: "tabular-nums",
-                    color: INK,
-                  }}
-                >
-                  {r.band != null ? r.band.toFixed(1) : "—"}
+                <span style={{ display: "flex", alignItems: "center", gap: 14, flex: "none" }}>
+                  {/* The band said what they scored; this says what they wrote.
+                      It is the learner's own feedback page — the marked-up
+                      essay, the per-answer explanations — not a staff copy of
+                      it, so the teacher reads exactly what the student read. */}
+                  {r.reportHref ? <RowLink href={r.reportHref}>See their work →</RowLink> : null}
+                  <span
+                    style={{
+                      fontFamily: SANS,
+                      fontWeight: 700,
+                      fontSize: 17,
+                      fontVariantNumeric: "tabular-nums",
+                      color: INK,
+                    }}
+                  >
+                    {r.band != null ? r.band.toFixed(1) : "—"}
+                  </span>
                 </span>
               </Row>
             );
