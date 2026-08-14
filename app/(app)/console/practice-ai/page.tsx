@@ -56,7 +56,6 @@ export default async function PracticeAiPage({
           negative margins cancel `.cn-page`'s 26/28px padding exactly; the
           padding below puts it back inside. */}
       <div
-        className="pa-hero-bg"
         style={{
           position: "relative",
           overflow: "hidden",
@@ -64,6 +63,20 @@ export default async function PracticeAiPage({
           // across the content area; the padding goes back on inside.
           margin: "-26px -28px 0",
           padding: "72px 28px 64px",
+          /* Inline rather than a stylesheet class, deliberately.
+             This is a static value with no pseudo-selector, so a class buys
+             nothing — and it costs something real: a class lives in globals.css,
+             which a dev server or a browser can serve a stale copy of, and then
+             the page renders with the inline styles applied and the gradient
+             missing. Which is exactly what happened. Only :hover and
+             :focus-within states are left in CSS, because those genuinely
+             cannot be expressed inline.
+
+             Stops copied verbatim from lucid-ai's `.lucid-hero-bg`. It ends at
+             #FDFDFD rather than the console cream so the library below joins
+             without a seam. */
+          background:
+            "linear-gradient(180deg, #A4CFD6 0%, #A4CFD6 8%, #A8D2D8 18%, #AED5DB 28%, #B6D8DD 38%, #C2DDE0 48%, #D2E2E2 58%, #E2E9E6 66%, #EFEEEA 72%, #F7F6F2 77%, #FBFBF8 81%, #FDFDFD 84%, #FDFDFD 100%)",
         }}
       >
         {/* Radial highlights + grain, masked so they fade before the gradient
@@ -79,8 +92,24 @@ export default async function PracticeAiPage({
             WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 45%, transparent 75%)",
           }}
         >
-          <div className="pa-hero-atmos" style={{ position: "absolute", inset: "-10%" }} />
-          <div className="pa-hero-noise" style={{ position: "absolute", inset: 0 }} />
+          <div
+            style={{
+              position: "absolute",
+              inset: "-10%",
+              background:
+                "radial-gradient(60% 40% at 50% 14%, rgba(255,255,255,.20), transparent 65%), radial-gradient(55% 45% at 86% 18%, rgba(120,170,180,.18), transparent 70%), radial-gradient(55% 45% at 14% 18%, rgba(100,160,175,.16), transparent 70%)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: 0.16,
+              mixBlendMode: "multiply",
+              backgroundImage:
+                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09  0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+            }}
+          />
         </div>
 
         <div style={{ position: "relative", maxWidth: 880, margin: "0 auto", textAlign: "center" }}>

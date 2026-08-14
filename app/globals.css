@@ -820,44 +820,11 @@
 }
 
 /* ── Practice AI hero ───────────────────────────────────────────────────────
-   Ported from the Lucid AI hero the owner asked this to match exactly
-   (lucid-ai/frontend/src/app/globals.css `.lucid-hero-bg` and
-   components/HeroSection.js). The stops are theirs, unchanged — the band where
-   the teal meets the paper is the whole character of it, and rounding the
-   values to "about the same" is what makes a port look like an imitation.
-
-   It terminates at #FDFDFD rather than the console cream so the page below
-   continues without a seam. */
-.pa-hero-bg {
-  background: linear-gradient(180deg,
-    #A4CFD6 0%,
-    #A4CFD6 8%,
-    #A8D2D8 18%,
-    #AED5DB 28%,
-    #B6D8DD 38%,
-    #C2DDE0 48%,
-    #D2E2E2 58%,
-    #E2E9E6 66%,
-    #EFEEEA 72%,
-    #F7F6F2 77%,
-    #FBFBF8 81%,
-    #FDFDFD 84%,
-    #FDFDFD 100%);
-}
-
-/* Radial highlights + film grain, masked so they fade out before the gradient
-   reaches paper — without the mask there is a visible band at the join. */
-.pa-hero-atmos {
-  background:
-    radial-gradient(60% 40% at 50% 14%, rgba(255,255,255,.20), transparent 65%),
-    radial-gradient(55% 45% at 86% 18%, rgba(120,170,180,.18), transparent 70%),
-    radial-gradient(55% 45% at 14% 18%, rgba(100,160,175,.16), transparent 70%);
-}
-.pa-hero-noise {
-  opacity: .16;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09  0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
+   Only the INTERACTIVE states live here. The hero gradient and its atmosphere
+   layer are inline on the page: they are static values with no pseudo-selector,
+   so a class bought nothing and cost something real — a stale globals.css left
+   the page rendering with its inline styles applied and the gradient missing.
+   :hover and :focus-within genuinely cannot be inline, so they stay. */
 
 /* The composer's focus ring — a :focus-within state cannot be an inline style. */
 .pa-composer {
