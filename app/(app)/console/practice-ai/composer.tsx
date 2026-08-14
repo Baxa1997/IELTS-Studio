@@ -547,9 +547,10 @@ export function Composer() {
         </div>
       ) : null}
 
-      {/* ── starters ────────────────────────────────────────────────────── */}
-      {phase.step === "idle" ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 30 }}>
+      {/* ── starters ──────────────────────────────────────────────────────
+          Always on screen. They are the menu, not a first-run hint — the person
+          most likely to want a lesson is the one who just made one. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 30 }}>
           <span
             style={{
               fontFamily: "var(--font-mono-data), ui-monospace, monospace",
@@ -591,8 +592,7 @@ export function Composer() {
               </button>
             ))}
           </div>
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }

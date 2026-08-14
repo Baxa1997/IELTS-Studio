@@ -1012,6 +1012,73 @@
 }
 .pa-chip:active { transform: translateY(0); }
 
+/* ── Printing a lesson ──────────────────────────────────────────────────────
+   "Download PDF" is the browser's own print-to-PDF, and that is a deliberate
+   choice rather than a shortcut. The alternative was the hand-rolled builder in
+   lib/finance/pdf.ts, which encodes WinAnsi — every Cyrillic character in a
+   Russian note would print as "?". Printing the real page gets correct Uzbek
+   and Russian, the real typography, and no font embedding.
+
+   What prints is the LESSON: the app's chrome, the staff controls and the
+   page's own buttons are removed, so a teacher hands out a worksheet rather
+   than a screenshot of software. Whether the answer key is on follows the
+   toggle on screen — one page, two documents. */
+@media print {
+  /* The app around the lesson. */
+  .lp-shell-sidebar,
+  .lp-shell-topbar,
+  .cn-topbar,
+  .pa-noprint,
+  .pa-staffbar {
+    display: none !important;
+  }
+
+  html,
+  body,
+  .cn-page,
+  .lp-shell-main {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Ink, not screen colour: tinted panels waste toner and read worse on paper. */
+  .lp-lesson .lp-tip,
+  .lp-lesson .lp-warn,
+  .lp-lesson .lp-example,
+  .lp-lesson .lp-key,
+  .lp-lesson .lp-timeline {
+    background: #fff !important;
+    border: 1px solid #999 !important;
+  }
+  .lp-lesson th { background: #F2F2F2 !important; }
+
+  /* A first-language note is closed on screen; on paper it should be there,
+     because the point of the printout is that the learner has it all. */
+  .lp-l1 { border-color: #BBB !important; background: #fff !important; }
+  .lp-l1 > div { display: block !important; }
+
+  /* Nothing should be orphaned across a page break mid-question. */
+  .lp-section,
+  .pa-q {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .lp-section-h,
+  .lp-lesson h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  a[href]::after { content: ""; }
+
+  @page {
+    margin: 16mm 14mm;
+  }
+}
+
 /* Lesson cards: lift on hover, ember edge — the same gesture as the starter
    chips above them, so the whole page answers to the pointer the same way. */
 .pa-card {

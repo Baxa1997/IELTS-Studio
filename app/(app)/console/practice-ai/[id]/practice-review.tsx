@@ -73,8 +73,36 @@ export function PracticeReview({ exercises }: { exercises: Exercise[] }) {
           {exercises.length} question{exercises.length === 1 ? "" : "s"}, in the order students see
           them.
         </span>
+        {/* Printing follows the toggle, which is the whole trick: the same page
+            is a worksheet with answers off and an answer key with them on, so a
+            teacher gets both documents from one screen and neither can drift
+            from the lesson students actually sit. */}
         <button
           type="button"
+          className="pa-noprint"
+          onClick={() => window.print()}
+          title={
+            showAnswers
+              ? "Print or save as PDF — with the answer key"
+              : "Print or save as PDF — the worksheet, no answers"
+          }
+          style={{
+            border: `1px solid ${LINE}`,
+            background: "#fff",
+            color: MUTED,
+            borderRadius: 999,
+            padding: "7px 14px",
+            fontFamily: "inherit",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {showAnswers ? "PDF (with answers)" : "PDF (worksheet)"}
+        </button>
+        <button
+          type="button"
+          className="pa-noprint"
           onClick={() => setShowAnswers((v) => !v)}
           aria-pressed={showAnswers}
           style={{
@@ -130,7 +158,7 @@ function Row({
   const closedEx = isOpen(exercise) ? null : exercise;
 
   return (
-    <div style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: "1px solid #F4F2ED" }}>
+    <div className="pa-q" style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: "1px solid #F4F2ED" }}>
       <span
         style={{
           flex: "none",

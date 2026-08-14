@@ -84,6 +84,7 @@ export function LessonStaffBar({
 
   return (
     <div
+      className="pa-staffbar"
       style={{
         background: "#fff",
         border: `1px solid ${LINE}`,
