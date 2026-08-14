@@ -21,6 +21,7 @@ import {
   Mic,
   Receipt,
   Settings,
+  Sparkles,
   SquarePen,
   Target,
   UserRound,
@@ -192,6 +193,9 @@ const TEACHER: Section[] = [
   {
     title: "Practice",
     items: [
+      // First in the section: it is the only one a teacher MAKES rather than
+      // sits, and it is the reason they open this rail on a planning day.
+      { label: "Practice AI", href: "/console/practice-ai", icon: Sparkles },
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
       { label: "Listening", href: "/listen", icon: Headphones },

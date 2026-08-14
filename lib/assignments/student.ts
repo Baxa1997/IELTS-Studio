@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export interface StudentAssignment {
   id: string;
-  kind: "writing" | "reading" | "listening";
+  kind: "writing" | "reading" | "listening" | "lesson";
   title: string;
   instructions: string | null;
   groupName: string;
@@ -30,7 +30,7 @@ export async function loadStudentAssignments(
   const { data: rows } = await supabase
     .from("assignments")
     .select(
-      "id, kind, title, instructions, due_at, group_id, prompt_id, reading_test_id, listening_library_id",
+      "id, kind, title, instructions, due_at, group_id, prompt_id, reading_test_id, listening_library_id, lesson_id",
     )
     .order("created_at", { ascending: false });
   if (!rows || rows.length === 0) return [];
@@ -69,6 +69,15 @@ export async function loadStudentAssignments(
       : Promise.resolve({ data: [] }),
   ]);
 
+  const lessonIds = rows.filter((r) => r.lesson_id).map((r) => r.lesson_id as string);
+  const { data: lessonAttempts } = lessonIds.length > 0
+    ? await supabase
+        .from("lesson_attempts")
+        .select("lesson_id, grading_status")
+        .eq("student_id", studentId)
+        .in("lesson_id", lessonIds)
+    : { data: [] as { lesson_id: string; grading_status: string }[] };
+
   const groupName = new Map(
     (groupsRes.data ?? []).map((g) => [g.id as string, g.name as string]),
   );
@@ -82,9 +91,18 @@ export async function loadStudentAssignments(
   for (const l of (listeningRes.data ?? []) as { library_id: string; score: number | null }[]) {
     if (l.score != null) finished.add(l.library_id);
   }
+  // A lesson is finished the moment it is handed in. Written answers may still
+  // be with the marker, but the student has done their part — leaving it on the
+  // to-do list would ask them to sit it again.
+  for (const a of (lessonAttempts ?? []) as { lesson_id: string }[]) {
+    finished.add(a.lesson_id);
+  }
 
   return rows.map((r) => {
-    const contentId = (r.prompt_id ?? r.reading_test_id ?? r.listening_library_id) as string;
+    const contentId = (r.prompt_id ??
+      r.reading_test_id ??
+      r.listening_library_id ??
+      r.lesson_id) as string;
     const dueAt = (r.due_at as string | null) ?? null;
     const done = finished.has(contentId);
     return {
@@ -99,7 +117,9 @@ export async function loadStudentAssignments(
           ? `/write/${r.prompt_id}`
           : r.kind === "reading"
             ? `/read/test/${r.reading_test_id}`
-            : `/listen?item=${r.listening_library_id}`,
+            : r.kind === "lesson"
+              ? `/learn/${r.lesson_id}`
+              : `/listen?item=${r.listening_library_id}`,
       done,
       overdue: !done && dueAt != null && new Date(dueAt) < now,
     };

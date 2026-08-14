@@ -91,6 +91,115 @@ function getProvider(task: AiTask): AIProvider {
 
 // ---- Public API ------------------------------------------------------------
 
+/**
+ * Mark the open-ended items of a lesson against criteria fixed at generation.
+ *
+ * Lives here rather than in `lib/lessons` because of the repo-wide rule that
+ * every model call goes through one server-side service — this is where the
+ * provider, the temperature policy, the retries and the `ai_usage` row are
+ * decided, and a feature module reaching past it is how those stop being
+ * consistent.
+ *
+ * TEMPERATURE 0, like every other grader here: the same answer must get the
+ * same mark twice. And the instruction below is the anti-inflation rule the
+ * band grader follows, scaled down to one criterion — quote the learner's words
+ * BEFORE deciding, and treat anything arguable as not met.
+ */
+export async function markLessonOpenItems(input: {
+  lessonTitle: string;
+  items: {
+    id: string;
+    question: string;
+    criteria: string[];
+    model_answer: string;
+    student_answer: string;
+  }[];
+  meta: { organizationId: string; userId: string };
+}): Promise<unknown> {
+  const provider = getProvider("grade");
+  const startedAt = Date.now();
+
+  const system = [
+    "You mark short written answers from English learners against a fixed checklist.",
+    "",
+    "You did NOT write the checklist and you may not change it. For each criterion,",
+    "quote the words in the learner's own answer that decide it, THEN say whether it",
+    "is met. Quote first, judge second.",
+    "",
+    "If a criterion is arguable, mark it NOT met and let the evidence explain why.",
+    "Never give credit for something you cannot point at. A learner told they were",
+    "right when an examiner would mark them down is worse off than one told nothing.",
+    "",
+    "Also return `corrected`: their sentence rewritten correctly, changing as little",
+    "as possible. If it is already correct, return it unchanged. And `note`: one",
+    "short line, in plain words, on what to fix.",
+    "",
+    "Return ONLY this JSON:",
+    '{"marked":[{"id":"e15","criteria":[{"met":true,"evidence":"\\"My friend\\""},',
+    '{"met":false,"evidence":"\\"go\\" — needs \\"goes\\""}],',
+    '"corrected":"My friend goes to the gym after work.",',
+    '"note":"Everything was right except the -s ending."}]}',
+  ].join("\n");
+
+  const user = [
+    `Lesson: ${input.lessonTitle}`,
+    "",
+    "Mark every answer below. Return one object per id, criteria in the SAME ORDER",
+    "as given.",
+    "",
+    JSON.stringify(input.items, null, 2),
+  ].join("\n");
+
+  let ok = true;
+  let parsed: unknown = null;
+  const usage = { input: 0, output: 0 };
+
+  try {
+    const result = await withResilience(
+      (signal) =>
+        provider.complete({
+          task: "grade",
+          system,
+          prompt: user,
+          temperature: GRADING_TEMPERATURE,
+          responseFormat: "json",
+          signal,
+        }),
+      GRADE_RESILIENCE,
+    );
+    usage.input = result.usage?.inputTokens ?? 0;
+    usage.output = result.usage?.outputTokens ?? 0;
+    parsed = JSON.parse(stripFence(result.text));
+    return parsed;
+  } catch (err) {
+    ok = false;
+    throw err;
+  } finally {
+    await logUsage({
+      organizationId: input.meta.organizationId,
+      userId: input.meta.userId,
+      task: "grade",
+      provider: provider.name,
+      model: serverEnv.geminiModels.grade,
+      requestKind: "lesson_open_items",
+      inputTokens: usage.input,
+      outputTokens: usage.output,
+      latencyMs: Date.now() - startedAt,
+      ok,
+      promptVersion: GRADE_PROMPT_VERSION,
+      resultSummary: `${input.items.length} open item(s)`,
+    });
+  }
+}
+
+/** Models sometimes wrap JSON in a markdown fence even when asked not to. */
+function stripFence(text: string): string {
+  return text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "");
+}
+
 export async function gradeEssay(rawInput: GradeEssayInput): Promise<EssayGrade> {
   const input = gradeEssayInputSchema.parse(rawInput);
 

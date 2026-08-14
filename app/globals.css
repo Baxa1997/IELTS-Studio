@@ -819,6 +819,282 @@
   }
 }
 
+/* ── Practice AI hero ───────────────────────────────────────────────────────
+   Only the INTERACTIVE states live here. The hero gradient and its atmosphere
+   layer are inline on the page: they are static values with no pseudo-selector,
+   so a class bought nothing and cost something real — a stale globals.css left
+   the page rendering with its inline styles applied and the gradient missing.
+   :hover and :focus-within genuinely cannot be inline, so they stay. */
+
+/* ── Lesson prose ───────────────────────────────────────────────────────────
+   Typography for the HTML a lesson's teaching half is made of.
+
+   This is what makes every generated lesson look like the app rather than like
+   whatever the model felt like that morning: the model chooses the STRUCTURE
+   (a table here, a tip box there) and this file chooses how all of it looks. It
+   is also why the sanitiser's class allow-list is `lp-*` — those are the hooks
+   below, and nothing the model writes can reach any other class in the app. */
+.lp-lesson {
+  color: #2A2D34;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* Sections are the spine of the page, so they get real separation and a
+   numbered heading. A lesson read as one undifferentiated wall is the single
+   most common complaint about generated material — the reader cannot tell
+   where they are or how much is left. */
+.lp-section { padding: 26px 0; border-top: 1px solid #EFEDE8; }
+.lp-section:first-child { padding-top: 4px; border-top: 0; }
+.lp-section-h {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--font-serif4), Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  color: #15171C;
+  margin: 0 0 14px;
+}
+.lp-section-n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #B9B5AC;
+  letter-spacing: .04em;
+}
+
+/* The first-language note. Closed by default and quiet when closed: a learner
+   who reads English fine should see one line, not a second copy of what they
+   just read. */
+.lp-l1 {
+  margin: 14px 0 0;
+  border: 1px solid #E4E9EA;
+  background: #F5F8F8;
+  border-radius: 10px;
+  padding: 0 14px;
+}
+.lp-l1 > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4A6A70;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lp-l1 > summary::-webkit-details-marker { display: none; }
+.lp-l1 > summary::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform .15s;
+}
+.lp-l1[open] > summary::before { transform: rotate(90deg); }
+.lp-l1[open] > summary { border-bottom: 1px solid #E4E9EA; }
+.lp-l1 > div { padding: 12px 0 14px; font-size: 15px; color: #33474B; }
+.lp-l1 > div p:last-child { margin-bottom: 0; }
+.lp-lesson p { margin: 0 0 12px; }
+.lp-lesson h3 {
+  font-size: 16px;
+  font-weight: 650;
+  color: #15171C;
+  margin: 20px 0 8px;
+}
+.lp-lesson h4 {
+  font-size: 14.5px;
+  font-weight: 650;
+  color: #15171C;
+  margin: 16px 0 6px;
+}
+.lp-lesson ul,
+.lp-lesson ol { margin: 0 0 12px; padding-left: 22px; }
+.lp-lesson li { margin-bottom: 5px; }
+.lp-lesson strong { font-weight: 650; color: #15171C; }
+.lp-lesson code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .9em;
+  background: #F1EFEA;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Tables carry the grammar. A form table is the densest, most-read thing on a
+   grammar page, so it gets real styling rather than browser defaults. */
+.lp-lesson table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 14px;
+  font-size: 14.5px;
+}
+.lp-lesson th,
+.lp-lesson td {
+  border: 1px solid #E7E5DF;
+  padding: 8px 11px;
+  text-align: left;
+  vertical-align: top;
+}
+.lp-lesson th {
+  background: #FAFAF8;
+  font-weight: 650;
+  color: #15171C;
+}
+.lp-lesson caption {
+  caption-side: bottom;
+  font-size: 12.5px;
+  color: #7C7A93;
+  padding-top: 6px;
+  text-align: left;
+}
+
+/* The named boxes the prompt offers the model. Each one is a different KIND of
+   aside, and looking different is the whole point — a learner skimming should
+   be able to tell a rule from a warning without reading either. */
+.lp-lesson .lp-tip,
+.lp-lesson .lp-warn,
+.lp-lesson .lp-example,
+.lp-lesson .lp-key {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  border: 1px solid;
+}
+.lp-lesson .lp-tip { background: #EEF4F5; border-color: #CFE0E3; }
+.lp-lesson .lp-warn { background: #FBEEE0; border-color: #E9CDA6; }
+.lp-lesson .lp-example { background: #FAFAF8; border-color: #E7E5DF; }
+.lp-lesson .lp-key { background: #F3F1FB; border-color: #D8D4F0; }
+.lp-lesson .lp-timeline {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: #FAFAF8;
+  border: 1px solid #E7E5DF;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  white-space: pre-wrap;
+}
+.lp-lesson .lp-form th { width: 22%; }
+
+/* The composer's focus ring — a :focus-within state cannot be an inline style. */
+.pa-composer {
+  transition: border-color .15s, box-shadow .15s;
+}
+.pa-composer:focus-within {
+  border-color: rgba(232, 90, 44, .45);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.85) inset,
+    0 30px 60px -28px rgba(21,23,28,.30),
+    0 12px 28px -12px rgba(21,23,28,.10),
+    0 0 0 4px rgba(232,90,44,.12);
+}
+
+/* Icon buttons along the composer's foot. */
+.pa-icon-btn {
+  transition: background .15s, border-color .15s;
+  border: 1px solid transparent;
+}
+.pa-icon-btn:hover {
+  border-color: #E5EAF0;
+  background: rgba(21,23,28,.04);
+}
+
+/* Starter chips: lift on hover, ember edge. */
+.pa-chip {
+  transition: border-color .15s, background .15s, color .15s, transform .15s;
+}
+.pa-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(232,90,44,.4);
+  background: rgba(255,255,255,.95);
+  color: #6B2810;
+}
+.pa-chip:active { transform: translateY(0); }
+
+/* ── Printing a lesson ──────────────────────────────────────────────────────
+   "Download PDF" is the browser's own print-to-PDF, and that is a deliberate
+   choice rather than a shortcut. The alternative was the hand-rolled builder in
+   lib/finance/pdf.ts, which encodes WinAnsi — every Cyrillic character in a
+   Russian note would print as "?". Printing the real page gets correct Uzbek
+   and Russian, the real typography, and no font embedding.
+
+   What prints is the LESSON: the app's chrome, the staff controls and the
+   page's own buttons are removed, so a teacher hands out a worksheet rather
+   than a screenshot of software. Whether the answer key is on follows the
+   toggle on screen — one page, two documents. */
+@media print {
+  /* The app around the lesson. */
+  .lp-shell-sidebar,
+  .lp-shell-topbar,
+  .cn-topbar,
+  .pa-noprint,
+  .pa-staffbar {
+    display: none !important;
+  }
+
+  html,
+  body,
+  .cn-page,
+  .lp-shell-main {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Ink, not screen colour: tinted panels waste toner and read worse on paper. */
+  .lp-lesson .lp-tip,
+  .lp-lesson .lp-warn,
+  .lp-lesson .lp-example,
+  .lp-lesson .lp-key,
+  .lp-lesson .lp-timeline {
+    background: #fff !important;
+    border: 1px solid #999 !important;
+  }
+  .lp-lesson th { background: #F2F2F2 !important; }
+
+  /* A first-language note is closed on screen; on paper it should be there,
+     because the point of the printout is that the learner has it all. */
+  .lp-l1 { border-color: #BBB !important; background: #fff !important; }
+  .lp-l1 > div { display: block !important; }
+
+  /* Nothing should be orphaned across a page break mid-question. */
+  .lp-section,
+  .pa-q {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .lp-section-h,
+  .lp-lesson h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  a[href]::after { content: ""; }
+
+  @page {
+    margin: 16mm 14mm;
+  }
+}
+
+/* Lesson cards: lift on hover, ember edge — the same gesture as the starter
+   chips above them, so the whole page answers to the pointer the same way. */
+.pa-card {
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.pa-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 90, 44, .35);
+  box-shadow: 0 10px 24px -12px rgba(21, 23, 28, .18);
+}
+.pa-card:active { transform: translateY(0); }
+
+.pa-send { transition: background .15s, transform .15s, opacity .15s; }
+.pa-send:hover:not(:disabled) { background: #d8501f; }
+.pa-send:active:not(:disabled) { transform: translateY(1px); }
+
 /* Scrolls, but shows no bar.
 
    For panes that overflow only occasionally — a wide table on a narrow screen,
