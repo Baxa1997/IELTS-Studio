@@ -955,6 +955,18 @@
 }
 .pa-chip:active { transform: translateY(0); }
 
+/* Lesson cards: lift on hover, ember edge — the same gesture as the starter
+   chips above them, so the whole page answers to the pointer the same way. */
+.pa-card {
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.pa-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 90, 44, .35);
+  box-shadow: 0 10px 24px -12px rgba(21, 23, 28, .18);
+}
+.pa-card:active { transform: translateY(0); }
+
 .pa-send { transition: background .15s, transform .15s, opacity .15s; }
 .pa-send:hover:not(:disabled) { background: #d8501f; }
 .pa-send:active:not(:disabled) { transform: translateY(1px); }

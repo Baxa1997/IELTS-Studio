@@ -172,8 +172,19 @@ export function ConsoleChrome({
 
   const crumb = CRUMBS.find(([href]) => pathname === href || pathname.startsWith(href + "/"))?.[1];
 
+  /**
+   * Pages that own the whole surface.
+   *
+   * Practice AI opens on a full-bleed hero, and a breadcrumb bar plus 28px of
+   * canvas padding above it cuts the gradient off and frames it like a widget.
+   * A page whose first screen IS the design gets the screen; the rail stays,
+   * because that is how you leave.
+   */
+  const bare = pathname.startsWith("/console/practice-ai");
+
   return (
     <PanelContext.Provider value={api}>
+      {bare ? null : (
       <header
         className="cn-topbar"
         style={{
@@ -239,8 +250,9 @@ export function ConsoleChrome({
           </div>
         </div>
       </header>
+      )}
 
-      <div className="cn-page" style={{ padding: "26px 28px 60px" }}>
+      <div className="cn-page" style={bare ? { padding: 0 } : { padding: "26px 28px 60px" }}>
         {children}
       </div>
 

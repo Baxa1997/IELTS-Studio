@@ -50,7 +50,11 @@ export default async function PracticeAiPage({
   const count = (key: LessonStatus) => all.filter((l) => l.status === key).length;
 
   return (
-    <div>
+    // The page owns the whole surface — the console chrome drops its bar and its
+    // padding for this route. #FDFDFD is where the hero gradient ENDS, so the
+    // library below continues the same sheet of paper instead of sitting on the
+    // console's cream and reading as a separate panel bolted underneath.
+    <div style={{ background: "#FDFDFD", minHeight: "100%" }}>
       {/* A centred hero, following the reference the owner supplied — and
           full-bleed, so the gradient reaches the edges of the content area. The
           negative margins cancel `.cn-page`'s 26/28px padding exactly; the
@@ -59,10 +63,7 @@ export default async function PracticeAiPage({
         style={{
           position: "relative",
           overflow: "hidden",
-          // Cancels `.cn-page`'s 26/28px padding so the gradient is full-bleed
-          // across the content area; the padding goes back on inside.
-          margin: "-26px -28px 0",
-          padding: "72px 28px 64px",
+          padding: "76px 28px 68px",
           /* Inline rather than a stylesheet class, deliberately.
              This is a static value with no pseudo-selector, so a class buys
              nothing — and it costs something real: a class lives in globals.css,
@@ -148,20 +149,24 @@ export default async function PracticeAiPage({
         </div>
       </div>
 
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "8px 28px 72px" }}>
       <h2
         style={{
           fontFamily: SERIF,
-          fontSize: 22,
+          fontSize: 24,
           fontWeight: 700,
           color: INK,
-          letterSpacing: "-.01em",
-          margin: "38px 0 0",
+          letterSpacing: "-.015em",
+          margin: "0 0 2px",
         }}
       >
         Your lessons
       </h2>
+      <p style={{ fontSize: 14, color: MUTED, margin: "0 0 18px" }}>
+        Everything you&apos;ve made, and where it has been.
+      </p>
 
-      <div style={{ display: "flex", gap: 4, margin: "14px 0", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 4, margin: "0 0 18px", flexWrap: "wrap" }}>
         {TABS.map((t) => {
           const on = t.key === tab;
           return (
@@ -219,6 +224,7 @@ export default async function PracticeAiPage({
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -226,120 +232,138 @@ export default async function PracticeAiPage({
 /**
  * One lesson.
  *
- * The thumbnail is a real preview — this lesson's own title and first heading,
- * tinted by blueprint — rather than a stock illustration. A grid of identical
- * decorations tells a teacher nothing; a grid where each card shows what is
- * actually inside it can be scanned.
+ * The fake browser chrome is gone. It was lifted from the reference, where the
+ * thing being made really IS a website — here it was a picture of a window
+ * wrapped around something that is a page of teaching, and against the softer
+ * hero it read as clip-art.
+ *
+ * What replaces it is the information a teacher actually scans for: what kind of
+ * lesson it is, what it teaches, how much practice, and — the line that matters
+ * most — whether anyone has been set it.
  */
 function Card({ lesson }: { lesson: LessonCard }) {
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
+  const used = lesson.groups.length > 0;
 
   return (
     <Link
       href={`/console/practice-ai/${lesson.id}`}
-      className="cn-tile"
+      className="pa-card"
       style={{
         display: "flex",
         flexDirection: "column",
+        gap: 12,
         background: "#fff",
         border: `1px solid ${LINE}`,
-        borderRadius: 14,
-        overflow: "hidden",
+        borderRadius: 16,
+        padding: "18px 20px 16px",
         textDecoration: "none",
+        boxShadow: "0 1px 2px rgba(21,23,28,.04)",
       }}
     >
-      <div style={{ background: tint.bg, padding: 12 }}>
-        {/* Browser chrome, from the reference: it says "this is a page", which
-            is exactly what a lesson is. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 9 }}>
-          {["#F0655A", "#F5BE4F", "#61C554"].map((c) => (
-            <span key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />
-          ))}
-          <span
-            style={{
-              marginLeft: 6,
-              fontSize: 10.5,
-              color: tint.ink,
-              opacity: 0.75,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {lesson.topic}
-          </span>
-        </div>
-        <div
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span
           style={{
-            background: "rgba(255,255,255,.72)",
-            borderRadius: 8,
-            padding: "12px 13px",
-            minHeight: 92,
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: tint.ink,
+            flex: "none",
           }}
-        >
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: INK,
-              lineHeight: 1.3,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
-          >
-            {lesson.title}
-          </div>
-          {lesson.previewHeading ? (
-            <div style={{ fontSize: 11, color: tint.ink, marginTop: 7, fontWeight: 600 }}>
-              {lesson.previewHeading}
-            </div>
-          ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-            {[92, 78, 60].map((w) => (
-              <span key={w} style={{ height: 4, width: `${w}%`, borderRadius: 2, background: "rgba(22,22,46,.09)" }} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ padding: "13px 15px 15px", display: "flex", flexDirection: "column", gap: 7 }}>
-        <div
+        />
+        <span
           style={{
             fontSize: 10.5,
-            letterSpacing: ".1em",
+            letterSpacing: ".12em",
             textTransform: "uppercase",
             color: tint.ink,
             fontWeight: 700,
           }}
         >
           {BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}
-          {lesson.level ? ` · ${lesson.level}` : ""}
-        </div>
+        </span>
+        {lesson.level ? (
+          <span style={{ fontSize: 11.5, color: FAINT, marginLeft: "auto" }}>{lesson.level}</span>
+        ) : null}
+      </div>
 
-        <div style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.45 }}>
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 16.5,
+            fontWeight: 650,
+            color: "#15171C",
+            lineHeight: 1.3,
+            letterSpacing: "-.01em",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {lesson.title}
+        </div>
+        {lesson.previewHeading ? (
+          <div
+            style={{
+              fontSize: 13,
+              color: MUTED,
+              marginTop: 5,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Starts with {lesson.previewHeading.toLowerCase()}
+          </div>
+        ) : null}
+      </div>
+
+      <div
+        style={{
+          marginTop: "auto",
+          paddingTop: 12,
+          borderTop: `1px solid #F4F2ED`,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexWrap: "wrap",
+          fontSize: 12.5,
+        }}
+      >
+        <span style={{ color: MUTED }}>
           {lesson.exerciseCount} exercise{lesson.exerciseCount === 1 ? "" : "s"}
-          {lesson.language !== "en" ? ` · explained in ${lesson.language.toUpperCase()}` : ""}
-        </div>
+        </span>
+        {lesson.language !== "en" ? (
+          <span style={{ color: FAINT }}>· {lesson.language.toUpperCase()}</span>
+        ) : null}
 
-        {/* The truth about where this lesson has been. "Not set to anyone" is
-            worth saying — a library full of unassigned work is the thing a
-            teacher most needs to notice. */}
-        <div style={{ fontSize: 12, color: FAINT, marginTop: 2 }}>
-          {lesson.groups.length > 0 ? (
-            <>
-              {lesson.groups.slice(0, 2).join(", ")}
-              {lesson.groups.length > 2 ? ` +${lesson.groups.length - 2}` : ""}
-              {" · "}
-              {lesson.completed}/{lesson.assigned} done
-              {lesson.averagePercent != null ? ` · avg ${lesson.averagePercent}%` : ""}
-            </>
-          ) : (
-            "Not set to anyone"
-          )}
-          {lesson.shareEnabled ? " · link on" : ""}
-        </div>
+        {/* The status a teacher is really looking for. "Not set to anyone" is
+            said plainly rather than left as an absence — a library full of
+            unused work is the thing most worth noticing. */}
+        <span
+          style={{
+            marginLeft: "auto",
+            color: used ? "#16794C" : FAINT,
+            fontWeight: used ? 600 : 400,
+          }}
+        >
+          {used
+            ? `${lesson.completed}/${lesson.assigned} done${lesson.averagePercent != null ? ` · ${lesson.averagePercent}%` : ""}`
+            : "Not set to anyone"}
+        </span>
+        {lesson.shareEnabled ? (
+          <span
+            title="A public link is on for this lesson"
+            style={{
+              flexBasis: "100%",
+              color: "#A9721F",
+              fontSize: 11.5,
+            }}
+          >
+            Public link is on
+          </span>
+        ) : null}
       </div>
     </Link>
   );

@@ -544,7 +544,7 @@ export function Composer() {
       ) : null}
 
       {/* ── starters ────────────────────────────────────────────────────── */}
-      {phase.step === "idle" && brief.trim() === "" ? (
+      {phase.step === "idle" ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 30 }}>
           <span
             style={{
@@ -564,9 +564,10 @@ export function Composer() {
                 type="button"
                 onClick={() => setBrief(s)}
                 className="pa-chip"
+                aria-pressed={brief.trim() === s}
                 style={{
-                  border: `1px solid ${LINE}`,
-                  background: "rgba(255,255,255,.7)",
+                  border: `1px solid ${brief.trim() === s ? "rgba(232,90,44,.45)" : LINE}`,
+                  background: brief.trim() === s ? "rgba(232,90,44,.08)" : "rgba(255,255,255,.7)",
                   borderRadius: 999,
                   padding: "11px 22px",
                   fontFamily: "inherit",
@@ -574,7 +575,7 @@ export function Composer() {
                   fontWeight: 500,
                   lineHeight: 1,
                   letterSpacing: "-.005em",
-                  color: HERO_BODY,
+                  color: brief.trim() === s ? "#6B2810" : HERO_BODY,
                   cursor: "pointer",
                   backdropFilter: "blur(12px) saturate(150%)",
                   WebkitBackdropFilter: "blur(12px) saturate(150%)",
