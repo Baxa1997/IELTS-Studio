@@ -826,6 +826,100 @@
    the page rendering with its inline styles applied and the gradient missing.
    :hover and :focus-within genuinely cannot be inline, so they stay. */
 
+/* ── Lesson prose ───────────────────────────────────────────────────────────
+   Typography for the HTML a lesson's teaching half is made of.
+
+   This is what makes every generated lesson look like the app rather than like
+   whatever the model felt like that morning: the model chooses the STRUCTURE
+   (a table here, a tip box there) and this file chooses how all of it looks. It
+   is also why the sanitiser's class allow-list is `lp-*` — those are the hooks
+   below, and nothing the model writes can reach any other class in the app. */
+.lp-lesson {
+  color: #2A2D34;
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.lp-lesson p { margin: 0 0 12px; }
+.lp-lesson h3 {
+  font-size: 16px;
+  font-weight: 650;
+  color: #15171C;
+  margin: 20px 0 8px;
+}
+.lp-lesson h4 {
+  font-size: 14.5px;
+  font-weight: 650;
+  color: #15171C;
+  margin: 16px 0 6px;
+}
+.lp-lesson ul,
+.lp-lesson ol { margin: 0 0 12px; padding-left: 22px; }
+.lp-lesson li { margin-bottom: 5px; }
+.lp-lesson strong { font-weight: 650; color: #15171C; }
+.lp-lesson code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .9em;
+  background: #F1EFEA;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Tables carry the grammar. A form table is the densest, most-read thing on a
+   grammar page, so it gets real styling rather than browser defaults. */
+.lp-lesson table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 14px;
+  font-size: 14.5px;
+}
+.lp-lesson th,
+.lp-lesson td {
+  border: 1px solid #E7E5DF;
+  padding: 8px 11px;
+  text-align: left;
+  vertical-align: top;
+}
+.lp-lesson th {
+  background: #FAFAF8;
+  font-weight: 650;
+  color: #15171C;
+}
+.lp-lesson caption {
+  caption-side: bottom;
+  font-size: 12.5px;
+  color: #7C7A93;
+  padding-top: 6px;
+  text-align: left;
+}
+
+/* The named boxes the prompt offers the model. Each one is a different KIND of
+   aside, and looking different is the whole point — a learner skimming should
+   be able to tell a rule from a warning without reading either. */
+.lp-lesson .lp-tip,
+.lp-lesson .lp-warn,
+.lp-lesson .lp-example,
+.lp-lesson .lp-key {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  border: 1px solid;
+}
+.lp-lesson .lp-tip { background: #EEF4F5; border-color: #CFE0E3; }
+.lp-lesson .lp-warn { background: #FBEEE0; border-color: #E9CDA6; }
+.lp-lesson .lp-example { background: #FAFAF8; border-color: #E7E5DF; }
+.lp-lesson .lp-key { background: #F3F1FB; border-color: #D8D4F0; }
+.lp-lesson .lp-timeline {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: #FAFAF8;
+  border: 1px solid #E7E5DF;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  white-space: pre-wrap;
+}
+.lp-lesson .lp-form th { width: 22%; }
+
 /* The composer's focus ring — a :focus-within state cannot be an inline style. */
 .pa-composer {
   transition: border-color .15s, box-shadow .15s;
