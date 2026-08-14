@@ -21,11 +21,17 @@ import { createClient } from "@/lib/supabase/client";
  * listening do: a full build runs well past the 60s a Vercel function gets.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#93919F";
-const LINE = "#E0DED8";
-const INDIGO = "#4340CB";
+const INK = "#15171C";
+const MUTED = "#5C616C";
+const FAINT = "#8B909B";
+const LINE = "rgba(21,23,28,0.08)";
+/* The reference's ember. The owner asked for the UI exactly as pictured, and
+   the accent is the most recognisable part of it — so this page departs from
+   the console indigo deliberately rather than by accident. */
+const EMBER = "#E85A2C";
+const EMBER_OFF = "#D0D6DE";
+const HERO_INK = "#15171C";
+const HERO_BODY = "#2A2D34";
 
 const PLACEHOLDERS = [
   "Explain the present perfect, with practice",
@@ -209,13 +215,17 @@ export function Composer() {
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
       {/* ── the box ─────────────────────────────────────────────────────── */}
       <div
+        className="pa-composer"
         style={{
           width: "100%",
-          maxWidth: 720,
-          background: "linear-gradient(180deg,#FFFFFF 0%,#FBFAF8 100%)",
-          border: `1px solid ${LINE}`,
+          maxWidth: 660,
+          background: "rgba(255,255,255,.78)",
+          border: "1px solid rgba(255,255,255,.8)",
           borderRadius: 22,
-          boxShadow: "0 18px 44px rgba(20,25,50,.10)",
+          boxShadow:
+            "0 1px 0 rgba(255,255,255,.85) inset, 0 30px 60px -28px rgba(21,23,28,.30), 0 12px 28px -12px rgba(21,23,28,.10)",
+          backdropFilter: "blur(22px) saturate(150%)",
+          WebkitBackdropFilter: "blur(22px) saturate(150%)",
           overflow: "hidden",
         }}
       >
@@ -236,11 +246,12 @@ export function Composer() {
             border: 0,
             outline: "none",
             resize: "none",
-            padding: "26px 26px 10px",
+            padding: "18px 22px 4px",
+            minHeight: 56,
             fontFamily: "inherit",
-            fontSize: 19,
+            fontSize: 16,
             lineHeight: 1.5,
-            color: INK,
+            color: HERO_INK,
             background: "transparent",
           }}
         />
@@ -274,8 +285,8 @@ export function Composer() {
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "12px 14px 14px 16px",
-            borderTop: "1px solid #F1EFEA",
+            padding: "6px 12px 12px",
+            borderTop: "1px solid rgba(21,23,28,.06)",
             flexWrap: "wrap",
           }}
         >
@@ -284,21 +295,22 @@ export function Composer() {
             onClick={() => setShowContext((v) => !v)}
             aria-expanded={showContext}
             title="Add context — what you've covered, what they keep getting wrong"
+            className="pa-icon-btn"
             style={{
-              width: 34,
-              height: 34,
-              borderRadius: "50%",
-              border: `1px solid ${showContext ? INDIGO : "transparent"}`,
-              background: showContext ? "#EEEDF8" : "transparent",
-              color: showContext ? INDIGO : MUTED,
-              fontSize: 20,
-              lineHeight: 1,
+              width: 36,
+              height: 36,
+              borderRadius: 9,
+              borderColor: showContext ? "rgba(232,90,44,.4)" : "transparent",
+              background: showContext ? "rgba(232,90,44,.08)" : "transparent",
+              color: showContext ? EMBER : HERO_BODY,
               cursor: "pointer",
               display: "grid",
               placeItems: "center",
             }}
           >
-            +
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 4v10M4 9h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
           </button>
 
           <button
@@ -312,23 +324,25 @@ export function Composer() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 9,
-              background: "#fff",
+              gap: 10,
+              background: "rgba(255,255,255,.55)",
               border: `1px solid ${LINE}`,
               borderRadius: 999,
-              padding: "6px 13px 6px 7px",
+              padding: "6px 14px 6px 6px",
               cursor: "pointer",
               fontFamily: "inherit",
               fontSize: 14,
-              color: INK,
+              fontWeight: 500,
+              color: HERO_BODY,
             }}
           >
             <span
+              aria-hidden
               style={{
-                width: 32,
+                width: 30,
                 height: 18,
                 borderRadius: 999,
-                background: planFirst ? INDIGO : "#D8D5CE",
+                background: planFirst ? EMBER : EMBER_OFF,
                 position: "relative",
                 transition: "background .15s",
                 flex: "none",
@@ -338,11 +352,12 @@ export function Composer() {
                 style={{
                   position: "absolute",
                   top: 2,
-                  left: planFirst ? 16 : 2,
+                  left: planFirst ? 14 : 2,
                   width: 14,
                   height: 14,
                   borderRadius: "50%",
                   background: "#fff",
+                  boxShadow: "0 1px 2px rgba(0,0,0,.18)",
                   transition: "left .15s",
                 }}
               />
@@ -350,16 +365,17 @@ export function Composer() {
             Plan
             <span
               aria-hidden
+              title="On: I ask a couple of questions and show the outline before writing"
               style={{
                 width: 16,
                 height: 16,
                 borderRadius: "50%",
-                border: `1px solid ${FAINT}`,
+                border: `1.2px solid ${FAINT}`,
                 color: FAINT,
-                fontSize: 10.5,
+                fontSize: 10,
+                fontWeight: 600,
                 display: "grid",
                 placeItems: "center",
-                fontStyle: "italic",
               }}
             >
               i
@@ -393,13 +409,13 @@ export function Composer() {
                 onClick={toggleDictation}
                 aria-pressed={listening}
                 title={listening ? "Stop dictating" : "Dictate your brief"}
+                className="pa-icon-btn"
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "50%",
-                  border: 0,
-                  background: listening ? "#FBEAE8" : "transparent",
-                  color: listening ? "#C2453A" : MUTED,
+                  width: 36,
+                  height: 36,
+                  borderRadius: 9,
+                  background: listening ? "rgba(232,90,44,.12)" : "transparent",
+                  color: listening ? EMBER : HERO_BODY,
                   cursor: "pointer",
                   display: "grid",
                   placeItems: "center",
@@ -414,22 +430,29 @@ export function Composer() {
               onClick={() => void start(fullBrief())}
               disabled={busy || brief.trim() === ""}
               aria-label="Make this lesson"
+              className="pa-send"
               style={{
-                width: 48,
-                height: 48,
+                width: 42,
+                height: 42,
                 borderRadius: "50%",
                 border: 0,
-                background: brief.trim() === "" ? "#DAD7D0" : INDIGO,
+                background: EMBER,
                 color: "#fff",
-                fontSize: 21,
+                opacity: brief.trim() === "" ? 0.8 : 1,
                 cursor: busy || brief.trim() === "" ? "default" : "pointer",
                 display: "grid",
                 placeItems: "center",
-                boxShadow: brief.trim() === "" ? "none" : "0 6px 16px rgba(67,64,203,.32)",
-                transition: "background .15s, box-shadow .15s",
+                boxShadow:
+                  "0 1px 0 rgba(255,255,255,.3) inset, 0 10px 22px -8px rgba(232,90,44,.6)",
               }}
             >
-              {busy ? "…" : "↑"}
+              {busy ? (
+                "…"
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 13V3m0 0L4 7m4-4l4 4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
             </button>
           </span>
         </div>
@@ -464,9 +487,9 @@ export function Composer() {
                       type="button"
                       onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
                       style={{
-                        border: `1px solid ${on ? INDIGO : LINE}`,
+                        border: `1px solid ${on ? EMBER : LINE}`,
                         background: on ? "#EEEDF8" : "#fff",
-                        color: on ? INDIGO : INK,
+                        color: on ? EMBER : INK,
                         borderRadius: 999,
                         padding: "7px 14px",
                         fontFamily: "inherit",
@@ -522,14 +545,14 @@ export function Composer() {
 
       {/* ── starters ────────────────────────────────────────────────────── */}
       {phase.step === "idle" && brief.trim() === "" ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 30 }}>
           <span
             style={{
-              fontSize: 11.5,
-              letterSpacing: ".18em",
+              fontFamily: "var(--font-mono-data), ui-monospace, monospace",
+              fontSize: 11,
+              letterSpacing: ".2em",
               textTransform: "uppercase",
-              color: FAINT,
-              fontWeight: 500,
+              color: MUTED,
             }}
           >
             Not sure where to start? Try one of these:
@@ -540,17 +563,23 @@ export function Composer() {
                 key={s}
                 type="button"
                 onClick={() => setBrief(s)}
-                className="cn-tile"
+                className="pa-chip"
                 style={{
                   border: `1px solid ${LINE}`,
-                  background: "#fff",
+                  background: "rgba(255,255,255,.7)",
                   borderRadius: 999,
-                  padding: "11px 21px",
+                  padding: "11px 22px",
                   fontFamily: "inherit",
                   fontSize: 14.5,
-                  fontWeight: 600,
-                  color: INK,
+                  fontWeight: 500,
+                  lineHeight: 1,
+                  letterSpacing: "-.005em",
+                  color: HERO_BODY,
                   cursor: "pointer",
+                  backdropFilter: "blur(12px) saturate(150%)",
+                  WebkitBackdropFilter: "blur(12px) saturate(150%)",
+                  boxShadow:
+                    "0 1px 0 rgba(255,255,255,.7) inset, 0 4px 12px -8px rgba(21,23,28,.16)",
                 }}
               >
                 {s}
@@ -588,7 +617,7 @@ const panel: React.CSSProperties = {
 const primaryButton: React.CSSProperties = {
   border: 0,
   borderRadius: 10,
-  background: INDIGO,
+  background: EMBER,
   color: "#fff",
   padding: "10px 18px",
   fontFamily: "inherit",

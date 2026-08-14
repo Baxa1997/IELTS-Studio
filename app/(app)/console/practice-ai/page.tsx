@@ -56,42 +56,66 @@ export default async function PracticeAiPage({
           negative margins cancel `.cn-page`'s 26/28px padding exactly; the
           padding below puts it back inside. */}
       <div
+        className="pa-hero-bg"
         style={{
+          position: "relative",
+          overflow: "hidden",
+          // Cancels `.cn-page`'s 26/28px padding so the gradient is full-bleed
+          // across the content area; the padding goes back on inside.
           margin: "-26px -28px 0",
-          padding: "56px 28px 44px",
-          background:
-            "linear-gradient(180deg, #DDE7EA 0%, #E9EBE7 42%, #F4F3EF 78%, #F4F3EF 100%)",
+          padding: "72px 28px 64px",
         }}
       >
-        <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
+        {/* Radial highlights + grain, masked so they fade before the gradient
+            reaches paper — without the mask there is a visible band at the join. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+            maskImage: "linear-gradient(to bottom, #000 0%, #000 45%, transparent 75%)",
+            WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 45%, transparent 75%)",
+          }}
+        >
+          <div className="pa-hero-atmos" style={{ position: "absolute", inset: "-10%" }} />
+          <div className="pa-hero-noise" style={{ position: "absolute", inset: 0 }} />
+        </div>
+
+        <div style={{ position: "relative", maxWidth: 880, margin: "0 auto", textAlign: "center" }}>
           <h1
             style={{
-              fontFamily: SERIF,
-              fontWeight: 700,
-              fontSize: "clamp(30px, 5vw, 46px)",
-              lineHeight: 1.08,
-              letterSpacing: "-.02em",
-              color: INK,
-              margin: "0 0 14px",
+              fontWeight: 400,
+              fontSize: "clamp(34px, 6vw, 60px)",
+              lineHeight: 1.02,
+              letterSpacing: "-.04em",
+              color: "#15171C",
+              margin: "0 0 22px",
               textWrap: "balance",
             }}
           >
-            What does your class need?
+            Where lessons come to life
           </h1>
           <p
             style={{
-              fontSize: 17,
-              lineHeight: 1.55,
-              color: MUTED,
-              margin: "0 auto 30px",
-              maxWidth: 560,
+              fontSize: 18,
+              lineHeight: 1.5,
+              letterSpacing: "-.01em",
+              color: "rgba(42,45,52,.85)",
+              margin: "0 auto",
+              maxWidth: "68ch",
             }}
           >
-            Say it in a sentence. You get a lesson page — the explanation and the practice —
-            ready to set as homework or share as a link.
+            Say what your class needs and get a lesson page — the explanation and the practice.
+            <span style={{ display: "block", marginTop: 4, fontWeight: 500, color: "#15171C" }}>
+              Ready to set as homework, or share as a link.
+            </span>
           </p>
 
-          <Composer />
+          <div style={{ marginTop: 44 }}>
+            <Composer />
+          </div>
         </div>
       </div>
 
