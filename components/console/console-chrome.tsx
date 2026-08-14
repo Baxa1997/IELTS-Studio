@@ -29,6 +29,7 @@ const CRUMBS: [string, string][] = [
   ["/console/attendance", "Center · Attendance"],
   ["/console/reports", "Insight · Reports"],
   ["/console/announcements", "Insight · Announcements"],
+  ["/console/practice-ai", "Teaching · Practice AI"],
   ["/console/practices", "Teaching · Practice"],
   ["/console/billing", "Admin · Billing & plan"],
   ["/console/settings", "Admin · Settings & roles"],
