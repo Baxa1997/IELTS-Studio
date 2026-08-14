@@ -130,6 +130,14 @@ export const sectionSchema = z.object({
   /** Allow-listed HTML. Sanitised at render; the engine refuses to store
    *  anything outside the list in the first place. */
   html: z.string(),
+  /**
+   * The hard part of this section, said again in the learner's first language.
+   *
+   * A separate field, not mixed into `html`, so the page can collapse it: a
+   * learner who does not need it should not read past it, and a teacher marking
+   * should be able to see the English alone. Absent on English-only lessons.
+   */
+  html_l1: z.string().nullish(),
 });
 
 export const lessonContentSchema = z.object({

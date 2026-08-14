@@ -1,46 +1,39 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { LessonSections } from "@/components/lessons/lesson-sections";
-import { PageHead } from "@/components/console/crm-ui";
 import { requireOrgUser, roleHome } from "@/lib/auth";
-import { BLUEPRINT_LABEL } from "@/lib/console/lessons";
+import { BLUEPRINT_LABEL, BLUEPRINT_TINT } from "@/lib/console/lessons";
 import { loadLesson } from "@/lib/lessons/load";
-import { isOpen, type Exercise } from "@/lib/lessons/types";
+import { isOpen } from "@/lib/lessons/types";
 
 import { LessonStaffBar } from "./staff-bar";
+import { PracticeReview } from "./practice-review";
 
 export const dynamic = "force-dynamic";
 
 const INK = "#15171C";
-const BODY = "#2A2D34";
 const MUTED = "#5C616C";
 const FAINT = "#8B909B";
 const LINE = "#E7E5DF";
 
-const STAGE_LABEL: Record<string, string> = {
-  controlled: "Recognise it",
-  semi_controlled: "Work with it",
-  freer: "Use it yourself",
-};
-
-const STAGE_NOTE: Record<string, string> = {
-  controlled: "Check they can spot and produce the form with support.",
-  semi_controlled: "Transform and correct — where understanding shows.",
-  freer: "Produce their own language. The only proof they can use it.",
+const STAGE_SHORT: Record<string, string> = {
+  controlled: "warm up",
+  semi_controlled: "change it",
+  freer: "write it",
 };
 
 /**
- * A lesson, exactly as a learner will meet it — plus the bar of things only a
- * teacher can do.
+ * A lesson, as the teacher who made it needs to read it.
  *
- * Deliberately not a "preview mode". The one honest way to know what you are
- * about to set thirty people is to read the page they will read, so this shows
- * the real thing and adds to it rather than rebuilding a staff copy that could
- * drift from what students see.
- *
- * The answer key IS shown here, which is the one difference from the student
- * view — checking the marking is most of what reviewing a generated lesson
- * means.
+ * Two problems this layout solves. It used to sit in a fixed 820px card flush
+ * against the left edge with the rest of the window empty, because this route
+ * drops the console's padding — a page that owns the surface has to lay itself
+ * out. And it presented everything at once: every section, every exercise, every
+ * answer, in one column. A teacher checking a lesson before setting it needs to
+ * SCAN first and read second, so the page now opens with what it covers and how
+ * much of each, and the answer key is behind a toggle rather than doubling the
+ * length of the practice.
  */
 export default async function LessonPage({ params }: { params: Promise<{ id: string }> }) {
   const { profile } = await requireOrgUser();
@@ -50,184 +43,140 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const lesson = await loadLesson(id);
   if (!lesson) notFound();
 
-  const byStage = (stage: string) => lesson.content.exercises.filter((e) => e.stage === stage);
+  const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
+  const stageCount = (stage: string) =>
+    lesson.content.exercises.filter((e) => e.stage === stage).length;
+  const openCount = lesson.content.exercises.filter(isOpen).length;
+  const tags = [...new Set(lesson.content.exercises.map((e) => e.tag))];
 
   return (
-    <div>
-      <PageHead
-        back={{ href: "/console/practice-ai", label: "Practice AI" }}
-        eyebrow={BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}
-        title={lesson.title}
-        subtitle={
-          <>
-            {lesson.content.meta.objective}
-            <span style={{ display: "block", marginTop: 4, fontSize: 12.5, color: FAINT }}>
-              {lesson.level ? `${lesson.level} · ` : ""}
-              {lesson.exerciseCount} exercise{lesson.exerciseCount === 1 ? "" : "s"}
-              {lesson.language !== "en" ? ` · explained in ${lesson.language.toUpperCase()}` : ""}
-            </span>
-          </>
-        }
-      />
-
-      <LessonStaffBar
-        id={lesson.id}
-        status={lesson.status}
-        shareEnabled={lesson.shareEnabled}
-        shareToken={lesson.shareToken}
-        hasAttempts={lesson.hasAttempts}
-      />
-
+    <div style={{ background: "#FDFDFD", minHeight: "100%" }}>
+      {/* A calm band rather than the hero's gradient: this page is for reading,
+          and a second big gradient would compete with the thing being read. */}
       <div
         style={{
-          background: "#fff",
-          border: `1px solid ${LINE}`,
-          borderRadius: 14,
-          padding: "28px 30px",
-          marginTop: 16,
-          maxWidth: 820,
+          background: "linear-gradient(180deg, #F4F6F6 0%, #FDFDFD 100%)",
+          borderBottom: `1px solid ${LINE}`,
+          padding: "26px 28px 30px",
         }}
       >
-        <LessonSections sections={lesson.content.sections} />
+        <div style={{ maxWidth: 820, margin: "0 auto" }}>
+          <Link
+            href="/console/practice-ai"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              color: MUTED,
+              textDecoration: "none",
+              marginBottom: 16,
+            }}
+          >
+            ← Practice AI
+          </Link>
 
-        <hr style={{ border: 0, borderTop: `1px solid ${LINE}`, margin: "10px 0 26px" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
+            <span
+              style={{ width: 7, height: 7, borderRadius: "50%", background: tint.ink, flex: "none" }}
+            />
+            <span
+              style={{
+                fontSize: 10.5,
+                letterSpacing: ".12em",
+                textTransform: "uppercase",
+                color: tint.ink,
+                fontWeight: 700,
+              }}
+            >
+              {BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}
+            </span>
+            {lesson.level ? <span style={{ fontSize: 12.5, color: FAINT }}>· {lesson.level}</span> : null}
+          </div>
 
-        <h2
+          <h1
+            style={{
+              fontFamily: "var(--font-serif4), Georgia, serif",
+              fontSize: "clamp(26px, 3.6vw, 36px)",
+              fontWeight: 700,
+              lineHeight: 1.14,
+              letterSpacing: "-.02em",
+              color: INK,
+              margin: "0 0 10px",
+              textWrap: "balance",
+            }}
+          >
+            {lesson.title}
+          </h1>
+          <p style={{ fontSize: 16.5, lineHeight: 1.5, color: MUTED, margin: 0, maxWidth: "62ch" }}>
+            {lesson.content.meta.objective}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 28px 90px" }}>
+        <LessonStaffBar
+          id={lesson.id}
+          status={lesson.status}
+          shareEnabled={lesson.shareEnabled}
+          shareToken={lesson.shareToken}
+          hasAttempts={lesson.hasAttempts}
+        />
+
+        {/* Scan before you read: what this lesson actually drills, and whether
+            the practice reaches production or stops at recognition. */}
+        <div
           style={{
-            fontFamily: "var(--font-serif4), Georgia, serif",
-            fontSize: 21,
-            fontWeight: 700,
-            color: INK,
-            margin: "0 0 4px",
+            display: "flex",
+            gap: 26,
+            flexWrap: "wrap",
+            padding: "16px 0 18px",
+            borderBottom: `1px solid ${LINE}`,
+            marginTop: 18,
           }}
         >
-          Practice
-        </h2>
-        <p style={{ fontSize: 13.5, color: MUTED, margin: "0 0 22px" }}>
-          Answers are shown here because you are the teacher. Students see them only after they
-          submit.
-        </p>
+          <Stat value={String(lesson.exerciseCount)} label="exercises" />
+          {(["controlled", "semi_controlled", "freer"] as const).map((s) => (
+            <Stat key={s} value={String(stageCount(s))} label={STAGE_SHORT[s]} />
+          ))}
+          {openCount > 0 ? <Stat value={String(openCount)} label="written, AI-marked" /> : null}
+        </div>
 
-        {(["controlled", "semi_controlled", "freer"] as const).map((stage) => {
-          const items = byStage(stage);
-          if (items.length === 0) return null;
-          return (
-            <section key={stage} style={{ marginBottom: 30 }}>
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 15, fontWeight: 650, color: INK }}>
-                  {STAGE_LABEL[stage]}
-                </div>
-                <div style={{ fontSize: 12.5, color: FAINT }}>{STAGE_NOTE[stage]}</div>
-              </div>
-              <ol style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                {items.map((exercise, i) => (
-                  <ExerciseRow key={exercise.id} exercise={exercise} n={i + 1} />
-                ))}
-              </ol>
-            </section>
-          );
-        })}
+        {tags.length > 0 ? (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "14px 0 6px" }}>
+            <span style={{ fontSize: 12.5, color: FAINT, marginRight: 2 }}>Covers</span>
+            {tags.map((t) => (
+              <span
+                key={t}
+                style={{
+                  background: "#F4F2ED",
+                  borderRadius: 999,
+                  padding: "3px 10px",
+                  fontSize: 12,
+                  color: MUTED,
+                }}
+              >
+                {t.replaceAll("-", " ")}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <LessonSections sections={lesson.content.sections} language={lesson.language} />
+
+        <PracticeReview exercises={lesson.content.exercises} />
       </div>
     </div>
   );
 }
 
-/** One exercise with its key — the review view, not the answering view. */
-function ExerciseRow({ exercise, n }: { exercise: Exercise; n: number }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <li
-      style={{
-        borderTop: `1px solid #F2F0EB`,
-        padding: "14px 0",
-        display: "flex",
-        gap: 12,
-      }}
-    >
-      <span
-        style={{
-          flex: "none",
-          width: 22,
-          fontSize: 12.5,
-          color: FAINT,
-          fontVariantNumeric: "tabular-nums",
-          paddingTop: 2,
-        }}
-      >
-        {n}
+    <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+      <span style={{ fontSize: 20, fontWeight: 700, color: INK, letterSpacing: "-.01em" }}>
+        {value}
       </span>
-      <span style={{ minWidth: 0, flex: 1 }}>
-        <span style={{ display: "block", fontSize: 15, color: BODY, lineHeight: 1.55 }}>
-          {exercise.prompt}
-        </span>
-
-        {!isOpen(exercise) && exercise.options ? (
-          <span style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-            {exercise.options.map((opt, i) => {
-              const correct = exercise.answers.includes(String(i));
-              return (
-                <span
-                  key={opt}
-                  style={{
-                    border: `1px solid ${correct ? "#B6D9C4" : LINE}`,
-                    background: correct ? "#EAF4EE" : "#FAFAF8",
-                    color: correct ? "#16794C" : MUTED,
-                    borderRadius: 999,
-                    padding: "4px 11px",
-                    fontSize: 13,
-                    fontWeight: correct ? 600 : 400,
-                  }}
-                >
-                  {opt}
-                </span>
-              );
-            })}
-          </span>
-        ) : null}
-
-        {!isOpen(exercise) && !exercise.options ? (
-          <span style={{ display: "block", marginTop: 7, fontSize: 13.5, color: "#16794C" }}>
-            <strong style={{ fontWeight: 600 }}>Answer:</strong> {exercise.answers.join("  /  ")}
-          </span>
-        ) : null}
-
-        {/* An open item has no answer key — it has the checklist the marker will
-            use. Showing it is the only way a teacher can tell whether the
-            marking will be fair before setting it. */}
-        {isOpen(exercise) ? (
-          <span style={{ display: "block", marginTop: 8 }}>
-            <span style={{ fontSize: 12.5, color: FAINT }}>Marked against:</span>
-            <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13.5, color: BODY }}>
-              {exercise.criteria.map((c) => (
-                <li key={c} style={{ marginBottom: 2 }}>
-                  {c}
-                </li>
-              ))}
-            </ul>
-            <span style={{ display: "block", marginTop: 6, fontSize: 13.5, color: "#16794C" }}>
-              <strong style={{ fontWeight: 600 }}>Model answer:</strong> {exercise.model_answer}
-            </span>
-          </span>
-        ) : null}
-
-        {exercise.why ? (
-          <span style={{ display: "block", marginTop: 6, fontSize: 12.5, color: MUTED }}>
-            {exercise.why}
-          </span>
-        ) : null}
-
-        <span
-          style={{
-            display: "inline-block",
-            marginTop: 8,
-            fontSize: 11,
-            letterSpacing: ".06em",
-            textTransform: "uppercase",
-            color: FAINT,
-          }}
-        >
-          {exercise.tag.replaceAll("-", " ")}
-        </span>
-      </span>
-    </li>
+      <span style={{ fontSize: 12.5, color: FAINT }}>{label}</span>
+    </span>
   );
 }

@@ -149,7 +149,7 @@ export default async function PracticeAiPage({
         </div>
       </div>
 
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "8px 28px 72px" }}>
+      <div style={{ padding: "10px 32px 96px" }}>
       <h2
         style={{
           fontFamily: SERIF,
@@ -215,8 +215,8 @@ export default async function PracticeAiPage({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: 16,
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+            gap: 18,
           }}
         >
           {rows.map((lesson) => (
@@ -232,14 +232,13 @@ export default async function PracticeAiPage({
 /**
  * One lesson.
  *
- * The fake browser chrome is gone. It was lifted from the reference, where the
- * thing being made really IS a website — here it was a picture of a window
- * wrapped around something that is a page of teaching, and against the softer
- * hero it read as clip-art.
+ * Each KIND of lesson looks different — its own wash, accent and mark on the
+ * header band. A library where every card is identical is a library you have to
+ * read word by word; giving grammar, vocabulary, skills and exam technique
+ * distinct faces means the grid can be scanned instead.
  *
- * What replaces it is the information a teacher actually scans for: what kind of
- * lesson it is, what it teaches, how much practice, and — the line that matters
- * most — whether anyone has been set it.
+ * The band also carries the thing a teacher most wants to know at a glance and
+ * would otherwise have to open the lesson for: whether anyone has been set it.
  */
 function Card({ lesson }: { lesson: LessonCard }) {
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
@@ -252,118 +251,108 @@ function Card({ lesson }: { lesson: LessonCard }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 12,
         background: "#fff",
         border: `1px solid ${LINE}`,
         borderRadius: 16,
-        padding: "18px 20px 16px",
+        overflow: "hidden",
         textDecoration: "none",
         boxShadow: "0 1px 2px rgba(21,23,28,.04)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div
+        style={{
+          background: tint.wash,
+          padding: "14px 18px",
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          borderBottom: `1px solid ${LINE}`,
+        }}
+      >
         <span
+          aria-hidden
           style={{
-            width: 7,
-            height: 7,
-            borderRadius: "50%",
-            background: tint.ink,
-            flex: "none",
-          }}
-        />
-        <span
-          style={{
-            fontSize: 10.5,
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
+            width: 30,
+            height: 30,
+            borderRadius: 9,
+            background: "#fff",
             color: tint.ink,
+            display: "grid",
+            placeItems: "center",
+            fontSize: 15,
             fontWeight: 700,
+            flex: "none",
+            boxShadow: "0 1px 2px rgba(21,23,28,.08)",
           }}
         >
-          {BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}
+          {tint.mark}
         </span>
-        {lesson.level ? (
-          <span style={{ fontSize: 11.5, color: FAINT, marginLeft: "auto" }}>{lesson.level}</span>
-        ) : null}
+        <span style={{ minWidth: 0 }}>
+          <span
+            style={{
+              display: "block",
+              fontSize: 10.5,
+              letterSpacing: ".12em",
+              textTransform: "uppercase",
+              color: tint.ink,
+              fontWeight: 700,
+            }}
+          >
+            {BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}
+          </span>
+          <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
+            {lesson.level ? `${lesson.level} · ` : ""}
+            {lesson.exerciseCount} exercise{lesson.exerciseCount === 1 ? "" : "s"}
+            {lesson.language !== "en" ? ` · +${lesson.language.toUpperCase()}` : ""}
+          </span>
+        </span>
       </div>
 
-      <div style={{ minWidth: 0 }}>
+      <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
         <div
           style={{
             fontSize: 16.5,
             fontWeight: 650,
             color: "#15171C",
-            lineHeight: 1.3,
+            lineHeight: 1.32,
             letterSpacing: "-.01em",
             display: "-webkit-box",
-            WebkitLineClamp: 2,
+            WebkitLineClamp: 3,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
           }}
         >
           {lesson.title}
         </div>
-        {lesson.previewHeading ? (
-          <div
-            style={{
-              fontSize: 13,
-              color: MUTED,
-              marginTop: 5,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Starts with {lesson.previewHeading.toLowerCase()}
-          </div>
-        ) : null}
-      </div>
 
-      <div
-        style={{
-          marginTop: "auto",
-          paddingTop: 12,
-          borderTop: `1px solid #F4F2ED`,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          flexWrap: "wrap",
-          fontSize: 12.5,
-        }}
-      >
-        <span style={{ color: MUTED }}>
-          {lesson.exerciseCount} exercise{lesson.exerciseCount === 1 ? "" : "s"}
-        </span>
-        {lesson.language !== "en" ? (
-          <span style={{ color: FAINT }}>· {lesson.language.toUpperCase()}</span>
-        ) : null}
-
-        {/* The status a teacher is really looking for. "Not set to anyone" is
-            said plainly rather than left as an absence — a library full of
-            unused work is the thing most worth noticing. */}
-        <span
+        <div
           style={{
-            marginLeft: "auto",
-            color: used ? "#16794C" : FAINT,
-            fontWeight: used ? 600 : 400,
+            marginTop: "auto",
+            paddingTop: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 12.5,
           }}
         >
-          {used
-            ? `${lesson.completed}/${lesson.assigned} done${lesson.averagePercent != null ? ` · ${lesson.averagePercent}%` : ""}`
-            : "Not set to anyone"}
-        </span>
-        {lesson.shareEnabled ? (
           <span
-            title="A public link is on for this lesson"
             style={{
-              flexBasis: "100%",
-              color: "#A9721F",
-              fontSize: 11.5,
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: used ? "#16794C" : "#D5D2CA",
+              flex: "none",
             }}
-          >
-            Public link is on
+          />
+          <span style={{ color: used ? "#16794C" : FAINT, fontWeight: used ? 600 : 400 }}>
+            {used
+              ? `${lesson.completed}/${lesson.assigned} done${lesson.averagePercent != null ? ` · ${lesson.averagePercent}%` : ""}`
+              : "Not set to anyone"}
           </span>
-        ) : null}
+          {lesson.shareEnabled ? (
+            <span style={{ marginLeft: "auto", color: "#A9721F", fontSize: 11.5 }}>link on</span>
+          ) : null}
+        </div>
       </div>
     </Link>
   );

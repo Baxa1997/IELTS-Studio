@@ -43,12 +43,42 @@ export const BLUEPRINT_LABEL: Record<string, string> = {
   exam_technique: "Exam technique",
 };
 
-/** Card tint per blueprint, so the grid is scannable by kind at a glance. */
-export const BLUEPRINT_TINT: Record<string, { bg: string; ink: string }> = {
-  grammar: { bg: "#EEEDF8", ink: "#4340CB" },
-  vocabulary: { bg: "#EAF4EE", ink: "#16794C" },
-  skill: { bg: "#FBEEE0", ink: "#A9721F" },
-  exam_technique: { bg: "#F7E4E2", ink: "#A63A30" },
+/**
+ * A visual identity per lesson kind, so a wall of cards is scannable rather
+ * than uniform: its own accent, its own wash, and its own mark.
+ *
+ * `wash` is the card's header band and `mark` the glyph on it — a grammar
+ * lesson and a vocabulary lesson should be tellable apart across the room,
+ * which is the whole job of a library grid.
+ */
+export const BLUEPRINT_TINT: Record<
+  string,
+  { bg: string; ink: string; wash: string; mark: string }
+> = {
+  grammar: {
+    bg: "#EEEDF8",
+    ink: "#4340CB",
+    wash: "linear-gradient(135deg,#EDECFA 0%,#F7F6FD 100%)",
+    mark: "¶",
+  },
+  vocabulary: {
+    bg: "#EAF4EE",
+    ink: "#16794C",
+    wash: "linear-gradient(135deg,#E7F3EC 0%,#F5FAF7 100%)",
+    mark: "A",
+  },
+  skill: {
+    bg: "#FBEEE0",
+    ink: "#A9721F",
+    wash: "linear-gradient(135deg,#FBEEDF 0%,#FDF8F1 100%)",
+    mark: "→",
+  },
+  exam_technique: {
+    bg: "#F7E4E2",
+    ink: "#A63A30",
+    wash: "linear-gradient(135deg,#F8E6E3 0%,#FDF5F4 100%)",
+    mark: "★",
+  },
 };
 
 export async function loadLessons(opts: { profileId: string }): Promise<LessonCard[]> {

@@ -836,9 +836,66 @@
    below, and nothing the model writes can reach any other class in the app. */
 .lp-lesson {
   color: #2A2D34;
-  font-size: 15.5px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.7;
 }
+
+/* Sections are the spine of the page, so they get real separation and a
+   numbered heading. A lesson read as one undifferentiated wall is the single
+   most common complaint about generated material — the reader cannot tell
+   where they are or how much is left. */
+.lp-section { padding: 26px 0; border-top: 1px solid #EFEDE8; }
+.lp-section:first-child { padding-top: 4px; border-top: 0; }
+.lp-section-h {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--font-serif4), Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  color: #15171C;
+  margin: 0 0 14px;
+}
+.lp-section-n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #B9B5AC;
+  letter-spacing: .04em;
+}
+
+/* The first-language note. Closed by default and quiet when closed: a learner
+   who reads English fine should see one line, not a second copy of what they
+   just read. */
+.lp-l1 {
+  margin: 14px 0 0;
+  border: 1px solid #E4E9EA;
+  background: #F5F8F8;
+  border-radius: 10px;
+  padding: 0 14px;
+}
+.lp-l1 > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4A6A70;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lp-l1 > summary::-webkit-details-marker { display: none; }
+.lp-l1 > summary::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform .15s;
+}
+.lp-l1[open] > summary::before { transform: rotate(90deg); }
+.lp-l1[open] > summary { border-bottom: 1px solid #E4E9EA; }
+.lp-l1 > div { padding: 12px 0 14px; font-size: 15px; color: #33474B; }
+.lp-l1 > div p:last-child { margin-bottom: 0; }
 .lp-lesson p { margin: 0 0 12px; }
 .lp-lesson h3 {
   font-size: 16px;

@@ -72,7 +72,7 @@ export default async function LearnPage({ params }: { params: Promise<{ id: stri
           </p>
         </header>
 
-        <LessonSections sections={lesson.content.sections} />
+        <LessonSections sections={lesson.content.sections} language={lesson.language} />
 
         <hr style={{ border: 0, borderTop: "1px solid #E7E5DF", margin: "8px 0 26px" }} />
 

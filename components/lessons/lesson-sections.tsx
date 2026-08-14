@@ -18,24 +18,40 @@ import type { LessonSection } from "@/lib/lessons/types";
  * Server component — the sanitiser pulls in a DOM implementation, and there is
  * no reason to ship that to the browser.
  */
-export function LessonSections({ sections }: { sections: LessonSection[] }) {
+
+const L1_LABEL: Record<string, string> = {
+  uz: "O'zbekcha izoh",
+  ru: "Пояснение по-русски",
+};
+
+export function LessonSections({
+  sections,
+  language = "en",
+}: {
+  sections: LessonSection[];
+  /** Which second language the notes are in, for their summary label. */
+  language?: string;
+}) {
   return (
     <div className="lp-lesson">
-      {sections.map((section) => (
-        <section key={section.id} style={{ marginBottom: 34 }}>
-          <h2
-            style={{
-              fontFamily: "var(--font-serif4), Georgia, serif",
-              fontSize: 21,
-              fontWeight: 700,
-              letterSpacing: "-.01em",
-              color: "#15171C",
-              margin: "0 0 12px",
-            }}
-          >
+      {sections.map((section, i) => (
+        <section key={section.id} className="lp-section">
+          <h2 className="lp-section-h">
+            <span className="lp-section-n">{String(i + 1).padStart(2, "0")}</span>
             {section.heading}
           </h2>
           <div dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(section.html) }} />
+
+          {/* Collapsed by default, and native <details> so it costs no
+              JavaScript. A learner who reads English fine should see one quiet
+              line, not a second copy of the section they have just read; a
+              learner who is stuck is one click from help. */}
+          {section.html_l1 ? (
+            <details className="lp-l1">
+              <summary>{L1_LABEL[language] ?? "In your language"}</summary>
+              <div dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(section.html_l1) }} />
+            </details>
+          ) : null}
         </section>
       ))}
     </div>

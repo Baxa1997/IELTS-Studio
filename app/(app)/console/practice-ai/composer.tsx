@@ -385,7 +385,7 @@ export function Composer() {
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            title="Which language the explanations are written in"
+            title="The lesson is always in English. Pick a second language to add a short note per section for the parts your learners find hardest."
             style={{
               border: `1px solid ${LINE}`,
               borderRadius: 999,
@@ -397,9 +397,13 @@ export function Composer() {
               cursor: "pointer",
             }}
           >
-            <option value="en">English</option>
-            <option value="uz">O&apos;zbekcha</option>
-            <option value="ru">Русский</option>
+            {/* Not "which language is the lesson in" — the lesson is always in
+                English, because that is the language being learned. This adds a
+                short note per section in the learner's own, for the part that is
+                genuinely hard. English means no note at all. */}
+            <option value="en">English only</option>
+            <option value="uz">+ O&apos;zbekcha izoh</option>
+            <option value="ru">+ пояснение по-русски</option>
           </select>
 
           <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
