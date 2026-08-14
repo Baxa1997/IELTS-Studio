@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { LessonSections } from "@/components/lessons/lesson-sections";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { BLUEPRINT_LABEL, BLUEPRINT_TINT } from "@/lib/console/lessons";
+import { loadGroups } from "@/lib/console/groups";
 import { loadLesson } from "@/lib/lessons/load";
 import { isOpen } from "@/lib/lessons/types";
 
@@ -42,6 +43,10 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const lesson = await loadLesson(id);
   if (!lesson) notFound();
+
+  // RLS narrows this to the classes this teacher owns, so the picker can only
+  // ever offer somewhere they may actually set work.
+  const { groups } = await loadGroups(profile);
 
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
   const stageCount = (stage: string) =>
@@ -121,6 +126,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           shareEnabled={lesson.shareEnabled}
           shareToken={lesson.shareToken}
           hasAttempts={lesson.hasAttempts}
+          groups={groups.map((g) => ({ id: g.id, name: g.name, students: g.memberCount }))}
         />
 
         {/* Scan before you read: what this lesson actually drills, and whether

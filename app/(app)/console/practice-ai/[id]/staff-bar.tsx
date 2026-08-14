@@ -10,6 +10,7 @@ import {
   setLessonStatus,
   type LessonActionState,
 } from "./actions";
+import { ShareModal, type GroupOption } from "./share-modal";
 
 /**
  * The things only a teacher can do to a lesson: publish it, share it, retire it.
@@ -53,12 +54,14 @@ export function LessonStaffBar({
   shareEnabled,
   shareToken,
   hasAttempts,
+  groups,
 }: {
   id: string;
   status: "draft" | "published" | "archived";
   shareEnabled: boolean;
   shareToken: string | null;
   hasAttempts: boolean;
+  groups: GroupOption[];
 }) {
   const [statusState, statusAction, statusPending] = useActionState(
     setLessonStatus,
@@ -73,6 +76,18 @@ export function LessonStaffBar({
     {} as LessonActionState,
   );
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // Publishing opens the modal, because "published" on its own does nothing for
+  // anybody — the decision a teacher has actually just made is that the lesson
+  // is ready for people, and the next question is which people. Adjusted during
+  // render rather than in an effect, the same way the console chrome closes its
+  // panels.
+  const [seenPublish, setSeenPublish] = useState<string | undefined>(undefined);
+  if (statusState.ok && statusState.ok !== seenPublish) {
+    setSeenPublish(statusState.ok);
+    if (statusState.ok.startsWith("Published")) setShareOpen(true);
+  }
 
   useActionFeedback(statusState, { keepOpen: true });
   useActionFeedback(shareState, { keepOpen: true });
@@ -122,13 +137,18 @@ export function LessonStaffBar({
             </form>
           ) : null}
           {status === "published" ? (
-            <form action={statusAction}>
-              <input type="hidden" name="id" value={id} />
-              <input type="hidden" name="status" value="archived" />
-              <button type="submit" disabled={statusPending} style={ghost}>
-                Archive
+            <>
+              <button type="button" onClick={() => setShareOpen(true)} style={primary}>
+                Set to a class
               </button>
-            </form>
+              <form action={statusAction}>
+                <input type="hidden" name="id" value={id} />
+                <input type="hidden" name="status" value="archived" />
+                <button type="submit" disabled={statusPending} style={ghost}>
+                  Archive
+                </button>
+              </form>
+            </>
           ) : null}
           {status === "archived" ? (
             <form action={statusAction}>
@@ -220,6 +240,15 @@ export function LessonStaffBar({
           lesson they actually sat. Make a new one to change anything.
         </p>
       ) : null}
+
+      <ShareModal
+        lessonId={id}
+        groups={groups}
+        shareEnabled={shareEnabled}
+        shareToken={shareToken}
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+      />
 
       {statusState.error || shareState.error || rotateState.error ? (
         <p style={{ margin: 0, fontSize: 12.5, color: "#A63A30" }} role="alert">
