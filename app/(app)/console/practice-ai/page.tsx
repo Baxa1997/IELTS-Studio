@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PageHead } from "@/components/console/crm-ui";
+import { SERIF } from "@/components/console/crm-ui";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import {
   BLUEPRINT_LABEL,
@@ -51,15 +51,64 @@ export default async function PracticeAiPage({
 
   return (
     <div>
-      <PageHead
-        eyebrow="Teaching"
-        title="Practice AI"
-        subtitle="Say what your class needs. You get a lesson page — the explanation and the practice — to set as homework or share."
-      />
+      {/* A centred hero, following the reference the owner supplied — and
+          full-bleed, so the gradient reaches the edges of the content area. The
+          negative margins cancel `.cn-page`'s 26/28px padding exactly; the
+          padding below puts it back inside. */}
+      <div
+        style={{
+          margin: "-26px -28px 0",
+          padding: "56px 28px 44px",
+          background:
+            "linear-gradient(180deg, #DDE7EA 0%, #E9EBE7 42%, #F4F3EF 78%, #F4F3EF 100%)",
+        }}
+      >
+        <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
+          <h1
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 700,
+              fontSize: "clamp(30px, 5vw, 46px)",
+              lineHeight: 1.08,
+              letterSpacing: "-.02em",
+              color: INK,
+              margin: "0 0 14px",
+              textWrap: "balance",
+            }}
+          >
+            What does your class need?
+          </h1>
+          <p
+            style={{
+              fontSize: 17,
+              lineHeight: 1.55,
+              color: MUTED,
+              margin: "0 auto 30px",
+              maxWidth: 560,
+            }}
+          >
+            Say it in a sentence. You get a lesson page — the explanation and the practice —
+            ready to set as homework or share as a link.
+          </p>
 
-      <Composer />
+          <Composer />
+        </div>
+      </div>
 
-      <div style={{ display: "flex", gap: 4, margin: "34px 0 14px", flexWrap: "wrap" }}>
+      <h2
+        style={{
+          fontFamily: SERIF,
+          fontSize: 22,
+          fontWeight: 700,
+          color: INK,
+          letterSpacing: "-.01em",
+          margin: "38px 0 0",
+        }}
+      >
+        Your lessons
+      </h2>
+
+      <div style={{ display: "flex", gap: 4, margin: "14px 0", flexWrap: "wrap" }}>
         {TABS.map((t) => {
           const on = t.key === tab;
           return (

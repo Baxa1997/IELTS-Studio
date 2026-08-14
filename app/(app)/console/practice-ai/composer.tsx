@@ -1,23 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Type what you need; get a lesson page.
+ * Type what your class needs; get a lesson page.
  *
- * Calls the ENGINE directly with the user's Supabase token, the same way
- * reading and listening do — a full build runs well past the 60s a Vercel
- * function gets, so it must not ride one.
+ * Laid out after the reference the owner supplied: a centred hero, one large
+ * brief box, and the affordances along its foot.
  *
- * Three steps, shown as three states, because they fail and cost differently.
- * The "Plan" toggle decides whether the teacher sees the middle one: on, they
- * answer a couple of questions and can correct the outline while correcting is
- * still cheap; off, it goes straight through. Either way the questions are
- * skippable — "just build it" has to stay possible at every step.
+ * Every control here does something. A `+` that opened nothing and a mic that
+ * listened to nothing would match the picture and lie about the product, so the
+ * `+` adds real context to the brief and the mic dictates into it — and the mic
+ * only renders where the browser can actually do it.
+ *
+ * Calls the ENGINE directly with the user's Supabase token, the way reading and
+ * listening do: a full build runs well past the 60s a Vercel function gets.
  */
 
 const INK = "#16162E";
@@ -26,20 +27,20 @@ const FAINT = "#93919F";
 const LINE = "#E0DED8";
 const INDIGO = "#4340CB";
 
-/** What a teacher might plausibly type, rotated so the box never looks empty. */
 const PLACEHOLDERS = [
   "Explain the present perfect, with practice",
   "Collocations for the education topic",
   "Task 2 introductions — how to paraphrase the question",
   "Articles: a, an, the — my B1 group keeps dropping them",
-  "True / False / Not Given, and why students fall for it",
 ];
 
 const STARTERS = [
-  "Present simple vs present continuous",
+  "Present simple vs continuous",
   "Linking words for Task 2",
-  "Countable and uncountable nouns",
+  "Countable and uncountable",
   "Describing trends for Task 1",
+  "True / False / Not Given",
+  "Past simple irregular verbs",
 ];
 
 type Question = { id: string; label: string; options: string[]; default: string };
@@ -51,6 +52,26 @@ type Phase =
   | { step: "asking"; questions: Question[]; blueprint: string | null }
   | { step: "planned"; plan: Plan }
   | { step: "error"; message: string };
+
+/** The browser's own dictation. No server, no cost — and absent in browsers
+ *  that can't do it, which is why the button is conditional. */
+interface SpeechSession {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+}
+type SpeechCtor = new () => SpeechSession;
+
+function speechCtor(): SpeechCtor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 async function callEngine<T>(path: string, body: unknown): Promise<T> {
   const backend = clientEnv.aiBackendUrl;
@@ -71,8 +92,9 @@ async function callEngine<T>(path: string, body: unknown): Promise<T> {
       body: JSON.stringify(body),
     });
   } catch {
-    // A rejected fetch is a network fact, not an HTTP status — say so plainly
-    // rather than showing the browser's bare "Failed to fetch".
+    // A rejected fetch is a network fact, not an HTTP status. Saying so beats
+    // the browser's bare "Failed to fetch", which sent us hunting for a timeout
+    // when the engine box was simply switched off.
     throw new Error("Couldn't reach the AI engine. It may be restarting — try again shortly.");
   }
 
@@ -90,19 +112,59 @@ async function callEngine<T>(path: string, body: unknown): Promise<T> {
 export function Composer() {
   const router = useRouter();
   const [brief, setBrief] = useState("");
+  const [context, setContext] = useState("");
+  const [showContext, setShowContext] = useState(false);
   const [planFirst, setPlanFirst] = useState(true);
   const [language, setLanguage] = useState("en");
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [listening, setListening] = useState(false);
+  const recognition = useRef<SpeechSession | null>(null);
   const [placeholder] = useState(
     () => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)],
   );
 
+  // Whether this browser can dictate is a browser-only fact, so it is read the
+  // way React wants browser-only facts read: a server snapshot of `false` and a
+  // client snapshot of the real answer. An effect would set state after paint
+  // (and trip the cascading-render rule); a lazy useState initializer would
+  // disagree between server and client and break hydration.
+  const canDictate = useSyncExternalStore(
+    () => () => {},
+    () => speechCtor() != null,
+    () => false,
+  );
+
   const busy = phase.step === "thinking";
 
+  /** The brief as the engine sees it: what they typed, plus any context. */
+  const fullBrief = () =>
+    context.trim() ? `${brief.trim()}\n\nContext from the teacher:\n${context.trim()}` : brief.trim();
+
+  function toggleDictation() {
+    const Ctor = speechCtor();
+    if (!Ctor) return;
+    if (listening) {
+      recognition.current?.stop();
+      return;
+    }
+    const rec = new Ctor();
+    rec.lang = language === "uz" ? "uz-UZ" : language === "ru" ? "ru-RU" : "en-US";
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const said = Array.from({ length: e.results.length }, (_, i) => e.results[i][0].transcript).join(" ");
+      setBrief((b) => (b ? `${b} ${said}` : said));
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognition.current = rec;
+    setListening(true);
+    rec.start();
+  }
+
   async function start(text: string) {
-    const value = text.trim();
-    if (!value || busy) return;
+    if (!text.trim() || busy) return;
     setAnswers({});
     try {
       if (planFirst) {
@@ -111,54 +173,49 @@ export function Composer() {
           status: string;
           questions?: Question[];
           blueprint?: string | null;
-        }>("intake", { brief: value, language });
+        }>("intake", { brief: text, language });
 
         if (intake.status === "ask" && (intake.questions?.length ?? 0) > 0) {
-          setPhase({
-            step: "asking",
-            questions: intake.questions ?? [],
-            blueprint: intake.blueprint ?? null,
-          });
+          setPhase({ step: "asking", questions: intake.questions ?? [], blueprint: intake.blueprint ?? null });
           return;
         }
-        await makePlan(value, {}, intake.blueprint ?? null);
+        await makePlan(text, {}, intake.blueprint ?? null);
         return;
       }
-      // Plan off: straight to the build, using a plan we never show.
       setPhase({ step: "thinking", label: "Planning the lesson…" });
-      const plan = await callEngine<Plan>("plan", { brief: value, language });
-      await build(value, plan);
+      const plan = await callEngine<Plan>("plan", { brief: text, language });
+      await build(text, plan);
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
     }
   }
 
-  async function makePlan(value: string, given: Record<string, string>, blueprint: string | null) {
+  async function makePlan(text: string, given: Record<string, string>, blueprint: string | null) {
     setPhase({ step: "thinking", label: "Planning the lesson…" });
-    const plan = await callEngine<Plan>("plan", {
-      brief: value,
-      answers: given,
-      blueprint,
-      language,
-    });
+    const plan = await callEngine<Plan>("plan", { brief: text, answers: given, blueprint, language });
     setPhase({ step: "planned", plan });
   }
 
-  async function build(value: string, plan: Plan) {
+  async function build(text: string, plan: Plan) {
     setPhase({ step: "thinking", label: "Writing it — about a minute…" });
-    const made = await callEngine<{ id: string }>("build", { plan, brief: value });
+    const made = await callEngine<{ id: string }>("build", { plan, brief: text });
     router.push(`/console/practice-ai/${made.id}`);
   }
 
+  const guard = (fn: () => Promise<void>) => () =>
+    void fn().catch((e) => setPhase({ step: "error", message: (e as Error).message }));
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
       {/* ── the box ─────────────────────────────────────────────────────── */}
       <div
         style={{
-          background: "#fff",
+          width: "100%",
+          maxWidth: 720,
+          background: "linear-gradient(180deg,#FFFFFF 0%,#FBFAF8 100%)",
           border: `1px solid ${LINE}`,
-          borderRadius: 18,
-          boxShadow: "0 8px 30px rgba(20,25,50,.06)",
+          borderRadius: 22,
+          boxShadow: "0 18px 44px rgba(20,25,50,.10)",
           overflow: "hidden",
         }}
       >
@@ -166,10 +223,9 @@ export function Composer() {
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
           onKeyDown={(e) => {
-            // Enter sends; Shift+Enter is a new line. A teacher types one line.
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              void start(brief);
+              void start(fullBrief());
             }
           }}
           placeholder={placeholder}
@@ -180,66 +236,111 @@ export function Composer() {
             border: 0,
             outline: "none",
             resize: "none",
-            padding: "20px 22px 8px",
+            padding: "26px 26px 10px",
             fontFamily: "inherit",
-            fontSize: 17,
+            fontSize: 19,
             lineHeight: 1.5,
             color: INK,
             background: "transparent",
           }}
         />
 
+        {showContext ? (
+          <div style={{ padding: "0 26px 6px" }}>
+            <textarea
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              rows={3}
+              placeholder="Anything else that should shape it — the mistakes you keep seeing, what you covered last week, the coursebook point it follows."
+              style={{
+                width: "100%",
+                border: `1px solid ${LINE}`,
+                borderRadius: 10,
+                outline: "none",
+                resize: "vertical",
+                padding: "10px 12px",
+                fontFamily: "inherit",
+                fontSize: 13.5,
+                lineHeight: 1.5,
+                color: MUTED,
+                background: "#FBFAF8",
+              }}
+            />
+          </div>
+        ) : null}
+
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "10px 14px 12px 18px",
-            borderTop: `1px solid #F1EFEA`,
+            padding: "12px 14px 14px 16px",
+            borderTop: "1px solid #F1EFEA",
             flexWrap: "wrap",
           }}
         >
-          {/* The Plan toggle is a real behaviour switch, not decoration: it is
-              what decides whether the clarifying step happens at all. */}
+          <button
+            type="button"
+            onClick={() => setShowContext((v) => !v)}
+            aria-expanded={showContext}
+            title="Add context — what you've covered, what they keep getting wrong"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: `1px solid ${showContext ? INDIGO : "transparent"}`,
+              background: showContext ? "#EEEDF8" : "transparent",
+              color: showContext ? INDIGO : MUTED,
+              fontSize: 20,
+              lineHeight: 1,
+              cursor: "pointer",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            +
+          </button>
+
           <button
             type="button"
             onClick={() => setPlanFirst((v) => !v)}
             title={
               planFirst
-                ? "You'll answer a couple of questions and see the outline first"
-                : "Skip straight to writing the lesson"
+                ? "On: I'll ask a couple of questions and show you the outline before writing"
+                : "Off: go straight to writing the lesson"
             }
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              background: planFirst ? "#EEEDF8" : "#fff",
-              border: `1px solid ${planFirst ? "#C7C5F0" : LINE}`,
+              gap: 9,
+              background: "#fff",
+              border: `1px solid ${LINE}`,
               borderRadius: 999,
-              padding: "6px 12px 6px 7px",
+              padding: "6px 13px 6px 7px",
               cursor: "pointer",
               fontFamily: "inherit",
-              fontSize: 13,
-              color: planFirst ? INDIGO : MUTED,
+              fontSize: 14,
+              color: INK,
             }}
           >
             <span
               style={{
-                width: 30,
-                height: 17,
+                width: 32,
+                height: 18,
                 borderRadius: 999,
                 background: planFirst ? INDIGO : "#D8D5CE",
                 position: "relative",
                 transition: "background .15s",
+                flex: "none",
               }}
             >
               <span
                 style={{
                   position: "absolute",
                   top: 2,
-                  left: planFirst ? 15 : 2,
-                  width: 13,
-                  height: 13,
+                  left: planFirst ? 16 : 2,
+                  width: 14,
+                  height: 14,
                   borderRadius: "50%",
                   background: "#fff",
                   transition: "left .15s",
@@ -247,6 +348,22 @@ export function Composer() {
               />
             </span>
             Plan
+            <span
+              aria-hidden
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                border: `1px solid ${FAINT}`,
+                color: FAINT,
+                fontSize: 10.5,
+                display: "grid",
+                placeItems: "center",
+                fontStyle: "italic",
+              }}
+            >
+              i
+            </span>
           </button>
 
           <select
@@ -258,68 +375,80 @@ export function Composer() {
               borderRadius: 999,
               padding: "7px 11px",
               fontFamily: "inherit",
-              fontSize: 13,
+              fontSize: 13.5,
               color: MUTED,
               background: "#fff",
               cursor: "pointer",
             }}
           >
-            <option value="en">Explain in English</option>
-            <option value="uz">Tushuntirish o&apos;zbekcha</option>
-            <option value="ru">Объяснение по-русски</option>
+            <option value="en">English</option>
+            <option value="uz">O&apos;zbekcha</option>
+            <option value="ru">Русский</option>
           </select>
 
-          <button
-            type="button"
-            onClick={() => void start(brief)}
-            disabled={busy || brief.trim() === ""}
-            aria-label="Make this lesson"
-            style={{
-              marginLeft: "auto",
-              width: 42,
-              height: 42,
-              borderRadius: "50%",
-              border: 0,
-              background: brief.trim() === "" ? "#D8D5CE" : INDIGO,
-              color: "#fff",
-              fontSize: 19,
-              cursor: busy || brief.trim() === "" ? "default" : "pointer",
-              display: "grid",
-              placeItems: "center",
-              transition: "background .15s",
-            }}
-          >
-            {busy ? "…" : "↑"}
-          </button>
+          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            {canDictate ? (
+              <button
+                type="button"
+                onClick={toggleDictation}
+                aria-pressed={listening}
+                title={listening ? "Stop dictating" : "Dictate your brief"}
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  border: 0,
+                  background: listening ? "#FBEAE8" : "transparent",
+                  color: listening ? "#C2453A" : MUTED,
+                  cursor: "pointer",
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                <MicIcon />
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => void start(fullBrief())}
+              disabled={busy || brief.trim() === ""}
+              aria-label="Make this lesson"
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: 0,
+                background: brief.trim() === "" ? "#DAD7D0" : INDIGO,
+                color: "#fff",
+                fontSize: 21,
+                cursor: busy || brief.trim() === "" ? "default" : "pointer",
+                display: "grid",
+                placeItems: "center",
+                boxShadow: brief.trim() === "" ? "none" : "0 6px 16px rgba(67,64,203,.32)",
+                transition: "background .15s, box-shadow .15s",
+              }}
+            >
+              {busy ? "…" : "↑"}
+            </button>
+          </span>
         </div>
       </div>
 
-      {/* ── what's happening ────────────────────────────────────────────── */}
+      {/* ── state ───────────────────────────────────────────────────────── */}
       {phase.step === "thinking" ? (
-        <p style={{ fontSize: 13.5, color: MUTED, margin: 0 }} role="status">
+        <p style={{ fontSize: 14, color: MUTED, margin: 0 }} role="status">
           {phase.label}
         </p>
       ) : null}
-
       {phase.step === "error" ? (
-        <p style={{ fontSize: 13.5, color: "#A63A30", margin: 0 }} role="alert">
+        <p style={{ fontSize: 14, color: "#A63A30", margin: 0, maxWidth: 640, textAlign: "center" }} role="alert">
           {phase.message}
         </p>
       ) : null}
 
-      {/* ── clarifying questions ────────────────────────────────────────── */}
       {phase.step === "asking" ? (
-        <div
-          style={{
-            background: "#fff",
-            border: `1px solid ${LINE}`,
-            borderRadius: 14,
-            padding: 18,
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-          }}
-        >
+        <div style={panel}>
           <p style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
             A couple of things would change what I make. Skip any of them and I&apos;ll decide.
           </p>
@@ -353,74 +482,35 @@ export function Composer() {
               </span>
             </div>
           ))}
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button
-              type="button"
-              onClick={() =>
-                void makePlan(brief, answers, phase.blueprint).catch((e) =>
-                  setPhase({ step: "error", message: (e as Error).message }),
-                )
-              }
-              style={primaryButton}
-            >
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={guard(() => makePlan(fullBrief(), answers, phase.blueprint))} style={primaryButton}>
               Continue
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                void makePlan(brief, {}, phase.blueprint).catch((e) =>
-                  setPhase({ step: "error", message: (e as Error).message }),
-                )
-              }
-              style={ghostButton}
-            >
+            <button type="button" onClick={guard(() => makePlan(fullBrief(), {}, phase.blueprint))} style={ghostButton}>
               Skip — you decide
             </button>
           </div>
         </div>
       ) : null}
 
-      {/* ── the outline, before the expensive call ──────────────────────── */}
       {phase.step === "planned" ? (
-        <div
-          style={{
-            background: "#fff",
-            border: `1px solid ${LINE}`,
-            borderRadius: 14,
-            padding: 18,
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
+        <div style={panel}>
           <div>
             <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: FAINT }}>
               Here&apos;s the plan
             </div>
-            <div style={{ fontSize: 18, fontWeight: 650, color: INK, marginTop: 4 }}>
+            <div style={{ fontSize: 19, fontWeight: 650, color: INK, marginTop: 5 }}>
               {String(phase.plan.title ?? "Lesson")}
             </div>
             {phase.plan.objective ? (
-              <div style={{ fontSize: 13.5, color: MUTED, marginTop: 4 }}>
-                {String(phase.plan.objective)}
-              </div>
+              <div style={{ fontSize: 13.5, color: MUTED, marginTop: 5 }}>{String(phase.plan.objective)}</div>
             ) : null}
             {phase.plan.level ? (
-              <div style={{ fontSize: 12.5, color: FAINT, marginTop: 6 }}>
-                Level {String(phase.plan.level)}
-              </div>
+              <div style={{ fontSize: 12.5, color: FAINT, marginTop: 6 }}>Level {String(phase.plan.level)}</div>
             ) : null}
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button
-              type="button"
-              onClick={() =>
-                void build(brief, phase.plan).catch((e) =>
-                  setPhase({ step: "error", message: (e as Error).message }),
-                )
-              }
-              style={primaryButton}
-            >
+            <button type="button" onClick={guard(() => build(fullBrief(), phase.plan))} style={primaryButton}>
               Build it
             </button>
             <button type="button" onClick={() => setPhase({ step: "idle" })} style={ghostButton}>
@@ -432,62 +522,88 @@ export function Composer() {
 
       {/* ── starters ────────────────────────────────────────────────────── */}
       {phase.step === "idle" && brief.trim() === "" ? (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: 12 }}>
           <span
             style={{
-              fontSize: 11,
-              letterSpacing: ".1em",
+              fontSize: 11.5,
+              letterSpacing: ".18em",
               textTransform: "uppercase",
               color: FAINT,
-              marginRight: 2,
+              fontWeight: 500,
             }}
           >
-            Try one of these
+            Not sure where to start? Try one of these:
           </span>
-          {STARTERS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setBrief(s)}
-              style={{
-                border: `1px solid ${LINE}`,
-                background: "#fff",
-                borderRadius: 999,
-                padding: "6px 13px",
-                fontFamily: "inherit",
-                fontSize: 12.5,
-                color: MUTED,
-                cursor: "pointer",
-              }}
-            >
-              {s}
-            </button>
-          ))}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", maxWidth: 760 }}>
+            {STARTERS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setBrief(s)}
+                className="cn-tile"
+                style={{
+                  border: `1px solid ${LINE}`,
+                  background: "#fff",
+                  borderRadius: 999,
+                  padding: "11px 21px",
+                  fontFamily: "inherit",
+                  fontSize: 14.5,
+                  fontWeight: 600,
+                  color: INK,
+                  cursor: "pointer",
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>
   );
 }
 
+function MicIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <rect x="9" y="2" width="6" height="11" rx="3" />
+      <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4" />
+    </svg>
+  );
+}
+
+const panel: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 720,
+  background: "#fff",
+  border: `1px solid ${LINE}`,
+  borderRadius: 16,
+  padding: 20,
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
+  textAlign: "left",
+};
+
 const primaryButton: React.CSSProperties = {
   border: 0,
-  borderRadius: 9,
+  borderRadius: 10,
   background: INDIGO,
   color: "#fff",
-  padding: "9px 16px",
+  padding: "10px 18px",
   fontFamily: "inherit",
-  fontSize: 13.5,
+  fontSize: 14,
   fontWeight: 600,
   cursor: "pointer",
 };
 
 const ghostButton: React.CSSProperties = {
   border: `1px solid ${LINE}`,
-  borderRadius: 9,
+  borderRadius: 10,
   background: "#fff",
   color: MUTED,
-  padding: "9px 14px",
+  padding: "10px 16px",
   fontFamily: "inherit",
-  fontSize: 13.5,
+  fontSize: 14,
   cursor: "pointer",
 };
