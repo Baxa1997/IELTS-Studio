@@ -125,6 +125,36 @@ describe("closed marking", () => {
     expect(gradeClosed(lesson([ord]), { o1: ["am", "I", "happy"] }).score).toBe(0);
   });
 
+  /**
+   * What the generator actually emits: a permutation of option INDEXES. The
+   * feedback used to print those indexes straight out, so a learner who got it
+   * wrong was told the right answer was "1 → 2 → 0".
+   */
+  it("tells the learner the sentences, not the option numbers", () => {
+    const ord = closed({
+      id: "o2",
+      type: "ordering",
+      prompt: "Put these in order.",
+      options: [
+        "This cleaner air has improved public health.",
+        "Many cities replaced diesel buses with electric models.",
+        "This shift reduced carbon emissions.",
+      ],
+      answers: ["1", "2", "0"],
+    });
+
+    const wrong = gradeClosed(lesson([ord]), { o2: ["0", "1", "2"] });
+    const result = wrong.results.o2 as { correct: boolean; expected: string; given: string | null };
+    expect(result.correct).toBe(false);
+    expect(result.expected).toBe(
+      "Many cities replaced diesel buses with electric models. → This shift reduced carbon emissions. → This cleaner air has improved public health.",
+    );
+    expect(result.given).toContain("This cleaner air");
+    expect(result.expected).not.toMatch(/^\d/);
+
+    expect(gradeClosed(lesson([ord]), { o2: ["1", "2", "0"] }).score).toBe(1);
+  });
+
   it("leaves open items unmarked and out of the total by default", () => {
     const open = {
       id: "w1",

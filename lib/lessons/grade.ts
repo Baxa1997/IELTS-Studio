@@ -84,8 +84,11 @@ function markClosed(exercise: ClosedExercise, raw: string | string[] | undefined
       const given = asList(raw);
       return {
         correct: sequenceMatches(given, exercise.answers),
-        given: given.length > 0 ? given.join(" → ") : null,
-        expected: exercise.answers.join(" → "),
+        // Both sides go through optionLabel for the same reason MCQ does: these
+        // answers are option INDEXES, and a learner told the right answer was
+        // "1 → 2 → 0" has been told nothing. They need the sentences back.
+        given: given.length > 0 ? given.map((g) => optionLabel(exercise, g)).join(" → ") : null,
+        expected: exercise.answers.map((a: string) => optionLabel(exercise, a)).join(" → "),
       };
     }
     // gap_fill, transform, error_correction: typed text, compared against every
