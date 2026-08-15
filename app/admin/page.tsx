@@ -1,224 +1,483 @@
+import Link from "next/link";
+
+import { ChartLegend, PlatformChart } from "@/components/admin/platform-chart";
 import {
-  EmptyRow,
+  Bar,
+  Card,
+  CardHead,
+  Empty,
   FAINT,
-  List,
-  PageHead,
-  Panel,
+  Glyph,
+  Identity,
+  INDIGO,
+  INK,
+  Kpi,
+  KpiRow,
+  NAVY,
   Pill,
-  Row,
-  RowLink,
-  RowText,
-  SANS,
-  StatRow,
-  StatTile,
-} from "@/components/console/page-ui";
-import { BarList, DeltaStat, TrendChart } from "@/components/admin/charts";
-import { loadCenters, loadPlatformStats, loadPlatformTrends } from "@/lib/admin/platform";
+  PageTitle,
+  SERIF,
+  SOFT,
+  Split,
+  Surface,
+  TONE,
+  clip,
+} from "@/components/admin/ui";
+import { loadCenters, loadEngagement, loadPlatformStats, loadPlatformTrends } from "@/lib/admin/platform";
+import { loadConductFlags } from "@/lib/admin/moderation";
+import { loadRevenue } from "@/lib/admin/revenue";
+import { daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 import { OrgReviewRow } from "./org-review-row";
+
+export const dynamic = "force-dynamic";
+
+const money = (n: number) =>
+  n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(n % 1 === 0 ? 0 : 2)}`;
 
 const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "—";
+
+/**
+ * The platform, on one page.
+ *
+ * Built around one question — what needs me today? — which is why the decision
+ * queue sits above the numbers rather than below them. A dashboard that opens
+ * with charts asks the owner to go looking for the work; this one hands it over
+ * and then explains the context.
+ */
 export default async function AdminPage() {
   await requireSuperAdmin();
-  const [stats, centers, trends] = await Promise.all([
+
+  const [stats, centers, trends, revenue, engagement, conduct] = await Promise.all([
     loadPlatformStats(),
     loadCenters(),
     loadPlatformTrends(30),
+    loadRevenue(),
+    loadEngagement(),
+    loadConductFlags(10),
   ]);
+
   const pending = centers.filter((c) => c.status === "pending");
-
-  // Conduct findings — abuse or refusal aimed at the examiner, as reported by
-  // the grader (speaking/service.py `_conduct`). Surfaced HERE and nowhere near
-  // the learner's account: nothing about it changes their band, their quota or
-  // their access. It exists so the owner can tell one bad afternoon from a
-  // pattern, which is the only question this data can honestly answer.
-  const admin = createAdminClient();
-  const { data: flagged } = await admin
-    .from("speaking_sessions")
-    .select("id, organization_id, started_at, result")
-    .eq("mode", "full")
-    .not("result->conduct", "is", null)
-    .order("started_at", { ascending: false })
-    .limit(25);
-
-  const { data: orgNames } = await admin.from("organizations").select("id, name");
-  const orgName = new Map((orgNames ?? []).map((o) => [o.id, o.name]));
-
-  const conduct = (
-    (flagged ?? []) as {
-      id: string;
-      organization_id: string;
-      started_at: string;
-      result: { conduct?: { kind?: string; quote?: string } | null } | null;
-    }[]
-  )
-    .map((s) => ({
-      id: s.id,
-      org: orgName.get(s.organization_id) ?? s.organization_id,
-      when: dateFmt(s.started_at),
-      kind: s.result?.conduct?.kind ?? "",
-      quote: s.result?.conduct?.quote ?? "",
-    }))
-    .filter((c) => c.quote);
-
+  const decisions = pending.length + conduct.length;
   const p = stats.practice30d;
 
+  const oldestWait =
+    pending.length > 0
+      ? daysSince(pending.reduce((a, b) => (a.createdAt < b.createdAt ? a : b)).createdAt)
+      : null;
+
+  const delta = (now: number, before: number) => {
+    if (before === 0) return now > 0 ? "new" : "—";
+    return `${now >= before ? "+" : ""}${Math.round(((now - before) / before) * 100)}%`;
+  };
+  const practiceDelta = delta(trends.totals.practice, trends.previous.practice);
+  const signupDelta = delta(trends.totals.signups, trends.previous.signups);
+
+  const skills = [
+    { name: "Writing", n: p.writing },
+    { name: "Reading", n: p.reading },
+    { name: "Listening", n: p.listening },
+    { name: "Speaking", n: p.speaking },
+  ].sort((a, b) => b.n - a.n);
+  const skillMax = Math.max(1, ...skills.map((s) => s.n));
+
+  const busiest = [...centers].sort((a, b) => b.students - a.students).slice(0, 4);
+  const neverShare = engagement.learners
+    ? Math.round((engagement.neverPractised / engagement.learners) * 100)
+    : 0;
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
   return (
-    <div>
-      <PageHead
+    <Surface>
+      <PageTitle
         eyebrow="Platform"
         title="Everything, across every tenant"
-        subtitle="Approve centers, and watch the platform as a whole."
+        subtitle={
+          decisions > 0
+            ? `${today} · ${decisions} thing${decisions === 1 ? "" : "s"} need${decisions === 1 ? "s" : ""} you today.`
+            : `${today} · nothing is waiting on you.`
+        }
+        actions={
+          pending.length > 0 ? (
+            <Link
+              href="/admin/centers?tab=pending"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                background: INDIGO,
+                color: "#fff",
+                borderRadius: 9,
+                padding: "10px 15px",
+                fontSize: 13.5,
+                fontWeight: 600,
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Review {pending.length} application{pending.length === 1 ? "" : "s"}
+            </Link>
+          ) : undefined
+        }
       />
 
-      <StatRow>
-        <StatTile value={stats.learners} label="Learners" tone="indigo" />
-        <StatTile value={stats.centers} label="Centers" />
-        <StatTile value={stats.teachers} label="Teachers" />
-        <StatTile value={stats.newUsers7d} label="New this week" />
-        <StatTile value={p.total} label="Practices (30d)" />
-      </StatRow>
-
-      {pending.length > 0 ? (
-        <Panel
-          tone="flag"
-          title={`${pending.length} center${pending.length === 1 ? "" : "s"} waiting for approval`}
-          description="Approving activates the workspace and emails the applicant."
-        >
-          <List>
-            {pending.map((c) => (
-              <OrgReviewRow
-                key={c.id}
-                orgId={c.id}
-                name={c.name}
-                email={c.contactEmail}
-                applied={dateFmt(c.createdAt)}
-              />
-            ))}
-          </List>
-        </Panel>
-      ) : null}
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 16,
-        }}
-      >
-        <Panel
-          title="Practice"
-          description="Every graded attempt on the platform, per day for 30 days."
-        >
-          <div style={{ marginBottom: 14 }}>
-            <DeltaStat
-              value={trends.totals.practice}
-              label="vs. the 30 days before"
-              previous={trends.previous.practice}
-            />
-          </div>
-          <TrendChart points={trends.practice} label="Practice per day" />
-        </Panel>
-
-        <Panel title="New accounts" description="Sign-ups per day for 30 days.">
-          <div style={{ marginBottom: 14 }}>
-            <DeltaStat
-              value={trends.totals.signups}
-              label="vs. the 30 days before"
-              previous={trends.previous.signups}
-            />
-          </div>
-          <TrendChart points={trends.signups} label="Sign-ups per day" />
-        </Panel>
-      </div>
-
-      <Panel title="Which skills are being used" description="Last 30 days, all tenants.">
-        <BarList
-          rows={[
-            { label: "Writing", value: p.writing },
-            { label: "Reading", value: p.reading },
-            { label: "Listening", value: p.listening },
-            { label: "Speaking", value: p.speaking },
-          ]}
+      {/* ── needs a decision ───────────────────────────────────────────── */}
+      <Card style={{ marginBottom: 16 }}>
+        <CardHead
+          title="Needs a decision"
+          badge={
+            decisions > 0 ? (
+              <Pill tone={pending.length > 0 ? "red" : "amber"}>{decisions} open</Pill>
+            ) : (
+              <Pill tone="green">clear</Pill>
+            )
+          }
+          right={
+            oldestWait != null ? (
+              <span style={{ fontSize: 12.5, color: FAINT }}>
+                Oldest has waited {oldestWait} day{oldestWait === 1 ? "" : "s"}
+              </span>
+            ) : undefined
+          }
         />
-      </Panel>
+        {pending.map((c) => (
+          <OrgReviewRow
+            key={c.id}
+            orgId={c.id}
+            name={c.name}
+            email={c.contactEmail}
+            applied={dateFmt(c.createdAt)}
+          />
+        ))}
+        {conduct.slice(0, 3).map((c) => (
+          <div
+            key={c.id}
+            className="ad-row"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "14px 18px",
+              borderBottom: "1px solid #F5F4F0",
+            }}
+          >
+            <Glyph tone="red" size={34}>
+              !
+            </Glyph>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>
+                  Speaking mock flagged
+                </span>
+                <Pill tone="red">{c.kind || "conduct"}</Pill>
+              </div>
+              <div style={{ fontSize: 12, color: SOFT, marginTop: 3, ...clip }}>
+                {c.student} · {c.org} · “{c.quote}”
+              </div>
+            </div>
+            <Link
+              href="/admin/moderation"
+              style={{ fontSize: 12.5, color: INDIGO, textDecoration: "none", whiteSpace: "nowrap" }}
+            >
+              Review →
+            </Link>
+          </div>
+        ))}
+        {decisions === 0 ? (
+          <Empty>
+            Nothing is waiting. New center applications and flagged mocks land here.
+          </Empty>
+        ) : null}
+      </Card>
 
-      <Panel
-        title="Centers"
-        description={
-          centers.length > 0
-            ? `${centers.length} organization${centers.length === 1 ? "" : "s"}`
-            : undefined
-        }
-        actions={centers.length > 0 ? <RowLink href="/admin/centers">See all</RowLink> : undefined}
-      >
-        <List>
-          {centers.slice(0, 6).map((c, i) => (
-            <Row key={c.id} first={i === 0}>
-              <RowText
-                title={
-                  <>
-                    {c.name}{" "}
-                    <Pill
-                      tone={
-                        c.status === "active" ? "good" : c.status === "pending" ? "warn" : "bad"
-                      }
-                    >
-                      {c.status}
-                    </Pill>
-                  </>
-                }
-                meta={`${c.teachers} teacher${c.teachers === 1 ? "" : "s"} · ${c.groups} group${c.groups === 1 ? "" : "s"} · ${c.students} student${c.students === 1 ? "" : "s"}`}
-              />
-              <RowLink href={`/admin/centers/${c.id}`}>Open</RowLink>
-            </Row>
-          ))}
-          {centers.length === 0 ? (
-            <EmptyRow>
-              No centers yet. They arrive through the Organization tab on the sign-up page.
-            </EmptyRow>
-          ) : null}
-        </List>
-      </Panel>
+      {/* ── the numbers ────────────────────────────────────────────────── */}
+      <KpiRow cols={6}>
+        <Kpi
+          label="Learners"
+          value={stats.learners}
+          delta={`+${stats.newUsers7d}`}
+          deltaTone="green"
+          sub="this week"
+        />
+        <Kpi
+          label="Centers"
+          value={stats.centers}
+          delta={pending.length > 0 ? `${pending.length}` : undefined}
+          deltaTone="amber"
+          sub={pending.length > 0 ? "waiting" : "all reviewed"}
+        />
+        <Kpi label="Teachers" value={stats.teachers} sub="across all centers" />
+        <Kpi
+          label="Practices 30d"
+          value={p.total}
+          delta={practiceDelta}
+          deltaTone={trends.totals.practice >= trends.previous.practice ? "green" : "red"}
+          sub="vs prior"
+        />
+        <Kpi
+          label="Paying accounts"
+          value={revenue.payingAccounts}
+          delta={`${revenue.totalAccounts ? Math.round((revenue.payingAccounts / revenue.totalAccounts) * 100) : 0}%`}
+          deltaTone="amber"
+          sub={`of ${revenue.totalAccounts}`}
+        />
+        <Kpi
+          label="Never practised"
+          value={engagement.neverPractised}
+          delta={`${neverShare}%`}
+          deltaTone={neverShare > 50 ? "red" : "amber"}
+          sub="of learners"
+        />
+      </KpiRow>
 
-      <Panel
-        title="Individual learners"
-        description="Self-serve accounts, each in their own personal workspace."
-      >
-        <StatRow>
-          <StatTile value={stats.personalWorkspaces} label="Personal workspaces" />
-          <StatTile value={stats.centerAdmins} label="Center admins" />
-        </StatRow>
-      </Panel>
+      {/* ── traffic + revenue ──────────────────────────────────────────── */}
+      <Split ratio="1.35fr .65fr">
+        <Card pad>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div>
+              <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0, color: INK }}>
+                Graded practice, day by day
+              </h2>
+              <p style={{ margin: "4px 0 0", fontSize: 12.5, color: SOFT }}>
+                Every graded attempt on the platform. Sign-ups underneath, on the same days.
+              </p>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 18, margin: "14px 0 6px" }}>
+            <div>
+              <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.02em", color: INK }}>
+                {trends.totals.practice}
+              </div>
+              <div style={{ fontSize: 11.5, color: SOFT }}>
+                practices ·{" "}
+                <span style={{ color: TONE.green.ink, fontWeight: 600 }}>{practiceDelta}</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.02em", color: "#7C79DB" }}>
+                {trends.totals.signups}
+              </div>
+              <div style={{ fontSize: 11.5, color: SOFT }}>
+                sign-ups ·{" "}
+                <span style={{ color: TONE.green.ink, fontWeight: 600 }}>{signupDelta}</span>
+              </div>
+            </div>
+            <div style={{ marginLeft: "auto" }}>
+              <ChartLegend />
+            </div>
+          </div>
+          <PlatformChart practice={trends.practice} signups={trends.signups} />
+        </Card>
 
-      <Panel
-        title="Examiner conduct"
-        description="Mocks where the candidate abused or refused the examiner. Reported only — no band, quota or account is affected by anything here."
-      >
-        <List>
-          {conduct.map((c, i) => (
-            <Row key={c.id} first={i === 0}>
-              <RowText title={`“${c.quote}”`} meta={`${c.org} · ${c.when}`} />
-              <span
+        <div
+          style={{
+            background: NAVY,
+            color: "#fff",
+            borderRadius: 14,
+            padding: 18,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0 }}>Revenue</h2>
+            <Link
+              href="/admin/plans"
+              style={{
+                marginLeft: "auto",
+                border: "1px solid #33326E",
+                color: "#C9C7E4",
+                borderRadius: 7,
+                padding: "5px 10px",
+                fontSize: 11.5,
+                textDecoration: "none",
+              }}
+            >
+              Plans
+            </Link>
+          </div>
+          <div style={{ fontSize: 12, color: "#A8A6D0", marginTop: 12 }}>Monthly recurring</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginTop: 4 }}>
+            <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 700 }}>
+              {money(revenue.mrr)}
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "#7FD8A8" }}>
+              {revenue.activeSubscriptions} active
+            </div>
+          </div>
+
+          <div
+            style={{
+              height: 7,
+              background: "#2B2A63",
+              borderRadius: 4,
+              margin: "16px 0 10px",
+              display: "flex",
+              overflow: "hidden",
+              gap: 2,
+            }}
+          >
+            {revenue.lines
+              .filter((l) => l.granted > 0)
+              .map((l) => (
+                <div
+                  key={l.plan}
+                  title={`${l.name}: ${l.granted}`}
+                  style={{
+                    width: `${(l.granted / Math.max(1, revenue.totalAccounts)) * 100}%`,
+                    background: l.color,
+                  }}
+                />
+              ))}
+          </div>
+
+          {revenue.lines
+            .filter((l) => l.plan !== "trial")
+            .map((l) => (
+              <div
+                key={l.plan}
                 style={{
-                  fontFamily: SANS,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "7px 0",
+                  borderBottom: "1px solid #24234F",
                   fontSize: 12.5,
-                  color: FAINT,
-                  flex: "none",
-                  textTransform: "capitalize",
                 }}
               >
-                {c.kind}
-              </span>
-            </Row>
+                <span
+                  style={{ width: 8, height: 8, borderRadius: 3, background: l.color, flex: "none" }}
+                />
+                <span style={{ color: "#C9C7E4", ...clip }}>
+                  {l.name} · {l.granted} account{l.granted === 1 ? "" : "s"}
+                </span>
+                <span style={{ marginLeft: "auto", fontWeight: 600 }}>{money(l.mrr)}</span>
+              </div>
+            ))}
+
+          <div
+            style={{
+              marginTop: "auto",
+              paddingTop: 14,
+              fontSize: 11.5,
+              color: "#8280B8",
+              lineHeight: 1.6,
+            }}
+          >
+            {revenue.unpaidPaidPlans > 0 ? (
+              <>
+                {revenue.unpaidPaidPlans} account{revenue.unpaidPaidPlans === 1 ? " is" : "s are"} on
+                a paid plan with no live subscription — comped, or a payment that never completed.
+                They are counted above as accounts, not as revenue.
+              </>
+            ) : (
+              <>
+                {revenue.totalAccounts - revenue.payingAccounts} of {revenue.totalAccounts} accounts
+                are free. That is where the growth has to come from.
+              </>
+            )}
+          </div>
+        </div>
+      </Split>
+
+      {/* ── skills + centers ───────────────────────────────────────────── */}
+      <Split>
+        <Card pad>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0, color: INK }}>
+              Which skills are being used
+            </h2>
+            <span style={{ marginLeft: "auto", fontSize: 12.5, color: SOFT }}>last 30 days</span>
+          </div>
+          <p style={{ margin: "0 0 18px", fontSize: 12.5, color: SOFT }}>
+            {skills[skills.length - 1].n === 0
+              ? `${skills[skills.length - 1].name} is untouched — worth knowing before more is built for it.`
+              : `${skills[0].name} leads. The spread tells you where content is worth building.`}
+          </p>
+          {skills.map((s) => (
+            <div key={s.name} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: INK }}>{s.name}</span>
+                <span style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 600, color: INK }}>
+                  {s.n}
+                </span>
+                <span style={{ fontSize: 11.5, color: FAINT, marginLeft: 8 }}>
+                  {p.total ? Math.round((s.n / p.total) * 100) : 0}%
+                </span>
+              </div>
+              <Bar width={`${(s.n / skillMax) * 100}%`} fill={INDIGO} height={9} />
+            </div>
           ))}
-          {conduct.length === 0 ? <EmptyRow>Nothing flagged.</EmptyRow> : null}
-        </List>
-      </Panel>
-    </div>
+        </Card>
+
+        <Card>
+          <CardHead
+            title="Busiest centers"
+            right={
+              <Link href="/admin/centers" style={{ fontSize: 12.5, color: INDIGO, textDecoration: "none" }}>
+                All centers →
+              </Link>
+            }
+          />
+          {busiest.map((c) => (
+            <Link
+              key={c.id}
+              href={`/admin/centers/${c.id}`}
+              className="ad-row"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "13px 18px",
+                borderBottom: "1px solid #F5F4F0",
+                textDecoration: "none",
+                color: INK,
+              }}
+            >
+              <Identity
+                glyph={initials(c.name)}
+                name={c.name}
+                meta={`${c.teachers} teacher${c.teachers === 1 ? "" : "s"} · ${c.groups} group${c.groups === 1 ? "" : "s"}`}
+              />
+              <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{c.students}</div>
+                <div style={{ fontSize: 11, color: FAINT }}>students</div>
+              </div>
+              <Pill
+                tone={c.status === "active" ? "green" : c.status === "pending" ? "amber" : "red"}
+              >
+                {c.status}
+              </Pill>
+            </Link>
+          ))}
+          {busiest.length === 0 ? (
+            <Empty>
+              No centers yet. They arrive through the Organization tab on the sign-up page.
+            </Empty>
+          ) : null}
+        </Card>
+      </Split>
+
+      <div style={{ fontSize: 12, color: FAINT, marginTop: 4 }}>
+        {stats.personalWorkspaces} personal workspaces · {stats.centerAdmins} center admins ·{" "}
+        {engagement.activeLast30} learners practised in the last 30 days
+      </div>
+    </Surface>
   );
 }

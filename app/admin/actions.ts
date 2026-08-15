@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { recordAdminAction } from "@/lib/admin/audit";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
@@ -23,7 +24,7 @@ export async function reviewOrganization(
   _prev: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
-  await requireSuperAdmin();
+  const { user } = await requireSuperAdmin();
 
   const orgId = String(formData.get("org_id") ?? "");
   const decision = String(formData.get("decision") ?? "");
@@ -53,7 +54,20 @@ export async function reviewOrganization(
     .eq("id", orgId);
   if (updateError) return { error: `Update failed: ${updateError.message}` };
 
+  // Recorded before the email: the decision has already landed in the database
+  // at this point, and the log is about the decision, not the notification.
+  await recordAdminAction({
+    action: approve ? "center.approve" : "center.reject",
+    targetKind: "organization",
+    targetId: orgId,
+    targetLabel: org.name,
+    detail: { from: org.status, to: approve ? "active" : "rejected" },
+    actor: { id: user.id, email: user.email },
+  });
+
   revalidatePath("/admin");
+  revalidatePath("/admin/centers");
+  revalidatePath("/admin/health");
 
   if (!org.contact_email) {
     return { notice: `${approve ? "Approved" : "Rejected"} — no contact email on file.` };
@@ -130,7 +144,7 @@ export async function setAccountPlan(
   _prev: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
-  await requireSuperAdmin();
+  const { user } = await requireSuperAdmin();
 
   const profileId = String(formData.get("profile_id") ?? "");
   const plan = String(formData.get("plan") ?? "");
@@ -158,6 +172,14 @@ export async function setAccountPlan(
     .maybeSingle();
   if (!profile) return { error: "That account no longer exists." };
 
+  // Read the old values before overwriting them — "changed the plan" is close to
+  // useless in a log without what it changed FROM.
+  const { data: before } = await admin
+    .from("organizations")
+    .select("plan, grading_monthly_limit, generation_monthly_limit")
+    .eq("id", profile.organization_id)
+    .maybeSingle();
+
   const { count } = await admin
     .from("profiles")
     .select("id", { count: "exact", head: true })
@@ -181,8 +203,25 @@ export async function setAccountPlan(
     .select("id"); // RLS-filtered writes report success without this
   if (error) return { error: error.message };
 
+  await recordAdminAction({
+    action: before?.plan !== plan ? "user.plan_change" : "user.limits_change",
+    targetKind: "user",
+    targetId: profileId,
+    targetLabel: profile.full_name ?? "Account",
+    detail: {
+      from: before?.plan ?? null,
+      to: plan,
+      gradingLimit,
+      generationLimit,
+      // Named so the log tells you a change hit a whole centre, not one person.
+      members,
+    },
+    actor: { id: user.id, email: user.email },
+  });
+
   revalidatePath("/admin/users");
   revalidatePath("/admin");
+  revalidatePath("/admin/health");
   return {
     notice:
       members > 1

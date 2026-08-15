@@ -1,30 +1,58 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { EmptyTableRow, ScrollTable, TD, TH, THead, TR } from "@/components/admin/table";
 import {
-  EmptyRow,
+  Bar,
+  Card,
+  CardHead,
+  Empty,
   FAINT,
-  List,
-  PageHead,
-  Panel,
+  Glyph,
+  Identity,
+  INDIGO,
+  INK,
+  Kpi,
+  KpiRow,
+  MUTED,
+  Notice,
   Pill,
-  Row,
-  RowText,
-  SANS,
-  StatRow,
-  StatTile,
-} from "@/components/console/page-ui";
+  SERIF,
+  SOFT,
+  Split,
+  Surface,
+  TableHead,
+  TableRow,
+  TONE,
+  clip,
+} from "@/components/admin/ui";
 import { loadCenterDetail } from "@/lib/admin/platform";
+import { daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-export default async function CenterDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "—";
+
+const STUDENT_COLS = "2fr 1.1fr 1.4fr .7fr";
+
+/**
+ * One centre, in enough detail to answer "is this working?".
+ *
+ * The idle warning at the top is the whole reason this page is worth opening:
+ * a centre approved a week ago with staff, groups and zero practice is a trial
+ * about to churn, and that is invisible in a list of healthy-looking counts.
+ */
+export default async function CenterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requireSuperAdmin();
   const { id } = await params;
   const detail = await loadCenterDetail(id);
@@ -34,65 +62,149 @@ export default async function CenterDetailPage({
   const teachers = staff.filter((s) => s.role === "teacher");
   const admins = staff.filter((s) => s.role === "center_admin");
 
+  const skills = [
+    { name: "Writing", n: practice30d.writing },
+    { name: "Reading", n: practice30d.reading },
+    { name: "Listening", n: practice30d.listening },
+    { name: "Speaking", n: practice30d.speaking },
+  ];
+  const skillMax = Math.max(1, ...skills.map((s) => s.n));
+
+  // "Approved a while ago and still nothing" — the churn signal.
+  const since = center.approvedAt ?? center.createdAt;
+  const idleDays = daysSince(since);
+  const stalled = center.status === "active" && center.practice30d === 0 && idleDays >= 3;
+
   return (
-    <div>
-      <PageHead
-        back={{ href: "/admin/centers", label: "All centers" }}
-        eyebrow="Center"
-        title={center.name}
-        subtitle={
-          <>
+    <Surface>
+      <Link
+        href="/admin/centers"
+        style={{
+          fontSize: 13,
+          color: MUTED,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          textDecoration: "none",
+        }}
+      >
+        ← All centers
+      </Link>
+
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 20, margin: "12px 0 20px" }}>
+        <Glyph tone="indigo" size={52}>
+          {initials(center.name)}
+        </Glyph>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
+            <h1
+              style={{
+                fontFamily: SERIF,
+                fontSize: 30,
+                fontWeight: 700,
+                margin: 0,
+                color: INK,
+                letterSpacing: "-.01em",
+              }}
+            >
+              {center.name}
+            </h1>
+            <Pill
+              tone={center.status === "active" ? "green" : center.status === "pending" ? "amber" : "red"}
+            >
+              {center.status}
+            </Pill>
+            {!center.billingEnforced ? (
+              <Pill tone="indigo" title="Quota and seat checks are skipped for this centre">
+                unmetered
+              </Pill>
+            ) : null}
+          </div>
+          <p style={{ margin: "6px 0 0", fontSize: 13.5, color: MUTED }}>
             {center.contactEmail ?? "no contact email"} · {center.plan} ·{" "}
             {center.approvedAt
               ? `approved ${dateFmt(center.approvedAt)}`
               : `applied ${dateFmt(center.createdAt)}`}
-          </>
-        }
-        actions={
-          <span style={{ display: "flex", gap: 6 }}>
-            <Pill
-              tone={
-                center.status === "active" ? "good" : center.status === "pending" ? "warn" : "bad"
-              }
+          </p>
+        </div>
+      </div>
+
+      <KpiRow cols={5}>
+        <Kpi label="Teachers" value={teachers.length} sub={`${admins.length} admin${admins.length === 1 ? "" : "s"}`} />
+        <Kpi label="Groups" value={groups.length} sub={`${groups.filter((g) => !g.teacherName).length} unassigned`} />
+        <Kpi label="Students" value={center.students} sub={`${ungroupedStudents} in no group`} />
+        <Kpi
+          label="Practices 30d"
+          value={center.practice30d}
+          sub={center.practice30d === 0 ? "nothing graded" : "all four skills"}
+        />
+        <Kpi
+          label="Practising students"
+          value={students.filter((s) => s.practiceCount > 0).length}
+          sub={`of ${students.length}`}
+        />
+      </KpiRow>
+
+      {stalled ? (
+        <Notice
+          tone="amber"
+          title={`${center.approvedAt ? "Approved" : "Applied"} ${idleDays} day${idleDays === 1 ? "" : "s"} ago, still nothing graded`}
+          detail={`${teachers.length} teacher${teachers.length === 1 ? "" : "s"}, ${groups.length} group${groups.length === 1 ? "" : "s"}, ${center.students} student${center.students === 1 ? "" : "s"}, zero practice. A trial that stalls in week one rarely converts.`}
+          action={
+            center.contactEmail ? (
+              <a
+                href={`mailto:${center.contactEmail}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  background: "#fff",
+                  border: `1px solid ${TONE.amber.border}`,
+                  borderRadius: 8,
+                  padding: "8px 13px",
+                  fontSize: 12.5,
+                  fontWeight: 500,
+                  color: "#8A5B12",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Email the admin
+              </a>
+            ) : undefined
+          }
+        />
+      ) : null}
+
+      <Split>
+        <Card>
+          <CardHead
+            title="Staff"
+            note="Student counts are what each teacher can actually see — those in the groups they own."
+          />
+          {[...admins, ...teachers].map((s) => (
+            <div
+              key={s.id}
+              className="ad-row"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "13px 18px",
+                borderBottom: "1px solid #F5F4F0",
+              }}
             >
-              {center.status}
-            </Pill>
-            {!center.billingEnforced ? <Pill tone="indigo">unmetered</Pill> : null}
-          </span>
-        }
-      />
-
-      <StatRow>
-        <StatTile value={teachers.length} label="Teachers" tone="indigo" />
-        <StatTile value={groups.length} label="Groups" />
-        <StatTile value={center.students} label="Students" />
-        <StatTile value={center.practice30d} label="Practices (30d)" />
-      </StatRow>
-
-      <Panel title="Practice by skill" description="Last 30 days, this center only.">
-        <StatRow>
-          <StatTile value={practice30d.writing} label="Writing" />
-          <StatTile value={practice30d.reading} label="Reading" />
-          <StatTile value={practice30d.listening} label="Listening" />
-          <StatTile value={practice30d.speaking} label="Speaking" />
-        </StatRow>
-      </Panel>
-
-      <Panel
-        title="Staff"
-        description="Admins run the center; teachers own groups. Student counts are the students a teacher can actually see — those in the groups they own."
-      >
-        <List>
-          {[...admins, ...teachers].map((s, i) => (
-            <Row key={s.id} first={i === 0}>
-              <RowText
-                title={
-                  <>
-                    {s.name}{" "}
+              <Identity
+                glyph={initials(s.name)}
+                tone={s.role === "center_admin" ? "indigo" : "green"}
+                round
+                name={
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {s.name}
                     <Pill tone={s.role === "center_admin" ? "indigo" : "neutral"}>
                       {s.role === "center_admin" ? "admin" : "teacher"}
                     </Pill>
-                  </>
+                  </span>
                 }
                 meta={
                   s.role === "teacher"
@@ -100,83 +212,109 @@ export default async function CenterDetailPage({
                     : (s.username ?? "—")
                 }
               />
-            </Row>
+            </div>
           ))}
-          {staff.length === 0 ? (
-            <EmptyRow>Nobody has accepted an invite yet.</EmptyRow>
-          ) : null}
-        </List>
-      </Panel>
+          {staff.length === 0 ? <Empty>Nobody has accepted an invite yet.</Empty> : null}
+        </Card>
 
-      <Panel title="Groups" description="Ordered by size.">
-        <List>
-          {groups.map((g, i) => (
-            <Row key={g.id} first={i === 0}>
-              <RowText
-                title={g.name}
-                meta={
-                  <>
-                    {g.teacherName ?? "no teacher assigned"} · {g.students} student
-                    {g.students === 1 ? "" : "s"} · {g.assignments} assignment
-                    {g.assignments === 1 ? "" : "s"}
-                  </>
-                }
-              />
-              {!g.teacherName ? (
-                <span style={{ flex: "none" }}>
-                  <Pill tone="warn">unassigned</Pill>
+        <Card>
+          <CardHead title="Groups" note="Ordered by size." />
+          {groups.map((g) => (
+            <div
+              key={g.id}
+              className="ad-row"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "13px 18px",
+                borderBottom: "1px solid #F5F4F0",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 500, color: INK, ...clip }}>{g.name}</div>
+                <div style={{ fontSize: 11.5, color: FAINT, marginTop: 3, ...clip }}>
+                  {g.teacherName ?? "no teacher assigned"} · {g.students} student
+                  {g.students === 1 ? "" : "s"} · {g.assignments} assignment
+                  {g.assignments === 1 ? "" : "s"}
+                </div>
+              </div>
+              {!g.teacherName ? <Pill tone="amber">unassigned</Pill> : null}
+            </div>
+          ))}
+          {groups.length === 0 ? <Empty>No groups yet.</Empty> : null}
+        </Card>
+      </Split>
+
+      <Split ratio="1fr 1fr">
+        <Card pad>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0, color: INK }}>
+              Practice by skill
+            </h2>
+            <span style={{ marginLeft: "auto", fontSize: 12.5, color: SOFT }}>last 30 days</span>
+          </div>
+          {skills.map((s) => (
+            <div key={s.name} style={{ marginBottom: 13 }}>
+              <div style={{ display: "flex", alignItems: "baseline", marginBottom: 6 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: INK }}>{s.name}</span>
+                <span style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 600, color: INK }}>
+                  {s.n}
                 </span>
-              ) : null}
-            </Row>
+              </div>
+              <Bar
+                width={`${(s.n / skillMax) * 100}%`}
+                fill={s.n === 0 ? "#E0DED8" : INDIGO}
+                height={9}
+              />
+            </div>
           ))}
-          {groups.length === 0 ? <EmptyRow>No groups yet.</EmptyRow> : null}
-        </List>
-      </Panel>
+        </Card>
 
-      <Panel
-        title="Students"
-        description="Ordered by how much they've practised, so an idle roster shows itself. Counts are lifetime, all four skills."
-      >
-        <ScrollTable maxHeight={420} caption="Scroll for more.">
-          <THead>
-            <TH>Name</TH>
-            <TH>Login</TH>
-            <TH>Group</TH>
-            <TH align="right">Practice</TH>
-          </THead>
-          <tbody>
-            {students.map((s, i) => (
-              <TR key={s.id} first={i === 0}>
-                <TD>{s.name}</TD>
-                <TD muted>{s.username ?? "—"}</TD>
-                <TD muted>
-                  {s.groups.length > 0 ? (
-                    s.groups.join(", ")
-                  ) : (
-                    <Pill tone="warn">no group</Pill>
-                  )}
-                </TD>
-                <TD align="right" numeric muted={s.practiceCount === 0}>
-                  {s.practiceCount}
-                </TD>
-              </TR>
-            ))}
-            {students.length === 0 ? (
-              <EmptyTableRow colSpan={4}>No students yet.</EmptyTableRow>
-            ) : null}
-          </tbody>
-        </ScrollTable>
-      </Panel>
+        <Card>
+          <CardHead
+            title="Students"
+            note="Ordered by how much they have practised, so an idle roll shows itself."
+          />
+          <div className="ad-scroll" style={{ maxHeight: 340, overflowY: "auto" }}>
+            <div>
+              <TableHead cols={STUDENT_COLS}>
+                <div>NAME</div>
+                <div>LOGIN</div>
+                <div>GROUP</div>
+                <div style={{ textAlign: "right" }}>PRACTICE</div>
+              </TableHead>
+              {students.map((s) => (
+                <TableRow key={s.id} cols={STUDENT_COLS}>
+                  <div style={clip}>{s.name}</div>
+                  <div style={{ color: SOFT, fontSize: 12.5, ...clip }}>{s.username ?? "—"}</div>
+                  <div style={{ color: SOFT, fontSize: 12.5, ...clip }}>
+                    {s.groups.length > 0 ? s.groups.join(", ") : <Pill tone="amber">no group</Pill>}
+                  </div>
+                  <div
+                    style={{
+                      textAlign: "right",
+                      fontWeight: 600,
+                      color: s.practiceCount === 0 ? FAINT : INK,
+                    }}
+                  >
+                    {s.practiceCount}
+                  </div>
+                </TableRow>
+              ))}
+              {students.length === 0 ? <Empty>No students yet.</Empty> : null}
+            </div>
+          </div>
+        </Card>
+      </Split>
 
       {ungroupedStudents > 0 ? (
-        <Panel tone="flag" title="Students in no group">
-          <p style={{ fontFamily: SANS, fontSize: 14, color: FAINT, margin: 0 }}>
-            {ungroupedStudents} student{ungroupedStudents === 1 ? " belongs" : "s belong"} to this
-            center but no group, so {ungroupedStudents === 1 ? "they are" : "they are"} invisible to
-            every teacher report. They can still practise on their own.
-          </p>
-        </Panel>
+        <Notice
+          tone="amber"
+          title={`${ungroupedStudents} student${ungroupedStudents === 1 ? "" : "s"} in no group`}
+          detail="They belong to this centre but no class, so they are invisible to every teacher report. They can still practise on their own."
+        />
       ) : null}
-    </div>
+    </Surface>
   );
 }

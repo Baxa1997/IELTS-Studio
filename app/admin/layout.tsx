@@ -22,6 +22,16 @@ const newsreader = Newsreader({
  * rail, same chrome, same type. Only the menu and the pages differ, because a
  * super admin has no organization and a different job.
  *
+ * `variant="console"` gives it the cream ground the Super Admin design is drawn
+ * on, which the center console already uses. That is the whole of the design's
+ * chrome we adopt: the design draws its own dark navy rail, and the owner's
+ * call — the same one made for the center console — is that OUR rail stays and
+ * the design applies to the page area. A super admin who is also a teacher
+ * should not have the furniture move under them between surfaces.
+ *
+ * The variant also drops the shell's own padding, because each admin page owns
+ * its inset (see `Surface` in components/admin/ui.tsx).
+ *
  * The font variables have to be declared here too: this route group sits
  * outside (app), so it doesn't inherit that layout's `lp-root` wrapper.
  */
@@ -38,6 +48,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         roleLabel="Super admin"
         email={user.email}
         initialCollapsed={collapsed}
+        variant="console"
       >
         {children}
       </AppShell>

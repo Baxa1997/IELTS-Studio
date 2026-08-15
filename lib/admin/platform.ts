@@ -553,3 +553,61 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
     };
   });
 }
+
+export interface Engagement {
+  /** Learner profiles in total. */
+  learners: number;
+  /** Learners who have never produced a single piece of graded work. */
+  neverPractised: number;
+  /** Learners with at least one attempt in the last 30 days. */
+  activeLast30: number;
+}
+
+/**
+ * How many people who signed up have actually done anything.
+ *
+ * The single most useful number on the platform and the least flattering: a
+ * console that only counts sign-ups will always look like it is growing. This
+ * asks the harder question — of everyone who registered, how many produced one
+ * piece of work?
+ *
+ * Four id-only selects folded in memory rather than a join per table. The
+ * practice tables key on `student_id` (NOT `user_id` — they reference profiles,
+ * not auth users), which is the thing to check first if these ever read zero.
+ */
+export async function loadEngagement(): Promise<Engagement> {
+  const admin = createAdminClient();
+  const since = daysAgo(30);
+
+  const [profiles, essays, reading, listening, speaking] = await Promise.all([
+    admin.from("profiles").select("id").eq("role", "student"),
+    admin.from("essays").select("student_id, created_at"),
+    admin.from("reading_attempts").select("student_id, created_at"),
+    admin.from("listening_attempts").select("student_id, created_at"),
+    admin.from("speaking_sessions").select("student_id, started_at"),
+  ]);
+
+  const everyone = (profiles.data ?? []).map((p) => p.id as string);
+  const touched = new Set<string>();
+  const recent = new Set<string>();
+
+  const absorb = (rows: { student_id?: string | null }[] | null, stamp: (r: never) => string) => {
+    for (const row of rows ?? []) {
+      const id = row.student_id;
+      if (!id) continue;
+      touched.add(id);
+      if (stamp(row as never) >= since) recent.add(id);
+    }
+  };
+
+  absorb(essays.data, (r: { created_at: string }) => r.created_at);
+  absorb(reading.data, (r: { created_at: string }) => r.created_at);
+  absorb(listening.data, (r: { created_at: string }) => r.created_at);
+  absorb(speaking.data, (r: { started_at: string }) => r.started_at);
+
+  return {
+    learners: everyone.length,
+    neverPractised: everyone.filter((id) => !touched.has(id)).length,
+    activeLast30: everyone.filter((id) => recent.has(id)).length,
+  };
+}

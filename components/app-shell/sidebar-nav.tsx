@@ -3,6 +3,7 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   Award,
   Banknote,
   BookA,
@@ -21,6 +22,7 @@ import {
   Mic,
   Receipt,
   Settings,
+  ShieldAlert,
   Sparkles,
   SquarePen,
   Target,
@@ -214,12 +216,29 @@ const TEACHER: Section[] = [
 ];
 
 /** The platform owner: no organization, so none of the org menus apply. */
+/**
+ * The platform rail, in the two halves the Super Admin design names.
+ *
+ * PLATFORM is the tenants themselves — who exists and what they are doing.
+ * OPERATIONS is running the business behind them: what it earns, what needs
+ * policing, and whether the machinery is up. They are separated because a super
+ * admin arrives with one of those two questions and never both at once.
+ */
 const SUPER_ADMIN: Section[] = [
   {
+    title: "Platform",
     items: [
-      { label: "Platform", href: "/admin", icon: LayoutDashboard },
+      { label: "Overview", href: "/admin", icon: LayoutDashboard },
       { label: "Centers", href: "/admin/centers", icon: Building2 },
       { label: "Users", href: "/admin/users", icon: Users },
+      { label: "Plans & revenue", href: "/admin/plans", icon: CreditCard },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      { label: "Moderation", href: "/admin/moderation", icon: ShieldAlert },
+      { label: "System health", href: "/admin/health", icon: Activity },
     ],
   },
 ];
