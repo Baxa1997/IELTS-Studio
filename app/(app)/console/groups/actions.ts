@@ -849,6 +849,10 @@ export async function createAssignment(
     prompt_id: promptId,
     reading_test_id: readingTestId,
     due_at: dueAt ? dueAt.toISOString() : null,
+    // A placement is an ordinary practice in every respect except what its band
+    // is used for afterwards: it sets the student's baseline, which is the
+    // number every "+1.0 since" on their report is measured from.
+    is_placement: String(formData.get("is_placement") ?? "") === "on",
     created_by: profile.id,
   });
   if (error) return { error: error.message };

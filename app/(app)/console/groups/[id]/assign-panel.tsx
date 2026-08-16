@@ -96,6 +96,19 @@ export function AssignPanel({
           <Label htmlFor="assign-due">Due date (optional)</Label>
           <Input id="assign-due" name="due_at" type="date" />
         </div>
+        <div className="space-y-2">
+          <label className="flex items-start gap-2.5 text-sm">
+            <input type="checkbox" name="is_placement" className="mt-0.5" />
+            <span>
+              This is a placement test
+              <span className="text-muted-foreground block text-xs">
+                Its band becomes where these students started, so every later report can say how
+                far they have come. Set one per group, at the beginning — a second placement does
+                not move the baseline.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
 
       <div className="space-y-2">

@@ -1,3 +1,4 @@
+import { progressSince } from "@/lib/console/progress";
 import type { StudentReport, WeaknessRow } from "@/lib/console/student-report";
 
 import {
@@ -126,16 +127,44 @@ export function StudentReportView({
         <Stack>
           {/* ── band by skill ─────────────────────────────────────────────── */}
           <Card>
-            <CardHead title="Band by skill" note="latest measured estimate" />
+            <CardHead
+              title="Band by skill"
+              note="where they are now, and how far that is from where they started"
+            />
             {report.bands.map((b) => {
               const behind = b.current != null && b.target != null ? b.current - b.target : null;
+              const moved = progressSince(b.current, b.baseline, b.baselineSource, b.sampleCount);
               return (
                 <MeterRow
                   key={b.skill}
                   label={SKILL_LABEL[b.skill]}
                   // Bands run 0–9, so the bar is the band as a share of 9.
                   pct={((b.current ?? 0) / 9) * 100}
-                  value={b.current != null ? b.current.toFixed(1) : "—"}
+                  value={
+                    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+                      {b.current != null ? b.current.toFixed(1) : "—"}
+                      {/* §6's "baseline vs now". Shown only where it means
+                          something: an indicative baseline is greyed, so a
+                          parent reading the page can tell a diagnostic from a
+                          number we happened to have. */}
+                      {moved.label ? (
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 500,
+                            color:
+                              moved.confidence === "measured"
+                                ? (moved.moved ?? 0) >= 0
+                                  ? GREEN
+                                  : RED
+                                : FAINT,
+                          }}
+                        >
+                          {moved.label}
+                        </span>
+                      ) : null}
+                    </span>
+                  }
                   fill={
                     b.current == null
                       ? "#E4E2DC"

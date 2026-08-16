@@ -1,5 +1,7 @@
 import "server-only";
 
+import { type BaselineSource } from "@/lib/console/progress";
+
 import { signAvatar } from "@/lib/console/avatars";
 import { createClient } from "@/lib/supabase/server";
 
@@ -47,7 +49,15 @@ export interface StudentReport {
   studentId: string;
   name: string;
   photoUrl: string | null;
-  bands: { skill: PracticeSkill; current: number | null; target: number | null }[];
+  bands: {
+    skill: PracticeSkill;
+    current: number | null;
+    target: number | null;
+    /** Where they started, and how much that claim is worth. */
+    baseline: number | null;
+    baselineSource: BaselineSource;
+    sampleCount: number;
+  }[];
   practices: PracticeRow[];
   /** Total practices in the last 30 days, across all four skills. */
   recentCount: number;
@@ -93,7 +103,7 @@ export async function loadStudentReport(
     await Promise.all([
       supabase
         .from("skill_estimates")
-        .select("skill, current_band, target_band")
+        .select("skill, current_band, target_band, baseline_band, baseline_source, sample_count")
         .eq("student_id", studentId),
       supabase
         .from("essays")
@@ -262,6 +272,9 @@ export async function loadStudentReport(
         skill,
         current: est?.current_band != null ? Number(est.current_band) : null,
         target: est?.target_band != null ? Number(est.target_band) : null,
+        baseline: est?.baseline_band != null ? Number(est.baseline_band) : null,
+        baselineSource: (est?.baseline_source as BaselineSource) ?? "first_attempt",
+        sampleCount: (est?.sample_count as number | null) ?? 0,
       };
     }),
     practices: practices.slice(0, 40),
