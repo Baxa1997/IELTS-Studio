@@ -94,7 +94,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
               Role
             </label>
             <select id="teacher-role" name="staff_role" defaultValue="teacher" style={fieldStyle}>
-              <option value="teacher">Teacher — their own classes</option>
+              <option value="teacher">Teacher — their own groups</option>
               <option value="administrator">
                 Administrator — classes, students and the front desk
               </option>

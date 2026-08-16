@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { markCounts } from "@/lib/console/attendance-marks";
+
 import { percentOf } from "./money";
 
 /**
@@ -221,7 +223,8 @@ export interface GroupFacts {
   studentsEnrolled: number;
   /** Distinct students who paid something towards this class in the period. */
   studentsPaid: number;
-  /** Distinct students who turned up at least once. */
+  /** Distinct students marked present or late at least once. Excused does not
+   *  count as turning up. */
   studentsAttended: number;
   /** Tuition banked for this class in the period. */
   collectedMinor: number;
@@ -231,7 +234,9 @@ export interface GroupFacts {
   lessonsHeld: number;
   /** Present-or-late marks — headcount × lessons, actually attended. */
   studentLessons: number;
-  /** Every mark, including absences. The denominator of the attendance rate. */
+  /** Every mark that counted, including absences — but NOT excused, which
+   *  leaves the denominator altogether. Matches `v_student_attendance`, so the
+   *  payroll page and the attendance page cannot report different rates. */
   attendanceMarks: number;
   /** The rate written on the class: what the teacher earns per student per
    *  month. Null when the class has not been priced on the teacher's side. */
@@ -343,6 +348,10 @@ export function teacherTotals(facts: TeacherFacts) {
       t.attendanceMarks > 0 ? Math.round((100 * t.studentLessons) / t.attendanceMarks) : null,
   };
 }
+
+/** Re-exported so finance callers keep one import; the definition is shared
+ *  with the console, because the two must never disagree. */
+export { markCounts };
 
 /* ── the result ───────────────────────────────────────────────────────────── */
 

@@ -1,3 +1,4 @@
+import { AttemptReview } from "@/components/console/attempt-review";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -227,6 +228,13 @@ export default async function MockResultPage({ params }: PageProps) {
       ) : null}
 
       {s.state === "graded" ? <CoachChat sessionId={s.id} /> : null}
+
+      {/* Speaking grading is frozen pending expert labels (CLAUDE.md), which
+          makes a teacher's correction here MORE valuable than elsewhere, not
+          less: every one is a human label against a band we cannot yet trust. */}
+      {s.state === "graded" ? (
+        <AttemptReview kind="speaking" refId={s.id} aiBand={result.overall_band} />
+      ) : null}
     </div>
   );
 }

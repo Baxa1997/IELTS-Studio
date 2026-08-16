@@ -39,16 +39,20 @@ export function buildFindings(report: CenterReport): Finding[] {
   const { totals, groups, bandTrend, atRisk, writingCaps } = report;
 
   // ── 1. Is the teaching working? ─────────────────────────────────────────
-  const measured = bandTrend.filter((m) => m.band != null && m.samples > 0);
+  // WRITING ONLY, and it says so. This used to read the pooled trend — writing,
+  // reading and speaking bands averaged together — and announce the result as
+  // "average band", a figure that moves when a class switches which skill it
+  // practises and means nothing when it does.
+  const measured = bandTrend.Writing.filter((m) => m.band != null && m.samples > 0);
   const totalSamples = measured.reduce((n, m) => n + m.samples, 0);
 
   if (totalSamples < ENOUGH_SAMPLES) {
     findings.push({
-      headline: "Not enough graded work to judge progress yet",
+      headline: "Not enough marked writing to judge progress yet",
       detail:
         totalSamples === 0
-          ? "Nothing has been graded in the last 90 days. Set some practice and the picture fills in."
-          : `${totalSamples} graded ${totalSamples === 1 ? "piece" : "pieces"} so far — a few more and the average starts to mean something.`,
+          ? `No essays have been graded ${report.window.label.toLowerCase()}. Set a writing task and the picture fills in.`
+          : `${totalSamples} graded ${totalSamples === 1 ? "essay" : "essays"} so far — a few more and the figure starts to mean something.`,
       tone: "flat",
       action: { label: "Set practice", href: "/console/groups" },
     });
@@ -59,20 +63,20 @@ export function buildFindings(report: CenterReport): Finding[] {
     const rising = move >= 0.2;
     const falling = move <= -0.2;
     findings.push({
-      headline: `Average band is ${latest.band?.toFixed(1)}${
+      headline: `Writing band is ${latest.band?.toFixed(1)}${
         rising
           ? ` — up ${move.toFixed(1)} since ${earliest.label}`
           : falling
             ? ` — down ${Math.abs(move).toFixed(1)} since ${earliest.label}`
             : " — flat over the window"
       }`,
-      detail: `Across ${totalSamples} graded pieces. Listening is scored rather than banded, so it is not in this figure.`,
+      detail: `Across ${totalSamples} graded essays from ${new Set(groups.flatMap((g) => (g.writing.students > 0 ? [g.id] : []))).size || totals.groups} group${totals.groups === 1 ? "" : "s"}. Reading, listening and speaking each stand on their own and are never averaged into this.`,
       tone: rising ? "good" : falling ? "bad" : "flat",
     });
   }
 
-  // ── 2. Which class needs looking at? ────────────────────────────────────
-  // The weakest class by completion, not by band: a low band can mean a class
+  // ── 2. Which group needs looking at? ────────────────────────────────────
+  // The weakest group by completion, not by band: a low band can mean a group
   // of beginners doing everything right, whereas homework nobody hands in is a
   // problem whatever the level.
   const withWork = groups.filter((g) => g.assignments > 0 && g.completionPct != null);

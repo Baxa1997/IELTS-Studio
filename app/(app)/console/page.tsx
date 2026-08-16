@@ -5,7 +5,6 @@ import {
   BtnLink,
   Card,
   CardHead,
-  ChipLink,
   Columns,
   Empty,
   FAINT,
@@ -26,13 +25,16 @@ import {
   Stack,
   Tag,
   TextLink,
-  TINT,
-  type Tone,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
-import { loadCenterReport } from "@/lib/console/reports";
+import { loadDay } from "@/lib/console/attendance";
+import { loadCenterSettings } from "@/lib/console/center-settings";
+import { loadAlerts } from "@/lib/console/alert-catalogue";
+import { loadCenterReport, SKILL_UNIT } from "@/lib/console/reports";
+import { centerNow, registersToMark } from "@/lib/console/schedule";
 import { createClient } from "@/lib/supabase/server";
 
+import { NeedsAttention } from "./needs-attention";
 import { PendingInvites, type PendingInvite } from "./pending-invites";
 
 export const dynamic = "force-dynamic";
@@ -54,59 +56,60 @@ export default async function ConsolePage() {
 
   const supabase = await createClient();
   const isAdmin = profile.role === "center_admin";
-  const today = new Date();
-  const todayIso = today.toISOString().slice(0, 10);
+  const settings = await loadCenterSettings();
+  // The CENTER's today, not the server's. `new Date()` on Vercel is UTC, which
+  // in this market means the console shows yesterday's lessons until 05:00.
+  const clock = centerNow(settings.timezone);
+  const todayIso = clock.date;
 
   // RLS scopes every query to this admin/teacher's own organization — and, for
   // groups, to the ones a teacher actually owns.
-  let groupsQuery = supabase.from("groups").select("id");
+  let groupsQuery = supabase.from("groups").select("id").eq("status", "active");
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
-  const [
-    membersRes,
-    invitesRes,
-    groupsRes,
-    orgRes,
-    assignmentsRes,
-    report,
-    todayGroupsRes,
-    sessionsRes,
-  ] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role"),
-    supabase
-      .from("v_pending_invites")
-      .select("id, email, role, expires_at")
-      .order("created_at", { ascending: false }),
-    groupsQuery,
-    supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
-    // Only ever used as "has any" — RLS already narrows a teacher to their own.
-    supabase.from("assignments").select("id", { count: "exact", head: true }),
-    loadCenterReport({ role: profile.role, profileId: profile.id }),
-    // The design's "Today" panel. There is no timetable, so instead of
-    // inventing session times this lists the classes and whether their
-    // register has been marked — which is the question that panel answers.
-    supabase.from("groups").select("id, name, teacher_id").order("name"),
-    supabase.from("attendance_sessions").select("group_id, state").eq("held_on", todayIso),
-  ]);
+  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, day, alertBoard] =
+    await Promise.all([
+      supabase.from("profiles").select("id, full_name, role, member_status"),
+      supabase
+        .from("v_pending_invites")
+        .select("id, email, role, expires_at")
+        .order("created_at", { ascending: false }),
+      groupsQuery,
+      supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
+      // Only ever used as "has any" — RLS already narrows a teacher to their own.
+      supabase.from("assignments").select("id", { count: "exact", head: true }),
+      loadCenterReport({ role: profile.role, profileId: profile.id }),
+      // THE SAME QUERY THE ATTENDANCE PAGE RUNS. This panel used to list every
+      // group in the center and call them today's lessons, so the Overview
+      // reported open registers on days the timetable had nothing on and
+      // Attendance said "nothing is timetabled". One function now answers it.
+      loadDay(profile, todayIso),
+      loadAlerts(profile),
+    ]);
 
-  const people = membersRes.data ?? [];
-  const nameOf = new Map(
-    people.map((p) => [p.id as string, (p.full_name as string | null) ?? "Unnamed"]),
-  );
+  const people = (membersRes.data ?? []) as {
+    id: string;
+    full_name: string | null;
+    role: string;
+    member_status: string | null;
+  }[];
   const groupIds = (groupsRes.data ?? []).map((g) => g.id as string);
   const groupCount = groupIds.length;
-  const teachers = people.filter((m) => m.role === "teacher").length;
-  const teachersWithGroup = new Set(
-    report.groups.map((g) => g.teacherId).filter((id): id is string => id != null),
-  ).size;
+  const teachers = people.filter(
+    (m) => m.role === "teacher" && (m.member_status ?? "active") !== "left",
+  ).length;
 
   // An admin counts every learner in the center. A teacher counts the learners
-  // in their own classes — `profiles` is readable org-wide by any staff member,
+  // in their own groups — `profiles` is readable org-wide by any staff member,
   // so counting it here would have shown a teacher the whole center's total on
   // this page while /console/students showed them only their own.
+  //
+  // Students who have LEFT are not enrolled and are not counted anywhere here.
   let students: number;
   if (isAdmin) {
-    students = people.filter((m) => m.role === "student").length;
+    students = people.filter(
+      (m) => m.role === "student" && (m.member_status ?? "active") !== "left",
+    ).length;
   } else if (groupIds.length === 0) {
     students = 0;
   } else {
@@ -114,8 +117,14 @@ export default async function ConsolePage() {
       .from("group_members")
       .select("student_id")
       .in("group_id", groupIds);
-    students = new Set((roster ?? []).map((r) => r.student_id as string)).size;
+    const gone = new Set(
+      people.filter((p) => (p.member_status ?? "active") === "left").map((p) => p.id),
+    );
+    students = new Set(
+      (roster ?? []).map((r) => r.student_id as string).filter((id) => !gone.has(id)),
+    ).size;
   }
+  const withoutGroup = Math.max(0, students - report.totals.students);
 
   // A pending invite is unaccepted AND unexpired — the view is the definition
   // (this card used to count expired invites, the group page did not).
@@ -128,37 +137,15 @@ export default async function ConsolePage() {
 
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const assignmentCount = assignmentsRes.count ?? 0;
-  const idleTeachers = isAdmin ? Math.max(0, teachers - teachersWithGroup) : 0;
-  const classesNoPractice = report.groups.filter((g) => g.assignments === 0).length;
-  const lowCompletion = report.groups.filter(
-    (g) => g.completionPct != null && g.completionPct < 50,
-  ).length;
 
-  // Today's classes with their register state. A teacher sees only their own,
-  // because `groups` is already RLS-scoped and this filters to what they own.
-  const sessionState = new Map(
-    ((sessionsRes.data ?? []) as { group_id: string; state: string }[]).map((r) => [
-      r.group_id,
-      r.state,
-    ]),
-  );
-  const todayClasses = (
-    (todayGroupsRes.data ?? []) as {
-      id: string;
-      name: string;
-      teacher_id: string | null;
-    }[]
-  )
-    .filter((g) => isAdmin || g.teacher_id === profile.id)
-    .slice(0, 6)
-    .map((g) => ({
-      id: g.id,
-      name: g.name,
-      teacher: g.teacher_id ? (nameOf.get(g.teacher_id) ?? "Unassigned") : "No teacher",
-      marked: sessionState.get(g.id) === "marked",
-    }));
-  const openRegisters = todayClasses.filter((c) => !c.marked).length;
-
+  // What is on today, in time order — cancelled lessons and groups that aren't
+  // timetabled today are not "today". `loadDay` already filtered to the groups
+  // this person may mark.
+  const todayLessons = day.lessons.filter((l) => l.scheduled && !l.cancelledReason);
+  // Finished, and nobody saved the register. Not "unmarked" — a lesson that
+  // starts at 18:00 is not late at lunchtime, and an alert that fires all day
+  // for something you cannot do yet is an alert people learn to close.
+  const overdueRegisters = registersToMark(day, day.timezone);
   // The four things that have to exist before a center is running. Once they all
   // do, the checklist never comes back — it exists to cure the empty console.
   const steps = [
@@ -169,100 +156,27 @@ export default async function ConsolePage() {
   ];
   const setupDone = steps.every((s) => s.done);
 
-  const alerts: {
-    icon: string;
-    tone: Tone;
-    title: string;
-    detail: string;
-    cta: string;
-    href: string;
-  }[] = [
-    report.atRisk.length > 0
-      ? {
-          icon: "!",
-          tone: "red" as Tone,
-          title: `${report.atRisk.length} student${report.atRisk.length === 1 ? " has" : "s have"} gone quiet for 14 days`,
-          detail: report.atRisk
-            .slice(0, 2)
-            .map((s) => s.name)
-            .join(", "),
-          cta: "See list",
-          href: "/console/reports",
-        }
-      : null,
-    idleTeachers > 0
-      ? {
-          icon: "◐",
-          tone: "indigo" as Tone,
-          title: `${idleTeachers} teacher${idleTeachers === 1 ? " has" : "s have"} no group assigned`,
-          detail: "They can't set practice until they run a class.",
-          cta: "Assign",
-          href: "/console/teachers",
-        }
-      : null,
-    classesNoPractice > 0
-      ? {
-          icon: "◷",
-          tone: "amber" as Tone,
-          title: `${classesNoPractice} class${classesNoPractice === 1 ? " has" : "es have"} no practice set`,
-          detail: "Nothing to grade means nothing to report on.",
-          cta: "Open",
-          href: "/console/groups",
-        }
-      : null,
-    lowCompletion > 0
-      ? {
-          icon: "%",
-          tone: "amber" as Tone,
-          title: `${lowCompletion} class${lowCompletion === 1 ? "" : "es"} under 50% completion`,
-          detail: "Most of the homework set hasn't been finished.",
-          cta: "Report",
-          href: "/console/reports",
-        }
-      : null,
-    openRegisters > 0
-      ? {
-          icon: "◷",
-          tone: "amber" as Tone,
-          title: `${openRegisters} register${openRegisters === 1 ? "" : "s"} still open today`,
-          detail: todayClasses
-            .filter((c) => !c.marked)
-            .slice(0, 2)
-            .map((c) => c.name)
-            .join(", "),
-          cta: "Open",
-          href: "/console/attendance",
-        }
-      : null,
-    pendingInvites.length > 0
-      ? {
-          icon: "✉",
-          tone: "neutral" as Tone,
-          title: `${pendingInvites.length} invite${pendingInvites.length === 1 ? "" : "s"} unaccepted`,
-          detail: "They expire on their own if nobody signs up.",
-          cta: "See",
-          href: "/console/groups",
-        }
-      : null,
-  ].filter((a) => a !== null);
-
-  const measured = report.skillAverages.filter((s) => s.samples > 0);
-  const trend = report.bandTrend.filter((t) => t.band != null);
+  const measured = report.skillAverages.filter((s) => s.attempts > 0);
+  // WRITING, NAMED. This panel used to plot every skill's bands in one line and
+  // call it "average band across the center" — a 6.5 reading test and a 5.0
+  // essay averaged into a number that moves when a student changes which skill
+  // they practise. One skill, said out loud, with the count under it.
+  const writing = report.skillAverages.find((s) => s.skill === "Writing");
+  const trend = report.bandTrend.Writing.filter((t) => t.band != null);
   const trendLow = Math.min(...trend.map((t) => t.band ?? 0), 9);
   const trendHigh = Math.max(...trend.map((t) => t.band ?? 0), 0);
   const drift =
     trend.length >= 2 ? (trend[trend.length - 1].band ?? 0) - (trend[0].band ?? 0) : null;
-  const activeStudents = report.totals.students - report.atRisk.length;
 
   return (
     <div>
       <PageHead
         eyebrow={isAdmin ? "Center admin" : "Teaching"}
-        title={isAdmin ? centerName : "Your classes"}
+        title={isAdmin ? centerName : "Your groups"}
         subtitle={
           report.totals.gradedPractices > 0
-            ? `${report.totals.gradedPractices} graded practices in the last 90 days, and ${report.atRisk.length} student${report.atRisk.length === 1 ? " has" : "s have"} gone quiet.`
-            : "Nothing has been graded yet — set a class some practice and this fills in."
+            ? `${report.totals.gradedPractices} graded practice${report.totals.gradedPractices === 1 ? "" : "s"} ${report.window.label.toLowerCase()}, and ${report.atRisk.length} student${report.atRisk.length === 1 ? " has" : "s have"} gone quiet.`
+            : "Nothing has been graded yet — set a group some practice and this fills in."
         }
         actions={
           <>
@@ -276,44 +190,40 @@ export default async function ConsolePage() {
         }
       />
 
-      {/* ══ KPI strip — five across, exactly as drawn ══ */}
+      {/* ══ Four counters, and each label means one thing ══
+          The old strip put "Active students 3" above "1 active" and "Groups
+          running 3" above "2 idle" — a KPI that contradicts its own sub-line
+          teaches the reader to stop reading the strip. Each of these is one
+          definition, stated in the label. */}
       <KpiRow min={165}>
         <Kpi
-          label={isAdmin ? "Active students" : "Your students"}
+          label={isAdmin ? "Students enrolled" : "Your students"}
           value={students.toLocaleString()}
-          delta={activeStudents > 0 ? `${activeStudents} active` : undefined}
-          deltaTone="good"
-          sub="in a class"
+          delta={withoutGroup > 0 ? `${withoutGroup} in no group` : undefined}
+          deltaTone={withoutGroup > 0 ? "bad" : "flat"}
+          sub="active and paused"
         />
         <Kpi
-          label="Groups running"
-          value={groupCount}
-          delta={classesNoPractice > 0 ? `${classesNoPractice} idle` : undefined}
-          deltaTone="bad"
-          sub={`${assignmentCount} practice${assignmentCount === 1 ? "" : "s"} set`}
-        />
-        {isAdmin ? (
-          <Kpi
-            label="Teachers"
-            value={teachers}
-            delta={idleTeachers > 0 ? `${idleTeachers} idle` : undefined}
-            deltaTone="bad"
-            sub={`${teachersWithGroup} running a class`}
-          />
-        ) : null}
-        <Kpi
-          label="Graded practices"
-          value={report.totals.gradedPractices.toLocaleString()}
-          delta={drift != null ? `${drift >= 0 ? "+" : ""}${drift.toFixed(1)} band` : undefined}
-          deltaTone={drift != null && drift >= 0 ? "good" : "bad"}
-          sub="last 90 days"
+          label="Practised this week"
+          value={`${report.practisedThisWeek.students} of ${report.practisedThisWeek.of}`}
+          sub="since Monday · always current"
         />
         <Kpi
           label="Gone quiet"
           value={report.atRisk.length}
           delta={report.atRisk.length > 0 ? "worth a call" : "nobody"}
           deltaTone={report.atRisk.length > 0 ? "bad" : "good"}
-          sub="14 days idle"
+          sub="14 days · always current"
+        />
+        <Kpi
+          label="Registers to mark"
+          value={overdueRegisters.length}
+          deltaTone={overdueRegisters.length > 0 ? "bad" : "good"}
+          sub={
+            day.holiday
+              ? `${day.holiday.name} — closed`
+              : `${todayLessons.length} lesson${todayLessons.length === 1 ? "" : "s"} today`
+          }
         />
       </KpiRow>
 
@@ -325,47 +235,23 @@ export default async function ConsolePage() {
               title="Needs attention"
               divided
               badge={
-                alerts.length > 0 ? (
-                  <Tag tone="red">{alerts.length} open</Tag>
+                alertBoard.shown.length > 0 ? (
+                  <Tag tone="red">{alertBoard.shown.length} open</Tag>
                 ) : (
                   <Tag tone="green">all clear</Tag>
                 )
               }
+              note="one row per kind of problem, worst first"
             />
-            {alerts.map((a) => (
-              <ListRow
-                key={a.title}
-                lead={
-                  <div
-                    style={{
-                      width: 30,
-                      height: 30,
-                      flex: "0 0 30px",
-                      borderRadius: 8,
-                      background: TINT[a.tone].bg,
-                      color: TINT[a.tone].fg,
-                      fontFamily: SANS,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {a.icon}
-                  </div>
-                }
-                title={a.title}
-                meta={a.detail}
-                trail={<ChipLink href={a.href}>{a.cta}</ChipLink>}
-              />
-            ))}
-            {alerts.length === 0 ? (
-              <Empty>
-                Nothing needs you right now — every class has practice set and everyone has
-                practised in the last two weeks.
-              </Empty>
-            ) : null}
+            <NeedsAttention
+              alerts={alertBoard.shown}
+              dismissed={alertBoard.dismissed}
+              canDismiss={alertBoard.canDismiss}
+              hiddenCount={Math.max(
+                0,
+                alertBoard.all.length - alertBoard.shown.length - alertBoard.dismissed.length,
+              )}
+            />
           </Card>
 
           {!setupDone ? (
@@ -393,25 +279,51 @@ export default async function ConsolePage() {
           ) : (
             <Card flush>
               <CardHead
-                title={`Today · ${today.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}`}
+                title={`Today · ${prettyDay(todayIso)}`}
                 divided
-                actions={<TextLink href="/console/attendance">Attendance →</TextLink>}
+                actions={<TextLink href={`/console/attendance?date=${todayIso}`}>Attendance →</TextLink>}
               />
-              {todayClasses.map((c) => (
+              {day.holiday ? (
+                <Empty>
+                  {day.holiday.name} — the center is closed, so nothing is timetabled.
+                </Empty>
+              ) : null}
+              {todayLessons.map((l) => (
                 <ListRow
-                  key={c.id}
-                  href={`/console/attendance?group=${c.id}`}
-                  title={c.name}
-                  meta={c.teacher}
+                  key={l.groupId}
+                  href={`/console/attendance/${l.groupId}?date=${todayIso}`}
+                  title={l.groupName}
+                  meta={[l.timeLabel, l.teacherName ?? "No teacher", l.roomName]
+                    .filter(Boolean)
+                    .join(" · ")}
                   trail={
-                    <Tag tone={c.marked ? "green" : "amber"}>
-                      {c.marked ? "Marked" : "Register open"}
+                    <Tag tone={l.state === "marked" ? "green" : l.locked ? "neutral" : "amber"}>
+                      {l.state === "marked" ? "Marked" : l.locked ? "Closed" : "Mark"}
                     </Tag>
                   }
                 />
               ))}
-              {todayClasses.length === 0 ? (
-                <Empty>No classes yet — create one and it appears here to mark.</Empty>
+              {/* A lesson that was written off still belongs on the day — it
+                  explains the gap, and hiding it is how someone marks a
+                  register for a lesson that never happened. */}
+              {day.lessons
+                .filter((l) => l.cancelledReason)
+                .map((l) => (
+                  <ListRow
+                    key={l.groupId}
+                    title={
+                      <span style={{ color: MUTED, textDecoration: "line-through" }}>
+                        {l.groupName}
+                      </span>
+                    }
+                    meta={l.cancelledReason ?? undefined}
+                    trail={<Tag tone="neutral">Cancelled</Tag>}
+                  />
+                ))}
+              {todayLessons.length === 0 && !day.holiday ? (
+                <Empty action={{ href: "/console/calendar", label: "Open the timetable →" }}>
+                  Nothing is timetabled today.
+                </Empty>
               ) : null}
             </Card>
           )}
@@ -421,8 +333,12 @@ export default async function ConsolePage() {
         <Split>
           <Card>
             <CardHead
-              title="Average band across the center"
-              note="graded practice only"
+              title="Writing band across the center"
+              note={
+                writing && writing.attempts > 0
+                  ? `${writing.attempts} essay${writing.attempts === 1 ? "" : "s"} from ${writing.students} student${writing.students === 1 ? "" : "s"}${writing.provisional ? " · provisional" : ""}`
+                  : "graded essays only"
+              }
               actions={
                 drift != null ? (
                   <span
@@ -452,46 +368,75 @@ export default async function ConsolePage() {
                 }))}
               />
             ) : (
-              <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: 0 }}>
-                Nothing graded in this window yet. Set a class some practice and the trend appears
-                here.
-              </p>
+              <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
+                No essays graded in this window yet.
+              </Empty>
             )}
           </Card>
 
           <Stack>
             <Card>
-              <CardHead title="Average by skill" />
+              <CardHead title="Band by skill" note="each skill on its own" />
               {measured.map((s) => (
                 <MeterRow
                   key={s.skill}
                   label={s.skill}
                   pct={((s.band ?? 0) / 9) * 100}
-                  value={s.band?.toFixed(1) ?? "—"}
-                  fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
+                  // The count travels with the band. `5.5` is a claim; `5.5 ·
+                  // 12 essays` is evidence, and two essays says so.
+                  value={
+                    <span style={{ opacity: s.provisional ? 0.55 : 1 }}>
+                      {s.band?.toFixed(1) ?? "—"}
+                      <span style={{ fontSize: 11, color: FAINT, fontWeight: 400 }}>
+                        {" "}
+                        {s.attempts} {SKILL_UNIT[s.skill]}
+                        {s.provisional ? " · provisional" : ""}
+                      </span>
+                    </span>
+                  }
+                  fill={
+                    s.provisional
+                      ? "#C9C7C1"
+                      : (s.band ?? 0) >= 6.5
+                        ? GREEN
+                        : (s.band ?? 0) >= 5.5
+                          ? AMBER
+                          : RED
+                  }
                   labelWidth={66}
                 />
               ))}
               {measured.length === 0 ? (
-                <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                  No graded practice yet — nothing to average.
-                </p>
+                <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
+                  Nothing graded yet.
+                </Empty>
               ) : null}
-              {report.writingCaps.length > 0 ? (
-                <div
-                  style={{
-                    fontFamily: SANS,
-                    fontSize: 11.5,
-                    color: "#93919F",
-                    marginTop: 12,
-                    borderTop: "1px solid #F0EEE9",
-                    paddingTop: 10,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {report.writingCaps[0].label} is the lowest criterion in{" "}
-                  {report.writingCaps[0].hint}.
-                </div>
+            </Card>
+
+            {/* ══ The reason a center owner logs in ══
+                Not "your center averages 5.6" — that converts into nothing. This
+                converts into "run a Coherence workshop on Thursday", which is
+                the only insight on this page anyone can act on before lunch. */}
+            <Card>
+              <CardHead title="Where the center loses marks" note="lowest criterion, by student" />
+              {report.writingCaps.slice(0, 3).map((c) => (
+                <MeterRow
+                  key={c.label}
+                  label={c.label}
+                  pct={report.writersGraded > 0 ? (c.students / report.writersGraded) * 100 : 0}
+                  value={
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>
+                      {c.students} of {report.writersGraded}
+                    </span>
+                  }
+                  fill={RED}
+                  labelWidth={150}
+                />
+              ))}
+              {report.writingCaps.length === 0 ? (
+                <Empty action={{ href: "/console/groups", label: "Set a writing task →" }}>
+                  No essays graded yet, so nothing is capping anyone.
+                </Empty>
               ) : null}
             </Card>
 
@@ -499,7 +444,7 @@ export default async function ConsolePage() {
                 figure a center IS accountable for: who is actually practising. */}
             <Card tone="dark">
               <div style={{ fontFamily: SANS, fontSize: 12, color: RAIL.light }}>
-                Graded practice · last 90 days
+                Graded practice · {report.window.label.toLowerCase()}
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6 }}>
                 <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700 }}>
@@ -533,7 +478,7 @@ export default async function ConsolePage() {
               >
                 <div
                   style={{
-                    width: `${share(activeStudents, report.totals.students)}%`,
+                    width: `${share(report.practisedThisWeek.students, report.practisedThisWeek.of)}%`,
                     background: RAIL.mint,
                   }}
                 />
@@ -548,7 +493,7 @@ export default async function ConsolePage() {
                   color: RAIL.light,
                 }}
               >
-                <span>{activeStudents} practising</span>
+                <span>{report.practisedThisWeek.students} practised this week</span>
                 <span>{report.atRisk.length} gone quiet</span>
               </div>
             </Card>
@@ -567,6 +512,16 @@ export default async function ConsolePage() {
       </Stack>
     </div>
   );
+}
+
+/** `Mon 16 Aug`, read in UTC so the label matches the ISO date it names. */
+function prettyDay(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 }
 
 /** Position a value in an observed range, floored so the shortest bar is visible. */

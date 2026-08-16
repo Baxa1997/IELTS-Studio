@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 
 import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
+import { isMemberStatus } from "@/lib/console/status";
 import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
@@ -114,7 +115,7 @@ export async function createGroup(
   // rooms there (migration 20260810170000). A center always has at least one,
   // so a single-site center never sees this field.
   const branchId = String(formData.get("branch_id") ?? "").trim();
-  if (!branchId) return { error: "Pick the branch this class is taught at." };
+  if (!branchId) return { error: "Pick the branch this group is taught at." };
 
   // What the class teaches. Optional: a center that has not set up subjects yet
   // creates classes exactly as before, and the field is not even rendered.
@@ -123,7 +124,7 @@ export async function createGroup(
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const capacity = capacityRaw === "" ? null : Number(capacityRaw);
   if (capacity != null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) {
-    return { error: "Class size has to be a whole number between 1 and 500." };
+    return { error: "Group size has to be a whole number between 1 and 500." };
   }
 
   // Both prices are the owner's business, so a teacher creating their own class
@@ -223,7 +224,7 @@ function readSchedule(
   const endsAt = String(formData.get("ends_at") ?? "").trim();
   if (weekdays.length === 0 && !startsAt && !endsAt) return null;
 
-  if (weekdays.length === 0) return "Pick the days this class meets.";
+  if (weekdays.length === 0) return "Pick the days this group meets.";
   if (!TIME_RE.test(startsAt) || !TIME_RE.test(endsAt)) return "Use times like 15:30.";
   if (endsAt <= startsAt) return "The lesson has to end after it starts.";
 
@@ -313,10 +314,10 @@ async function writeSchedule(
 /** The two constraints a schedule can trip, in words a teacher can act on. */
 function explainSlotError(error: { code?: string; message: string }): string {
   if (error.code === "23P01") {
-    return "That clashes with a lesson this class already has at the same hour.";
+    return "That clashes with a lesson this group already has at the same hour.";
   }
   if (error.code === "23514" || /branch/i.test(error.message)) {
-    return "That room is at a different branch from this class.";
+    return "That room is at a different branch from this group.";
   }
   return error.message;
 }
@@ -360,7 +361,7 @@ export async function setGroupSchedule(
   // edited, never the whole class: a class with a second, separate booking must
   // not lose it because someone cleared the first.
   if (schedule == null) {
-    if (!seriesId) return { error: "Pick the days this class meets." };
+    if (!seriesId) return { error: "Pick the days this group meets." };
     const { data, error } = await supabase
       .from("lesson_slots")
       .delete()
@@ -419,6 +420,53 @@ export async function assignTeacher(
 
 /** Center admin deletes a group. Memberships cascade; the students' accounts and
  *  their work are untouched. */
+/**
+ * Close a course, or reopen one.
+ *
+ * THIS IS WHAT REPLACED DELETION for a group that has finished. A deleted group
+ * takes its registers, its invoices and every report that mentions it — and the
+ * moment a parent asks about last term, the center discovers what "delete"
+ * meant. Closing drops it out of every forward-looking count (what meets today,
+ * which groups have no practice set, who has no teacher) and changes nothing
+ * else.
+ *
+ * `deleteGroup` still exists below for a group created by mistake, and it is
+ * the only thing it should ever be used for.
+ */
+export async function setGroupStatus(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role)) {
+    return { error: "Only center staff can close or reopen a group." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  if (!groupId) return { error: "Missing group." };
+  if (status !== "active" && status !== "closed") return { error: "Unknown status." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("groups")
+    .update({ status, closed_at: status === "closed" ? new Date().toISOString() : null })
+    .eq("id", groupId)
+    .select("id, name");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That group is not yours to change." };
+
+  revalidatePath("/console/groups");
+  revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath("/console");
+  return {
+    notice:
+      status === "closed"
+        ? `${data[0].name} is closed. Its roster, registers and invoices are untouched.`
+        : `${data[0].name} is running again.`,
+  };
+}
+
 export async function deleteGroup(
   _prev: GroupFormState,
   formData: FormData,
@@ -430,11 +478,80 @@ export async function deleteGroup(
   if (!groupId) return { error: "Missing group." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("groups").delete().eq("id", groupId);
+  // Refuse to delete anything with a history. A course that ran is closed, not
+  // deleted — this path exists for the group somebody created by mistake.
+  const [{ count: sessions }, { count: members }] = await Promise.all([
+    supabase
+      .from("attendance_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+    supabase
+      .from("group_members")
+      .select("student_id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+  ]);
+  if ((sessions ?? 0) > 0 || (members ?? 0) > 0) {
+    return {
+      error:
+        "This group has students or registers behind it. Close it instead — deleting would take its attendance and invoices with it.",
+    };
+  }
+
+  const { error } = await supabase.from("groups").delete().eq("id", groupId).select("id");
   if (error) return { error: error.message };
 
   revalidatePath("/console/groups");
   return { notice: "Group deleted." };
+}
+
+/**
+ * Move a student's status: enrolled, on a break, or gone.
+ *
+ * Every denominator in the console reads this. A paused student leaves the
+ * gone-quiet list, the attendance rate and next month's invoice; a student who
+ * left leaves the roster as well. Nothing they have done is touched — that is
+ * the whole point of having three states instead of a delete button.
+ */
+export async function setStudentStatus(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can change a student's status." };
+  }
+
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim() || null;
+  if (!studentId) return { error: "Missing student." };
+  if (!isMemberStatus(status)) return { error: "Unknown status." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    // `status_changed_at` is stamped by the guard trigger, not here — the
+    // column and the value it describes cannot then disagree, and a caller
+    // cannot back-date a status change by sending its own timestamp.
+    .update({ member_status: status, status_note: note })
+    .eq("id", studentId)
+    .select("id, full_name");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That student is not yours to change." };
+
+  const name = data[0].full_name ?? "The student";
+  revalidatePath("/console/students");
+  revalidatePath(`/console/students/${studentId}`);
+  revalidatePath("/console/groups");
+  revalidatePath("/console");
+  return {
+    notice:
+      status === "active"
+        ? `${name} is active again and counts everywhere.`
+        : status === "paused"
+          ? `${name} is paused — out of chasing, attendance and invoicing until they return.`
+          : `${name} has left. Their marks, registers and invoices stay exactly as they are.`,
+  };
 }
 
 /** Remove a student from a group (they keep their account and history).
@@ -649,7 +766,11 @@ export async function createAssignment(
   const groupId = String(formData.get("group_id") ?? "").trim();
   const kind = String(formData.get("kind") ?? "");
   if (!groupId) return { error: "Missing group." };
-  if (kind !== "writing" && kind !== "reading") return { error: "Choose a practice type." };
+  // "library" is a third way to answer "what practice", not a third skill: the
+  // branch below reads the skill off the shelf item itself.
+  if (kind !== "writing" && kind !== "reading" && kind !== "library") {
+    return { error: "Choose a practice type." };
+  }
 
   const dueRaw = String(formData.get("due_at") ?? "").trim();
   const dueAt = dueRaw ? new Date(dueRaw) : null;
@@ -678,6 +799,70 @@ export async function createAssignment(
   let title: string;
   let promptId: string | null = null;
   let readingTestId: string | null = null;
+
+  // §9: SET IT AGAIN FROM THE SHELF. This branch is the entire point of the
+  // practice library — it reuses content the centre already has instead of
+  // generating more. That is not only a quota saving: two classes set the same
+  // library item sit the SAME paper, so their results can be compared, which
+  // regenerating "the same" prompt never gives you.
+  const libraryId = String(formData.get("library_id") ?? "").trim();
+  if (libraryId) {
+    const { data: item } = await supabase
+      .from("practice_library")
+      .select("id, kind, ref_id, title, archived_at")
+      .eq("id", libraryId)
+      .maybeSingle();
+    if (!item) return { error: "That library item is gone." };
+    if (item.archived_at) return { error: "That item has been archived. Restore it first." };
+
+    if (item.kind === "writing_prompt") {
+      promptId = item.ref_id as string;
+    } else {
+      readingTestId = item.ref_id as string;
+    }
+    title = String(formData.get("title") ?? "").trim() || (item.title as string);
+
+    const { error: insertError } = await supabase.from("assignments").insert({
+      organization_id: profile.organization_id,
+      group_id: groupId,
+      kind: item.kind === "writing_prompt" ? "writing" : "reading",
+      title,
+      instructions,
+      prompt_id: promptId,
+      reading_test_id: readingTestId,
+      due_at: dueAt ? dueAt.toISOString() : null,
+      is_placement: String(formData.get("is_placement") ?? "") === "on",
+      library_id: libraryId,
+      created_by: profile.id,
+    });
+    if (insertError) return { error: insertError.message };
+
+    const reusedHref = promptId ? `/write/${promptId}` : `/read/test/${readingTestId}`;
+    await notifyAssignment({
+      organizationId: profile.organization_id,
+      groupIds: [groupId],
+      title,
+      href: reusedHref,
+      dueAt: dueAt ? dueAt.toISOString() : null,
+      groupNameById: new Map([[groupId, group.name as string]]),
+      // The library item AND the group: setting the same shelf item to a second
+      // class must still notify that class.
+      assignmentKey: `${libraryId}:${dueAt?.toISOString() ?? "no-due"}`,
+    });
+    await notifyAssignmentTelegram({
+      organizationId: profile.organization_id,
+      groupIds: [groupId],
+      kind: item.kind === "writing_prompt" ? "writing" : "reading",
+      title,
+      siteUrl: serverEnv.outboundSiteUrl,
+      note: instructions,
+      dueAt: dueAt ? dueAt.toISOString() : null,
+    });
+
+    revalidatePath(`/console/groups/${groupId}`);
+    revalidatePath("/console/practice");
+    return { notice: `Assigned to ${group.name} from the library — nothing was regenerated.` };
+  }
 
   if (kind === "writing") {
     const category = String(formData.get("category") ?? "") as Task2Category;
@@ -732,6 +917,10 @@ export async function createAssignment(
     prompt_id: promptId,
     reading_test_id: readingTestId,
     due_at: dueAt ? dueAt.toISOString() : null,
+    // A placement is an ordinary practice in every respect except what its band
+    // is used for afterwards: it sets the student's baseline, which is the
+    // number every "+1.0 since" on their report is measured from.
+    is_placement: String(formData.get("is_placement") ?? "") === "on",
     created_by: profile.id,
   });
   if (error) return { error: error.message };
@@ -744,6 +933,7 @@ export async function createAssignment(
     title,
     href,
     dueAt: dueAt ? dueAt.toISOString() : null,
+    groupNameById: new Map([[groupId, group.name as string]]),
   });
 
   // The class's Telegram channel gets the same event. There are TWO places
@@ -1547,4 +1737,74 @@ async function seatLimitError(supabase: RlsClient, organizationId: string): Prom
   const used = (students ?? 0) + (pending ?? 0);
   if (used < limit) return null;
   return `Your plan includes ${limit} student seat${limit === 1 ? "" : "s"} and ${used} are used or pending. Upgrade your plan to invite more.`;
+}
+
+/**
+ * Move a student from one class to another (§5).
+ *
+ * ONE ACTION, NOT REMOVE-THEN-ADD. Done as two steps there is a moment when the
+ * student is in no class at all, and if the second step fails — a full class, a
+ * dropped connection — that is where they stay, off every roster, still owing
+ * money, and nobody is told. Here the add happens first and the old membership
+ * is only dropped once the new one exists.
+ *
+ * Their work, marks, registers and invoices are untouched: those hang off the
+ * student and the content, never off the membership row.
+ */
+export async function moveMember(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can move a student." };
+  }
+
+  const fromGroupId = String(formData.get("group_id") ?? "").trim();
+  const toGroupId = String(formData.get("to_group_id") ?? "").trim();
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  if (!fromGroupId || !toGroupId || !studentId) return { error: "Missing group or student." };
+  if (fromGroupId === toGroupId) return { error: "That is the class they are already in." };
+
+  const supabase = await createClient();
+
+  // RLS hides classes this person does not manage, so reading the destination
+  // is also the permission check on it — a teacher cannot post a student into
+  // somebody else's class by editing the form.
+  const { data: destination } = await supabase
+    .from("groups")
+    .select("id, name, capacity")
+    .eq("id", toGroupId)
+    .maybeSingle();
+  if (!destination) return { error: "That class is not one you manage." };
+
+  const { count } = await supabase
+    .from("group_members")
+    .select("student_id", { count: "exact", head: true })
+    .eq("group_id", toGroupId);
+  const capacity = destination.capacity as number | null;
+  if (capacity != null && (count ?? 0) >= capacity) {
+    return { error: `${destination.name as string} is full (${capacity}).` };
+  }
+
+  const { error: addError } = await supabase.from("group_members").insert({
+    organization_id: profile.organization_id,
+    group_id: toGroupId,
+    student_id: studentId,
+  });
+  // Already in the destination: not a failure, just nothing to add. Fall
+  // through and clear the old membership so the move still completes.
+  if (addError && !addError.message.includes("duplicate")) return { error: addError.message };
+
+  const { error: dropError } = await supabase
+    .from("group_members")
+    .delete()
+    .eq("group_id", fromGroupId)
+    .eq("student_id", studentId)
+    .select("student_id");
+  if (dropError) return { error: dropError.message };
+
+  revalidatePath(`/console/groups/${fromGroupId}`);
+  revalidatePath(`/console/groups/${toGroupId}`);
+  return { notice: `Moved to ${destination.name as string}.` };
 }

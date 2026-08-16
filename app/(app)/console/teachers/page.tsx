@@ -33,7 +33,7 @@ export const dynamic = "force-dynamic";
 /** The design's "Sort: load ▾". Load is what an admin scans this table for. */
 const SORTS = {
   load: { label: "load", cmp: (a: Row, b: Row) => b.students - a.students },
-  band: { label: "band", cmp: (a: Row, b: Row) => (b.band ?? -1) - (a.band ?? -1) },
+  practices: { label: "practice set", cmp: (a: Row, b: Row) => b.practices - a.practices },
   attendance: {
     label: "attendance",
     cmp: (a: Row, b: Row) => (b.attendance ?? -1) - (a.attendance ?? -1),
@@ -50,7 +50,7 @@ interface Row {
   role: "teacher" | "administrator";
   groups: number;
   students: number;
-  band: number | null;
+  practices: number;
   attendance: number | null;
 }
 
@@ -113,11 +113,18 @@ export default async function TeachersPage({
 
   // Roll the class report up to the person who runs the classes. Joined on
   // teacher id, not name — two teachers can share a name.
-  const stats = new Map<string, { bands: number[]; completions: number[] }>();
+  //
+  // NO BAND COLUMN. It used to average whatever skills a teacher's students
+  // happened to practise, across as few as one essay, and print it beside their
+  // name — a number that reads as a performance rating and is not one. What a
+  // teacher is actually accountable for is how much practice they set and
+  // whether it gets done; both are counted here. (Marking turnaround, the
+  // fairest of the three, arrives with the final-band field in Phase 2.)
+  const stats = new Map<string, { practices: number; completions: number[] }>();
   for (const g of report.groups) {
     if (!g.teacherId) continue;
-    const s = stats.get(g.teacherId) ?? { bands: [], completions: [] };
-    if (g.averageBand != null) s.bands.push(g.averageBand);
+    const s = stats.get(g.teacherId) ?? { practices: 0, completions: [] };
+    s.practices += g.assignments;
     if (g.completionPct != null) s.completions.push(g.completionPct);
     stats.set(g.teacherId, s);
   }
@@ -136,7 +143,7 @@ export default async function TeachersPage({
     role: t.role,
     groups: t.groups,
     students: t.students,
-    band: mean(stats.get(t.id)?.bands ?? []),
+    practices: stats.get(t.id)?.practices ?? 0,
     attendance: attendanceOf(t.id),
   }));
 
@@ -156,7 +163,6 @@ export default async function TeachersPage({
   const withoutGroups = teaching.filter((t) => t.groups === 0).length;
   const totalGroups = teaching.reduce((n, t) => n + t.groups, 0);
   const totalStudents = teaching.reduce((n, t) => n + t.students, 0);
-  const allBands = resolved.map((t) => t.band).filter((b): b is number => b != null);
   // The design's "100% of the center" line: every learner is in somebody's class
   // only when this matches the roll.
   const centerStudents = new Set(
@@ -188,7 +194,11 @@ export default async function TeachersPage({
           label="Teachers"
           value={teaching.length}
           sub={
-            mean(allBands) != null ? `avg band ${mean(allBands)?.toFixed(1)}` : "nothing graded yet"
+            withoutGroups > 0
+              ? `${withoutGroups} without a group`
+              : teaching.length > 0
+                ? "all running a group"
+                : "none yet"
           }
         />
         <Kpi
@@ -259,10 +269,10 @@ export default async function TeachersPage({
         <Table cols={COLS}>
           <THead
             cols={COLS}
-            labels={["Teacher", "Subjects", "Groups", "Students", "Avg band", "Attendance", "Status", ""]}
+            labels={["Teacher", "Subjects", "Groups", "Students", "Practice set", "Attendance", "Status", ""]}
           />
           {rows.map((t) => {
-            const { band, attendance } = t;
+            const { practices, attendance } = t;
             return (
               <TRow key={t.id} cols={COLS}>
                 <PersonCell name={t.name} meta={t.username ?? "no login"} />
@@ -280,8 +290,8 @@ export default async function TeachersPage({
                 </TD>
                 <TD>{t.groups || "—"}</TD>
                 <TD tone={t.students === 0 ? "faint" : "body"}>{t.students || "—"}</TD>
-                <TD tone="ink" weight={600}>
-                  {band?.toFixed(1) ?? "—"}
+                <TD tone={practices === 0 ? "faint" : "ink"} weight={600}>
+                  {practices || "—"}
                 </TD>
                 <TD>
                   {attendance == null ? (
@@ -304,7 +314,7 @@ export default async function TeachersPage({
                   {t.role === "administrator" ? (
                     <Tag tone="neutral">Administrator</Tag>
                   ) : t.groups === 0 ? (
-                    <Tag tone="amber">No class yet</Tag>
+                    <Tag tone="amber">No group yet</Tag>
                   ) : t.students === 0 ? (
                     <Tag tone="neutral">No students</Tag>
                   ) : (
@@ -320,7 +330,7 @@ export default async function TeachersPage({
           {rows.length === 0 ? (
             <Empty>
               {teachers.length === 0
-                ? "No teachers yet. Use + Add teacher above and they can start building classes."
+                ? "No teachers yet. Use + Add teacher above and they can start building groups."
                 : "Nobody matches that search."}
             </Empty>
           ) : null}

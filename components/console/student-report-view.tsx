@@ -1,3 +1,4 @@
+import { progressSince } from "@/lib/console/progress";
 import type { StudentReport, WeaknessRow } from "@/lib/console/student-report";
 
 import {
@@ -112,6 +113,7 @@ export function StudentReportView({
         eyebrow="Student"
         title={report.name}
         media={<Avatar name={report.name} url={report.photoUrl} size={58} />}
+        actions={<ExportPdfLink studentId={report.studentId} />}
         subtitle={
           <>
             {report.recentCount} practice{report.recentCount === 1 ? "" : "s"} in the last 30 days
@@ -126,16 +128,49 @@ export function StudentReportView({
         <Stack>
           {/* ── band by skill ─────────────────────────────────────────────── */}
           <Card>
-            <CardHead title="Band by skill" note="latest measured estimate" />
+            <CardHead
+              title="Band by skill"
+              note="where they are now, and how far that is from where they started"
+            />
             {report.bands.map((b) => {
-              const behind = b.current != null && b.target != null ? b.current - b.target : null;
+              // Only a target somebody chose counts. `target_band` defaults to
+              // 7.0 for everyone, so measuring "behind" against an unagreed
+              // default tells a teacher a student is 4.1 short of a goal that
+              // was never set.
+              const target = b.targetAgreed ? b.target : null;
+              const behind = b.current != null && target != null ? b.current - target : null;
+              const moved = progressSince(b.current, b.baseline, b.baselineSource, b.sampleCount);
               return (
                 <MeterRow
                   key={b.skill}
                   label={SKILL_LABEL[b.skill]}
                   // Bands run 0–9, so the bar is the band as a share of 9.
                   pct={((b.current ?? 0) / 9) * 100}
-                  value={b.current != null ? b.current.toFixed(1) : "—"}
+                  value={
+                    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+                      {b.current != null ? b.current.toFixed(1) : "—"}
+                      {/* §6's "baseline vs now". Shown only where it means
+                          something: an indicative baseline is greyed, so a
+                          parent reading the page can tell a diagnostic from a
+                          number we happened to have. */}
+                      {moved.label ? (
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 500,
+                            color:
+                              moved.confidence === "measured"
+                                ? (moved.moved ?? 0) >= 0
+                                  ? GREEN
+                                  : RED
+                                : FAINT,
+                          }}
+                        >
+                          {moved.label}
+                        </span>
+                      ) : null}
+                    </span>
+                  }
                   fill={
                     b.current == null
                       ? "#E4E2DC"
@@ -157,8 +192,8 @@ export function StudentReportView({
                     >
                       {b.current == null
                         ? "not measured"
-                        : b.target == null
-                          ? ""
+                        : target == null
+                          ? "no target set"
                           : behind != null && behind >= 0
                             ? "at target"
                             : `${behind?.toFixed(1)} to go`}
@@ -228,10 +263,16 @@ export function StudentReportView({
                 </TRow>
               ))}
               {homework.length === 0 ? (
-                <Empty>
+                <Empty
+                  action={
+                    report.homework.assigned > 0
+                      ? undefined
+                      : { href: "/console/groups", label: "Set some →" }
+                  }
+                >
                   {report.homework.assigned > 0
                     ? "Nothing handed in yet."
-                    : "No homework has been set to this student's class."}
+                    : "No homework has been set to this student's group."}
                 </Empty>
               ) : null}
             </Table>
@@ -364,5 +405,37 @@ function WeaknessCard({
         </p>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * Download the parent-facing PDF (§6).
+ *
+ * A plain anchor, not a Link and not a client component: the route replies with
+ * a file, so there is nothing for the router to navigate to and nothing to hold
+ * in state. `download` keeps the browser from opening it in a tab and losing
+ * the filename the route chose.
+ */
+function ExportPdfLink({ studentId }: { studentId: string }) {
+  return (
+    <a
+      href={`/api/console/students/${studentId}/report`}
+      download
+      className="cn-btn cn-btn--ghost"
+      style={{
+        display: "inline-block",
+        borderRadius: 10,
+        padding: "8px 15px",
+        fontFamily: SANS,
+        fontSize: 13.5,
+        fontWeight: 500,
+        textDecoration: "none",
+        background: "#FFF",
+        color: INK,
+        border: "1px solid #E0DED8",
+      }}
+    >
+      Export report (PDF)
+    </a>
   );
 }

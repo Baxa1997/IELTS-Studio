@@ -42,6 +42,11 @@ const STAGES = [
   },
 ] as const;
 
+/** Ordering and matching answer with a sequence — see the note in Row. */
+function isSequenceType(type: string): boolean {
+  return type === "ordering" || type === "matching";
+}
+
 export function PracticeReview({ exercises }: { exercises: Exercise[] }) {
   const [showAnswers, setShowAnswers] = useState(false);
 
@@ -175,7 +180,26 @@ function Row({
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 15.5, color: BODY, lineHeight: 1.55 }}>{exercise.prompt}</div>
 
-        {closedEx?.options ? (
+        {/* An ordering or matching answer is a SEQUENCE, so highlighting "the
+            correct options" says nothing — every option is in the answer, and
+            the key came out as a wall of green with the actual order invisible.
+            The order is the answer, so the order is what gets shown. */}
+        {closedEx?.options && isSequenceType(closedEx.type) ? (
+          <div style={{ marginTop: 8 }}>
+            <ol style={{ margin: 0, paddingLeft: 20, fontSize: 14.5, color: BODY, lineHeight: 1.55 }}>
+              {(showAnswers ? closedEx.answers : closedEx.options.map((_, i) => String(i))).map(
+                (a, pos) => (
+                  <li key={`${a}-${pos}`} style={{ marginBottom: 3 }}>
+                    {closedEx.options?.[Number(a)] ?? a}
+                  </li>
+                ),
+              )}
+            </ol>
+            <div style={{ fontSize: 12, color: FAINT, marginTop: 5 }}>
+              {showAnswers ? "The correct order." : "Students put these in order."}
+            </div>
+          </div>
+        ) : closedEx?.options ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
             {closedEx.options.map((opt, i) => {
               const key = showAnswers && closedEx.answers.includes(String(i));

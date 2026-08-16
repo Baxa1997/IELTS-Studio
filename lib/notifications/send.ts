@@ -1,67 +1,32 @@
 import "server-only";
 
+import { autoMessageEnabled, sendAutoMessage } from "@/lib/console/auto-message-service";
+import { notify, type NotificationType } from "@/lib/notifications/notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Fan-out for in-app notifications.
+ * The event-shaped notification helpers — "an essay was graded", "practice was
+ * set" — layered over the `notify` primitive next door.
  *
- * Always service-role: a notification is the system stating that something
- * happened, so no client may write one (RLS grants clients only `read_at`).
- *
- * Always best-effort. Delivering the news must never break the thing the news is
- * about — a failed insert here cannot be allowed to fail a grading, an
- * assignment, or a submission. Failures are logged and swallowed.
+ * Re-exported here because every existing caller imports them from this path,
+ * and the split was made to break an import cycle, not to move the API.
  */
-
-export type NotificationType =
-  | "assignment_published"
-  | "assignment_due_soon"
-  | "attempt_graded"
-  | "grading_queued"
-  | "grading_failed"
-  | "quota_warning"
-  | "quota_exhausted"
-  /** A center-wide message from the center admin. */
-  | "announcement";
-
-interface NotifyInput {
-  organizationId: string;
-  recipientIds: string[];
-  type: NotificationType;
-  title: string;
-  body?: string | null;
-  href?: string | null;
-  payload?: Record<string, unknown>;
-}
-
-export async function notify(input: NotifyInput): Promise<void> {
-  const recipients = [...new Set(input.recipientIds)].filter(Boolean);
-  if (recipients.length === 0) return;
-
-  try {
-    const admin = createAdminClient();
-    const { error } = await admin.from("notifications").insert(
-      recipients.map((recipient_id) => ({
-        organization_id: input.organizationId,
-        recipient_id,
-        type: input.type,
-        title: input.title,
-        body: input.body ?? null,
-        href: input.href ?? null,
-        payload: input.payload ?? {},
-      })),
-    );
-    if (error) console.error("[notify] insert failed:", input.type, error.message);
-  } catch (err) {
-    console.error("[notify] failed:", input.type, err);
-  }
-}
+export { notify, type NotificationType };
 
 /**
  * A teacher set practice for a class → tell everyone in it.
  *
  * The href is the runner deep link, the same one the Assignments page uses, so
  * the notification lands the student on the work rather than on a list.
+ *
+ * ROUTED THROUGH §12's `practice_set` SETTING. A centre that switches "New
+ * practice set" off must stop receiving it — a toggle that does not stop the
+ * send is a lie told to the person who flipped it. The default is ON, so a
+ * centre that never opens that page sees exactly today's behaviour.
+ *
+ * SENT PER GROUP, not once for the union. `{group}` is a placeholder a centre
+ * can put in the wording, and one assignment can span several classes; a single
+ * fan-out could only name one of them, or none.
  */
 export async function notifyAssignment(args: {
   organizationId: string;
@@ -70,6 +35,8 @@ export async function notifyAssignment(args: {
   href: string;
   dueAt?: string | null;
   groupNameById?: Map<string, string>;
+  /** Distinguishes two different assignments so neither dedupes the other. */
+  assignmentKey?: string;
 }): Promise<void> {
   if (args.groupIds.length === 0) return;
 
@@ -84,37 +51,153 @@ export async function notifyAssignment(args: {
       ? ` Due ${new Date(args.dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.`
       : "";
 
-    await notify({
-      organizationId: args.organizationId,
-      recipientIds: ((members ?? []) as { student_id: string }[]).map((m) => m.student_id),
-      type: "assignment_published",
-      title: "New homework",
-      body: `${args.title}.${due}`,
-      href: args.href,
-    });
+    const byGroup = new Map<string, string[]>();
+    for (const m of (members ?? []) as { student_id: string; group_id: string }[]) {
+      byGroup.set(m.group_id, [...(byGroup.get(m.group_id) ?? []), m.student_id]);
+    }
+
+    for (const [groupId, studentIds] of byGroup) {
+      await sendAutoMessage({
+        organizationId: args.organizationId,
+        key: "practice_set",
+        recipientIds: studentIds,
+        values: {
+          practice: `${args.title}${due}`,
+          group: args.groupNameById?.get(groupId) ?? "your class",
+        },
+        href: args.href,
+        subjectKey: `${args.assignmentKey ?? args.href}:${groupId}`,
+      });
+    }
   } catch (err) {
     console.error("[notify] assignment fan-out failed:", err);
   }
 }
 
-/** A grading finished → tell the learner, with a link to the feedback. */
+/**
+ * A grading finished → tell the learner, with a link to the feedback.
+ *
+ * Routed through §12's `results_ready` setting, default ON.
+ *
+ * THE BAND-LESS CASE IS WHY `composeAutoMessage` REFUSES RATHER THAN GUESSES.
+ * The default wording names the band, and not every marked attempt has one — a
+ * reading quick practice has a score instead. Rather than sending "came back at
+ * band ." the message is skipped, and this function falls back to the plain
+ * notification that never mentioned a band in the first place. The learner is
+ * still told; they are just not told a number that does not exist.
+ */
 export async function notifyGraded(args: {
   organizationId: string;
   studentId: string;
   band: number | null;
   href: string;
+  /** What was marked, for `{practice}`. */
+  practice?: string | null;
 }): Promise<void> {
+  if (args.band != null) {
+    const sent = await sendAutoMessage({
+      organizationId: args.organizationId,
+      key: "results_ready",
+      recipientIds: [args.studentId],
+      values: { practice: args.practice ?? "Your work", band: args.band.toFixed(1) },
+      href: args.href,
+      subjectKey: args.href,
+    });
+    if (sent > 0) return;
+    // Nothing sent means the centre switched it off — respect that rather than
+    // falling through to the hardcoded notice, which would make the toggle a
+    // lie. The fallback below is only for the case the template cannot serve.
+    const on = await autoMessageEnabled(args.organizationId, "results_ready");
+    if (!on) return;
+  }
+
   await notify({
     organizationId: args.organizationId,
     recipientIds: [args.studentId],
     type: "attempt_graded",
-    title: "Your essay has been marked",
+    title: "Your work has been marked",
     body:
       args.band != null
         ? `Band ${args.band.toFixed(1)}. Open it to see what capped it and what to fix.`
         : "Open it to see the feedback.",
     href: args.href,
   });
+}
+
+/**
+ * A register recorded an absence → tell the student (§12 `absent_today`).
+ *
+ * Off by default. A centre that wants it turns it on, because a message saying
+ * "you were marked absent" arriving after a lesson the student attended — a
+ * mis-tapped register — is the kind of thing that gets a centre a phone call,
+ * and it should be the centre's choice to accept that risk.
+ *
+ * The subject key is the LESSON DATE, so correcting a register and saving it
+ * again does not send a second copy.
+ */
+export async function notifyAbsent(args: {
+  organizationId: string;
+  absentees: { studentId: string; name: string }[];
+  groupId: string;
+  groupName: string;
+  heldOn: string;
+}): Promise<void> {
+  for (const student of args.absentees) {
+    await sendAutoMessage({
+      organizationId: args.organizationId,
+      key: "absent_today",
+      recipientIds: [student.studentId],
+      values: { student: student.name, group: args.groupName },
+      href: "/assignments",
+      subjectKey: `${args.groupId}:${args.heldOn}`,
+    });
+  }
+}
+
+/**
+ * Two consecutive absences → tell the teacher and the centre admin
+ * (§12 `two_absences`).
+ *
+ * Goes to STAFF, not the student: §12's audience column, and the right one —
+ * this is the point where somebody should ring home, which is not a thing a
+ * notification to the absent student achieves.
+ */
+export async function notifyTwoAbsences(args: {
+  organizationId: string;
+  studentId: string;
+  studentName: string;
+  groupId: string;
+  groupName: string;
+  heldOn: string;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const [{ data: group }, { data: admins }] = await Promise.all([
+      admin.from("groups").select("teacher_id").eq("id", args.groupId).maybeSingle(),
+      admin
+        .from("profiles")
+        .select("id")
+        .eq("organization_id", args.organizationId)
+        .eq("role", "center_admin"),
+    ]);
+
+    const staff = [
+      ...((group?.teacher_id as string | null) ? [group!.teacher_id as string] : []),
+      ...((admins ?? []) as { id: string }[]).map((a) => a.id),
+    ];
+    if (staff.length === 0) return;
+
+    await sendAutoMessage({
+      organizationId: args.organizationId,
+      key: "two_absences",
+      recipientIds: staff,
+      values: { student: args.studentName, group: args.groupName },
+      href: `/console/attendance/${args.groupId}`,
+      subjectKey: `${args.studentId}:${args.heldOn}`,
+    });
+  } catch (err) {
+    console.error("[notify] two-absences fan-out failed:", err);
+  }
 }
 
 /**

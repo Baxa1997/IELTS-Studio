@@ -69,9 +69,9 @@ export function AnnouncementComposer({
         { value: "everyone", label: "Everyone" },
         { value: "students", label: "All students" },
         { value: "teachers", label: "All teachers" },
-        ...(groups.length > 0 ? [{ value: "group" as Audience, label: "One class" }] : []),
+        ...(groups.length > 0 ? [{ value: "group" as Audience, label: "One group" }] : []),
       ]
-    : [{ value: "group", label: "One class" }];
+    : [{ value: "group", label: "One group" }];
 
   const chosen = groups.find((g) => g.id === groupId);
   const reach = audience === "group" ? (chosen?.students ?? 0) : counts[audience];
@@ -123,7 +123,7 @@ export function AnnouncementComposer({
       {audience === "group" ? (
         <div style={{ marginBottom: 14 }}>
           <label htmlFor="ann-group" style={label}>
-            Which class
+            Which group
           </label>
           <select
             id="ann-group"
@@ -194,9 +194,9 @@ export function AnnouncementComposer({
               No Telegram channel connected
             </span>
             <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 2 }}>
-              This post reaches the app only. Connect a class channel from{" "}
+              This post reaches the app only. Connect a group channel from{" "}
               <Link href="/console/groups" style={{ color: INDIGO }}>
-                its class page
+                its group page
               </Link>{" "}
               → Settings → Telegram to reach parents too.
             </span>
@@ -245,7 +245,7 @@ export function AnnouncementComposer({
           {toTelegram ? (
             <div style={{ borderTop: "1px solid #DDEEF8", padding: "9px 12px 11px" }}>
               <span style={{ ...label, marginBottom: 7 }}>
-                {locked ? "Goes to this class's channel" : "Choose the channels"}
+                {locked ? "Goes to this group's channel" : "Choose the channels"}
               </span>
 
               {channels.map((c) => {
@@ -285,7 +285,7 @@ export function AnnouncementComposer({
               {targets.length === 0 ? (
                 <p style={{ fontSize: 11.5, color: "#A63A30", margin: "7px 0 0" }}>
                   {locked
-                    ? "This class has no channel connected — connect one on the class page."
+                    ? "This group has no channel connected — connect one on the group page."
                     : "Pick at least one channel, or untick Telegram."}
                 </p>
               ) : (

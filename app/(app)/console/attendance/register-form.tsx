@@ -17,12 +17,22 @@ const AMBER = "#B8791F";
 const RED = "#A63A30";
 const INK = "#16162E";
 
-type Status = "present" | "late" | "absent";
+type Status = "present" | "late" | "absent" | "excused";
 
+/**
+ * Four states, and `excused` is the one that keeps the alerts usable.
+ *
+ * An absence somebody rang about is not the same event as one nobody explained,
+ * and collapsing them means the two-absences alert fires on the student whose
+ * mother phoned. It is also not a softer "present": an excused student was not
+ * in the room, so they leave the attendance denominator entirely rather than
+ * counting as attendance.
+ */
 const OPTIONS: { value: Status; label: string; ink: string; bg: string }[] = [
   { value: "present", label: "Present", ink: GREEN, bg: "#EAF4EE" },
   { value: "late", label: "Late", ink: AMBER, bg: "#FDF2E3" },
   { value: "absent", label: "Absent", ink: RED, bg: "#FBEAE8" },
+  { value: "excused", label: "Excused", ink: "#4C4A63", bg: "#EFEEEA" },
 ];
 
 export interface RegisterStudent {
@@ -39,12 +49,16 @@ export function RegisterForm({
   heldOn,
   students,
   initial,
+  locked = false,
 }: {
   groupId: string;
   heldOn: string;
   students: RegisterStudent[];
   /** Marks already saved for this date, so re-opening shows what was recorded. */
   initial: Record<string, Status>;
+  /** Past its lock date. The form still renders — reading the register is the
+   *  point of keeping it — but nothing can be changed. */
+  locked?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(saveRegister, {} as ActionState);
   // Stays put: the register you just saved is the thing you want to keep
@@ -60,7 +74,7 @@ export function RegisterForm({
       acc[marks[s.id] ?? "present"] += 1;
       return acc;
     },
-    { present: 0, late: 0, absent: 0 } as Record<Status, number>,
+    { present: 0, late: 0, absent: 0, excused: 0 } as Record<Status, number>,
   );
 
   return (
@@ -83,10 +97,12 @@ export function RegisterForm({
       >
         <div style={{ fontSize: 12.5, color: "#7C7A93" }}>
           {counts.present} present · {counts.late} late · {counts.absent} absent
+          {counts.excused > 0 ? ` · ${counts.excused} excused` : ""}
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <button
             type="button"
+            disabled={locked}
             onClick={() =>
               setMarks(Object.fromEntries(students.map((s) => [s.id, "present" as Status])))
             }
@@ -106,7 +122,7 @@ export function RegisterForm({
           </button>
           <button
             type="submit"
-            disabled={pending || students.length === 0}
+            disabled={pending || locked || students.length === 0}
             className="cn-btn cn-btn--green"
             style={{
               background: GREEN,
@@ -117,11 +133,11 @@ export function RegisterForm({
               fontFamily: "inherit",
               fontSize: 12.5,
               fontWeight: 600,
-              cursor: pending ? "wait" : "pointer",
-              opacity: pending || students.length === 0 ? 0.6 : 1,
+              cursor: pending ? "wait" : locked ? "not-allowed" : "pointer",
+              opacity: pending || locked || students.length === 0 ? 0.6 : 1,
             }}
           >
-            {pending ? "Saving…" : "Save register"}
+            {pending ? "Saving…" : locked ? "Closed" : "Save register"}
           </button>
         </div>
       </div>
@@ -181,6 +197,7 @@ export function RegisterForm({
                     key={o.value}
                     type="button"
                     aria-pressed={on}
+                    disabled={locked}
                     onClick={() => setMarks((m) => ({ ...m, [s.id]: o.value }))}
                     style={{
                       borderRadius: 7,
@@ -188,7 +205,7 @@ export function RegisterForm({
                       fontFamily: "inherit",
                       fontSize: 12,
                       fontWeight: 500,
-                      cursor: "pointer",
+                      cursor: locked ? "default" : "pointer",
                       whiteSpace: "nowrap",
                       border: `1px solid ${on ? o.ink : "#E4E2DC"}`,
                       background: on ? o.bg : "#fff",
@@ -206,7 +223,7 @@ export function RegisterForm({
 
       {students.length === 0 ? (
         <div style={{ padding: 18, fontSize: 13, color: "#93919F" }}>
-          This class has no students yet, so there is nobody to mark.
+          This group has no students yet, so there is nobody to mark.
         </div>
       ) : null}
     </form>

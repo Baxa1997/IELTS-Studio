@@ -89,7 +89,9 @@ export async function loadWorkOverview(profile: Profile, limit = 30): Promise<Wo
   // Which class each student belongs to, for the row's second line. A student
   // in two of a teacher's classes shows the first — the report link covers both.
   const supabase = await createClient();
-  const { groups } = await loadGroups(profile);
+  // "all": a student whose course finished still has work in this list, and a
+  // blank group name beside it reads as a bug rather than as an archive.
+  const { groups } = await loadGroups(profile, { include: "all" });
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
   const { data: members } = await supabase
     .from("group_members")
@@ -105,11 +107,30 @@ export async function loadWorkOverview(profile: Profile, limit = 30): Promise<Wo
     classOf.set(m.student_id, { id: m.group_id, name: groupName.get(m.group_id) ?? "—" });
   }
 
+  // NAMES COME FROM THE ROSTER, NOT FROM THE WORK.
+  //
+  // This map used to be seeded with `name: "—"` and filled in from `recent`,
+  // which meant a student's name only appeared once they had handed something
+  // in. So the one list where the name matters most — "nothing back yet", the
+  // people you are about to chase — rendered a dash for every row, and a dash
+  // for their initials in the avatar beside it.
+  const rosterIds = [...classOf.keys()];
+  const nameOf = new Map<string, string>();
+  if (rosterIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", rosterIds);
+    for (const p of (profiles ?? []) as { id: string; full_name: string | null }[]) {
+      nameOf.set(p.id, p.full_name ?? "Unnamed");
+    }
+  }
+
   const byStudent = new Map<string, StudentSummary>();
   for (const [studentId, cls] of classOf) {
     byStudent.set(studentId, {
       studentId,
-      name: "—",
+      name: nameOf.get(studentId) ?? "Unnamed",
       groupName: cls.name,
       latestBand: null,
       done: 0,
@@ -157,9 +178,10 @@ export async function loadWorkOverview(profile: Profile, limit = 30): Promise<Wo
 export async function loadRecentWork(profile: Profile, limit = 30): Promise<RecentWorkRow[]> {
   const supabase = await createClient();
 
-  // Scope follows the classes this person may see: RLS narrows a teacher's
+  // Scope follows the groups this person may see: RLS narrows a teacher's
   // groups to their own, so the roster derived from them is already correct.
-  const { groups } = await loadGroups(profile);
+  // Closed groups included — their students' work still needs an owner.
+  const { groups } = await loadGroups(profile, { include: "all" });
   if (groups.length === 0) return [];
 
   const { data: members } = await supabase

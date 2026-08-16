@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FiBell, FiCheckCircle, FiChevronRight, FiClock, FiUsers } from "react-icons/fi";
+import { FiBell, FiCheckCircle, FiChevronRight, FiClock, FiLock, FiSlash, FiUsers } from "react-icons/fi";
 
 import {
   AMBER,
@@ -18,29 +18,32 @@ import {
 } from "@/components/console/crm-ui";
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
-import { loadAttendanceClasses } from "@/lib/console/attendance";
+import { loadDay } from "@/lib/console/attendance";
 import { loadAlertSettings } from "@/lib/console/alerts";
+import { loadCenterSettings } from "@/lib/console/center-settings";
+import { centerNow, registersToMark, type DayLesson } from "@/lib/console/schedule";
 
 import { AlertSettingsForm } from "./alert-settings-form";
 import { DateStrip } from "./date-strip";
 
 export const dynamic = "force-dynamic";
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
-
 /**
- * Attendance, step one: which class?
+ * Attendance, step one: which group?
  *
- * WHAT THIS REPLACED. A 300px column of class names beside a register, with the
- * first class auto-opened. On a teacher with one class that was fine; on a
- * center with fifteen it was a scrollable list of near-identical rows, and the
- * register on the right belonged to whichever class happened to sort first —
- * so the first thing you did was find your class and click it anyway.
+ * WHAT THIS REPLACED. A 300px column of group names beside a register, with the
+ * first one auto-opened. On a teacher with one group that was fine; on a center
+ * with fifteen it was a scrollable list of near-identical rows, and the register
+ * on the right belonged to whichever group happened to sort first — so the first
+ * thing you did was find yours and click it anyway.
  *
- * Now the classes ARE the page, and picking one goes to its register. That is
- * one more click for a teacher with a single class and several fewer for
- * everyone else, and it makes room for the thing the list never showed: which
- * classes actually meet today, and which of those still need marking.
+ * Now the groups ARE the page, and picking one goes to its register. The day's
+ * shape comes from `loadDay`, the same function the Overview reads, so the two
+ * pages can no longer disagree about what is on today.
+ *
+ * This page is OPERATIONAL ONLY — mark today, jump to a date. Attendance
+ * analysis belongs on the group page and in Results, where there is room to
+ * qualify it.
  */
 export default async function AttendancePage({
   searchParams,
@@ -51,27 +54,34 @@ export default async function AttendancePage({
   if (profile.role === "student") redirect("/dashboard");
 
   const sp = await searchParams;
-  const today = iso(new Date());
+  const settings = await loadCenterSettings();
+  // The center's day, not the server's. A UTC "today" shows yesterday's
+  // register until 05:00 in the market this is sold into.
+  const today = centerNow(settings.timezone).date;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(sp.date ?? "") ? (sp.date as string) : today;
 
   const isAdmin = profile.role === "center_admin";
-  const [classes, alerts] = await Promise.all([
-    loadAttendanceClasses(profile, date),
+  const [day, alerts] = await Promise.all([
+    loadDay(profile, date),
     isAdmin ? loadAlertSettings() : Promise.resolve(null),
   ]);
 
-  const due = classes.filter((c) => c.meetsToday);
-  const outstanding = due.filter((c) => c.state === "open");
-  const marked = classes.filter((c) => c.state === "marked").length;
+  const lessons = day.lessons;
+  const scheduled = lessons.filter((l) => l.scheduled && !l.cancelledReason);
+  const outstanding = scheduled.filter((l) => l.state === "open");
+  const overdue = registersToMark(day, day.timezone);
+  const marked = lessons.filter((l) => l.state === "marked").length;
 
   return (
     <div>
       <PageHead
         title="Attendance"
         subtitle={
-          due.length > 0
-            ? `${outstanding.length} of ${due.length} register${due.length === 1 ? "" : "s"} still to mark.`
-            : "Nothing is timetabled for this day — you can still mark any class."
+          day.holiday
+            ? `${day.holiday.name} — the center is closed, so no registers are expected.`
+            : scheduled.length > 0
+              ? `${outstanding.length} of ${scheduled.length} register${scheduled.length === 1 ? "" : "s"} still to mark.`
+              : "Nothing is timetabled for this day — you can still mark any group."
         }
         actions={
           isAdmin && alerts ? (
@@ -96,25 +106,56 @@ export default async function AttendancePage({
 
       <DateStrip date={date} today={today} />
 
+      {day.holiday ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "12px 16px",
+            marginBottom: 14,
+            background: "#FDF2E3",
+            border: "1px solid #F0DCBB",
+            borderRadius: 10,
+            fontFamily: SANS,
+            fontSize: 13,
+            color: "#8A5A12",
+          }}
+        >
+          <FiSlash size={15} aria-hidden />
+          <span>
+            <strong style={{ fontWeight: 600 }}>{day.holiday.name}</strong> — the center is closed.
+            No lessons run and no registers are expected.
+          </span>
+        </div>
+      ) : null}
+
       <KpiRow>
-        <Kpi label="Timetabled today" value={due.length} sub={`of ${classes.length} classes`} />
+        <Kpi
+          label="Timetabled"
+          value={scheduled.length}
+          sub={`of ${lessons.length} group${lessons.length === 1 ? "" : "s"}`}
+        />
         <Kpi
           label="Still to mark"
           value={outstanding.length}
           deltaTone={outstanding.length > 0 ? "bad" : "good"}
+          delta={overdue.length > 0 ? `${overdue.length} already finished` : undefined}
         />
         <Kpi label="Marked" value={marked} deltaTone="good" sub="on this day" />
         <Kpi
           label="Students covered"
-          value={classes.filter((c) => c.state === "marked").reduce((a, c) => a + c.students, 0)}
+          value={lessons.filter((l) => l.state === "marked").reduce((a, l) => a + l.students, 0)}
           sub="in the saved registers"
         />
       </KpiRow>
 
-      {classes.length === 0 ? (
+      {lessons.length === 0 ? (
         <Card>
-          <Empty>
-            No classes yet — a register belongs to one, so create a class and it appears here.
+          <Empty
+            action={{ href: "/console/groups", label: "Create a group →" }}
+          >
+            No groups yet — a register belongs to one.
           </Empty>
         </Card>
       ) : (
@@ -125,8 +166,8 @@ export default async function AttendancePage({
             gap: 14,
           }}
         >
-          {classes.map((c) => (
-            <ClassCard key={c.id} cls={c} date={date} />
+          {lessons.map((l) => (
+            <LessonCard key={l.groupId} lesson={l} date={date} />
           ))}
         </div>
       )}
@@ -134,21 +175,22 @@ export default async function AttendancePage({
   );
 }
 
-function ClassCard({
-  cls,
-  date,
-}: {
-  cls: Awaited<ReturnType<typeof loadAttendanceClasses>>[number];
-  date: string;
-}) {
-  const done = cls.state === "marked";
+function LessonCard({ lesson, date }: { lesson: DayLesson; date: string }) {
+  const done = lesson.state === "marked";
+  const cancelled = lesson.cancelledReason != null;
   // Scheduled-and-unmarked is the only state that needs chasing, so it is the
   // only one that gets a coloured edge. Everything else stays quiet.
-  const accent = done ? GREEN : cls.meetsToday ? AMBER : "#E4E2DC";
+  const accent = cancelled
+    ? "#E4E2DC"
+    : done
+      ? GREEN
+      : lesson.scheduled
+        ? AMBER
+        : "#E4E2DC";
 
   return (
     <Link
-      href={`/console/attendance/${cls.id}?date=${date}`}
+      href={`/console/attendance/${lesson.groupId}?date=${date}`}
       className="cn-row"
       style={{
         display: "block",
@@ -160,6 +202,7 @@ function ClassCard({
         borderRadius: 12,
         padding: "14px 16px",
         boxShadow: "0 1px 2px rgba(22,22,46,.04)",
+        opacity: cancelled ? 0.72 : 1,
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
@@ -174,14 +217,16 @@ function ClassCard({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              textDecoration: cancelled ? "line-through" : "none",
             }}
           >
-            {cls.name}
+            {lesson.groupName}
           </span>
           <span
             style={{ display: "block", fontFamily: SANS, fontSize: 12, color: FAINT, marginTop: 2 }}
           >
-            {cls.teacherName ?? "No teacher"}
+            {lesson.teacherName ?? "No teacher"}
+            {lesson.roomName ? ` · ${lesson.roomName}` : ""}
           </span>
         </span>
         <FiChevronRight size={16} color={FAINT} aria-hidden style={{ marginTop: 3 }} />
@@ -201,15 +246,15 @@ function ClassCard({
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
           <FiUsers size={13} aria-hidden />
-          {cls.students}
+          {lesson.students}
         </span>
-        {cls.timeLabel ? (
+        {lesson.timeLabel ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
             <FiClock size={13} aria-hidden />
-            {cls.timeLabel}
+            {lesson.timeLabel}
           </span>
         ) : null}
-        {cls.ratePct != null ? <span>{cls.ratePct}% overall</span> : null}
+        {lesson.ratePct != null ? <span>{lesson.ratePct}% overall</span> : null}
       </div>
 
       <div
@@ -223,20 +268,31 @@ function ClassCard({
           fontFamily: SANS,
           fontSize: 12.5,
           fontWeight: 600,
-          color: done ? GREEN : cls.meetsToday ? AMBER : FAINT,
+          color: cancelled ? FAINT : done ? GREEN : lesson.scheduled ? AMBER : FAINT,
         }}
       >
-        {done ? (
+        {cancelled ? (
+          <>
+            <FiSlash size={14} aria-hidden />
+            Cancelled
+            <span style={{ fontWeight: 400, color: MUTED }}>— {lesson.cancelledReason}</span>
+          </>
+        ) : done ? (
           <>
             <FiCheckCircle size={14} aria-hidden />
             Marked
-            {cls.presentToday != null ? (
+            {lesson.presentToday != null ? (
               <span style={{ fontWeight: 400, color: MUTED }}>
-                — {cls.presentToday} of {cls.students} in
+                — {lesson.presentToday} of {lesson.students} in
               </span>
             ) : null}
           </>
-        ) : cls.meetsToday ? (
+        ) : lesson.locked ? (
+          <>
+            <FiLock size={14} aria-hidden />
+            <span style={{ fontWeight: 400 }}>Closed — never marked</span>
+          </>
+        ) : lesson.scheduled ? (
           <>
             <FiClock size={14} aria-hidden />
             Register open
@@ -245,7 +301,7 @@ function ClassCard({
           <span style={{ fontWeight: 400 }}>Not timetabled today — mark anyway</span>
         )}
         <span style={{ marginLeft: "auto", color: INDIGO, fontWeight: 600 }}>
-          {done ? "Review" : "Mark"}
+          {done ? "Review" : cancelled ? "Open" : "Mark"}
         </span>
       </div>
     </Link>

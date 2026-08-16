@@ -9,7 +9,12 @@ import { gatherPayrollFacts, loadSalaryRules } from "@/lib/finance/payroll";
 import { isDate, monthStart, today } from "@/lib/finance/period";
 import { computePayroll } from "@/lib/finance/salary";
 import { loadLessonDatesFor } from "@/lib/finance/schedule";
-import { prorate } from "@/lib/finance/tuition";
+import {
+  billableUntil,
+  describeProration,
+  prorate,
+  type ClassMember,
+} from "@/lib/finance/tuition";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -481,10 +486,38 @@ export async function generateInvoices(
     .from("group_members")
     .select("student_id, joined_at")
     .eq("group_id", groupId);
-  const roster = ((members ?? []) as Record<string, unknown>[]).map((m) => ({
-    studentId: m.student_id as string,
-    joinedOn: m.joined_at ? String(m.joined_at).slice(0, 10) : null,
-  }));
+
+  // §6: "Paused students are excluded from ... invoices." Status lives on the
+  // profile, not the membership — a paused student is paused everywhere.
+  const memberIds = ((members ?? []) as Record<string, unknown>[]).map(
+    (m) => m.student_id as string,
+  );
+  const { data: people } = memberIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, member_status, status_changed_at")
+        .in("id", memberIds)
+    : { data: [] as Record<string, unknown>[] };
+  const statusOf = new Map(
+    ((people ?? []) as Record<string, unknown>[]).map((p) => [
+      p.id as string,
+      {
+        status: (p.member_status as string | null) ?? "active",
+        changedOn: p.status_changed_at ? String(p.status_changed_at).slice(0, 10) : null,
+      },
+    ]),
+  );
+
+  const roster: ClassMember[] = ((members ?? []) as Record<string, unknown>[]).map((m) => {
+    const id = m.student_id as string;
+    const st = statusOf.get(id);
+    return {
+      studentId: id,
+      joinedOn: m.joined_at ? String(m.joined_at).slice(0, 10) : null,
+      status: st?.status ?? "active",
+      statusChangedOn: st?.changedOn ?? null,
+    };
+  });
   if (roster.length === 0) return { error: "Nobody is enrolled in that class yet." };
 
   const { data: existing } = await supabase
@@ -506,27 +539,43 @@ export async function generateInvoices(
   // Mon/Wed/Fri class divides by its own 12 or 13 rather than by 30 days.
   const lessonDates = await loadLessonDatesFor(groupId, month);
   const dueOn = `${month.slice(0, 7)}-${String(settings.invoiceDueDay).padStart(2, "0")}`;
-  const rows = toCreate.map((m) => {
-    const p = prorate({
+
+  const priced = toCreate.map((m) => ({
+    member: m,
+    p: prorate({
       fullMinor: amount,
       lessonDates,
       joinedOn: m.joinedOn,
+      leftOn: billableUntil(m),
       month,
       fallbackLessons: settings.lessonsPerMonth,
-    });
+    }),
+  }));
+
+  // NO INVOICE AT ALL, rather than one for zero. A student who left in March
+  // owes this month nothing, and a 0 invoice would still appear on their
+  // statement, still be chased by the debtors report, and still have to be
+  // explained to whoever asks why it is there.
+  const billable = priced.filter(({ p }) => p.billed > 0 && p.amountMinor > 0);
+  const skipped = priced.length - billable.length;
+  if (billable.length === 0) {
     return {
-      organization_id: profile.organization_id,
-      student_id: m.studentId,
-      group_id: groupId,
-      period_month: month,
-      amount_minor: p.amountMinor,
-      lessons_billed: p.billed,
-      lessons_planned: p.planned,
-      due_on: dueOn,
-      created_by: profile.id,
-      note: p.partial ? `Joined ${m.joinedOn} — ${p.billed} of ${p.planned} lessons.` : null,
+      ok: `Nobody in ${group.name as string} is billable for this month — ${skipped} paused or left.`,
     };
-  });
+  }
+
+  const rows = billable.map(({ member: m, p }) => ({
+    organization_id: profile.organization_id,
+    student_id: m.studentId,
+    group_id: groupId,
+    period_month: month,
+    amount_minor: p.amountMinor,
+    lessons_billed: p.billed,
+    lessons_planned: p.planned,
+    due_on: dueOn,
+    created_by: profile.id,
+    note: p.partial ? describeProration(p, (d) => d) : null,
+  }));
 
   const { error } = await supabase.from("student_invoices").insert(rows);
   if (error) return { error: error.message };
@@ -536,7 +585,9 @@ export async function generateInvoices(
   return {
     ok:
       `${rows.length} invoice${rows.length === 1 ? "" : "s"} raised for ${group.name as string}` +
-      (partial > 0 ? `, ${partial} of them part-month for joining late.` : "."),
+      (partial > 0 ? `, ${partial} part-month` : "") +
+      (skipped > 0 ? `, ${skipped} skipped as paused or left` : "") +
+      ".",
   };
 }
 

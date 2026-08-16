@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { AttemptReview } from "@/components/console/attempt-review";
 import { EssayFeedback, type CriterionScore } from "@/components/writing/essay-feedback";
 import { cleanAnnotations } from "@/components/writing/annotations";
 import { requireOrgUser } from "@/lib/auth";
@@ -53,6 +54,7 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
 
   const taskType = essay.task_type as string;
   const criteria = (grading.criteria ?? {}) as Record<string, CriterionScore>;
+
   const blocker = (grading.score_blocker ?? null) as { criterion: string; why: string } | null;
   const annotations = cleanAnnotations(grading.annotations);
 
@@ -69,6 +71,22 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
       annotations={annotations}
       promptText={(promptRes.data?.prompt_text as string | null) ?? null}
       reviseHref={essay.prompt_id ? `/write/${essay.prompt_id as string}` : null}
-    />
+    >
+      {/* THE VERDICT, on the page the student already reads — deliberately not
+          a staff-only screen. These four report routes gate on RLS rather than
+          role, so a teacher and their student are looking at one artefact; two
+          views would let the band a parent is shown and the band a teacher
+          signed drift apart. */}
+      <div style={{ maxWidth: 760, margin: "0 auto" }}>
+        <AttemptReview
+          kind="writing"
+          refId={id}
+          aiBand={Number(grading.overall_band)}
+          aiCriteria={Object.fromEntries(
+            Object.entries(criteria).map(([k, v]) => [k, v?.band != null ? Number(v.band) : null]),
+          )}
+        />
+      </div>
+    </EssayFeedback>
   );
 }

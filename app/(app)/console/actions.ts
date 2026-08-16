@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getSession, type AppRole } from "@/lib/auth";
-import { recomputeSkillEstimate } from "@/lib/estimates/service";
+import { getSession } from "@/lib/auth";
 import { getGenerationQuota } from "@/lib/quota";
 import {
   generateWritingPrompt,
@@ -27,10 +26,6 @@ import {
   type ReadingModule,
   type StoredReadingPassage,
 } from "@/lib/reading/types";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
-
-const CAN_REVIEW: AppRole[] = ["center_admin", "teacher"];
 
 // Inviting members lives in ./groups/actions.ts (it also handles roles, group
 // binding and seat limits).
@@ -215,92 +210,18 @@ export async function reviewReadingAction(
 
 // ── Teacher grading override (the calibration flywheel) ──────────────────────
 
-export interface OverrideState {
-  error?: string;
-  newBand?: number;
-}
-
-/**
- * Teacher/admin adjusts an AI grading's band with a comment. We stamp the grading
- * (is_teacher_override = true, graded_by = the teacher, the human band) and append
- * an immutable grading_overrides row pairing the prior (AI) band with the human
- * band + rationale — the source data for new calibration anchors. The student's
- * writing estimate is then re-rolled off the corrected band.
+/*
+ * THE OVERRIDE ACTION USED TO LIVE HERE, and it has been removed rather than
+ * left dormant.
  *
- * Writes go through the RLS client, so Postgres independently enforces "teacher/
- * admin of this org only" on both the grading update and the override log.
+ * It wrote the human's band straight into `gradings.overall_band`, which is the
+ * column `v_gradable_attempts` now reads as the AI's answer. Leaving both paths
+ * in place would mean a teacher who found the old form could silently rewrite
+ * what the model said — destroying the (ai_band, human_band) pair that Phase 2
+ * exists to collect, and doing it invisibly, since the row would still look
+ * perfectly well-formed afterwards.
+ *
+ * Marking is now `reviewAttempt` in ./marking-actions.ts, which writes to
+ * `attempt_reviews` and never touches a grading row. See migration
+ * 20260816130000.
  */
-export async function overrideGradingAction(
-  _prev: OverrideState,
-  formData: FormData,
-): Promise<OverrideState> {
-  const actor = await currentActor();
-  if (!actor) return { error: "You are not signed in to an organization." };
-  if (!CAN_REVIEW.includes(actor.role)) {
-    return { error: "Only a teacher or center admin can override a grading." };
-  }
-
-  const gradingId = String(formData.get("gradingId") ?? "").trim();
-  if (!gradingId) return { error: "Missing grading id." };
-
-  const bandRaw = Number(formData.get("band"));
-  if (!Number.isFinite(bandRaw)) return { error: "Choose a band." };
-  const band = Math.round(bandRaw * 2) / 2; // snap to the 0.5 grid
-  if (band < 0 || band > 9) return { error: "Band must be between 0.0 and 9.0." };
-
-  const comment = String(formData.get("comment") ?? "").trim();
-  if (comment.length < 3) return { error: "Add a brief comment explaining the adjustment." };
-
-  const supabase = await createClient();
-  const { data: grading } = await supabase
-    .from("gradings")
-    .select("id, essay_id, organization_id, overall_band, version_no")
-    .eq("id", gradingId)
-    .maybeSingle();
-  if (!grading) return { error: "Grading not found." };
-
-  const { data: essay } = await supabase
-    .from("essays")
-    .select("student_id")
-    .eq("id", grading.essay_id)
-    .maybeSingle();
-
-  // Stamp the grading with the human verdict.
-  const { error: upErr } = await supabase
-    .from("gradings")
-    .update({ overall_band: band, is_teacher_override: true, graded_by: actor.userId })
-    .eq("id", gradingId);
-  if (upErr) return { error: upErr.message };
-
-  // Append the override to the log (the anchor source).
-  const { error: logErr } = await supabase.from("grading_overrides").insert({
-    grading_id: gradingId,
-    essay_id: grading.essay_id,
-    organization_id: grading.organization_id,
-    teacher_id: actor.userId,
-    previous_band: grading.overall_band,
-    new_band: band,
-    comment,
-    version_no: grading.version_no,
-  });
-  if (logErr) return { error: logErr.message };
-
-  // Re-roll the student's writing estimate off the corrected band (best-effort).
-  if (essay?.student_id) {
-    try {
-      const admin = createAdminClient();
-      await recomputeSkillEstimate(admin, {
-        studentId: essay.student_id,
-        organizationId: grading.organization_id,
-        skill: "writing",
-      });
-    } catch (err) {
-      console.error("[override] estimate recompute failed:", gradingId, err);
-    }
-  }
-
-  revalidatePath("/console/review");
-  revalidatePath(`/console/grading/${gradingId}`);
-  revalidatePath("/dashboard");
-  return { newBand: band };
-}

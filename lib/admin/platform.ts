@@ -420,6 +420,9 @@ export interface PlatformUser {
   orgName: string;
   orgKind: "personal" | "center";
   orgPlan: OrgPlan;
+  /** A suspended workspace cannot sign in — requireOrgUser bounces every member
+   *  to /awaiting-approval, so this is the real lock, not a cosmetic flag. */
+  orgStatus: string;
   /** Per-org overrides of the plan's monthly allowances. Null = use the plan's
    *  default. These already existed in the schema; nothing surfaced them. */
   gradingLimit: number | null;
@@ -500,7 +503,7 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
     select,
     admin
       .from("organizations")
-      .select("id, name, kind, plan, grading_monthly_limit, generation_monthly_limit"),
+      .select("id, name, kind, plan, status, grading_monthly_limit, generation_monthly_limit"),
   ]);
 
   const ids = (profiles ?? []).map((p) => p.id);
@@ -545,6 +548,7 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
       orgName: org?.name ?? "—",
       orgKind: (org?.kind ?? "personal") as "personal" | "center",
       orgPlan: (org?.plan ?? "trial") as OrgPlan,
+      orgStatus: (org?.status as string | null) ?? "active",
       gradingLimit: (org?.grading_monthly_limit as number | null) ?? null,
       generationLimit: (org?.generation_monthly_limit as number | null) ?? null,
       orgMemberCount: memberCount.get(p.organization_id) ?? 1,
@@ -552,4 +556,69 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
       practiceCount: practice.get(p.id) ?? 0,
     };
   });
+}
+
+export interface Engagement {
+  /** Learner profiles in total. */
+  learners: number;
+  /** Learners who have never produced a single piece of graded work. */
+  neverPractised: number;
+  /** Learners with at least one attempt in the last 30 days. */
+  activeLast30: number;
+  /** …and in the last 7, which is the number that moves week to week. */
+  activeLast7: number;
+}
+
+/**
+ * How many people who signed up have actually done anything.
+ *
+ * The single most useful number on the platform and the least flattering: a
+ * console that only counts sign-ups will always look like it is growing. This
+ * asks the harder question — of everyone who registered, how many produced one
+ * piece of work?
+ *
+ * Four id-only selects folded in memory rather than a join per table. The
+ * practice tables key on `student_id` (NOT `user_id` — they reference profiles,
+ * not auth users), which is the thing to check first if these ever read zero.
+ */
+export async function loadEngagement(): Promise<Engagement> {
+  const admin = createAdminClient();
+  const since = daysAgo(30);
+  const week = daysAgo(7);
+
+  const [profiles, essays, reading, listening, speaking] = await Promise.all([
+    admin.from("profiles").select("id").eq("role", "student"),
+    admin.from("essays").select("student_id, created_at"),
+    admin.from("reading_attempts").select("student_id, created_at"),
+    admin.from("listening_attempts").select("student_id, created_at"),
+    admin.from("speaking_sessions").select("student_id, started_at"),
+  ]);
+
+  const everyone = (profiles.data ?? []).map((p) => p.id as string);
+  const touched = new Set<string>();
+  const recent = new Set<string>();
+  const thisWeek = new Set<string>();
+
+  const absorb = (rows: { student_id?: string | null }[] | null, stamp: (r: never) => string) => {
+    for (const row of rows ?? []) {
+      const id = row.student_id;
+      if (!id) continue;
+      touched.add(id);
+      const at = stamp(row as never);
+      if (at >= since) recent.add(id);
+      if (at >= week) thisWeek.add(id);
+    }
+  };
+
+  absorb(essays.data, (r: { created_at: string }) => r.created_at);
+  absorb(reading.data, (r: { created_at: string }) => r.created_at);
+  absorb(listening.data, (r: { created_at: string }) => r.created_at);
+  absorb(speaking.data, (r: { started_at: string }) => r.started_at);
+
+  return {
+    learners: everyone.length,
+    neverPractised: everyone.filter((id) => !touched.has(id)).length,
+    activeLast30: everyone.filter((id) => recent.has(id)).length,
+    activeLast7: everyone.filter((id) => thisWeek.has(id)).length,
+  };
 }

@@ -80,6 +80,10 @@ interface Props {
   /** When set, a "Write it better" tab is shown that lazy-loads a single top-quality
    *  model answer for THIS task to study. Omit to hide the tab. */
   promptText?: string | null;
+  /** Rendered under the essay, in the scrolling column. The marking footer goes
+   *  here — who signed off this band and why — so a teacher and their student
+   *  read one report rather than two that can drift apart. */
+  children?: React.ReactNode;
 }
 
 /** A band-targeted model answer, as returned by /api/writing/samples. */
@@ -111,6 +115,7 @@ export function EssayFeedback({
   onRevise,
   disclaimer,
   promptText = null,
+  children,
 }: Props) {
   const ranges = matchRanges(essayText, annotations);
   const insights = useMemo(() => computeWritingInsights(essayText), [essayText]);
@@ -291,6 +296,7 @@ export function EssayFeedback({
             <div style={{ maxWidth: 760, margin: "0 auto", fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: "#262B3D", whiteSpace: "pre-wrap" }}>
               {ranges.length ? renderEssay(essayText, ranges, selected, pick) : essayText}
             </div>
+            {children}
             <p style={{ maxWidth: 760, margin: "26px auto 0", fontFamily: SANS, fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>{disclaimer ?? DEFAULT_DISCLAIMER}</p>
           </div>
         </main>

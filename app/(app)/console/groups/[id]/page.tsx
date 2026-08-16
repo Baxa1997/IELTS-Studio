@@ -32,7 +32,9 @@ import {
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
+import { attendanceRateFrom } from "@/lib/console/attendance-marks";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
+import { ENROLLED, STUDENT_STATUS_LABEL } from "@/lib/console/status";
 import { loadGroupActivity } from "@/lib/console/student-report";
 import { loadClassMoney } from "@/lib/finance/class-money";
 import { formatMoney, toMajor } from "@/lib/finance/money";
@@ -42,10 +44,12 @@ import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { AssignTeacherForm, DeleteGroupButton } from "../group-forms";
+import { AssignTeacherForm, CloseGroupButton, DeleteGroupButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { TelegramPanel } from "./telegram-panel";
+import { loadLibrary } from "@/lib/console/practice-library";
+
 import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
@@ -86,16 +90,24 @@ export default async function GroupDetailPage({
   const isOwner = isAdmin || group.teacherId === profile.id;
   if (!isOwner) notFound();
 
-  const memberIds = group.members.map((m) => m.id);
+  // DENOMINATORS ARE THE ENROLLED ROSTER. A student who left keeps their marks,
+  // their registers and their invoices — but counting them as a member makes
+  // every completion percentage and every "measured out of" look worse than the
+  // group is doing, for as long as the center exists.
+  const roster = group.members.filter((m) => ENROLLED.includes(m.status));
+  const alumni = group.members.filter((m) => m.status === "left");
+  const memberIds = roster.map((m) => m.id);
 
   // The shared reading library lives in its own org, so it's read with the
   // service-role client (exactly as the student read hub does).
   const admin = createAdminClient();
   const supabase = await createClient();
-  const [{ teachers }, assignments, activity, libTestsRes, estimatesRes] = await Promise.all([
-    isAdmin
-      ? loadGroups(profile)
-      : Promise.resolve({ teachers: [] as { id: string; name: string }[] }),
+  // Loaded for everyone now, not only the owner: a teacher needs the list of
+  // their OWN classes to move a student between them. `teachers` stays gated in
+  // the UI below, and RLS scopes both to what this person may touch anyway.
+  const [{ teachers, groups: manageable }, assignments, activity, libTestsRes, estimatesRes] =
+    await Promise.all([
+    loadGroups(profile),
     loadGroupAssignments(group.id),
     loadGroupActivity(memberIds),
     admin
@@ -129,7 +141,8 @@ export default async function GroupDetailPage({
       .from("lesson_slots")
       .select("series_id, weekday, starts_at, ends_at, room_id")
       .eq("group_id", group.id),
-    loadGroups(profile),
+    // "all": this page has to open for a closed group too.
+    loadGroups(profile, { include: "all" }),
   ]);
   // A class can hold SEVERAL independent bookings — the same class at 08:00 and
   // again at 15:30 is two series, four rows. Grouping by series_id keeps them
@@ -201,16 +214,28 @@ export default async function GroupDetailPage({
       marks.set(m.student_id, row);
     }
   }
+  // The shared definition, not a fourth one. This used to be
+  // `s !== "absent"`, which counted an excused lesson as attended and left it
+  // in the denominator — so this page and the payroll page reported different
+  // rates for the same class.
   const attendanceRate = (studentId: string) => {
     const row = marks.get(studentId);
     if (!row || row.size === 0) return null;
-    const attended = [...row.values()].filter((s) => s !== "absent").length;
-    return Math.round((attended / row.size) * 100);
+    return attendanceRateFrom(row.values());
   };
 
   const libraryTests = (libTestsRes.data ?? []).map((t, i) => ({
     id: t.id as string,
     label: t.target_band ? `Test ${i + 1} — band ${t.target_band} level` : `Test ${i + 1}`,
+  }));
+
+  // §9's shelf, offered here so setting practice can reuse rather than
+  // regenerate. Kept to what is unarchived and current.
+  const shelf = (await loadLibrary()).map((item) => ({
+    id: item.id,
+    title: item.title,
+    skill: item.skill,
+    level: item.level,
   }));
 
   // Per-student bands. The weakest measured skill, never a cross-skill mean —
@@ -237,23 +262,51 @@ export default async function GroupDetailPage({
     return measured.length ? measured.reduce((lo, m) => (m.band < lo.band ? m : lo)) : null;
   };
 
-  const measuredMembers = group.members
+  const measuredMembers = roster
     .map((m) => ({ ...m, weakest: weakestOf(m.id), target: targets.get(m.id) ?? null }))
     .filter((m) => m.weakest != null);
   const atTarget = measuredMembers.filter(
     (m) => m.target != null && (m.weakest as { band: number }).band >= m.target,
   ).length;
-  const activeCount = group.members.filter((m) => (activity.get(m.id)?.count30d ?? 0) > 0).length;
+  const activeCount = roster.filter((m) => (activity.get(m.id)?.count30d ?? 0) > 0).length;
   const totalCompleted = assignments.reduce((n, a) => n + a.completed, 0);
   const completionPct =
-    assignments.length > 0 && group.members.length > 0
-      ? Math.round((totalCompleted / (assignments.length * group.members.length)) * 100)
+    assignments.length > 0 && roster.length > 0
+      ? Math.round((totalCompleted / (assignments.length * roster.length)) * 100)
       : null;
 
   // The class list, learning data and account data joined into one shape —
   // both the table and the CSV export read this, so what you download is
   // exactly what you were looking at.
-  const studentRows = group.members.map((m) => {
+  // An address given twice in one roster is a shared parent inbox, which the
+  // enrolment form deliberately allows. Counted once so the row can say so.
+  const emailUses = new Map<string, number>();
+  for (const m of roster) {
+    const key = (m.contactEmail ?? "").toLowerCase();
+    if (key) emailUses.set(key, (emailUses.get(key) ?? 0) + 1);
+  }
+
+  // The other classes this person manages — the destinations a student can be
+  // moved to. RLS already scopes `loadGroups` to what they may touch, so an
+  // empty list genuinely means there is nowhere to move anybody.
+  const siblingGroups = manageable
+    .filter((g) => g.id !== group.id)
+    .map((g) => ({ id: g.id, name: g.name }));
+
+  // What each student still owes for this month, for the Move-or-remove sheet.
+  // Only the owner sees money on this page, so a teacher's sheet simply omits
+  // the line rather than showing them a figure they are not shown anywhere else.
+  const owedByStudent = new Map<string, string>();
+  if (moneyData) {
+    for (const [studentId, row] of moneyData.rows) {
+      const owed = (row.invoicedMinor ?? 0) - row.paidMinor;
+      if (owed > 0) {
+        owedByStudent.set(studentId, `${formatMoney(owed, moneyData.currency)} owed`);
+      }
+    }
+  }
+
+  const studentRows = roster.map((m) => {
     const weakest = weakestOf(m.id);
     const act = activity.get(m.id);
     return {
@@ -261,6 +314,7 @@ export default async function GroupDetailPage({
       name: m.name,
       login: m.login,
       contactEmail: m.contactEmail,
+      sharesEmail: (emailUses.get((m.contactEmail ?? "").toLowerCase()) ?? 0) > 1,
       joinedAt: m.joinedAt,
       photoUrl: m.photoUrl,
       weakestSkill: weakest?.skill ?? null,
@@ -268,6 +322,8 @@ export default async function GroupDetailPage({
       targetBand: targets.get(m.id) ?? null,
       practice30d: act?.count30d ?? 0,
       lastActive: act?.lastActive ?? null,
+      status: m.status ?? "active",
+      owedLabel: owedByStudent.get(m.id) ?? null,
     };
   });
 
@@ -281,8 +337,8 @@ export default async function GroupDetailPage({
         title={group.name}
         subtitle={
           <>
-            {group.teacherName ? group.teacherName : "No teacher assigned"} · {group.members.length}{" "}
-            student{group.members.length === 1 ? "" : "s"} · {assignments.length} practice
+            {group.teacherName ? group.teacherName : "No teacher assigned"} · {roster.length}{" "}
+            student{roster.length === 1 ? "" : "s"} · {assignments.length} practice
             {assignments.length === 1 ? "" : "s"} set
           </>
         }
@@ -291,7 +347,7 @@ export default async function GroupDetailPage({
             label="Settings"
             variant="ghost"
             eyebrow={group.name}
-            title="Class settings"
+            title="Group settings"
             note="The things you set once: who teaches it, where it announces, whether it exists."
           >
             <div style={{ display: "grid", gap: 20 }}>
@@ -338,7 +394,16 @@ export default async function GroupDetailPage({
                     teacherId={group.teacherId}
                     teachers={teachers}
                   />
-                  <div style={{ borderTop: `1px solid ${LINE}`, marginTop: 18, paddingTop: 16 }}>
+                  <div
+                    style={{
+                      borderTop: `1px solid ${LINE}`,
+                      marginTop: 18,
+                      paddingTop: 16,
+                      display: "grid",
+                      gap: 18,
+                    }}
+                  >
+                    <CloseGroupButton groupId={group.id} status={group.status} />
                     <DeleteGroupButton groupId={group.id} />
                   </div>
                 </section>
@@ -351,7 +416,7 @@ export default async function GroupDetailPage({
       <KpiRow>
         <Kpi
           label="Students"
-          value={group.members.length}
+          value={roster.length}
           sub={`${activeCount} active in 30 days`}
         />
         <Kpi label="Practice set" value={assignments.length} />
@@ -361,12 +426,12 @@ export default async function GroupDetailPage({
           sub={
             assignments.length === 0
               ? "nothing set yet"
-              : `${totalCompleted} of ${assignments.length * group.members.length} finished`
+              : `${totalCompleted} of ${assignments.length * roster.length} finished`
           }
         />
         <Kpi
           label="Measured"
-          value={`${measuredMembers.length}/${group.members.length}`}
+          value={`${measuredMembers.length}/${roster.length}`}
           sub="have a graded band"
         />
         <Kpi
@@ -407,7 +472,7 @@ export default async function GroupDetailPage({
                 Everyone in the group gets the same prompt or test, so their results are comparable.
                 You can also set practice from the Writing, Reading or Listening screens themselves.
               </CardNote>
-              <AssignPanel groupId={group.id} libraryTests={libraryTests} />
+              <AssignPanel groupId={group.id} libraryTests={libraryTests} library={shelf} />
             </Card>
           ) : null}
 
@@ -419,8 +484,8 @@ export default async function GroupDetailPage({
             />
             {assignments.map((a) => {
               const pct =
-                group.members.length > 0
-                  ? Math.round((a.completed / group.members.length) * 100)
+                roster.length > 0
+                  ? Math.round((a.completed / roster.length) * 100)
                   : 0;
               return (
                 <ListRow
@@ -456,7 +521,7 @@ export default async function GroupDetailPage({
                         }}
                       >
                         <span>
-                          {a.completed}/{group.members.length} submitted
+                          {a.completed}/{roster.length} submitted
                         </span>
                         <span>{pct}%</span>
                       </div>
@@ -490,7 +555,7 @@ export default async function GroupDetailPage({
             </p>
           ) : (
             <>
-              {group.members.map((m) => {
+              {roster.map((m) => {
                 const row = marks.get(m.id);
                 const rate = attendanceRate(m.id);
                 return (
@@ -618,7 +683,7 @@ export default async function GroupDetailPage({
             <Kpi
               label="Tuition this month"
               value={formatMoney(moneyData.expectedMinor, moneyData.currency)}
-              sub={`${group.members.length} student${group.members.length === 1 ? "" : "s"} at the current price`}
+              sub={`${roster.length} student${roster.length === 1 ? "" : "s"} at the current price`}
             />
             <Kpi
               label="Invoiced"
@@ -657,7 +722,7 @@ export default async function GroupDetailPage({
                 cols={MONEY_COLS}
                 labels={["Student", "This month", "Invoiced", "Paid", "Teacher earns"]}
               />
-              {group.members.map((m) => {
+              {roster.map((m) => {
                 const row = moneyData.rows.get(m.id);
                 const tuition = row?.tuition ?? null;
                 const explain = tuition ? describeProration(tuition, prettyDate) : null;
@@ -707,8 +772,10 @@ export default async function GroupDetailPage({
                   </TRow>
                 );
               })}
-              {group.members.length === 0 ? (
-                <Empty>Nobody is enrolled, so there is nothing to charge.</Empty>
+              {roster.length === 0 ? (
+                <Empty action={{ href: `/console/groups/${group.id}`, label: "Add students →" }}>
+                  Nobody is enrolled, so there is nothing to charge.
+                </Empty>
               ) : null}
             </Table>
           </Card>
@@ -729,12 +796,12 @@ export default async function GroupDetailPage({
             <CardHead
               title={
                 group.capacity
-                  ? `Students (${group.members.length}/${group.capacity})`
-                  : `Students (${group.members.length})`
+                  ? `Students (${roster.length}/${group.capacity})`
+                  : `Students (${roster.length})`
               }
               note={
-                group.capacity && group.members.length >= group.capacity
-                  ? `This class is full — ${group.members.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
+                group.capacity && roster.length >= group.capacity
+                  ? `This group is full — ${roster.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
                   : "Everyone here signs in with their own login — that is how homework is handed in and graded."
               }
               actions={
@@ -746,8 +813,34 @@ export default async function GroupDetailPage({
                 />
               }
             />
-            <StudentsManager groupId={group.id} students={studentRows} />
+            <StudentsManager
+              groupId={group.id}
+              students={studentRows}
+              otherGroups={siblingGroups}
+            />
           </Card>
+
+          {/* Students who left. Kept on the page and out of every count above
+              it — someone asks about last term's student, and "we deleted
+              them" is not an answer a center can give a parent. */}
+          {alumni.length > 0 ? (
+            <Card flush>
+              <CardHead
+                title={`Left this group (${alumni.length})`}
+                divided
+                note="their marks, registers and invoices are untouched"
+              />
+              {alumni.map((m) => (
+                <ListRow
+                  key={m.id}
+                  href={`/console/students/${m.id}`}
+                  title={m.name}
+                  meta={m.login ?? "no login"}
+                  trail={<Tag tone="neutral">{STUDENT_STATUS_LABEL[m.status]}</Tag>}
+                />
+              ))}
+            </Card>
+          ) : null}
 
           {group.pendingInvites.length > 0 ? (
             <Card flush>

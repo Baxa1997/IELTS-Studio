@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
+  BandCell,
   AMBER,
   Avatar,
   Bar,
@@ -22,7 +23,7 @@ import {
 } from "@/components/console/crm-ui";
 import { PanelButton } from "@/components/console/console-chrome";
 import { requireOrgUser } from "@/lib/auth";
-import { loadGroups } from "@/lib/console/groups";
+import { loadGroups, type GroupStatus } from "@/lib/console/groups";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,13 +32,23 @@ export const dynamic = "force-dynamic";
 /** The chips above the grid. Each is a predicate over the same list, so the
  *  count on the chip and the cards below it can never disagree. */
 const FILTERS = {
-  all: { label: "All", test: () => true },
+  // "All" means all the RUNNING ones. A finished course is not deleted, it is
+  // archived, and it lives behind its own chip rather than padding every count
+  // on this page for the rest of the center's life.
+  all: { label: "All", test: (g: Card_) => g.status === "active" },
   running: {
     label: "Active",
-    test: (g: Card_) => g.teacherName != null && g.assignments > 0,
+    test: (g: Card_) => g.status === "active" && g.teacherName != null && g.assignments > 0,
   },
-  // nopractice: { label: "No practice set", test: (g: Card_) => g.assignments === 0 },
-  noteacher: { label: "No teacher", test: (g: Card_) => g.teacherName == null },
+  nopractice: {
+    label: "No practice set",
+    test: (g: Card_) => g.status === "active" && g.assignments === 0,
+  },
+  noteacher: {
+    label: "No teacher",
+    test: (g: Card_) => g.status === "active" && g.teacherName == null,
+  },
+  closed: { label: "Closed", test: (g: Card_) => g.status === "closed" },
 } as const;
 
 type FilterKey = keyof typeof FILTERS;
@@ -49,11 +60,14 @@ const mean = (xs: number[]) =>
 interface Card_ {
   id: string;
   name: string;
+  status: GroupStatus;
   teacherName: string | null;
   students: number;
+  paused: number;
   assignments: number;
   completionPct: number | null;
-  averageBand: number | null;
+  /** Writing, with its count. Never a mean across skills. */
+  writing: { band: number | null; attempts: number; provisional: boolean };
   attendancePct: number | null;
 }
 
@@ -73,7 +87,9 @@ export default async function GroupsPage({
 
   const supabase = await createClient();
   const [{ groups }, report, membersRes, ratesRes] = await Promise.all([
-    loadGroups(profile),
+    // "all" so the archive is reachable — the chips do the filtering, and a
+    // closed group that vanishes from the interface entirely looks like data loss.
+    loadGroups(profile, { include: "all" }),
     loadCenterReport({ role: profile.role, profileId: profile.id }),
     supabase.from("group_members").select("group_id, student_id"),
     supabase.from("v_student_attendance").select("student_id, rate_pct"),
@@ -102,11 +118,13 @@ export default async function GroupsPage({
     return {
       id: g.id,
       name: g.name,
+      status: g.status,
       teacherName: g.teacherName,
       students: g.memberCount,
+      paused: g.pausedCount,
       assignments: r?.assignments ?? 0,
       completionPct: r?.completionPct ?? null,
-      averageBand: r?.averageBand ?? null,
+      writing: r?.writing ?? { band: null, attempts: 0, provisional: false },
       attendancePct: mean(ratesByGroup.get(g.id) ?? []),
     };
   });
@@ -206,20 +224,30 @@ export default async function GroupsPage({
   );
 }
 
-/** One class as a card: who runs it, how full it is, and how it's doing. */
+/** One group as a card: who runs it, how full it is, and how it's doing. */
 function GroupCard({ group: g }: { group: Card_ }) {
+  // Closed wins over everything: a finished course with no teacher assigned is
+  // not a problem to fix, and badging it red sends someone to fix it.
   const status: { label: string; tone: Tone } =
-    g.teacherName == null
-      ? { label: "No teacher", tone: "red" }
-      : g.assignments === 0
-        ? { label: "No practice", tone: "amber" }
-        : { label: "Active", tone: "green" };
+    g.status === "closed"
+      ? { label: "Closed", tone: "neutral" }
+      : g.teacherName == null
+        ? { label: "No teacher", tone: "red" }
+        : g.assignments === 0
+          ? { label: "No practice", tone: "amber" }
+          : { label: "Active", tone: "green" };
 
   return (
     <Link
       href={`/console/groups/${g.id}`}
       className="cn-tile"
-      style={{ ...cardStyle, padding: 16, textDecoration: "none", display: "block" }}
+      style={{
+        ...cardStyle,
+        padding: 16,
+        textDecoration: "none",
+        display: "block",
+        opacity: g.status === "closed" ? 0.72 : 1,
+      }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -271,6 +299,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
       >
         <span>
           {g.students} student{g.students === 1 ? "" : "s"}
+          {g.paused > 0 ? ` · ${g.paused} paused` : ""}
         </span>
         <span>{g.completionPct == null ? "not started" : `${g.completionPct}% completed`}</span>
       </div>
@@ -292,7 +321,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
           paddingTop: 12,
         }}
       >
-        <Stat label="Avg band" value={g.averageBand?.toFixed(1) ?? "—"} />
+        <Stat label="Writing" value={<BandCell figure={g.writing} unit="essays" />} />
         <Stat label="Completion" value={g.completionPct == null ? "—" : `${g.completionPct}%`} />
         <Stat label="Attendance" value={g.attendancePct == null ? "—" : `${g.attendancePct}%`} />
       </div>

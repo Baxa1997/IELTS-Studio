@@ -26,7 +26,7 @@ const AUDIENCE_LABEL: Record<string, string> = {
   everyone: "Everyone",
   students: "All students",
   teachers: "All teachers",
-  group: "One class",
+  group: "One group",
 };
 
 export interface SentRow {
@@ -233,7 +233,7 @@ function TelegramGuide({
             <b>Create the Telegram group or channel</b> for the class, if it doesn&apos;t exist.
           </li>
           <li style={step}>
-            <b>Open the class</b> → Settings → Telegram, and press <i>Connect Telegram</i>, then{" "}
+            <b>Open the group</b> → Settings → Telegram, and press <i>Connect Telegram</i>, then{" "}
             <i>Add to a group</i>.
           </li>
           <li style={step}>

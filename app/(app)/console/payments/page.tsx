@@ -51,7 +51,9 @@ export default async function PaymentsPage() {
   const [settings, people, { groups }, desksRes, categoriesRes, paymentsRes] = await Promise.all([
     loadFinanceSettings(),
     loadFinancePeople(),
-    loadGroups(profile),
+    // Arrears get paid after a course ends; refusing to record that is worse
+    // than offering a finished group in the picker.
+    loadGroups(profile, { include: "all" }),
     supabase.from("finance_accounts").select("id, name").eq("active", true).order("name"),
     supabase.from("finance_categories").select("id, name, slug").eq("direction", "in").order("name"),
     // RLS narrows this to direction='in' for an administrator (migration
@@ -153,10 +155,12 @@ export default async function PaymentsPage() {
 
       <Card>
         {payments.length === 0 ? (
-          <Empty>Nothing taken yet this month.</Empty>
+          <Empty action={{ href: "/console/finance/invoices", label: "See what is owed →" }}>
+            Nothing taken yet this month.
+          </Empty>
         ) : (
           <Table cols={COLS}>
-            <THead cols={COLS} labels={["Date", "Student", "Class", "Method", "Amount"]} />
+            <THead cols={COLS} labels={["Date", "Student", "Group", "Method", "Amount"]} />
             <tbody>
               {payments.map((p) => (
                 <TRow key={p.id as string} cols={COLS}>

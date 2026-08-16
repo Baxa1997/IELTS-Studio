@@ -6,10 +6,11 @@ import { loadFinanceSettings } from "./load";
 import { nameMap, peopleMap } from "./names";
 import { monthEnd, monthStart } from "./period";
 import { loadLessonDates } from "./schedule";
-import { chargeClass, teacherBillForClass } from "./tuition";
+import { chargeClass, teacherBillForClass, type ClassMember } from "./tuition";
 import {
   emptyGroupFacts,
   type GroupFacts,
+  markCounts,
   parseComponents,
   type PayrollComputation,
   type SalaryRule,
@@ -124,19 +125,52 @@ export async function gatherPayrollFacts(periodMonthInput: string): Promise<Teac
     groups.map((g) => [g.id, emptyGroupFacts(g.id, g.name)]),
   );
 
-  // Roster as it stood at the end of the month. There is no leave date on
-  // group_members, so a student who left mid-month still counts — the honest
-  // limitation, and the reason `paid` and `attended` headcounts exist.
-  const roster = new Map<string, { studentId: string; joinedOn: string | null }[]>();
+  // Roster as it stood during the month, both ends of it.
+  //
+  // THIS USED TO SAY "there is no leave date on group_members, so a student who
+  // left mid-month still counts — the honest limitation". There is one now:
+  // Phase 1 added profiles.member_status and status_changed_at. Until this was
+  // wired up a teacher was paid a per-student rate for students who had left
+  // the centre months earlier, every month, for ever.
+  const rosterIds = ((membersRes.data ?? []) as Record<string, unknown>[]).map(
+    (m) => m.student_id as string,
+  );
+  const { data: people } = rosterIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, member_status, status_changed_at")
+        .in("id", rosterIds)
+    : { data: [] as Record<string, unknown>[] };
+  const statusOf = new Map(
+    ((people ?? []) as Record<string, unknown>[]).map((p) => [
+      p.id as string,
+      {
+        status: (p.member_status as string | null) ?? "active",
+        changedOn: p.status_changed_at ? String(p.status_changed_at).slice(0, 10) : null,
+      },
+    ]),
+  );
+
+  const roster = new Map<string, ClassMember[]>();
   for (const m of (membersRes.data ?? []) as Record<string, unknown>[]) {
     const joined = String(m.joined_at ?? "").slice(0, 10);
     if (joined && joined > to) continue;
     const gid = m.group_id as string;
     const f = facts.get(gid);
     if (!f) continue;
+    const id = m.student_id as string;
+    const s = statusOf.get(id);
+    // `studentsEnrolled` is the NAMES on the roster and stays the headcount a
+    // teacher would recognise; `studentsProrated` below is what the money says.
+    // The two differ exactly when somebody left, which is the point.
     f.studentsEnrolled += 1;
     if (!roster.has(gid)) roster.set(gid, []);
-    roster.get(gid)!.push({ studentId: m.student_id as string, joinedOn: joined || null });
+    roster.get(gid)!.push({
+      studentId: id,
+      joinedOn: joined || null,
+      status: s?.status ?? "active",
+      statusChangedOn: s?.changedOn ?? null,
+    });
   }
 
   // What each class's own teacher rate comes to, prorated by the lessons each
@@ -205,14 +239,36 @@ export async function gatherPayrollFacts(periodMonthInput: string): Promise<Teac
         "session_id",
         sessions.map((s) => s.id as string),
       );
+    // EXCUSED IS NOT ATTENDED, AND IT IS NOT ABSENT EITHER.
+    //
+    // This used to read `if (m.status !== "absent")`, which was exactly
+    // "present or late" for as long as those were the only three marks. Phase 1
+    // added `excused` (20260816120000) and silently changed the meaning of
+    // every line below it: a student whose mother phoned ahead started counting
+    // as a student-lesson taught.
+    //
+    // Three things went wrong at once. `studentLessons` is a salary basis paid
+    // per student-lesson, so the teacher was paid for lessons nobody sat.
+    // `attendanceRatePct` divides it by `attendanceMarks`, so payroll reported
+    // a different attendance rate from the attendance page for the same class —
+    // and one number with two definitions is the thing this restructure exists
+    // to remove. And `studentsAttended` counted a student who was excused every
+    // week as somebody who turned up.
+    //
+    // The definition here is now the one `v_student_attendance` uses, because
+    // there should only be one: attended means present or late, and an excused
+    // lesson leaves the denominator altogether rather than counting against
+    // anybody.
     const attended = new Map<string, Set<string>>();
     for (const m of (marks ?? []) as Record<string, unknown>[]) {
       const gid = sessionGroup.get(m.session_id as string);
       if (!gid) continue;
       const f = facts.get(gid);
       if (!f) continue;
+      const counted = markCounts(m.status as string);
+      if (!counted.inDenominator) continue;
       f.attendanceMarks += 1;
-      if (m.status !== "absent") {
+      if (counted.attended) {
         f.studentLessons += 1;
         if (!attended.has(gid)) attended.set(gid, new Set());
         attended.get(gid)!.add(m.student_id as string);

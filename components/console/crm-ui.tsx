@@ -583,9 +583,70 @@ export function PersonCell({
 }
 
 /** Empty state inside a flush Card. */
-export function Empty({ children }: { children: React.ReactNode }) {
+/**
+ * Nothing here yet — and the one thing that would change that.
+ *
+ * The `action` is not decoration. "Nothing graded yet" is a dead end that leaves
+ * the reader to work out whose job it is and where they'd go; "Nothing graded
+ * yet — set the first practice →" is the same sentence with the way out
+ * attached. Every empty state in the console takes one, and the few that
+ * genuinely have no action (a filter that matched nothing) say so instead.
+ */
+export function Empty({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: { href: string; label: string };
+}) {
   return (
-    <div style={{ fontFamily: SANS, fontSize: 13, color: FAINT, padding: "18px" }}>{children}</div>
+    <div style={{ fontFamily: SANS, fontSize: 13, color: FAINT, padding: "18px" }}>
+      {children}
+      {action ? (
+        <>
+          {" "}
+          <Link
+            href={action.href}
+            style={{ color: INDIGO, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}
+          >
+            {action.label}
+          </Link>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A band, and what it rests on. Never one without the other.
+ *
+ * R3 of the restructure: `1.0` printed alone in a table cell is noise dressed
+ * as a measurement, and a center owner who quotes it to a parent finds out the
+ * hard way that it came from one essay. Under three attempts the number greys
+ * and says `provisional` — still visible, because hiding it is its own kind of
+ * lie, but impossible to mistake for a finding.
+ *
+ * Structurally typed on purpose: `SkillFigure` lives in a server-only module,
+ * and this has to render in both worlds.
+ */
+export function BandCell({
+  figure,
+  unit = "attempts",
+}: {
+  figure: { band: number | null; attempts: number; provisional: boolean };
+  unit?: string;
+}) {
+  if (figure.band == null) {
+    return <span style={{ color: FAINT, fontWeight: 400 }}>not measured</span>;
+  }
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+      <span style={{ color: figure.provisional ? MUTED : INK }}>{figure.band.toFixed(1)}</span>
+      <span style={{ fontSize: 11, fontWeight: 400, color: FAINT, whiteSpace: "nowrap" }}>
+        {figure.attempts} {figure.attempts === 1 ? unit.replace(/s$/, "") : unit}
+        {figure.provisional ? " · provisional" : ""}
+      </span>
+    </span>
   );
 }
 

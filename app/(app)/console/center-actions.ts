@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { canManagePeople, requireOrgUser } from "@/lib/auth";
-import { notify } from "@/lib/notifications/send";
+import {
+  AUTO_MESSAGE_BY_KEY,
+  validateTemplate,
+  type AutoMessageKey,
+} from "@/lib/console/auto-messages";
+import { notify, notifyAbsent, notifyTwoAbsences } from "@/lib/notifications/send";
 import { createClient } from "@/lib/supabase/server";
 import { sendAnnouncementTelegram } from "@/lib/telegram/send";
 
@@ -21,7 +26,16 @@ export interface ActionState {
   ok?: string;
 }
 
-const STATUSES = new Set(["present", "late", "absent"]);
+/**
+ * The four marks a register can carry.
+ *
+ * `excused` is the one that earns its keep. Without it every "my mother phoned
+ * ahead" absence looks identical to a truancy, the two-absences alert fires on
+ * the wrong student, and a teacher learns within a fortnight to ignore the
+ * alerts entirely. It is not a softer absent — it leaves the attendance
+ * denominator altogether (see `v_student_attendance`).
+ */
+const STATUSES = new Set(["present", "late", "absent", "excused"]);
 
 /* ── attendance ───────────────────────────────────────────────────────────── */
 
@@ -38,7 +52,7 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
 
   const groupId = String(formData.get("group_id") ?? "").trim();
   const heldOn = String(formData.get("held_on") ?? "").trim();
-  if (!groupId) return { error: "Pick a class first." };
+  if (!groupId) return { error: "Pick a group first." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(heldOn)) return { error: "Pick a valid date." };
 
   const marks: { student_id: string; status: string }[] = [];
@@ -58,7 +72,7 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
     .select("id")
     .eq("id", groupId)
     .maybeSingle();
-  if (!group) return { error: "Class not found." };
+  if (!group) return { error: "Group not found." };
 
   // One register per group per day — re-saving corrects the same row rather
   // than stacking a second one.
@@ -90,14 +104,415 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
     })),
     { onConflict: "session_id,student_id" },
   );
+  // The 7-day lock is a database trigger and it raises a sentence, not a code
+  // — "This register closed on 09 Aug 2026 …" — so the message passes straight
+  // through rather than being translated twice.
   if (marksError) return { error: marksError.message };
+
+  // §12's two attendance messages. After the save, never before: a message
+  // about an absence that failed to record is worse than no message. Both are
+  // best-effort and both are off unless the centre turned them on.
+  await announceAbsences({
+    organizationId: profile.organization_id,
+    groupId,
+    heldOn,
+    absentIds: marks.filter((m) => m.status === "absent").map((m) => m.student_id),
+  });
 
   revalidatePath("/console/attendance");
   revalidatePath(`/console/groups/${groupId}`);
+  const inRoom = marks.filter((m) => m.status === "present" || m.status === "late").length;
   const absent = marks.filter((m) => m.status === "absent").length;
+  const excused = marks.filter((m) => m.status === "excused").length;
   return {
-    ok: `Register saved — ${marks.length - absent} in, ${absent} absent.`,
+    ok:
+      `Register saved — ${inRoom} in, ${absent} absent` +
+      (excused > 0 ? `, ${excused} excused.` : "."),
   };
+}
+
+/**
+ * Tell whoever §12 says to tell about today's absences.
+ *
+ * TWO-IN-A-ROW IS COMPUTED HERE RATHER THAN REUSED FROM THE ALERT CATALOGUE.
+ * `twoAbsencesInARow` answers "who is currently in this state across the whole
+ * centre" for the Today panel; this needs "who entered it because of the
+ * register just saved", scoped to one group. Same rule, different question —
+ * and using the panel's version would re-notify staff about a student who has
+ * been on two-in-a-row since last week.
+ *
+ * `excused` drops out of the sequence entirely, matching the alert and the
+ * attendance view: "in a row" means the lessons they were expected at.
+ */
+async function announceAbsences(args: {
+  organizationId: string;
+  groupId: string;
+  heldOn: string;
+  absentIds: string[];
+}): Promise<void> {
+  if (args.absentIds.length === 0) return;
+
+  try {
+    const supabase = await createClient();
+    const [{ data: group }, { data: people }] = await Promise.all([
+      supabase.from("groups").select("name").eq("id", args.groupId).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, member_status").in("id", args.absentIds),
+    ]);
+
+    const groupName = (group?.name as string) ?? "your class";
+    const named = ((people ?? []) as { id: string; full_name: string | null; member_status: string | null }[])
+      // A paused student is not skipping lessons; somebody already knows why.
+      .filter((p) => (p.member_status ?? "active") === "active")
+      .map((p) => ({ studentId: p.id, name: p.full_name ?? "A student" }));
+    if (named.length === 0) return;
+
+    await notifyAbsent({
+      organizationId: args.organizationId,
+      absentees: named,
+      groupId: args.groupId,
+      groupName,
+      heldOn: args.heldOn,
+    });
+
+    // The lesson before this one, for this group. One query, not one per
+    // student: a class of twenty shares the same previous lesson.
+    const { data: previous } = await supabase
+      .from("attendance_sessions")
+      .select("id, held_on")
+      .eq("group_id", args.groupId)
+      .eq("state", "marked")
+      .lt("held_on", args.heldOn)
+      .order("held_on", { ascending: false })
+      .limit(1);
+    const previousId = (previous ?? [])[0]?.id as string | undefined;
+    if (!previousId) return;
+
+    const { data: before } = await supabase
+      .from("attendance_marks")
+      .select("student_id, status")
+      .eq("session_id", previousId)
+      .in("student_id", named.map((n) => n.studentId));
+
+    const alsoAbsent = new Set(
+      ((before ?? []) as { student_id: string; status: string }[])
+        .filter((m) => m.status === "absent")
+        .map((m) => m.student_id),
+    );
+
+    for (const student of named.filter((n) => alsoAbsent.has(n.studentId))) {
+      await notifyTwoAbsences({
+        organizationId: args.organizationId,
+        studentId: student.studentId,
+        studentName: student.name,
+        groupId: args.groupId,
+        groupName,
+        heldOn: args.heldOn,
+      });
+    }
+  } catch (err) {
+    console.error("[attendance] absence messages failed:", err);
+  }
+}
+
+/* ── putting an alert down ────────────────────────────────────────────────── */
+
+/**
+ * Silence one alert type for a week.
+ *
+ * A WEEK, NOT FOR EVER, and that is the whole design. An alert nobody can
+ * silence is one a centre learns to scroll past — and once they are scrolling
+ * past one row they are scrolling past the panel, which is the only part of the
+ * console that tells an owner something is wrong. Seven days is long enough to
+ * act on it and short enough that a problem nobody actually fixed comes back.
+ *
+ * The dismissal writes itself to `center_audit_log` from a trigger, so "nobody
+ * told me the students had gone quiet" is answerable.
+ */
+export async function dismissAlert(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can put an alert down." };
+  }
+
+  const key = String(formData.get("alert_key") ?? "").trim();
+  if (!key) return { error: "Which alert?" };
+
+  const until = new Date(Date.now() + 7 * 86400_000).toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alert_dismissals")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        alert_key: key,
+        dismissed_by: profile.id,
+        dismissed_at: new Date().toISOString(),
+        expires_at: until,
+      },
+      { onConflict: "organization_id,alert_key" },
+    )
+    .select("alert_key");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console");
+  return { ok: "Put down for 7 days. It comes back if it is still true." };
+}
+
+/** Bring one back before its week is up. */
+export async function restoreAlert(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change this." };
+  }
+  const key = String(formData.get("alert_key") ?? "").trim();
+  if (!key) return { error: "Which alert?" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alert_dismissals")
+    .delete()
+    .eq("alert_key", key)
+    .select("alert_key");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console");
+  return { ok: "Back on the list." };
+}
+
+/* ── chasing the work ─────────────────────────────────────────────────────── */
+
+/**
+ * Nudge the students who have not handed a practice in.
+ *
+ * THE STUDENT IDS ARRIVE FROM THE BROWSER, so they are treated as a request
+ * rather than as fact: they are intersected with the group's real roster, read
+ * through RLS. Without that, anyone who can open this page could post a list of
+ * arbitrary uuids and have the platform message strangers on their behalf —
+ * and it would look like an ordinary reminder to everyone who received it.
+ *
+ * In-app only for now. A Telegram nudge would reach further and is the obvious
+ * next step, but "we messaged your parents" is not a thing to switch on without
+ * a centre asking for it.
+ */
+export async function remindNonSubmitters(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can send a reminder." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const asked = formData.getAll("student_id").map((v) => String(v));
+  if (!groupId || asked.length === 0) return { error: "Nobody to remind." };
+
+  const supabase = await createClient();
+
+  // RLS narrows this to a group the caller may actually see, which is what
+  // makes the intersection below a real check rather than a formality.
+  const { data: roster, error } = await supabase
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  const real = new Set((roster ?? []).map((r) => r.student_id as string));
+  const recipients = asked.filter((id) => real.has(id));
+  if (recipients.length === 0) {
+    return { error: "Those students are not in this group." };
+  }
+
+  const dueAt = String(formData.get("due_at") ?? "").trim();
+  const when = dueAt
+    ? ` It was due ${new Date(dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.`
+    : "";
+
+  await notify({
+    organizationId: profile.organization_id,
+    recipientIds: recipients,
+    type: "assignment_due_soon",
+    title: title ? `Still to hand in: ${title}` : "You have practice still to hand in",
+    body: `Your teacher is waiting on this one.${when}`,
+    href: "/assignments",
+  });
+
+  revalidatePath("/console/practice");
+  return {
+    ok: `Reminded ${recipients.length} student${recipients.length === 1 ? "" : "s"}.`,
+  };
+}
+
+/* ── lessons that did not happen ──────────────────────────────────────────── */
+
+/**
+ * Write off one lesson.
+ *
+ * Not a delete and not an edit — the timetable is a recurrence rule, so the
+ * lesson being cancelled has no row of its own until someone marks its
+ * register. This writes the fact that it did not happen, and attendance
+ * percentages, the fee divisor and the unmarked-register alert all read it.
+ *
+ * The reason is required. "Cancelled" with no reason is an argument in three
+ * weeks' time when a parent asks why they were charged for a full month.
+ */
+export async function cancelLesson(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can cancel a lesson." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const heldOn = String(formData.get("held_on") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!groupId) return { error: "Pick a group first." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(heldOn)) return { error: "Pick a valid date." };
+  if (!reason) return { error: "Say why — it is the part someone asks about later." };
+  if (reason.length > 300) return { error: "Keep the reason under 300 characters." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lesson_cancellations")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        group_id: groupId,
+        held_on: heldOn,
+        reason,
+        cancelled_by: profile.id,
+      },
+      { onConflict: "group_id,held_on" },
+    )
+    .select("id");
+  // `.select()` after every write: an RLS-filtered write reports success while
+  // changing nothing, which is how this schema hides its failures.
+  if (error) return { error: error.message };
+
+  revalidatePath("/console/attendance");
+  revalidatePath("/console");
+  revalidatePath(`/console/groups/${groupId}`);
+  return { ok: "Lesson cancelled. It is out of attendance and out of the fee divisor." };
+}
+
+/** Put a cancelled lesson back — someone cancelled the wrong date. */
+export async function restoreLesson(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can restore a lesson." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const heldOn = String(formData.get("held_on") ?? "").trim();
+  if (!groupId || !/^\d{4}-\d{2}-\d{2}$/.test(heldOn)) return { error: "Pick a valid lesson." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lesson_cancellations")
+    .delete()
+    .eq("group_id", groupId)
+    .eq("held_on", heldOn)
+    .select("id");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console/attendance");
+  revalidatePath("/console");
+  revalidatePath(`/console/groups/${groupId}`);
+  return { ok: "Lesson restored — its register is expected again." };
+}
+
+/* ── registers that have closed ───────────────────────────────────────────── */
+
+/**
+ * Reopen a register that locked.
+ *
+ * A center admin's alone, and the database says so as well as this does: the
+ * trigger on `attendance_sessions` refuses the write and writes the unlock to
+ * `center_audit_log` itself, so the log records what happened rather than what
+ * the application meant to happen.
+ */
+export async function unlockRegister(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can reopen a closed register." };
+  }
+
+  const sessionId = String(formData.get("session_id") ?? "").trim();
+  if (!sessionId) return { error: "That register does not exist yet." };
+
+  const supabase = await createClient();
+  // 24 hours: long enough to fix the mistake in front of you, short enough that
+  // nobody has to remember to close it again.
+  const until = new Date(Date.now() + 24 * 3600_000).toISOString();
+  const { data, error } = await supabase
+    .from("attendance_sessions")
+    .update({ unlocked_until: until })
+    .eq("id", sessionId)
+    .select("id, group_id, held_on");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That register is not yours to reopen." };
+
+  revalidatePath("/console/attendance");
+  return { ok: "Reopened for 24 hours. The unlock is in the center's activity log." };
+}
+
+/* ── days the center is shut ──────────────────────────────────────────────── */
+
+export async function saveHoliday(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can set the center's holidays." };
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const startsOn = String(formData.get("starts_on") ?? "").trim();
+  const endsOn = String(formData.get("ends_on") ?? "").trim() || startsOn;
+  if (!name) return { error: "Name it — “Navruz” tells the timetable more than a date does." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startsOn)) return { error: "Pick a start date." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) return { error: "Pick an end date." };
+  if (endsOn < startsOn) return { error: "It cannot end before it starts." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("center_holidays")
+    .insert({
+      organization_id: profile.organization_id,
+      name,
+      starts_on: startsOn,
+      ends_on: endsOn,
+      created_by: profile.id,
+    })
+    .select("id");
+  if (error) {
+    return {
+      error: error.code === "23505" ? "That holiday is already in the calendar." : error.message,
+    };
+  }
+
+  revalidatePath("/console/settings");
+  revalidatePath("/console/calendar");
+  revalidatePath("/console/attendance");
+  revalidatePath("/console");
+  return { ok: `${name} saved — no lessons, no registers, no fees on those days.` };
+}
+
+export async function deleteHoliday(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change the center's holidays." };
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "Pick a holiday." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("center_holidays").delete().eq("id", id).select("id");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console/settings");
+  revalidatePath("/console/calendar");
+  revalidatePath("/console/attendance");
+  return { ok: "Removed — those days are working days again." };
 }
 
 export async function sendAnnouncement(
@@ -119,7 +534,7 @@ export async function sendAnnouncement(
   if (!["everyone", "students", "teachers", "group"].includes(audience)) {
     return { error: "Pick an audience." };
   }
-  if (audience === "group" && !groupId) return { error: "Pick which class." };
+  if (audience === "group" && !groupId) return { error: "Pick which group." };
 
   const supabase = await createClient();
 
@@ -128,7 +543,7 @@ export async function sendAnnouncement(
   // — this check exists so a teacher gets a sentence instead of a policy error.
   if (!isAdmin) {
     if (audience !== "group" || !groupId) {
-      return { error: "You can announce to one of your classes. Pick the class." };
+      return { error: "You can announce to one of your groups. Pick the group." };
     }
     // RLS hides other teachers' groups, so a hit here proves they own it.
     const { data: owned } = await supabase
@@ -137,7 +552,7 @@ export async function sendAnnouncement(
       .eq("id", groupId)
       .maybeSingle();
     if (!owned || owned.teacher_id !== profile.id) {
-      return { error: "You can only announce to your own classes." };
+      return { error: "You can only announce to your own groups." };
     }
   }
 
@@ -207,7 +622,7 @@ export async function sendAnnouncement(
       if (channels === 0) {
         revalidatePath("/console/announcements");
         return {
-          ok: `Sent to ${recipientIds.length} in the app, but Telegram delivered nothing — check the class still shows a connected channel.`,
+          ok: `Sent to ${recipientIds.length} in the app, but Telegram delivered nothing — check the group still shows a connected channel.`,
         };
       }
     }
@@ -252,6 +667,79 @@ export async function saveCenterProfile(
   return { ok: "Saved." };
 }
 
+/**
+ * How the center runs: where it is, when its week starts, which days it teaches.
+ *
+ * The timezone is the load-bearing one. Everything else in this app takes the
+ * UTC day, which for the market it sells into means the console shows yesterday
+ * until 05:00 and thinks a 19:30 lesson has not finished at 20:00. Both of
+ * those make a "registers to mark" count a center owner can disprove by looking
+ * out of the window.
+ *
+ * A missing row means every default in `CENTER_DEFAULTS`, so this upserts.
+ */
+export async function saveCenterSettings(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change these." };
+  }
+
+  const timezone = String(formData.get("timezone") ?? "").trim();
+  // Validated by asking the platform, rather than by carrying a list that goes
+  // stale every time a country moves its clocks.
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: timezone });
+  } catch {
+    return { error: "That is not a timezone this server recognises." };
+  }
+
+  const weekStartsOn = Number(formData.get("week_starts_on"));
+  if (!Number.isInteger(weekStartsOn) || weekStartsOn < 0 || weekStartsOn > 6) {
+    return { error: "Pick the day your week starts on." };
+  }
+
+  const workingDays = formData
+    .getAll("working_days")
+    .map((d) => Number(d))
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  if (workingDays.length === 0) return { error: "A center has to teach on at least one day." };
+
+  const lessonMinutes = Number(formData.get("default_lesson_minutes"));
+  if (!Number.isInteger(lessonMinutes) || lessonMinutes < 15 || lessonMinutes > 480) {
+    return { error: "A lesson is between 15 and 480 minutes." };
+  }
+
+  const overridePolicy = String(formData.get("override_policy") ?? "teacher");
+  if (!["teacher", "admin_only", "nobody"].includes(overridePolicy)) {
+    return { error: "Pick who may correct an AI band." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("center_settings")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        timezone,
+        week_starts_on: weekStartsOn,
+        working_days: workingDays,
+        default_lesson_minutes: lessonMinutes,
+        override_policy: overridePolicy,
+      },
+      { onConflict: "organization_id" },
+    )
+    .select("organization_id");
+  if (error) return { error: error.message };
+
+  // The timezone decides what "today" is on every console page, so the whole
+  // layout has to be rebuilt rather than just this one.
+  revalidatePath("/console", "layout");
+  return { ok: "Saved. Every date in the console now reads in this timezone." };
+}
+
 /* ── telegram ─────────────────────────────────────────────────────────────── */
 
 /**
@@ -270,7 +758,7 @@ export async function startTelegramLink(
     return { error: "Only center staff can connect a channel." };
   }
   const groupId = String(formData.get("group_id") ?? "").trim();
-  if (!groupId) return { error: "Missing class." };
+  if (!groupId) return { error: "Missing group." };
 
   // No O/0 or I/1 — this gets read off a screen and typed into Telegram.
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -306,7 +794,7 @@ export async function unlinkTelegram(_prev: ActionState, formData: FormData): Pr
     return { error: "Only center staff can disconnect a channel." };
   }
   const groupId = String(formData.get("group_id") ?? "").trim();
-  if (!groupId) return { error: "Missing class." };
+  if (!groupId) return { error: "Missing group." };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -395,5 +883,66 @@ export async function saveAlertSettings(
     ok: enabled
       ? "Alert rules saved. Nothing sends yet — the sender is not built."
       : "Alerts are off. The rules are kept for when you turn them back on.",
+  };
+}
+
+/* ── automatic messages (§12) ─────────────────────────────────────────────── */
+
+/**
+ * Turn one of the six automatic messages on or off, and edit its wording.
+ *
+ * VALIDATION RUNS HERE TOO, not only in the editor. The client checks so the
+ * owner sees the problem while typing; the server checks because a template
+ * that reaches the database is a template that will be sent to every student in
+ * the centre, unattended, over the centre's name. `{studnet}` saved once is
+ * wrong on every message thereafter, and nobody proof-reads an automatic one.
+ *
+ * An empty template is stored as NULL rather than "": null means "use the
+ * default wording", so clearing the box restores the default instead of
+ * sending a blank message.
+ */
+export async function saveAutoMessage(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change the automatic messages." };
+  }
+
+  const key = String(formData.get("key") ?? "") as AutoMessageKey;
+  const spec = AUTO_MESSAGE_BY_KEY[key];
+  if (!spec) return { error: "No such message." };
+
+  const enabled = formData.get("enabled") === "on";
+  const raw = String(formData.get("template") ?? "").trim();
+
+  // Only validate what will actually be stored. A blank box is the owner asking
+  // for the default back, which is always valid.
+  if (raw) {
+    const problems = validateTemplate(raw, spec);
+    if (problems.length > 0) return { error: problems[0].message };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("auto_messages")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        key,
+        enabled,
+        template: raw || null,
+      },
+      { onConflict: "organization_id,key" },
+    )
+    .select("key");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console/announcements");
+  return {
+    ok: enabled
+      ? `"${spec.label}" is on. ${spec.notWiredYet ? "Nothing raises this event yet, so it will not send." : `It will go to ${spec.audience.toLowerCase()}.`}`
+      : `"${spec.label}" is off. Nothing will be sent.`,
   };
 }

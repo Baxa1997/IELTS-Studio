@@ -305,7 +305,14 @@ function ExerciseCard({
           </div>
 
           {/* ---- the answer control ---- */}
-          {closedEx?.options ? (
+          {closedEx && isSequence(closedEx) && closedEx.options ? (
+            <SequenceAnswer
+              exercise={closedEx}
+              value={value}
+              onChange={onChange}
+              locked={locked}
+            />
+          ) : closedEx?.options ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               {closedEx.options.map((opt, i) => {
                 const multi = closedEx.type === "mcq_multi";
@@ -446,6 +453,103 @@ function ExerciseCard({
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Ordering and matching answer with a SEQUENCE, not a choice. */
+function isSequence(exercise: { type: string }): boolean {
+  return exercise.type === "ordering" || exercise.type === "matching";
+}
+
+/**
+ * Putting things in order.
+ *
+ * These questions were unanswerable before this existed. `ordering` fell
+ * through to the multiple-choice branch, which renders RADIO buttons — one
+ * pick, when the answer is a whole permutation — so every ordering question a
+ * student met was marked wrong no matter what they did.
+ *
+ * Click to place, click again to take back. Numbered rather than dragged
+ * because drag-and-drop is the one interaction that fails on a phone, fails
+ * with a keyboard, and needs a library; tapping in order does neither and is
+ * what a paper worksheet asks for anyway ("number these 1–5").
+ */
+function SequenceAnswer({
+  exercise,
+  value,
+  onChange,
+  locked,
+}: {
+  exercise: { id: string; options?: string[] | null };
+  value: string | string[] | undefined;
+  onChange: (v: string | string[]) => void;
+  locked: boolean;
+}) {
+  const options = exercise.options ?? [];
+  const picked = Array.isArray(value) ? value : [];
+
+  const place = (i: string) => {
+    if (locked) return;
+    onChange(picked.includes(i) ? picked.filter((p) => p !== i) : [...picked, i]);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ fontSize: 12.5, color: FAINT }}>
+        {picked.length === 0
+          ? "Tap them in the right order."
+          : picked.length < options.length
+            ? `${picked.length} of ${options.length} placed — tap one again to take it back.`
+            : "All placed. Tap one to change it."}
+      </div>
+      {options.map((opt, i) => {
+        const at = picked.indexOf(String(i));
+        const on = at >= 0;
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => place(String(i))}
+            disabled={locked}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              textAlign: "left",
+              border: `1px solid ${on ? EMBER : LINE}`,
+              background: on ? "rgba(232,90,44,.06)" : "#fff",
+              borderRadius: 10,
+              padding: "10px 13px",
+              cursor: locked ? "default" : "pointer",
+              fontFamily: "inherit",
+              fontSize: 15,
+              color: BODY,
+              width: "100%",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                flex: "none",
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                fontSize: 12,
+                fontWeight: 700,
+                border: `1px solid ${on ? EMBER : LINE}`,
+                background: on ? EMBER : "#fff",
+                color: on ? "#fff" : FAINT,
+              }}
+            >
+              {on ? at + 1 : ""}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>{opt}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

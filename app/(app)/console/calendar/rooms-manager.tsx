@@ -197,7 +197,7 @@ function RoomEditor({
 
       {/* A room is always at a branch. With one branch there is nothing to
           decide, so the field is sent hidden and the form stays short. Moving a
-          room to another branch un-rooms any lesson whose class is at the old
+          room to another branch un-rooms any lesson whose group is at the old
           one — the lesson survives, it just needs a new room. */}
       {branches.length > 1 ? (
         <label style={{ fontSize: 12, color: MUTED, display: "block", marginBottom: 10 }}>

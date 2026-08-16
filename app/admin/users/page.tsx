@@ -1,208 +1,275 @@
+import Link from "next/link";
+
+import { MenuIcon } from "@/components/admin/menu-icons";
+import { OverflowMenu } from "@/components/admin/menu";
 import {
-  EmptyTableRow,
-  FilterBar,
-  ScrollTable,
-  SearchField,
-  SelectField,
-  TD,
-  TH,
-  THead,
-  TR,
-} from "@/components/admin/table";
-import { PageHead, Panel, Pill, StatRow, StatTile } from "@/components/console/page-ui";
-import { loadUsers, type PlatformUser } from "@/lib/admin/platform";
+  Card,
+  CardHead,
+  FAINT,
+  INDIGO,
+  INK,
+  LINE,
+  MUTED,
+  PageTitle,
+  SERIF,
+  SOFT,
+  Surface,
+  TONE,
+  clip,
+} from "@/components/admin/ui";
+import { loadEngagement, loadUsers } from "@/lib/admin/platform";
+import { monthlyPrice } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
-import { PLAN_ORDER, PLAN_TIERS } from "@/lib/billing/plans";
+import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
-import { PlanControls } from "./plan-controls";
+import { UsersTable, type UserRow } from "./users-table";
 
-const dateFmt = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+export const dynamic = "force-dynamic";
 
-const SORTS = {
-  recent: { label: "Newest first", cmp: (a: PlatformUser, b: PlatformUser) => b.createdAt.localeCompare(a.createdAt) },
-  oldest: { label: "Oldest first", cmp: (a: PlatformUser, b: PlatformUser) => a.createdAt.localeCompare(b.createdAt) },
-  practice: { label: "Most practice", cmp: (a: PlatformUser, b: PlatformUser) => b.practiceCount - a.practiceCount },
-  idle: { label: "No practice first", cmp: (a: PlatformUser, b: PlatformUser) => a.practiceCount - b.practiceCount },
-  name: { label: "Name A–Z", cmp: (a: PlatformUser, b: PlatformUser) => a.name.localeCompare(b.name) },
-} as const;
+/** Straight from the design's `planMix`: free is the quiet grey that should
+ *  dominate the bar, and the paid tiers climb toward the indigo accent. */
+const PLAN_COLOR: Record<OrgPlan, string> = {
+  trial: "#D8D6D0",
+  starter: "#7C79DB",
+  pro: "#4340CB",
+  enterprise: "#E5A85C",
+};
 
-type SortKey = keyof typeof SORTS;
+/** The design's small KPI tile: 23px value in its own colour, 12px label. */
+function Tile({
+  label,
+  value,
+  sub,
+  ink,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub: string;
+  ink: string;
+}) {
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: `1px solid ${LINE}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+      }}
+    >
+      <div style={{ fontSize: 12, color: MUTED, marginBottom: 7 }}>{label}</div>
+      <div style={{ fontSize: 23, fontWeight: 600, color: ink, letterSpacing: "-.02em" }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 11.5, color: FAINT, marginTop: 4, ...clip }}>{sub}</div>
+    </div>
+  );
+}
 
+/**
+ * Everyone on the platform.
+ *
+ * The page loads the list once and hands the whole thing to a client table —
+ * filtering, sorting and paging all happen in the browser, which is what makes
+ * the controls act instantly instead of costing a round trip per keystroke.
+ * Only `q` survives as a URL parameter, because the header's search deep-links
+ * into here.
+ */
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; kind?: string; sort?: string; plan?: string }>;
+  searchParams: Promise<{ q?: string; filter?: string }>;
 }) {
   await requireSuperAdmin();
   const sp = await searchParams;
-  const query = sp.q?.trim() || undefined;
-  const role = sp.role && sp.role !== "all" ? sp.role : undefined;
-  const kind = sp.kind && sp.kind !== "all" ? sp.kind : undefined;
-  const sort: SortKey = (sp.sort && sp.sort in SORTS ? sp.sort : "recent") as SortKey;
 
-  const plan = sp.plan && sp.plan !== "all" ? sp.plan : undefined;
-
-  const all = await loadUsers(query);
-  const rows = all
-    .filter((u) => (role ? u.role === role : true))
-    .filter((u) => (kind ? u.orgKind === kind : true))
-    .filter((u) => (plan ? u.orgPlan === plan : true))
-    .sort(SORTS[sort].cmp);
+  const [all, engagement] = await Promise.all([loadUsers(), loadEngagement()]);
 
   const inCenters = all.filter((u) => u.orgKind === "center").length;
-  const active = all.filter((u) => u.practiceCount > 0).length;
-  // Paying accounts by tier. Counted over PEOPLE, not organizations, because
-  // that is the question being asked — "how many Pro users" — and a center on
-  // Pro is a room full of them.
-  const byPlan = (p: string) => all.filter((u) => u.orgPlan === p).length;
+  const practising = all.filter((u) => u.practiceCount > 0).length;
+  const byPlan = (p: OrgPlan) => all.filter((u) => u.orgPlan === p).length;
+  const paidPeople = all.filter((u) => u.orgPlan !== "trial").length;
+  const suspendedCount = all.filter((u) => u.orgStatus === "suspended").length;
+  // Deliverable addresses only: a centre-created account's address is synthetic
+  // and mailing it just bounces into the void.
+  const neverPractisedEmails = all
+    .filter((u) => u.practiceCount === 0 && u.email && !u.emailUndeliverable)
+    .map((u) => u.email as string);
+
+  const rows: UserRow[] = all.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    username: u.username,
+    emailUndeliverable: u.emailUndeliverable,
+    role: u.role,
+    orgKind: u.orgKind,
+    orgName: u.orgName,
+    orgPlan: u.orgPlan,
+    orgStatus: u.orgStatus,
+    gradingLimit: u.gradingLimit,
+    generationLimit: u.generationLimit,
+    orgMemberCount: u.orgMemberCount,
+    practiceCount: u.practiceCount,
+    createdAt: u.createdAt,
+  }));
 
   return (
-    <div>
-      <PageHead
+    <Surface>
+      <PageTitle
         eyebrow="Platform"
         title="Users"
         subtitle="Everyone on the platform, with how much work each of them owns."
+        actions={
+          <OverflowMenu
+            label="User actions"
+            items={[
+              {
+                label: `Email never-practised (${all.length - practising})`,
+                // A real mailto, BCC'd, so nobody sees anyone else's address.
+                // Capped at 90 recipients because a mailto: longer than roughly
+                // 2000 characters is silently truncated by some mail clients —
+                // better a first batch that works than a link that half-sends.
+                href: `mailto:?bcc=${encodeURIComponent(neverPractisedEmails.slice(0, 90).join(","))}&subject=${encodeURIComponent("Your EngProgress practice is waiting")}`,
+                icon: MenuIcon.mail,
+                tone: "indigo",
+              },
+              {
+                label: "Plans & revenue",
+                href: "/admin/plans",
+                icon: MenuIcon.card,
+                tone: "indigo",
+              },
+              {
+                label: "Export users (Excel)",
+                href: "/api/admin/export?kind=users",
+                icon: MenuIcon.sheet,
+                tone: "green",
+                download: true,
+                separated: true,
+              },
+              {
+                label: `Suspended accounts (${suspendedCount})`,
+                href: "/admin/users?filter=suspended",
+                icon: MenuIcon.ban,
+                tone: "red",
+                separated: true,
+              },
+            ]}
+          />
+        }
       />
 
-      <StatRow>
-        <StatTile value={all.length} label="Users" tone="indigo" />
-        <StatTile value={all.length - inCenters} label="Individual" />
-        <StatTile value={inCenters} label="In a center" />
-        <StatTile value={all.length - active} label="Never practised" />
-      </StatRow>
-
-      {/* By tier. Each tile filters the table, so "who are my 12 Pro users" is
-          one click rather than a question you have to go and answer elsewhere. */}
-      <StatRow>
-        {PLAN_ORDER.map((p) => (
-          <StatTile
-            key={p}
-            value={byPlan(p)}
-            label={PLAN_TIERS[p].name}
-            tone={plan === p ? "indigo" : "ink"}
-            href={`/admin/users?plan=${plan === p ? "all" : p}`}
-            active={plan === p}
-          />
-        ))}
-      </StatRow>
-
-      <Panel
-        title={query ? `Matching “${query}”` : "All users"}
-        description={`${rows.length} shown${rows.length !== all.length ? ` of ${all.length}` : ""}.`}
+      {/* The design's split: four small tiles in a 2×2 on the left, the plan
+          mix filling the same height on the right. */}
+      <div
+        className="ad-split-users"
+        style={{ display: "grid", gridTemplateColumns: "1.1fr 1.9fr", gap: 12, marginBottom: 16 }}
       >
-        <FilterBar>
-          <SearchField name="q" label="Search" value={query} placeholder="Name, email or login…" />
-          <SelectField
-            name="role"
-            label="Role"
-            value={sp.role}
-            options={[
-              { value: "all", label: "Any role" },
-              { value: "student", label: "Students" },
-              { value: "teacher", label: "Teachers" },
-              { value: "center_admin", label: "Center admins" },
-            ]}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          <Tile
+            label="Users"
+            value={all.length}
+            sub={`${all.length - inCenters} individual · ${inCenters} in a center`}
+            ink={INDIGO}
           />
-          <SelectField
-            name="kind"
-            label="Account"
-            value={sp.kind}
-            options={[
-              { value: "all", label: "Anywhere" },
-              { value: "personal", label: "Individual" },
-              { value: "center", label: "In a center" },
-            ]}
+          <Tile
+            label="Active this week"
+            value={engagement.activeLast7}
+            sub={`${all.length ? Math.round((engagement.activeLast7 / all.length) * 100) : 0}% of the base`}
+            ink={INK}
           />
-          {/* Also a field, not only the tiles above: the bar is a form, so a
-              plan chosen by tile has to round-trip when you then type a name. */}
-          <SelectField
-            name="plan"
-            label="Plan"
-            value={sp.plan}
-            options={[
-              { value: "all", label: "Any plan" },
-              ...PLAN_ORDER.map((p) => ({ value: p, label: PLAN_TIERS[p].name })),
-            ]}
+          <Tile
+            label="Never practised"
+            value={all.length - practising}
+            sub="worth one nudge email"
+            ink={TONE.red.ink}
           />
-          <SelectField
-            name="sort"
-            label="Sort"
-            value={sort}
-            options={Object.entries(SORTS).map(([value, s]) => ({ value, label: s.label }))}
+          <Tile
+            label="On a paid plan"
+            value={paidPeople}
+            sub={
+              PLAN_ORDER.filter((p) => p !== "trial" && byPlan(p) > 0)
+                .map((p) => `${byPlan(p)} ${PLAN_TIERS[p].name}`)
+                .join(" · ") || "nobody yet"
+            }
+            ink={TONE.green.ink}
           />
-        </FilterBar>
+        </div>
 
-        <ScrollTable
-          maxHeight={560}
-          caption="Scroll for more. The list is capped at the 500 most recent accounts."
+        <section
+          style={{
+            background: "#fff",
+            border: `1px solid ${LINE}`,
+            borderRadius: 12,
+            padding: "16px 18px",
+          }}
         >
-          <THead>
-            <TH>Name</TH>
-            <TH>Role</TH>
-            <TH>Workspace</TH>
-            <TH>Email</TH>
-            <TH>Login</TH>
-            <TH>Plan</TH>
-            <TH align="right">Practice</TH>
-            <TH align="right">Joined</TH>
-            <TH align="right">Controls</TH>
-          </THead>
-          <tbody>
-            {rows.map((u, i) => (
-              <TR key={u.id} first={i === 0}>
-                <TD>{u.name}</TD>
-                <TD>
-                  <Pill tone={u.role === "center_admin" ? "indigo" : "neutral"}>
-                    {u.role.replace("_", " ")}
-                  </Pill>
-                </TD>
-                <TD muted>{u.orgKind === "center" ? u.orgName : "individual"}</TD>
-                {/* An undeliverable address is shown, not hidden — but it says so,
-                    because a support reply to it disappears silently. */}
-                <TD muted={u.emailUndeliverable}>
-                  {u.email ?? "—"}
-                  {u.emailUndeliverable ? (
-                    <span title="Synthetic sign-in address — cannot receive mail">
-                      {" "}
-                      (no inbox)
-                    </span>
-                  ) : null}
-                </TD>
-                <TD muted>{u.username ?? "—"}</TD>
-                <TD>
-                  <Pill tone={u.orgPlan === "trial" ? "neutral" : "indigo"}>
-                    {PLAN_TIERS[u.orgPlan].name}
-                  </Pill>
-                </TD>
-                <TD align="right" numeric muted={u.practiceCount === 0}>
-                  {u.practiceCount}
-                </TD>
-                <TD align="right" muted numeric>
-                  {dateFmt(u.createdAt)}
-                </TD>
-                <TD align="right">
-                  <PlanControls
-                    profileId={u.id}
-                    name={u.name}
-                    plan={u.orgPlan}
-                    orgKind={u.orgKind}
-                    orgName={u.orgName}
-                    gradingLimit={u.gradingLimit}
-                    generationLimit={u.generationLimit}
-                    orgMemberCount={u.orgMemberCount}
-                  />
-                </TD>
-              </TR>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 700, margin: 0, color: INK }}>
+              Plan mix
+            </h2>
+            <span style={{ fontSize: 12.5, color: SOFT }}>
+              {all.length} accounts · {paidPeople} on a paid plan
+            </span>
+            <Link
+              href="/admin/plans"
+              style={{ marginLeft: "auto", fontSize: 12.5, color: INDIGO, textDecoration: "none" }}
+            >
+              Plans &amp; limits →
+            </Link>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              height: 10,
+              borderRadius: 6,
+              overflow: "hidden",
+              gap: 2,
+              marginBottom: 14,
+            }}
+          >
+            {PLAN_ORDER.filter((p) => byPlan(p) > 0).map((p) => (
+              <div
+                key={p}
+                title={`${PLAN_TIERS[p].name}: ${byPlan(p)}`}
+                style={{
+                  background: PLAN_COLOR[p],
+                  width: `${(byPlan(p) / Math.max(1, all.length)) * 100}%`,
+                }}
+              />
             ))}
-            {rows.length === 0 ? (
-              <EmptyTableRow colSpan={9}>
-                Nobody matches those filters.
-              </EmptyTableRow>
-            ) : null}
-          </tbody>
-        </ScrollTable>
-      </Panel>
-    </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            {PLAN_ORDER.map((p) => {
+              const n = byPlan(p);
+              return (
+                <div key={p}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span
+                      style={{ width: 8, height: 8, borderRadius: 3, background: PLAN_COLOR[p] }}
+                    />
+                    <span style={{ fontSize: 12, color: MUTED }}>{PLAN_TIERS[p].name}</span>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: INK }}>{n}</div>
+                  {/* List value, not billed revenue — the two differ, and the
+                      difference is spelled out on Plans & revenue where there is
+                      room to explain it rather than imply it in a caption. */}
+                  <div style={{ fontSize: 11, color: FAINT }}>
+                    {monthlyPrice(p) > 0 ? `$${(n * monthlyPrice(p)).toFixed(0)}/mo listed` : "$0"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      <Card>
+        <CardHead title="All users" note="Capped at the 500 most recent accounts." />
+        <UsersTable users={rows} initialQuery={sp.q ?? ""} initialFilter={sp.filter ?? ""} />
+      </Card>
+    </Surface>
   );
 }

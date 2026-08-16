@@ -140,7 +140,7 @@ export function SlotForm({
   if (groups.length === 0) {
     return (
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.55 }}>
-        There are no classes to schedule yet. Create one first — a lesson is a class meeting, not a
+        There are no groups to schedule yet. Create one first — a lesson is one meeting of a group, not a
         free-standing event.
       </p>
     );
@@ -165,7 +165,7 @@ export function SlotForm({
           <input key={day} type="hidden" name="weekdays" value={day} />
         ))}
 
-        <Field label="Class">
+        <Field label="Group">
           <select
             name="group_id"
             required
@@ -173,7 +173,7 @@ export function SlotForm({
             onChange={(e) => setGroupId(e.target.value)}
             style={fieldStyle}
           >
-            <option value="">Pick a class…</option>
+            <option value="">Pick a group…</option>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
@@ -328,7 +328,7 @@ export function SlotForm({
           label="Room"
           hint={
             !groupId
-              ? "pick the class first — rooms depend on its branch"
+              ? "pick the group first — rooms depend on its branch"
               : roomsHere.length === 0
                 ? `no rooms at ${groups.find((g) => g.id === groupId)?.branchName ?? "that branch"} yet`
                 : "every day of the lesson goes in this room"

@@ -64,7 +64,7 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
   if (profile.role === "student") return { error: "Only staff can edit the timetable." };
 
   const groupId = str(formData, "group_id");
-  if (!groupId) return { error: "Pick a class." };
+  if (!groupId) return { error: "Pick a group." };
 
   const weekdays = readWeekdays(formData);
   if (weekdays.length === 0) return { error: "Pick at least one day." };
@@ -127,7 +127,7 @@ export async function saveSlot(_prev: ActionState, formData: FormData): Promise<
     const from = String(selfOverlap.starts_at).slice(0, 5);
     const to = String(selfOverlap.ends_at).slice(0, 5);
     return {
-      error: `This class already meets ${day} ${from}–${to}. One class cannot be in two places at once — move or remove that lesson first.`,
+      error: `This group already meets ${day} ${from}–${to}. One group cannot be in two places at once — move or remove that lesson first.`,
     };
   }
 
@@ -262,7 +262,7 @@ async function clashWarning(
     .select("name")
     .eq("id", overlapping[0].group_id as string)
     .maybeSingle();
-  return ` Note: ${(other?.name as string) ?? "another class"} is already in that room then.`;
+  return ` Note: ${(other?.name as string) ?? "another group"} is already in that room then.`;
 }
 
 /**
@@ -274,10 +274,10 @@ async function clashWarning(
  */
 function explain(error: { code?: string; message: string }): string {
   if (error.code === "23P01") {
-    return "This class already has a lesson at that hour on one of those days. One class cannot be in two places at once.";
+    return "This group already has a lesson at that hour on one of those days. One group cannot be in two places at once.";
   }
   if (error.code === "23514" && /branch/i.test(error.message)) {
-    return "That room is at a different branch from the class. Pick a room at the class's branch, or move the class.";
+    return "That room is at a different branch from the group. Pick a room at the group's branch, or move the group.";
   }
   if (error.code === "23505") {
     return "That lesson is already on the timetable.";
@@ -290,7 +290,7 @@ function explain(error: { code?: string; message: string }): string {
 
 /** The message for a write RLS silently discarded. */
 function notAllowed(verb: string): string {
-  return `Nothing changed — you may not ${verb} this class's timetable. Ask the center owner, or reload the page if it was just deleted.`;
+  return `Nothing changed — you may not ${verb} this group's timetable. Ask the center owner, or reload the page if it was just deleted.`;
 }
 
 /* ── branches (filiallar) ─────────────────────────────────────────────────── */
@@ -349,7 +349,7 @@ export async function deleteBranch(_prev: ActionState, formData: FormData): Prom
   ]);
   const holding = [
     [(roomsRes.data ?? []).length, "room"],
-    [(groupsRes.data ?? []).length, "class", "es"],
+    [(groupsRes.data ?? []).length, "group", "s"],
     [(desksRes.data ?? []).length, "cash desk"],
   ]
     .filter(([n]) => (n as number) > 0)
@@ -428,5 +428,5 @@ export async function deleteRoom(_prev: ActionState, formData: FormData): Promis
   if ((data ?? []).length === 0) return { error: notAllowed("remove from") };
 
   revalidatePath("/console/calendar");
-  return { ok: "Room removed. Classes booked in it are now unassigned." };
+  return { ok: "Room removed. Groups booked in it are now unassigned." };
 }

@@ -205,7 +205,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             <Drawer
               label="Add a lesson"
               eyebrow="Timetable"
-              title="Schedule a class"
+              title="Schedule a lesson"
               note="Pick the days it meets — Mon/Wed/Fri is one lesson, not three. Or just click an empty cell in the grid."
             >
               <SlotForm groups={groupOptions} rooms={roomOptions} slot={{ weekdays: [day] }} />
@@ -216,7 +216,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 variant="ghost"
                 eyebrow="Timetable"
                 title="Rooms"
-                note="The columns of the grid, and the thing two classes cannot share."
+                note="The columns of the grid, and the thing two groups cannot share."
                 width={520}
               >
                 <RoomsManager
@@ -266,7 +266,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
         <Card>
           <CardHead
             title="Create a branch first"
-            note="Rooms, classes and cash desks all belong to one"
+            note="Rooms, groups and cash desks all belong to one"
           />
           <p
             style={{
@@ -617,7 +617,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               <Card>
                 <CardHead
                   title="Not on the timetable"
-                  note={`${unscheduled.length} class${unscheduled.length === 1 ? "" : "es"} with no slot at all`}
+                  note={`${unscheduled.length} group${unscheduled.length === 1 ? "" : "s"} with no slot at all`}
                 />
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {unscheduled.map((group) => (
@@ -634,7 +634,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                       variant="ghost"
                       eyebrow="Timetable"
                       title={group.name}
-                      note="Put this class on the timetable."
+                      note="Put this group on the timetable."
                       triggerStyle={{
                         borderRadius: 20,
                         padding: "7px 13px",

@@ -468,7 +468,7 @@ export function TimetableGrid({
                     color: INK,
                   }}
                 >
-                  {editing.kind === "slot" ? editing.slot.groupName : "Schedule a class"}
+                  {editing.kind === "slot" ? editing.slot.groupName : "Schedule a lesson"}
                 </h2>
                 <p style={{ margin: 0, fontSize: 13, color: "#6E6C87", lineHeight: 1.5 }}>
                   {editing.kind === "slot"

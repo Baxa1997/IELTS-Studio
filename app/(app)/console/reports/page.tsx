@@ -4,6 +4,7 @@ import {
   AMBER,
   Avatar,
   Bar,
+  BandCell,
   Card,
   CardHead,
   CardNote,
@@ -25,14 +26,18 @@ import {
   TD,
   THead,
   TRow,
+  LINE,
+  SERIF,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
-import { loadCenterReport } from "@/lib/console/reports";
+import { loadCenterReport, SKILLS, SKILL_UNIT, type SkillName } from "@/lib/console/reports";
+import { ALWAYS_CURRENT, type RangeKey } from "@/lib/console/window";
 import { createClient } from "@/lib/supabase/server";
 
 import { ReportAlerts } from "./alerts-button";
+import { RangePicker } from "./range-picker";
 import { ExportReportButton } from "./export-button";
 
 export const dynamic = "force-dynamic";
@@ -82,17 +87,27 @@ function OpenArrow() {
  * EVERY STUDENT APPEARS EXACTLY ONCE. "Has stopped" is a tag on a row, not a
  * third list — a name in two places makes a roster impossible to count.
  *
- * Everything is the last 90 days. Listening is scored rather than banded, so it
- * never enters the band figures, and no "overall band" is averaged across
- * skills, because a number like that would be ours, not IELTS's.
+ * ONE RANGE GOVERNS THIS PAGE (R1). The picker in the header sets it, every
+ * band, count and completion below is measured over it, and the two figures
+ * that deliberately ignore it — gone quiet, work nobody has opened — say
+ * "always current" beside themselves rather than leaving the reader to wonder
+ * why they did not move.
+ *
+ * Listening is banded from its own result, no "overall band" is ever averaged
+ * across skills, and every band carries the count behind it.
  */
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 
+  const sp = await searchParams;
   const supabase = await createClient();
   const [report, orgRes, overview] = await Promise.all([
-    loadCenterReport({ role: profile.role, profileId: profile.id }),
+    loadCenterReport({ role: profile.role, profileId: profile.id, range: sp.range as RangeKey }),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
     loadWorkOverview(profile),
   ]);
@@ -100,8 +115,15 @@ export default async function ReportsPage() {
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const isCenter = report.scope === "center";
 
-  const measured = report.skillAverages.filter((s) => s.samples > 0);
-  const topBucket = Math.max(1, ...report.bandBuckets.map((b) => b.value));
+  const measured = report.skillAverages.filter((s) => s.attempts > 0);
+  // Writing leads: it is graded most, it is the moat, and a distribution has to
+  // belong to ONE skill or it is a picture of nothing.
+  const headline: SkillName =
+    measured.length > 0
+      ? ([...measured].sort((a, b) => b.attempts - a.attempts)[0].skill as SkillName)
+      : "Writing";
+  const buckets = report.bandBuckets[headline];
+  const topBucket = Math.max(1, ...buckets.map((b) => b.value));
   const topCap = Math.max(1, ...report.writingCaps.map((c) => c.value));
   const topMiss = Math.max(1, ...report.readingMisses.map((m) => m.value));
 
@@ -140,9 +162,10 @@ export default async function ReportsPage() {
       <PageHead
         eyebrow="Reports"
         title={isCenter ? centerName : "Your students"}
-        subtitle={`${report.totals.students} students · ${report.totals.groups} classes · ${report.totals.gradedPractices} marked in the last 90 days.`}
+        subtitle={`${report.totals.students} student${report.totals.students === 1 ? "" : "s"} · ${report.totals.groups} group${report.totals.groups === 1 ? "" : "s"} · ${report.totals.gradedPractices} marked ${report.window.label.toLowerCase()}.`}
         actions={
           <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <RangePicker value={report.window.key} />
             {/* THE WARNINGS, one control wide. These used to be a stack of cards
                 that pushed the students below the fold on every visit. */}
             <ReportAlerts
@@ -156,13 +179,55 @@ export default async function ReportsPage() {
       />
 
       <Stack>
+        {/* ══ THE ANSWER, ABOVE THE WORKING ══
+            §8's "what to teach next". Everything below this is evidence for it,
+            and a centre owner who reads only one line on this page should read
+            the one that turns into a lesson on Thursday. */}
+        {report.teachNext ? (
+          <div
+            style={{
+              background: "linear-gradient(135deg,#EDECFA 0%,#F7F6FD 100%)",
+              border: "1px solid #DEDDF6",
+              borderRadius: 12,
+              padding: "16px 20px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: SANS,
+                fontSize: 11,
+                letterSpacing: ".08em",
+                textTransform: "uppercase",
+                color: "#6E6C87",
+                marginBottom: 6,
+              }}
+            >
+              What to teach next
+            </div>
+            <div
+              style={{
+                fontFamily: SERIF,
+                fontSize: 19,
+                fontWeight: 700,
+                color: INK,
+                lineHeight: 1.35,
+              }}
+            >
+              {report.teachNext.headline}
+            </div>
+            <div style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, marginTop: 6 }}>
+              {report.teachNext.detail}
+            </div>
+          </div>
+        ) : null}
+
         {/* ── 1. who has handed in ─────────────────────────────────────────── */}
         <Card flush id="handed-in">
           <CardHead
             title="Handed in"
             divided
             badge={unopenedCount > 0 ? <Tag tone="red">{unopenedCount} new</Tag> : null}
-            note="newest first — open a student to see every piece they did, with the marking"
+            note={`newest first — open a student to see every piece they did, with the marking · ${ALWAYS_CURRENT}`}
           />
           {handedIn.length > 0 ? (
             <Table cols={IN_COLS}>
@@ -213,9 +278,8 @@ export default async function ReportsPage() {
               })}
             </Table>
           ) : (
-            <Empty>
-              Nothing has been handed in yet. Set a class some practice and it lands here as soon as
-              it is marked.
+            <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
+              Nothing has been handed in yet. Work lands here as soon as it is marked.
             </Empty>
           )}
         </Card>
@@ -266,7 +330,7 @@ export default async function ReportsPage() {
               ))}
             </Table>
           ) : (
-            <Empty>Everyone in your classes has work back. Nothing to chase.</Empty>
+            <Empty>Everyone in your groups has work back. Nothing to chase.</Empty>
           )}
         </Card>
 
@@ -296,8 +360,8 @@ export default async function ReportsPage() {
                   cols={COLS}
                   labels={
                     isCenter
-                      ? ["Class", "Teacher", "Students", "Avg band", "Completion", "Set"]
-                      : ["Class", "Students", "Avg band", "Completion", "Set"]
+                      ? ["Group", "Teacher", "Students", "Writing", "Completion", "Set"]
+                      : ["Group", "Students", "Writing", "Completion", "Set"]
                   }
                 />
                 {report.groups.map((g) => (
@@ -308,7 +372,7 @@ export default async function ReportsPage() {
                     {isCenter ? <TD tone="body">{g.teacherName ?? "—"}</TD> : null}
                     <TD>{g.students}</TD>
                     <TD tone="ink" weight={600}>
-                      {g.averageBand?.toFixed(1) ?? "—"}
+                      <BandCell figure={g.writing} unit="essays" />
                     </TD>
                     <TD>
                       {g.completionPct == null ? (
@@ -324,24 +388,96 @@ export default async function ReportsPage() {
                         </span>
                       )}
                     </TD>
-                    <TD tone={g.assignments === 0 ? "faint" : "body"}>{g.assignments}</TD>
+                    <TD tone={g.assignments === 0 ? "faint" : "body"}>
+                      {g.assignments}
+                      {g.teachNext ? (
+                        <span
+                          style={{ display: "block", fontSize: 11, color: FAINT, marginTop: 2 }}
+                          title={`${g.teachNext.students} of ${g.teachNext.of} are lowest on ${g.teachNext.label}`}
+                        >
+                          teach {g.teachNext.label.split(" ")[0]}
+                        </span>
+                      ) : null}
+                    </TD>
                   </TRow>
                 ))}
                 {report.groups.length === 0 ? (
-                  <Empty>No classes yet. Create one and set it some practice.</Empty>
+                  <Empty action={{ href: "/console/groups", label: "Create a group →" }}>
+                    No groups yet.
+                  </Empty>
                 ) : null}
               </Table>
+            </Card>
+
+            <Card>
+              <CardHead
+                title="Which way they are going"
+                note="each student against their OWN previous attempt · half a band counts as a move"
+              />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+                  gap: 12,
+                }}
+              >
+                {SKILLS.map((skill) => {
+                  const m = report.movement[skill];
+                  const total = m.improved + m.held + m.declined;
+                  return (
+                    <div
+                      key={skill}
+                      style={{
+                        border: `1px solid ${LINE}`,
+                        borderRadius: 10,
+                        padding: "12px 14px",
+                        opacity: total === 0 ? 0.55 : 1,
+                      }}
+                    >
+                      <div style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: INK }}>
+                        {skill}
+                      </div>
+                      {total === 0 ? (
+                        <div style={{ fontFamily: SANS, fontSize: 12, color: FAINT, marginTop: 6 }}>
+                          {/* Movement needs two measurements. Saying so beats
+                              printing three zeros, which reads as "nobody
+                              improved" rather than "nobody has been measured
+                              twice". */}
+                          nobody has sat it twice yet
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: "flex", height: 8, borderRadius: 5, overflow: "hidden", marginTop: 9, gap: 2 }}>
+                            {m.improved > 0 ? <div style={{ flex: m.improved, background: GREEN }} /> : null}
+                            {m.held > 0 ? <div style={{ flex: m.held, background: "#D8D6D0" }} /> : null}
+                            {m.declined > 0 ? <div style={{ flex: m.declined, background: RED }} /> : null}
+                          </div>
+                          <div style={{ fontFamily: SANS, fontSize: 11.5, color: MUTED, marginTop: 7 }}>
+                            <span style={{ color: GREEN, fontWeight: 600 }}>{m.improved} up</span>
+                            {" · "}
+                            {m.held} held
+                            {" · "}
+                            <span style={{ color: m.declined > 0 ? RED : MUTED }}>
+                              {m.declined} down
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </Card>
 
             <Split>
               <Card>
                 <CardHead
-                  title="Bands awarded"
-                  note="every marked writing, reading and speaking practice"
+                  title={`${headline} bands awarded`}
+                  note={`${measured.find((m) => m.skill === headline)?.attempts ?? 0} marked ${report.window.label.toLowerCase()} · skills are never mixed`}
                 />
-                {report.bandBuckets.length > 0 ? (
+                {buckets.length > 0 ? (
                   <Columns
-                    bars={report.bandBuckets.map((b) => ({
+                    bars={buckets.map((b) => ({
                       label: b.label,
                       cap: b.value,
                       pct: (b.value / topBucket) * 100,
@@ -368,7 +504,15 @@ export default async function ReportsPage() {
                     label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
                     pct={((s.band ?? 0) / 9) * 100}
                     value={s.band?.toFixed(1) ?? "—"}
-                    fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
+                    fill={
+                      s.provisional
+                        ? "#C9C7C1"
+                        : (s.band ?? 0) >= 6.5
+                          ? GREEN
+                          : (s.band ?? 0) >= 5.5
+                            ? AMBER
+                            : RED
+                    }
                     trail={
                       <span
                         style={{
@@ -378,15 +522,16 @@ export default async function ReportsPage() {
                           textAlign: "right",
                         }}
                       >
-                        {s.samples} marked
+                        {s.attempts} {SKILL_UNIT[s.skill]}
+                        {s.provisional ? " · provisional" : ""}
                       </span>
                     }
                   />
                 ))}
                 {measured.length === 0 ? (
-                  <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                    No marked practice yet.
-                  </p>
+                  <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
+                    Nothing marked yet.
+                  </Empty>
                 ) : null}
               </Card>
             </Split>
