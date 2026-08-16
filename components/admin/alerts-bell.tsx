@@ -154,7 +154,7 @@ export function AlertsBell({ alerts, count }: { alerts: AlertRow[]; count: numbe
                       {ICON[a.icon]}
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: "block", fontSize: 13, fontWeight: 500 }}>
+                      <span style={{ display: "block", fontSize: 13, fontWeight: 600 }}>
                         {a.title}
                       </span>
                       <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 2 }}>

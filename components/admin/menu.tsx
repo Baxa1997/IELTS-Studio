@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { INK, LINE, SANS, TONE, type Tone } from "./ui";
+import { INK, RULE, SANS, TONE, type Tone } from "./ui";
 
 /**
  * The "…" overflow menu the design puts beside the primary action on every
@@ -142,16 +142,22 @@ export function OverflowMenu({ items, label = "More actions" }: { items: MenuIte
                     background: "none",
                     border: 0,
                     borderRadius: 8,
+                    // Every row keeps the SAME padding. A separated row used to
+                    // add 12px on top of the rule and the margin, which made it
+                    // sit ~26px below its neighbour and 9px above the next —
+                    // the lopsided gaps that made the menu look broken. The
+                    // rule and a 5px margin are the whole separation, as the
+                    // design has it.
                     padding: "9px 10px",
                     fontFamily: "inherit",
                     fontSize: 13,
+                    fontWeight: 500,
                     textAlign: "left",
                     cursor: "pointer",
                     color: item.danger ? TONE.red.ink : INK,
                     textDecoration: "none",
-                    borderTop: item.separated ? `1px solid ${LINE}` : undefined,
+                    borderTop: item.separated ? `1px solid ${RULE}` : undefined,
                     marginTop: item.separated ? 5 : undefined,
-                    paddingTop: item.separated ? 12 : undefined,
                   };
                   return item.href ? (
                     <Link
