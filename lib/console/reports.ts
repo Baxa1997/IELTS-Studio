@@ -1,5 +1,6 @@
 import "server-only";
 
+import { weakestCriteria } from "@/lib/console/criteria";
 import { type MemberStatus } from "@/lib/console/status";
 import { resolveWindow, type RangeKey, type Window } from "@/lib/console/window";
 import { createClient } from "@/lib/supabase/server";
@@ -106,14 +107,6 @@ export interface CenterReport {
    *  Always relative to now — this one deliberately ignores any date picker. */
   practisedThisWeek: { students: number; of: number };
 }
-
-const CRITERION_LABEL: Record<string, string> = {
-  TR: "Task Response",
-  TA: "Task Achievement",
-  CC: "Coherence & Cohesion",
-  LR: "Lexical Resource",
-  GRA: "Grammatical Range & Accuracy",
-};
 
 /**
  * DELIBERATELY FIXED, and it must stay that way (R1).
@@ -249,7 +242,9 @@ export async function loadCenterReport(opts: {
 
   // Latest grading per essay: band + which criterion capped it.
   const essayBand = new Map<string, number>();
-  const essayCap = new Map<string, string>();
+  // Essay id → the criteria holding it back. Absent when nothing distinguishes
+  // them, which on this corpus is most essays.
+  const essayCap = new Map<string, string[]>();
   if (essays.length > 0) {
     const { data: gradings } = await supabase
       .from("gradings")
@@ -266,8 +261,8 @@ export async function loadCenterReport(opts: {
     }[]) {
       if (g.overall_band == null) continue;
       essayBand.set(g.essay_id, Number(g.overall_band));
-      const cap = weakestCriterion(g.criteria ?? {});
-      if (cap) essayCap.set(g.essay_id, cap);
+      const caps = weakestCriteria(g.criteria ?? {});
+      if (caps.length > 0) essayCap.set(g.essay_id, caps);
     }
   }
 
@@ -445,13 +440,18 @@ export async function loadCenterReport(opts: {
   const capTally = new Map<string, number>();
   const capStudents = new Map<string, Set<string>>();
   const ownerOfEssay = new Map(essays.map((e) => [e.id, e.student_id]));
-  for (const [essayId, cap] of essayCap.entries()) {
-    capTally.set(cap, (capTally.get(cap) ?? 0) + 1);
+  for (const [essayId, caps] of essayCap.entries()) {
     const owner = ownerOfEssay.get(essayId);
-    if (owner) capStudents.set(cap, (capStudents.get(cap) ?? new Set()).add(owner));
+    for (const cap of caps) {
+      capTally.set(cap, (capTally.get(cap) ?? 0) + 1);
+      if (owner) capStudents.set(cap, (capStudents.get(cap) ?? new Set()).add(owner));
+    }
   }
+  // Students for whom a weakest criterion could be NAMED. Sharing out of every
+  // graded writer would count the ones whose criteria all tie in the
+  // denominator and never in any numerator, so every share would understate.
   const writersGraded = new Set(
-    [...essayBand.keys()].map((id) => ownerOfEssay.get(id)).filter(Boolean),
+    [...essayCap.keys()].map((id) => ownerOfEssay.get(id)).filter(Boolean),
   ).size;
   const writingCaps = [...capTally.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -461,9 +461,11 @@ export async function loadCenterReport(opts: {
         label,
         value: count,
         students,
+        // "of N with a nameable weakness", not "of all writers" — the two
+        // differ sharply on this corpus and the wrong one inflates every share.
         hint:
           writersGraded > 0
-            ? `lowest for ${students} of ${writersGraded} student${writersGraded === 1 ? "" : "s"}`
+            ? `lowest for ${students} of ${writersGraded} student${writersGraded === 1 ? "" : "s"} with a clear weak spot`
             : `${count} essay${count === 1 ? "" : "s"}`,
       };
     });
@@ -490,14 +492,22 @@ export async function loadCenterReport(opts: {
    * it is expressed in STUDENTS, not in attempts — "lowest for 8 of 11
    * students" is a workshop; "capped 23 essays" could be one prolific student.
    */
+  // How many graded essays had NO criterion standing out. On this corpus that
+  // is most of them, and it is a fact about the marking worth saying out loud
+  // rather than hiding behind a confident-looking headline.
+  const flatProfiles = essayBand.size - essayCap.size;
+
   const teachNext: CenterReport["teachNext"] =
     writingCaps.length > 0 && writersGraded > 0
       ? {
-          headline: `${writingCaps[0].label} is the lowest criterion for ${writingCaps[0].students} of ${writersGraded} student${writersGraded === 1 ? "" : "s"}`,
+          headline: `${writingCaps[0].label} is the lowest criterion for ${writingCaps[0].students} of ${writersGraded} student${writersGraded === 1 ? "" : "s"} whose marks single one out`,
           detail:
-            writingCaps.length > 1
-              ? `Next after that: ${writingCaps[1].label} (${writingCaps[1].students}). Worth one lesson, not a rewrite of the scheme of work.`
-              : "One lesson on it would move more bands than anything else on this page.",
+            (writingCaps.length > 1
+              ? `Next after that: ${writingCaps[1].label} (${writingCaps[1].students}). `
+              : "") +
+            (flatProfiles > 0
+              ? `${flatProfiles} of ${essayBand.size} graded essays scored the same on every criterion, so they name no weak spot at all.`
+              : "Worth one lesson, not a rewrite of the scheme of work."),
         }
       : readingMisses.length > 0
         ? {
@@ -547,14 +557,14 @@ export async function loadCenterReport(opts: {
     // is the whole point — the answer differs per group and that difference is
     // what a teacher does something about.
     const ourCaps = new Map<string, Set<string>>();
-    for (const [essayId, cap] of essayCap.entries()) {
+    const ourNamed = new Set<string>();
+    for (const [essayId, caps] of essayCap.entries()) {
       const owner = ownerOfEssay.get(essayId);
       if (!owner || !roster.has(owner)) continue;
-      ourCaps.set(cap, (ourCaps.get(cap) ?? new Set()).add(owner));
+      ourNamed.add(owner);
+      for (const cap of caps) ourCaps.set(cap, (ourCaps.get(cap) ?? new Set()).add(owner));
     }
-    const ourWriters = new Set(
-      essays.filter((e) => roster.has(e.student_id) && essayBand.has(e.id)).map((e) => e.student_id),
-    ).size;
+    const ourWriters = ourNamed.size;
     const worst = [...ourCaps.entries()].sort((a, b) => b[1].size - a[1].size)[0];
 
     return {
@@ -680,13 +690,4 @@ function mean(xs: number[]): number | null {
   return Math.round((xs.reduce((s, x) => s + x, 0) / xs.length) * 10) / 10;
 }
 
-/** The lowest-scoring criterion — the thing that capped this essay's band. */
-function weakestCriterion(criteria: Record<string, { band?: number }>): string | null {
-  let worst: { key: string; band: number } | null = null;
-  for (const [key, value] of Object.entries(criteria ?? {})) {
-    const band = Number(value?.band);
-    if (!Number.isFinite(band)) continue;
-    if (!worst || band < worst.band) worst = { key, band };
-  }
-  return worst ? (CRITERION_LABEL[worst.key] ?? worst.key) : null;
-}
+
