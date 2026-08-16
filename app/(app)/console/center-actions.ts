@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { canManagePeople, requireOrgUser } from "@/lib/auth";
-import { notify } from "@/lib/notifications/send";
+import {
+  AUTO_MESSAGE_BY_KEY,
+  validateTemplate,
+  type AutoMessageKey,
+} from "@/lib/console/auto-messages";
+import { notify, notifyAbsent, notifyTwoAbsences } from "@/lib/notifications/send";
 import { createClient } from "@/lib/supabase/server";
 import { sendAnnouncementTelegram } from "@/lib/telegram/send";
 
@@ -104,6 +109,16 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
   // through rather than being translated twice.
   if (marksError) return { error: marksError.message };
 
+  // §12's two attendance messages. After the save, never before: a message
+  // about an absence that failed to record is worse than no message. Both are
+  // best-effort and both are off unless the centre turned them on.
+  await announceAbsences({
+    organizationId: profile.organization_id,
+    groupId,
+    heldOn,
+    absentIds: marks.filter((m) => m.status === "absent").map((m) => m.student_id),
+  });
+
   revalidatePath("/console/attendance");
   revalidatePath(`/console/groups/${groupId}`);
   const inRoom = marks.filter((m) => m.status === "present" || m.status === "late").length;
@@ -114,6 +129,89 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
       `Register saved — ${inRoom} in, ${absent} absent` +
       (excused > 0 ? `, ${excused} excused.` : "."),
   };
+}
+
+/**
+ * Tell whoever §12 says to tell about today's absences.
+ *
+ * TWO-IN-A-ROW IS COMPUTED HERE RATHER THAN REUSED FROM THE ALERT CATALOGUE.
+ * `twoAbsencesInARow` answers "who is currently in this state across the whole
+ * centre" for the Today panel; this needs "who entered it because of the
+ * register just saved", scoped to one group. Same rule, different question —
+ * and using the panel's version would re-notify staff about a student who has
+ * been on two-in-a-row since last week.
+ *
+ * `excused` drops out of the sequence entirely, matching the alert and the
+ * attendance view: "in a row" means the lessons they were expected at.
+ */
+async function announceAbsences(args: {
+  organizationId: string;
+  groupId: string;
+  heldOn: string;
+  absentIds: string[];
+}): Promise<void> {
+  if (args.absentIds.length === 0) return;
+
+  try {
+    const supabase = await createClient();
+    const [{ data: group }, { data: people }] = await Promise.all([
+      supabase.from("groups").select("name").eq("id", args.groupId).maybeSingle(),
+      supabase.from("profiles").select("id, full_name, member_status").in("id", args.absentIds),
+    ]);
+
+    const groupName = (group?.name as string) ?? "your class";
+    const named = ((people ?? []) as { id: string; full_name: string | null; member_status: string | null }[])
+      // A paused student is not skipping lessons; somebody already knows why.
+      .filter((p) => (p.member_status ?? "active") === "active")
+      .map((p) => ({ studentId: p.id, name: p.full_name ?? "A student" }));
+    if (named.length === 0) return;
+
+    await notifyAbsent({
+      organizationId: args.organizationId,
+      absentees: named,
+      groupId: args.groupId,
+      groupName,
+      heldOn: args.heldOn,
+    });
+
+    // The lesson before this one, for this group. One query, not one per
+    // student: a class of twenty shares the same previous lesson.
+    const { data: previous } = await supabase
+      .from("attendance_sessions")
+      .select("id, held_on")
+      .eq("group_id", args.groupId)
+      .eq("state", "marked")
+      .lt("held_on", args.heldOn)
+      .order("held_on", { ascending: false })
+      .limit(1);
+    const previousId = (previous ?? [])[0]?.id as string | undefined;
+    if (!previousId) return;
+
+    const { data: before } = await supabase
+      .from("attendance_marks")
+      .select("student_id, status")
+      .eq("session_id", previousId)
+      .in("student_id", named.map((n) => n.studentId));
+
+    const alsoAbsent = new Set(
+      ((before ?? []) as { student_id: string; status: string }[])
+        .filter((m) => m.status === "absent")
+        .map((m) => m.student_id),
+    );
+
+    for (const student of named.filter((n) => alsoAbsent.has(n.studentId))) {
+      await notifyTwoAbsences({
+        organizationId: args.organizationId,
+        studentId: student.studentId,
+        studentName: student.name,
+        groupId: args.groupId,
+        groupName,
+        heldOn: args.heldOn,
+      });
+    }
+  } catch (err) {
+    console.error("[attendance] absence messages failed:", err);
+  }
 }
 
 /* ── putting an alert down ────────────────────────────────────────────────── */
@@ -785,5 +883,66 @@ export async function saveAlertSettings(
     ok: enabled
       ? "Alert rules saved. Nothing sends yet — the sender is not built."
       : "Alerts are off. The rules are kept for when you turn them back on.",
+  };
+}
+
+/* ── automatic messages (§12) ─────────────────────────────────────────────── */
+
+/**
+ * Turn one of the six automatic messages on or off, and edit its wording.
+ *
+ * VALIDATION RUNS HERE TOO, not only in the editor. The client checks so the
+ * owner sees the problem while typing; the server checks because a template
+ * that reaches the database is a template that will be sent to every student in
+ * the centre, unattended, over the centre's name. `{studnet}` saved once is
+ * wrong on every message thereafter, and nobody proof-reads an automatic one.
+ *
+ * An empty template is stored as NULL rather than "": null means "use the
+ * default wording", so clearing the box restores the default instead of
+ * sending a blank message.
+ */
+export async function saveAutoMessage(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change the automatic messages." };
+  }
+
+  const key = String(formData.get("key") ?? "") as AutoMessageKey;
+  const spec = AUTO_MESSAGE_BY_KEY[key];
+  if (!spec) return { error: "No such message." };
+
+  const enabled = formData.get("enabled") === "on";
+  const raw = String(formData.get("template") ?? "").trim();
+
+  // Only validate what will actually be stored. A blank box is the owner asking
+  // for the default back, which is always valid.
+  if (raw) {
+    const problems = validateTemplate(raw, spec);
+    if (problems.length > 0) return { error: problems[0].message };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("auto_messages")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        key,
+        enabled,
+        template: raw || null,
+      },
+      { onConflict: "organization_id,key" },
+    )
+    .select("key");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console/announcements");
+  return {
+    ok: enabled
+      ? `"${spec.label}" is on. ${spec.notWiredYet ? "Nothing raises this event yet, so it will not send." : `It will go to ${spec.audience.toLowerCase()}.`}`
+      : `"${spec.label}" is off. Nothing will be sent.`,
   };
 }

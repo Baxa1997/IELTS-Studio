@@ -2,11 +2,15 @@ import { redirect } from "next/navigation";
 
 import { Card, Empty, PageHead } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
+import { loadAutoMessageSettings } from "@/lib/console/auto-message-service";
+import { AUTO_MESSAGES, type AutoMessageSetting } from "@/lib/console/auto-messages";
 import { loadGroups } from "@/lib/console/groups";
 import { createClient } from "@/lib/supabase/server";
 
 import { AnnouncementComposer } from "./composer";
+import { AutomaticMessages } from "./automatic";
 import { SentPanel, type SentRow, type TelegramClass } from "./sent-panel";
+import { AnnouncementTabs } from "./tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +55,16 @@ export default async function AnnouncementsPage() {
     loadGroups(profile),
     supabase.from("telegram_links").select("group_id, chat_title, verified_at"),
   ]);
+
+  // §12's automatic set. Loaded for everyone who can see the page — a teacher
+  // reads which messages their students receive without being able to change
+  // them, because "did they get told?" is a question a teacher has to answer.
+  const autoSettings = await loadAutoMessageSettings();
+  const autoRecord: Record<string, AutoMessageSetting> = Object.fromEntries(autoSettings);
+  const autoOn = AUTO_MESSAGES.filter((spec) => {
+    const setting = autoSettings.get(spec.key);
+    return (setting ? setting.enabled : spec.onByDefault) && !spec.notWiredYet;
+  }).length;
 
   const people = peopleRes.data ?? [];
   const counts = {
@@ -142,6 +156,10 @@ export default async function AnnouncementsPage() {
         }
       />
 
+      <AnnouncementTabs
+        automaticCount={autoOn}
+        automatic={<AutomaticMessages settings={autoRecord} canEdit={isAdmin} />}
+        broadcast={
       <div
         className="cn-split"
         style={{
@@ -179,6 +197,8 @@ export default async function AnnouncementsPage() {
           <SentPanel rows={rows} classes={telegramClasses} botUsername={botUsername} />
         )}
       </div>
+        }
+      />
     </div>
   );
 }
