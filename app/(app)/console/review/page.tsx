@@ -27,47 +27,32 @@ export default async function ReviewQueuePage() {
         </Link>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Review queue</h1>
         <p className="text-muted-foreground">
-          Audit AI gradings, approve generated content, and correct bands. Your corrections become
-          calibration anchors — the grader gets sharper the more you review.
+          Approve generated content before it reaches a student. Marking essays and tests happens
+          on each report now — see Marking.
         </p>
       </div>
 
-      {/* Low-confidence gradings to audit. */}
-      <section className="rounded-lg border">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div>
-            <h2 className="text-base font-medium">AI gradings to review</h2>
-            <p className="text-muted-foreground text-xs">
-              {gradings.length} pending · {borderlineCount} low-confidence
-            </p>
-          </div>
-        </div>
-        <ul className="divide-y text-sm">
-          {gradings.map((g) => (
-            <li key={g.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{g.studentName}</span>
-                {g.borderline ? (
-                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                    low confidence
-                  </span>
-                ) : null}
-                <span className="text-muted-foreground text-xs tabular-nums">
-                  band {g.band.toFixed(1)} · {new Date(g.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <Link
-                href={`/console/grading/${g.id}`}
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                Review
-              </Link>
-            </li>
-          ))}
-          {gradings.length === 0 ? (
-            <li className="text-muted-foreground px-4 py-3">No gradings awaiting review.</li>
-          ) : null}
-        </ul>
+      {/* THE GRADING QUEUE MOVED. It lived here, writing-only, listing
+          low-confidence gradings and linking to a form that overwrote the AI's
+          band. Marking is now /console/marking: all four skills, oldest first,
+          and it keeps the model's band beside the teacher's instead of
+          replacing it. This page keeps only what it alone does — approving
+          generated content. */}
+      <section className="rounded-lg border p-4">
+        <h2 className="text-base font-medium">Marking moved</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {gradings.length > 0
+            ? `${gradings.length} graded ${gradings.length === 1 ? "essay" : "essays"} were listed here, ${borderlineCount} of them low-confidence.`
+            : "Nothing was waiting here."}{" "}
+          Marking now covers all four skills and keeps the AI&rsquo;s band beside the
+          teacher&rsquo;s.
+        </p>
+        <Link
+          href="/console/marking"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-3")}
+        >
+          Open marking →
+        </Link>
       </section>
 
       {/* Unapproved generated content. */}

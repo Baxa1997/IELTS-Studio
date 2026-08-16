@@ -201,18 +201,18 @@ export async function loadCenterReport(opts: {
       .gte("created_at", since),
     supabase
       .from("reading_attempts")
-      .select("student_id, test_id, band, type_breakdown, created_at")
+      .select("id, student_id, test_id, band, type_breakdown, created_at")
       .in("student_id", studentIds)
       .eq("status", "graded")
       .gte("created_at", since),
     supabase
       .from("listening_attempts")
-      .select("student_id, library_id, score, max_score, result, created_at")
+      .select("id, student_id, library_id, score, max_score, result, created_at")
       .in("student_id", studentIds)
       .gte("created_at", since),
     supabase
       .from("speaking_sessions")
-      .select("student_id, result, started_at")
+      .select("id, student_id, result, started_at")
       .in("student_id", studentIds)
       .eq("state", "graded")
       .gte("started_at", since),
@@ -254,6 +254,7 @@ export async function loadCenterReport(opts: {
   // filter over it, which is what makes accidental cross-skill mixing hard: to
   // combine two skills you would have to write code that looks wrong.
   const listening = (listeningRes.data ?? []) as {
+    id: string;
     student_id: string;
     library_id: string | null;
     score: number | null;
@@ -263,33 +264,75 @@ export async function loadCenterReport(opts: {
   }[];
   const listeningScored = listening.filter((l) => l.score != null && (l.max_score ?? 0) > 0);
 
+  // THE CENTRE'S BAND WINS WHERE THERE IS ONE.
+  //
+  // A teacher who corrects a 5.5 to a 6.0 and then sees the centre report still
+  // averaging 5.5 has been told their correction does not count. Every figure
+  // below reads the reviewed band when a review exists and the AI's otherwise,
+  // which is exactly what "final band" is supposed to mean.
+  const reviewed = new Map<string, number>();
+  {
+    const { data: reviews } = await supabase
+      .from("attempt_reviews")
+      .select("kind, ref_id, final_band")
+      .in("student_id", studentIds);
+    for (const r of (reviews ?? []) as { kind: string; ref_id: string; final_band: number }[]) {
+      reviewed.set(`${r.kind}:${r.ref_id}`, Number(r.final_band));
+    }
+  }
+  const verdict = (kind: string, refId: string, aiBand: number): number =>
+    reviewed.get(`${kind}:${refId}`) ?? aiBand;
+
   const marks: { skill: SkillName; student: string; band: number; at: string }[] = [];
   for (const e of essays) {
     const b = essayBand.get(e.id);
-    if (b != null) marks.push({ skill: "Writing", student: e.student_id, band: b, at: e.created_at });
+    if (b != null)
+      marks.push({
+        skill: "Writing",
+        student: e.student_id,
+        band: verdict("writing", e.id, b),
+        at: e.created_at,
+      });
   }
   for (const r of (readingRes.data ?? []) as {
+    id: string;
     student_id: string;
     band: number | null;
     created_at: string;
   }[]) {
     if (r.band != null)
-      marks.push({ skill: "Reading", student: r.student_id, band: Number(r.band), at: r.created_at });
+      marks.push({
+        skill: "Reading",
+        student: r.student_id,
+        band: verdict("reading", r.id, Number(r.band)),
+        at: r.created_at,
+      });
   }
   for (const l of listening) {
     // The band lives in `result.band`; score/max is the raw mark behind it.
     const b = Number(l.result?.band);
     if (Number.isFinite(b) && b > 0)
-      marks.push({ skill: "Listening", student: l.student_id, band: b, at: l.created_at });
+      marks.push({
+        skill: "Listening",
+        student: l.student_id,
+        band: verdict("listening", l.id, b),
+        at: l.created_at,
+      });
   }
   for (const s of (speakingRes.data ?? []) as {
+    id: string;
     student_id: string;
     result: { overall_band?: number } | null;
     started_at: string;
   }[]) {
     const b = s.result?.overall_band;
     if (typeof b === "number")
-      marks.push({ skill: "Speaking", student: s.student_id, band: b, at: s.started_at });
+      marks.push({
+        skill: "Speaking",
+        student: s.student_id,
+        band: verdict("speaking", s.id, b),
+        at: s.started_at,
+      });
   }
 
   const figureFor = (skill: SkillName, pool = marks): SkillFigure => {

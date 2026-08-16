@@ -1,3 +1,4 @@
+import { AttemptReview } from "@/components/console/attempt-review";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -287,6 +288,12 @@ export default async function ListeningResultPage({ params }: PageProps) {
             Practice again →
           </Link>
         </div>
+
+        <AttemptReview
+          kind="listening"
+          refId={attempt.id as string}
+          aiBand={typeof result.band === "number" ? result.band : null}
+        />
       </div>
     </div>
   );

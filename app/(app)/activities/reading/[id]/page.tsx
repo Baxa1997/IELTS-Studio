@@ -1,3 +1,4 @@
+import { AttemptReview } from "@/components/console/attempt-review";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -149,6 +150,11 @@ export default async function ReadingFeedbackPage({ params }: PageProps) {
           <p className="text-muted-foreground text-sm">No per-question detail was stored for this attempt.</p>
         ) : null}
       </section>
+
+      {/* Who signed off this band. Renders for centre accounts only — a solo
+          learner has no teacher, so "not yet reviewed" would be a promise
+          nobody made. */}
+      <AttemptReview kind="reading" refId={id} aiBand={band} />
     </div>
   );
 }
