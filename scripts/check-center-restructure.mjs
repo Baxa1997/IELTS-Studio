@@ -38,10 +38,14 @@ const probes = [
   ["timezone + week start", "center_settings", "organization_id, timezone, week_starts_on, working_days"],
   ["unlock audit trail", "center_audit_log", "id, action, actor_name, subject, detail"],
   ["attendance % (redefined)", "v_student_attendance", "student_id, sessions, attended, rate_pct"],
+  // Phase 2 — 20260816130000
+  ["AI band vs final band", "attempt_reviews", "id, kind, ref_id, ai_band, final_band, reason"],
+  ["every graded attempt", "v_gradable_attempts", "kind, ref_id, student_id, submitted_at, ai_band"],
+  ["the marking queue", "v_marking_queue", "kind, ref_id, student_id, submitted_at, ai_band"],
 ];
 
 let missing = 0;
-console.log("\nPhase 1 schema — is it applied?\n");
+console.log("\nCenter restructure schema — is it applied?\n");
 
 for (const [what, table, columns] of probes) {
   const { error } = await db.from(table).select(columns).limit(1);
@@ -72,8 +76,11 @@ if (enumError) {
 console.log(
   missing === 0
     ? "\nApplied. The restructure is live in the database.\n"
-    : `\n${missing} of ${probes.length + 1} MISSING — migration 20260816120000 has not been applied.\n` +
-        "Do not deploy the app until it is: these loaders return null, and the\n" +
-        "console renders blank rather than erroring.\n",
+    : `\n${missing} of ${probes.length + 1} MISSING — a migration has not been applied.\n` +
+        "  Phase 1 objects → supabase/migrations/20260816120000_center_correctness.sql\n" +
+        "  Phase 2 objects → supabase/migrations/20260816130000_attempt_reviews.sql\n\n" +
+        "Phase 1 is load-bearing: without it these loaders return null and the\n" +
+        "console renders blank rather than erroring. Phase 2 degrades safely —\n" +
+        "the marking queue reads empty and the review panel cannot save.\n",
 );
 process.exit(missing === 0 ? 0 : 1);

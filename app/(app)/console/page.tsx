@@ -32,6 +32,7 @@ import {
 import { requireOrgUser } from "@/lib/auth";
 import { loadDay } from "@/lib/console/attendance";
 import { loadCenterSettings } from "@/lib/console/center-settings";
+import { loadMarkingQueue, OVERDUE_HOURS } from "@/lib/console/marking";
 import { loadCenterReport, SKILL_UNIT } from "@/lib/console/reports";
 import { centerNow, registersToMark } from "@/lib/console/schedule";
 import { createClient } from "@/lib/supabase/server";
@@ -68,7 +69,7 @@ export default async function ConsolePage() {
   let groupsQuery = supabase.from("groups").select("id").eq("status", "active");
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
-  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, day] =
+  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, day, queue] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, role, member_status"),
       supabase
@@ -85,6 +86,7 @@ export default async function ConsolePage() {
       // reported open registers on days the timetable had nothing on and
       // Attendance said "nothing is timetabled". One function now answers it.
       loadDay(profile, todayIso),
+      loadMarkingQueue(profile),
     ]);
 
   const people = (membersRes.data ?? []) as {
@@ -155,6 +157,10 @@ export default async function ConsolePage() {
   // starts at 18:00 is not late at lunchtime, and an alert that fires all day
   // for something you cannot do yet is an alert people learn to close.
   const overdueRegisters = registersToMark(day, day.timezone);
+  // The doc's "unmarked submissions" alert: graded, in a group, and nobody has
+  // put a name to it in two days. Oldest first, so the detail line names the
+  // student who has waited longest rather than an arbitrary one.
+  const overdueMarking = queue.filter((q) => q.waitingHours >= OVERDUE_HOURS);
 
   // The four things that have to exist before a center is running. Once they all
   // do, the checklist never comes back — it exists to cure the empty console.
@@ -185,6 +191,16 @@ export default async function ConsolePage() {
             .join(", "),
           cta: "See list",
           href: "/console/reports",
+        }
+      : null,
+    overdueMarking.length > 0
+      ? {
+          icon: "!",
+          tone: "red" as Tone,
+          title: `${overdueMarking.length} submission${overdueMarking.length === 1 ? "" : "s"} waiting over 48 hours`,
+          detail: `Graded by the AI, nobody has signed off. Longest: ${overdueMarking[0].studentName}.`,
+          cta: "Mark",
+          href: "/console/marking",
         }
       : null,
     groupsNoTeacher > 0

@@ -42,9 +42,17 @@ export async function loadNavCounts(profile: Profile): Promise<Record<string, nu
       .limit(500),
   ]);
 
+  // Work the AI has graded that nobody has signed off. A count on the rail is
+  // the only thing that makes marking a habit rather than a page you remember
+  // to visit — and it is derived, so it can never disagree with the queue.
+  const { count: marking } = await supabase
+    .from("v_marking_queue")
+    .select("ref_id", { count: "exact", head: true });
+
   const groupIds = (groupsRes.data ?? []).map((g) => g.id as string);
   const counts: Record<string, number> = {
     groups: groupIds.length,
+    marking: marking ?? 0,
     newWork: new Set(
       ((newWorkRes.data ?? []) as { studentId: string | null }[])
         .map((n) => n.studentId)

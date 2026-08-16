@@ -134,7 +134,11 @@ const ADMIN: Section[] = [
      anything that wasn't people or money. */
   {
     title: "Learning",
-    items: [{ label: "Results", href: "/console/reports", icon: ChartNoAxesColumn }],
+    items: [
+      // Marking first: it is work waiting, and Results is what it produces.
+      { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
+      { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
+    ],
   },
   {
     title: "Communication",
@@ -172,7 +176,11 @@ const ADMINISTRATOR: Section[] = [
   },
   {
     title: "Learning",
-    items: [{ label: "Results", href: "/console/reports", icon: ChartNoAxesColumn }],
+    items: [
+      // Marking first: it is work waiting, and Results is what it produces.
+      { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
+      { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
+    ],
   },
   {
     title: "Communication",
@@ -212,7 +220,11 @@ const TEACHER: Section[] = [
   },
   {
     title: "Learning",
-    items: [{ label: "Results", href: "/console/reports", icon: ChartNoAxesColumn }],
+    items: [
+      // Marking first: it is work waiting, and Results is what it produces.
+      { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
+      { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
+    ],
   },
   {
     title: "Communication",
