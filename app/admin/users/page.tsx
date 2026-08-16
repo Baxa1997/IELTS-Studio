@@ -44,7 +44,10 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase() || "—";
 
-const COLS = "2.3fr 1fr 1.4fr .9fr .8fr 1fr 60px";
+/** The last column is fixed at 88px because it holds the "Manage" button, which
+ *  sets `white-space: nowrap` — give it a fraction and it overflows its cell on
+ *  a narrow window instead of wrapping. */
+const COLS = "2.3fr 1fr 1.4fr .9fr .8fr 1fr 88px";
 const PAGE_SIZE = 25;
 
 const PLAN_COLOR: Record<OrgPlan, string> = {
@@ -312,7 +315,7 @@ export default async function UsersPage({
               <div>PLAN</div>
               <div style={{ textAlign: "right" }}>PRACTICE</div>
               <div>JOINED</div>
-              <div style={{ textAlign: "right" }}>PLAN</div>
+              <div style={{ textAlign: "right" }}>ACTIONS</div>
             </TableHead>
 
             {rows.map((u) => (
