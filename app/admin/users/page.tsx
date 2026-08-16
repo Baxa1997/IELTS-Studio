@@ -9,8 +9,6 @@ import {
   Identity,
   INDIGO,
   INK,
-  Kpi,
-  KpiRow,
   LINE,
   MUTED,
   Pill,
@@ -23,11 +21,12 @@ import {
   TONE,
   clip,
 } from "@/components/admin/ui";
-import { loadUsers, type PlatformUser } from "@/lib/admin/platform";
+import { loadEngagement, loadUsers, type PlatformUser } from "@/lib/admin/platform";
 import { monthlyPrice } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
+import { FilterAutoSubmit } from "./filter-auto-submit";
 import { PlanControls } from "./plan-controls";
 
 export const dynamic = "force-dynamic";
@@ -44,17 +43,20 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase() || "—";
 
-/** The last column is fixed at 88px because it holds the "Manage" button, which
- *  sets `white-space: nowrap` — give it a fraction and it overflows its cell on
- *  a narrow window instead of wrapping. */
-const COLS = "2.3fr 1fr 1.4fr .9fr .8fr 1fr 88px";
+/** Fixed last column, as the design has it — it holds icon buttons, and a
+ *  fractional track would let them drift away from the header above them.
+ *  60px rather than the design's 110px: that width is for three icons, and two
+ *  of those (sign in as, suspend) are actions this platform does not have. */
+const COLS = "2.3fr 1fr 1.4fr .9fr .8fr 1fr 60px";
 const PAGE_SIZE = 25;
 
+/** Straight from the design's `planMix`: free is the quiet grey that should
+ *  dominate the bar, and the paid tiers climb toward the indigo accent. */
 const PLAN_COLOR: Record<OrgPlan, string> = {
-  trial: "#C9C7E4",
-  starter: "#E5A85C",
-  pro: "#7FD8A8",
-  enterprise: "#7C79DB",
+  trial: "#D8D6D0",
+  starter: "#7C79DB",
+  pro: "#4340CB",
+  enterprise: "#E5A85C",
 };
 
 const PLAN_TONE: Record<OrgPlan, "neutral" | "indigo" | "amber" | "green"> = {
@@ -84,6 +86,36 @@ const SORTS = {
 } as const;
 
 type SortKey = keyof typeof SORTS;
+
+/** The design's small KPI tile: 23px value in its own colour, 12px label. */
+function Tile({
+  label,
+  value,
+  sub,
+  ink,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub: string;
+  ink: string;
+}) {
+  return (
+    <div
+      style={{
+        background: "#fff",
+        border: `1px solid ${LINE}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+      }}
+    >
+      <div style={{ fontSize: 12, color: MUTED, marginBottom: 7 }}>{label}</div>
+      <div style={{ fontSize: 23, fontWeight: 600, color: ink, letterSpacing: "-.02em" }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 11.5, color: FAINT, marginTop: 4, ...clip }}>{sub}</div>
+    </div>
+  );
+}
 
 const field: React.CSSProperties = {
   border: "1px solid #E4E2DC",
@@ -115,7 +147,7 @@ export default async function UsersPage({
   const plan = sp.plan && sp.plan !== "all" ? sp.plan : undefined;
   const sort: SortKey = (sp.sort && sp.sort in SORTS ? sp.sort : "recent") as SortKey;
 
-  const all = await loadUsers(query);
+  const [all, engagement] = await Promise.all([loadUsers(query), loadEngagement()]);
   const filtered = all
     .filter((u) => (role ? u.role === role : true))
     .filter((u) => (kind ? u.orgKind === kind : true))
@@ -130,6 +162,7 @@ export default async function UsersPage({
   const inCenters = all.filter((u) => u.orgKind === "center").length;
   const practising = all.filter((u) => u.practiceCount > 0).length;
   const byPlan = (p: OrgPlan) => all.filter((u) => u.orgPlan === p).length;
+  const paidPeople = all.filter((u) => u.orgPlan !== "trial").length;
 
   // A URL builder that keeps every other filter — the classic bug here is a
   // pagination link that silently drops the search you had typed.
@@ -151,98 +184,136 @@ export default async function UsersPage({
         subtitle="Everyone on the platform, with how much work each of them owns."
       />
 
-      <KpiRow cols={4}>
-        <Kpi label="Users" value={all.length} sub="all roles" />
-        <Kpi label="Individual" value={all.length - inCenters} sub="own workspace" />
-        <Kpi label="In a center" value={inCenters} sub="on a centre roll" />
-        <Kpi
-          label="Never practised"
-          value={all.length - practising}
-          delta={`${all.length ? Math.round(((all.length - practising) / all.length) * 100) : 0}%`}
-          deltaTone="red"
-          sub="of everyone"
-        />
-      </KpiRow>
-
-      {/* ── plan mix ───────────────────────────────────────────────────── */}
-      <Card pad style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
-          <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0, color: INK }}>
-            Plan mix
-          </h2>
-          <span style={{ fontSize: 12.5, color: SOFT }}>counted over people, not workspaces</span>
-          <Link
-            href="/admin/plans"
-            style={{ marginLeft: "auto", fontSize: 12.5, color: INDIGO, textDecoration: "none" }}
-          >
-            Plans &amp; revenue →
-          </Link>
+      {/* The design's split, not a flat KPI row: four small tiles in a 2×2 on
+          the left, the plan mix filling the same height on the right. */}
+      <div
+        className="ad-split-users"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.1fr 1.9fr",
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          <Tile
+            label="Users"
+            value={all.length}
+            sub={`${all.length - inCenters} individual · ${inCenters} in a center`}
+            ink={INDIGO}
+          />
+          <Tile
+            label="Active this week"
+            value={engagement.activeLast7}
+            sub={`${all.length ? Math.round((engagement.activeLast7 / all.length) * 100) : 0}% of the base`}
+            ink={INK}
+          />
+          <Tile
+            label="Never practised"
+            value={all.length - practising}
+            sub="worth one nudge email"
+            ink={TONE.red.ink}
+          />
+          <Tile
+            label="On a paid plan"
+            value={paidPeople}
+            sub={
+              PLAN_ORDER.filter((p) => p !== "trial" && byPlan(p) > 0)
+                .map((p) => `${byPlan(p)} ${PLAN_TIERS[p].name}`)
+                .join(" · ") || "nobody yet"
+            }
+            ink={TONE.green.ink}
+          />
         </div>
 
-        <div
+        <section
           style={{
-            display: "flex",
-            height: 10,
-            borderRadius: 6,
-            overflow: "hidden",
-            gap: 2,
-            marginBottom: 14,
+            background: "#fff",
+            border: `1px solid ${LINE}`,
+            borderRadius: 12,
+            padding: "16px 18px",
           }}
         >
-          {PLAN_ORDER.filter((p) => byPlan(p) > 0).map((p) => (
-            <div
-              key={p}
-              title={`${PLAN_TIERS[p].name}: ${byPlan(p)}`}
-              style={{
-                background: PLAN_COLOR[p],
-                width: `${(byPlan(p) / Math.max(1, all.length)) * 100}%`,
-              }}
-            />
-          ))}
-        </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: 16, fontWeight: 700, margin: 0, color: INK }}>
+              Plan mix
+            </h2>
+            <span style={{ fontSize: 12.5, color: SOFT }}>
+              {all.length} accounts · {paidPeople} on a paid plan
+            </span>
+            <Link
+              href="/admin/plans"
+              style={{ marginLeft: "auto", fontSize: 12.5, color: INDIGO, textDecoration: "none" }}
+            >
+              Plans &amp; limits →
+            </Link>
+          </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-          {PLAN_ORDER.map((p) => {
-            const n = byPlan(p);
-            const on = plan === p;
-            return (
-              <Link
+          <div
+            style={{
+              display: "flex",
+              height: 10,
+              borderRadius: 6,
+              overflow: "hidden",
+              gap: 2,
+              marginBottom: 14,
+            }}
+          >
+            {PLAN_ORDER.filter((p) => byPlan(p) > 0).map((p) => (
+              <div
                 key={p}
-                href={url({ plan: on ? "all" : p, page: undefined })}
+                title={`${PLAN_TIERS[p].name}: ${byPlan(p)}`}
                 style={{
-                  textDecoration: "none",
-                  borderRadius: 10,
-                  padding: "8px 10px",
-                  border: `1px solid ${on ? TONE.indigo.border : "transparent"}`,
-                  background: on ? TONE.indigo.tint : "transparent",
+                  background: PLAN_COLOR[p],
+                  width: `${(byPlan(p) / Math.max(1, all.length)) * 100}%`,
                 }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span
-                    style={{ width: 8, height: 8, borderRadius: 3, background: PLAN_COLOR[p] }}
-                  />
-                  <span style={{ fontSize: 12, color: MUTED }}>{PLAN_TIERS[p].name}</span>
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: INK }}>{n}</div>
-                <div style={{ fontSize: 11, color: FAINT }}>
-                  {monthlyPrice(p) > 0 ? `$${monthlyPrice(p).toFixed(2)}/mo each` : "free"}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </Card>
+              />
+            ))}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+            {PLAN_ORDER.map((p) => {
+              const n = byPlan(p);
+              const on = plan === p;
+              return (
+                <Link
+                  key={p}
+                  href={url({ plan: on ? "all" : p, page: undefined })}
+                  title={`Show only ${PLAN_TIERS[p].name} accounts`}
+                  style={{
+                    textDecoration: "none",
+                    borderRadius: 8,
+                    padding: "6px 8px",
+                    margin: "-6px -8px",
+                    border: `1px solid ${on ? TONE.indigo.border : "transparent"}`,
+                    background: on ? TONE.indigo.tint : "transparent",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span
+                      style={{ width: 8, height: 8, borderRadius: 3, background: PLAN_COLOR[p] }}
+                    />
+                    <span style={{ fontSize: 12, color: MUTED }}>{PLAN_TIERS[p].name}</span>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: INK }}>{n}</div>
+                  {/* List value, not billed revenue — the two differ, and the
+                      difference is spelled out on Plans & revenue where there
+                      is room to explain it rather than imply it in a caption. */}
+                  <div style={{ fontSize: 11, color: FAINT }}>
+                    {monthlyPrice(p) > 0 ? `$${(n * monthlyPrice(p)).toFixed(0)}/mo listed` : "$0"}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      </div>
 
       {/* ── the table ──────────────────────────────────────────────────── */}
       <Card>
         <CardHead
           title={query ? `Matching “${query}”` : "All users"}
           note="Capped at the 500 most recent accounts."
-          badge={
-            <span style={{ fontSize: 12, color: FAINT, fontWeight: 400 }}>
-              {filtered.length} shown{filtered.length !== all.length ? ` of ${all.length}` : ""}
-            </span>
-          }
         />
 
         <form
@@ -290,20 +361,18 @@ export default async function UsersPage({
               </option>
             ))}
           </select>
-          <button
-            type="submit"
-            style={{
-              ...field,
-              background: INDIGO,
-              color: "#fff",
-              border: 0,
-              fontWeight: 600,
-              cursor: "pointer",
-              padding: "9px 16px",
-            }}
-          >
-            Apply
-          </button>
+          {/* The design shows no Apply button — the selects act on change. This
+              submits the same form from the client, and the button stays for
+              anyone without JavaScript rather than leaving the page unusable. */}
+          <FilterAutoSubmit />
+          <span style={{ fontSize: 12, color: FAINT }}>
+            {filtered.length} of {all.length}
+          </span>
+          <noscript>
+            <button type="submit" style={{ ...field, cursor: "pointer" }}>
+              Apply
+            </button>
+          </noscript>
         </form>
 
         <div className="ad-scroll">

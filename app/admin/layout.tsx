@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { Hanken_Grotesk, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
 
+import { AdminHeader } from "@/components/admin/header";
 import { AppShell } from "@/components/app-shell/shell";
 import { requireSuperAdmin } from "@/lib/auth";
 
@@ -14,6 +15,31 @@ const newsreader = Newsreader({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-newsreader",
+  display: "swap",
+});
+
+/**
+ * The design's own two faces, loaded for this route group ONLY.
+ *
+ * Work Sans and Source Serif 4 are what the Super Admin design is drawn in, and
+ * substituting the app's Hanken/Newsreader was visibly not the same page. They
+ * are scoped here rather than in the root layout because /admin is the only
+ * surface that uses them — a learner loading the dashboard should not pay for
+ * two font families they never see.
+ *
+ * The rail keeps the app's own type. Only the page area picks these up, via
+ * `Surface` in components/admin/ui.tsx.
+ */
+const workSans = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-work-sans",
+  display: "swap",
+});
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-source-serif",
   display: "swap",
 });
 
@@ -40,7 +66,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
 
   return (
-    <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
+    <div
+      className={`${hanken.variable} ${newsreader.variable} ${workSans.variable} ${sourceSerif.variable} lp-root`}
+    >
       <AppShell
         role="super_admin"
         home="/admin"
@@ -50,6 +78,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         initialCollapsed={collapsed}
         variant="console"
       >
+        <AdminHeader />
         {children}
       </AppShell>
     </div>

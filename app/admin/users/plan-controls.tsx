@@ -85,24 +85,21 @@ export function PlanControls({
 
   return (
     <span style={{ position: "relative", display: "inline-block" }}>
+      {/* An icon, as the design has it. The label lives in `title` and
+          `aria-label` so it is still announced and still hoverable — a table of
+          text buttons competes with the data it sits beside. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        style={{
-          border: `1px solid ${LINE}`,
-          background: "#fff",
-          borderRadius: 7,
-          padding: "4px 10px",
-          fontFamily: "inherit",
-          fontSize: 12,
-          color: INDIGO,
-          fontWeight: 600,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-        }}
+        title="Plan and limits"
+        aria-label="Plan and limits"
+        className="ad-act ad-act--go"
+        style={{ color: INDIGO }}
         aria-expanded={open}
       >
-        Manage
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" />
+        </svg>
       </button>
 
       {/*

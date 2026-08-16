@@ -561,6 +561,8 @@ export interface Engagement {
   neverPractised: number;
   /** Learners with at least one attempt in the last 30 days. */
   activeLast30: number;
+  /** …and in the last 7, which is the number that moves week to week. */
+  activeLast7: number;
 }
 
 /**
@@ -578,6 +580,7 @@ export interface Engagement {
 export async function loadEngagement(): Promise<Engagement> {
   const admin = createAdminClient();
   const since = daysAgo(30);
+  const week = daysAgo(7);
 
   const [profiles, essays, reading, listening, speaking] = await Promise.all([
     admin.from("profiles").select("id").eq("role", "student"),
@@ -590,13 +593,16 @@ export async function loadEngagement(): Promise<Engagement> {
   const everyone = (profiles.data ?? []).map((p) => p.id as string);
   const touched = new Set<string>();
   const recent = new Set<string>();
+  const thisWeek = new Set<string>();
 
   const absorb = (rows: { student_id?: string | null }[] | null, stamp: (r: never) => string) => {
     for (const row of rows ?? []) {
       const id = row.student_id;
       if (!id) continue;
       touched.add(id);
-      if (stamp(row as never) >= since) recent.add(id);
+      const at = stamp(row as never);
+      if (at >= since) recent.add(id);
+      if (at >= week) thisWeek.add(id);
     }
   };
 
@@ -609,5 +615,6 @@ export async function loadEngagement(): Promise<Engagement> {
     learners: everyone.length,
     neverPractised: everyone.filter((id) => !touched.has(id)).length,
     activeLast30: everyone.filter((id) => recent.has(id)).length,
+    activeLast7: everyone.filter((id) => thisWeek.has(id)).length,
   };
 }

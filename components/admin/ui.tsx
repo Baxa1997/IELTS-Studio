@@ -31,10 +31,10 @@ export const NAVY = "#14133A";
 export const CREAM = "#F4F3EF";
 export const HEAD_BG = "#FAFAF8";
 
-/** Newsreader, not the design's Source Serif 4: it is already loaded by the
- *  admin layout, reads the same at heading sizes, and the app is carrying
- *  enough font families as it is. */
-export const SERIF = "var(--font-newsreader), Georgia, serif";
+/** The design's own two faces, loaded for this route group in the admin layout.
+ *  Newsreader/Hanken were tried first and were visibly not the same page. */
+export const SERIF = "var(--font-source-serif), Georgia, serif";
+export const SANS = "var(--font-work-sans), system-ui, sans-serif";
 
 export type Tone = "indigo" | "green" | "amber" | "red" | "neutral";
 
@@ -49,9 +49,17 @@ export const TONE: Record<Tone, { tint: string; ink: string; border: string }> =
 
 /* ─────────────────────────── page frame ─────────────────────────── */
 
-/** The cream page area. The shell supplies the ground; this owns the inset. */
+/**
+ * The cream page area. The shell supplies the ground; this owns the inset.
+ *
+ * Also where the design's body face is applied, so it reaches every admin page
+ * without touching the rail — which keeps the app's own type, by the owner's
+ * decision.
+ */
 export function Surface({ children }: { children: React.ReactNode }) {
-  return <div style={{ padding: "24px 28px 70px" }}>{children}</div>;
+  return (
+    <div style={{ padding: "24px 28px 70px", fontFamily: SANS, color: INK }}>{children}</div>
+  );
 }
 
 export function PageTitle({
