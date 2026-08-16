@@ -88,3 +88,40 @@ describe("weakestCriteria", () => {
     expect(caps).toEqual(["Task Achievement"]);
   });
 });
+
+/**
+ * The joined cell, and how the group roll-up takes it apart again.
+ *
+ * `weakestCriteria` returns an array; three call sites render it as one table
+ * cell and one of them (the per-assignment report) then splits that cell back
+ * apart to tally "What the group struggled with". If the join and the split
+ * ever disagree, the tally silently grows a category that is not a criterion —
+ * exactly the class of silent, plausible wrongness this whole file exists for.
+ */
+describe("the joined cell survives the round trip", () => {
+  /** Mirrors the join in student-report.ts and assignments.ts. */
+  const asCell = (caps: string[]) => (caps.length > 0 ? caps.join(" + ") : null);
+  /** Mirrors the split in assignments.ts's commonMistakes tally. */
+  const split = (cell: string) => cell.split(/,\s|\s\+\s/);
+
+  it("splits a two-criterion cell back into two criteria", () => {
+    const cell = asCell(weakestCriteria(graderOrder(5, 5, 6.5, 6)))!;
+    expect(cell).toBe("Coherence & Cohesion + Lexical Resource");
+    expect(split(cell)).toEqual(["Coherence & Cohesion", "Lexical Resource"]);
+  });
+
+  it("does not tear apart the ampersand inside a criterion name", () => {
+    // "Grammatical Range & Accuracy" contains an "&" and "Coherence & Cohesion"
+    // contains one too. A separator of " & " instead of " + " would have made
+    // every criterion name its own bug.
+    const cell = asCell(weakestCriteria(graderOrder(6, 6, 6, 5)))!;
+    expect(split(cell)).toEqual(["Grammatical Range & Accuracy"]);
+  });
+
+  it("still splits reading's comma-separated question types", () => {
+    expect(split("matching headings (3), true/false (2)")).toEqual([
+      "matching headings (3)",
+      "true/false (2)",
+    ]);
+  });
+});

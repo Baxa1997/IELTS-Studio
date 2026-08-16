@@ -49,6 +49,19 @@ const probes = [
   ["AI band vs final band", "attempt_reviews", "id, kind, ref_id, ai_band, final_band, reason"],
   ["every graded attempt", "v_gradable_attempts", "kind, ref_id, student_id, submitted_at, ai_band"],
   ["the marking queue", "v_marking_queue", "kind, ref_id, student_id, submitted_at, ai_band"],
+  // Phase 4 — 20260816170000 (placement baselines)
+  // One probe per MIGRATION, not per table: `assignments` gains a column in
+  // 20260816170000 and another in 20260816190000, and a single combined probe
+  // reported both as missing when only the second one was — which is how you
+  // end up re-applying a migration that was already live.
+  ["placement practice", "assignments", "id, is_placement"],
+  ["assigning from the library", "assignments", "id, library_id"],
+  ["baseline provenance", "skill_estimates", "student_id, baseline_band, baseline_source, target_set_by"],
+  // Phase 4 — 20260816180000 (automatic messages)
+  ["the six automatic messages", "auto_messages", "organization_id, key, enabled, template"],
+  ["never sending a nudge twice", "auto_message_sends", "id, key, recipient_id, subject_key"],
+  // Phase 4 — 20260816190000 (practice library)
+  ["the practice library", "practice_library", "id, kind, ref_id, title, skill, level, archived_at"],
 ];
 
 let missing = 0;
@@ -84,10 +97,19 @@ console.log(
   missing === 0
     ? "\nApplied. The restructure is live in the database.\n"
     : `\n${missing} of ${probes.length + 1} MISSING — a migration has not been applied.\n` +
-        "  Phase 1 objects → supabase/migrations/20260816120000_center_correctness.sql\n" +
-        "  Phase 2 objects → supabase/migrations/20260816130000_attempt_reviews.sql\n\n" +
-        "Phase 1 is load-bearing: without it these loaders return null and the\n" +
-        "console renders blank rather than erroring. Phase 2 degrades safely —\n" +
-        "the marking queue reads empty and the review panel cannot save.\n",
+        "  Phase 1 → supabase/migrations/20260816120000_center_correctness.sql\n" +
+        "  Phase 2 → supabase/migrations/20260816130000_attempt_reviews.sql\n" +
+        "  Phase 4 → 20260816170000_placement_baselines.sql\n" +
+        "            20260816180000_auto_messages.sql\n" +
+        "            20260816190000_practice_library.sql\n\n" +
+        "HOW EACH ONE FAILS, which is not the same for all of them:\n\n" +
+        "  Phase 1 is load-bearing. Its loaders return null and the console\n" +
+        "  renders BLANK rather than erroring.\n\n" +
+        "  20260816170000 is the other unsafe one: skill_estimates gains two\n" +
+        "  columns the estimate service WRITES, so without it every upsert\n" +
+        "  fails and no band is ever recorded. Apply it before deploying.\n\n" +
+        "  Phase 2, the auto-messages and the library all degrade safely: the\n" +
+        "  marking queue reads empty, the automatic tab shows the code defaults\n" +
+        "  and saves nothing, and the library shows as empty.\n",
 );
 process.exit(missing === 0 ? 0 : 1);

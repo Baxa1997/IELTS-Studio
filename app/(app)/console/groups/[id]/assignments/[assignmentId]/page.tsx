@@ -16,6 +16,7 @@ import {
   StatRow,
   StatTile,
 } from "@/components/console/page-ui";
+import { KeepButton } from "./keep-button";
 import { requireOrgUser } from "@/lib/auth";
 import { loadAssignmentReport } from "@/lib/console/assignments";
 
@@ -47,6 +48,15 @@ export default async function AssignmentReportPage({
         back={{ href: `/console/groups/${report.groupId}`, label: report.groupName }}
         eyebrow={report.kind}
         title={report.title}
+        actions={
+          report.source && profile.role === "teacher" ? (
+            <KeepButton
+              source={report.source}
+              defaultTitle={report.title}
+              inLibrary={report.inLibrary}
+            />
+          ) : null
+        }
         subtitle={
           <>
             {completed}/{report.rows.length} completed

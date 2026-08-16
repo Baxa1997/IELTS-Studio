@@ -766,7 +766,11 @@ export async function createAssignment(
   const groupId = String(formData.get("group_id") ?? "").trim();
   const kind = String(formData.get("kind") ?? "");
   if (!groupId) return { error: "Missing group." };
-  if (kind !== "writing" && kind !== "reading") return { error: "Choose a practice type." };
+  // "library" is a third way to answer "what practice", not a third skill: the
+  // branch below reads the skill off the shelf item itself.
+  if (kind !== "writing" && kind !== "reading" && kind !== "library") {
+    return { error: "Choose a practice type." };
+  }
 
   const dueRaw = String(formData.get("due_at") ?? "").trim();
   const dueAt = dueRaw ? new Date(dueRaw) : null;
@@ -795,6 +799,70 @@ export async function createAssignment(
   let title: string;
   let promptId: string | null = null;
   let readingTestId: string | null = null;
+
+  // §9: SET IT AGAIN FROM THE SHELF. This branch is the entire point of the
+  // practice library — it reuses content the centre already has instead of
+  // generating more. That is not only a quota saving: two classes set the same
+  // library item sit the SAME paper, so their results can be compared, which
+  // regenerating "the same" prompt never gives you.
+  const libraryId = String(formData.get("library_id") ?? "").trim();
+  if (libraryId) {
+    const { data: item } = await supabase
+      .from("practice_library")
+      .select("id, kind, ref_id, title, archived_at")
+      .eq("id", libraryId)
+      .maybeSingle();
+    if (!item) return { error: "That library item is gone." };
+    if (item.archived_at) return { error: "That item has been archived. Restore it first." };
+
+    if (item.kind === "writing_prompt") {
+      promptId = item.ref_id as string;
+    } else {
+      readingTestId = item.ref_id as string;
+    }
+    title = String(formData.get("title") ?? "").trim() || (item.title as string);
+
+    const { error: insertError } = await supabase.from("assignments").insert({
+      organization_id: profile.organization_id,
+      group_id: groupId,
+      kind: item.kind === "writing_prompt" ? "writing" : "reading",
+      title,
+      instructions,
+      prompt_id: promptId,
+      reading_test_id: readingTestId,
+      due_at: dueAt ? dueAt.toISOString() : null,
+      is_placement: String(formData.get("is_placement") ?? "") === "on",
+      library_id: libraryId,
+      created_by: profile.id,
+    });
+    if (insertError) return { error: insertError.message };
+
+    const reusedHref = promptId ? `/write/${promptId}` : `/read/test/${readingTestId}`;
+    await notifyAssignment({
+      organizationId: profile.organization_id,
+      groupIds: [groupId],
+      title,
+      href: reusedHref,
+      dueAt: dueAt ? dueAt.toISOString() : null,
+      groupNameById: new Map([[groupId, group.name as string]]),
+      // The library item AND the group: setting the same shelf item to a second
+      // class must still notify that class.
+      assignmentKey: `${libraryId}:${dueAt?.toISOString() ?? "no-due"}`,
+    });
+    await notifyAssignmentTelegram({
+      organizationId: profile.organization_id,
+      groupIds: [groupId],
+      kind: item.kind === "writing_prompt" ? "writing" : "reading",
+      title,
+      siteUrl: serverEnv.outboundSiteUrl,
+      note: instructions,
+      dueAt: dueAt ? dueAt.toISOString() : null,
+    });
+
+    revalidatePath(`/console/groups/${groupId}`);
+    revalidatePath("/console/practice");
+    return { notice: `Assigned to ${group.name} from the library — nothing was regenerated.` };
+  }
 
   if (kind === "writing") {
     const category = String(formData.get("category") ?? "") as Task2Category;
@@ -865,6 +933,7 @@ export async function createAssignment(
     title,
     href,
     dueAt: dueAt ? dueAt.toISOString() : null,
+    groupNameById: new Map([[groupId, group.name as string]]),
   });
 
   // The class's Telegram channel gets the same event. There are TWO places

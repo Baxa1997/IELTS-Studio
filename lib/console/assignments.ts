@@ -1,5 +1,6 @@
 import "server-only";
 
+import { weakestCriteria } from "@/lib/console/criteria";
 import { createClient } from "@/lib/supabase/server";
 
 export type AssignmentKind = "writing" | "reading" | "listening";
@@ -44,19 +45,18 @@ export interface AssignmentReport {
   groupId: string;
   groupName: string;
   rows: AssignmentReportRow[];
+  /**
+   * The content behind this assignment, so it can be kept (§9). Null for
+   * listening, which the library does not hold yet.
+   */
+  source: { kind: "writing_prompt" | "reading_test"; refId: string } | null;
+  /** Already on the shelf — the button says "Saved" rather than offering again. */
+  inLibrary: boolean;
   /** Mean band across graded attempts, or null when nobody has finished. */
   averageBand: number | null;
   /** Most common weaknesses across the group, worst first. */
   commonMistakes: { label: string; count: number }[];
 }
-
-const CRITERION_LABEL: Record<string, string> = {
-  TR: "Task Response",
-  TA: "Task Achievement",
-  CC: "Coherence & Cohesion",
-  LR: "Lexical Resource",
-  GRA: "Grammatical Range & Accuracy",
-};
 
 /** Assignments for one group, newest first, with a completion count. */
 export async function loadGroupAssignments(groupId: string): Promise<AssignmentSummary[]> {
@@ -189,16 +189,39 @@ export async function loadAssignmentReport(assignmentId: string): Promise<Assign
   const tally = new Map<string, number>();
   for (const r of rows) {
     if (!r.weakness) continue;
-    // Reading rows list several types; writing rows carry one criterion.
-    for (const part of r.weakness.split(", ")) {
+    // Reading rows list several types ("matching headings (3), true/false (2)");
+    // a writing row carries one criterion, or two joined by "+" when the essay
+    // was held back equally by both. Splitting on only one separator would
+    // tally "Coherence & Cohesion + Lexical Resource" as a third category that
+    // is neither of them.
+    for (const part of r.weakness.split(/,\s|\s\+\s/)) {
       tally.set(part, (tally.get(part) ?? 0) + 1);
     }
   }
+
+  const source =
+    a.kind === "writing" && a.prompt_id
+      ? ({ kind: "writing_prompt", refId: a.prompt_id as string } as const)
+      : a.kind === "reading" && a.reading_test_id
+        ? ({ kind: "reading_test", refId: a.reading_test_id as string } as const)
+        : null;
+
+  const { data: shelved } = source
+    ? await supabase
+        .from("practice_library")
+        .select("id")
+        .eq("kind", source.kind)
+        .eq("ref_id", source.refId)
+        .is("archived_at", null)
+        .maybeSingle()
+    : { data: null };
 
   return {
     id: a.id as string,
     kind: a.kind as AssignmentKind,
     title: a.title as string,
+    source,
+    inLibrary: Boolean(shelved),
     instructions: (a.instructions as string | null) ?? null,
     dueAt: (a.due_at as string | null) ?? null,
     groupId: a.group_id as string,
@@ -375,15 +398,23 @@ async function listeningRows(
   });
 }
 
-/** The lowest-scoring criterion — the thing capping this essay's band. */
+/**
+ * What capped this essay — the THIRD copy of the tie-break bug, and the one on
+ * the page a teacher actually plans a lesson from.
+ *
+ * The old rule walked `Object.entries` and kept the first strict minimum, and
+ * the grader always writes CC first. So every essay scoring the same on all
+ * four criteria — 47 of 74 on the real corpus — was reported as capped by
+ * Coherence & Cohesion, both in this row and in `commonMistakes`, the panel
+ * headed "What the group struggled with". A whole class could be told to work
+ * on cohesion because of JSON key order.
+ *
+ * Two criteria tied at the bottom are both named; all four tied names none,
+ * because a uniformly 5.0 essay has no weak spot.
+ */
 function weakestCriterion(criteria: Record<string, unknown>): string | null {
-  let worst: { key: string; band: number } | null = null;
-  for (const [key, value] of Object.entries(criteria ?? {})) {
-    const band = Number((value as { band?: unknown })?.band);
-    if (!Number.isFinite(band)) continue;
-    if (!worst || band < worst.band) worst = { key, band };
-  }
-  return worst ? (CRITERION_LABEL[worst.key] ?? worst.key) : null;
+  const capping = weakestCriteria(criteria as Record<string, { band?: number }>);
+  return capping.length > 0 ? capping.join(" + ") : null;
 }
 
 /** Question types this student got wrong most often (at most two). */

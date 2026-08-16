@@ -24,7 +24,9 @@ import {
 import { requireOrgUser } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/console/attempts";
 import { loadPracticeBoard, type PracticeBoardRow, type PracticeStatus } from "@/lib/console/practice-board";
+import { libraryFacets, loadLibrary } from "@/lib/console/practice-library";
 
+import { LibraryPanel } from "./library-panel";
 import { RemindButton } from "./remind-button";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +65,10 @@ export default async function PracticePage({
 
   const sp = await searchParams;
   const board = await loadPracticeBoard(profile);
+  // §9: the shelf lives on this page, under the board. The board answers "is
+  // what we set landing"; the library answers "what do we already have" — the
+  // two questions a teacher has when they sit down to set work.
+  const library = await loadLibrary();
 
   const shown = board.rows.filter(
     (r) =>
@@ -233,6 +239,22 @@ export default async function PracticePage({
         ) : (
           <Empty>Nothing matches those filters.</Empty>
         )}
+      </Card>
+
+      {/* ── the shelf ──────────────────────────────────────────────────────── */}
+      <Card flush>
+        <CardHead
+          title="Practice library"
+          note="kept so the same paper can be set again — two classes sitting the same task are comparable"
+          divided
+        />
+        <div style={{ padding: "14px 16px 16px" }}>
+          <LibraryPanel
+            items={library}
+            facets={libraryFacets(library)}
+            canEdit={profile.role === "teacher" || profile.role === "center_admin"}
+          />
+        </div>
       </Card>
     </div>
   );

@@ -47,6 +47,8 @@ import { AssignTeacherForm, CloseGroupButton, DeleteGroupButton } from "../group
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { TelegramPanel } from "./telegram-panel";
+import { loadLibrary } from "@/lib/console/practice-library";
+
 import { AssignPanel } from "./assign-panel";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
@@ -219,6 +221,15 @@ export default async function GroupDetailPage({
   const libraryTests = (libTestsRes.data ?? []).map((t, i) => ({
     id: t.id as string,
     label: t.target_band ? `Test ${i + 1} — band ${t.target_band} level` : `Test ${i + 1}`,
+  }));
+
+  // §9's shelf, offered here so setting practice can reuse rather than
+  // regenerate. Kept to what is unarchived and current.
+  const shelf = (await loadLibrary()).map((item) => ({
+    id: item.id,
+    title: item.title,
+    skill: item.skill,
+    level: item.level,
   }));
 
   // Per-student bands. The weakest measured skill, never a cross-skill mean —
@@ -433,7 +444,7 @@ export default async function GroupDetailPage({
                 Everyone in the group gets the same prompt or test, so their results are comparable.
                 You can also set practice from the Writing, Reading or Listening screens themselves.
               </CardNote>
-              <AssignPanel groupId={group.id} libraryTests={libraryTests} />
+              <AssignPanel groupId={group.id} libraryTests={libraryTests} library={shelf} />
             </Card>
           ) : null}
 
