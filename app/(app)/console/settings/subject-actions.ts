@@ -131,7 +131,7 @@ export async function setSubjectActive(
   if (!data || data.length === 0) return { error: "You cannot change that subject." };
 
   refresh();
-  return { ok: active ? "Back on the list." : "Retired — existing classes keep it." };
+  return { ok: active ? "Back on the list." : "Retired — existing groups keep it." };
 }
 
 /**
@@ -175,7 +175,7 @@ export async function setTeacherSubjects(
   return {
     ok:
       subjectIds.length === 0
-        ? "Cleared — they can be put on any class."
+        ? "Cleared — they can be put on any group."
         : `Set to ${subjectIds.length} subject${subjectIds.length === 1 ? "" : "s"}.`,
   };
 }

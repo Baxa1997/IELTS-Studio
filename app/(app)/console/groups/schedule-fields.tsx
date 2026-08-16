@@ -176,8 +176,8 @@ export function ScheduleFields({
         {days.length > 0
           ? `${describeDays(days)}${startsAt && endsAt ? ` · ${startsAt}–${endsAt}` : ""} — this is what the timetable shows, what the register offers to mark, and the lesson count a part-month fee is divided by.`
           : optional
-            ? "Leave this blank to decide later. Until a class is timetabled, part-month fees are worked out from the center's assumed lesson count instead of its real one."
-            : "Untick every day to take this class off the timetable."}
+            ? "Leave this blank to decide later. Until a group is timetabled, part-month fees are worked out from the center's assumed lesson count instead of its real one."
+            : "Untick every day to take this group off the timetable."}
       </p>
     </div>
   );

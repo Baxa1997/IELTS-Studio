@@ -137,8 +137,8 @@ export default async function AnnouncementsPage() {
         title="Announcements"
         subtitle={
           isAdmin
-            ? "Reaches every account in the app; post it to a class Telegram channel too, where the parents are."
-            : "Write to one of your classes. It reaches them in the app, and in the class Telegram channel if one is connected."
+            ? "Reaches every account in the app; post it to a group Telegram channel too, where the parents are."
+            : "Write to one of your groups. It reaches them in the app, and in the group Telegram channel if one is connected."
         }
       />
 

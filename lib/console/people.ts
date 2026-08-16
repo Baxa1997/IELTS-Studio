@@ -1,6 +1,7 @@
 import "server-only";
 
 import { canManagePeople, type AppRole } from "@/lib/auth";
+import { type MemberStatus } from "@/lib/console/status";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -29,6 +30,9 @@ export interface StudentRow {
   name: string;
   username: string | null;
   avatarPath: string | null;
+  /** Enrolled, on a break, or gone. Drives every denominator they appear in —
+   *  attendance, invoicing, and whether anyone should be chasing them. */
+  status: MemberStatus;
   groups: { id: string; name: string }[];
   /** GRADED practices, any skill — see v_practice_activity. Drafts don't count. */
   practiceCount: number;
@@ -162,7 +166,17 @@ export async function loadStudents(opts: {
   const targets = new Map<string, number>();
   const attendance = new Map<string, number>();
   const sparks = new Map<string, number[]>();
+  const statuses = new Map<string, MemberStatus>();
   if (rosterIds.length > 0) {
+    // Status is on `profiles`, not on the stats view — the view aggregates work
+    // and has no business knowing whether someone still attends.
+    const { data: people } = await supabase
+      .from("profiles")
+      .select("id, member_status")
+      .in("id", rosterIds);
+    for (const p of (people ?? []) as { id: string; member_status: string | null }[]) {
+      statuses.set(p.id, (p.member_status as MemberStatus) ?? "active");
+    }
     const [{ data: estimates }, { data: rates }] = await Promise.all([
       supabase
         .from("skill_estimates")
@@ -223,6 +237,7 @@ export async function loadStudents(opts: {
         name: (s.full_name as string | null) ?? "Unnamed",
         username: (s.username as string | null) ?? null,
         avatarPath: (s.avatar_path as string | null) ?? null,
+        status: statuses.get(id) ?? "active",
         groups: groupsByStudent.get(id) ?? [],
         practiceCount: (s.practice_count as number | null) ?? 0,
         lastActive: (s.last_active as string | null) ?? null,

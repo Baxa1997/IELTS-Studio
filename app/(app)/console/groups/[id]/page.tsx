@@ -33,6 +33,7 @@ import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
+import { ENROLLED, STUDENT_STATUS_LABEL } from "@/lib/console/status";
 import { loadGroupActivity } from "@/lib/console/student-report";
 import { loadClassMoney } from "@/lib/finance/class-money";
 import { formatMoney, toMajor } from "@/lib/finance/money";
@@ -42,7 +43,7 @@ import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { AssignTeacherForm, DeleteGroupButton } from "../group-forms";
+import { AssignTeacherForm, CloseGroupButton, DeleteGroupButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { TelegramPanel } from "./telegram-panel";
@@ -86,7 +87,13 @@ export default async function GroupDetailPage({
   const isOwner = isAdmin || group.teacherId === profile.id;
   if (!isOwner) notFound();
 
-  const memberIds = group.members.map((m) => m.id);
+  // DENOMINATORS ARE THE ENROLLED ROSTER. A student who left keeps their marks,
+  // their registers and their invoices — but counting them as a member makes
+  // every completion percentage and every "measured out of" look worse than the
+  // group is doing, for as long as the center exists.
+  const roster = group.members.filter((m) => ENROLLED.includes(m.status));
+  const alumni = group.members.filter((m) => m.status === "left");
+  const memberIds = roster.map((m) => m.id);
 
   // The shared reading library lives in its own org, so it's read with the
   // service-role client (exactly as the student read hub does).
@@ -237,23 +244,23 @@ export default async function GroupDetailPage({
     return measured.length ? measured.reduce((lo, m) => (m.band < lo.band ? m : lo)) : null;
   };
 
-  const measuredMembers = group.members
+  const measuredMembers = roster
     .map((m) => ({ ...m, weakest: weakestOf(m.id), target: targets.get(m.id) ?? null }))
     .filter((m) => m.weakest != null);
   const atTarget = measuredMembers.filter(
     (m) => m.target != null && (m.weakest as { band: number }).band >= m.target,
   ).length;
-  const activeCount = group.members.filter((m) => (activity.get(m.id)?.count30d ?? 0) > 0).length;
+  const activeCount = roster.filter((m) => (activity.get(m.id)?.count30d ?? 0) > 0).length;
   const totalCompleted = assignments.reduce((n, a) => n + a.completed, 0);
   const completionPct =
-    assignments.length > 0 && group.members.length > 0
-      ? Math.round((totalCompleted / (assignments.length * group.members.length)) * 100)
+    assignments.length > 0 && roster.length > 0
+      ? Math.round((totalCompleted / (assignments.length * roster.length)) * 100)
       : null;
 
   // The class list, learning data and account data joined into one shape —
   // both the table and the CSV export read this, so what you download is
   // exactly what you were looking at.
-  const studentRows = group.members.map((m) => {
+  const studentRows = roster.map((m) => {
     const weakest = weakestOf(m.id);
     const act = activity.get(m.id);
     return {
@@ -281,8 +288,8 @@ export default async function GroupDetailPage({
         title={group.name}
         subtitle={
           <>
-            {group.teacherName ? group.teacherName : "No teacher assigned"} · {group.members.length}{" "}
-            student{group.members.length === 1 ? "" : "s"} · {assignments.length} practice
+            {group.teacherName ? group.teacherName : "No teacher assigned"} · {roster.length}{" "}
+            student{roster.length === 1 ? "" : "s"} · {assignments.length} practice
             {assignments.length === 1 ? "" : "s"} set
           </>
         }
@@ -291,7 +298,7 @@ export default async function GroupDetailPage({
             label="Settings"
             variant="ghost"
             eyebrow={group.name}
-            title="Class settings"
+            title="Group settings"
             note="The things you set once: who teaches it, where it announces, whether it exists."
           >
             <div style={{ display: "grid", gap: 20 }}>
@@ -338,7 +345,16 @@ export default async function GroupDetailPage({
                     teacherId={group.teacherId}
                     teachers={teachers}
                   />
-                  <div style={{ borderTop: `1px solid ${LINE}`, marginTop: 18, paddingTop: 16 }}>
+                  <div
+                    style={{
+                      borderTop: `1px solid ${LINE}`,
+                      marginTop: 18,
+                      paddingTop: 16,
+                      display: "grid",
+                      gap: 18,
+                    }}
+                  >
+                    <CloseGroupButton groupId={group.id} status={group.status} />
                     <DeleteGroupButton groupId={group.id} />
                   </div>
                 </section>
@@ -351,7 +367,7 @@ export default async function GroupDetailPage({
       <KpiRow>
         <Kpi
           label="Students"
-          value={group.members.length}
+          value={roster.length}
           sub={`${activeCount} active in 30 days`}
         />
         <Kpi label="Practice set" value={assignments.length} />
@@ -361,12 +377,12 @@ export default async function GroupDetailPage({
           sub={
             assignments.length === 0
               ? "nothing set yet"
-              : `${totalCompleted} of ${assignments.length * group.members.length} finished`
+              : `${totalCompleted} of ${assignments.length * roster.length} finished`
           }
         />
         <Kpi
           label="Measured"
-          value={`${measuredMembers.length}/${group.members.length}`}
+          value={`${measuredMembers.length}/${roster.length}`}
           sub="have a graded band"
         />
         <Kpi
@@ -419,8 +435,8 @@ export default async function GroupDetailPage({
             />
             {assignments.map((a) => {
               const pct =
-                group.members.length > 0
-                  ? Math.round((a.completed / group.members.length) * 100)
+                roster.length > 0
+                  ? Math.round((a.completed / roster.length) * 100)
                   : 0;
               return (
                 <ListRow
@@ -456,7 +472,7 @@ export default async function GroupDetailPage({
                         }}
                       >
                         <span>
-                          {a.completed}/{group.members.length} submitted
+                          {a.completed}/{roster.length} submitted
                         </span>
                         <span>{pct}%</span>
                       </div>
@@ -490,7 +506,7 @@ export default async function GroupDetailPage({
             </p>
           ) : (
             <>
-              {group.members.map((m) => {
+              {roster.map((m) => {
                 const row = marks.get(m.id);
                 const rate = attendanceRate(m.id);
                 return (
@@ -618,7 +634,7 @@ export default async function GroupDetailPage({
             <Kpi
               label="Tuition this month"
               value={formatMoney(moneyData.expectedMinor, moneyData.currency)}
-              sub={`${group.members.length} student${group.members.length === 1 ? "" : "s"} at the current price`}
+              sub={`${roster.length} student${roster.length === 1 ? "" : "s"} at the current price`}
             />
             <Kpi
               label="Invoiced"
@@ -657,7 +673,7 @@ export default async function GroupDetailPage({
                 cols={MONEY_COLS}
                 labels={["Student", "This month", "Invoiced", "Paid", "Teacher earns"]}
               />
-              {group.members.map((m) => {
+              {roster.map((m) => {
                 const row = moneyData.rows.get(m.id);
                 const tuition = row?.tuition ?? null;
                 const explain = tuition ? describeProration(tuition, prettyDate) : null;
@@ -707,7 +723,7 @@ export default async function GroupDetailPage({
                   </TRow>
                 );
               })}
-              {group.members.length === 0 ? (
+              {roster.length === 0 ? (
                 <Empty>Nobody is enrolled, so there is nothing to charge.</Empty>
               ) : null}
             </Table>
@@ -729,12 +745,12 @@ export default async function GroupDetailPage({
             <CardHead
               title={
                 group.capacity
-                  ? `Students (${group.members.length}/${group.capacity})`
-                  : `Students (${group.members.length})`
+                  ? `Students (${roster.length}/${group.capacity})`
+                  : `Students (${roster.length})`
               }
               note={
-                group.capacity && group.members.length >= group.capacity
-                  ? `This class is full — ${group.members.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
+                group.capacity && roster.length >= group.capacity
+                  ? `This group is full — ${roster.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
                   : "Everyone here signs in with their own login — that is how homework is handed in and graded."
               }
               actions={
@@ -748,6 +764,28 @@ export default async function GroupDetailPage({
             />
             <StudentsManager groupId={group.id} students={studentRows} />
           </Card>
+
+          {/* Students who left. Kept on the page and out of every count above
+              it — someone asks about last term's student, and "we deleted
+              them" is not an answer a center can give a parent. */}
+          {alumni.length > 0 ? (
+            <Card flush>
+              <CardHead
+                title={`Left this group (${alumni.length})`}
+                divided
+                note="their marks, registers and invoices are untouched"
+              />
+              {alumni.map((m) => (
+                <ListRow
+                  key={m.id}
+                  href={`/console/students/${m.id}`}
+                  title={m.name}
+                  meta={m.login ?? "no login"}
+                  trail={<Tag tone="neutral">{STUDENT_STATUS_LABEL[m.status]}</Tag>}
+                />
+              ))}
+            </Card>
+          ) : null}
 
           {group.pendingInvites.length > 0 ? (
             <Card flush>

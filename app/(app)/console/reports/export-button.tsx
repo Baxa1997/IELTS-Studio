@@ -15,15 +15,29 @@ export function ExportReportButton({
   centerName: string;
 }) {
   function download() {
+    // ONE COLUMN PER SKILL, each with its count. A single "average band" column
+    // was the export's version of the same mistake the console made on screen:
+    // four measurements collapsed into one number that nobody could act on, and
+    // — worse in a spreadsheet — one that gets pasted into a report to a parent.
     const table = [
-      ["Group", "Teacher", "Students", "Assignments", "Completion %", "Average band"],
+      [
+        "Group",
+        "Teacher",
+        "Students",
+        "Practice set",
+        "Completion %",
+        ...rows[0]?.bySkill.flatMap((s) => [`${s.skill} band`, `${s.skill} marked`]) ?? [],
+      ],
       ...rows.map((r) => [
         r.name,
         r.teacherName ?? "",
         String(r.students),
         String(r.assignments),
         r.completionPct != null ? String(r.completionPct) : "",
-        r.averageBand != null ? r.averageBand.toFixed(1) : "",
+        ...r.bySkill.flatMap((s) => [
+          s.band != null ? `${s.band.toFixed(1)}${s.provisional ? " (provisional)" : ""}` : "",
+          String(s.attempts),
+        ]),
       ]),
     ];
     const csv = table

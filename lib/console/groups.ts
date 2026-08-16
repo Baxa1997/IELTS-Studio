@@ -2,18 +2,27 @@ import "server-only";
 
 import { type Profile } from "@/lib/auth";
 import { signAvatars } from "@/lib/console/avatars";
+import { type MemberStatus } from "@/lib/console/status";
 import { createClient } from "@/lib/supabase/server";
+
+/** A course that finished, versus one that is running. Never a deletion — a
+ *  closed group keeps its roster, its registers and its invoices. */
+export type GroupStatus = "active" | "closed";
 
 export interface GroupSummary {
   id: string;
   name: string;
+  status: GroupStatus;
   teacherId: string | null;
   teacherName: string | null;
-  /** The site this class is taught at. Required since 20260810170000. */
+  /** The site this group is taught at. Required since 20260810170000. */
   branchId: string;
   branchName: string | null;
+  /** Enrolled and countable: students who have left are not on the roster. */
   memberCount: number;
-  /** Seats. Null = nobody has sized this class. */
+  /** Of those, how many are paused — enrolled but not to be chased. */
+  pausedCount: number;
+  /** Seats. Null = nobody has sized this group. */
   capacity: number | null;
 }
 
@@ -44,6 +53,8 @@ export interface GroupMemberRow {
   login: string | null;
   /** Where credentials are delivered, when they gave a real address. */
   contactEmail: string | null;
+  /** Enrolled / on a break / gone. Drives every denominator they appear in. */
+  status: MemberStatus;
   joinedAt: string;
   /** Signed URL for their photo, or null when they don't have one. */
   photoUrl: string | null;
@@ -52,9 +63,11 @@ export interface GroupMemberRow {
 export interface GroupDetail {
   id: string;
   name: string;
+  status: GroupStatus;
   capacity: number | null;
   teacherId: string | null;
   teacherName: string | null;
+  /** Everyone ever enrolled, including those who left — the roster filters. */
   members: GroupMemberRow[];
   pendingInvites: { email: string; expiresAt: string }[];
 }
@@ -63,8 +76,16 @@ export interface GroupDetail {
  * Groups for the console list. A center_admin sees every group in the org; a
  * teacher sees only the groups assigned to them (which is also the only set
  * whose membership RLS lets them read, so the counts stay truthful).
+ *
+ * `include` decides whether finished courses come back. The default is ACTIVE
+ * ONLY, because every operational question — what meets today, which groups
+ * have no practice set, who has no teacher — is about groups that are running.
+ * A page that wants the archive asks for it.
  */
-export async function loadGroups(profile: Profile): Promise<{
+export async function loadGroups(
+  profile: Profile,
+  opts: { include?: "active" | "all" } = {},
+): Promise<{
   groups: GroupSummary[];
   teachers: StaffOption[];
   branches: BranchOption[];
@@ -74,9 +95,10 @@ export async function loadGroups(profile: Profile): Promise<{
 
   let groupQuery = supabase
     .from("groups")
-    .select("id, name, teacher_id, branch_id, capacity")
+    .select("id, name, status, teacher_id, branch_id, capacity")
     .order("name", { ascending: true });
   if (profile.role === "teacher") groupQuery = groupQuery.eq("teacher_id", profile.id);
+  if (opts.include !== "all") groupQuery = groupQuery.eq("status", "active");
 
   const [groupsRes, staffRes, branchesRes, roomsRes] = await Promise.all([
     groupQuery,
@@ -111,16 +133,30 @@ export async function loadGroups(profile: Profile): Promise<{
 
   // One grouped count query instead of N: fetch the visible membership rows for
   // these groups and tally in memory (a center's rosters are small).
+  //
+  // A student who LEFT is not on the roster. Counting them was making every
+  // class look fuller than it is and every attendance percentage look worse.
   const ids = groups.map((g) => g.id as string);
   const counts = new Map<string, number>();
+  const paused = new Map<string, number>();
   if (ids.length > 0) {
-    const { data: members } = await supabase
-      .from("group_members")
-      .select("group_id")
-      .in("group_id", ids);
-    for (const m of members ?? []) {
-      const key = m.group_id as string;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+    const [{ data: members }, { data: statuses }] = await Promise.all([
+      supabase.from("group_members").select("group_id, student_id").in("group_id", ids),
+      supabase.from("profiles").select("id, member_status").eq("role", "student"),
+    ]);
+    const statusOf = new Map(
+      ((statuses ?? []) as { id: string; member_status: string }[]).map((p) => [
+        p.id,
+        (p.member_status as MemberStatus) ?? "active",
+      ]),
+    );
+    for (const m of (members ?? []) as { group_id: string; student_id: string }[]) {
+      // Unknown means the profile is outside this caller's read scope; count it
+      // rather than silently shrinking a teacher's own roster.
+      const status = statusOf.get(m.student_id) ?? "active";
+      if (status === "left") continue;
+      counts.set(m.group_id, (counts.get(m.group_id) ?? 0) + 1);
+      if (status === "paused") paused.set(m.group_id, (paused.get(m.group_id) ?? 0) + 1);
     }
   }
 
@@ -128,11 +164,13 @@ export async function loadGroups(profile: Profile): Promise<{
     groups: groups.map((g) => ({
       id: g.id as string,
       name: g.name as string,
+      status: ((g.status as GroupStatus | null) ?? "active") as GroupStatus,
       teacherId: (g.teacher_id as string | null) ?? null,
       teacherName: g.teacher_id ? (staffName.get(g.teacher_id as string) ?? null) : null,
       branchId: g.branch_id as string,
       branchName: branchName.get(g.branch_id as string) ?? null,
       memberCount: counts.get(g.id as string) ?? 0,
+      pausedCount: paused.get(g.id as string) ?? 0,
       capacity: (g.capacity as number | null) ?? null,
     })),
     teachers: staff
@@ -154,7 +192,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
 
   const { data: group, error } = await supabase
     .from("groups")
-    .select("id, name, teacher_id, capacity")
+    .select("id, name, status, teacher_id, capacity")
     .eq("id", groupId)
     .maybeSingle();
   // A null row means "you may not see this class", and the caller turns that
@@ -185,16 +223,18 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
   const logins = new Map<string, string>();
   const emails = new Map<string, string>();
   const photos = new Map<string, string>();
+  const statuses = new Map<string, MemberStatus>();
   if (studentIds.length > 0) {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_path, username, contact_email")
+      .select("id, full_name, avatar_path, username, contact_email, member_status")
       .in("id", studentIds);
     const rows = profiles ?? [];
     for (const p of rows) {
       names.set(p.id as string, (p.full_name as string | null) ?? "—");
       logins.set(p.id as string, (p.username as string | null) ?? "");
       emails.set(p.id as string, (p.contact_email as string | null) ?? "");
+      statuses.set(p.id as string, ((p.member_status as MemberStatus) ?? "active") as MemberStatus);
     }
     // One signing call for the whole roster.
     const signed = await signAvatars(rows.map((p) => (p.avatar_path as string | null) ?? null));
@@ -207,6 +247,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
   return {
     id: group.id as string,
     name: group.name as string,
+    status: ((group.status as GroupStatus | null) ?? "active") as GroupStatus,
     capacity: (group.capacity as number | null) ?? null,
     teacherId: (group.teacher_id as string | null) ?? null,
     teacherName: (teacherRes.data as { full_name: string | null } | null)?.full_name ?? null,
@@ -215,6 +256,7 @@ export async function loadGroupDetail(groupId: string): Promise<GroupDetail | nu
       name: names.get(m.student_id as string) ?? "—",
       login: logins.get(m.student_id as string) || null,
       contactEmail: emails.get(m.student_id as string) || null,
+      status: statuses.get(m.student_id as string) ?? "active",
       joinedAt: m.joined_at as string,
       photoUrl: photos.get(m.student_id as string) ?? null,
     })),

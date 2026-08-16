@@ -99,13 +99,17 @@ const STUDENT: Section[] = [
    CLAUDE.md) and they made the menu read like an unfinished admin tool. Add the
    line back to restore either. */
 const ADMIN: Section[] = [
+  /* RUN, not "Center". The section answers "what has to happen today", and
+     "Today" replaces "Overview" for the same reason: an owner opens this once a
+     morning to find out what is broken and what is on, and the old name
+     promised a summary of everything instead. */
   {
-    title: "Center",
+    title: "Run",
     items: [
-      { label: "Overview", href: "/console", icon: LayoutDashboard },
-      { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
+      { label: "Today", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
       { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
     ],
@@ -125,20 +129,22 @@ const ADMIN: Section[] = [
       { label: "Salary", href: "/console/finance/payroll", icon: Banknote },
     ],
   },
-  // No Practice: the library is the teacher's. An admin runs people, billing
-  // and reports, and sees results through Reports and the groups.
+  /* Learning, not "Insight" — and Announcements is out of it. A broadcast is
+     not an insight; putting it here is what made the section a drawer for
+     anything that wasn't people or money. */
   {
-    title: "Insight",
-    items: [
-      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
-      { label: "Announcements", href: "/console/announcements", icon: Megaphone },
-    ],
+    title: "Learning",
+    items: [{ label: "Results", href: "/console/reports", icon: ChartNoAxesColumn }],
+  },
+  {
+    title: "Communication",
+    items: [{ label: "Announcements", href: "/console/announcements", icon: Megaphone }],
   },
   {
     title: "Admin",
     items: [
       { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
-      { label: "Settings & roles", href: "/console/settings", icon: Settings },
+      { label: "Settings", href: "/console/settings", icon: Settings },
     ],
   },
 ];
@@ -150,9 +156,9 @@ const ADMIN: Section[] = [
    its own shape, and one wrong condition leaks a balance. */
 const ADMINISTRATOR: Section[] = [
   {
-    title: "Center",
+    title: "Run",
     items: [
-      { label: "Overview", href: "/console", icon: LayoutDashboard },
+      { label: "Today", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
@@ -165,19 +171,20 @@ const ADMINISTRATOR: Section[] = [
     items: [{ label: "Take payment", href: "/console/payments", icon: Wallet }],
   },
   {
-    title: "Insight",
-    items: [
-      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
-      { label: "Announcements", href: "/console/announcements", icon: Megaphone },
-    ],
+    title: "Learning",
+    items: [{ label: "Results", href: "/console/reports", icon: ChartNoAxesColumn }],
+  },
+  {
+    title: "Communication",
+    items: [{ label: "Announcements", href: "/console/announcements", icon: Megaphone }],
   },
 ];
 
 const TEACHER: Section[] = [
   {
-    title: "Teaching",
+    title: "Run",
     items: [
-      { label: "Overview", href: "/console", icon: LayoutDashboard },
+      { label: "Today", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
@@ -188,7 +195,7 @@ const TEACHER: Section[] = [
   },
   /* A teacher's practice IS the learner's practice — the same /write, /read and
      /listen screens a student uses, not a console copy of them. The only staff
-     addition lives on those pages: "attach to a class", which publishes the
+     addition lives on those pages: "attach to a group", which publishes the
      content and sets it as homework in one step (see assignPractice). There is
      no separate console library in the menu because previewing a prompt should
      mean doing exactly what the student will do. */
@@ -204,14 +211,15 @@ const TEACHER: Section[] = [
     ],
   },
   {
-    title: "Insight",
-    items: [
-      { label: "Reports", href: "/console/reports", icon: ChartNoAxesColumn },
-      // Scoped to their own classes. A teacher sets the class's homework and
-      // connects its Telegram channel, so barring them from mentioning it was
-      // the least defensible line in the whole permission split.
-      { label: "Announcements", href: "/console/announcements", icon: Megaphone },
-    ],
+    title: "Learning",
+    items: [{ label: "Results", href: "/console/reports", icon: ChartNoAxesColumn }],
+  },
+  {
+    title: "Communication",
+    // Scoped to their own groups. A teacher sets the group's homework and
+    // connects its Telegram channel, so barring them from mentioning it was
+    // the least defensible line in the whole permission split.
+    items: [{ label: "Announcements", href: "/console/announcements", icon: Megaphone }],
   },
 ];
 

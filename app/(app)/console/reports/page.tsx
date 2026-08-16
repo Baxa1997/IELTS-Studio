@@ -4,6 +4,7 @@ import {
   AMBER,
   Avatar,
   Bar,
+  BandCell,
   Card,
   CardHead,
   CardNote,
@@ -29,7 +30,7 @@ import {
 import { requireOrgUser } from "@/lib/auth";
 import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
-import { loadCenterReport } from "@/lib/console/reports";
+import { loadCenterReport, SKILL_UNIT, type SkillName } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
 import { ReportAlerts } from "./alerts-button";
@@ -100,8 +101,15 @@ export default async function ReportsPage() {
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const isCenter = report.scope === "center";
 
-  const measured = report.skillAverages.filter((s) => s.samples > 0);
-  const topBucket = Math.max(1, ...report.bandBuckets.map((b) => b.value));
+  const measured = report.skillAverages.filter((s) => s.attempts > 0);
+  // Writing leads: it is graded most, it is the moat, and a distribution has to
+  // belong to ONE skill or it is a picture of nothing.
+  const headline: SkillName =
+    measured.length > 0
+      ? ([...measured].sort((a, b) => b.attempts - a.attempts)[0].skill as SkillName)
+      : "Writing";
+  const buckets = report.bandBuckets[headline];
+  const topBucket = Math.max(1, ...buckets.map((b) => b.value));
   const topCap = Math.max(1, ...report.writingCaps.map((c) => c.value));
   const topMiss = Math.max(1, ...report.readingMisses.map((m) => m.value));
 
@@ -296,8 +304,8 @@ export default async function ReportsPage() {
                   cols={COLS}
                   labels={
                     isCenter
-                      ? ["Class", "Teacher", "Students", "Avg band", "Completion", "Set"]
-                      : ["Class", "Students", "Avg band", "Completion", "Set"]
+                      ? ["Group", "Teacher", "Students", "Writing", "Completion", "Set"]
+                      : ["Group", "Students", "Writing", "Completion", "Set"]
                   }
                 />
                 {report.groups.map((g) => (
@@ -308,7 +316,7 @@ export default async function ReportsPage() {
                     {isCenter ? <TD tone="body">{g.teacherName ?? "—"}</TD> : null}
                     <TD>{g.students}</TD>
                     <TD tone="ink" weight={600}>
-                      {g.averageBand?.toFixed(1) ?? "—"}
+                      <BandCell figure={g.writing} unit="essays" />
                     </TD>
                     <TD>
                       {g.completionPct == null ? (
@@ -328,7 +336,9 @@ export default async function ReportsPage() {
                   </TRow>
                 ))}
                 {report.groups.length === 0 ? (
-                  <Empty>No classes yet. Create one and set it some practice.</Empty>
+                  <Empty action={{ href: "/console/groups", label: "Create a group →" }}>
+                    No groups yet.
+                  </Empty>
                 ) : null}
               </Table>
             </Card>
@@ -336,12 +346,12 @@ export default async function ReportsPage() {
             <Split>
               <Card>
                 <CardHead
-                  title="Bands awarded"
-                  note="every marked writing, reading and speaking practice"
+                  title={`${headline} bands awarded`}
+                  note={`${measured.find((m) => m.skill === headline)?.attempts ?? 0} marked · skills are never mixed`}
                 />
-                {report.bandBuckets.length > 0 ? (
+                {buckets.length > 0 ? (
                   <Columns
-                    bars={report.bandBuckets.map((b) => ({
+                    bars={buckets.map((b) => ({
                       label: b.label,
                       cap: b.value,
                       pct: (b.value / topBucket) * 100,
@@ -368,7 +378,15 @@ export default async function ReportsPage() {
                     label={<span style={{ textTransform: "capitalize" }}>{s.skill}</span>}
                     pct={((s.band ?? 0) / 9) * 100}
                     value={s.band?.toFixed(1) ?? "—"}
-                    fill={(s.band ?? 0) >= 6.5 ? GREEN : (s.band ?? 0) >= 5.5 ? AMBER : RED}
+                    fill={
+                      s.provisional
+                        ? "#C9C7C1"
+                        : (s.band ?? 0) >= 6.5
+                          ? GREEN
+                          : (s.band ?? 0) >= 5.5
+                            ? AMBER
+                            : RED
+                    }
                     trail={
                       <span
                         style={{
@@ -378,15 +396,16 @@ export default async function ReportsPage() {
                           textAlign: "right",
                         }}
                       >
-                        {s.samples} marked
+                        {s.attempts} {SKILL_UNIT[s.skill]}
+                        {s.provisional ? " · provisional" : ""}
                       </span>
                     }
                   />
                 ))}
                 {measured.length === 0 ? (
-                  <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-                    No marked practice yet.
-                  </p>
+                  <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
+                    Nothing marked yet.
+                  </Empty>
                 ) : null}
               </Card>
             </Split>

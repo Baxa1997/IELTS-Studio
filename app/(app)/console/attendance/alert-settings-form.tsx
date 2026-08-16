@@ -46,7 +46,7 @@ const CHANNELS: { key: AlertChannel; label: string; icon: React.ReactNode; note:
     key: "telegram",
     label: "Telegram",
     icon: <FiSend size={15} color="#229ED9" />,
-    note: "Free, needs the class channel linked",
+    note: "Free, needs the group channel linked",
   },
 ];
 

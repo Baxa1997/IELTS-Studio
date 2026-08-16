@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 
 import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { uploadAvatar } from "@/lib/console/avatars";
+import { isMemberStatus } from "@/lib/console/status";
 import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
@@ -114,7 +115,7 @@ export async function createGroup(
   // rooms there (migration 20260810170000). A center always has at least one,
   // so a single-site center never sees this field.
   const branchId = String(formData.get("branch_id") ?? "").trim();
-  if (!branchId) return { error: "Pick the branch this class is taught at." };
+  if (!branchId) return { error: "Pick the branch this group is taught at." };
 
   // What the class teaches. Optional: a center that has not set up subjects yet
   // creates classes exactly as before, and the field is not even rendered.
@@ -123,7 +124,7 @@ export async function createGroup(
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const capacity = capacityRaw === "" ? null : Number(capacityRaw);
   if (capacity != null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) {
-    return { error: "Class size has to be a whole number between 1 and 500." };
+    return { error: "Group size has to be a whole number between 1 and 500." };
   }
 
   // Both prices are the owner's business, so a teacher creating their own class
@@ -223,7 +224,7 @@ function readSchedule(
   const endsAt = String(formData.get("ends_at") ?? "").trim();
   if (weekdays.length === 0 && !startsAt && !endsAt) return null;
 
-  if (weekdays.length === 0) return "Pick the days this class meets.";
+  if (weekdays.length === 0) return "Pick the days this group meets.";
   if (!TIME_RE.test(startsAt) || !TIME_RE.test(endsAt)) return "Use times like 15:30.";
   if (endsAt <= startsAt) return "The lesson has to end after it starts.";
 
@@ -313,10 +314,10 @@ async function writeSchedule(
 /** The two constraints a schedule can trip, in words a teacher can act on. */
 function explainSlotError(error: { code?: string; message: string }): string {
   if (error.code === "23P01") {
-    return "That clashes with a lesson this class already has at the same hour.";
+    return "That clashes with a lesson this group already has at the same hour.";
   }
   if (error.code === "23514" || /branch/i.test(error.message)) {
-    return "That room is at a different branch from this class.";
+    return "That room is at a different branch from this group.";
   }
   return error.message;
 }
@@ -360,7 +361,7 @@ export async function setGroupSchedule(
   // edited, never the whole class: a class with a second, separate booking must
   // not lose it because someone cleared the first.
   if (schedule == null) {
-    if (!seriesId) return { error: "Pick the days this class meets." };
+    if (!seriesId) return { error: "Pick the days this group meets." };
     const { data, error } = await supabase
       .from("lesson_slots")
       .delete()
@@ -419,6 +420,53 @@ export async function assignTeacher(
 
 /** Center admin deletes a group. Memberships cascade; the students' accounts and
  *  their work are untouched. */
+/**
+ * Close a course, or reopen one.
+ *
+ * THIS IS WHAT REPLACED DELETION for a group that has finished. A deleted group
+ * takes its registers, its invoices and every report that mentions it — and the
+ * moment a parent asks about last term, the center discovers what "delete"
+ * meant. Closing drops it out of every forward-looking count (what meets today,
+ * which groups have no practice set, who has no teacher) and changes nothing
+ * else.
+ *
+ * `deleteGroup` still exists below for a group created by mistake, and it is
+ * the only thing it should ever be used for.
+ */
+export async function setGroupStatus(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role)) {
+    return { error: "Only center staff can close or reopen a group." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  if (!groupId) return { error: "Missing group." };
+  if (status !== "active" && status !== "closed") return { error: "Unknown status." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("groups")
+    .update({ status, closed_at: status === "closed" ? new Date().toISOString() : null })
+    .eq("id", groupId)
+    .select("id, name");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That group is not yours to change." };
+
+  revalidatePath("/console/groups");
+  revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath("/console");
+  return {
+    notice:
+      status === "closed"
+        ? `${data[0].name} is closed. Its roster, registers and invoices are untouched.`
+        : `${data[0].name} is running again.`,
+  };
+}
+
 export async function deleteGroup(
   _prev: GroupFormState,
   formData: FormData,
@@ -430,11 +478,81 @@ export async function deleteGroup(
   if (!groupId) return { error: "Missing group." };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("groups").delete().eq("id", groupId);
+  // Refuse to delete anything with a history. A course that ran is closed, not
+  // deleted — this path exists for the group somebody created by mistake.
+  const [{ count: sessions }, { count: members }] = await Promise.all([
+    supabase
+      .from("attendance_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+    supabase
+      .from("group_members")
+      .select("student_id", { count: "exact", head: true })
+      .eq("group_id", groupId),
+  ]);
+  if ((sessions ?? 0) > 0 || (members ?? 0) > 0) {
+    return {
+      error:
+        "This group has students or registers behind it. Close it instead — deleting would take its attendance and invoices with it.",
+    };
+  }
+
+  const { error } = await supabase.from("groups").delete().eq("id", groupId).select("id");
   if (error) return { error: error.message };
 
   revalidatePath("/console/groups");
   return { notice: "Group deleted." };
+}
+
+/**
+ * Move a student's status: enrolled, on a break, or gone.
+ *
+ * Every denominator in the console reads this. A paused student leaves the
+ * gone-quiet list, the attendance rate and next month's invoice; a student who
+ * left leaves the roster as well. Nothing they have done is touched — that is
+ * the whole point of having three states instead of a delete button.
+ */
+export async function setStudentStatus(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can change a student's status." };
+  }
+
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const note = String(formData.get("note") ?? "").trim() || null;
+  if (!studentId) return { error: "Missing student." };
+  if (!isMemberStatus(status)) return { error: "Unknown status." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      member_status: status,
+      status_changed_at: new Date().toISOString(),
+      status_note: note,
+    })
+    .eq("id", studentId)
+    .select("id, full_name");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That student is not yours to change." };
+
+  const name = data[0].full_name ?? "The student";
+  revalidatePath("/console/students");
+  revalidatePath(`/console/students/${studentId}`);
+  revalidatePath("/console/groups");
+  revalidatePath("/console");
+  return {
+    notice:
+      status === "active"
+        ? `${name} is active again and counts everywhere.`
+        : status === "paused"
+          ? `${name} is paused — out of chasing, attendance and invoicing until they return.`
+          : `${name} has left. Their marks, registers and invoices stay exactly as they are.`,
+  };
 }
 
 /** Remove a student from a group (they keep their account and history).

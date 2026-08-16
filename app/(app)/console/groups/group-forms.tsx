@@ -14,6 +14,7 @@ import {
   createGroup,
   deleteGroup,
   removeMember,
+  setGroupStatus,
   type GroupFormState,
 } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
@@ -134,7 +135,7 @@ export function CreateGroupForm({
           </select>
           <p className="text-muted-foreground text-xs">
             {teachers.length === 0
-              ? "No teachers yet — you can create the class now and assign one later."
+              ? "No teachers yet — you can create the group now and assign one later."
               : /* Narrowing, not hiding: a teacher with no subjects set is still
                    offered, because "nobody has said what they teach" must not
                    read as "they teach nothing" and empty the list. */
@@ -146,7 +147,7 @@ export function CreateGroupForm({
       ) : null}
       <div className="space-y-2">
         <Label htmlFor="group-capacity">
-          Class size <span className="text-muted-foreground font-normal">(optional)</span>
+          Group size <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <Input
           id="group-capacity"
@@ -296,15 +297,54 @@ export function AssignTeacherForm({
 }
 
 /** Delete a group. Memberships go with it; student accounts and work do not. */
+/**
+ * Close a course, or reopen it.
+ *
+ * THE NORMAL WAY A GROUP ENDS. Closing keeps its roster, its registers and its
+ * invoices, and drops it out of every count about what is running now. Deleting
+ * is below it and refuses outright once anything has happened in the group,
+ * because a course that ran and was deleted takes the attendance record with it
+ * — and nobody discovers that until a parent asks about last term.
+ */
+export function CloseGroupButton({ groupId, status }: { groupId: string; status: string }) {
+  const [state, formAction, pending] = useActionState(setGroupStatus, initial);
+  const closing = status !== "closed";
+
+  return (
+    <form action={formAction} className="space-y-2">
+      <input type="hidden" name="group_id" value={groupId} />
+      <input type="hidden" name="status" value={closing ? "closed" : "active"} />
+      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+        {pending
+          ? closing
+            ? "Closing…"
+            : "Reopening…"
+          : closing
+            ? "Close this group"
+            : "Reopen this group"}
+      </Button>
+      <p className="text-muted-foreground text-xs">
+        {closing
+          ? "It keeps its roster, registers and invoices, and stops counting as a group that is running."
+          : "It goes back into today's lessons and every running-group count."}
+      </p>
+      <FormMessage state={state} />
+    </form>
+  );
+}
+
 export function DeleteGroupButton({ groupId }: { groupId: string }) {
   const [state, formAction, pending] = useActionState(deleteGroup, initial);
 
   return (
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="group_id" value={groupId} />
-      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+      <Button type="submit" variant="ghost" size="sm" disabled={pending}>
         {pending ? "Deleting…" : "Delete group"}
       </Button>
+      <p className="text-muted-foreground text-xs">
+        Only for a group created by mistake — refused once it has students or registers.
+      </p>
       <FormMessage state={state} />
     </form>
   );

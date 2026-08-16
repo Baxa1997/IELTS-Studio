@@ -19,6 +19,7 @@ import { loadSubjects } from "@/lib/console/subjects";
 import { createClient } from "@/lib/supabase/server";
 
 import { CenterProfileForm } from "./profile-form";
+import { Holidays, type Holiday } from "./holidays";
 import { SubjectsManager } from "./subjects-manager";
 
 export const dynamic = "force-dynamic";
@@ -47,34 +48,46 @@ export default async function SettingsPage() {
 
   const supabase = await createClient();
   const subjects = await loadSubjects();
-  const [orgRes, peopleRes, groupsRes, invitesRes, announceRes, certRes] = await Promise.all([
-    supabase
-      .from("organizations")
-      .select("name, status, plan, contact_email")
-      .eq("id", profile.organization_id)
-      .maybeSingle(),
-    supabase.from("profiles").select("id, full_name, role, created_at"),
-    supabase
-      .from("groups")
-      .select("id, name, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("v_pending_invites")
-      .select("email, role, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("announcements")
-      .select("subject, sent_at")
-      .order("sent_at", { ascending: false })
-      .limit(10),
-    supabase
-      .from("certificates")
-      .select("course, issued_on, created_at")
-      .order("created_at", { ascending: false })
-      .limit(10),
-  ]);
+  const [orgRes, peopleRes, groupsRes, invitesRes, announceRes, certRes, holidayRes] =
+    await Promise.all([
+      supabase
+        .from("organizations")
+        .select("name, status, plan, contact_email")
+        .eq("id", profile.organization_id)
+        .maybeSingle(),
+      supabase.from("profiles").select("id, full_name, role, created_at"),
+      supabase
+        .from("groups")
+        .select("id, name, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("v_pending_invites")
+        .select("email, role, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("announcements")
+        .select("subject, sent_at")
+        .order("sent_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("certificates")
+        .select("course, issued_on, created_at")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("center_holidays")
+        .select("id, name, starts_on, ends_on")
+        .order("starts_on", { ascending: false }),
+    ]);
+
+  const holidays: Holiday[] = ((holidayRes.data ?? []) as Record<string, unknown>[]).map((h) => ({
+    id: h.id as string,
+    name: h.name as string,
+    startsOn: String(h.starts_on).slice(0, 10),
+    endsOn: String(h.ends_on).slice(0, 10),
+  }));
 
   const org = orgRes.data as {
     name: string | null;
@@ -100,17 +113,17 @@ export default async function SettingsPage() {
     {
       name: "Administrator",
       count: roleCount("administrator"),
-      can: "Runs the center day to day: classes, students, teachers on classes, the timetable, attendance, reports and taking tuition at the counter. Never payroll, the ledger, invoices, branches, billing or these settings.",
+      can: "Runs the center day to day: groups, students, teachers on groups, the timetable, attendance, reports and taking tuition at the counter. Never payroll, the ledger, invoices, branches, billing or these settings.",
     },
     {
       name: "Teacher",
       count: roleCount("teacher"),
-      can: "Only the groups they own — create classes, add students, set practice, mark attendance and read their own students' results. No billing, no other teacher's classes.",
+      can: "Only the groups they own — create groups, add students, set practice, mark attendance and read their own students' results. No billing, no other teacher's groups.",
     },
     {
       name: "Student",
       count: roleCount("student"),
-      can: "Their own practice and feedback across all four skills, plus any homework set for their class. Cannot see a classmate's work, or the roster.",
+      can: "Their own practice and feedback across all four skills, plus any homework set for their group. Cannot see a classmate's work, or the roster.",
     },
   ];
 
@@ -128,7 +141,7 @@ export default async function SettingsPage() {
       })),
     ...((groupsRes.data ?? []) as { name: string; created_at: string }[]).map((g) => ({
       at: g.created_at,
-      what: `Created the class ${g.name}`,
+      what: `Created the group ${g.name}`,
     })),
     ...((invitesRes.data ?? []) as { email: string; role: string; created_at: string }[]).map(
       (i) => ({
@@ -207,9 +220,20 @@ export default async function SettingsPage() {
           <Card>
             <CardHead
               title="Subjects"
-              note="what this center teaches — a class carries one, a teacher can take several"
+              note="what this center teaches — a group carries one, a teacher can take several"
             />
             <SubjectsManager subjects={subjects} />
+          </Card>
+
+          <Card flush>
+            <CardHead
+              title="Holidays"
+              divided
+              note="days the center is shut: no lessons, no registers, no fees"
+            />
+            <div style={{ paddingTop: 14 }}>
+              <Holidays holidays={holidays} />
+            </div>
           </Card>
 
           <Card flush>

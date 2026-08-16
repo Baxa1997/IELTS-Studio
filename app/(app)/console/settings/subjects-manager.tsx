@@ -207,7 +207,7 @@ function SubjectRow({ subject, first }: { subject: SubjectItem; first: boolean }
             <span style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{subject.name}</span>
             <span style={{ display: "block", fontSize: 12, color: FAINT, marginTop: 1 }}>
               {subject.teacherCount} teacher{subject.teacherCount === 1 ? "" : "s"} ·{" "}
-              {subject.groupCount} class{subject.groupCount === 1 ? "" : "es"}
+              {subject.groupCount} group{subject.groupCount === 1 ? "" : "s"}
             </span>
           </span>
 
@@ -237,7 +237,7 @@ function SubjectRow({ subject, first }: { subject: SubjectItem; first: boolean }
                 subject.active && !used
                   ? "Nothing uses it yet, so this removes it"
                   : subject.active
-                    ? "Existing classes keep it; it stops being offered"
+                    ? "Existing groups keep it; it stops being offered"
                     : undefined
               }
               style={{

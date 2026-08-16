@@ -25,6 +25,8 @@ import { PanelButton } from "@/components/console/console-chrome";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudents, type StudentRow } from "@/lib/console/people";
 
+import { StudentStatusCell } from "./status-cell";
+
 export const dynamic = "force-dynamic";
 
 const dateFmt = (iso: string) =>
@@ -65,11 +67,12 @@ const CARD_FILTERS = {
   practised: (s: StudentRow) => s.practiceCount > 0,
   never: (s: StudentRow) => s.practiceCount === 0,
   nogroup: (s: StudentRow) => s.groups.length === 0,
+  away: (s: StudentRow) => s.status !== "active",
 } as const;
 
 type CardFilter = keyof typeof CARD_FILTERS;
 
-const COLS = "2.2fr 1.5fr 1.1fr 1.1fr .7fr 1fr";
+const COLS = "2.2fr 1.4fr .9fr 1fr 1fr .7fr .9fr";
 
 export default async function StudentsPage({
   searchParams,
@@ -113,6 +116,10 @@ export default async function StudentsPage({
     .sort(SORTS[sort].cmp);
 
   const ungrouped = all.filter((s) => s.groups.length === 0).length;
+  // Enrolled means active or paused. Someone who left is on the page — you have
+  // to be able to find last term's student — but they are not on the roll.
+  const enrolled = all.filter((s) => s.status !== "left").length;
+  const away = all.filter((s) => s.status !== "active").length;
   // The last bucket of the sparkline IS this week, so the KPI and the trend
   // column can never tell different stories.
   const practisedThisWeek = all.filter((s) => (s.spark.at(-1) ?? 0) > 0).length;
@@ -136,8 +143,8 @@ export default async function StudentsPage({
       <KpiRow>
         <Kpi
           label="Enrolled"
-          value={all.length}
-          sub="click a card to filter the list"
+          value={enrolled}
+          sub="active and paused · click a card to filter"
           href="/console/students"
           active={!card}
         />
@@ -160,11 +167,13 @@ export default async function StudentsPage({
         />
         {profile.role === "center_admin" ? (
           <Kpi
-            label="In no group"
-            value={ungrouped}
+            label="Paused or left"
+            value={away}
+            delta={ungrouped > 0 ? `${ungrouped} in no group` : undefined}
             deltaTone="bad"
-            href={cardHref("nogroup")}
-            active={card === "nogroup"}
+            sub="out of every denominator"
+            href={cardHref("away")}
+            active={card === "away"}
           />
         ) : null}
       </KpiRow>
@@ -222,7 +231,7 @@ export default async function StudentsPage({
         <Table cols={COLS}>
           <THead
             cols={COLS}
-            labels={["Student", "Group", "Band", "Trend", "Att.", "Last active"]}
+            labels={["Student", "Group", "Status", "Band", "Trend", "Att.", "Last active"]}
           />
           {rows.map((s) => {
             const short = s.weakest ? s.weakest.skill : null;
@@ -238,6 +247,9 @@ export default async function StudentsPage({
                   ) : (
                     <Tag tone="amber">no group</Tag>
                   )}
+                </TD>
+                <TD>
+                  <StudentStatusCell studentId={s.id} status={s.status} />
                 </TD>
                 <TD>
                   {s.weakest ? (
@@ -270,11 +282,13 @@ export default async function StudentsPage({
             );
           })}
           {rows.length === 0 ? (
-            <Empty>
-              {all.length === 0
-                ? "No students yet. Open a group and add one."
-                : "Nobody matches those filters."}
-            </Empty>
+            all.length === 0 ? (
+              <Empty action={{ href: "/console/groups", label: "Open a group →" }}>
+                No students yet.
+              </Empty>
+            ) : (
+              <Empty>Nobody matches those filters.</Empty>
+            )
           ) : null}
         </Table>
       </Card>
