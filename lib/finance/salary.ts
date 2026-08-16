@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { markCounts } from "@/lib/console/attendance-marks";
+
 import { percentOf } from "./money";
 
 /**
@@ -268,23 +270,6 @@ export interface TeacherFacts {
   groups: GroupFacts[];
 }
 
-/**
- * What one attendance mark contributes to the money.
- *
- * ONE DEFINITION OF "ATTENDED", shared with `v_student_attendance`. It lived
- * inline in payroll.ts as `status !== "absent"`, which was correct until Phase 1
- * added `excused` and silently turned every excused lesson into a student-lesson
- * the teacher was paid for — and made the payroll page report a different
- * attendance rate from the attendance page for the same class.
- *
- * Excused is neither attended nor absent: it leaves the denominator, because a
- * lesson somebody was excused from is not a lesson they failed to attend.
- */
-export function markCounts(status: string): { inDenominator: boolean; attended: boolean } {
-  if (status === "excused") return { inDenominator: false, attended: false };
-  return { inDenominator: true, attended: status === "present" || status === "late" };
-}
-
 export function emptyGroupFacts(groupId: string, groupName: string): GroupFacts {
   return {
     groupId,
@@ -363,6 +348,10 @@ export function teacherTotals(facts: TeacherFacts) {
       t.attendanceMarks > 0 ? Math.round((100 * t.studentLessons) / t.attendanceMarks) : null,
   };
 }
+
+/** Re-exported so finance callers keep one import; the definition is shared
+ *  with the console, because the two must never disagree. */
+export { markCounts };
 
 /* ── the result ───────────────────────────────────────────────────────────── */
 

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { markCounts } from "./salary";
+import { attendanceRateFrom, markCounts } from "./attendance-marks";
 
 /**
  * `excused` is a salary bug, not just an attendance nicety.
+ *
+ * FOUR places answered "did they attend?" independently — the SQL view, the
+ * payroll run, the group page and the roster — and three of them said
+ * `status !== "absent"`.
  *
  * payroll.ts counted attendance as `status !== "absent"`, which was exactly
  * "present or late" for as long as those were the only three marks. Phase 1
@@ -63,5 +67,26 @@ describe("markCounts", () => {
     // A status nobody has added yet must not silently become "attended" and
     // start paying somebody — which is exactly how `excused` broke this.
     expect(markCounts("holiday")).toEqual({ inDenominator: true, attended: false });
+  });
+});
+
+describe("attendanceRateFrom", () => {
+  it("gives no rate at all when every mark was excused", () => {
+    // Not 0%. A room full of people excused from a lesson did not fail to turn
+    // up to it, and printing 0% accuses all of them.
+    expect(attendanceRateFrom(["excused", "excused"])).toBeNull();
+    expect(attendanceRateFrom([])).toBeNull();
+  });
+
+  it("matches the old rule when nobody was excused", () => {
+    // The fix must not move any number that was already right — which is most
+    // of them, and the reason this went unnoticed.
+    expect(attendanceRateFrom(["present", "present", "absent", "late"])).toBe(75);
+  });
+
+  it("moves the rate up when an excused lesson leaves the denominator", () => {
+    // 2 present, 1 absent, 1 excused. Old rule: 3/4 = 75% (excused counted as
+    // attended). New: 2/3 = 67%. Lower, and true.
+    expect(attendanceRateFrom(["present", "present", "absent", "excused"])).toBe(67);
   });
 });

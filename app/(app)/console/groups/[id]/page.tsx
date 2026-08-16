@@ -32,6 +32,7 @@ import {
 import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
+import { attendanceRateFrom } from "@/lib/console/attendance-marks";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
 import { ENROLLED, STUDENT_STATUS_LABEL } from "@/lib/console/status";
 import { loadGroupActivity } from "@/lib/console/student-report";
@@ -213,11 +214,14 @@ export default async function GroupDetailPage({
       marks.set(m.student_id, row);
     }
   }
+  // The shared definition, not a fourth one. This used to be
+  // `s !== "absent"`, which counted an excused lesson as attended and left it
+  // in the denominator — so this page and the payroll page reported different
+  // rates for the same class.
   const attendanceRate = (studentId: string) => {
     const row = marks.get(studentId);
     if (!row || row.size === 0) return null;
-    const attended = [...row.values()].filter((s) => s !== "absent").length;
-    return Math.round((attended / row.size) * 100);
+    return attendanceRateFrom(row.values());
   };
 
   const libraryTests = (libTestsRes.data ?? []).map((t, i) => ({
