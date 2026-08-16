@@ -58,6 +58,8 @@ export interface GroupReportRow {
   bySkill: SkillFigure[];
   /** The headline: Writing, because it is graded most and means the most. */
   writing: SkillFigure;
+  /** This group's own weakest criterion, and how many of them share it. */
+  teachNext: { label: string; students: number; of: number } | null;
 }
 
 export interface CenterReport {
@@ -80,6 +82,23 @@ export interface CenterReport {
   writersGraded: number;
   /** Reading question types by total wrong answers. */
   readingMisses: { label: string; value: number }[];
+  /**
+   * MOVEMENT — improved, held or declined against each student's own previous
+   * attempt in the window, per skill.
+   *
+   * The distribution says where a centre IS; this says which way it is going,
+   * which is the only one of the two an owner can act on this week. Compared
+   * per student against themselves, never against the cohort: a group that
+   * takes on six beginners has not got worse.
+   */
+  movement: Record<SkillName, { improved: number; held: number; declined: number }>;
+  /**
+   * WHAT TO TEACH NEXT — the single criterion the largest share of this scope
+   * is weakest on, as a sentence. One line, and it is the reason the page
+   * exists: "8 of 11 students are lowest on Coherence & Cohesion" converts into
+   * a workshop on Thursday. An average band converts into nothing.
+   */
+  teachNext: { headline: string; detail: string } | null;
   /** Students with no graded practice in the last 14 days. Paused students are
    *  excluded — they are on a break, not slipping away. */
   atRisk: { id: string; name: string; lastActive: string | null }[];
@@ -179,12 +198,15 @@ export async function loadCenterReport(opts: {
         completionPct: null,
         bySkill: SKILLS.map(emptyFigure),
         writing: emptyFigure("Writing"),
+        teachNext: null,
       })),
       bandBuckets: emptyBySkill(() => []),
       bandTrend: emptyBySkill(() => []),
       skillAverages: SKILLS.map(emptyFigure),
       writingCaps: [],
       writersGraded: 0,
+      movement: emptyBySkill(() => ({ improved: 0, held: 0, declined: 0 })),
+      teachNext: null,
       readingMisses: [],
       atRisk: [],
       practisedThisWeek: { students: 0, of: 0 },
@@ -348,6 +370,40 @@ export async function loadCenterReport(opts: {
 
   const skillAverages = SKILLS.map((s) => figureFor(s));
 
+  /**
+   * Which way each student is going, per skill.
+   *
+   * AGAINST THEMSELVES, NEVER THE COHORT. A group that takes on six beginners
+   * has not got worse, and a report that says it has is a report a centre owner
+   * stops opening. Each student's latest mark is compared with their previous
+   * one in the same window and the same skill; someone with a single attempt is
+   * not counted at all, because "no change" from one measurement is a claim
+   * about a line drawn through one point.
+   *
+   * A half band either way is the threshold: the grader itself moves by less
+   * than that between two readings of the same essay, so anything smaller is
+   * measurement noise dressed as progress.
+   */
+  const movementFor = (pool = marks) =>
+    emptyBySkill<{ improved: number; held: number; declined: number }>((skill) => {
+      const out = { improved: 0, held: 0, declined: 0 };
+      const byStudent = new Map<string, { band: number; at: string }[]>();
+      for (const m of pool.filter((x) => x.skill === skill)) {
+        byStudent.set(m.student, [...(byStudent.get(m.student) ?? []), { band: m.band, at: m.at }]);
+      }
+      for (const series of byStudent.values()) {
+        if (series.length < 2) continue;
+        const sorted = [...series].sort((a, b) => a.at.localeCompare(b.at));
+        const move = sorted[sorted.length - 1].band - sorted[sorted.length - 2].band;
+        if (move >= 0.5) out.improved += 1;
+        else if (move <= -0.5) out.declined += 1;
+        else out.held += 1;
+      }
+      return out;
+    });
+
+  const movement = movementFor();
+
   // Distribution per skill: a histogram answers "who is where", which is what a
   // center acts on. A mean answers nothing and hides the two students at 4.5.
   const bandBuckets = emptyBySkill<{ label: string; value: number }[]>((skill) => {
@@ -426,6 +482,30 @@ export async function loadCenterReport(opts: {
     .slice(0, 8)
     .map(([type, count]) => ({ label: type.replaceAll("_", " "), value: count }));
 
+  /**
+   * The one sentence this page exists for.
+   *
+   * Writing criteria first because they are the richest signal we hold; reading
+   * question types are the fallback when nothing has been written. Either way
+   * it is expressed in STUDENTS, not in attempts — "lowest for 8 of 11
+   * students" is a workshop; "capped 23 essays" could be one prolific student.
+   */
+  const teachNext: CenterReport["teachNext"] =
+    writingCaps.length > 0 && writersGraded > 0
+      ? {
+          headline: `${writingCaps[0].label} is the lowest criterion for ${writingCaps[0].students} of ${writersGraded} student${writersGraded === 1 ? "" : "s"}`,
+          detail:
+            writingCaps.length > 1
+              ? `Next after that: ${writingCaps[1].label} (${writingCaps[1].students}). Worth one lesson, not a rewrite of the scheme of work.`
+              : "One lesson on it would move more bands than anything else on this page.",
+        }
+      : readingMisses.length > 0
+        ? {
+            headline: `${readingMisses[0].label} is the question type costing the most marks`,
+            detail: `${readingMisses[0].value} wrong answers across the window. Nothing has been written yet, so this is the strongest signal available.`,
+          }
+        : null;
+
   // --- per-group completion + per-skill standing -----------------------------
   const doneByContent = new Map<string, Set<string>>();
   const note = (contentId: string | null, student: string) => {
@@ -462,6 +542,21 @@ export async function loadCenterReport(opts: {
     const ourMarks = marks.filter((m) => roster.has(m.student));
     const bySkill = SKILLS.map((s) => figureFor(s, ourMarks));
 
+    // §8 level 2: the criterion the largest share of THIS group is lowest on.
+    // Scoped to its own students rather than inherited from the centre, which
+    // is the whole point — the answer differs per group and that difference is
+    // what a teacher does something about.
+    const ourCaps = new Map<string, Set<string>>();
+    for (const [essayId, cap] of essayCap.entries()) {
+      const owner = ownerOfEssay.get(essayId);
+      if (!owner || !roster.has(owner)) continue;
+      ourCaps.set(cap, (ourCaps.get(cap) ?? new Set()).add(owner));
+    }
+    const ourWriters = new Set(
+      essays.filter((e) => roster.has(e.student_id) && essayBand.has(e.id)).map((e) => e.student_id),
+    ).size;
+    const worst = [...ourCaps.entries()].sort((a, b) => b[1].size - a[1].size)[0];
+
     return {
       id: g.id,
       name: g.name,
@@ -472,6 +567,9 @@ export async function loadCenterReport(opts: {
       completionPct: expected > 0 ? Math.round((completed / expected) * 100) : null,
       bySkill,
       writing: bySkill.find((s) => s.skill === "Writing") ?? emptyFigure("Writing"),
+      teachNext: worst && ourWriters > 0
+        ? { label: worst[0], students: worst[1].size, of: ourWriters }
+        : null,
     };
   });
 
@@ -514,6 +612,8 @@ export async function loadCenterReport(opts: {
     writingCaps,
     writersGraded,
     readingMisses,
+    movement,
+    teachNext,
     atRisk,
     practisedThisWeek: {
       students: studentIds.filter((id) => (lastActive.get(id) ?? "") >= mondayISO(now)).length,

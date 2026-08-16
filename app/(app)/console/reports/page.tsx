@@ -26,11 +26,13 @@ import {
   TD,
   THead,
   TRow,
+  LINE,
+  SERIF,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
-import { loadCenterReport, SKILL_UNIT, type SkillName } from "@/lib/console/reports";
+import { loadCenterReport, SKILLS, SKILL_UNIT, type SkillName } from "@/lib/console/reports";
 import { ALWAYS_CURRENT, type RangeKey } from "@/lib/console/window";
 import { createClient } from "@/lib/supabase/server";
 
@@ -177,6 +179,48 @@ export default async function ReportsPage({
       />
 
       <Stack>
+        {/* ══ THE ANSWER, ABOVE THE WORKING ══
+            §8's "what to teach next". Everything below this is evidence for it,
+            and a centre owner who reads only one line on this page should read
+            the one that turns into a lesson on Thursday. */}
+        {report.teachNext ? (
+          <div
+            style={{
+              background: "linear-gradient(135deg,#EDECFA 0%,#F7F6FD 100%)",
+              border: "1px solid #DEDDF6",
+              borderRadius: 12,
+              padding: "16px 20px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: SANS,
+                fontSize: 11,
+                letterSpacing: ".08em",
+                textTransform: "uppercase",
+                color: "#6E6C87",
+                marginBottom: 6,
+              }}
+            >
+              What to teach next
+            </div>
+            <div
+              style={{
+                fontFamily: SERIF,
+                fontSize: 19,
+                fontWeight: 700,
+                color: INK,
+                lineHeight: 1.35,
+              }}
+            >
+              {report.teachNext.headline}
+            </div>
+            <div style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, marginTop: 6 }}>
+              {report.teachNext.detail}
+            </div>
+          </div>
+        ) : null}
+
         {/* ── 1. who has handed in ─────────────────────────────────────────── */}
         <Card flush id="handed-in">
           <CardHead
@@ -344,7 +388,17 @@ export default async function ReportsPage({
                         </span>
                       )}
                     </TD>
-                    <TD tone={g.assignments === 0 ? "faint" : "body"}>{g.assignments}</TD>
+                    <TD tone={g.assignments === 0 ? "faint" : "body"}>
+                      {g.assignments}
+                      {g.teachNext ? (
+                        <span
+                          style={{ display: "block", fontSize: 11, color: FAINT, marginTop: 2 }}
+                          title={`${g.teachNext.students} of ${g.teachNext.of} are lowest on ${g.teachNext.label}`}
+                        >
+                          teach {g.teachNext.label.split(" ")[0]}
+                        </span>
+                      ) : null}
+                    </TD>
                   </TRow>
                 ))}
                 {report.groups.length === 0 ? (
@@ -353,6 +407,66 @@ export default async function ReportsPage({
                   </Empty>
                 ) : null}
               </Table>
+            </Card>
+
+            <Card>
+              <CardHead
+                title="Which way they are going"
+                note="each student against their OWN previous attempt · half a band counts as a move"
+              />
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+                  gap: 12,
+                }}
+              >
+                {SKILLS.map((skill) => {
+                  const m = report.movement[skill];
+                  const total = m.improved + m.held + m.declined;
+                  return (
+                    <div
+                      key={skill}
+                      style={{
+                        border: `1px solid ${LINE}`,
+                        borderRadius: 10,
+                        padding: "12px 14px",
+                        opacity: total === 0 ? 0.55 : 1,
+                      }}
+                    >
+                      <div style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: INK }}>
+                        {skill}
+                      </div>
+                      {total === 0 ? (
+                        <div style={{ fontFamily: SANS, fontSize: 12, color: FAINT, marginTop: 6 }}>
+                          {/* Movement needs two measurements. Saying so beats
+                              printing three zeros, which reads as "nobody
+                              improved" rather than "nobody has been measured
+                              twice". */}
+                          nobody has sat it twice yet
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: "flex", height: 8, borderRadius: 5, overflow: "hidden", marginTop: 9, gap: 2 }}>
+                            {m.improved > 0 ? <div style={{ flex: m.improved, background: GREEN }} /> : null}
+                            {m.held > 0 ? <div style={{ flex: m.held, background: "#D8D6D0" }} /> : null}
+                            {m.declined > 0 ? <div style={{ flex: m.declined, background: RED }} /> : null}
+                          </div>
+                          <div style={{ fontFamily: SANS, fontSize: 11.5, color: MUTED, marginTop: 7 }}>
+                            <span style={{ color: GREEN, fontWeight: 600 }}>{m.improved} up</span>
+                            {" · "}
+                            {m.held} held
+                            {" · "}
+                            <span style={{ color: m.declined > 0 ? RED : MUTED }}>
+                              {m.declined} down
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </Card>
 
             <Split>
