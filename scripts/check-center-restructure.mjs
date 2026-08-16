@@ -78,6 +78,23 @@ for (const [what, table, columns] of probes) {
   }
 }
 
+// `announcement` was missing from notification_type for the whole life of the
+// announcements feature, so every announcement was recorded as sent and never
+// delivered — `notify` is best-effort and swallowed the enum error. Nothing in
+// the typecheck could see it: the TS union had the value, Postgres did not.
+const { error: announcementEnum } = await db
+  .from("notifications")
+  .select("id")
+  .eq("type", "announcement")
+  .limit(1);
+if (announcementEnum) {
+  missing += 1;
+  console.log(`  ✗  notification_type      'announcement' is not a valid value`);
+  console.log("     └─ breaks: EVERY announcement, and 3 of the 6 automatic messages");
+} else {
+  console.log("  ✓  notification_type      'announcement' exists");
+}
+
 // The enum is not a column, so it needs its own probe: ask for a status nobody
 // has used yet and see whether Postgres recognises the label at all.
 const { error: enumError } = await db
@@ -96,20 +113,26 @@ if (enumError) {
 console.log(
   missing === 0
     ? "\nApplied. The restructure is live in the database.\n"
-    : `\n${missing} of ${probes.length + 1} MISSING — a migration has not been applied.\n` +
-        "  Phase 1 → supabase/migrations/20260816120000_center_correctness.sql\n" +
-        "  Phase 2 → supabase/migrations/20260816130000_attempt_reviews.sql\n" +
+    : `\n${missing} MISSING — a migration has not been applied.\n` +
+        "  Phase 1 → 20260816120000_center_correctness.sql\n" +
+        "  Phase 2 → 20260816130000_attempt_reviews.sql\n" +
         "  Phase 4 → 20260816170000_placement_baselines.sql\n" +
         "            20260816180000_auto_messages.sql\n" +
-        "            20260816190000_practice_library.sql\n\n" +
+        "            20260816190000_practice_library.sql\n" +
+        "            20260816200000_notification_announcement_type.sql\n\n" +
         "HOW EACH ONE FAILS, which is not the same for all of them:\n\n" +
         "  Phase 1 is load-bearing. Its loaders return null and the console\n" +
         "  renders BLANK rather than erroring.\n\n" +
         "  20260816170000 is the other unsafe one: skill_estimates gains two\n" +
         "  columns the estimate service WRITES, so without it every upsert\n" +
-        "  fails and no band is ever recorded. Apply it before deploying.\n\n" +
-        "  Phase 2, the auto-messages and the library all degrade safely: the\n" +
-        "  marking queue reads empty, the automatic tab shows the code defaults\n" +
+        "  fails and no band is ever recorded.\n\n" +
+        "  20260816200000 fixes a bug that PREDATES this branch: 'announcement'\n" +
+        "  was never in the notification_type enum, so every announcement a\n" +
+        "  centre has sent was recorded as sent and silently never delivered.\n" +
+        "  It also unblocks 3 of the 6 automatic messages.\n\n" +
+        "  Phase 2, the auto-messages and the library degrade safely: the\n" +
+        "  marking queue reads empty, the automatic tab shows code defaults\n" +
         "  and saves nothing, and the library shows as empty.\n",
 );
+
 process.exit(missing === 0 ? 0 : 1);

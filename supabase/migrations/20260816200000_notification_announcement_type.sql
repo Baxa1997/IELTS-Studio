@@ -1,0 +1,39 @@
+-- ============================================================================
+-- 20260816200000_notification_announcement_type.sql
+-- `announcement` was never added to the notification_type enum.
+--
+-- WHAT HAS BEEN HAPPENING. `sendAnnouncement` writes the row in `announcements`
+-- (so the console shows it as sent, with a recipient count), then calls
+-- `notify()` with type 'announcement'. Postgres rejects the insert —
+-- "invalid input value for enum notification_type" — and `notify` is
+-- deliberately best-effort, so it logs and swallows. Delivering the news must
+-- never break the thing the news is about; the cost is that a delivery failure
+-- is invisible.
+--
+-- So every announcement a centre has ever sent has been recorded as sent and
+-- never delivered in-app. Nobody received one. There are zero notification rows
+-- to show for any of it.
+--
+-- THIS ALSO EXPLAINS §12'S COMPLAINT. The restructure doc singles out
+-- "`not opened yet · 5 sent`" as "a discouraging headline metric that doesn't
+-- tell anyone anything". It is not a metric problem. The page computes the read
+-- share by counting `notifications` rows with type 'announcement' and matching
+-- title — and there are none, because none were ever created. It said "not
+-- opened yet" because nothing had been opened, because nothing had arrived.
+--
+-- The TypeScript union in lib/notifications/send.ts has listed 'announcement'
+-- since the feature was written, so nothing in the build or the typecheck could
+-- have caught this: the mismatch is between TS and Postgres, and only Postgres
+-- knows.
+--
+-- The same enum carries the three new §12 automatic messages that are not
+-- assignments or gradings (absent today, gone quiet, two absences), which would
+-- have failed identically.
+--
+-- Note: `alter type ... add value` is transaction-safe on PG12+, but the new
+-- label cannot be USED in the same transaction. Nothing here uses it.
+--
+-- Idempotent: `if not exists` makes re-running a no-op.
+-- ============================================================================
+
+alter type public.notification_type add value if not exists 'announcement';
