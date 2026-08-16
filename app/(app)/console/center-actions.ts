@@ -116,6 +116,71 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
   };
 }
 
+/* ── chasing the work ─────────────────────────────────────────────────────── */
+
+/**
+ * Nudge the students who have not handed a practice in.
+ *
+ * THE STUDENT IDS ARRIVE FROM THE BROWSER, so they are treated as a request
+ * rather than as fact: they are intersected with the group's real roster, read
+ * through RLS. Without that, anyone who can open this page could post a list of
+ * arbitrary uuids and have the platform message strangers on their behalf —
+ * and it would look like an ordinary reminder to everyone who received it.
+ *
+ * In-app only for now. A Telegram nudge would reach further and is the obvious
+ * next step, but "we messaged your parents" is not a thing to switch on without
+ * a centre asking for it.
+ */
+export async function remindNonSubmitters(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can send a reminder." };
+  }
+
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const asked = formData.getAll("student_id").map((v) => String(v));
+  if (!groupId || asked.length === 0) return { error: "Nobody to remind." };
+
+  const supabase = await createClient();
+
+  // RLS narrows this to a group the caller may actually see, which is what
+  // makes the intersection below a real check rather than a formality.
+  const { data: roster, error } = await supabase
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", groupId);
+  if (error) return { error: error.message };
+
+  const real = new Set((roster ?? []).map((r) => r.student_id as string));
+  const recipients = asked.filter((id) => real.has(id));
+  if (recipients.length === 0) {
+    return { error: "Those students are not in this group." };
+  }
+
+  const dueAt = String(formData.get("due_at") ?? "").trim();
+  const when = dueAt
+    ? ` It was due ${new Date(dueAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}.`
+    : "";
+
+  await notify({
+    organizationId: profile.organization_id,
+    recipientIds: recipients,
+    type: "assignment_due_soon",
+    title: title ? `Still to hand in: ${title}` : "You have practice still to hand in",
+    body: `Your teacher is waiting on this one.${when}`,
+    href: "/assignments",
+  });
+
+  revalidatePath("/console/practice");
+  return {
+    ok: `Reminded ${recipients.length} student${recipients.length === 1 ? "" : "s"}.`,
+  };
+}
+
 /* ── lessons that did not happen ──────────────────────────────────────────── */
 
 /**

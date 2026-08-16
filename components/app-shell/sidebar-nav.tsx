@@ -10,6 +10,7 @@ import {
   BookOpen,
   Building2,
   CalendarCheck,
+  ClipboardList,
   CalendarRange,
   ChartNoAxesColumn,
   ClipboardCheck,
@@ -135,7 +136,9 @@ const ADMIN: Section[] = [
   {
     title: "Learning",
     items: [
-      // Marking first: it is work waiting, and Results is what it produces.
+      // Practice → Marking → Results is the actual order of the work: it gets
+      // set, it comes back, it gets marked, and then it means something.
+      { label: "Practice", href: "/console/practice", icon: ClipboardList },
       { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
@@ -177,7 +180,9 @@ const ADMINISTRATOR: Section[] = [
   {
     title: "Learning",
     items: [
-      // Marking first: it is work waiting, and Results is what it produces.
+      // Practice → Marking → Results is the actual order of the work: it gets
+      // set, it comes back, it gets marked, and then it means something.
+      { label: "Practice", href: "/console/practice", icon: ClipboardList },
       { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
@@ -221,7 +226,9 @@ const TEACHER: Section[] = [
   {
     title: "Learning",
     items: [
-      // Marking first: it is work waiting, and Results is what it produces.
+      // Practice → Marking → Results is the actual order of the work: it gets
+      // set, it comes back, it gets marked, and then it means something.
+      { label: "Practice", href: "/console/practice", icon: ClipboardList },
       { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],

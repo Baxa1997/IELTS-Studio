@@ -243,7 +243,10 @@ export default async function ConsolePage() {
           title: `${groupsNoPractice} group${groupsNoPractice === 1 ? " has" : "s have"} no practice set`,
           detail: "Nothing to grade means nothing to report on.",
           cta: "Open",
-          href: "/console/groups",
+          // §2's complaint answered: this alert had no destination until the
+          // Practice page existed, so it pointed at the group LIST and left the
+          // reader to work out which ones it meant.
+          href: "/console/practice",
         }
       : null,
     lowCompletion > 0
@@ -252,8 +255,8 @@ export default async function ConsolePage() {
           tone: "amber" as Tone,
           title: `${lowCompletion} group${lowCompletion === 1 ? "" : "s"} under 50% completion`,
           detail: "Most of the homework set hasn't been finished.",
-          cta: "Report",
-          href: "/console/reports",
+          cta: "Chase",
+          href: "/console/practice?status=overdue",
         }
       : null,
     pendingInvites.length > 0
