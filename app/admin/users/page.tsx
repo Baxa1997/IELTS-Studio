@@ -1,54 +1,29 @@
 import Link from "next/link";
 
+import { MenuIcon, OverflowMenu } from "@/components/admin/menu";
 import {
   Card,
   CardHead,
-  Empty,
   FAINT,
-  HEAD_BG,
-  Identity,
   INDIGO,
   INK,
   LINE,
   MUTED,
-  Pill,
   PageTitle,
   SERIF,
   SOFT,
   Surface,
-  TableHead,
-  TableRow,
   TONE,
   clip,
 } from "@/components/admin/ui";
-import { loadEngagement, loadUsers, type PlatformUser } from "@/lib/admin/platform";
+import { loadEngagement, loadUsers } from "@/lib/admin/platform";
 import { monthlyPrice } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
-import { FilterAutoSubmit } from "./filter-auto-submit";
-import { PlanControls } from "./plan-controls";
+import { UsersTable, type UserRow } from "./users-table";
 
 export const dynamic = "force-dynamic";
-
-const dateFmt = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "—";
-
-/** Fixed last column, as the design has it — it holds icon buttons, and a
- *  fractional track would let them drift away from the header above them.
- *  60px rather than the design's 110px: that width is for three icons, and two
- *  of those (sign in as, suspend) are actions this platform does not have. */
-const COLS = "2.3fr 1fr 1.4fr .9fr .8fr 1fr 60px";
-const PAGE_SIZE = 25;
 
 /** Straight from the design's `planMix`: free is the quiet grey that should
  *  dominate the bar, and the paid tiers climb toward the indigo accent. */
@@ -58,34 +33,6 @@ const PLAN_COLOR: Record<OrgPlan, string> = {
   pro: "#4340CB",
   enterprise: "#E5A85C",
 };
-
-const PLAN_TONE: Record<OrgPlan, "neutral" | "indigo" | "amber" | "green"> = {
-  trial: "neutral",
-  starter: "indigo",
-  pro: "amber",
-  enterprise: "green",
-};
-
-/** Colour a person's avatar by their name, so the same face keeps the same tile. */
-const AVATAR: ("indigo" | "green" | "amber" | "red" | "neutral")[] = [
-  "indigo",
-  "green",
-  "amber",
-  "red",
-  "neutral",
-];
-const avatarTone = (name: string) =>
-  AVATAR[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR.length];
-
-const SORTS = {
-  recent: { label: "Newest first", cmp: (a: PlatformUser, b: PlatformUser) => b.createdAt.localeCompare(a.createdAt) },
-  oldest: { label: "Oldest first", cmp: (a: PlatformUser, b: PlatformUser) => a.createdAt.localeCompare(b.createdAt) },
-  practice: { label: "Most practice", cmp: (a: PlatformUser, b: PlatformUser) => b.practiceCount - a.practiceCount },
-  idle: { label: "No practice first", cmp: (a: PlatformUser, b: PlatformUser) => a.practiceCount - b.practiceCount },
-  name: { label: "Name A–Z", cmp: (a: PlatformUser, b: PlatformUser) => a.name.localeCompare(b.name) },
-} as const;
-
-type SortKey = keyof typeof SORTS;
 
 /** The design's small KPI tile: 23px value in its own colour, 12px label. */
 function Tile({
@@ -117,64 +64,47 @@ function Tile({
   );
 }
 
-const field: React.CSSProperties = {
-  border: "1px solid #E4E2DC",
-  borderRadius: 8,
-  padding: "8px 10px",
-  fontSize: 12.5,
-  background: "#fff",
-  fontFamily: "inherit",
-  color: INK,
-};
-
+/**
+ * Everyone on the platform.
+ *
+ * The page loads the list once and hands the whole thing to a client table —
+ * filtering, sorting and paging all happen in the browser, which is what makes
+ * the controls act instantly instead of costing a round trip per keystroke.
+ * Only `q` survives as a URL parameter, because the header's search deep-links
+ * into here.
+ */
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    q?: string;
-    role?: string;
-    kind?: string;
-    sort?: string;
-    plan?: string;
-    page?: string;
-  }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
   await requireSuperAdmin();
   const sp = await searchParams;
-  const query = sp.q?.trim() || undefined;
-  const role = sp.role && sp.role !== "all" ? sp.role : undefined;
-  const kind = sp.kind && sp.kind !== "all" ? sp.kind : undefined;
-  const plan = sp.plan && sp.plan !== "all" ? sp.plan : undefined;
-  const sort: SortKey = (sp.sort && sp.sort in SORTS ? sp.sort : "recent") as SortKey;
 
-  const [all, engagement] = await Promise.all([loadUsers(query), loadEngagement()]);
-  const filtered = all
-    .filter((u) => (role ? u.role === role : true))
-    .filter((u) => (kind ? u.orgKind === kind : true))
-    .filter((u) => (plan ? u.orgPlan === plan : true))
-    .sort(SORTS[sort].cmp);
-
-  const page = Math.max(1, Number(sp.page ?? 1) || 1);
-  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, pages);
-  const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const [all, engagement] = await Promise.all([loadUsers(), loadEngagement()]);
 
   const inCenters = all.filter((u) => u.orgKind === "center").length;
   const practising = all.filter((u) => u.practiceCount > 0).length;
   const byPlan = (p: OrgPlan) => all.filter((u) => u.orgPlan === p).length;
   const paidPeople = all.filter((u) => u.orgPlan !== "trial").length;
 
-  // A URL builder that keeps every other filter — the classic bug here is a
-  // pagination link that silently drops the search you had typed.
-  const url = (over: Record<string, string | number | undefined>) => {
-    const params = new URLSearchParams();
-    const merged = { q: query, role: sp.role, kind: sp.kind, plan: sp.plan, sort, ...over };
-    for (const [k, v] of Object.entries(merged)) {
-      if (v != null && v !== "" && v !== "all") params.set(k, String(v));
-    }
-    const qs = params.toString();
-    return `/admin/users${qs ? `?${qs}` : ""}`;
-  };
+  const rows: UserRow[] = all.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    username: u.username,
+    emailUndeliverable: u.emailUndeliverable,
+    role: u.role,
+    orgKind: u.orgKind,
+    orgName: u.orgName,
+    orgPlan: u.orgPlan,
+    orgStatus: u.orgStatus,
+    gradingLimit: u.gradingLimit,
+    generationLimit: u.generationLimit,
+    orgMemberCount: u.orgMemberCount,
+    practiceCount: u.practiceCount,
+    createdAt: u.createdAt,
+  }));
 
   return (
     <Surface>
@@ -182,18 +112,40 @@ export default async function UsersPage({
         eyebrow="Platform"
         title="Users"
         subtitle="Everyone on the platform, with how much work each of them owns."
+        actions={
+          <OverflowMenu
+            label="User actions"
+            items={[
+              {
+                label: "Export users (Excel)",
+                href: "/api/admin/export?kind=users",
+                icon: MenuIcon.sheet,
+                tone: "green",
+                download: true,
+              },
+              {
+                label: "Plans & revenue",
+                href: "/admin/plans",
+                icon: MenuIcon.card,
+                tone: "indigo",
+              },
+              {
+                label: "System health",
+                href: "/admin/health",
+                icon: MenuIcon.pulse,
+                tone: "neutral",
+                separated: true,
+              },
+            ]}
+          />
+        }
       />
 
-      {/* The design's split, not a flat KPI row: four small tiles in a 2×2 on
-          the left, the plan mix filling the same height on the right. */}
+      {/* The design's split: four small tiles in a 2×2 on the left, the plan
+          mix filling the same height on the right. */}
       <div
         className="ad-split-users"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.1fr 1.9fr",
-          gap: 12,
-          marginBottom: 16,
-        }}
+        style={{ display: "grid", gridTemplateColumns: "1.1fr 1.9fr", gap: 12, marginBottom: 16 }}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           <Tile
@@ -274,21 +226,8 @@ export default async function UsersPage({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
             {PLAN_ORDER.map((p) => {
               const n = byPlan(p);
-              const on = plan === p;
               return (
-                <Link
-                  key={p}
-                  href={url({ plan: on ? "all" : p, page: undefined })}
-                  title={`Show only ${PLAN_TIERS[p].name} accounts`}
-                  style={{
-                    textDecoration: "none",
-                    borderRadius: 8,
-                    padding: "6px 8px",
-                    margin: "-6px -8px",
-                    border: `1px solid ${on ? TONE.indigo.border : "transparent"}`,
-                    background: on ? TONE.indigo.tint : "transparent",
-                  }}
-                >
+                <div key={p}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <span
                       style={{ width: 8, height: 8, borderRadius: 3, background: PLAN_COLOR[p] }}
@@ -297,196 +236,21 @@ export default async function UsersPage({
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 600, marginTop: 4, color: INK }}>{n}</div>
                   {/* List value, not billed revenue — the two differ, and the
-                      difference is spelled out on Plans & revenue where there
-                      is room to explain it rather than imply it in a caption. */}
+                      difference is spelled out on Plans & revenue where there is
+                      room to explain it rather than imply it in a caption. */}
                   <div style={{ fontSize: 11, color: FAINT }}>
                     {monthlyPrice(p) > 0 ? `$${(n * monthlyPrice(p)).toFixed(0)}/mo listed` : "$0"}
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
         </section>
       </div>
 
-      {/* ── the table ──────────────────────────────────────────────────── */}
       <Card>
-        <CardHead
-          title={query ? `Matching “${query}”` : "All users"}
-          note="Capped at the 500 most recent accounts."
-        />
-
-        <form
-          method="get"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-            padding: "14px 18px",
-            borderBottom: "1px solid #F0EEE9",
-            flexWrap: "wrap",
-          }}
-        >
-          <input
-            name="q"
-            defaultValue={query ?? ""}
-            placeholder="Name, email or login…"
-            aria-label="Search users"
-            style={{ ...field, flex: 1, minWidth: 200, maxWidth: 280, background: "#FAFAF8" }}
-          />
-          <select name="role" defaultValue={sp.role ?? "all"} aria-label="Role" style={field}>
-            <option value="all">Any role</option>
-            <option value="student">Student</option>
-            <option value="teacher">Teacher</option>
-            <option value="center_admin">Center admin</option>
-            <option value="administrator">Administrator</option>
-          </select>
-          <select name="kind" defaultValue={sp.kind ?? "all"} aria-label="Workspace" style={field}>
-            <option value="all">Anywhere</option>
-            <option value="personal">Individual</option>
-            <option value="center">In a center</option>
-          </select>
-          <select name="plan" defaultValue={sp.plan ?? "all"} aria-label="Plan" style={field}>
-            <option value="all">Any plan</option>
-            {PLAN_ORDER.map((p) => (
-              <option key={p} value={p}>
-                {PLAN_TIERS[p].name}
-              </option>
-            ))}
-          </select>
-          <select name="sort" defaultValue={sort} aria-label="Sort" style={field}>
-            {Object.entries(SORTS).map(([value, s]) => (
-              <option key={value} value={value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          {/* The design shows no Apply button — the selects act on change. This
-              submits the same form from the client, and the button stays for
-              anyone without JavaScript rather than leaving the page unusable. */}
-          <FilterAutoSubmit />
-          <span style={{ fontSize: 12, color: FAINT }}>
-            {filtered.length} of {all.length}
-          </span>
-          <noscript>
-            <button type="submit" style={{ ...field, cursor: "pointer" }}>
-              Apply
-            </button>
-          </noscript>
-        </form>
-
-        <div className="ad-scroll">
-          <div>
-            <TableHead cols={COLS}>
-              <div>USER</div>
-              <div>ROLE</div>
-              <div>WORKSPACE</div>
-              <div>PLAN</div>
-              <div style={{ textAlign: "right" }}>PRACTICE</div>
-              <div>JOINED</div>
-              <div style={{ textAlign: "right" }}>ACTIONS</div>
-            </TableHead>
-
-            {rows.map((u) => (
-              <TableRow key={u.id} cols={COLS}>
-                <Identity
-                  glyph={initials(u.name)}
-                  tone={avatarTone(u.name)}
-                  round
-                  name={u.name}
-                  meta={
-                    <>
-                      {u.email ?? u.username ?? "—"}
-                      {/* Shown, not hidden — but labelled, because a support reply
-                          to a synthetic address disappears without a bounce. */}
-                      {u.emailUndeliverable ? (
-                        <span title="Synthetic sign-in address — cannot receive mail">
-                          {" "}
-                          (no inbox)
-                        </span>
-                      ) : null}
-                    </>
-                  }
-                />
-                <div>
-                  <Pill tone={u.role === "center_admin" ? "indigo" : "neutral"}>
-                    {u.role.replace("_", " ")}
-                  </Pill>
-                </div>
-                <div style={{ color: "#4C4A63", fontSize: 12.5, ...clip }}>
-                  {u.orgKind === "center" ? u.orgName : "Individual"}
-                </div>
-                <div>
-                  <Pill tone={PLAN_TONE[u.orgPlan]}>{PLAN_TIERS[u.orgPlan].name}</Pill>
-                </div>
-                <div
-                  style={{
-                    textAlign: "right",
-                    fontWeight: 600,
-                    color: u.practiceCount === 0 ? FAINT : INK,
-                  }}
-                >
-                  {u.practiceCount}
-                </div>
-                <div style={{ color: SOFT, fontSize: 12.5 }}>{dateFmt(u.createdAt)}</div>
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <PlanControls
-                    profileId={u.id}
-                    name={u.name}
-                    plan={u.orgPlan}
-                    orgKind={u.orgKind}
-                    orgName={u.orgName}
-                    gradingLimit={u.gradingLimit}
-                    generationLimit={u.generationLimit}
-                    orgMemberCount={u.orgMemberCount}
-                  />
-                </div>
-              </TableRow>
-            ))}
-
-            {rows.length === 0 ? <Empty>Nobody matches those filters.</Empty> : null}
-          </div>
-        </div>
-
-        {/* ── pagination ─────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "13px 18px",
-            fontSize: 12.5,
-            color: SOFT,
-            background: HEAD_BG,
-            borderTop: `1px solid ${LINE}`,
-          }}
-        >
-          <span>
-            {filtered.length === 0
-              ? "Nothing to show"
-              : `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, filtered.length)} of ${filtered.length}`}
-          </span>
-          <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
-            {safePage > 1 ? (
-              <Link href={url({ page: safePage - 1 })} className="ad-act" style={{ color: "#4C4A63", textDecoration: "none" }}>
-                ‹
-              </Link>
-            ) : (
-              <span className="ad-act" style={{ color: "#CFCDC8", cursor: "default" }}>
-                ‹
-              </span>
-            )}
-            {safePage < pages ? (
-              <Link href={url({ page: safePage + 1 })} className="ad-act" style={{ color: "#4C4A63", textDecoration: "none" }}>
-                ›
-              </Link>
-            ) : (
-              <span className="ad-act" style={{ color: "#CFCDC8", cursor: "default" }}>
-                ›
-              </span>
-            )}
-          </span>
-        </div>
+        <CardHead title="All users" note="Capped at the 500 most recent accounts." />
+        <UsersTable users={rows} initialQuery={sp.q ?? ""} />
       </Card>
     </Surface>
   );

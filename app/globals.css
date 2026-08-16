@@ -1870,3 +1870,11 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Menu and alert rows share one hover, so a dropdown never feels inert. */
+.ad-menu-item:hover {
+  background: #f4f3ef;
+}
+.ad-act:disabled {
+  cursor: default;
+}

@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { loadCenters } from "@/lib/admin/platform";
 import { loadConductFlags } from "@/lib/admin/moderation";
 
+import { AlertsBell, type AlertRow } from "./alerts-bell";
 import { HeaderCrumb } from "./header-crumb";
 import { CREAM, FAINT, MUTED, SANS, TONE } from "./ui";
 
@@ -25,7 +24,39 @@ export async function AdminHeader() {
   // that lied about the count would be worse than no badge.
   const [centers, conduct] = await Promise.all([loadCenters(), loadConductFlags(50)]);
   const pending = centers.filter((c) => c.status === "pending").length;
-  const alerts = pending + conduct.length;
+  // Approved, and has still graded nothing — the churn signal the centre page
+  // leads with, surfaced here so it is noticed without going looking.
+  const stalled = centers.filter((c) => c.status === "active" && c.practice30d === 0).length;
+  const alerts = pending + stalled + conduct.length;
+
+  const rows: AlertRow[] = [];
+  if (pending > 0) {
+    rows.push({
+      title: `${pending} center application${pending === 1 ? "" : "s"} waiting`,
+      detail: "Nobody can teach until these are approved",
+      href: "/admin/centers?tab=pending",
+      tone: "indigo",
+      icon: "building",
+    });
+  }
+  if (stalled > 0) {
+    rows.push({
+      title: `${stalled} center${stalled === 1 ? "" : "s"} at zero practice`,
+      detail: "Approved, staffed, and nothing graded yet",
+      href: "/admin/centers?sort=idle",
+      tone: "amber",
+      icon: "warn",
+    });
+  }
+  if (conduct.length > 0) {
+    rows.push({
+      title: `${conduct.length} speaking mock${conduct.length === 1 ? "" : "s"} flagged`,
+      detail: "Examiner abuse or refusal, reported only",
+      href: "/admin/moderation",
+      tone: "red",
+      icon: "shield",
+    });
+  }
 
   return (
     <header
@@ -111,46 +142,7 @@ export async function AdminHeader() {
           Last 30 days
         </span>
 
-        <Link
-          href="/admin"
-          title={
-            alerts > 0
-              ? `${pending} application${pending === 1 ? "" : "s"} and ${conduct.length} flagged mock${conduct.length === 1 ? "" : "s"}`
-              : "Nothing waiting"
-          }
-          style={{
-            position: "relative",
-            width: 34,
-            height: 34,
-            background: "#fff",
-            border: "1px solid #E0DED8",
-            borderRadius: 8,
-            display: "grid",
-            placeItems: "center",
-            color: "#4C4A63",
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 01-3.4 0" />
-          </svg>
-          {alerts > 0 ? (
-            <span
-              style={{
-                position: "absolute",
-                top: -4,
-                right: -4,
-                background: TONE.red.ink,
-                color: "#fff",
-                fontSize: 10,
-                fontWeight: 600,
-                borderRadius: 20,
-                padding: "1px 5px",
-              }}
-            >
-              {alerts}
-            </span>
-          ) : null}
-        </Link>
+        <AlertsBell count={alerts} alerts={rows} />
       </div>
     </header>
   );

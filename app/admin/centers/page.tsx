@@ -12,7 +12,6 @@ import {
   Kpi,
   KpiRow,
   LINE,
-  MUTED,
   Pill,
   PageTitle,
   SOFT,
@@ -20,7 +19,9 @@ import {
   TableHead,
   TableRow,
   TONE,
+  NAVY,
 } from "@/components/admin/ui";
+import { MenuIcon, OverflowMenu } from "@/components/admin/menu";
 import { loadCenters, type CenterRow } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
 
@@ -90,6 +91,7 @@ export default async function CentersPage({
     { teachers: 0, students: 0, groups: 0 },
   );
   const dormant = active.filter((c) => c.practice30d === 0).length;
+  const pendingCount = all.filter((c) => c.status === "pending").length;
   const busiest = Math.max(1, ...all.map((c) => c.practice30d));
 
   const count = (key: string) =>
@@ -101,6 +103,36 @@ export default async function CentersPage({
         eyebrow="Platform"
         title="Education centers"
         subtitle="Every organization, and how much of it is actually being used."
+        actions={
+          <OverflowMenu
+            label="Center actions"
+            items={[
+              ...(pendingCount > 0
+                ? [
+                    {
+                      label: `Review applications (${pendingCount})`,
+                      href: "/admin/centers?tab=pending",
+                      icon: MenuIcon.check,
+                      tone: "green" as const,
+                    },
+                  ]
+                : []),
+              {
+                label: "Export centers (Excel)",
+                href: "/api/admin/export?kind=centers",
+                icon: MenuIcon.sheet,
+                tone: "green" as const,
+                download: true,
+              },
+              {
+                label: "Silent centers first",
+                href: "/admin/centers?sort=idle",
+                icon: MenuIcon.pulse,
+                tone: "amber" as const,
+              },
+            ]}
+          />
+        }
       />
 
       <KpiRow cols={5}>
@@ -162,14 +194,14 @@ export default async function CentersPage({
                   fontSize: 12.5,
                   textDecoration: "none",
                   whiteSpace: "nowrap",
-                  border: `1px solid ${on ? TONE.indigo.border : "#E4E2DC"}`,
-                  background: on ? TONE.indigo.tint : "#fff",
-                  color: on ? INDIGO : MUTED,
+                  border: `1px solid ${on ? NAVY : "#E4E2DC"}`,
+                  background: on ? NAVY : "#fff",
+                  color: on ? "#fff" : "#4C4A63",
                   fontWeight: on ? 600 : 400,
                 }}
               >
                 {t.label}
-                <span style={{ marginLeft: 6, color: on ? INDIGO : FAINT, opacity: 0.8 }}>
+                <span style={{ marginLeft: 6, color: on ? "#B9B7EC" : FAINT }}>
                   {count(t.key)}
                 </span>
               </Link>
@@ -205,6 +237,20 @@ export default async function CentersPage({
               </button>
             </noscript>
           </form>
+
+          <a
+            href="/api/admin/export?kind=centers"
+            download
+            title="Export centers (Excel)"
+            aria-label="Export centers to Excel"
+            className="ad-act"
+            style={{ color: TONE.green.ink, textDecoration: "none" }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="4" y="4" width="16" height="16" rx="2" />
+              <path d="M4 10h16M10 10v10" />
+            </svg>
+          </a>
         </div>
 
         <div className="ad-scroll">

@@ -237,3 +237,104 @@ function escapeHtml(s: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
+/**
+ * Suspend an account, or bring it back.
+ *
+ * WHAT IT ACTUALLY TOUCHES. `organizations.status`, because that is the only
+ * switch the app honours — `requireOrgUser` sends anyone whose org is not
+ * `active` to /awaiting-approval, so this locks every member out at the door
+ * rather than relying on a flag some page might forget to check.
+ *
+ * WHICH MEANS THE BLAST RADIUS MATTERS. For an individual learner the org has
+ * exactly one member and this reads as "suspend this person". For anyone inside
+ * a centre it would lock out the whole centre, so the caller has to send back
+ * the member count it warned about — the same guard `setAccountPlan` uses, and
+ * for the same reason: the roll can grow between the page rendering and the
+ * button being pressed.
+ *
+ * Nothing is deleted and no work is lost. Restoring puts the org back to
+ * `active` and everyone signs in again.
+ */
+export async function setAccountSuspended(
+  _prev: ReviewState,
+  formData: FormData,
+): Promise<ReviewState> {
+  const { user } = await requireSuperAdmin();
+
+  const profileId = String(formData.get("profile_id") ?? "");
+  const orgId = String(formData.get("org_id") ?? "");
+  const suspend = String(formData.get("suspend") ?? "") === "1";
+  if (!profileId && !orgId) return { error: "No account given." };
+
+  const admin = createAdminClient();
+
+  let targetOrg = orgId;
+  let label = String(formData.get("label") ?? "") || "Account";
+  if (!targetOrg) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("organization_id, full_name")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (!profile) return { error: "That account no longer exists." };
+    targetOrg = profile.organization_id as string;
+    label = (profile.full_name as string | null) ?? label;
+  }
+
+  const { data: org } = await admin
+    .from("organizations")
+    .select("id, name, kind, status")
+    .eq("id", targetOrg)
+    .maybeSingle();
+  if (!org) return { error: "That workspace no longer exists." };
+  if (org.kind === "center") label = org.name as string;
+
+  const { count } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", targetOrg);
+  const members = count ?? 1;
+  const acknowledged = Number(formData.get("member_count") ?? 0);
+  if (members > 1 && members !== acknowledged) {
+    return {
+      error: `This workspace now has ${members} members, not ${acknowledged}. Reload and check before locking everyone out.`,
+    };
+  }
+
+  const next = suspend ? "suspended" : "active";
+  if (org.status === next) return { notice: suspend ? "Already suspended." : "Already active." };
+
+  const { data, error } = await admin
+    .from("organizations")
+    .update({ status: next })
+    .eq("id", targetOrg)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "That workspace could not be changed." };
+
+  await recordAdminAction({
+    action: org.kind === "center"
+      ? (suspend ? "center.suspend" : "center.restore")
+      : (suspend ? "user.suspend" : "user.restore"),
+    targetKind: org.kind === "center" ? "organization" : "user",
+    targetId: org.kind === "center" ? targetOrg : profileId,
+    targetLabel: label,
+    detail: { from: org.status, to: next, members },
+    actor: { id: user.id, email: user.email },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/centers");
+  revalidatePath(`/admin/centers/${targetOrg}`);
+  revalidatePath("/admin/health");
+
+  return {
+    notice: suspend
+      ? members > 1
+        ? `${label} suspended — all ${members} members are locked out.`
+        : `${label} is suspended and cannot sign in.`
+      : `${label} is active again.`,
+  };
+}

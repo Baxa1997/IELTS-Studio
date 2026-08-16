@@ -25,9 +25,13 @@ import {
   TONE,
   clip,
 } from "@/components/admin/ui";
+import { MenuIcon, OverflowMenu } from "@/components/admin/menu";
+import { loadCenterActivity } from "@/lib/admin/activity";
 import { loadCenterDetail } from "@/lib/admin/platform";
-import { daysSince } from "@/lib/admin/time";
+import { ago, daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
+
+import { CenterActions } from "./center-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +59,7 @@ const STUDENT_COLS = "2fr 1.1fr 1.4fr .7fr";
 export default async function CenterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   await requireSuperAdmin();
   const { id } = await params;
-  const detail = await loadCenterDetail(id);
+  const [detail, activity] = await Promise.all([loadCenterDetail(id), loadCenterActivity(id)]);
   if (!detail) notFound();
 
   const { center, staff, groups, students, practice30d, ungroupedStudents } = detail;
@@ -126,6 +130,43 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
               ? `approved ${dateFmt(center.approvedAt)}`
               : `applied ${dateFmt(center.createdAt)}`}
           </p>
+        </div>
+
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexShrink: 0 }}>
+          <CenterActions
+            orgId={center.id}
+            name={center.name}
+            suspended={center.status === "suspended"}
+            memberCount={staff.length + center.students}
+          />
+          <OverflowMenu
+            label="Center actions"
+            items={[
+              ...(center.contactEmail
+                ? [
+                    {
+                      label: "Email the admin",
+                      href: `mailto:${center.contactEmail}`,
+                      icon: MenuIcon.mail,
+                      tone: "indigo" as const,
+                    },
+                  ]
+                : []),
+              {
+                label: "Change plan & limits",
+                href: `/admin/users?q=${encodeURIComponent(center.name)}`,
+                icon: MenuIcon.card,
+                tone: "indigo" as const,
+              },
+              {
+                label: "Export centers (Excel)",
+                href: "/api/admin/export?kind=centers",
+                icon: MenuIcon.sheet,
+                tone: "green" as const,
+                download: true,
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -239,7 +280,11 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
                   {g.assignments === 1 ? "" : "s"}
                 </div>
               </div>
-              {!g.teacherName ? <Pill tone="amber">unassigned</Pill> : null}
+              {!g.teacherName ? (
+                <Pill tone="amber">unassigned</Pill>
+              ) : g.assignments === 0 ? (
+                <Pill tone="amber">no activity</Pill>
+              ) : null}
             </div>
           ))}
           {groups.length === 0 ? <Empty>No groups yet.</Empty> : null}
@@ -315,6 +360,32 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
           detail="They belong to this centre but no class, so they are invisible to every teacher report. They can still practise on their own."
         />
       ) : null}
+
+      <Card>
+        <CardHead
+          title="Recent activity in this center"
+          note="Assembled from when things were created — there is no event log behind it, so removals leave no line."
+        />
+        {activity.map((row, i) => (
+          <div
+            key={`${row.when}-${i}`}
+            style={{
+              display: "flex",
+              gap: 14,
+              padding: "12px 18px",
+              borderBottom: "1px solid #F5F4F0",
+              fontSize: 12.5,
+            }}
+          >
+            <span style={{ color: FAINT, width: 100, flexShrink: 0 }}>{ago(row.when)}</span>
+            <span style={{ flex: 1, minWidth: 0, color: INK }}>{row.what}</span>
+            <span style={{ color: SOFT, whiteSpace: "nowrap", ...clip }}>{row.who}</span>
+          </div>
+        ))}
+        {activity.length === 0 ? (
+          <Empty>Nothing has happened in this centre yet.</Empty>
+        ) : null}
+      </Card>
     </Surface>
   );
 }

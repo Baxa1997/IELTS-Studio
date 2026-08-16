@@ -47,6 +47,22 @@ export const TONE: Record<Tone, { tint: string; ink: string; border: string }> =
   neutral: { tint: "#F1F0EB", ink: MUTED, border: LINE },
 };
 
+/**
+ * Badge tints, which are NOT the pill tints above.
+ *
+ * A pill is a word on a wash and reads fine at 11px; an avatar badge is two
+ * letters that have to carry across a table, and the pill wash left them barely
+ * visible — the owner spotted it on the Centers list. These are the design's
+ * own badge pairs, a step darker on both sides.
+ */
+export const BADGE: Record<Tone, { tint: string; ink: string }> = {
+  indigo: { tint: "#DEDDF6", ink: "#3B38B0" },
+  green: { tint: "#E7F1EA", ink: "#16794C" },
+  amber: { tint: "#FBEEE0", ink: "#A9721F" },
+  red: { tint: "#F7E4E2", ink: "#A63A30" },
+  neutral: { tint: "#E4EDF7", ink: "#2F5D8C" },
+};
+
 /* ─────────────────────────── page frame ─────────────────────────── */
 
 /**
@@ -291,7 +307,7 @@ export function Glyph({
   size?: number;
   round?: boolean;
 }) {
-  const t = TONE[tone];
+  const t = BADGE[tone];
   return (
     <span
       aria-hidden

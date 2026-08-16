@@ -420,6 +420,9 @@ export interface PlatformUser {
   orgName: string;
   orgKind: "personal" | "center";
   orgPlan: OrgPlan;
+  /** A suspended workspace cannot sign in — requireOrgUser bounces every member
+   *  to /awaiting-approval, so this is the real lock, not a cosmetic flag. */
+  orgStatus: string;
   /** Per-org overrides of the plan's monthly allowances. Null = use the plan's
    *  default. These already existed in the schema; nothing surfaced them. */
   gradingLimit: number | null;
@@ -500,7 +503,7 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
     select,
     admin
       .from("organizations")
-      .select("id, name, kind, plan, grading_monthly_limit, generation_monthly_limit"),
+      .select("id, name, kind, plan, status, grading_monthly_limit, generation_monthly_limit"),
   ]);
 
   const ids = (profiles ?? []).map((p) => p.id);
@@ -545,6 +548,7 @@ export async function loadUsers(query?: string): Promise<PlatformUser[]> {
       orgName: org?.name ?? "—",
       orgKind: (org?.kind ?? "personal") as "personal" | "center",
       orgPlan: (org?.plan ?? "trial") as OrgPlan,
+      orgStatus: (org?.status as string | null) ?? "active",
       gradingLimit: (org?.grading_monthly_limit as number | null) ?? null,
       generationLimit: (org?.generation_monthly_limit as number | null) ?? null,
       orgMemberCount: memberCount.get(p.organization_id) ?? 1,
