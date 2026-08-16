@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { INK, LINE, MUTED, SANS, TONE, type Tone } from "./ui";
+import { INK, LINE, SANS, TONE, type Tone } from "./ui";
 
 /**
  * The "…" overflow menu the design puts beside the primary action on every
@@ -187,55 +187,3 @@ export function OverflowMenu({ items, label = "More actions" }: { items: MenuIte
     </>
   );
 }
-
-/** The 26px glyphs the menus use, at the stroke weight the design draws them. */
-export const MenuIcon = {
-  card: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
-      <path d="M2.5 10h19" />
-    </svg>
-  ),
-  mail: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 5h16v14H4z" />
-      <path d="M4 6l8 6 8-6" />
-    </svg>
-  ),
-  sheet: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <path d="M4 10h16M10 10v10" />
-    </svg>
-  ),
-  ban: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M10 8v8M14 8v8" />
-    </svg>
-  ),
-  check: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  ),
-  restore: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M3 12a9 9 0 1015.5-6.2M3 4v5h5" />
-    </svg>
-  ),
-  users: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M3 19c0-3 2.7-5 6-5s6 2 6 5" />
-    </svg>
-  ),
-  pulse: (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 12h4l2-6 4 12 2-6h6" />
-    </svg>
-  ),
-};
-
-/** Shared with the header's alert list. */
-export const menuMuted = MUTED;

@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/components/admin/ui";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
-import { setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
+import { loadAccountUsage, setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
 
 /**
  * Plan and limits for one account, as the design draws it.
@@ -64,6 +64,7 @@ export function ManageModal({
     {} as ReviewState,
   );
   const [plan, setPlan] = useState<OrgPlan>(target?.plan ?? "trial");
+  const [usage, setUsage] = useState<Awaited<ReturnType<typeof loadAccountUsage>>>(null);
 
   // Follow the row that was opened: the same modal serves every row, so the
   // picker has to reset when a different person is chosen.
@@ -71,6 +72,7 @@ export function ManageModal({
   if (target && target.profileId !== seenId) {
     setSeenId(target.profileId);
     setPlan(target.plan);
+    setUsage(null);
   }
 
   // Close once a write lands — the table re-renders from the server, and
@@ -88,6 +90,20 @@ export function ManageModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [target, onClose]);
+
+  // One lookup per open, and it is allowed to lose the race: `live` guards
+  // against a slow answer for a row the owner has already clicked past.
+  const id = target?.profileId;
+  useEffect(() => {
+    if (!id) return;
+    let live = true;
+    void loadAccountUsage(id).then((u) => {
+      if (live) setUsage(u);
+    });
+    return () => {
+      live = false;
+    };
+  }, [id]);
 
   if (!target || typeof document === "undefined") return null;
   const shared = target.orgMemberCount > 1;
@@ -299,7 +315,13 @@ export function ManageModal({
             }}
           >
             Leave a limit blank to use the plan&apos;s own allowance.{" "}
-            <strong style={{ color: INK }}>0 blocks it entirely.</strong>
+            <strong style={{ color: INK }}>0 blocks it entirely.</strong>{" "}
+            {/* What they have actually spent this month — the number that makes
+                a limit decision an informed one rather than a guess. Fetched
+                when the dialog opens, so the table costs nothing for it. */}
+            {usage
+              ? `Used ${usage.gradeUsed} of ${usage.gradeLimit ?? "unlimited"} gradings and ${usage.practiceUsed} of ${usage.practiceLimit ?? "unlimited"} practices this month.`
+              : "Checking this month’s usage…"}
           </div>
 
           {error ? (

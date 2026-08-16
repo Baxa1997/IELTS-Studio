@@ -98,11 +98,21 @@ const field: React.CSSProperties = {
   color: INK,
 };
 
-export function UsersTable({ users, initialQuery = "" }: { users: UserRow[]; initialQuery?: string }) {
+export function UsersTable({
+  users,
+  initialQuery = "",
+  initialFilter = "",
+}: {
+  users: UserRow[];
+  initialQuery?: string;
+  /** A named view arrived at from a menu: "suspended" | "never". */
+  initialFilter?: string;
+}) {
   const [query, setQuery] = useState(initialQuery);
   const [role, setRole] = useState("all");
   const [kind, setKind] = useState("all");
   const [plan, setPlan] = useState("all");
+  const [view, setView] = useState(initialFilter);
   const [sort, setSort] = useState("recent");
   const [page, setPage] = useState(1);
   const [manage, setManage] = useState<ManageTarget | null>(null);
@@ -121,8 +131,15 @@ export function UsersTable({ users, initialQuery = "" }: { users: UserRow[]; ini
       .filter((u) => (role === "all" ? true : u.role === role))
       .filter((u) => (kind === "all" ? true : u.orgKind === kind))
       .filter((u) => (plan === "all" ? true : u.orgPlan === plan))
+      .filter((u) =>
+        view === "suspended"
+          ? u.orgStatus === "suspended"
+          : view === "never"
+            ? u.practiceCount === 0
+            : true,
+      )
       .sort(SORTS[sort].cmp);
-  }, [users, query, role, kind, plan, sort]);
+  }, [users, query, role, kind, plan, sort, view]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   // Adjusted during render rather than in an effect: filtering down to two rows
@@ -182,6 +199,30 @@ export function UsersTable({ users, initialQuery = "" }: { users: UserRow[]; ini
             </option>
           ))}
         </select>
+        {view ? (
+          <button
+            type="button"
+            onClick={() => reset(setView)("")}
+            title="Clear this view"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              border: `1px solid ${TONE.indigo.border}`,
+              background: TONE.indigo.tint,
+              color: TONE.indigo.ink,
+              borderRadius: 20,
+              padding: "6px 12px",
+              fontFamily: "inherit",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {view === "suspended" ? "Suspended only" : "Never practised"} ✕
+          </button>
+        ) : null}
         <span style={{ fontSize: 12, color: FAINT }}>
           {filtered.length} of {users.length}
         </span>

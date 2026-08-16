@@ -21,7 +21,8 @@ import {
   TONE,
   NAVY,
 } from "@/components/admin/ui";
-import { MenuIcon, OverflowMenu } from "@/components/admin/menu";
+import { MenuIcon } from "@/components/admin/menu-icons";
+import { OverflowMenu } from "@/components/admin/menu";
 import { loadCenters, type CenterRow } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
 
@@ -125,10 +126,28 @@ export default async function CentersPage({
                 download: true,
               },
               {
-                label: "Silent centers first",
+                label: `Silent centers (${dormant})`,
                 href: "/admin/centers?sort=idle",
                 icon: MenuIcon.pulse,
                 tone: "amber" as const,
+              },
+              {
+                label: "Email idle centers",
+                href: `mailto:?bcc=${encodeURIComponent(
+                  active
+                    .filter((c) => c.practice30d === 0 && c.contactEmail)
+                    .map((c) => c.contactEmail as string)
+                    .join(","),
+                )}&subject=${encodeURIComponent("Getting started on EngProgress")}`,
+                icon: MenuIcon.mail,
+                tone: "indigo" as const,
+              },
+              {
+                label: "Plans & revenue",
+                href: "/admin/plans",
+                icon: MenuIcon.card,
+                tone: "indigo" as const,
+                separated: true,
               },
             ]}
           />

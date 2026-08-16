@@ -25,7 +25,8 @@ import {
   TONE,
   clip,
 } from "@/components/admin/ui";
-import { MenuIcon, OverflowMenu } from "@/components/admin/menu";
+import { MenuIcon } from "@/components/admin/menu-icons";
+import { OverflowMenu } from "@/components/admin/menu";
 import { loadCenterActivity } from "@/lib/admin/activity";
 import { loadCenterDetail } from "@/lib/admin/platform";
 import { ago, daysSince } from "@/lib/admin/time";

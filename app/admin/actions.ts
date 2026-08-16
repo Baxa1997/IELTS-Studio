@@ -7,6 +7,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
+import { getUsageSummary } from "@/lib/quota";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface ReviewState {
@@ -336,5 +337,39 @@ export async function setAccountSuspended(
         ? `${label} suspended — all ${members} members are locked out.`
         : `${label} is suspended and cannot sign in.`
       : `${label} is active again.`,
+  };
+}
+
+/**
+ * This month's usage for one account, fetched when the manage dialog opens.
+ *
+ * NOT loaded with the table. It is three counting queries per organization, and
+ * a list of five hundred would mean fifteen hundred of them to render a line
+ * almost nobody reads. One dialog, one lookup, at the moment it is wanted.
+ *
+ * Reuses `getUsageSummary`, which is the same function the learner's own plan
+ * card reads — so what the owner sees here and what the learner is actually
+ * allowed can never drift apart.
+ */
+export async function loadAccountUsage(
+  profileId: string,
+): Promise<{ gradeUsed: number; gradeLimit: number | null; practiceUsed: number; practiceLimit: number | null } | null> {
+  await requireSuperAdmin();
+  if (!profileId) return null;
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("organization_id")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (!profile) return null;
+
+  const usage = await getUsageSummary(profile.organization_id as string);
+  return {
+    gradeUsed: usage.grade.used,
+    gradeLimit: usage.grade.limit,
+    practiceUsed: usage.generate.used,
+    practiceLimit: usage.generate.limit,
   };
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { MenuIcon, OverflowMenu } from "@/components/admin/menu";
+import { MenuIcon } from "@/components/admin/menu-icons";
+import { OverflowMenu } from "@/components/admin/menu";
 import {
   Card,
   CardHead,
@@ -76,7 +77,7 @@ function Tile({
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; filter?: string }>;
 }) {
   await requireSuperAdmin();
   const sp = await searchParams;
@@ -87,6 +88,12 @@ export default async function UsersPage({
   const practising = all.filter((u) => u.practiceCount > 0).length;
   const byPlan = (p: OrgPlan) => all.filter((u) => u.orgPlan === p).length;
   const paidPeople = all.filter((u) => u.orgPlan !== "trial").length;
+  const suspendedCount = all.filter((u) => u.orgStatus === "suspended").length;
+  // Deliverable addresses only: a centre-created account's address is synthetic
+  // and mailing it just bounces into the void.
+  const neverPractisedEmails = all
+    .filter((u) => u.practiceCount === 0 && u.email && !u.emailUndeliverable)
+    .map((u) => u.email as string);
 
   const rows: UserRow[] = all.map((u) => ({
     id: u.id,
@@ -117,11 +124,14 @@ export default async function UsersPage({
             label="User actions"
             items={[
               {
-                label: "Export users (Excel)",
-                href: "/api/admin/export?kind=users",
-                icon: MenuIcon.sheet,
-                tone: "green",
-                download: true,
+                label: `Email never-practised (${all.length - practising})`,
+                // A real mailto, BCC'd, so nobody sees anyone else's address.
+                // Capped at 90 recipients because a mailto: longer than roughly
+                // 2000 characters is silently truncated by some mail clients —
+                // better a first batch that works than a link that half-sends.
+                href: `mailto:?bcc=${encodeURIComponent(neverPractisedEmails.slice(0, 90).join(","))}&subject=${encodeURIComponent("Your EngProgress practice is waiting")}`,
+                icon: MenuIcon.mail,
+                tone: "indigo",
               },
               {
                 label: "Plans & revenue",
@@ -130,10 +140,18 @@ export default async function UsersPage({
                 tone: "indigo",
               },
               {
-                label: "System health",
-                href: "/admin/health",
-                icon: MenuIcon.pulse,
-                tone: "neutral",
+                label: "Export users (Excel)",
+                href: "/api/admin/export?kind=users",
+                icon: MenuIcon.sheet,
+                tone: "green",
+                download: true,
+                separated: true,
+              },
+              {
+                label: `Suspended accounts (${suspendedCount})`,
+                href: "/admin/users?filter=suspended",
+                icon: MenuIcon.ban,
+                tone: "red",
                 separated: true,
               },
             ]}
@@ -250,7 +268,7 @@ export default async function UsersPage({
 
       <Card>
         <CardHead title="All users" note="Capped at the 500 most recent accounts." />
-        <UsersTable users={rows} initialQuery={sp.q ?? ""} />
+        <UsersTable users={rows} initialQuery={sp.q ?? ""} initialFilter={sp.filter ?? ""} />
       </Card>
     </Surface>
   );
