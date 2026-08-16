@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { canManagePeople, requireOrgUser } from "@/lib/auth";
+import { explainClashes, findClashes, type SlotLike } from "@/lib/console/slot-clash";
 import { uploadAvatar } from "@/lib/console/avatars";
 import { isMemberStatus } from "@/lib/console/status";
 import { sendEmail } from "@/lib/email/send";
@@ -264,6 +265,18 @@ async function writeSchedule(
   seriesIdInput?: string | null,
 ): Promise<string | null> {
   const seriesId = seriesIdInput || randomUUID();
+
+  // §5/§10: WARN AND BLOCK. The timetable already drew clashes in red, but only
+  // when you went to look at the grid — nothing stopped the save. A teacher
+  // booked into two rooms at 15:30 is not a display problem; it is two classes
+  // turning up and one of them having nobody to teach them.
+  //
+  // Checked against the whole centre, not this group's own bookings: the room
+  // you are taking is taken by somebody else's class, and RLS already limits
+  // what this person can see to their own centre.
+  const clashError = await refuseOnClash(supabase, groupId, schedule, seriesId);
+  if (clashError) return clashError;
+
   const { data: existingRows, error: readError } = await supabase
     .from("lesson_slots")
     .select("id, weekday, series_id")
@@ -309,6 +322,80 @@ async function writeSchedule(
     if (error) return explainSlotError(error);
   }
   return null;
+}
+
+
+/**
+ * The save-time half of §5's conflict rule: read what the centre already has,
+ * ask the shared rule, and refuse.
+ *
+ * Returns a sentence to show the user, or null to proceed. Uses the SAME
+ * `findClashes` the grid draws with, so "the timetable says this is fine" and
+ * "the save says it is not" can never both be true.
+ */
+async function refuseOnClash(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  groupId: string,
+  schedule: { weekdays: number[]; startsAt: string; endsAt: string; roomId: string | null },
+  seriesId: string,
+): Promise<string | null> {
+  const [{ data: slots }, { data: groups }, { data: rooms }] = await Promise.all([
+    supabase.from("lesson_slots").select("id, group_id, series_id, weekday, starts_at, ends_at, room_id"),
+    supabase.from("groups").select("id, name, teacher_id"),
+    supabase.from("rooms").select("id, name"),
+  ]);
+  if (!slots?.length) return null;
+
+  const groupById = new Map(
+    ((groups ?? []) as { id: string; name: string; teacher_id: string | null }[]).map((g) => [g.id, g]),
+  );
+  const roomName = new Map(((rooms ?? []) as { id: string; name: string }[]).map((r) => [r.id, r.name]));
+
+  const existing: SlotLike[] = (slots as Record<string, unknown>[]).map((r) => {
+    const g = groupById.get(r.group_id as string);
+    return {
+      id: r.id as string,
+      groupId: r.group_id as string,
+      groupName: g?.name,
+      seriesId: (r.series_id as string | null) ?? null,
+      weekday: Number(r.weekday),
+      startsAt: String(r.starts_at).slice(0, 5),
+      endsAt: String(r.ends_at).slice(0, 5),
+      roomId: (r.room_id as string | null) ?? null,
+      roomName: r.room_id ? (roomName.get(r.room_id as string) ?? null) : null,
+      teacherId: g?.teacher_id ?? null,
+    };
+  });
+
+  const mine = groupById.get(groupId);
+  const teacherName = mine?.teacher_id
+    ? ((
+        await supabase.from("profiles").select("full_name").eq("id", mine.teacher_id).maybeSingle()
+      ).data?.full_name as string | null)
+    : null;
+
+  // Every weekday being saved, because a Mon/Wed/Fri booking can be fine on
+  // Monday and collide on Wednesday — and saving two of the three would leave
+  // the timetable half-changed.
+  const clashes = schedule.weekdays.flatMap((weekday) =>
+    findClashes(
+      {
+        groupId,
+        groupName: mine?.name,
+        seriesId,
+        weekday,
+        startsAt: schedule.startsAt,
+        endsAt: schedule.endsAt,
+        roomId: schedule.roomId,
+        roomName: schedule.roomId ? (roomName.get(schedule.roomId) ?? null) : null,
+        teacherId: mine?.teacher_id ?? null,
+        teacherName,
+      },
+      existing,
+    ),
+  );
+
+  return clashes.length > 0 ? explainClashes(clashes) : null;
 }
 
 /** The two constraints a schedule can trip, in words a teacher can act on. */
