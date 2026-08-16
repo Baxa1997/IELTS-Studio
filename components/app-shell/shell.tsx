@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Menu } from "lucide-react";
+import {
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronUp,
+  CreditCard,
+  LogOut,
+  type LucideIcon,
+  Megaphone,
+  Menu,
+  Settings,
+} from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
 import { EngProgressLogo, EngProgressMark } from "@/components/brand/engprogress-logo";
@@ -37,7 +47,8 @@ function readCollapsed(fallback: boolean): boolean {
 /**
  * The authenticated app shell (Option A brand). The sidebar is the only chrome: it
  * owns the brand (top), navigation (middle), and the signed-in user as a profile
- * menu pinned to the bottom — clicking it reveals account options (Sign out). There
+ * menu pinned to the bottom — clicking it reveals the account menu: Announcements,
+ * Billing & plan and Settings (by role), then Sign out. There
  * is no desktop top header, so <main> runs the full height of the viewport; on
  * mobile a slim bar carries the hamburger + brand and the sidebar slides in as a
  * drawer. The frame itself doesn't scroll; only <main> does.
@@ -305,7 +316,12 @@ export function AppShell({
                 {bell}
               </div>
             ) : null}
-            <ProfileMenu name={name} roleLabel={roleLabel} email={email} />
+            <ProfileMenu
+              name={name}
+              roleLabel={roleLabel}
+              email={email}
+              items={accountItemsFor(role)}
+            />
           </div>
         </aside>
 
@@ -342,19 +358,66 @@ export function AppShell({
   );
 }
 
+export interface AccountItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+/**
+ * What moves out of the rail and under the avatar.
+ *
+ * WHY THESE THREE. The rail answers "what has to happen today"; these three
+ * are things you go and do occasionally and then leave alone — the centre's
+ * own settings, its plan, and writing to everybody. Keeping them as permanent
+ * sections meant two of the rail's six headings were for pages an owner opens
+ * about once a month, which pushed the daily work further down every screen.
+ *
+ * ROLE STILL DECIDES. This is the same split the rail enforced: the front desk
+ * runs people and money-in and never sees billing or settings, and a teacher
+ * announces only to their own groups. A menu is a hint, not a gate — the pages
+ * redirect and RLS refuses independently — but it should not offer somebody a
+ * door that will shut in their face.
+ */
+export function accountItemsFor(role: string): AccountItem[] {
+  const announcements = {
+    label: "Announcements",
+    href: "/console/announcements",
+    icon: Megaphone,
+  };
+  switch (role) {
+    case "center_admin":
+      return [
+        announcements,
+        { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
+        { label: "Settings", href: "/console/settings", icon: Settings },
+      ];
+    case "administrator":
+    case "teacher":
+      return [announcements];
+    default:
+      // Students and the platform owner have none of these.
+      return [];
+  }
+}
+
 /**
  * The signed-in user, pinned to the bottom of the sidebar. Click to reveal a small
- * account menu (opening upward) with Sign out. A transparent full-screen backdrop
- * closes it on any outside click. When the rail is collapsed only the avatar shows.
+ * account menu (opening upward): the occasional pages first, Sign out last and
+ * separated, because it is the one item you can press by accident and regret.
+ * A transparent full-screen backdrop closes it on any outside click. When the
+ * rail is collapsed only the avatar shows.
  */
 function ProfileMenu({
   name,
   roleLabel,
   email,
+  items = [],
 }: {
   name: string;
   roleLabel: string;
   email?: string;
+  items?: AccountItem[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -421,6 +484,40 @@ function ProfileMenu({
             </div>
           </div>
           <div style={{ height: 1, background: RAIL_LINE, margin: "2px 4px 6px" }} />
+
+          {items.length > 0 ? (
+            <>
+              {items.map(({ label, href, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  role="menuitem"
+                  className="lp-menu-item"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    height: 40,
+                    padding: "0 10px",
+                    borderRadius: 9,
+                    fontFamily: SANS,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#E7E9F5",
+                    textDecoration: "none",
+                  }}
+                >
+                  <Icon size={17} strokeWidth={2} />
+                  {label}
+                </Link>
+              ))}
+              {/* Sign out is fenced off. It is the only irreversible thing in
+                  here and it sits where a mis-aimed click lands. */}
+              <div style={{ height: 1, background: RAIL_LINE, margin: "6px 4px" }} />
+            </>
+          ) : null}
+
           <form action={signOut}>
             {/* No inline background — the .lp-menu-item:hover wash (globals.css)
                 can't beat an inline value. */}

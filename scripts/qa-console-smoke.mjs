@@ -267,6 +267,19 @@ async function main() {
     check(`${path}${marker ? ` (${marker})` : ""}`, r.ok, r.detail);
   }
 
+  // The three items moved from the rail into the account menu. The MENU itself
+  // is client-rendered on click, so it is not in this HTML and cannot be
+  // asserted here — what is checkable, and what actually regresses, is that
+  // they are no longer ALSO in the rail. Two doors to one page is the failure
+  // this move could introduce.
+  const ownerHtml = await (await fetch(`${BASE}/console`, { headers: { cookie: ownerCookie } })).text();
+  const railLinks = [...ownerHtml.matchAll(/href="(\/console\/[a-z-]+)"[^>]*class="[^"]*lp-sb-item/g)].map(
+    (m) => m[1],
+  );
+  for (const gone of ["/console/announcements", "/console/billing", "/console/settings"]) {
+    check(`${gone} is out of the rail`, !railLinks.includes(gone), "still a rail item");
+  }
+
   // The parent report is a file, not a page — its own check.
   const pdf = await fetch(`${BASE}/api/console/students/${students[0].id}/report`, {
     headers: { cookie: ownerCookie },
@@ -292,6 +305,16 @@ async function main() {
     const r = await loadPage(teacherCookie, path, marker);
     check(`${path}${marker ? ` (${marker})` : ""}`, r.ok, r.detail);
   }
+
+  // A teacher never had billing in the rail and must not gain it now.
+  const teacherHtml = await (
+    await fetch(`${BASE}/console`, { headers: { cookie: teacherCookie } })
+  ).text();
+  check(
+    "a teacher's rail still offers no billing",
+    !teacherHtml.includes("/console/billing"),
+    "a teacher was offered billing",
+  );
 
   console.log(`\n${pass} passed, ${fail} failed\n`);
 }

@@ -19,10 +19,8 @@ import {
   Headphones,
   History,
   LayoutDashboard,
-  Megaphone,
   Mic,
   Receipt,
-  Settings,
   ShieldAlert,
   Sparkles,
   SquarePen,
@@ -143,17 +141,11 @@ const ADMIN: Section[] = [
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
-  {
-    title: "Communication",
-    items: [{ label: "Announcements", href: "/console/announcements", icon: Megaphone }],
-  },
-  {
-    title: "Admin",
-    items: [
-      { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
-      { label: "Settings", href: "/console/settings", icon: Settings },
-    ],
-  },
+  /* Announcements, Billing & plan and Settings are NOT here. They moved under
+     the avatar (see accountItemsFor in shell.tsx): all three are things you go
+     and do occasionally and then leave alone, and as permanent sections they
+     cost two of the rail's six headings for pages an owner opens about once a
+     month — pushing the daily work further down every screen. */
 ];
 
 /* The front desk. Runs classes and people, takes tuition, and never sees what
@@ -187,10 +179,7 @@ const ADMINISTRATOR: Section[] = [
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
-  {
-    title: "Communication",
-    items: [{ label: "Announcements", href: "/console/announcements", icon: Megaphone }],
-  },
+  // Announcements lives under the avatar — see accountItemsFor.
 ];
 
 const TEACHER: Section[] = [
@@ -233,13 +222,11 @@ const TEACHER: Section[] = [
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
-  {
-    title: "Communication",
-    // Scoped to their own groups. A teacher sets the group's homework and
-    // connects its Telegram channel, so barring them from mentioning it was
-    // the least defensible line in the whole permission split.
-    items: [{ label: "Announcements", href: "/console/announcements", icon: Megaphone }],
-  },
+  // Announcements is under the avatar (accountItemsFor), still scoped to their
+  // own groups. A teacher sets the group's homework and connects its Telegram
+  // channel, so barring them from mentioning it was the least defensible line
+  // in the whole permission split — moving it out of the rail does not undo
+  // that, it just stops a one-item section costing a heading.
 ];
 
 /** The platform owner: no organization, so none of the org menus apply. */

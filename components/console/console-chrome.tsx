@@ -21,19 +21,35 @@ const INDIGO = "#4340CB";
 const INK = "#16162E";
 const CANVAS = "#F4F3EF";
 
-/** Breadcrumb text per route, matching the design's "Section · Page". */
+/**
+ * Breadcrumb text per route, as "Section · Page".
+ *
+ * The section half has to be the section the rail ACTUALLY shows, or the
+ * breadcrumb becomes the third name for the same place — which is the exact
+ * complaint §1 opens with ("Nav says Groups, breadcrumb says CLASSES"). These
+ * had drifted: Reports became Results, Overview became Today, and Announcements,
+ * Billing and Settings left the rail for the account menu.
+ */
 const CRUMBS: [string, string][] = [
-  ["/console/teachers", "Center · Teachers"],
-  ["/console/groups", "Center · Groups"],
-  ["/console/students", "Center · Students"],
-  ["/console/attendance", "Center · Attendance"],
-  ["/console/reports", "Insight · Reports"],
-  ["/console/announcements", "Insight · Announcements"],
-  ["/console/practice-ai", "Teaching · Practice AI"],
-  ["/console/practices", "Teaching · Practice"],
-  ["/console/billing", "Admin · Billing & plan"],
-  ["/console/settings", "Admin · Settings & roles"],
-  ["/console", "Center · Overview"],
+  ["/console/teachers", "Run · Teachers"],
+  ["/console/groups", "Run · Groups"],
+  ["/console/students", "Run · Students"],
+  ["/console/attendance", "Run · Attendance"],
+  ["/console/calendar", "Run · Timetable"],
+  ["/console/practice-ai", "Practice · Practice AI"],
+  ["/console/practices", "Practice · Practice"],
+  ["/console/practice", "Learning · Practice"],
+  ["/console/marking", "Learning · Marking"],
+  ["/console/reports", "Learning · Results"],
+  ["/console/finance/invoices", "Money · Invoices"],
+  ["/console/finance/payroll", "Money · Salary"],
+  ["/console/finance", "Money · Finance"],
+  // Under the avatar now, so they name the menu they live in rather than a
+  // section that no longer exists.
+  ["/console/announcements", "Account · Announcements"],
+  ["/console/billing", "Account · Billing & plan"],
+  ["/console/settings", "Account · Settings"],
+  ["/console", "Run · Today"],
 ];
 
 function initials(name: string): string {
