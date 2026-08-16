@@ -77,10 +77,39 @@ export async function loadClassMoney(groupId: string, month: string): Promise<Cl
       .eq("voided", false),
   ]);
 
-  const members = ((membersRes.data ?? []) as Record<string, unknown>[]).map((m) => ({
-    studentId: m.student_id as string,
-    joinedOn: m.joined_at ? String(m.joined_at).slice(0, 10) : null,
-  }));
+  // Status comes from `profiles`, not `group_members` — a paused student is
+  // paused everywhere, not per class. Two flat queries rather than an embed:
+  // every join in this schema is a composite FK, which PostgREST resolves to
+  // nothing without erroring.
+  const memberIds = ((membersRes.data ?? []) as Record<string, unknown>[]).map(
+    (m) => m.student_id as string,
+  );
+  const { data: people } = memberIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, member_status, status_changed_at")
+        .in("id", memberIds)
+    : { data: [] as Record<string, unknown>[] };
+  const statusOf = new Map(
+    ((people ?? []) as Record<string, unknown>[]).map((p) => [
+      p.id as string,
+      {
+        status: (p.member_status as string | null) ?? "active",
+        changedOn: p.status_changed_at ? String(p.status_changed_at).slice(0, 10) : null,
+      },
+    ]),
+  );
+
+  const members = ((membersRes.data ?? []) as Record<string, unknown>[]).map((m) => {
+    const id = m.student_id as string;
+    const s = statusOf.get(id);
+    return {
+      studentId: id,
+      joinedOn: m.joined_at ? String(m.joined_at).slice(0, 10) : null,
+      status: s?.status ?? "active",
+      statusChangedOn: s?.changedOn ?? null,
+    };
+  });
 
   const invoices = (invoicesRes.data ?? []) as Record<string, unknown>[];
   const invoiceOf = new Map(
