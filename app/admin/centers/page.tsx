@@ -207,6 +207,11 @@ export default async function CentersPage({
               <Link
                 key={t.key}
                 href={`/admin/centers?tab=${t.key}&sort=${sort}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+                // Four tabs, four prefetches of THIS page with different
+                // params — each one re-running loadCenters(). The filtering is
+                // done in memory from a list already loaded; there is nothing
+                // to warm.
+                prefetch={false}
                 style={{
                   borderRadius: 20,
                   padding: "7px 13px",

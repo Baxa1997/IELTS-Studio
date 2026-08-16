@@ -460,6 +460,25 @@ export function SidebarNav({
                 <Link
                   key={href}
                   href={href}
+                  /*
+                   * NO PREFETCH, and this is a measured decision rather than a
+                   * default worth keeping.
+                   *
+                   * Next prefetches every <Link> that is visible, and a rail is
+                   * six to fifteen links all on screen at once. Every one of
+                   * those destinations is `force-dynamic` and query-heavy — the
+                   * admin Centers page alone runs six database round trips —
+                   * so a single page view was firing ten route requests and
+                   * re-running all of their queries. The production Network tab
+                   * showed twenty requests for one visit to /admin/centers.
+                   *
+                   * The user clicks at most one of them. Prefetching the other
+                   * nine multiplies the database load of every page view by the
+                   * size of the menu, for a saving that a dynamic page cannot
+                   * bank anyway: the click still costs a server round trip
+                   * because the payload cannot be cached.
+                   */
+                  prefetch={false}
                   data-label={label}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
