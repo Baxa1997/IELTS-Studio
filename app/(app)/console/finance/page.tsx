@@ -129,7 +129,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
       pageSize,
     }),
     loadFinancePeople(),
-    loadGroups(profile),
+    // The ledger is history — closed groups are part of it.
+    loadGroups(profile, { include: "all" }),
   ]);
 
   const { settings, accounts, branches, categories, rows, methodTotals } = overview;

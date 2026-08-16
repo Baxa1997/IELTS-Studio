@@ -136,7 +136,8 @@ export default async function GroupDetailPage({
       .from("lesson_slots")
       .select("series_id, weekday, starts_at, ends_at, room_id")
       .eq("group_id", group.id),
-    loadGroups(profile),
+    // "all": this page has to open for a closed group too.
+    loadGroups(profile, { include: "all" }),
   ]);
   // A class can hold SEVERAL independent bookings — the same class at 08:00 and
   // again at 15:30 is two series, four rows. Grouping by series_id keeps them

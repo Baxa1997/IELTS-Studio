@@ -65,7 +65,8 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
   const [settings, invoices, { groups }, accountsRes, categoriesRes, feesRes] = await Promise.all([
     loadFinanceSettings(),
     loadInvoices({ periodMonth: month, groupId }),
-    loadGroups(profile),
+    // Money outlives the course: a closed group's March invoice is still owed.
+    loadGroups(profile, { include: "all" }),
     supabase.from("finance_accounts").select("id, name").eq("active", true).order("sort"),
     supabase.from("finance_categories").select("id, name, slug").eq("direction", "in"),
     supabase.from("groups").select("id, monthly_fee_minor, teacher_rate_minor"),
