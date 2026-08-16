@@ -155,7 +155,9 @@ export default async function PaymentsPage() {
 
       <Card>
         {payments.length === 0 ? (
-          <Empty>Nothing taken yet this month.</Empty>
+          <Empty action={{ href: "/console/finance/invoices", label: "See what is owed →" }}>
+            Nothing taken yet this month.
+          </Empty>
         ) : (
           <Table cols={COLS}>
             <THead cols={COLS} labels={["Date", "Student", "Group", "Method", "Amount"]} />

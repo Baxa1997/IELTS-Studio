@@ -439,6 +439,79 @@ export async function saveCenterProfile(
   return { ok: "Saved." };
 }
 
+/**
+ * How the center runs: where it is, when its week starts, which days it teaches.
+ *
+ * The timezone is the load-bearing one. Everything else in this app takes the
+ * UTC day, which for the market it sells into means the console shows yesterday
+ * until 05:00 and thinks a 19:30 lesson has not finished at 20:00. Both of
+ * those make a "registers to mark" count a center owner can disprove by looking
+ * out of the window.
+ *
+ * A missing row means every default in `CENTER_DEFAULTS`, so this upserts.
+ */
+export async function saveCenterSettings(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change these." };
+  }
+
+  const timezone = String(formData.get("timezone") ?? "").trim();
+  // Validated by asking the platform, rather than by carrying a list that goes
+  // stale every time a country moves its clocks.
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: timezone });
+  } catch {
+    return { error: "That is not a timezone this server recognises." };
+  }
+
+  const weekStartsOn = Number(formData.get("week_starts_on"));
+  if (!Number.isInteger(weekStartsOn) || weekStartsOn < 0 || weekStartsOn > 6) {
+    return { error: "Pick the day your week starts on." };
+  }
+
+  const workingDays = formData
+    .getAll("working_days")
+    .map((d) => Number(d))
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+  if (workingDays.length === 0) return { error: "A center has to teach on at least one day." };
+
+  const lessonMinutes = Number(formData.get("default_lesson_minutes"));
+  if (!Number.isInteger(lessonMinutes) || lessonMinutes < 15 || lessonMinutes > 480) {
+    return { error: "A lesson is between 15 and 480 minutes." };
+  }
+
+  const overridePolicy = String(formData.get("override_policy") ?? "teacher");
+  if (!["teacher", "admin_only", "nobody"].includes(overridePolicy)) {
+    return { error: "Pick who may correct an AI band." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("center_settings")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        timezone,
+        week_starts_on: weekStartsOn,
+        working_days: workingDays,
+        default_lesson_minutes: lessonMinutes,
+        override_policy: overridePolicy,
+      },
+      { onConflict: "organization_id" },
+    )
+    .select("organization_id");
+  if (error) return { error: error.message };
+
+  // The timezone decides what "today" is on every console page, so the whole
+  // layout has to be rebuilt rather than just this one.
+  revalidatePath("/console", "layout");
+  return { ok: "Saved. Every date in the console now reads in this timezone." };
+}
+
 /* ── telegram ─────────────────────────────────────────────────────────────── */
 
 /**

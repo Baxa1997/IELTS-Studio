@@ -228,10 +228,16 @@ export function StudentReportView({
                 </TRow>
               ))}
               {homework.length === 0 ? (
-                <Empty>
+                <Empty
+                  action={
+                    report.homework.assigned > 0
+                      ? undefined
+                      : { href: "/console/groups", label: "Set some →" }
+                  }
+                >
                   {report.homework.assigned > 0
                     ? "Nothing handed in yet."
-                    : "No homework has been set to this student's class."}
+                    : "No homework has been set to this student's group."}
                 </Empty>
               ) : null}
             </Table>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { useActionFeedback } from "@/components/console/toast";
@@ -205,9 +206,23 @@ function SubjectRow({ subject, first }: { subject: SubjectItem; first: boolean }
         <>
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{subject.name}</span>
+            {/* "0 teachers · 0 groups" beside four real groups reads as a
+                broken query, not as an unused feature. A subject nothing is
+                attached to says so, and says where to attach it. */}
             <span style={{ display: "block", fontSize: 12, color: FAINT, marginTop: 1 }}>
-              {subject.teacherCount} teacher{subject.teacherCount === 1 ? "" : "s"} ·{" "}
-              {subject.groupCount} group{subject.groupCount === 1 ? "" : "s"}
+              {subject.teacherCount === 0 && subject.groupCount === 0 ? (
+                <>
+                  Not on any group yet —{" "}
+                  <Link href="/console/groups" style={{ color: INDIGO, textDecoration: "none" }}>
+                    put it on one →
+                  </Link>
+                </>
+              ) : (
+                <>
+                  {subject.teacherCount} teacher{subject.teacherCount === 1 ? "" : "s"} ·{" "}
+                  {subject.groupCount} group{subject.groupCount === 1 ? "" : "s"}
+                </>
+              )}
             </span>
           </span>
 

@@ -271,8 +271,8 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
         {shown.length === 0 ? (
           <Empty>
             Nothing charged for {monthLabel(month)}
-            {groupId ? " in this class" : ""} yet. &ldquo;Raise invoices&rdquo; charges a whole
-            class in one go.
+            {groupId ? " in this group" : ""} yet. &ldquo;Raise invoices&rdquo; charges a whole
+            group in one go.
           </Empty>
         ) : (
           <Table cols={COLS}>

@@ -51,7 +51,7 @@ export function buildFindings(report: CenterReport): Finding[] {
       headline: "Not enough marked writing to judge progress yet",
       detail:
         totalSamples === 0
-          ? "No essays have been graded in the last 90 days. Set a writing task and the picture fills in."
+          ? `No essays have been graded ${report.window.label.toLowerCase()}. Set a writing task and the picture fills in.`
           : `${totalSamples} graded ${totalSamples === 1 ? "essay" : "essays"} so far — a few more and the figure starts to mean something.`,
       tone: "flat",
       action: { label: "Set practice", href: "/console/groups" },

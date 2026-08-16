@@ -1,6 +1,7 @@
 import "server-only";
 
 import { type MemberStatus } from "@/lib/console/status";
+import { resolveWindow, type RangeKey, type Window } from "@/lib/console/window";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -61,6 +62,9 @@ export interface GroupReportRow {
 
 export interface CenterReport {
   scope: "center" | "teacher";
+  /** The range every figure below was measured over, so captions can say it
+   *  once and cannot drift from what was actually counted. */
+  window: { key: RangeKey; label: string; days: number };
   totals: { students: number; groups: number; gradedPractices: number };
   groups: GroupReportRow[];
   /** Band distribution per skill — a histogram, never a mean. */
@@ -92,18 +96,29 @@ const CRITERION_LABEL: Record<string, string> = {
   GRA: "Grammatical Range & Accuracy",
 };
 
-const WINDOW_DAYS = 90;
+/**
+ * DELIBERATELY FIXED, and it must stay that way (R1).
+ *
+ * "Gone quiet" answers "who should someone ring this week". Letting the page's
+ * date picker widen it to a year would turn a call list into a history lesson,
+ * and a reader who moved the picker would have no way to tell which of the
+ * numbers in front of them had moved with it. Anything on this page that
+ * ignores the picker says `always current` beside itself.
+ */
 const AT_RISK_DAYS = 14;
 
 export async function loadCenterReport(opts: {
   role: string;
   profileId: string;
+  /** The page's date range. Governs every band, count and completion below. */
+  range?: RangeKey;
   now?: Date;
 }): Promise<CenterReport> {
   const supabase = await createClient();
   const now = opts.now ?? new Date();
   const isAdmin = opts.role === "center_admin";
-  const since = new Date(now.getTime() - WINDOW_DAYS * 86400_000).toISOString();
+  const window: Window = resolveWindow(opts.range, now);
+  const since = window.since;
 
   const [groupsRes, membersRes, assignmentsRes, staffRes] = await Promise.all([
     // Active groups only. A course that finished in June is not a group with no
@@ -152,6 +167,7 @@ export async function loadCenterReport(opts: {
   if (studentIds.length === 0) {
     return {
       scope: isAdmin ? "center" : "teacher",
+      window: { key: window.key, label: window.label, days: window.days },
       totals: { students: 0, groups: groups.length, gradedPractices: 0 },
       groups: groups.map((g) => ({
         id: g.id,
@@ -442,6 +458,7 @@ export async function loadCenterReport(opts: {
 
   return {
     scope: isAdmin ? "center" : "teacher",
+    window: { key: window.key, label: window.label, days: window.days },
     totals: {
       students: studentIds.length,
       groups: groups.length,

@@ -49,6 +49,10 @@ export interface StudentRow {
   name: string;
   login: string | null;
   contactEmail: string | null;
+  /** Another student in this group gives the same address. Allowed by design —
+   *  siblings share a parent's inbox — but it has to LOOK deliberate, because
+   *  the same address twice in a roster otherwise reads as a duplicated row. */
+  sharesEmail?: boolean;
   joinedAt: string;
   photoUrl: string | null;
   /** Their lowest measured band, and in which skill. Null = never graded. */
@@ -164,7 +168,20 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
               ) : (
                 "no login"
               )}
-              {student.contactEmail ? ` · ${student.contactEmail}` : ""}
+              {student.contactEmail ? (
+                <>
+                  {" · "}
+                  {student.contactEmail}
+                  {student.sharesEmail ? (
+                    <span
+                      title="Another student in this group uses the same address — usually a shared parent inbox."
+                      style={{ marginLeft: 5, color: "#8A5A12", fontWeight: 600 }}
+                    >
+                      shared
+                    </span>
+                  ) : null}
+                </>
+              ) : null}
             </span>
           </span>
         </span>

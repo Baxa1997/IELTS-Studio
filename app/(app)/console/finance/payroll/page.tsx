@@ -248,7 +248,9 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
         </Card>
       ) : items.length === 0 ? (
         <Card>
-          <Empty>The run produced no payslips — no class has a teacher assigned.</Empty>
+          <Empty action={{ href: "/console/groups", label: "Assign teachers →" }}>
+            The run produced no payslips — no group has a teacher assigned.
+          </Empty>
         </Card>
       ) : (
         <Stack>

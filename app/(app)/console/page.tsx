@@ -271,7 +271,7 @@ export default async function ConsolePage() {
         title={isAdmin ? centerName : "Your groups"}
         subtitle={
           report.totals.gradedPractices > 0
-            ? `${report.totals.gradedPractices} graded practices in the last 90 days, and ${report.atRisk.length} student${report.atRisk.length === 1 ? " has" : "s have"} gone quiet.`
+            ? `${report.totals.gradedPractices} graded practice${report.totals.gradedPractices === 1 ? "" : "s"} ${report.window.label.toLowerCase()}, and ${report.atRisk.length} student${report.atRisk.length === 1 ? " has" : "s have"} gone quiet.`
             : "Nothing has been graded yet — set a group some practice and this fills in."
         }
         actions={
@@ -564,7 +564,7 @@ export default async function ConsolePage() {
                 figure a center IS accountable for: who is actually practising. */}
             <Card tone="dark">
               <div style={{ fontFamily: SANS, fontSize: 12, color: RAIL.light }}>
-                Graded practice · last 90 days
+                Graded practice · {report.window.label.toLowerCase()}
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6 }}>
                 <div style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 700 }}>

@@ -261,6 +261,14 @@ export default async function GroupDetailPage({
   // The class list, learning data and account data joined into one shape —
   // both the table and the CSV export read this, so what you download is
   // exactly what you were looking at.
+  // An address given twice in one roster is a shared parent inbox, which the
+  // enrolment form deliberately allows. Counted once so the row can say so.
+  const emailUses = new Map<string, number>();
+  for (const m of roster) {
+    const key = (m.contactEmail ?? "").toLowerCase();
+    if (key) emailUses.set(key, (emailUses.get(key) ?? 0) + 1);
+  }
+
   const studentRows = roster.map((m) => {
     const weakest = weakestOf(m.id);
     const act = activity.get(m.id);
@@ -269,6 +277,7 @@ export default async function GroupDetailPage({
       name: m.name,
       login: m.login,
       contactEmail: m.contactEmail,
+      sharesEmail: (emailUses.get((m.contactEmail ?? "").toLowerCase()) ?? 0) > 1,
       joinedAt: m.joinedAt,
       photoUrl: m.photoUrl,
       weakestSkill: weakest?.skill ?? null,
@@ -725,7 +734,9 @@ export default async function GroupDetailPage({
                 );
               })}
               {roster.length === 0 ? (
-                <Empty>Nobody is enrolled, so there is nothing to charge.</Empty>
+                <Empty action={{ href: `/console/groups/${group.id}`, label: "Add students →" }}>
+                  Nobody is enrolled, so there is nothing to charge.
+                </Empty>
               ) : null}
             </Table>
           </Card>

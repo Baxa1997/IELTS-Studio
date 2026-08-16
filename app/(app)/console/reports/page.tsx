@@ -31,9 +31,11 @@ import { requireOrgUser } from "@/lib/auth";
 import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
 import { loadCenterReport, SKILL_UNIT, type SkillName } from "@/lib/console/reports";
+import { ALWAYS_CURRENT, type RangeKey } from "@/lib/console/window";
 import { createClient } from "@/lib/supabase/server";
 
 import { ReportAlerts } from "./alerts-button";
+import { RangePicker } from "./range-picker";
 import { ExportReportButton } from "./export-button";
 
 export const dynamic = "force-dynamic";
@@ -83,17 +85,27 @@ function OpenArrow() {
  * EVERY STUDENT APPEARS EXACTLY ONCE. "Has stopped" is a tag on a row, not a
  * third list — a name in two places makes a roster impossible to count.
  *
- * Everything is the last 90 days. Listening is scored rather than banded, so it
- * never enters the band figures, and no "overall band" is averaged across
- * skills, because a number like that would be ours, not IELTS's.
+ * ONE RANGE GOVERNS THIS PAGE (R1). The picker in the header sets it, every
+ * band, count and completion below is measured over it, and the two figures
+ * that deliberately ignore it — gone quiet, work nobody has opened — say
+ * "always current" beside themselves rather than leaving the reader to wonder
+ * why they did not move.
+ *
+ * Listening is banded from its own result, no "overall band" is ever averaged
+ * across skills, and every band carries the count behind it.
  */
-export default async function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 
+  const sp = await searchParams;
   const supabase = await createClient();
   const [report, orgRes, overview] = await Promise.all([
-    loadCenterReport({ role: profile.role, profileId: profile.id }),
+    loadCenterReport({ role: profile.role, profileId: profile.id, range: sp.range as RangeKey }),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
     loadWorkOverview(profile),
   ]);
@@ -148,9 +160,10 @@ export default async function ReportsPage() {
       <PageHead
         eyebrow="Reports"
         title={isCenter ? centerName : "Your students"}
-        subtitle={`${report.totals.students} students · ${report.totals.groups} classes · ${report.totals.gradedPractices} marked in the last 90 days.`}
+        subtitle={`${report.totals.students} student${report.totals.students === 1 ? "" : "s"} · ${report.totals.groups} group${report.totals.groups === 1 ? "" : "s"} · ${report.totals.gradedPractices} marked ${report.window.label.toLowerCase()}.`}
         actions={
           <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <RangePicker value={report.window.key} />
             {/* THE WARNINGS, one control wide. These used to be a stack of cards
                 that pushed the students below the fold on every visit. */}
             <ReportAlerts
@@ -170,7 +183,7 @@ export default async function ReportsPage() {
             title="Handed in"
             divided
             badge={unopenedCount > 0 ? <Tag tone="red">{unopenedCount} new</Tag> : null}
-            note="newest first — open a student to see every piece they did, with the marking"
+            note={`newest first — open a student to see every piece they did, with the marking · ${ALWAYS_CURRENT}`}
           />
           {handedIn.length > 0 ? (
             <Table cols={IN_COLS}>
@@ -221,9 +234,8 @@ export default async function ReportsPage() {
               })}
             </Table>
           ) : (
-            <Empty>
-              Nothing has been handed in yet. Set a class some practice and it lands here as soon as
-              it is marked.
+            <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
+              Nothing has been handed in yet. Work lands here as soon as it is marked.
             </Empty>
           )}
         </Card>
@@ -274,7 +286,7 @@ export default async function ReportsPage() {
               ))}
             </Table>
           ) : (
-            <Empty>Everyone in your classes has work back. Nothing to chase.</Empty>
+            <Empty>Everyone in your groups has work back. Nothing to chase.</Empty>
           )}
         </Card>
 
@@ -347,7 +359,7 @@ export default async function ReportsPage() {
               <Card>
                 <CardHead
                   title={`${headline} bands awarded`}
-                  note={`${measured.find((m) => m.skill === headline)?.attempts ?? 0} marked · skills are never mixed`}
+                  note={`${measured.find((m) => m.skill === headline)?.attempts ?? 0} marked ${report.window.label.toLowerCase()} · skills are never mixed`}
                 />
                 {buckets.length > 0 ? (
                   <Columns

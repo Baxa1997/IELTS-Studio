@@ -484,7 +484,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
 
           {activeDesks.length === 0 ? (
             <Card>
-              <Empty>No desks yet. Add one and every payment gets somewhere to land.</Empty>
+              <Empty action={{ href: "/console/calendar", label: "Add a cash desk →" }}>
+                No desks yet — a payment needs somewhere to land.
+              </Empty>
             </Card>
           ) : null}
 
