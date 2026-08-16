@@ -530,11 +530,10 @@ export async function setStudentStatus(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .update({
-      member_status: status,
-      status_changed_at: new Date().toISOString(),
-      status_note: note,
-    })
+    // `status_changed_at` is stamped by the guard trigger, not here — the
+    // column and the value it describes cannot then disagree, and a caller
+    // cannot back-date a status change by sending its own timestamp.
+    .update({ member_status: status, status_note: note })
     .eq("id", studentId)
     .select("id, full_name");
   if (error) return { error: error.message };

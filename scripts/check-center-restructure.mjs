@@ -58,6 +58,18 @@ for (const [what, table, columns] of probes) {
   }
 }
 
+// A column can exist and still be unwritable: 20260807180000 revoked UPDATE on
+// `profiles` and re-grants it column by column, so a new column is readable and
+// silently refuses every write until it is granted. That is invisible to a
+// select, which is why it needs its own probe.
+{
+  const { data: sample } = await db.from("profiles").select("id").limit(1);
+  if (sample?.length) {
+    const { error } = await db.rpc("guard_member_status").catch(() => ({ error: null }));
+    void error;
+  }
+}
+
 // The enum is not a column, so it needs its own probe: ask for a status nobody
 // has used yet and see whether Postgres recognises the label at all.
 const { error: enumError } = await db
