@@ -58,7 +58,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  *
  * Clashes are still computed across the WHOLE week and the whole center, not
  * just the visible day, because the room you are about to book can be taken by
- * a class you are not looking at.
+ * a group you are not looking at.
  */
 export default async function CalendarPage({ searchParams }: { searchParams: SearchParams }) {
   const { profile } = await requireOrgUser();
@@ -100,7 +100,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   /**
    * Which site are we looking at?
    *
-   * Every room and every class belongs to a branch (migration 20260810170000),
+   * Every room and every group belongs to a branch (migration 20260810170000),
    * so the tabs are simply the branches — there is no "No branch" case left to
    * carry. The row is shown even for a single branch: it is the label that says
    * WHICH site the grid below belongs to, and a timetable that does not name
@@ -119,7 +119,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
 
   // Everything on this page counts within the chosen branch — the day tabs, the
   // hours, the week list. The one deliberate exception is `conflicts`, which
-  // stays center-wide: the room you are booking can be taken by a class at a
+  // stays center-wide: the room you are booking can be taken by a group at a
   // branch you are not looking at.
   // Scoped by the CLASS's branch, so a lesson whose room was deleted still
   // appears under the site that teaches it instead of in all of them.
@@ -145,7 +145,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     })),
   ];
 
-  // Classes carry their branch, so the form can offer only the rooms that class
+  // Groups carry their branch, so the form can offer only the rooms that group
   // is allowed into. The database enforces the same rule (lesson_slots_branch_
   // guard); this is what stops the user meeting it.
   const groupOptions = groups.map((g) => ({
@@ -187,7 +187,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
     profile.role === "teacher" ? (
       <div style={{ display: "flex", gap: 6 }}>
         <Link href={link({ who: undefined })} className="cn-chip" style={toggle(mine)}>
-          My classes
+          My groups
         </Link>
         <Link href={link({ who: "all" })} className="cn-chip" style={toggle(!mine)}>
           Whole center
@@ -278,7 +278,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               maxWidth: 560,
             }}
           >
-            A branch is the address you teach at. Every room is in one, every class is taught at
+            A branch is the address you teach at. Every room is in one, every group is taught at
             one, and every payment is taken at one — so there is nothing to put on a timetable until
             the first one exists. Most centers have exactly one and never think about it again.
           </p>
@@ -519,7 +519,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
             </div>
           ) : null}
 
-          {/* One line per collision, each naming the classes and linking to the
+          {/* One line per collision, each naming the groups and linking to the
           day it is on. A count on its own ("2 lessons are double-booked") sends
           the reader hunting through seven tabs for a problem it will not
           describe. */}
@@ -556,8 +556,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               </ul>
               {conflicts.some((c) => c.reason === "self") ? (
                 <p style={{ margin: "8px 0 0" }}>
-                  A class booked twice at once is always a mistake — open either block and remove
-                  it. Two <em>different</em> classes sharing a room or a teacher is only a warning;
+                  A group booked twice at once is always a mistake — open either block and remove
+                  it. Two <em>different</em> groups sharing a room or a teacher is only a warning;
                   leave it if it is deliberate.
                 </p>
               ) : null}
@@ -676,7 +676,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 </p>
               ) : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {/* One chip per LESSON, not per day: a Mon/Wed/Fri class listed
+                  {/* One chip per LESSON, not per day: a Mon/Wed/Fri group listed
                   three times reads as three classes. */}
                   {weekLessons.map((slot) => (
                     <span

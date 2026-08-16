@@ -9,17 +9,17 @@ import { useActionFeedback } from "@/components/console/toast";
 import { startTelegramLink, unlinkTelegram, type ActionState } from "../../center-actions";
 
 /**
- * Connect this class to a Telegram channel — in one tap.
+ * Connect this group to a Telegram channel — in one tap.
  *
  * HOW THE TAP WORKS. The button is a Telegram deep link carrying the link code:
  * `t.me/<bot>?startgroup=CODE`. Telegram opens, the admin picks a group, the
  * bot is added, and Telegram itself sends `/start CODE` into that group. The
- * webhook matches the code and the class is connected. Nobody copies anything.
+ * webhook matches the code and the group is connected. Nobody copies anything.
  *
  * WHY THE CODE IS STILL THERE. It is not ceremony — it is the authorisation.
  * Telegram chat ids are not secret and cannot be looked up by name, so the bot
  * has to LEARN the id from an update it can trust. The code proves the person
- * holds something the app only shows to staff who manage this class, and adding
+ * holds something the app only shows to staff who manage this group, and adding
  * the bot proves they can act in that chat. A "paste your chat id" box would
  * prove neither, and would let anyone who guessed an id post into another
  * center's channel. The one-tap flow hides the code without removing it.
@@ -56,7 +56,7 @@ export function TelegramPanel({
     return (
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.55 }}>
         Telegram isn&apos;t set up on this platform yet. Once the bot is configured, you&apos;ll be
-        able to connect each class to its own channel here in one tap.
+        able to connect each group to its own channel here in one tap.
       </p>
     );
   }
@@ -113,7 +113,7 @@ export function TelegramPanel({
         <ConnectChoices code={code} botUsername={botUsername} />
       ) : (
         <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
-          Announce new practice where the class already talks. Parents are usually in the channel
+          Announce new practice where the group already talks. Parents are usually in the channel
           and have no account here, so this is often the only way they hear anything.
         </p>
       )}
@@ -199,7 +199,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
       }}
     >
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 11px", lineHeight: 1.55 }}>
-        Pick where this class talks. If Telegram opens a chat with the bot instead of a list of
+        Pick where this group talks. If Telegram opens a chat with the bot instead of a list of
         groups, that is the wrong screen — back out and use the manual line below.
       </p>
 
@@ -210,7 +210,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
           icon={<FiUsers size={16} color={TELEGRAM} />}
           title="Add to a group"
           badge="connects itself"
-          note="A normal Telegram group the class is already in"
+          note="A normal Telegram group the group is already in"
         />
         <TapTarget
           href={link("channel")}

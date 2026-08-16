@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Authorization is explicit rather than inherited from a group: `profiles` is
  * readable org-wide by any staff member, so without this check a teacher could
- * open a name and photo belonging to another teacher's class (the practice data
+ * open a name and photo belonging to another teacher's group (the practice data
  * itself is already scoped by can_view_student). A center_admin sees the whole
  * org; a teacher must share a group with the student, and `group_members` under
  * RLS only returns groups they manage — so a non-empty result IS the proof.

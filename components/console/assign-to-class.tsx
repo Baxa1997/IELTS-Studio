@@ -5,7 +5,7 @@ import { AssignToClassPanel } from "./assign-to-class-panel";
 
 /**
  * The one thing a teacher gets on top of the learner's practice UI: a way to set
- * what's on screen to a class.
+ * what's on screen to a group.
  *
  * Everything else about /write, /read and /listen is deliberately identical for
  * staff and students — a teacher previews a prompt by doing exactly what the
@@ -14,7 +14,7 @@ import { AssignToClassPanel } from "./assign-to-class-panel";
  * the page.
  *
  * Only a teacher sees it. A center_admin runs people, billing and reports; the
- * teaching decisions belong to whoever runs the class.
+ * teaching decisions belong to whoever runs the group.
  */
 export async function AssignToClass({
   kind,
@@ -35,7 +35,7 @@ export async function AssignToClass({
     .order("name");
 
   const rows = (groups ?? []) as { id: string; name: string }[];
-  if (rows.length === 0) return null; // no classes yet — nothing to assign to
+  if (rows.length === 0) return null; // no groups yet — nothing to assign to
 
   return <AssignToClassPanel kind={kind} contentId={contentId} groups={rows} />;
 }

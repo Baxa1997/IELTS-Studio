@@ -6,7 +6,7 @@ import { loadGroupDetail } from "@/lib/console/groups";
 import { loadStudentReport } from "@/lib/console/student-report";
 
 /** One student's practice picture, reached from their group — so "back" returns
- *  to the class. The same report hangs off the roster at /console/students/[id]. */
+ *  to the group. The same report hangs off the roster at /console/students/[id]. */
 export default async function StudentReportPage({
   params,
 }: {

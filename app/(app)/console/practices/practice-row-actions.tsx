@@ -13,7 +13,7 @@ const empty: PracticeFormState = {};
 /**
  * Archive / restore, inline on the row. There is no preview button because
  * there is no preview page any more: "Open" goes to the real runner, which is
- * how a teacher sees exactly what the class will see.
+ * how a teacher sees exactly what the group will see.
  */
 export function PracticeRowActions({
   promptId,

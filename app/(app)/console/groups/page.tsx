@@ -95,7 +95,7 @@ export default async function GroupsPage({
     supabase.from("v_student_attendance").select("student_id, rate_pct"),
   ]);
 
-  // Attendance per class = the mean rate of its members. RLS has already
+  // Attendance per group = the mean rate of its members. RLS has already
   // narrowed both queries to what this person may read.
   const rateOf = new Map(
     ((ratesRes.data ?? []) as { student_id: string; rate_pct: number | null }[]).map((r) => [
@@ -142,12 +142,12 @@ export default async function GroupsPage({
   return (
     <div>
       <PageHead
-        eyebrow="Classes"
+        eyebrow="Groups"
         title="Groups"
         // subtitle={
         //   isAdmin
-        //     ? `${groups.length} class${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
-        //     : "The classes assigned to you — set practice here and read the results."
+        //     ? `${groups.length} group${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
+        //     : "The groups assigned to you — set practice here and read the results."
         // }
         actions={
           <>
@@ -216,7 +216,7 @@ export default async function GroupsPage({
               ? isAdmin
                 ? "No groups yet — use + New group above to create the first one."
                 : "No groups assigned to you yet."
-              : "No class matches that filter."}
+              : "No group matches that filter."}
           </p>
         </Card>
       )}
@@ -285,7 +285,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
       </div>
 
       {/* The design shows enrolled-against-capacity here. There is no capacity
-          column, so the bar carries completion — the figure a class is actually
+          column, so the bar carries completion — the figure a group is actually
           judged on — and the roster count stays a plain number. */}
       <div
         style={{

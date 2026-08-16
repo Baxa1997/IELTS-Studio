@@ -134,7 +134,7 @@ export default async function StudentsPage({
         title="Students"
         // subtitle={
         //   profile.role === "center_admin"
-        //     ? `${all.length} enrolled across ${groupOptions.length} class${groupOptions.length === 1 ? "" : "es"}.`
+        //     ? `${all.length} enrolled across ${groupOptions.length} group${groupOptions.length === 1 ? "" : "es"}.`
         //     : "The students in the groups you run."
         // }
         actions={<PanelButton panel="enrol">+ Enrol student</PanelButton>}

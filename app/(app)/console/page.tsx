@@ -44,7 +44,7 @@ export const dynamic = "force-dynamic";
  * attention" beside the day's activity, then the band trend beside the skill
  * meters and a dark summary card.
  *
- * Where the design shows tuition, seats and a class timetable, this shows what
+ * Where the design shows tuition, seats and a group timetable, this shows what
  * the product actually measures. Those three need tables that do not exist, and
  * a modelled number on the owner's home screen is the one thing that would make
  * every other number on it suspect.

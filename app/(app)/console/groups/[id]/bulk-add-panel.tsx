@@ -28,7 +28,7 @@ Bekzod Toshmatov, bekzod.t
 Dilnoza Rashidova, dilnoza@example.com`;
 
 /**
- * Create a whole class from a pasted register.
+ * Create a whole group from a pasted register.
  *
  * The credentials are shown once and nowhere else — the passwords are generated
  * server-side and never stored in readable form — so the download and copy
@@ -274,7 +274,7 @@ function SpreadsheetImport({ onLines }: { onLines: (lines: string[]) => void }) 
 
       {!grid && !error ? (
         <p className="text-muted-foreground text-xs">
-          Already have the class list in Excel? Drop the .xlsx or CSV here and we&apos;ll read the
+          Already have the group list in Excel? Drop the .xlsx or CSV here and we&apos;ll read the
           names out of it. Nothing is uploaded — the file is read in your browser and you check the
           columns before any account is created.
         </p>

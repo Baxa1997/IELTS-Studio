@@ -8,13 +8,13 @@ import { type ActionState, setGroupPricing } from "../../finance/actions";
 import { useActionFeedback } from "@/components/console/toast";
 
 /**
- * The two prices of this class, edited in place on the class itself.
+ * The two prices of this group, edited in place on the group itself.
  *
- * Deliberately here and not only in the finance console. Pricing a class is
- * something the owner does while looking at the class — the roster is right
+ * Deliberately here and not only in the finance console. Pricing a group is
+ * something the owner does while looking at the group — the roster is right
  * there, and the question "what does this one pay" is the reason they opened
  * the page. The finance console keeps its own copy of this form for the times
- * they are pricing several classes in a row.
+ * they are pricing several groups in a row.
  */
 
 const INK = "#16162E";
@@ -44,7 +44,7 @@ export function PricingPanel({
 }: {
   groupId: string;
   currency: string;
-  /** The class's real lesson count this month, for the per-lesson preview. */
+  /** The group's real lesson count this month, for the per-lesson preview. */
   lessonsThisMonth: number;
   /** Current values as plain numbers in major units, or "" when unpriced. */
   feeMajor: string;

@@ -12,7 +12,7 @@ import { assignLessonToGroup, setLessonSharing, type LessonActionState } from ".
  * the moment a teacher has decided the lesson is good — and "published" on its
  * own does nothing for anybody. The two routes are deliberately shown side by
  * side, because they differ in a way that matters and is easy to get wrong:
- * a class gets marked and reported on, a link does not.
+ * a group gets marked and reported on, a link does not.
  *
  * A PORTAL, like the platform console's plan panel, for the same reason: this
  * opens from a page that scrolls inside its own container, and an absolutely
@@ -69,7 +69,7 @@ export function ShareModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Set this lesson to a class or share it"
+      aria-label="Set this lesson to a group or share it"
       onClick={onClose}
       style={{
         position: "fixed",
@@ -136,10 +136,10 @@ export function ShareModal({
           </button>
         </div>
 
-        {/* ── set to a class ─────────────────────────────────────────────── */}
+        {/* ── set to a group ─────────────────────────────────────────────── */}
         <form action={assignAction} style={{ marginTop: 20 }}>
           <input type="hidden" name="id" value={lessonId} />
-          <div style={{ fontSize: 15, fontWeight: 650, color: INK }}>Set it to a class</div>
+          <div style={{ fontSize: 15, fontWeight: 650, color: INK }}>Set it to a group</div>
           <p style={{ fontSize: 13, color: MUTED, margin: "3px 0 12px", lineHeight: 1.5 }}>
             It appears in their assignments. Written answers are checked by AI, and you get every
             score and mistake.
@@ -147,7 +147,7 @@ export function ShareModal({
 
           {groups.length === 0 ? (
             <p style={{ fontSize: 13, color: FAINT, margin: "0 0 8px" }}>
-              You have no classes yet.
+              You have no groups yet.
             </p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
@@ -220,7 +220,7 @@ export function ShareModal({
             {assigning
               ? "Setting…"
               : picked.length > 1
-                ? `Set to ${picked.length} classes`
+                ? `Set to ${picked.length} groups`
                 : "Set as homework"}
           </button>
           {assignState.ok ? (

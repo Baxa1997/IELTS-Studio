@@ -34,9 +34,9 @@ export default async function AnnouncementsPage() {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 
-  // A teacher is the only person who can set a class's homework and the one who
-  // connects its Telegram channel, so shutting them out of telling the class
-  // about it made no sense. They get the page scoped to their own classes;
+  // A teacher is the only person who can set a group's homework and the one who
+  // connects its Telegram channel, so shutting them out of telling the group
+  // about it made no sense. They get the page scoped to their own groups;
   // center-wide audiences stay the owner's (see migration 20260812130000).
   const isAdmin = profile.role === "center_admin";
 
@@ -180,7 +180,7 @@ export default async function AnnouncementsPage() {
               students: g.memberCount,
               hasChannel: linked.has(g.id),
             }))}
-            // Only classes with a VERIFIED channel — the composer lists these
+            // Only groups with a VERIFIED channel — the composer lists these
             // by name so the sender picks the destinations rather than
             // trusting "all of them".
             channels={telegramClasses

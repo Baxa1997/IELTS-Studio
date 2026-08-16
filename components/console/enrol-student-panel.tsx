@@ -8,7 +8,7 @@ import { useActionFeedback } from "@/components/console/toast";
 
 /**
  * The design's "Enrol a student" slide-over: one form that creates the account
- * AND puts them in a class, so a center admin standing next to a new student
+ * AND puts them in a group, so a center admin standing next to a new student
  * never has to open the group first.
  *
  * It posts to the same `addStudentAccount` the group page uses — the group is
@@ -65,7 +65,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
       title: `${made.name} is enrolled`,
       body: made.email
         ? `Sign-in details sent to ${made.email}.`
-        : "No email on file — hand these over in class. There's no email reset, so you reset it if it's lost.",
+        : "No email on file — hand these over in person. There's no email reset, so you reset it if it's lost.",
       credentials: { login: made.login, password: made.password },
     });
   }, [state.created, finish]);
@@ -73,7 +73,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
   if (groups.length === 0) {
     return (
       <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
-        There are no classes yet, and a student is enrolled into one. Create a group first — then
+        There are no groups yet, and a student is enrolled into one. Create a group first — then
         this panel can put people straight into it.
       </p>
     );
@@ -203,7 +203,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
           >
             They sign in with their <strong>login</strong>, never an email — so an address that
             already has a personal account here is fine. Give one and the sign-in details are sent
-            there; leave it blank and you hand them over in class. Either way you reset the password
+            there; leave it blank and you hand them over in person. Either way you reset the password
             for them if it&apos;s lost.
           </div>
 

@@ -15,7 +15,7 @@ import type { Finding } from "@/lib/console/report-findings";
  * had to scroll past them every single visit to reach the students. Worse, good
  * news and bad news looked alike at a glance — a full-width card saying
  * "practice is getting done" occupied exactly as much of the screen as one
- * saying a class has stopped handing in.
+ * saying a group has stopped handing in.
  *
  * A count you can see from across the room is the honest summary: nothing to do
  * reads as "All clear" and takes one line, and anything wrong is a number in a

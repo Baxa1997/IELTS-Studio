@@ -21,8 +21,13 @@ import {
 } from "@/components/console/crm-ui";
 import { PanelButton } from "@/components/console/console-chrome";
 import { loadSubjects, loadTeacherSubjects } from "@/lib/console/subjects";
+import {
+  describeTurnaround,
+  NO_TURNAROUND,
+  type Turnaround,
+} from "@/lib/console/turnaround";
 import { requireOrgUser } from "@/lib/auth";
-import { loadTeachers } from "@/lib/console/people";
+import { loadTeachers, loadTurnaround } from "@/lib/console/people";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
@@ -38,6 +43,14 @@ const SORTS = {
     label: "attendance",
     cmp: (a: Row, b: Row) => (b.attendance ?? -1) - (a.attendance ?? -1),
   },
+  turnaround: {
+    label: "marking speed",
+    // Fastest first, and anyone who has marked nothing sorts last rather than
+    // top — an unmeasured teacher is not the quickest one.
+    cmp: (a: Row, b: Row) =>
+      (a.turnaround.medianHours ?? Number.POSITIVE_INFINITY) -
+      (b.turnaround.medianHours ?? Number.POSITIVE_INFINITY),
+  },
   name: { label: "name", cmp: (a: Row, b: Row) => a.name.localeCompare(b.name) },
 } as const;
 type SortKey = keyof typeof SORTS;
@@ -52,9 +65,11 @@ interface Row {
   students: number;
   practices: number;
   attendance: number | null;
+  /** §7's fair metric: median hours from hand-in to a signed final band. */
+  turnaround: Turnaround;
 }
 
-const COLS = "2fr 1.3fr .7fr .7fr .8fr 1.1fr .9fr 40px";
+const COLS = "1.8fr 1.1fr .6fr .6fr .8fr 1fr 1fr .9fr 40px";
 
 export default async function TeachersPage({
   searchParams,
@@ -89,7 +104,7 @@ export default async function TeachersPage({
   const isOwner = profile.role === "center_admin";
 
   // Attendance rolled up to the teacher: the mean rate of the students in the
-  // classes they own. A student in two of their classes counts once.
+  // groups they own. A student in two of their groups counts once.
   const teacherOfGroup = new Map(
     ((groupsRes.data ?? []) as { id: string; teacher_id: string | null }[]).map((g) => [
       g.id,
@@ -111,15 +126,20 @@ export default async function TeachersPage({
     studentsOfTeacher.set(teacherId, set);
   }
 
-  // Roll the class report up to the person who runs the classes. Joined on
+  // Roll the group report up to the person who runs the classes. Joined on
   // teacher id, not name — two teachers can share a name.
   //
   // NO BAND COLUMN. It used to average whatever skills a teacher's students
   // happened to practise, across as few as one essay, and print it beside their
   // name — a number that reads as a performance rating and is not one. What a
   // teacher is actually accountable for is how much practice they set and
-  // whether it gets done; both are counted here. (Marking turnaround, the
-  // fairest of the three, arrives with the final-band field in Phase 2.)
+  // whether it gets done, plus how fast they give it back — the three things
+  // they actually control. Turnaround is the fairest of them and is now real:
+  // attempt_reviews gave it a submission-to-signature pair to measure.
+  // §7's marking turnaround. Attributed to whoever SIGNED the band, so covering
+  // somebody's marking over half-term credits the person who did it.
+  const turnaroundOf = await loadTurnaround();
+
   const stats = new Map<string, { practices: number; completions: number[] }>();
   for (const g of report.groups) {
     if (!g.teacherId) continue;
@@ -141,6 +161,7 @@ export default async function TeachersPage({
     name: t.name,
     username: t.username,
     role: t.role,
+    turnaround: turnaroundOf.get(t.id) ?? NO_TURNAROUND,
     groups: t.groups,
     students: t.students,
     practices: stats.get(t.id)?.practices ?? 0,
@@ -156,14 +177,14 @@ export default async function TeachersPage({
     .sort(SORTS[sort].cmp);
 
   // The KPI strip is about TEACHING capacity, so it counts teachers only. An
-  // administrator owns no classes by design; letting them into these figures
+  // administrator owns no groups by design; letting them into these figures
   // would deflate "avg groups each" and, worse, put them in the amber
   // "Without a group" tile as though something needed fixing.
   const teaching = teachers.filter((t) => t.role === "teacher");
   const withoutGroups = teaching.filter((t) => t.groups === 0).length;
   const totalGroups = teaching.reduce((n, t) => n + t.groups, 0);
   const totalStudents = teaching.reduce((n, t) => n + t.students, 0);
-  // The design's "100% of the center" line: every learner is in somebody's class
+  // The design's "100% of the center" line: every learner is in somebody's group
   // only when this matches the roll.
   const centerStudents = new Set(
     ((membersRes.data ?? []) as { student_id: string }[]).map((m) => m.student_id),
@@ -269,13 +290,32 @@ export default async function TeachersPage({
         <Table cols={COLS}>
           <THead
             cols={COLS}
-            labels={["Teacher", "Subjects", "Groups", "Students", "Practice set", "Attendance", "Status", ""]}
+            labels={[
+              "Teacher",
+              "Subjects",
+              "Groups",
+              "Students",
+              "Practice set",
+              "Marking",
+              "Attendance",
+              "Status",
+              "",
+            ]}
           />
           {rows.map((t) => {
             const { practices, attendance } = t;
             return (
               <TRow key={t.id} cols={COLS}>
-                <PersonCell name={t.name} meta={t.username ?? "no login"} />
+                {/* The row is the way in to the detail page §7 asks for — a table
+                    with no destination makes an owner open every group to find
+                    out whose group is whose. The anchor is the grid item, so it
+                    has to lay out like the bare PersonCell it replaced. */}
+                <a
+                  href={`/console/teachers/${t.id}`}
+                  style={{ display: "block", minWidth: 0, color: "inherit", textDecoration: "none" }}
+                >
+                  <PersonCell name={t.name} meta={t.username ?? "no login"} />
+                </a>
                 <TD>
                   {t.role === "administrator" ? (
                     <span style={{ color: "#93919F" }}>—</span>
@@ -293,6 +333,16 @@ export default async function TeachersPage({
                 <TD tone={practices === 0 ? "faint" : "ink"} weight={600}>
                   {practices || "—"}
                 </TD>
+                <TD tone={t.turnaround.medianHours == null ? "faint" : "body"}>
+                  {/* R3: the count is on the figure, and under three marks it
+                      says so — a median of two is not a turnaround. */}
+                  <span title={`${t.turnaround.reviews} marked`}>
+                    {describeTurnaround(t.turnaround)}
+                    {t.turnaround.medianHours != null && t.turnaround.provisional ? (
+                      <span style={{ color: "#93919F", fontSize: 11 }}> provisional</span>
+                    ) : null}
+                  </span>
+                </TD>
                 <TD>
                   {attendance == null ? (
                     <span style={{ color: "#93919F" }}>—</span>
@@ -308,7 +358,7 @@ export default async function TeachersPage({
                   )}
                 </TD>
                 <TD>
-                  {/* An administrator has no classes BY DESIGN, so "No class
+                  {/* An administrator has no groups BY DESIGN, so "No group
                       yet" would read as a problem to fix rather than the role
                       working correctly. */}
                   {t.role === "administrator" ? (

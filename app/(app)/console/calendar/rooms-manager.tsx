@@ -35,7 +35,7 @@ function useRefreshingAction(
  *
  * The first version of this offered an add form and a read-only list, which is
  * how you end up with a room called "12" that you cannot rename and cannot get
- * rid of. A room is a column of the timetable and the thing two classes cannot
+ * rid of. A room is a column of the timetable and the thing two groups cannot
  * share, so it needs the full set of edits, in one place, visible on the page
  * that uses them.
  *

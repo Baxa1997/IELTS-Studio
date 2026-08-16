@@ -9,14 +9,14 @@ import { type RoomChoice, ScheduleFields } from "../schedule-fields";
 import { useActionFeedback } from "@/components/console/toast";
 
 /**
- * Change when an existing class meets.
+ * Change when an existing group meets.
  *
  * A CLASS CAN HOLD SEVERAL BOOKINGS, and this has to respect that. "IELTS
  * Evening, Tue+Wed 08:00" and "IELTS Evening, Tue+Wed 15:30" are two
- * independent series — four rows — and a center really does run the same class
+ * independent series — four rows — and a center really does run the same group
  * twice a day. So each series is edited on its own, and clearing one never
  * touches the other. The first version of this reconciled every slot on the
- * class into a single series; against the live data it would have deleted
+ * group into a single series; against the live data it would have deleted
  * three of four bookings.
  *
  * Editing reconciles rather than replaces: a day left ticked keeps its row, its
@@ -226,7 +226,7 @@ function ScheduleForm({
 
       {current ? (
         <p style={{ margin: 0, fontSize: 11.5, color: FAINT, lineHeight: 1.5 }}>
-          Untick every day and save to take this booking off the timetable. The class stays.
+          Untick every day and save to take this booking off the timetable. The group stays.
         </p>
       ) : null}
     </form>

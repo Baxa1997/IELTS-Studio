@@ -43,13 +43,13 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * Invoices: what each student was charged this month, and who has paid.
  *
  * The reference CRM tracks only receipts, which answers "what came in" and not
- * "what should have". Charging the class explicitly is what turns a till into a
+ * "what should have". Charging the group explicitly is what turns a till into a
  * ledger: it gives the front desk a chase list, it gives payroll an `invoiced`
  * basis to pay a share of, and it makes a part payment visible as a part
  * payment rather than as an absence.
  *
  * Settling one is one click from the row — the payment lands with the student,
- * the class and the invoice already attached, which is exactly the tagging the
+ * the group and the invoice already attached, which is exactly the tagging the
  * salary engine needs and the exactly the tagging nobody does by hand.
  */
 export default async function InvoicesPage({ searchParams }: { searchParams: SearchParams }) {
@@ -75,7 +75,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
   const currency = settings.currency;
   const money = (m: number) => formatMoney(m, currency);
 
-  // Both prices of a class, so the pricing drawer can show what is already set
+  // Both prices of a group, so the pricing drawer can show what is already set
   // on each side rather than only the student's half.
   const priceOf = new Map(
     ((feesRes.data ?? []) as Record<string, unknown>[]).map((g) => [
@@ -145,13 +145,13 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
             <Drawer
               label="Raise invoices"
               eyebrow="Tuition"
-              title="Charge a class"
+              title="Charge a group"
               note="One invoice per student on the roster, for the month you pick."
             >
               <GenerateInvoicesForm groups={groupsForForms} months={months} currency={currency} />
             </Drawer>
             <Drawer
-              label="Class fees"
+              label="Group fees"
               variant="ghost"
               eyebrow="Tuition"
               title="Set a monthly fee"
@@ -228,7 +228,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
                 color: INK,
               }}
             >
-              <option value="">Every class</option>
+              <option value="">Every group</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name}
@@ -278,7 +278,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
           <Table cols={COLS}>
             <THead
               cols={COLS}
-              labels={["Student", "Class", "Due", "Paid", "Balance", "Status", ""]}
+              labels={["Student", "Group", "Due", "Paid", "Balance", "Status", ""]}
             />
             {shown.map((invoice) => (
               <TRow key={invoice.id} cols={COLS}>
@@ -354,8 +354,8 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
       <p
         style={{ fontFamily: SANS, fontSize: 12, color: SOFT, margin: "14px 0 0", lineHeight: 1.6 }}
       >
-        A payment taken from this page is tagged with the student, the class and the invoice — which
-        is what lets the same som appear correctly in the class&apos;s collections, the
+        A payment taken from this page is tagged with the student, the group and the invoice — which
+        is what lets the same som appear correctly in the group&apos;s collections, the
         student&apos;s balance, and the teacher&apos;s share.{" "}
         <span style={{ color: AMBER }}>Voiding</span> an invoice removes the charge without touching
         any payment already received against it.

@@ -2,6 +2,7 @@ import "server-only";
 
 import { canManagePeople, type AppRole } from "@/lib/auth";
 import { type MemberStatus } from "@/lib/console/status";
+import { median, PROVISIONAL_UNDER, type Turnaround } from "@/lib/console/turnaround";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -249,4 +250,60 @@ export async function loadStudents(opts: {
       };
     })
     .sort((a, b) => b.practiceCount - a.practiceCount || a.name.localeCompare(b.name));
+}
+
+/**
+ * Turnaround per teacher across the centre.
+ *
+ * Attributed to WHOEVER SIGNED THE BAND (`reviewed_by`), not to whoever owns
+ * the class. A teacher covering someone's marking during half-term should be
+ * credited for it, and the class's owner should not be blamed for work they
+ * were not asked to do.
+ */
+export async function loadTurnaround(): Promise<Map<string, Turnaround>> {
+  const supabase = await createClient();
+
+  const [{ data: reviews }, { data: attempts }] = await Promise.all([
+    supabase
+      .from("attempt_reviews")
+      .select("kind, ref_id, reviewed_by, reviewed_at")
+      .not("reviewed_by", "is", null),
+    supabase.from("v_gradable_attempts").select("kind, ref_id, submitted_at"),
+  ]);
+
+  if (!reviews?.length) return new Map();
+
+  const submittedAt = new Map(
+    ((attempts ?? []) as { kind: string; ref_id: string; submitted_at: string }[]).map((a) => [
+      `${a.kind}:${a.ref_id}`,
+      a.submitted_at,
+    ]),
+  );
+
+  const hoursByTeacher = new Map<string, number[]>();
+  for (const r of reviews as {
+    kind: string;
+    ref_id: string;
+    reviewed_by: string;
+    reviewed_at: string;
+  }[]) {
+    const submitted = submittedAt.get(`${r.kind}:${r.ref_id}`);
+    if (!submitted) continue;
+    const hours = (Date.parse(r.reviewed_at) - Date.parse(submitted)) / 3_600_000;
+    // A review stamped before the submission is a clock problem, not a
+    // negative turnaround. Dropped rather than counted as instant marking,
+    // which would flatter whoever it happened to.
+    if (!Number.isFinite(hours) || hours < 0) continue;
+    hoursByTeacher.set(r.reviewed_by, [...(hoursByTeacher.get(r.reviewed_by) ?? []), hours]);
+  }
+
+  const out = new Map<string, Turnaround>();
+  for (const [teacherId, hours] of hoursByTeacher) {
+    out.set(teacherId, {
+      medianHours: median(hours),
+      reviews: hours.length,
+      provisional: hours.length < PROVISIONAL_UNDER,
+    });
+  }
+  return out;
 }

@@ -34,7 +34,7 @@ export function AssignPanel({
   useActionFeedback(state);
   const [kind, setKind] = useState<"writing" | "reading" | "library">(
     // The shelf goes FIRST when there is one. Generating is the expensive path
-    // — it costs quota, takes seconds, and produces a paper no other class has
+    // — it costs quota, takes seconds, and produces a paper no other group has
     // sat — so it should be the deliberate choice, not the default.
     library.length > 0 ? "library" : "writing",
   );
@@ -159,7 +159,7 @@ export function AssignPanel({
         {kind === "library" ? (
           <span className="text-muted-foreground text-xs">
             Sets the identical paper — instant, no generation used, and comparable with every other
-            class that has sat it.
+            group that has sat it.
           </span>
         ) : null}
         {kind === "reading" && libraryTests.length === 0 ? (

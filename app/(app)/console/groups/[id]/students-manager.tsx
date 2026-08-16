@@ -10,12 +10,12 @@ import { useActionFeedback } from "@/components/console/toast";
 import { MoveOrRemove } from "./move-or-remove";
 
 /**
- * The class, as one table.
+ * The group, as one table.
  *
  * WHAT THIS REPLACED. The group page had SIX tabs, two of which — "Roster" and
  * "Manage" — both listed the same students: one with their bands, one with two
  * permanently-expanded forms for adding more. Nowhere did it just show you the
- * class. Now there is one Students tab, this table is it, and the two ways of
+ * group. Now there is one Students tab, this table is it, and the two ways of
  * adding are a button and a menu above it.
  *
  * EVERY STUDENT HAS AN ACCOUNT, AND THAT IS NOT OPTIONAL. Homework on this
@@ -71,13 +71,13 @@ export function StudentsManager({
 }: {
   groupId: string;
   students: StudentRow[];
-  /** Classes this person also manages — the destinations for a move. */
+  /** Groups this person also manages — the destinations for a move. */
   otherGroups?: { id: string; name: string }[];
 }) {
   if (students.length === 0) {
     return (
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.6 }}>
-        Nobody in this class yet. Add them one at a time, or import the register you already keep —
+        Nobody in this group yet. Add them one at a time, or import the register you already keep —
         logins and passwords are made for you.
       </p>
     );
@@ -436,12 +436,12 @@ const credStyle: React.CSSProperties = {
 /* ── the toolbar ──────────────────────────────────────────────────────────── */
 
 /**
- * One button over the class list, with the three things you can do to it.
+ * One button over the group list, with the three things you can do to it.
  *
  * A single entry point rather than a row of buttons. "Add one", "import a
  * list" and "export the list" are the same job at different scales, and a
  * roster screen that opens with three competing primary buttons reads as a
- * toolbar rather than as a class. The menu also gives each one room for a
+ * toolbar rather than as a group. The menu also gives each one room for a
  * sentence saying what it does, which a button label cannot.
  */
 export function RosterToolbar({
@@ -493,7 +493,7 @@ export function RosterToolbar({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${groupName.replace(/[^\w\s-]/g, "").trim() || "class"}-students.csv`;
+    a.download = `${groupName.replace(/[^\w\s-]/g, "").trim() || "group"}-students.csv`;
     a.click();
     URL.revokeObjectURL(url);
     setMenuOpen(false);
@@ -779,7 +779,7 @@ const quietStyle: React.CSSProperties = {
  * Destructive, and looking it — but only once confirmed.
  *
  * The FIRST click is a red-lettered outline button, not a filled red one. A
- * filled danger button sitting on every row of a class list turns the whole
+ * filled danger button sitting on every row of a group list turns the whole
  * table into a wall of alarm, and the thing it removes is reversible (the
  * account and its work survive). The filled treatment is earned by the second
  * click, which is the one that actually does something.

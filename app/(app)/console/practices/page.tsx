@@ -30,7 +30,7 @@ const TABS: { key: PracticeTab; label: string; blurb: string }[] = [
     label: "Drafts",
     blurb: "Generated, not yet published. Only staff can see these.",
   },
-  { key: "published", label: "Published", blurb: "Ready to set to a class." },
+  { key: "published", label: "Published", blurb: "Ready to set to a group." },
   {
     key: "archived",
     label: "Archived",
@@ -42,7 +42,7 @@ const TABS: { key: PracticeTab; label: string; blurb: string }[] = [
  * Everything a teacher has made, and what became of it.
  *
  * Teacher-only, by design. A practice library belongs to whoever teaches the
- * class; a center_admin has no use for a list of drafts they cannot publish and
+ * group; a center_admin has no use for a list of drafts they cannot publish and
  * would never assign, and sees results through Reports and the group pages.
  */
 export default async function PracticesPage({
@@ -67,7 +67,7 @@ export default async function PracticesPage({
       <PageHead
         eyebrow="Practice"
         title="Your practice library"
-        subtitle="Everything you've made, and how your classes did on it."
+        subtitle="Everything you've made, and how your groups did on it."
       />
 
       <StatRow>
@@ -85,7 +85,7 @@ export default async function PracticesPage({
 
       <Panel
         title="Make a new practice"
-        description="You get the same screens your students do — generate it, work through it if you like, then set it to a class from the button on that page."
+        description="You get the same screens your students do — generate it, work through it if you like, then set it to a group from the button on that page."
       >
         <List>
           <Row first>
@@ -120,9 +120,9 @@ export default async function PracticesPage({
           {rows.length === 0 ? (
             <EmptyRow>
               {tab === "drafts"
-                ? "No drafts. Anything you generate in Writing lands here until you set it to a class."
+                ? "No drafts. Anything you generate in Writing lands here until you set it to a group."
                 : tab === "published"
-                  ? "Nothing published yet. Open Writing, generate a prompt, then set it to a class."
+                  ? "Nothing published yet. Open Writing, generate a prompt, then set it to a group."
                   : "Nothing archived."}
             </EmptyRow>
           ) : null}

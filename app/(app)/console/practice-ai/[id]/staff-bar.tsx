@@ -32,7 +32,7 @@ const STATUS_COPY: Record<string, { label: string; tone: string; bg: string; not
     label: "Draft",
     tone: "#A9721F",
     bg: "#FBEEE0",
-    note: "Only you can see this. Publish it to set it to a class or share a link.",
+    note: "Only you can see this. Publish it to set it to a group or share a link.",
   },
   published: {
     label: "Published",
@@ -139,7 +139,7 @@ export function LessonStaffBar({
           {status === "published" ? (
             <>
               <button type="button" onClick={() => setShareOpen(true)} style={primary}>
-                Set to a class
+                Set to a group
               </button>
               <form action={statusAction}>
                 <input type="hidden" name="id" value={id} />

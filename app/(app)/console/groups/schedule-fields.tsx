@@ -5,15 +5,15 @@ import { useState } from "react";
 import { DAY_PRESETS, describeDays, orderedWeekdays } from "@/lib/console/timetable-days";
 
 /**
- * When the class meets — the same control on the create form and on an
- * existing class.
+ * When the group meets — the same control on the create form and on an
+ * existing group.
  *
  * WHY THIS IS ON THE CLASS AND NOT ONLY ON THE TIMETABLE. "Mon/Wed/Fri at
- * 18:00" is how a center describes a class when it sells it; it is not
+ * 18:00" is how a center describes a group when it sells it; it is not
  * something you go to a calendar page to look up afterwards. Making it part of
- * creating the class also closes the gap that made every prorated figure
+ * creating the group also closes the gap that made every prorated figure
  * approximate: the lesson count is the denominator for a mid-month student's
- * fee and for their teacher's pay, and a class nobody timetabled falls back to
+ * fee and for their teacher's pay, and a group nobody timetabled falls back to
  * the center's assumed twelve.
  *
  * The presets are shortcuts for the human, never a stored second truth — the
@@ -35,11 +35,11 @@ export function ScheduleFields({
   rooms,
   branchId,
   initial,
-  /** Shown when a class currently has no schedule at all. */
+  /** Shown when a group currently has no schedule at all. */
   optional = true,
 }: {
   rooms: RoomChoice[];
-  /** The class's branch — a lesson may only be booked into a room there. */
+  /** The group's branch — a lesson may only be booked into a room there. */
   branchId: string;
   initial?: { weekdays: number[]; startsAt: string; endsAt: string; roomId: string | null };
   optional?: boolean;
@@ -64,7 +64,7 @@ export function ScheduleFields({
     }
   };
 
-  // Only rooms at this class's branch: the DB trigger `lesson_slot_branch_guard`
+  // Only rooms at this group's branch: the DB trigger `lesson_slot_branch_guard`
   // rejects the rest, so offering them would be offering a guaranteed error.
   const available = rooms.filter((r) => r.branchId === branchId);
 

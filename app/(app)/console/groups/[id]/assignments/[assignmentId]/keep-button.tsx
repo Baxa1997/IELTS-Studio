@@ -16,7 +16,7 @@ const RULE = "#E7E5DF";
  *
  * HERE, RATHER THAN AT THE MOMENT OF ASSIGNING, on purpose. When a teacher sets
  * practice they have not read the generated prompt yet and cannot judge whether
- * it is worth keeping. On the results page they have seen what the class did
+ * it is worth keeping. On the results page they have seen what the group did
  * with it — which is exactly when "that one worked, use it again" is a real
  * judgement rather than a guess.
  *

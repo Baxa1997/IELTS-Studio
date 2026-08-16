@@ -78,7 +78,7 @@ function OpenArrow() {
  *
  * WHY IT IS TWO LISTS AND A DRAWER. It used to be nine analytics panels — a
  * band histogram, a monthly trend, per-skill means, capping criteria, missed
- * question types, a class table, an at-risk list, a KPI row and a stack of
+ * question types, a group table, an at-risk list, a KPI row and a stack of
  * finding cards. Every panel was accurate; the page as a whole answered
  * nothing, because a teacher opening it on a Tuesday evening wants a list of
  * names, not a dashboard. The charts are still here, under "Show the working",
@@ -233,7 +233,7 @@ export default async function ReportsPage({
             <Table cols={IN_COLS}>
               <THead
                 cols={IN_COLS}
-                labels={["Student", "Class", "Handed in", "Band", "Last", ""]}
+                labels={["Student", "Group", "Handed in", "Band", "Last", ""]}
               />
               {handedIn.map((s) => {
                 const quiet = s.lastGraded ? daysSince(s.lastGraded) : null;
@@ -290,13 +290,13 @@ export default async function ReportsPage({
             title="Nothing back yet"
             divided
             badge={waiting.length > 0 ? <Tag tone="amber">{waiting.length}</Tag> : null}
-            note="students in your classes with no marked work — longest silence first"
+            note="students in your groups with no marked work — longest silence first"
           />
           {waiting.length > 0 ? (
             <Table cols={WAIT_COLS}>
               <THead
                 cols={WAIT_COLS}
-                labels={["Student", "Class", "Started but unfinished", "Last seen", ""]}
+                labels={["Student", "Group", "Started but unfinished", "Last seen", ""]}
               />
               {waiting.map((s) => (
                 <TRow key={s.studentId} cols={WAIT_COLS} href={s.reportHref}>
@@ -345,13 +345,13 @@ export default async function ReportsPage({
               marginBottom: 10,
             }}
           >
-            Show the working — classes, band spread, and what keeps capping them
+            Show the working — groups, band spread, and what keeps capping them
           </summary>
 
           <Stack>
             <Card flush>
               <CardHead
-                title="Classes"
+                title="Groups"
                 divided
                 note="completion is the share of set practice finished and marked"
               />
@@ -562,7 +562,7 @@ export default async function ReportsPage({
               <Card>
                 <CardHead title="Reading questions most often wrong" />
                 <CardNote>
-                  Total wrong answers by question type, across the classes in scope.
+                  Total wrong answers by question type, across the groups in scope.
                 </CardNote>
                 {report.readingMisses.map((m) => (
                   <MeterRow

@@ -23,12 +23,12 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   const { user, profile } = await requireOrgUser();
   // Two different questions, and they stopped having the same answer when the
   // administrator role arrived. `isOwner` gates money and hiring; `canStaff`
-  // gates putting a teacher on a class, which is scheduling.
+  // gates putting a teacher on a group, which is scheduling.
   const isAdmin = isOrgOwner(profile.role);
   const canStaff = canManagePeople(profile.role);
 
   // Groups feed both slide-overs: enrolling picks one, inviting targets one.
-  // The currency comes along because a new class is priced as it is created,
+  // The currency comes along because a new group is priced as it is created,
   // and only the owner sees those fields.
   const [{ groups, teachers, branches, rooms }, settings, subjects, teacherSubjects] =
     await Promise.all([

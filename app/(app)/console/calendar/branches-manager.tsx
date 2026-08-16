@@ -30,7 +30,7 @@ function useRefreshingAction(
  *
  * A branch owns rooms and nothing else, so this list is short on purpose —
  * name, address, phone. Everything else about a branch is answered by its
- * rooms: which classes meet there, which hours are free, who is teaching.
+ * rooms: which groups meet there, which hours are free, who is teaching.
  *
  * Deleting a branch leaves its rooms behind, unassigned, rather than taking a
  * day's timetable down with it.

@@ -46,7 +46,7 @@ export function AnnouncementComposer({
   canAnnounceCenterWide: boolean;
   counts: { everyone: number; students: number; teachers: number };
   groups: { id: string; name: string; students: number; hasChannel: boolean }[];
-  /** Classes with a verified channel, named. Empty hides the whole section. */
+  /** Groups with a verified channel, named. Empty hides the whole section. */
   channels: { groupId: string; groupName: string; chatTitle: string }[];
 }) {
   const [state, formAction, pending] = useActionState(sendAnnouncement, {} as ActionState);
@@ -58,7 +58,7 @@ export function AnnouncementComposer({
   const [toTelegram, setToTelegram] = useState(false);
   // Which channels this post goes to. Named and ticked, never implied: the
   // first version posted to "every linked channel" whenever the audience was
-  // not one class, so there was no way to write to two classes out of five —
+  // not one group, so there was no way to write to two groups out of five —
   // and no way to see where a post had gone until it had gone there.
   const [picked, setPicked] = useState<string[]>(() => channels.map((c) => c.groupId));
 
@@ -76,8 +76,8 @@ export function AnnouncementComposer({
   const chosen = groups.find((g) => g.id === groupId);
   const reach = audience === "group" ? (chosen?.students ?? 0) : counts[audience];
 
-  // Writing to ONE class pins the channel to that class — posting a
-  // class-specific message into another class's channel is never what was
+  // Writing to ONE group pins the channel to that group — posting a
+  // group-specific message into another group's channel is never what was
   // meant. Any wider audience picks its own destinations.
   const locked = audience === "group";
   const targets = locked
@@ -277,7 +277,7 @@ export function AnnouncementComposer({
               })}
 
               {/* A locked pick is not submitted by a disabled checkbox, so the
-                  class's own channel is sent as a hidden field instead. */}
+                  group's own channel is sent as a hidden field instead. */}
               {locked && chosen?.hasChannel ? (
                 <input type="hidden" name="telegram_groups" value={groupId} />
               ) : null}
