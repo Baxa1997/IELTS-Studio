@@ -103,6 +103,33 @@ export function ellipsize(text: string, maxWidth: number, size: number, bold = f
   return `${out}...`;
 }
 
+/**
+ * Break a paragraph across lines that fit.
+ *
+ * Added because clipping is the wrong failure for prose. A table cell that
+ * ellipsizes loses a group name the reader can guess; a NOTE or a FOOTER that
+ * ellipsizes loses the end of a sentence — and on the parent report the end of
+ * that sentence was "...not an official IELTS result", the one line on the page
+ * that is not optional. It was silently cut to "not an official IELTS...".
+ */
+export function wrapText(text: string, maxWidth: number, size: number, bold = false): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (textWidth(candidate, size, bold) <= maxWidth) {
+      line = candidate;
+      continue;
+    }
+    if (line) lines.push(line);
+    // A single word longer than the column still has to go somewhere; it is the
+    // one case where cutting is the only option.
+    line = textWidth(word, size, bold) > maxWidth ? ellipsize(word, maxWidth, size, bold) : word;
+  }
+  if (line) lines.push(line);
+  return lines.length > 0 ? lines : [""];
+}
+
 function pdfString(text: string): string {
   return winAnsi(text).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
@@ -155,6 +182,12 @@ class Page {
 class Writer {
   pages: Page[] = [];
   page: Page;
+  /**
+   * Vertical space the footer will occupy, set before any content is drawn.
+   * A wrapping footer can be three lines tall, and content laid out against a
+   * one-line assumption would print straight through it.
+   */
+  footerReserve = 28;
 
   constructor() {
     this.page = new Page();
@@ -168,7 +201,7 @@ class Writer {
 
   /** Start a new page when `needed` points won't fit above the footer. */
   ensure(needed: number): void {
-    if (this.page.y - needed < MARGIN + 28) this.newPage();
+    if (this.page.y - needed < MARGIN + this.footerReserve) this.newPage();
   }
 
   text(
@@ -295,15 +328,18 @@ function drawTable(w: Writer, table: PdfTable): void {
     w.text(table.title, MARGIN, w.page.y - 11, { size: 12, bold: true });
     w.page.y -= 20;
     if (table.note) {
-      w.text(table.note, MARGIN, w.page.y - 8, { size: 8.5, color: MUTED });
-      w.page.y -= 14;
+      for (const line of wrapText(table.note, CONTENT_W, 8.5)) {
+        w.text(line, MARGIN, w.page.y - 8, { size: 8.5, color: MUTED });
+        w.page.y -= 12;
+      }
+      w.page.y -= 2;
     }
   }
 
   drawHead();
 
   table.rows.forEach((row, rowIndex) => {
-    if (w.page.y - rowH < MARGIN + 28) {
+    if (w.page.y - rowH < MARGIN + w.footerReserve) {
       w.newPage();
       drawHead();
     }
@@ -350,16 +386,24 @@ function drawTable(w: Writer, table: PdfTable): void {
   w.page.y -= 22;
 }
 
+/**
+ * The footer wraps rather than clips, and the rule above it moves up to make
+ * room. A footer carrying a required disclaimer must be shown in full or it is
+ * not a disclaimer.
+ */
 function drawFooters(w: Writer, doc: PdfDocument): void {
   const total = w.pages.length;
+  const lines = doc.footer ? wrapText(doc.footer, CONTENT_W - 90, 7.5) : [];
+  const block = Math.max(1, lines.length) * 9;
+
   w.pages.forEach((page, i) => {
     const saved = w.page;
     w.page = page;
-    w.rule(MARGIN + 22, RULE);
-    if (doc.footer) {
-      w.text(doc.footer, MARGIN, MARGIN + 8, { size: 7.5, color: MUTED, maxWidth: CONTENT_W - 90 });
-    }
-    w.text(`Page ${i + 1} of ${total}`, PAGE_W - MARGIN, MARGIN + 8, {
+    w.rule(MARGIN + block + 12, RULE);
+    lines.forEach((line, n) => {
+      w.text(line, MARGIN, MARGIN + block - 9 - n * 9, { size: 7.5, color: MUTED });
+    });
+    w.text(`Page ${i + 1} of ${total}`, PAGE_W - MARGIN, MARGIN + block - 9, {
       size: 7.5,
       color: MUTED,
       align: "right",
@@ -428,6 +472,10 @@ function serialize(pages: Page[]): Buffer {
 
 export function buildPdf(doc: PdfDocument): Buffer {
   const w = new Writer();
+  // Measured before anything is laid out, so every page break already knows how
+  // tall the footer will be.
+  const footerLines = doc.footer ? wrapText(doc.footer, CONTENT_W - 90, 7.5).length : 0;
+  w.footerReserve = Math.max(1, footerLines) * 9 + 18;
   drawHeader(w, doc);
   if (doc.stats?.length) drawStats(w, doc.stats);
   for (const table of doc.tables) drawTable(w, table);

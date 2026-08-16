@@ -113,6 +113,7 @@ export function StudentReportView({
         eyebrow="Student"
         title={report.name}
         media={<Avatar name={report.name} url={report.photoUrl} size={58} />}
+        actions={<ExportPdfLink studentId={report.studentId} />}
         subtitle={
           <>
             {report.recentCount} practice{report.recentCount === 1 ? "" : "s"} in the last 30 days
@@ -132,7 +133,12 @@ export function StudentReportView({
               note="where they are now, and how far that is from where they started"
             />
             {report.bands.map((b) => {
-              const behind = b.current != null && b.target != null ? b.current - b.target : null;
+              // Only a target somebody chose counts. `target_band` defaults to
+              // 7.0 for everyone, so measuring "behind" against an unagreed
+              // default tells a teacher a student is 4.1 short of a goal that
+              // was never set.
+              const target = b.targetAgreed ? b.target : null;
+              const behind = b.current != null && target != null ? b.current - target : null;
               const moved = progressSince(b.current, b.baseline, b.baselineSource, b.sampleCount);
               return (
                 <MeterRow
@@ -186,8 +192,8 @@ export function StudentReportView({
                     >
                       {b.current == null
                         ? "not measured"
-                        : b.target == null
-                          ? ""
+                        : target == null
+                          ? "no target set"
                           : behind != null && behind >= 0
                             ? "at target"
                             : `${behind?.toFixed(1)} to go`}
@@ -399,5 +405,37 @@ function WeaknessCard({
         </p>
       ) : null}
     </Card>
+  );
+}
+
+/**
+ * Download the parent-facing PDF (§6).
+ *
+ * A plain anchor, not a Link and not a client component: the route replies with
+ * a file, so there is nothing for the router to navigate to and nothing to hold
+ * in state. `download` keeps the browser from opening it in a tab and losing
+ * the filename the route chose.
+ */
+function ExportPdfLink({ studentId }: { studentId: string }) {
+  return (
+    <a
+      href={`/api/console/students/${studentId}/report`}
+      download
+      className="cn-btn cn-btn--ghost"
+      style={{
+        display: "inline-block",
+        borderRadius: 10,
+        padding: "8px 15px",
+        fontFamily: SANS,
+        fontSize: 13.5,
+        fontWeight: 500,
+        textDecoration: "none",
+        background: "#FFF",
+        color: INK,
+        border: "1px solid #E0DED8",
+      }}
+    >
+      Export report (PDF)
+    </a>
   );
 }

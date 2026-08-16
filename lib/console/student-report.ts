@@ -3,6 +3,7 @@ import "server-only";
 import { type BaselineSource } from "@/lib/console/progress";
 
 import { signAvatar } from "@/lib/console/avatars";
+import { weakestCriteria } from "@/lib/console/criteria";
 import { createClient } from "@/lib/supabase/server";
 
 export type PracticeSkill = "writing" | "reading" | "listening" | "speaking";
@@ -57,6 +58,13 @@ export interface StudentReport {
     baseline: number | null;
     baselineSource: BaselineSource;
     sampleCount: number;
+    /**
+     * Did anybody actually choose this target? `target_band` defaults to 7.0
+     * for every student in every skill, so an unagreed 7.0 is not a goal — it
+     * is the column default, and printing it on a parent report as "Target 7.0"
+     * commits the centre to something nobody promised.
+     */
+    targetAgreed: boolean;
   }[];
   practices: PracticeRow[];
   /** Total practices in the last 30 days, across all four skills. */
@@ -66,15 +74,15 @@ export interface StudentReport {
   readingWeaknesses: WeaknessRow[];
   /** Homework: assigned vs. actually done. */
   homework: { assigned: number; done: number };
+  /**
+   * Registers marked for this student. Null when nobody has taken a register
+   * yet — which is not the same as 0%, and a parent report must not print one
+   * as the other.
+   */
+  attendance: { sessions: number; attended: number; ratePct: number } | null;
+  /** The groups they are enrolled in, for the report letterhead. */
+  groups: string[];
 }
-
-const CRITERION_LABEL: Record<string, string> = {
-  TR: "Task Response",
-  TA: "Task Achievement",
-  CC: "Coherence & Cohesion",
-  LR: "Lexical Resource",
-  GRA: "Grammatical Range & Accuracy",
-};
 
 /**
  * Everything a teacher needs about one student: their band per skill, every
@@ -103,7 +111,9 @@ export async function loadStudentReport(
     await Promise.all([
       supabase
         .from("skill_estimates")
-        .select("skill, current_band, target_band, baseline_band, baseline_source, sample_count")
+        .select(
+          "skill, current_band, target_band, baseline_band, baseline_source, sample_count, target_set_by",
+        )
         .eq("student_id", studentId),
       supabase
         .from("essays")
@@ -136,6 +146,23 @@ export async function loadStudentReport(
       // wrote it: "Task 2 — city living" beats "Writing" in a list of six.
       supabase.from("assignments").select("prompt_id, reading_test_id, title"),
     ]);
+
+  const [attendanceRes, membershipRes] = await Promise.all([
+    supabase
+      .from("v_student_attendance")
+      .select("sessions, attended, rate_pct")
+      .eq("student_id", studentId)
+      .maybeSingle(),
+    // Two flat queries rather than a `groups(name)` embed: this schema's
+    // composite foreign keys make PostgREST embeds resolve to nothing without
+    // erroring, which is how a page goes blank in production and passes here.
+    supabase.from("group_members").select("group_id").eq("student_id", studentId),
+  ]);
+
+  const groupIds = (membershipRes.data ?? []).map((m) => m.group_id as string);
+  const { data: groupRows } = groupIds.length
+    ? await supabase.from("groups").select("name").in("id", groupIds)
+    : { data: [] as { name: string }[] };
 
   // Content id → the name the teacher gave it. Last one wins if the same
   // content was set twice; they are the same piece of work either way.
@@ -180,8 +207,13 @@ export async function loadStudentReport(
 
   for (const e of essays) {
     const grading = gradingByEssay.get(e.id as string);
+    // Each capping criterion counts once. Tallying the joined "A + B" cell text
+    // would invent a third category that is neither.
+    const capping = grading
+      ? weakestCriteria(grading.criteria as Record<string, { band?: number }>)
+      : [];
+    for (const label of capping) writingTally.set(label, (writingTally.get(label) ?? 0) + 1);
     const weak = grading ? weakestCriterion(grading.criteria) : null;
-    if (weak) writingTally.set(weak, (writingTally.get(weak) ?? 0) + 1);
     practices.push({
       id: e.id as string,
       skill: "writing",
@@ -275,6 +307,7 @@ export async function loadStudentReport(
         baseline: est?.baseline_band != null ? Number(est.baseline_band) : null,
         baselineSource: (est?.baseline_source as BaselineSource) ?? "first_attempt",
         sampleCount: (est?.sample_count as number | null) ?? 0,
+        targetAgreed: est?.target_set_by != null,
       };
     }),
     practices: practices.slice(0, 40),
@@ -286,6 +319,17 @@ export async function loadStudentReport(
       assigned: assignedPrompts.size + assignedTests.size,
       done: homeworkRows.filter((p) => p.band != null).length,
     },
+    // No register taken at all reads as null, never 0% — the view returns no
+    // row for a student nobody has marked, and "0% attendance" on a report
+    // going home to a parent is an accusation the data does not support.
+    attendance: attendanceRes.data
+      ? {
+          sessions: Number(attendanceRes.data.sessions ?? 0),
+          attended: Number(attendanceRes.data.attended ?? 0),
+          ratePct: Number(attendanceRes.data.rate_pct ?? 0),
+        }
+      : null,
+    groups: (groupRows ?? []).map((g) => g.name as string).filter(Boolean),
   };
 }
 
@@ -336,14 +380,26 @@ function toWeaknessRows(tally: Map<string, number>): WeaknessRow[] {
     .slice(0, 5);
 }
 
+/**
+ * What capped one essay, as a single line for a table cell.
+ *
+ * THE TIE-BREAK BUG HAD A SECOND COPY, and this was the one that mattered most.
+ * `reports.ts` was fixed in isolation, but this file carried its own version
+ * walking `Object.entries` for the first strict minimum — and the grader always
+ * writes CC first. Every flat essay (47 of 74 on the real corpus score
+ * identically on all four criteria) therefore tallied as "Coherence &
+ * Cohesion" in `writingWeaknesses`: the panel a teacher reads to decide what to
+ * teach, and now the panel a PARENT reads. Fixing one call site and leaving the
+ * other is how a bug comes back, so both go through the tested function.
+ *
+ * Two criteria tied at the bottom are both named — an essay held back equally
+ * by two things is held back by two things. All four tied returns null, which
+ * the table renders as "—": a uniformly 5.0 essay has no weak spot, and naming
+ * one invents a finding.
+ */
 function weakestCriterion(criteria: Record<string, unknown>): string | null {
-  let worst: { key: string; band: number } | null = null;
-  for (const [key, value] of Object.entries(criteria ?? {})) {
-    const band = Number((value as { band?: unknown })?.band);
-    if (!Number.isFinite(band)) continue;
-    if (!worst || band < worst.band) worst = { key, band };
-  }
-  return worst ? (CRITERION_LABEL[worst.key] ?? worst.key) : null;
+  const capping = weakestCriteria(criteria as Record<string, { band?: number }>);
+  return capping.length > 0 ? capping.join(" + ") : null;
 }
 
 /** [questionType, wrongCount] for every type this attempt lost marks on. */
