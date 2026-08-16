@@ -8,7 +8,14 @@
  * Every loader touched by 20260816120000 selects at least one new column, which
  * means an unapplied migration does not degrade the console — it empties it.
  *
- * Run it before deploying, and again straight after applying the migration:
+ * WHAT IT CANNOT TELL YOU. It runs with the service-role key, which bypasses
+ * both RLS and column grants. A column can exist here and still refuse every
+ * write from a real user — `profiles.member_status` did exactly that, because
+ * 20260807180000 revoked UPDATE on that table and re-grants it column by
+ * column. Green here means "the schema is applied", not "the feature works".
+ * For that, sign in as a real user and try it.
+ *
+ * Run it before deploying, and again straight after applying a migration:
  *
  *     node scripts/check-center-restructure.mjs
  */
@@ -55,18 +62,6 @@ for (const [what, table, columns] of probes) {
     console.log(`     └─ breaks: ${what}`);
   } else {
     console.log(`  ✓  ${table.padEnd(22)} ${what}`);
-  }
-}
-
-// A column can exist and still be unwritable: 20260807180000 revoked UPDATE on
-// `profiles` and re-grants it column by column, so a new column is readable and
-// silently refuses every write until it is granted. That is invisible to a
-// select, which is why it needs its own probe.
-{
-  const { data: sample } = await db.from("profiles").select("id").limit(1);
-  if (sample?.length) {
-    const { error } = await db.rpc("guard_member_status").catch(() => ({ error: null }));
-    void error;
   }
 }
 
