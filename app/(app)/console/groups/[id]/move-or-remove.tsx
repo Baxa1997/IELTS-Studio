@@ -18,7 +18,7 @@ const RULE = "#E7E5DF";
  *
  * THE POINT IS THAT REMOVE WAS THE ONLY OPTION. A student stops coming, and the
  * one button on the row deletes their membership — so they vanish from the
- * class, from the teacher's view and from every roster, while their unpaid
+ * group, from the teacher's view and from every roster, while their unpaid
  * invoices sit in the debtors report attached to nobody the centre can now
  * find. Marking them `left` is almost always what was meant: it keeps them on
  * the roster, greyed, with their history and their balance intact, and it stops
@@ -91,7 +91,7 @@ export function MoveOrRemove({
             padding: "6px 9px",
           }}
         >
-          {owedLabel}. Removing them from the class does not cancel it — mark them as left
+          {owedLabel}. Removing them from the group does not cancel it — mark them as left
           instead, so somebody can still find them.
         </div>
       ) : null}
@@ -99,9 +99,9 @@ export function MoveOrRemove({
       <Option
         action={moveMember}
         hidden={{ group_id: groupId, student_id: student.id }}
-        label="Move to another class"
+        label="Move to another group"
         disabled={otherGroups.length === 0}
-        disabledNote="There is no other class to move them to."
+        disabledNote="There is no other group to move them to."
         submit="Move"
       >
         <select name="to_group_id" required style={field}>
@@ -126,8 +126,8 @@ export function MoveOrRemove({
       <Option
         action={removeMember}
         hidden={{ group_id: groupId, student_id: student.id }}
-        label="Remove from this class"
-        note="They keep their account, their work and any balance — they are just no longer in this class."
+        label="Remove from this group"
+        note="They keep their account, their work and any balance — they are just no longer in this group."
         submit="Remove"
         danger
       />

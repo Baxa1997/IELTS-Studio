@@ -103,7 +103,7 @@ export default async function GroupDetailPage({
   const admin = createAdminClient();
   const supabase = await createClient();
   // Loaded for everyone now, not only the owner: a teacher needs the list of
-  // their OWN classes to move a student between them. `teachers` stays gated in
+  // their OWN groups to move a student between them. `teachers` stays gated in
   // the UI below, and RLS scopes both to what this person may touch anyway.
   const [{ teachers, groups: manageable }, assignments, activity, libTestsRes, estimatesRes] =
     await Promise.all([
@@ -125,16 +125,16 @@ export default async function GroupDetailPage({
       : Promise.resolve({ data: null }),
   ]);
 
-  // ── the money side of the class ────────────────────────────────────────────
+  // ── the money side of the group ────────────────────────────────────────────
   // Owner only: a teacher must not read what the center charges, and RLS on
   // finance_settings would refuse anyway. Loaded here rather than inside the tab
   // so the whole page is one round of queries.
   const thisMonth = monthStart(today());
   const moneyData = isAdmin ? await loadClassMoney(group.id, thisMonth) : null;
 
-  // ── when the class meets ───────────────────────────────────────────────────
+  // ── when the group meets ───────────────────────────────────────────────────
   // Its own row rather than loadGroups', because a teacher's loadGroups is
-  // narrowed to their classes and this page is already proven to be one of them.
+  // narrowed to their groups and this page is already proven to be one of them.
   const [{ data: groupRow }, { data: slotRows }, { rooms: allRooms }] = await Promise.all([
     supabase.from("groups").select("branch_id").eq("id", group.id).maybeSingle(),
     supabase
@@ -144,7 +144,7 @@ export default async function GroupDetailPage({
     // "all": this page has to open for a closed group too.
     loadGroups(profile, { include: "all" }),
   ]);
-  // A class can hold SEVERAL independent bookings — the same class at 08:00 and
+  // A group can hold SEVERAL independent bookings — the same group at 08:00 and
   // again at 15:30 is two series, four rows. Grouping by series_id keeps them
   // apart; a single flattened weekday list would merge two real bookings into
   // one and lose a time.
@@ -177,7 +177,7 @@ export default async function GroupDetailPage({
     .map((e) => ({ ...e, weekdays: [...new Set(e.weekdays)].sort() }))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
-  // The class's Telegram channel, if the handshake completed.
+  // The group's Telegram channel, if the handshake completed.
   const { data: tgRow } = await supabase
     .from("telegram_links")
     .select("chat_title, verified_at")
@@ -186,7 +186,7 @@ export default async function GroupDetailPage({
   const telegramLinked =
     tgRow?.verified_at != null ? { chatTitle: (tgRow.chat_title as string | null) ?? null } : null;
 
-  // The last dozen registers for this class, oldest-to-newest across the row so
+  // The last dozen registers for this group, oldest-to-newest across the row so
   // the strip reads left to right like a calendar.
   const { data: sessionRows } = await supabase
     .from("attendance_sessions")
@@ -217,7 +217,7 @@ export default async function GroupDetailPage({
   // The shared definition, not a fourth one. This used to be
   // `s !== "absent"`, which counted an excused lesson as attended and left it
   // in the denominator — so this page and the payroll page reported different
-  // rates for the same class.
+  // rates for the same group.
   const attendanceRate = (studentId: string) => {
     const row = marks.get(studentId);
     if (!row || row.size === 0) return null;
@@ -275,7 +275,7 @@ export default async function GroupDetailPage({
       ? Math.round((totalCompleted / (assignments.length * roster.length)) * 100)
       : null;
 
-  // The class list, learning data and account data joined into one shape —
+  // The group list, learning data and account data joined into one shape —
   // both the table and the CSV export read this, so what you download is
   // exactly what you were looking at.
   // An address given twice in one roster is a shared parent inbox, which the
@@ -286,7 +286,7 @@ export default async function GroupDetailPage({
     if (key) emailUses.set(key, (emailUses.get(key) ?? 0) + 1);
   }
 
-  // The other classes this person manages — the destinations a student can be
+  // The other groups this person manages — the destinations a student can be
   // moved to. RLS already scopes `loadGroups` to what they may touch, so an
   // empty list genuinely means there is nowhere to move anybody.
   const siblingGroups = manageable
@@ -377,7 +377,7 @@ export default async function GroupDetailPage({
               <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
                 <h3 style={settingsHeading}>Telegram channel</h3>
                 <p style={settingsNote}>
-                  Announce new practice where the class already talks. One channel per class.
+                  Announce new practice where the group already talks. One channel per group.
                 </p>
                 <TelegramPanel
                   groupId={group.id}
@@ -443,7 +443,7 @@ export default async function GroupDetailPage({
       </KpiRow>
 
       {/* Four tabs, from six. "Roster" and "Manage" both listed the same
-          students and neither just showed the class; they are one Students tab
+          students and neither just showed the group; they are one Students tab
           now, and the single Progress card folded into its columns. */}
       <Tabs
         tabs={[
@@ -464,7 +464,7 @@ export default async function GroupDetailPage({
         <Stack>
           {/* Setting practice lives with the practice, not on a separate admin
               tab — it used to be two clicks away from the list it changes.
-              Only the class's own teacher may set it; see createAssignment. */}
+              Only the group's own teacher may set it; see createAssignment. */}
           {group.teacherId === profile.id ? (
             <Card>
               <CardHead title="Assign practice" />
@@ -478,7 +478,7 @@ export default async function GroupDetailPage({
 
           <Card flush>
             <CardHead
-              title="Practice set for this class"
+              title="Practice set for this group"
               divided
               note="everyone gets identical content, so the bands compare"
             />
@@ -550,7 +550,7 @@ export default async function GroupDetailPage({
           />
           {sessions.length === 0 ? (
             <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-              No registers taken for this class yet. Open Attendance and mark one — the strip fills
+              No registers taken for this group yet. Open Attendance and mark one — the strip fills
               in from there.
             </p>
           ) : (
@@ -652,11 +652,11 @@ export default async function GroupDetailPage({
       {tab === "money" && moneyData ? (
         <Stack>
           <Card>
-            <CardHead title={`What this class costs — ${monthLabel(thisMonth)}`} />
+            <CardHead title={`What this group costs — ${monthLabel(thisMonth)}`} />
             <CardNote>
               {moneyData.lessonsThisMonth > 0
                 ? `${moneyData.lessonsThisMonth} lessons this month, from the timetable. A student who joined part-way through pays for the ones that were left, and the teacher is paid for the same ones.`
-                : `This class isn't on the timetable yet, so a month is assumed to be ${moneyData.fallbackLessons} lessons. Book it into a room and the real count is used instead.`}
+                : `This group isn't on the timetable yet, so a month is assumed to be ${moneyData.fallbackLessons} lessons. Book it into a room and the real count is used instead.`}
             </CardNote>
             <PricingPanel
               groupId={group.id}
@@ -699,7 +699,7 @@ export default async function GroupDetailPage({
               value={formatMoney(moneyData.teacherTotalMinor, moneyData.currency)}
               sub={
                 moneyData.teacherRateMinor == null
-                  ? "no rate set on this class"
+                  ? "no rate set on this group"
                   : `${moneyData.studentsProrated} student${moneyData.studentsProrated === 1 ? "" : "s"} once part-months are counted`
               }
             />

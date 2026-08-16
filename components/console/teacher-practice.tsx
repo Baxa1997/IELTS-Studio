@@ -5,8 +5,8 @@ import { useActionState } from "react";
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
 
 /**
- * The two pieces every practice hub shares for setting content to a class: the
- * modal shell, and the class-picker form inside it.
+ * The two pieces every practice hub shares for setting content to a group: the
+ * modal shell, and the group-picker form inside it.
  *
  * There is deliberately no "teacher bench" component any more. A teacher uses
  * the learner's own hub — the same Generate button, the same cards — and these
@@ -40,7 +40,7 @@ const labelStyle: React.CSSProperties = {
   marginBottom: 5,
 };
 
-/** Class picker + optional deadline, posting the same action the runner uses. */
+/** Group picker + optional deadline, posting the same action the runner uses. */
 export function AttachForm({
   kind,
   contentId,
@@ -62,12 +62,12 @@ export function AttachForm({
       <input type="hidden" name="content_id" value={contentId} />
 
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.5 }}>
-        Everyone in the class gets this exact practice, so their bands compare. It is published as
+        Everyone in the group gets this exact practice, so their bands compare. It is published as
         part of attaching.
       </p>
 
       <div>
-        <span style={labelStyle}>Classes</span>
+        <span style={labelStyle}>Groups</span>
         <div
           style={{
             display: "grid",
@@ -109,7 +109,7 @@ export function AttachForm({
 
       <div>
         <label htmlFor="tp-instructions" style={labelStyle}>
-          A note for the class <span style={{ color: FAINT }}>(optional)</span>
+          A note for the group <span style={{ color: FAINT }}>(optional)</span>
         </label>
         <textarea
           id="tp-instructions"

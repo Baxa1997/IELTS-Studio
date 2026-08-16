@@ -104,7 +104,7 @@ export default async function TeachersPage({
   const isOwner = profile.role === "center_admin";
 
   // Attendance rolled up to the teacher: the mean rate of the students in the
-  // classes they own. A student in two of their classes counts once.
+  // groups they own. A student in two of their groups counts once.
   const teacherOfGroup = new Map(
     ((groupsRes.data ?? []) as { id: string; teacher_id: string | null }[]).map((g) => [
       g.id,
@@ -126,7 +126,7 @@ export default async function TeachersPage({
     studentsOfTeacher.set(teacherId, set);
   }
 
-  // Roll the class report up to the person who runs the classes. Joined on
+  // Roll the group report up to the person who runs the classes. Joined on
   // teacher id, not name — two teachers can share a name.
   //
   // NO BAND COLUMN. It used to average whatever skills a teacher's students
@@ -177,14 +177,14 @@ export default async function TeachersPage({
     .sort(SORTS[sort].cmp);
 
   // The KPI strip is about TEACHING capacity, so it counts teachers only. An
-  // administrator owns no classes by design; letting them into these figures
+  // administrator owns no groups by design; letting them into these figures
   // would deflate "avg groups each" and, worse, put them in the amber
   // "Without a group" tile as though something needed fixing.
   const teaching = teachers.filter((t) => t.role === "teacher");
   const withoutGroups = teaching.filter((t) => t.groups === 0).length;
   const totalGroups = teaching.reduce((n, t) => n + t.groups, 0);
   const totalStudents = teaching.reduce((n, t) => n + t.students, 0);
-  // The design's "100% of the center" line: every learner is in somebody's class
+  // The design's "100% of the center" line: every learner is in somebody's group
   // only when this matches the roll.
   const centerStudents = new Set(
     ((membersRes.data ?? []) as { student_id: string }[]).map((m) => m.student_id),
@@ -308,7 +308,7 @@ export default async function TeachersPage({
               <TRow key={t.id} cols={COLS}>
                 {/* The row is the way in to the detail page §7 asks for — a table
                     with no destination makes an owner open every group to find
-                    out whose class is whose. The anchor is the grid item, so it
+                    out whose group is whose. The anchor is the grid item, so it
                     has to lay out like the bare PersonCell it replaced. */}
                 <a
                   href={`/console/teachers/${t.id}`}
@@ -358,7 +358,7 @@ export default async function TeachersPage({
                   )}
                 </TD>
                 <TD>
-                  {/* An administrator has no classes BY DESIGN, so "No class
+                  {/* An administrator has no groups BY DESIGN, so "No group
                       yet" would read as a problem to fix rather than the role
                       working correctly. */}
                   {t.role === "administrator" ? (

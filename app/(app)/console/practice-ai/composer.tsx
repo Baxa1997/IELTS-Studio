@@ -7,7 +7,7 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Type what your class needs; get a lesson page.
+ * Type what your group needs; get a lesson page.
  *
  * Laid out after the reference the owner supplied: a centred hero, one large
  * brief box, and the affordances along its foot.

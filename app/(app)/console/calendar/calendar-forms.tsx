@@ -44,7 +44,7 @@ export interface RoomOption {
   branchName?: string | null;
 }
 
-/** A class, and the site it is taught at. */
+/** A group, and the site it is taught at. */
 export interface GroupOption {
   id: string;
   name: string;
@@ -76,7 +76,7 @@ export interface SlotDraft {
  * as one purchase — so the form takes a SET of days and writes one row per day,
  * tied by a series id. The old form took a single weekday plus a "repeats"
  * dropdown, which stored the same fact twice and let it contradict itself; a
- * Mon/Wed/Fri class showed up on Wednesday only and staff re-entered the other
+ * Mon/Wed/Fri group showed up on Wednesday only and staff re-entered the other
  * two days by hand.
  *
  * The end time follows the start by whatever duration was last picked, because
@@ -124,9 +124,9 @@ export function SlotForm({
   const [groupId, setGroupId] = useState(slot?.groupId ?? "");
   const [runsTo, setRunsTo] = useState(slot?.effectiveTo ?? "");
 
-  // A class is taught at one branch and can only be booked into rooms there —
+  // A group is taught at one branch and can only be booked into rooms there —
   // the database enforces it, so the picker must not offer anything else. Room
-  // choice therefore follows the class, and clearing the class clears it.
+  // choice therefore follows the group, and clearing the group clears it.
   const branchId = groups.find((g) => g.id === groupId)?.branchId ?? null;
   const roomsHere = branchId ? rooms.filter((r) => r.branchId === branchId) : [];
   const [roomId, setRoomId] = useState(slot?.roomId ?? "");
@@ -372,7 +372,7 @@ export function SlotForm({
 /**
  * Removing: this day, or the whole lesson.
  *
- * Both are offered because both happen — a class that stopped meeting on
+ * Both are offered because both happen — a group that stopped meeting on
  * Saturdays has not stopped. A single-day lesson shows only one button, since
  * "this day" and "all days" would be the same thing.
  */

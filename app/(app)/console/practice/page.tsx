@@ -245,7 +245,7 @@ export default async function PracticePage({
       <Card flush>
         <CardHead
           title="Practice library"
-          note="kept so the same paper can be set again — two classes sitting the same task are comparable"
+          note="kept so the same paper can be set again — two groups sitting the same task are comparable"
           divided
         />
         <div style={{ padding: "14px 16px 16px" }}>

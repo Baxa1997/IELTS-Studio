@@ -15,7 +15,7 @@ import { setTeacherSubjects, type SubjectState } from "../settings/subject-actio
  *
  * An empty set is shown as "Any", not "None". Nobody having said what someone
  * teaches is not the same as them teaching nothing, and the group form relies
- * on that reading: an unset teacher stays available for every class.
+ * on that reading: an unset teacher stays available for every group.
  */
 
 const INK = "#16162E";
@@ -149,7 +149,7 @@ export function TeacherSubjectsCell({
               ))}
             </div>
             <p style={{ fontSize: 11, color: FAINT, margin: "0 0 9px", lineHeight: 1.4 }}>
-              Tick none and they can be put on any class.
+              Tick none and they can be put on any group.
             </p>
             {state.error ? (
               <p style={{ fontSize: 12, color: "#A63A30", margin: "0 0 8px" }} role="alert">

@@ -31,7 +31,7 @@ export interface Option {
   id: string;
   name: string;
   meta?: string;
-  /** Categories only. `tuition` is the one that demands a student and a class. */
+  /** Categories only. `tuition` is the one that demands a student and a group. */
   slug?: string | null;
 }
 
@@ -83,7 +83,7 @@ export function TransactionForm({
   const today = new Date().toISOString().slice(0, 10);
   const income = direction === "in";
 
-  // Tuition must name the student and the class — a payment without them never
+  // Tuition must name the student and the group — a payment without them never
   // clears a balance and pays no teacher (see recordTransaction). The rule
   // follows the category, so the form has to watch which one is selected.
   const [categoryId, setCategoryId] = useState(defaultCategoryId ?? "");
@@ -186,8 +186,8 @@ export function TransactionForm({
               </select>
             </Field>
             <Field
-              label={mustName ? "For which class *" : "For which class"}
-              hint="drives the teacher's share of what this class collected"
+              label={mustName ? "For which group *" : "For which group"}
+              hint="drives the teacher's share of what this group collected"
             >
               <select
                 name="group_id"
@@ -196,7 +196,7 @@ export function TransactionForm({
                 required={mustName}
                 style={fieldStyle}
               >
-                <option value="">{mustName ? "Choose a class…" : "Not class-specific"}</option>
+                <option value="">{mustName ? "Choose a group…" : "Not group-specific"}</option>
                 {groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}

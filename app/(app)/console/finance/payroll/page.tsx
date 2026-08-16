@@ -126,8 +126,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
             >
               Paid so far {money(mine.paidMinor)} · outstanding{" "}
               {money(mine.netMinor - mine.paidMinor)}. Something look wrong? The figures come from
-              the class rosters, the registers you marked and the payments recorded against your
-              classes.
+              the group rosters, the registers you marked and the payments recorded against your
+              groups.
             </p>
           </Card>
         ) : (
@@ -227,8 +227,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
             }}
           >
             Salary reads what the center already recorded — who is on each roster, when they joined,
-            and how many lessons the class holds this month — and pays each teacher the rate written
-            on their classes. Nothing here needs to be typed in twice, and a draft can be recomputed
+            and how many lessons the group holds this month — and pays each teacher the rate written
+            on their groups. Nothing here needs to be typed in twice, and a draft can be recomputed
             as often as you like.
           </p>
           <p
@@ -240,7 +240,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
               lineHeight: 1.6,
             }}
           >
-            The rate lives on the class, beside what the student pays — set it under a class&apos;s
+            The rate lives on the group, beside what the student pays — set it under a group&apos;s
             Money tab, or from <TextLink href="/console/finance/invoices">Invoices</TextLink>. A
             student who joined part-way through the month is paid for the lessons they were here
             for.
@@ -278,7 +278,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
                 <TRow key={item.id} cols={COLS}>
                   <PersonCell
                     name={item.teacherName}
-                    meta={`${new Set(item.breakdown.map((l) => l.groupId).filter(Boolean)).size || "no"} class${
+                    meta={`${new Set(item.breakdown.map((l) => l.groupId).filter(Boolean)).size || "no"} group${
                       new Set(item.breakdown.map((l) => l.groupId).filter(Boolean)).size === 1
                         ? ""
                         : "es"

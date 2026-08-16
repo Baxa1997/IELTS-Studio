@@ -38,7 +38,7 @@ export function DateStrip({
 }: {
   date: string;
   today: string;
-  /** Set on a class register, so stepping a day stays on that class. */
+  /** Set on a group register, so stepping a day stays on that group. */
   groupId?: string;
 }) {
   const base = groupId ? `/console/attendance/${groupId}` : "/console/attendance";

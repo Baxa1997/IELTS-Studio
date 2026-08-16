@@ -44,7 +44,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const lesson = await loadLesson(id);
   if (!lesson) notFound();
 
-  // RLS narrows this to the classes this teacher owns, so the picker can only
+  // RLS narrows this to the groups this teacher owns, so the picker can only
   // ever offer somewhere they may actually set work.
   const { groups } = await loadGroups(profile);
 

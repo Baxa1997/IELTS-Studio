@@ -914,8 +914,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                         : ""}
                     </div>
                   </div>
-                  {/* Who paid, and which class it was for — two questions, so two
-                      columns. The class used to be a grey sub-line under the
+                  {/* Who paid, and which group it was for — two questions, so two
+                      columns. The group used to be a grey sub-line under the
                       name, which made it read as part of the person rather than
                       as the thing being paid for. */}
                   <TD tone="body">

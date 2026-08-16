@@ -48,9 +48,9 @@ const prettyDate = (s: string) =>
   });
 
 /**
- * Attendance, step two: the register for one class on one day.
+ * Attendance, step two: the register for one group on one day.
  *
- * Its own route rather than a panel beside the class list, so the URL names
+ * Its own route rather than a panel beside the group list, so the URL names
  * what you are marking. A teacher who bookmarks the Wednesday register, or
  * sends it to a colleague, gets the register — not the list with something else
  * pre-opened.

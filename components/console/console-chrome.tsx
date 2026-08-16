@@ -294,9 +294,9 @@ export function ConsoleChrome({
 
       {panel === "group" && groupPanel ? (
         <SlideOver
-          eyebrow="Classes"
+          eyebrow="Groups"
           title="Create a group"
-          note="A class is where practice is set and bands are compared."
+          note="A group is where practice is set and bands are compared."
           onClose={close}
         >
           {groupPanel}

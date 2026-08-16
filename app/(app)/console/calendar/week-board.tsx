@@ -64,7 +64,7 @@ export function WeekBoard({
   groups: GroupOption[];
   roomOptions: RoomOption[];
   canEdit: boolean;
-  /** The teacher's "my classes / whole center" toggle, rendered on the server. */
+  /** The teacher's "my groups / whole center" toggle, rendered on the server. */
   filter?: React.ReactNode;
 }) {
   const [day, setDay] = useState(initialDay);

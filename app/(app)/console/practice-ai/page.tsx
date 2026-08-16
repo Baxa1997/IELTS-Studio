@@ -23,7 +23,7 @@ const INDIGO = "#4340CB";
 
 const TABS: { key: LessonStatus; label: string; blurb: string }[] = [
   { key: "draft", label: "Drafts", blurb: "Made, not published. Only you can see these." },
-  { key: "published", label: "Published", blurb: "Ready to set to a class or share." },
+  { key: "published", label: "Published", blurb: "Ready to set to a group or share." },
   { key: "archived", label: "Archived", blurb: "Retired, but kept — attempts point at them." },
 ];
 
@@ -64,9 +64,9 @@ export default async function PracticeAiPage({
           position: "relative",
           overflow: "hidden",
           padding: "76px 28px 68px",
-          /* Inline rather than a stylesheet class, deliberately.
-             This is a static value with no pseudo-selector, so a class buys
-             nothing — and it costs something real: a class lives in globals.css,
+          /* Inline rather than a stylesheet group, deliberately.
+             This is a static value with no pseudo-selector, so a group buys
+             nothing — and it costs something real: a group lives in globals.css,
              which a dev server or a browser can serve a stale copy of, and then
              the page renders with the inline styles applied and the gradient
              missing. Which is exactly what happened. Only :hover and
@@ -137,7 +137,7 @@ export default async function PracticeAiPage({
               maxWidth: "68ch",
             }}
           >
-            Say what your class needs and get a lesson page — the explanation and the practice.
+            Say what your group needs and get a lesson page — the explanation and the practice.
             <span style={{ display: "block", marginTop: 4, fontWeight: 500, color: "#15171C" }}>
               Ready to set as homework, or share as a link.
             </span>
@@ -206,7 +206,7 @@ export default async function PracticeAiPage({
           }}
         >
           {tab === "draft"
-            ? "Nothing yet. Type what your class needs in the box above — a lesson takes about a minute to write."
+            ? "Nothing yet. Type what your group needs in the box above — a lesson takes about a minute to write."
             : tab === "published"
               ? "Nothing published yet. Open a draft and publish it once you're happy with it."
               : "Nothing archived."}

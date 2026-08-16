@@ -43,7 +43,7 @@ export interface TelegramClass {
   id: string;
   name: string;
   students: number;
-  /** The connected channel's title, or null when the class has none. */
+  /** The connected channel's title, or null when the group has none. */
   channel: string | null;
 }
 
@@ -192,9 +192,9 @@ function SentList({ rows }: { rows: SentRow[] }) {
 }
 
 /**
- * How to connect a class channel, written for someone holding a phone.
+ * How to connect a group channel, written for someone holding a phone.
  *
- * Three steps, not five: the deep link on the class page does the adding, the
+ * Three steps, not five: the deep link on the group page does the adding, the
  * permissions and the code in one tap. The steps still SAY there is a code and
  * why, because the manual fallback exists and because a security step nobody
  * can see is a security step nobody trusts.
@@ -222,15 +222,15 @@ function TelegramGuide({
       <section>
         <h3 style={heading}>
           <FiSend size={14} color={TELEGRAM} aria-hidden />
-          Connect a class channel
+          Connect a group channel
         </h3>
         <p style={note}>
-          One channel per class. Posts there reach parents, who usually have no account here at all
+          One channel per group. Posts there reach parents, who usually have no account here at all
           — which is why it is worth the two minutes.
         </p>
         <ol style={steps}>
           <li style={step}>
-            <b>Create the Telegram group or channel</b> for the class, if it doesn&apos;t exist.
+            <b>Create the Telegram group or channel</b> for the group, if it doesn&apos;t exist.
           </li>
           <li style={step}>
             <b>Open the group</b> → Settings → Telegram, and press <i>Connect Telegram</i>, then{" "}
@@ -252,7 +252,7 @@ function TelegramGuide({
       <section>
         <h3 style={heading}>
           <FiCheckCircle size={14} color={connected.length > 0 ? GREEN : FAINT} aria-hidden />
-          {connected.length} of {classes.length} classes connected
+          {connected.length} of {classes.length} groups connected
         </h3>
         <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
           {[...connected, ...missing].map((c) => (
@@ -315,7 +315,7 @@ function TelegramGuide({
             </Link>
           ))}
           {classes.length === 0 ? (
-            <p style={note}>No classes yet — a channel belongs to one, so create a class first.</p>
+            <p style={note}>No groups yet — a channel belongs to one, so create a group first.</p>
           ) : null}
         </div>
       </section>

@@ -53,7 +53,7 @@ export function AssignToClassPanel({
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-            <strong style={{ fontSize: 14, color: INK }}>Set this to a class</strong>
+            <strong style={{ fontSize: 14, color: INK }}>Set this to a group</strong>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -112,11 +112,11 @@ export function AssignToClassPanel({
               />
             </label>
 
-            {/* The note goes to the students, in the app AND in the class's
+            {/* The note goes to the students, in the app AND in the group's
                 Telegram post — assignPractice has always read `instructions`,
                 but nothing ever offered the field here. */}
             <label style={{ display: "grid", gap: 4, fontSize: 12.5, color: MUTED }}>
-              Note for the class (optional)
+              Note for the group (optional)
               <textarea
                 name="instructions"
                 rows={2}
@@ -179,7 +179,7 @@ export function AssignToClassPanel({
             cursor: "pointer",
           }}
         >
-          Set this to a class
+          Set this to a group
         </button>
       )}
     </div>

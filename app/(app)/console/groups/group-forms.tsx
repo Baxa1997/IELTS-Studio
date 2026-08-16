@@ -25,7 +25,7 @@ const FIELD =
 const initial: GroupFormState = {};
 
 /**
- * Create a group. An admin picks the teacher; a teacher always owns the class
+ * Create a group. An admin picks the teacher; a teacher always owns the group
  * they create, so they get no picker.
  *
  * Laid out for the slide-over it lives in: stacked, every control full width.
@@ -78,7 +78,7 @@ export function CreateGroupForm({
       </div>
       {/* One branch means no decision to make: send it silently and keep the
           form short. Two or more and the choice is real, because it decides
-          which rooms the class can be booked into. */}
+          which rooms the group can be booked into. */}
       {branches.length > 1 ? (
         <div className="space-y-2">
           <Label htmlFor="group-branch">Branch</Label>
@@ -97,7 +97,7 @@ export function CreateGroupForm({
             ))}
           </select>
           <p className="text-muted-foreground text-xs">
-            The class can only be timetabled into rooms at this branch.
+            The group can only be timetabled into rooms at this branch.
           </p>
         </div>
       ) : (
@@ -159,7 +159,7 @@ export function CreateGroupForm({
         />
         <p className="text-muted-foreground text-xs">
           Seats in the room. The roster warns when it is full but never stops you adding — a
-          nineteenth student in an eighteen-seat class is a decision, not a bug.
+          nineteenth student in an eighteen-seat group is a decision, not a bug.
         </p>
       </div>
 
@@ -180,15 +180,15 @@ export function CreateGroupForm({
 }
 
 /**
- * The two prices of a class, with the per-lesson figure worked out as you type.
+ * The two prices of a group, with the per-lesson figure worked out as you type.
  *
  * The preview is the point. A center owner thinks in "200 000 a head" but pays
  * a late joiner by the lesson, and until they can see that 200 000 over twelve
  * lessons is 16 667 each, the two numbers feel like different systems. Showing
- * it here — against the class's real lesson count once it is timetabled — means
+ * it here — against the group's real lesson count once it is timetabled — means
  * the arithmetic on the payslip is never a surprise.
  *
- * `lessonsPerMonth` is the center's house assumption; a class that has been
+ * `lessonsPerMonth` is the center's house assumption; a group that has been
  * timetabled is billed on its real bookings instead, which is why this says
  * "about".
  */

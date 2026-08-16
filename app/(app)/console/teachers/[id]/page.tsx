@@ -92,7 +92,7 @@ export default async function TeacherPage({ params }: { params: Promise<{ id: st
   );
 
   // The queue is centre-wide; this page wants only the work sitting in THIS
-  // teacher's classes — which is the work they are the one who has to do.
+  // teacher's groups — which is the work they are the one who has to do.
   const theirs = queue.filter((q) => studentIds.has(q.studentId));
   const overdue = theirs.filter((q) => q.waitingHours >= OVERDUE_HOURS);
 
@@ -175,7 +175,7 @@ export default async function TeacherPage({ params }: { params: Promise<{ id: st
           <Card flush>
             <CardHead
               title="Waiting to be marked"
-              note="their own classes only — oldest first"
+              note="their own groups only — oldest first"
               divided
             />
             {theirs.length === 0 ? (
@@ -251,7 +251,7 @@ export default async function TeacherPage({ params }: { params: Promise<{ id: st
               ) : (
                 <span style={{ color: FAINT }}>
                   No rule of their own — they fall back to the centre default, and to each
-                  class&apos;s own teacher rate where one is set.
+                  group&apos;s own teacher rate where one is set.
                 </span>
               )}
             </p>

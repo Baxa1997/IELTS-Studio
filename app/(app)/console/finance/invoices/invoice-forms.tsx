@@ -14,7 +14,7 @@ import {
 import { type ActionState, generateInvoices, setGroupPricing } from "../actions";
 import { useActionFeedback } from "@/components/console/toast";
 
-/** Charge a whole class for a month, from the fee already on the class. */
+/** Charge a whole group for a month, from the fee already on the group. */
 export function GenerateInvoicesForm({
   groups,
   months,
@@ -40,7 +40,7 @@ export function GenerateInvoicesForm({
   if (groups.length === 0) {
     return (
       <p style={{ fontSize: 13, color: "#6E6C87", margin: 0, lineHeight: 1.55 }}>
-        There are no classes yet. An invoice is for a seat in a class, so create one first.
+        There are no groups yet. An invoice is for a seat in a group, so create one first.
       </p>
     );
   }
@@ -48,7 +48,7 @@ export function GenerateInvoicesForm({
   return (
     <form action={formAction} key={state.ok ?? "new"}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Class">
+        <Field label="Group">
           <select name="group_id" required style={fieldStyle}>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>
@@ -67,11 +67,11 @@ export function GenerateInvoicesForm({
               ))}
             </select>
           </Field>
-          <Field label={`Amount (${currency})`} hint="blank uses the class fee">
+          <Field label={`Amount (${currency})`} hint="blank uses the group fee">
             <input
               name="amount"
               inputMode="numeric"
-              placeholder="from the class"
+              placeholder="from the group"
               style={fieldStyle}
             />
           </Field>
@@ -79,7 +79,7 @@ export function GenerateInvoicesForm({
       </div>
       <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
         Anyone already invoiced for that month is skipped, so running this again after two students
-        join tops up the class rather than charging the rest twice.
+        join tops up the group rather than charging the rest twice.
       </p>
       <div style={{ marginTop: 16 }}>
         <SubmitButton pending={pending}>Raise invoices</SubmitButton>
@@ -113,7 +113,7 @@ export function GroupFeeForm({
   return (
     <form action={formAction} key={state.ok ?? "new"}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <Field label="Class">
+        <Field label="Group">
           <select name="group_id" required style={fieldStyle}>
             {groups.map((g) => (
               <option key={g.id} value={g.id}>

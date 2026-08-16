@@ -96,7 +96,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
             <select id="teacher-role" name="staff_role" defaultValue="teacher" style={fieldStyle}>
               <option value="teacher">Teacher — their own groups</option>
               <option value="administrator">
-                Administrator — classes, students and the front desk
+                Administrator — groups, students and the front desk
               </option>
             </select>
             <p style={{ fontSize: 11.5, color: FAINT, margin: "5px 0 0", lineHeight: 1.45 }}>
@@ -162,7 +162,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
           >
             They sign in with their <strong>login</strong>, not an email — so a contact address that
             already has a personal account on the platform is fine here. It&apos;s only where we
-            send their sign-in details. A teacher runs their own classes and sees only the students
+            send their sign-in details. A teacher runs their own groups and sees only the students
             in them.
           </div>
 

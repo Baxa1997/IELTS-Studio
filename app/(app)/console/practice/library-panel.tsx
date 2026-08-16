@@ -89,7 +89,7 @@ export function LibraryPanel({
       {items.length === 0 ? (
         <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, lineHeight: 1.6, margin: 0 }}>
           Nothing saved yet. When a teacher generates a prompt worth keeping, saving it here means
-          the next class can sit <em>the same</em> paper — which is what makes two groups
+          the next group can sit <em>the same</em> paper — which is what makes two groups
           comparable, and what stops the centre paying to regenerate work it already has.
         </p>
       ) : shown.length === 0 ? (

@@ -231,7 +231,7 @@ export function StudentReportView({
               note={
                 report.homework.assigned > 0
                   ? `${report.homework.done} of ${report.homework.assigned} done — newest first`
-                  : "nothing set to this student's class yet"
+                  : "nothing set to this student's group yet"
               }
             />
             <Table cols={HW_COLS} minWidth={680}>

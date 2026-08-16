@@ -21,7 +21,7 @@ import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
  *  3. ONE dialog for the whole grid. A hundred cells cannot each own a modal;
  *     this component holds a single one and swaps what it is editing.
  *
- * Rows are real CSS-grid rows and a lesson spans them, so a 90-minute class is
+ * Rows are real CSS-grid rows and a lesson spans them, so a 90-minute group is
  * one block three bands tall — the same shape as the paper timetable it
  * replaces.
  */
@@ -519,7 +519,7 @@ export function TimetableGrid({
               >
                 {editing.slot.clashReason === "self" ? (
                   <>
-                    This class is booked twice at this hour — it cannot be in two places at once.
+                    This group is booked twice at this hour — it cannot be in two places at once.
                     Remove one of them.
                   </>
                 ) : (

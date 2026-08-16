@@ -8,7 +8,7 @@ import { useActionFeedback } from "@/components/console/toast";
 /**
  * The register itself: one row per student, three states, saved in a single
  * post. Client-side only for the toggle — the marks ride the form, so nothing
- * is written until the register is saved and a half-marked class can be
+ * is written until the register is saved and a half-marked group can be
  * abandoned without leaving rows behind.
  */
 
