@@ -2,15 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { FaFileCsv, FaFileExcel } from "react-icons/fa6";
-import { FiChevronDown, FiKey, FiUserMinus, FiUserPlus } from "react-icons/fi";
+import { FiChevronDown, FiKey, FiUserPlus } from "react-icons/fi";
 
-import {
-  type GroupFormState,
-  removeMember,
-  resetStudentPassword,
-  type ResetPasswordState,
-} from "../actions";
+import { resetStudentPassword, type ResetPasswordState } from "../actions";
 import { useActionFeedback } from "@/components/console/toast";
+
+import { MoveOrRemove } from "./move-or-remove";
 
 /**
  * The class, as one table.
@@ -61,14 +58,21 @@ export interface StudentRow {
   targetBand: number | null;
   practice30d: number;
   lastActive: string | null;
+  /** `active` | `paused` | `left`. A left student stays on the roster, greyed. */
+  status?: string | null;
+  /** "120 000 owed" when they are behind, null when square. */
+  owedLabel?: string | null;
 }
 
 export function StudentsManager({
   groupId,
   students,
+  otherGroups = [],
 }: {
   groupId: string;
   students: StudentRow[];
+  /** Classes this person also manages — the destinations for a move. */
+  otherGroups?: { id: string; name: string }[];
 }) {
   if (students.length === 0) {
     return (
@@ -104,14 +108,22 @@ export function StudentsManager({
           <span />
         </div>
         {students.map((s) => (
-          <StudentLine key={s.id} groupId={groupId} student={s} />
+          <StudentLine key={s.id} groupId={groupId} student={s} otherGroups={otherGroups} />
         ))}
       </div>
     </div>
   );
 }
 
-function StudentLine({ groupId, student }: { groupId: string; student: StudentRow }) {
+function StudentLine({
+  groupId,
+  student,
+  otherGroups,
+}: {
+  groupId: string;
+  student: StudentRow;
+  otherGroups: { id: string; name: string }[];
+}) {
   const [reset, resetAction, resetting] = useActionState(
     resetStudentPassword,
     {} as ResetPasswordState,
@@ -122,12 +134,6 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
   // dialog next week would greet you with the password from last time instead
   // of a form.
   useActionFeedback(reset, { keepOpen: true, onSuccess: () => setShowResult(true) });
-  // `removeMember` takes (prevState, formData), so it has to be driven through
-  // useActionState — passed straight to `<form action>` it would receive the
-  // FormData as its first argument and silently do nothing.
-  const [removal, removeAction, removing] = useActionState(removeMember, {} as GroupFormState);
-  useActionFeedback(removal, { keepOpen: true });
-  const [confirming, setConfirming] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -233,44 +239,19 @@ function StudentLine({ groupId, student }: { groupId: string; student: StudentRo
             Password
           </button>
 
-          {/* Two clicks, because on a class list a mis-click costs someone their
-              place in the class. The account and its work survive either way. */}
-          {confirming ? (
-            <form action={removeAction} style={{ display: "flex", gap: 6 }}>
-              <input type="hidden" name="group_id" value={groupId} />
-              <input type="hidden" name="student_id" value={student.id} />
-              <button
-                type="submit"
-                disabled={removing}
-                style={{ ...quietStyle, ...dangerStyle }}
-                title={`Remove ${student.name} from this class`}
-              >
-                <FiUserMinus size={13} aria-hidden />
-                {removing ? "Removing…" : "Confirm"}
-              </button>
-              <button type="button" onClick={() => setConfirming(false)} style={quietStyle}>
-                Cancel
-              </button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              style={{ ...quietStyle, color: RED }}
-              title="Remove from this class"
-            >
-              <FiUserMinus size={13} aria-hidden />
-              Remove
-            </button>
-          )}
+          {/* §5: one button, three ways out. Remove used to be the only one,
+              which meant a student who simply stopped coming was deleted from
+              the roster — off the teacher's list, off every report, with their
+              unpaid invoices attached to nobody anyone could now find. */}
+          <MoveOrRemove
+            groupId={groupId}
+            student={{ id: student.id, name: student.name }}
+            otherGroups={otherGroups}
+            owedLabel={student.owedLabel ?? null}
+          />
         </span>
       </div>
 
-      {removal.error ? (
-        <p style={{ fontSize: 12, color: RED, margin: "6px 0 0" }} role="alert">
-          {removal.error}
-        </p>
-      ) : null}
       {resetOpen ? (
         <Modal
           onClose={() => {
@@ -803,12 +784,6 @@ const quietStyle: React.CSSProperties = {
  * account and its work survive). The filled treatment is earned by the second
  * click, which is the one that actually does something.
  */
-const dangerStyle: React.CSSProperties = {
-  background: "#B3261E",
-  borderColor: "#B3261E",
-  color: "#fff",
-  fontWeight: 600,
-};
 
 const linkStyle: React.CSSProperties = {
   ...quietStyle,

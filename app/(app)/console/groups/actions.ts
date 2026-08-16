@@ -1738,3 +1738,73 @@ async function seatLimitError(supabase: RlsClient, organizationId: string): Prom
   if (used < limit) return null;
   return `Your plan includes ${limit} student seat${limit === 1 ? "" : "s"} and ${used} are used or pending. Upgrade your plan to invite more.`;
 }
+
+/**
+ * Move a student from one class to another (§5).
+ *
+ * ONE ACTION, NOT REMOVE-THEN-ADD. Done as two steps there is a moment when the
+ * student is in no class at all, and if the second step fails — a full class, a
+ * dropped connection — that is where they stay, off every roster, still owing
+ * money, and nobody is told. Here the add happens first and the old membership
+ * is only dropped once the new one exists.
+ *
+ * Their work, marks, registers and invoices are untouched: those hang off the
+ * student and the content, never off the membership row.
+ */
+export async function moveMember(
+  _prev: GroupFormState,
+  formData: FormData,
+): Promise<GroupFormState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can move a student." };
+  }
+
+  const fromGroupId = String(formData.get("group_id") ?? "").trim();
+  const toGroupId = String(formData.get("to_group_id") ?? "").trim();
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  if (!fromGroupId || !toGroupId || !studentId) return { error: "Missing group or student." };
+  if (fromGroupId === toGroupId) return { error: "That is the class they are already in." };
+
+  const supabase = await createClient();
+
+  // RLS hides classes this person does not manage, so reading the destination
+  // is also the permission check on it — a teacher cannot post a student into
+  // somebody else's class by editing the form.
+  const { data: destination } = await supabase
+    .from("groups")
+    .select("id, name, capacity")
+    .eq("id", toGroupId)
+    .maybeSingle();
+  if (!destination) return { error: "That class is not one you manage." };
+
+  const { count } = await supabase
+    .from("group_members")
+    .select("student_id", { count: "exact", head: true })
+    .eq("group_id", toGroupId);
+  const capacity = destination.capacity as number | null;
+  if (capacity != null && (count ?? 0) >= capacity) {
+    return { error: `${destination.name as string} is full (${capacity}).` };
+  }
+
+  const { error: addError } = await supabase.from("group_members").insert({
+    organization_id: profile.organization_id,
+    group_id: toGroupId,
+    student_id: studentId,
+  });
+  // Already in the destination: not a failure, just nothing to add. Fall
+  // through and clear the old membership so the move still completes.
+  if (addError && !addError.message.includes("duplicate")) return { error: addError.message };
+
+  const { error: dropError } = await supabase
+    .from("group_members")
+    .delete()
+    .eq("group_id", fromGroupId)
+    .eq("student_id", studentId)
+    .select("student_id");
+  if (dropError) return { error: dropError.message };
+
+  revalidatePath(`/console/groups/${fromGroupId}`);
+  revalidatePath(`/console/groups/${toGroupId}`);
+  return { notice: `Moved to ${destination.name as string}.` };
+}

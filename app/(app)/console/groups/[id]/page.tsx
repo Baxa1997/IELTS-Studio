@@ -101,10 +101,12 @@ export default async function GroupDetailPage({
   // service-role client (exactly as the student read hub does).
   const admin = createAdminClient();
   const supabase = await createClient();
-  const [{ teachers }, assignments, activity, libTestsRes, estimatesRes] = await Promise.all([
-    isAdmin
-      ? loadGroups(profile)
-      : Promise.resolve({ teachers: [] as { id: string; name: string }[] }),
+  // Loaded for everyone now, not only the owner: a teacher needs the list of
+  // their OWN classes to move a student between them. `teachers` stays gated in
+  // the UI below, and RLS scopes both to what this person may touch anyway.
+  const [{ teachers, groups: manageable }, assignments, activity, libTestsRes, estimatesRes] =
+    await Promise.all([
+    loadGroups(profile),
     loadGroupAssignments(group.id),
     loadGroupActivity(memberIds),
     admin
@@ -280,6 +282,26 @@ export default async function GroupDetailPage({
     if (key) emailUses.set(key, (emailUses.get(key) ?? 0) + 1);
   }
 
+  // The other classes this person manages — the destinations a student can be
+  // moved to. RLS already scopes `loadGroups` to what they may touch, so an
+  // empty list genuinely means there is nowhere to move anybody.
+  const siblingGroups = manageable
+    .filter((g) => g.id !== group.id)
+    .map((g) => ({ id: g.id, name: g.name }));
+
+  // What each student still owes for this month, for the Move-or-remove sheet.
+  // Only the owner sees money on this page, so a teacher's sheet simply omits
+  // the line rather than showing them a figure they are not shown anywhere else.
+  const owedByStudent = new Map<string, string>();
+  if (moneyData) {
+    for (const [studentId, row] of moneyData.rows) {
+      const owed = (row.invoicedMinor ?? 0) - row.paidMinor;
+      if (owed > 0) {
+        owedByStudent.set(studentId, `${formatMoney(owed, moneyData.currency)} owed`);
+      }
+    }
+  }
+
   const studentRows = roster.map((m) => {
     const weakest = weakestOf(m.id);
     const act = activity.get(m.id);
@@ -296,6 +318,8 @@ export default async function GroupDetailPage({
       targetBand: targets.get(m.id) ?? null,
       practice30d: act?.count30d ?? 0,
       lastActive: act?.lastActive ?? null,
+      status: m.status ?? "active",
+      owedLabel: owedByStudent.get(m.id) ?? null,
     };
   });
 
@@ -785,7 +809,11 @@ export default async function GroupDetailPage({
                 />
               }
             />
-            <StudentsManager groupId={group.id} students={studentRows} />
+            <StudentsManager
+              groupId={group.id}
+              students={studentRows}
+              otherGroups={siblingGroups}
+            />
           </Card>
 
           {/* Students who left. Kept on the page and out of every count above
