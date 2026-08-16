@@ -5,7 +5,6 @@ import {
   BtnLink,
   Card,
   CardHead,
-  ChipLink,
   Columns,
   Empty,
   FAINT,
@@ -26,17 +25,16 @@ import {
   Stack,
   Tag,
   TextLink,
-  TINT,
-  type Tone,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadDay } from "@/lib/console/attendance";
 import { loadCenterSettings } from "@/lib/console/center-settings";
-import { loadMarkingQueue, OVERDUE_HOURS } from "@/lib/console/marking";
+import { loadAlerts } from "@/lib/console/alert-catalogue";
 import { loadCenterReport, SKILL_UNIT } from "@/lib/console/reports";
 import { centerNow, registersToMark } from "@/lib/console/schedule";
 import { createClient } from "@/lib/supabase/server";
 
+import { NeedsAttention } from "./needs-attention";
 import { PendingInvites, type PendingInvite } from "./pending-invites";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +67,7 @@ export default async function ConsolePage() {
   let groupsQuery = supabase.from("groups").select("id").eq("status", "active");
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
-  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, day, queue] =
+  const [membersRes, invitesRes, groupsRes, orgRes, assignmentsRes, report, day, alertBoard] =
     await Promise.all([
       supabase.from("profiles").select("id, full_name, role, member_status"),
       supabase
@@ -86,7 +84,7 @@ export default async function ConsolePage() {
       // reported open registers on days the timetable had nothing on and
       // Attendance said "nothing is timetabled". One function now answers it.
       loadDay(profile, todayIso),
-      loadMarkingQueue(profile),
+      loadAlerts(profile),
     ]);
 
   const people = (membersRes.data ?? []) as {
@@ -100,9 +98,6 @@ export default async function ConsolePage() {
   const teachers = people.filter(
     (m) => m.role === "teacher" && (m.member_status ?? "active") !== "left",
   ).length;
-  const teachersWithGroup = new Set(
-    report.groups.map((g) => g.teacherId).filter((id): id is string => id != null),
-  ).size;
 
   // An admin counts every learner in the center. A teacher counts the learners
   // in their own groups — `profiles` is readable org-wide by any staff member,
@@ -142,12 +137,6 @@ export default async function ConsolePage() {
 
   const centerName = (orgRes.data?.name as string | null) ?? "Your center";
   const assignmentCount = assignmentsRes.count ?? 0;
-  const idleTeachers = isAdmin ? Math.max(0, teachers - teachersWithGroup) : 0;
-  const groupsNoPractice = report.groups.filter((g) => g.assignments === 0).length;
-  const groupsNoTeacher = report.groups.filter((g) => g.teacherId == null).length;
-  const lowCompletion = report.groups.filter(
-    (g) => g.completionPct != null && g.completionPct < 50 && g.assignments >= 3,
-  ).length;
 
   // What is on today, in time order — cancelled lessons and groups that aren't
   // timetabled today are not "today". `loadDay` already filtered to the groups
@@ -157,11 +146,6 @@ export default async function ConsolePage() {
   // starts at 18:00 is not late at lunchtime, and an alert that fires all day
   // for something you cannot do yet is an alert people learn to close.
   const overdueRegisters = registersToMark(day, day.timezone);
-  // The doc's "unmarked submissions" alert: graded, in a group, and nobody has
-  // put a name to it in two days. Oldest first, so the detail line names the
-  // student who has waited longest rather than an arbitrary one.
-  const overdueMarking = queue.filter((q) => q.waitingHours >= OVERDUE_HOURS);
-
   // The four things that have to exist before a center is running. Once they all
   // do, the checklist never comes back — it exists to cure the empty console.
   const steps = [
@@ -171,105 +155,6 @@ export default async function ConsolePage() {
     { label: "Set the first practice", href: "/console/groups", done: assignmentCount > 0 },
   ];
   const setupDone = steps.every((s) => s.done);
-
-  const alerts: {
-    icon: string;
-    tone: Tone;
-    title: string;
-    detail: string;
-    cta: string;
-    href: string;
-  }[] = [
-    report.atRisk.length > 0
-      ? {
-          icon: "!",
-          tone: "red" as Tone,
-          title: `${report.atRisk.length} student${report.atRisk.length === 1 ? " has" : "s have"} gone quiet for 14 days`,
-          detail: report.atRisk
-            .slice(0, 2)
-            .map((s) => s.name)
-            .join(", "),
-          cta: "See list",
-          href: "/console/reports",
-        }
-      : null,
-    overdueMarking.length > 0
-      ? {
-          icon: "!",
-          tone: "red" as Tone,
-          title: `${overdueMarking.length} submission${overdueMarking.length === 1 ? "" : "s"} waiting over 48 hours`,
-          detail: `Graded by the AI, nobody has signed off. Longest: ${overdueMarking[0].studentName}.`,
-          cta: "Mark",
-          href: "/console/marking",
-        }
-      : null,
-    groupsNoTeacher > 0
-      ? {
-          icon: "!",
-          tone: "red" as Tone,
-          title: `${groupsNoTeacher} group${groupsNoTeacher === 1 ? " has" : "s have"} no teacher`,
-          detail: "Nobody can mark their register or set them practice.",
-          cta: "Assign",
-          href: "/console/groups",
-        }
-      : null,
-    overdueRegisters.length > 0
-      ? {
-          icon: "◷",
-          tone: "amber" as Tone,
-          title: `${overdueRegisters.length} register${overdueRegisters.length === 1 ? "" : "s"} not marked`,
-          detail: `${overdueRegisters
-            .slice(0, 2)
-            .map((l) => l.groupName)
-            .join(", ")} — finished and still open`,
-          cta: "Mark",
-          href: `/console/attendance?date=${todayIso}`,
-        }
-      : null,
-    idleTeachers > 0
-      ? {
-          icon: "◐",
-          tone: "indigo" as Tone,
-          title: `${idleTeachers} teacher${idleTeachers === 1 ? " has" : "s have"} no group assigned`,
-          detail: "They can't set practice until they run a group.",
-          cta: "Assign",
-          href: "/console/teachers",
-        }
-      : null,
-    groupsNoPractice > 0
-      ? {
-          icon: "◷",
-          tone: "amber" as Tone,
-          title: `${groupsNoPractice} group${groupsNoPractice === 1 ? " has" : "s have"} no practice set`,
-          detail: "Nothing to grade means nothing to report on.",
-          cta: "Open",
-          // §2's complaint answered: this alert had no destination until the
-          // Practice page existed, so it pointed at the group LIST and left the
-          // reader to work out which ones it meant.
-          href: "/console/practice",
-        }
-      : null,
-    lowCompletion > 0
-      ? {
-          icon: "%",
-          tone: "amber" as Tone,
-          title: `${lowCompletion} group${lowCompletion === 1 ? "" : "s"} under 50% completion`,
-          detail: "Most of the homework set hasn't been finished.",
-          cta: "Chase",
-          href: "/console/practice?status=overdue",
-        }
-      : null,
-    pendingInvites.length > 0
-      ? {
-          icon: "✉",
-          tone: "neutral" as Tone,
-          title: `${pendingInvites.length} invite${pendingInvites.length === 1 ? "" : "s"} unaccepted`,
-          detail: "They expire on their own if nobody signs up.",
-          cta: "See",
-          href: "/console/groups",
-        }
-      : null,
-  ].filter((a) => a !== null);
 
   const measured = report.skillAverages.filter((s) => s.attempts > 0);
   // WRITING, NAMED. This panel used to plot every skill's bands in one line and
@@ -350,47 +235,23 @@ export default async function ConsolePage() {
               title="Needs attention"
               divided
               badge={
-                alerts.length > 0 ? (
-                  <Tag tone="red">{alerts.length} open</Tag>
+                alertBoard.shown.length > 0 ? (
+                  <Tag tone="red">{alertBoard.shown.length} open</Tag>
                 ) : (
                   <Tag tone="green">all clear</Tag>
                 )
               }
+              note="one row per kind of problem, worst first"
             />
-            {alerts.map((a) => (
-              <ListRow
-                key={a.title}
-                lead={
-                  <div
-                    style={{
-                      width: 30,
-                      height: 30,
-                      flex: "0 0 30px",
-                      borderRadius: 8,
-                      background: TINT[a.tone].bg,
-                      color: TINT[a.tone].fg,
-                      fontFamily: SANS,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {a.icon}
-                  </div>
-                }
-                title={a.title}
-                meta={a.detail}
-                trail={<ChipLink href={a.href}>{a.cta}</ChipLink>}
-              />
-            ))}
-            {alerts.length === 0 ? (
-              <Empty>
-                Nothing needs you right now — every group has practice set and everyone has
-                practised in the last two weeks.
-              </Empty>
-            ) : null}
+            <NeedsAttention
+              alerts={alertBoard.shown}
+              dismissed={alertBoard.dismissed}
+              canDismiss={alertBoard.canDismiss}
+              hiddenCount={Math.max(
+                0,
+                alertBoard.all.length - alertBoard.shown.length - alertBoard.dismissed.length,
+              )}
+            />
           </Card>
 
           {!setupDone ? (

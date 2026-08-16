@@ -116,6 +116,71 @@ export async function saveRegister(_prev: ActionState, formData: FormData): Prom
   };
 }
 
+/* ── putting an alert down ────────────────────────────────────────────────── */
+
+/**
+ * Silence one alert type for a week.
+ *
+ * A WEEK, NOT FOR EVER, and that is the whole design. An alert nobody can
+ * silence is one a centre learns to scroll past — and once they are scrolling
+ * past one row they are scrolling past the panel, which is the only part of the
+ * console that tells an owner something is wrong. Seven days is long enough to
+ * act on it and short enough that a problem nobody actually fixed comes back.
+ *
+ * The dismissal writes itself to `center_audit_log` from a trigger, so "nobody
+ * told me the students had gone quiet" is answerable.
+ */
+export async function dismissAlert(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can put an alert down." };
+  }
+
+  const key = String(formData.get("alert_key") ?? "").trim();
+  if (!key) return { error: "Which alert?" };
+
+  const until = new Date(Date.now() + 7 * 86400_000).toISOString();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alert_dismissals")
+    .upsert(
+      {
+        organization_id: profile.organization_id,
+        alert_key: key,
+        dismissed_by: profile.id,
+        dismissed_at: new Date().toISOString(),
+        expires_at: until,
+      },
+      { onConflict: "organization_id,alert_key" },
+    )
+    .select("alert_key");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console");
+  return { ok: "Put down for 7 days. It comes back if it is still true." };
+}
+
+/** Bring one back before its week is up. */
+export async function restoreAlert(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { profile } = await requireOrgUser();
+  if (profile.role !== "center_admin") {
+    return { error: "Only a center admin can change this." };
+  }
+  const key = String(formData.get("alert_key") ?? "").trim();
+  if (!key) return { error: "Which alert?" };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alert_dismissals")
+    .delete()
+    .eq("alert_key", key)
+    .select("alert_key");
+  if (error) return { error: error.message };
+
+  revalidatePath("/console");
+  return { ok: "Back on the list." };
+}
+
 /* ── chasing the work ─────────────────────────────────────────────────────── */
 
 /**
