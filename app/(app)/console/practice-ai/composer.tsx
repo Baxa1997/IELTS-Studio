@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import { clientEnv } from "@/lib/env";
 import {
@@ -13,6 +14,7 @@ import {
   INK,
   MUTED,
   PAPER,
+  SERIF,
   SOFT,
   TROUGH,
   TROUGH_DEEP,
@@ -62,8 +64,12 @@ type Plan = Record<string, unknown> & { title?: string; level?: string; objectiv
 type Phase =
   | { step: "idle" }
   | { step: "working"; stage: number; label: string }
-  | { step: "asking"; questions: Question[]; blueprint: string | null }
-  | { step: "planned"; plan: Plan }
+  // Both carry the brief they were built from. A starter chip sets the brief
+  // and starts in the same tick, so re-reading `brief` state a step later gets
+  // the value from BEFORE the click — the lesson would be built from whatever
+  // was in the box previously, or from nothing at all.
+  | { step: "asking"; questions: Question[]; blueprint: string | null; brief: string }
+  | { step: "planned"; plan: Plan; brief: string }
   | { step: "error"; message: string };
 
 /* ── the specs ──────────────────────────────────────────────────────────────
@@ -92,9 +98,15 @@ const FOCUSES = [
 ];
 
 /** Sizes a real class actually needs: a warm-up, a normal lesson, a long one,
- *  and a full worksheet. Anything is allowed by the engine — these are the ones
- *  worth one press. */
+ *  and a full worksheet. These are shortcuts, not the choice — the box beside
+ *  them takes any number, because how long a lesson is depends on how long the
+ *  class is and a teacher is the only one who knows that. */
 const COUNTS = [8, 12, 16, 20];
+/** The engine needs enough items to build all three stages, and a lesson past
+ *  40 stops being a lesson. Enforced here AND on blur, so a typed 999 is pulled
+ *  back to something the generator can actually deliver. */
+const COUNT_MIN = 4;
+const COUNT_MAX = 40;
 
 const LANGUAGES = [
   { value: "en", label: "English only" },
@@ -194,12 +206,13 @@ export function Composer() {
    * a key it never asked for is a key it is free to drop. A sentence at the end
    * of a brief is read by every model, every time.
    */
-  const fullBrief = () => {
+  const fullBrief = (override?: string) => {
+    const body = (override ?? brief).trim();
     const notes = [
       level !== AUTO ? `Level: ${level}.` : null,
       focus !== AUTO ? `Focus on ${FOCUSES.find((f) => f.value === focus)?.label.toLowerCase()}.` : null,
     ].filter(Boolean);
-    return notes.length > 0 ? `${brief.trim()}\n\n${notes.join(" ")}` : brief.trim();
+    return notes.length > 0 ? `${body}\n\n${notes.join(" ")}` : body;
   };
 
   function toggleDictation() {
@@ -234,8 +247,8 @@ export function Composer() {
    * otherwise this goes straight on to planning. The dialog is no longer
    * unconditional: everything it used to insist on asking is now on the page.
    */
-  async function start() {
-    const text = fullBrief();
+  async function start(override?: string) {
+    const text = fullBrief(override);
     if (!text.trim() || busy) return;
     setAnswers({});
     setPhase({ step: "working", stage: 0, label: "Reading your brief…" });
@@ -248,18 +261,22 @@ export function Composer() {
 
       const questions = intake.questions ?? [];
       if (questions.length === 0) {
-        await proceed({}, intake.blueprint ?? null);
+        await proceed({}, intake.blueprint ?? null, override);
         return;
       }
-      setPhase({ step: "asking", questions, blueprint: intake.blueprint ?? null });
+      setPhase({ step: "asking", questions, blueprint: intake.blueprint ?? null, brief: text });
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
     }
   }
 
   /** Leaving the questions: plan and show it, or go straight to writing. */
-  async function proceed(given: Record<string, string>, blueprint: string | null) {
-    const text = fullBrief();
+  async function proceed(
+    given: Record<string, string>,
+    blueprint: string | null,
+    override?: string,
+  ) {
+    const text = fullBrief(override);
     setPhase({ step: "working", stage: 1, label: "Drafting the explanation…" });
     const plan = await callEngine<Plan>("plan", {
       brief: text,
@@ -269,7 +286,7 @@ export function Composer() {
       exercise_total: count,
     });
     if (planFirst) {
-      setPhase({ step: "planned", plan });
+      setPhase({ step: "planned", plan, brief: text });
       return;
     }
     await build(text, plan);
@@ -364,12 +381,56 @@ export function Composer() {
                 </SpecChip>
               ))}
             </SpecRow>
-            <SpecRow label="Items">
+            <SpecRow
+              label="Items"
+              hint={`How many exercises to write, split across the three stages. Anything from ${COUNT_MIN} to ${COUNT_MAX}.`}
+            >
               {COUNTS.map((c) => (
                 <SpecChip key={c} on={count === c} onClick={() => setCount(c)}>
                   {c}
                 </SpecChip>
               ))}
+              {/* The presets are shortcuts; this is the actual control. A class
+                  that needs 14 is not an edge case, and a teacher who cannot
+                  type 14 quietly settles for 12 — which is exactly what
+                  happened when the chips were the only way in. */}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "4px 6px 4px 14px",
+                  borderRadius: 999,
+                  background: "#fff",
+                  boxShadow: `inset 0 0 0 ${COUNTS.includes(count) ? 1 : 2}px ${COUNTS.includes(count) ? "#e4e0d6" : EMBER}`,
+                }}
+              >
+                <span style={{ fontSize: 13, color: SOFT }}>or</span>
+                <input
+                  type="number"
+                  min={COUNT_MIN}
+                  max={COUNT_MAX}
+                  value={count}
+                  aria-label="How many exercises"
+                  onChange={(e) => setCount(Number(e.target.value))}
+                  onBlur={(e) =>
+                    setCount(
+                      Math.max(COUNT_MIN, Math.min(COUNT_MAX, Number(e.target.value) || 12)),
+                    )
+                  }
+                  style={{
+                    width: 62,
+                    border: 0,
+                    outline: "none",
+                    background: "transparent",
+                    fontFamily: "inherit",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: INK,
+                    padding: "6px 0",
+                  }}
+                />
+              </span>
             </SpecRow>
             {/* Said here because it is the one thing teachers get wrong about
                 this control: it is not "translate the lesson". A learner who
@@ -514,15 +575,17 @@ export function Composer() {
                 boxShadow: "0 8px 20px -6px rgba(236,106,69,.7)",
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 19V5" />
-                <path d="M5 12l7-7 7 7" />
-              </svg>
+              {busy ? (
+                <Spinner size={20} />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19V5" />
+                  <path d="M5 12l7-7 7 7" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
-
-        {busy ? <Progress stage={phase.stage} count={count} /> : null}
       </div>
 
       {/* ── what came back ──────────────────────────────────────────────── */}
@@ -535,6 +598,8 @@ export function Composer() {
         </p>
       ) : null}
 
+      {busy ? <Working stage={phase.stage} count={count} /> : null}
+
       {phase.step === "asking" ? (
         <SetupDialog
           questions={phase.questions}
@@ -542,66 +607,18 @@ export function Composer() {
           onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
           planFirst={planFirst}
           onCancel={() => setPhase({ step: "idle" })}
-          onGo={guard(() => proceed(answers, phase.blueprint))}
-          onSkip={guard(() => proceed({}, phase.blueprint))}
+          onGo={guard(() => proceed(answers, phase.blueprint, phase.brief))}
+          onSkip={guard(() => proceed({}, phase.blueprint, phase.brief))}
         />
       ) : null}
 
       {phase.step === "planned" ? (
-        <div
-          className="pa-slide"
-          style={{
-            width: "100%",
-            maxWidth: 880,
-            marginTop: 18,
-            padding: "24px 26px",
-            borderRadius: 26,
-            background: "#fff",
-            boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 16px 34px -24px rgba(20,35,46,.35)",
-            textAlign: "left",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
-              color: FAINT,
-            }}
-          >
-            Here&apos;s the plan
-          </div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: INK, marginTop: 8, letterSpacing: "-.01em" }}>
-            {String(phase.plan.title ?? "Lesson")}
-          </div>
-          {phase.plan.objective ? (
-            <p style={{ fontSize: 15, lineHeight: 1.6, color: MUTED, margin: "8px 0 0" }}>
-              {String(phase.plan.objective)}
-            </p>
-          ) : null}
-          {phase.plan.level ? (
-            <div style={{ fontSize: 13, color: FAINT, marginTop: 8 }}>Level {String(phase.plan.level)}</div>
-          ) : null}
-          <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={guard(() => build(fullBrief(), phase.plan))}
-              className="pa-ember"
-              style={emberPill}
-            >
-              Build it
-            </button>
-            <button
-              type="button"
-              onClick={() => setPhase({ step: "idle" })}
-              className="pa-ghost"
-              style={ghostPill}
-            >
-              Start again
-            </button>
-          </div>
-        </div>
+        <PlanModal
+          plan={phase.plan}
+          count={count}
+          onBuild={guard(() => build(phase.brief, phase.plan))}
+          onCancel={() => setPhase({ step: "idle" })}
+        />
       ) : null}
 
       {/* ── starters ──────────────────────────────────────────────────────
@@ -628,29 +645,48 @@ export function Composer() {
             marginTop: 18,
           }}
         >
-          {STARTERS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setBrief(s)}
-              aria-pressed={brief.trim() === s}
-              className="pa-chip"
-              style={{
-                padding: "13px 22px",
-                borderRadius: 999,
-                border: 0,
-                background: brief.trim() === s ? INK : "#fff",
-                color: brief.trim() === s ? PAPER : INK,
-                fontSize: 15,
-                fontWeight: 500,
-                fontFamily: "inherit",
-                cursor: "pointer",
-                boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 8px 20px -14px rgba(20,35,46,.3)",
-              }}
-            >
-              {s}
-            </button>
-          ))}
+          {STARTERS.map((s) => {
+            const mine = brief.trim() === s;
+            const working = busy && mine;
+            return (
+              <button
+                key={s}
+                type="button"
+                // A starter is a finished brief, so pressing one BUILDS. It used
+                // to only fill the box — 40px above the fold on a laptop, which
+                // read as "nothing happened" and left the teacher pressing it
+                // again. The spinner is on the chip they pressed, because that
+                // is where they are looking.
+                onClick={() => {
+                  if (busy) return;
+                  setBrief(s);
+                  void start(s);
+                }}
+                disabled={busy}
+                aria-pressed={mine}
+                className="pa-chip"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "13px 22px",
+                  borderRadius: 999,
+                  border: 0,
+                  background: mine ? INK : "#fff",
+                  color: mine ? PAPER : INK,
+                  fontSize: 15,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  cursor: busy ? "default" : "pointer",
+                  opacity: busy && !mine ? 0.5 : 1,
+                  boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 8px 20px -14px rgba(20,35,46,.3)",
+                }}
+              >
+                {working ? <Spinner size={15} /> : null}
+                {s}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -712,11 +748,113 @@ function useTypedPlaceholder(active: boolean): string {
   return active ? `${text}▏` : "";
 }
 
-/** The bar under the box while the engine works.
+/**
+ * A centred sheet over the whole window.
  *
- *  Four named steps rather than one spinner, because this takes about a minute
- *  and a minute of "…" is indistinguishable from a minute of nothing. */
-function Progress({ stage, count }: { stage: number; count: number }) {
+ * PORTALLED TO `document.body`, and that is the whole point rather than a
+ * detail. This composer sits inside the console's scrolling content area and
+ * inside a hero that runs its own entrance animation — and an ancestor with a
+ * transform makes `position: fixed` resolve against THAT box instead of the
+ * viewport. The setup dialog was landing three-quarters of the way down the
+ * page with its buttons below the fold for exactly that reason. Leaving the
+ * tree removes the whole class of bug.
+ *
+ * `100dvh` rather than `vh`: on iOS Safari the address bar makes `vh` taller
+ * than what you can actually see, which puts the last button under it.
+ */
+function Overlay({
+  onClose,
+  label,
+  children,
+}: {
+  onClose?: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      role="presentation"
+      onClick={onClose}
+      className="pa-slide"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "rgba(20,35,46,0.42)",
+        backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+        display: "grid",
+        placeItems: "center",
+        padding: 20,
+        overflow: "auto",
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        // The backdrop closes; the sheet must not close when its own controls
+        // are pressed, which is what a click inside it would otherwise do.
+        onClick={(e) => e.stopPropagation()}
+        className="pa-pop"
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          maxHeight: "calc(100dvh - 40px)",
+          overflowY: "auto",
+          background: PAPER,
+          borderRadius: 30,
+          padding: "30px 30px 28px",
+          textAlign: "left",
+          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6)",
+        }}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** A ring that turns. Inline SVG rather than a border trick so it keeps its
+ *  weight at 15px on a chip and at 20px in the send button. */
+function Spinner({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      className="pa-spin"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      style={{ flex: "none" }}
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.4" opacity=".25" />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The wait, centred.
+ *
+ * FOUR NAMED STEPS rather than one spinner, because a full build takes about a
+ * minute and a minute of "…" is indistinguishable from a minute of nothing.
+ * Naming them also sets the right expectation: a teacher who reads "Writing 16
+ * exercises" understands why this is not instant, and stops pressing things.
+ *
+ * It takes the window on purpose. The old version was a 5px bar tucked under
+ * the box, which on a laptop was below the fold the moment the specs panel was
+ * open — so the answer to "did that work?" was off screen.
+ */
+function Working({ stage, count }: { stage: number; count: number }) {
   const steps = [
     "Reading the brief",
     "Drafting the explanation",
@@ -724,7 +862,38 @@ function Progress({ stage, count }: { stage: number; count: number }) {
     "Checking every answer key",
   ];
   return (
-    <div className="pa-slide" style={{ padding: "0 22px 22px" }}>
+    <Overlay label="Writing your lesson">
+      <div style={{ textAlign: "center", padding: "6px 0 2px" }}>
+        <span
+          style={{
+            display: "inline-grid",
+            placeItems: "center",
+            width: 64,
+            height: 64,
+            borderRadius: 999,
+            background: "rgba(236,106,69,.1)",
+            color: EMBER,
+          }}
+        >
+          <Spinner size={30} />
+        </span>
+        <h2
+          style={{
+            fontFamily: SERIF,
+            fontWeight: 600,
+            fontSize: 32,
+            letterSpacing: "-.02em",
+            color: INK,
+            margin: "18px 0 6px",
+          }}
+        >
+          Writing your lesson
+        </h2>
+        <p style={{ fontSize: 15, color: MUTED, margin: "0 0 24px", lineHeight: 1.55 }}>
+          About a minute. You can leave this open.
+        </p>
+      </div>
+
       <div style={{ height: 5, borderRadius: 999, background: TROUGH_DEEP, overflow: "hidden" }}>
         <div
           style={{
@@ -736,21 +905,30 @@ function Progress({ stage, count }: { stage: number; count: number }) {
           }}
         />
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 18, marginTop: 14 }}>
+
+      <div style={{ display: "grid", gap: 12, marginTop: 20 }}>
         {steps.map((label, i) => {
           const done = stage > i;
           const active = stage === i;
           return (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 11, fontSize: 15 }}>
               <span
+                aria-hidden
                 style={{
-                  width: 9,
-                  height: 9,
+                  width: 20,
+                  height: 20,
                   borderRadius: 999,
-                  display: "block",
+                  flex: "none",
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#fff",
                   background: done ? GOOD_INK : active ? EMBER : "#dcd8cf",
                 }}
-              />
+              >
+                {done ? "✓" : ""}
+              </span>
               <span
                 style={{
                   color: done ? GOOD_INK : active ? INK : "#a6b0b6",
@@ -763,7 +941,89 @@ function Progress({ stage, count }: { stage: number; count: number }) {
           );
         })}
       </div>
-    </div>
+    </Overlay>
+  );
+}
+
+/**
+ * The outline, before a word of the lesson is written.
+ *
+ * A MODAL rather than a card below the box. This is a decision point — build it
+ * or start again — and the old inline card left both buttons under the fold on
+ * a laptop while the page carried on looking idle behind them.
+ */
+function PlanModal({
+  plan,
+  count,
+  onBuild,
+  onCancel,
+}: {
+  plan: Plan;
+  count: number;
+  onBuild: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Overlay label="Here's the plan" onClose={onCancel}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: ".1em",
+          textTransform: "uppercase",
+          color: FAINT,
+        }}
+      >
+        Here&apos;s the plan
+      </div>
+      <h2
+        style={{
+          fontFamily: SERIF,
+          fontWeight: 600,
+          fontSize: 30,
+          lineHeight: 1.15,
+          letterSpacing: "-.02em",
+          color: INK,
+          margin: "10px 0 0",
+          textWrap: "balance",
+        }}
+      >
+        {String(plan.title ?? "Lesson")}
+      </h2>
+      {plan.objective ? (
+        <p style={{ fontSize: 15.5, lineHeight: 1.6, color: MUTED, margin: "10px 0 0" }}>
+          {String(plan.objective)}
+        </p>
+      ) : null}
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 16 }}>
+        {[plan.level ? `Level ${String(plan.level)}` : null, `${count} exercises`]
+          .filter(Boolean)
+          .map((t) => (
+            <span
+              key={String(t)}
+              style={{
+                padding: "7px 14px",
+                borderRadius: 999,
+                background: TROUGH,
+                fontSize: 13,
+                color: MUTED,
+              }}
+            >
+              {t}
+            </span>
+          ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
+        <button type="button" onClick={onBuild} className="pa-ember" style={emberPill}>
+          Build it
+        </button>
+        <button type="button" onClick={onCancel} className="pa-ghost" style={ghostPill}>
+          Start again
+        </button>
+      </div>
+    </Overlay>
   );
 }
 
@@ -860,57 +1120,26 @@ function SetupDialog({
   onSkip: () => void;
 }) {
   return (
-    <div
-      role="presentation"
-      onClick={onCancel}
-      className="pa-slide"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 60,
-        background: "rgba(20,35,46,0.42)",
-        backdropFilter: "blur(3px)",
-        WebkitBackdropFilter: "blur(3px)",
-        display: "grid",
-        placeItems: "center",
-        padding: 24,
-        overflow: "auto",
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Before I write this lesson"
-        // The backdrop closes; the sheet must not close when its own controls
-        // are pressed, which is what a click inside it would otherwise do.
-        onClick={(e) => e.stopPropagation()}
-        className="pa-pop"
+    <Overlay label="Before I write this lesson" onClose={onCancel}>
+      <h2
         style={{
-          width: "100%",
-          maxWidth: 560,
-          maxHeight: "min(86vh, 760px)",
-          overflowY: "auto",
-          background: PAPER,
-          borderRadius: 32,
-          padding: "30px 32px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 24,
-          textAlign: "left",
-          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6)",
+          fontFamily: SERIF,
+          fontWeight: 600,
+          fontSize: 30,
+          letterSpacing: "-.02em",
+          color: INK,
+          margin: 0,
         }}
       >
-        <div>
-          <h2 style={{ fontSize: 24, fontWeight: 700, color: INK, margin: 0, letterSpacing: "-.02em" }}>
-            One thing first
-          </h2>
-          <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 0", lineHeight: 1.55 }}>
-            Skip anything and I&apos;ll choose sensibly.
-          </p>
-        </div>
+        One thing first
+      </h2>
+      <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 0", lineHeight: 1.55 }}>
+        Skip anything and I&apos;ll choose sensibly.
+      </p>
 
+      <div style={{ display: "grid", gap: 22, margin: "24px 0" }}>
         {questions.map((q) => (
-          <div key={q.id} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div key={q.id} style={{ display: "grid", gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{q.label}</span>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
               {q.options.map((opt) => (
@@ -921,25 +1150,38 @@ function SetupDialog({
             </div>
           </div>
         ))}
-
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button type="button" onClick={onGo} className="pa-ember" style={emberPill}>
-            {planFirst ? "Continue" : "Write it"}
-          </button>
-          <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
-            Skip — you decide
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="pa-ghost"
-            style={{ ...ghostPill, background: "transparent", color: GHOST, marginLeft: "auto" }}
-          >
-            Cancel
-          </button>
-        </div>
       </div>
-    </div>
+
+      {/* Sticks to the bottom of the sheet, so a long list of questions can
+          scroll past without taking the answer with it. */}
+      <div
+        style={{
+          position: "sticky",
+          bottom: -28,
+          display: "flex",
+          gap: 10,
+          alignItems: "center",
+          flexWrap: "wrap",
+          padding: "14px 0 2px",
+          background: PAPER,
+        }}
+      >
+        <button type="button" onClick={onGo} className="pa-ember" style={emberPill}>
+          {planFirst ? "Continue" : "Write it"}
+        </button>
+        <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
+          Skip — you decide
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="pa-ghost"
+          style={{ ...ghostPill, background: "transparent", color: GHOST, marginLeft: "auto" }}
+        >
+          Cancel
+        </button>
+      </div>
+    </Overlay>
   );
 }
 

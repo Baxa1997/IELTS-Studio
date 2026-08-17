@@ -242,9 +242,11 @@ export function LessonRunner({
   return (
     <div
       style={{
-        height: "100dvh",
-        display: "flex",
-        flexDirection: "column",
+        // A DOCUMENT, not an app frame. It used to be a 100dvh flex column
+        // with two independently scrolling panes, which meant the page never
+        // scrolled — the browser's own scrollbar, momentum and find-in-page all
+        // stopped working, and on a phone the address bar never retracted.
+        minHeight: "100dvh",
         background: WASH,
         fontFamily: SANS,
         color: INK,
@@ -255,10 +257,13 @@ export function LessonRunner({
       <div
         className="pa-bar"
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
           display: "flex",
           alignItems: "center",
           gap: 18,
-          padding: "14px 24px",
+          padding: "12px 22px",
           background: "rgba(253,251,247,0.92)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
@@ -404,13 +409,13 @@ export function LessonRunner({
 
       {/* ── the explanation ──────────────────────────────────────────────── */}
       {tab === "explain" && explanation ? (
-        <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
-          <div className="pa-pop" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 56px" }}>
+        <div>
+          <div className="pa-pop" style={{ maxWidth: 880, margin: "0 auto", padding: "32px 22px 64px" }}>
             <div
               style={{
-                borderRadius: 32,
+                borderRadius: 28,
                 background: "#fff",
-                padding: "40px 44px",
+                padding: "32px 34px",
                 boxShadow: LIFT_SHEET,
               }}
             >
@@ -461,8 +466,8 @@ export function LessonRunner({
       {/* ── the practice ─────────────────────────────────────────────────── */}
       {tab === "practice" ? (
         <div className="pa-runner">
-          <div style={{ overflow: "auto", display: "flex", minHeight: 0 }}>
-            <div style={{ maxWidth: 820, margin: "0 auto", width: "100%", padding: "44px 24px 48px" }}>
+          <div style={{ minWidth: 0 }}>
+            <div className="pa-runner-main">
               {done ? <ScoreCard result={result} canSubmit={canSubmit} /> : null}
 
               {current ? (
@@ -512,8 +517,6 @@ export function LessonRunner({
                 padding: "0 22px",
                 display: "grid",
                 gap: 22,
-                overflow: "auto",
-                flex: 1,
                 alignContent: "start",
               }}
             >
@@ -689,27 +692,22 @@ function Item({
 
   return (
     <div
-      className="pa-pop"
-      style={{
-        borderRadius: 32,
-        background: "#fff",
-        padding: "40px 32px 44px",
-        boxShadow: LIFT_SHEET,
-      }}
+      className="pa-pop pa-item"
+      style={{ borderRadius: 26, background: "#fff", boxShadow: LIFT_SHEET }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span
           aria-hidden
           style={{
             flex: "none",
-            width: 46,
-            height: 46,
+            width: 38,
+            height: 38,
             borderRadius: 999,
             background: INK,
             color: PAPER,
             display: "grid",
             placeItems: "center",
-            fontSize: 17,
+            fontSize: 14,
             fontWeight: 700,
             fontVariantNumeric: "tabular-nums",
           }}
@@ -731,10 +729,10 @@ function Item({
             alignItems: "baseline",
             gap: 10,
             flexWrap: "wrap",
-            fontSize: 23,
+            fontSize: 19,
             lineHeight: 1.6,
-            padding: "24px 26px",
-            borderRadius: 24,
+            padding: "20px 22px",
+            borderRadius: 20,
             background: WASH,
             margin: "26px 0 0",
           }}
@@ -753,8 +751,8 @@ function Item({
               background: "#fff",
               outline: "none",
               fontFamily: "inherit",
-              fontSize: 22,
-              width: 240,
+              fontSize: 18,
+              width: 210,
               maxWidth: "100%",
               padding: "8px 18px",
               color: INK,
@@ -767,10 +765,10 @@ function Item({
         <>
           <div
             style={{
-              fontSize: 28,
+              fontSize: 22,
               lineHeight: 1.45,
               letterSpacing: "-.015em",
-              margin: "26px 0 28px",
+              margin: "22px 0 22px",
               textWrap: "pretty",
             }}
           >
@@ -811,11 +809,11 @@ function Item({
                       alignItems: "center",
                       gap: 16,
                       textAlign: "left",
-                      padding: "18px 22px",
-                      borderRadius: 22,
+                      padding: "15px 18px",
+                      borderRadius: 18,
                       border: 0,
                       fontFamily: "inherit",
-                      fontSize: 20,
+                      fontSize: 17,
                       cursor: locked ? "default" : "pointer",
                       background: isKey ? GOOD_BG : chosen ? INK : WASH,
                       color: isKey ? GOOD_INK : chosen ? PAPER : INK,
@@ -827,12 +825,12 @@ function Item({
                       aria-hidden
                       style={{
                         flex: "none",
-                        width: 34,
-                        height: 34,
+                        width: 29,
+                        height: 29,
                         borderRadius: 999,
                         display: "grid",
                         placeItems: "center",
-                        fontSize: 15,
+                        fontSize: 13.5,
                         fontWeight: 700,
                         background: chosen && !isKey ? EMBER : "#fff",
                         color: chosen && !isKey ? "#fff" : SOFT,
@@ -854,13 +852,13 @@ function Item({
                 placeholder="Write your answer — an examiner-style comment comes back on submit."
                 style={{
                   width: "100%",
-                  minHeight: 150,
+                  minHeight: 132,
                   border: 0,
                   background: "transparent",
                   outline: "none",
                   resize: "none",
                   fontFamily: "inherit",
-                  fontSize: 19,
+                  fontSize: 16.5,
                   lineHeight: 1.65,
                   color: INK,
                 }}
@@ -901,11 +899,11 @@ function Item({
               style={{
                 width: "100%",
                 border: 0,
-                borderRadius: 22,
+                borderRadius: 18,
                 background: WASH,
-                padding: "20px 24px",
+                padding: "16px 20px",
                 fontFamily: "inherit",
-                fontSize: 20,
+                fontSize: 17,
                 color: INK,
                 outline: "none",
                 boxShadow: "inset 0 0 0 2px transparent",

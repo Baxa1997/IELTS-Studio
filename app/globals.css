@@ -1003,9 +1003,14 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes pa-spin { to { transform: rotate(360deg); } }
+
 .pa-rise { animation: pa-rise .45s cubic-bezier(.2,.7,.3,1) both; }
 .pa-pop { animation: pa-pop .35s cubic-bezier(.2,.7,.3,1) both; }
 .pa-slide { animation: pa-slide .28s ease both; }
+/* The one animation that must survive prefers-reduced-motion: it is not
+   decoration, it is the only sign the app is still working. */
+.pa-spin { animation: pa-spin .8s linear infinite; }
 
 /* Someone who has asked for less motion gets the layout and none of the
    travel. `both` fill means these must resolve to a real end state, not to
@@ -1080,7 +1085,15 @@
    page's own buttons are removed, so a teacher hands out a worksheet rather
    than a screenshot of software. Whether the answer key is on follows the
    toggle on screen — one page, two documents. */
+/* The worksheet exists only on paper: it is the document a teacher hands out,
+   and it has no business competing with the lesson on screen. */
+.pa-print-only { display: none; }
+
 @media print {
+  .pa-print-only { display: block !important; }
+  /* Each stage starts a fresh sheet, so a class gets clean handouts. */
+  .pa-print-only > div { break-before: auto; }
+
   /* The app around the lesson. */
   .lp-shell-sidebar,
   .lp-shell-topbar,
@@ -1158,14 +1171,20 @@
    move between them is a dead end on a phone. */
 .pa-runner {
   display: grid;
-  grid-template-columns: 1fr 300px;
-  flex: 1;
-  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 296px;
+  align-items: start;
 }
+/* Sticky rather than a second scrolling pane. The page owns the scroll now, so
+   the navigator follows the reader down it and parks under the bar (62px) —
+   and its own overflow only engages when a very long lesson makes the cell
+   grid taller than the screen. */
 .pa-runner-rail {
+  position: sticky;
+  top: 62px;
+  max-height: calc(100dvh - 62px);
+  overflow: auto;
   display: flex;
   flex-direction: column;
-  min-height: 0;
   background: #fdfbf7;
   border-left: 1px solid rgba(20,35,46,.07);
 }
@@ -1178,19 +1197,26 @@
    what actually gets squeezed out is the submit button: the one control that
    ends the lesson becomes unreachable on the device most likely to be used for
    homework. */
+.pa-runner-main { width: 100%; padding: 30px 26px 56px; }
+.pa-item { padding: 30px 28px 34px; }
+
 @media (max-width: 1000px) {
-  .pa-runner {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    overflow: auto;
-  }
-  .pa-runner > :first-child { overflow: visible; }
+  .pa-runner { grid-template-columns: 1fr; }
   .pa-runner-rail {
+    position: static;
+    max-height: none;
+    overflow: visible;
     border-left: 0;
     border-top: 1px solid rgba(20,35,46,.07);
   }
-  /* The cell grid owns no scroll of its own once the page provides one. */
-  .pa-runner-rail > :nth-child(2) { overflow: visible; }
+}
+
+/* Phones. The item keeps its card, because losing the card loses the sense of
+   "one thing at a time" that the whole runner is built on — it just stops
+   spending 28px a side on air it hasn't got. */
+@media (max-width: 620px) {
+  .pa-runner-main { padding: 18px 14px 40px; }
+  .pa-item { padding: 22px 18px 24px; }
 }
 
 /* The lesson page's reading column + sticky rail, on the same terms. */
@@ -1213,16 +1239,6 @@
 }
 @media (max-width: 1100px) { .pa-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 700px) { .pa-grid { grid-template-columns: 1fr; } }
-
-/* The lesson page's band of counts: four across, then two. Never one — a
-   single column turns four numbers into four screens of scrolling before the
-   lesson itself starts. */
-.pa-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-}
-@media (max-width: 900px) { .pa-metrics { grid-template-columns: repeat(2, 1fr); } }
 
 /* Due date beside the note, until there is no room for both. */
 @media (max-width: 560px) {

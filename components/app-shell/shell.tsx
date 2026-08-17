@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Bell,
@@ -43,6 +44,18 @@ function readCollapsed(fallback: boolean): boolean {
   if (typeof document === "undefined") return fallback;
   const m = document.cookie.match(/(?:^|;\s*)sb_collapsed=([01])/);
   return m ? m[1] === "1" : fallback;
+}
+
+/**
+ * Routes that own their whole surface, where the rail starts collapsed.
+ *
+ * Practice AI drops the console's bar and padding and lays out its own hero
+ * edge to edge; an expanded rail eats 240px of a page built around a centred
+ * headline and a three-card grid. Collapsing is a DEFAULT, not a lock — the
+ * toggle still works, and the choice made here is remembered like any other.
+ */
+function ownsTheSurface(pathname: string): boolean {
+  return pathname.startsWith("/console/practice-ai");
 }
 
 /**
@@ -113,11 +126,27 @@ export function AppShell({
   initialCollapsed?: boolean;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false); // mobile drawer
   // Seed from the live cookie (not just the prop) so a menu click that remounts the
   // shell can't re-expand a collapsed rail off a stale cached prop.
-  const [collapsed, setCollapsed] = useState(() => readCollapsed(initialCollapsed)); // desktop icon-rail
+  const [collapsed, setCollapsed] = useState(
+    () => ownsTheSurface(pathname) || readCollapsed(initialCollapsed),
+  ); // desktop icon-rail
   const close = () => setOpen(false);
+
+  // Entering a full-surface route collapses the rail; leaving one gives back
+  // whatever the reader had chosen. Adjusted DURING RENDER rather than in an
+  // effect — the same pattern the console's panels use — so the rail is never
+  // painted expanded for a frame and then yanked in.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    const leaving = ownsTheSurface(lastPath);
+    const entering = ownsTheSurface(pathname);
+    setLastPath(pathname);
+    if (entering && !leaving) setCollapsed(true);
+    else if (leaving && !entering) setCollapsed(readCollapsed(initialCollapsed));
+  }
 
   // Persist the collapse choice in a cookie so it holds across navigation — the
   // (app)↔(shell) layout boundary remounts the shell, which would otherwise reset it.
