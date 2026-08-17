@@ -1055,6 +1055,19 @@
 }
 
 @keyframes pa-spin { to { transform: rotate(360deg); } }
+@keyframes pa-shimmer { to { background-position: -200% 0; } }
+
+/* Skeleton blocks. A moving BACKGROUND rather than a transform or an opacity
+   pulse: the placeholder must not reflow or flicker, because the eye reads
+   either as the page still changing after it has arrived. */
+.pa-shimmer {
+  background-image: linear-gradient(90deg, #eeeeeb 0%, #f6f5f2 40%, #eeeeeb 80%);
+  background-size: 200% 100%;
+  animation: pa-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pa-shimmer { animation: none; background-image: none; background-color: #eeeeeb; }
+}
 
 .pa-rise { animation: pa-rise .45s cubic-bezier(.2,.7,.3,1) both; }
 .pa-pop { animation: pa-pop .35s cubic-bezier(.2,.7,.3,1) both; }

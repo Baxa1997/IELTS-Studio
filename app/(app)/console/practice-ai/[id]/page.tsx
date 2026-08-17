@@ -54,12 +54,14 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   if (profile.role !== "teacher") redirect(roleHome(profile.role));
 
   const { id } = await params;
-  const lesson = await loadLesson(id);
-  if (!lesson) notFound();
 
-  // RLS narrows this to the groups this teacher owns, so the picker can only
-  // ever offer somewhere they may actually set work.
-  const { groups } = await loadGroups(profile);
+  // IN PARALLEL. These two do not need each other, and awaiting them in series
+  // put the whole of one query's latency in front of the other before a byte of
+  // the page could render. RLS narrows the groups to the ones this teacher
+  // owns, so the picker can only ever offer somewhere they may actually set
+  // work.
+  const [lesson, { groups }] = await Promise.all([loadLesson(id), loadGroups(profile)]);
+  if (!lesson) notFound();
 
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
   const total = lesson.content.exercises.length;

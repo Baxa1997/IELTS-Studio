@@ -100,7 +100,7 @@ export default async function PracticeAiPage({
           <h1
             style={{
               fontWeight: 300,
-              fontSize: "clamp(62px, 7vw, 56px)",
+              fontSize: "clamp(42px, 7vw, 46px)",
               lineHeight: 1,
               color: INK,
               margin: "20px 0 18px",

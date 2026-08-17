@@ -370,44 +370,18 @@ export function Composer() {
               padding: "18px 20px",
               borderRadius: 22,
               background: WASH,
-              display: "grid",
-              gap: 14,
             }}
           >
-            <SpecRow label="Level">
-              {LEVELS.map((l) => (
-                <SpecChip key={l} on={level === l} onClick={() => setLevel(l)}>
-                  {l}
-                </SpecChip>
-              ))}
-            </SpecRow>
-            <SpecRow label="Focus">
-              {FOCUSES.map((f) => (
-                <SpecChip key={f.value} on={focus === f.value} onClick={() => setFocus(f.value)}>
-                  {f.label}
-                </SpecChip>
-              ))}
-            </SpecRow>
-            <SpecRow
-              label="Items"
-              hint={`How many exercises to write, split across the three stages. Anything from ${COUNT_MIN} to ${COUNT_MAX}.`}
-            >
-              {COUNTS.map((c) => (
-                <SpecChip key={c} on={count === c} onClick={() => setCount(c)}>
-                  {c}
-                </SpecChip>
-              ))}
-            </SpecRow>
-            {/* Said here because it is the one thing teachers get wrong about
-                this control: it is not "translate the lesson". A learner who
-                reads the rule only in Uzbek has practised nothing. */}
-            <SpecRow label="Support" hint="The lesson stays in English — this adds a short note per section.">
-              {LANGUAGES.map((l) => (
-                <SpecChip key={l.value} on={language === l.value} onClick={() => setLanguage(l.value)}>
-                  {l.label}
-                </SpecChip>
-              ))}
-            </SpecRow>
+            <Specs
+              level={level}
+              setLevel={setLevel}
+              focus={focus}
+              setFocus={setFocus}
+              count={count}
+              setCount={setCount}
+              language={language}
+              setLanguage={setLanguage}
+            />
           </div>
         ) : null}
 
@@ -484,12 +458,6 @@ export function Composer() {
             </span>
             <span style={{ fontWeight: 600, fontSize: 15 }}>Plan</span>
           </button>
-
-          {/* HOW MANY, on the face of the box rather than inside the specs
-              panel. It was one press away and that was one press too many: the
-              panel is shut by default, so every lesson quietly came out at the
-              default 12 and there was no sign the number was ever a choice. */}
-          <ItemCount count={count} setCount={setCount} />
 
           <span className="pa-bar-hide" style={{ fontSize: 13, color: SOFT }}>
             {planFirst ? "I'll show the outline first" : "Straight to writing"}
@@ -577,8 +545,14 @@ export function Composer() {
           questions={phase.questions}
           answers={answers}
           onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
+          level={level}
+          setLevel={setLevel}
+          focus={focus}
+          setFocus={setFocus}
           count={count}
           setCount={setCount}
+          language={language}
+          setLanguage={setLanguage}
           planFirst={planFirst}
           onCancel={() => setPhase({ step: "idle" })}
           onGo={guard(() => proceed(answers, phase.blueprint, phase.brief))}
@@ -1026,29 +1000,93 @@ function SpecRow({
 }
 
 /**
- * How many exercises — the one setting a teacher changes every time.
+ * Every setting that shapes the lesson, in one place.
  *
- * Rendered in TWO places on purpose, which is not duplication but the fix for a
- * real complaint: on the face of the composer while the brief is being written,
- * and again in the setup dialog, because the dialog is the last moment the
- * number still does anything. After it the plan is drafted around a count, and
- * `build` sends only the plan — so a control offered any later would look live
- * and change nothing.
+ * ONE COMPONENT, TWO SURFACES: the panel under the composer and the setup
+ * dialog. They used to be different — the dialog asked only what the engine
+ * wanted to know, so a teacher who opened it had no way to change the level
+ * they had picked a moment earlier without dismissing it first. Rendering the
+ * same rows in both means the answer to "where do I change this?" is "wherever
+ * you are", and there is no second copy to drift.
+ */
+function Specs({
+  level,
+  setLevel,
+  focus,
+  setFocus,
+  count,
+  setCount,
+  language,
+  setLanguage,
+}: {
+  level: string;
+  setLevel: (v: string) => void;
+  focus: string;
+  setFocus: (v: string) => void;
+  count: number;
+  setCount: (fn: (c: number) => number) => void;
+  language: string;
+  setLanguage: (v: string) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 14 }}>
+      <SpecRow label="Level">
+        {LEVELS.map((l) => (
+          <SpecChip key={l} on={level === l} onClick={() => setLevel(l)}>
+            {l}
+          </SpecChip>
+        ))}
+      </SpecRow>
+      <SpecRow label="Focus">
+        {FOCUSES.map((f) => (
+          <SpecChip key={f.value} on={focus === f.value} onClick={() => setFocus(f.value)}>
+            {f.label}
+          </SpecChip>
+        ))}
+      </SpecRow>
+      <SpecRow
+        label="Items"
+        hint={`How many exercises to write, split across the three stages. Anything from ${COUNT_MIN} to ${COUNT_MAX}.`}
+      >
+        {COUNTS.map((c) => (
+          <SpecChip key={c} on={count === c} onClick={() => setCount(() => c)}>
+            {c}
+          </SpecChip>
+        ))}
+        <ItemCount count={count} setCount={setCount} />
+      </SpecRow>
+      {/* Said here because it is the one thing teachers get wrong about this
+          control: it is not "translate the lesson". A learner who reads the
+          rule only in Uzbek has practised nothing. */}
+      <SpecRow label="Support" hint="The lesson stays in English — this adds a short note per section.">
+        {LANGUAGES.map((l) => (
+          <SpecChip key={l.value} on={language === l.value} onClick={() => setLanguage(l.value)}>
+            {l.label}
+          </SpecChip>
+        ))}
+      </SpecRow>
+    </div>
+  );
+}
+
+/**
+ * Any number, beside the four presets.
+ *
+ * The presets cover the common cases; this covers the class that needs
+ * fourteen. It lives INSIDE the Items row rather than loose on the composer's
+ * face, so every setting is in one panel instead of one being singled out.
  */
 function ItemCount({
   count,
   setCount,
-  block = false,
 }: {
   count: number;
   setCount: (fn: (c: number) => number) => void;
-  /** Full-width inside the dialog; a pill in the composer's button row. */
-  block?: boolean;
 }) {
   return (
     <span
       style={{
-        display: block ? "flex" : "inline-flex",
+        display: "inline-flex",
         alignItems: "center",
         gap: 2,
         padding: 4,
@@ -1087,7 +1125,7 @@ function ItemCount({
         +
       </Step>
       <span style={{ fontSize: 13.5, color: SOFT, padding: "0 10px 0 4px" }}>
-        {block ? `exercises (${COUNT_MIN}–${COUNT_MAX})` : "items"}
+        or type it
       </span>
     </span>
   );
@@ -1175,8 +1213,14 @@ function SetupDialog({
   questions,
   answers,
   onAnswer,
+  level,
+  setLevel,
+  focus,
+  setFocus,
   count,
   setCount,
+  language,
+  setLanguage,
   planFirst,
   onCancel,
   onGo,
@@ -1185,8 +1229,14 @@ function SetupDialog({
   questions: Question[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
+  level: string;
+  setLevel: (v: string) => void;
+  focus: string;
+  setFocus: (v: string) => void;
   count: number;
   setCount: (fn: (c: number) => number) => void;
+  language: string;
+  setLanguage: (v: string) => void;
   planFirst: boolean;
   onCancel: () => void;
   onGo: () => void;
@@ -1211,23 +1261,21 @@ function SetupDialog({
       </p>
 
       <div style={{ display: "grid", gap: 22, margin: "24px 0" }}>
-        {/* FIRST, and always — the engine's questions change from brief to
-            brief, but "how long is this lesson" is asked every time and is the
-            last point at which the answer still does anything. */}
-        <div style={{ display: "grid", gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>
-            How many exercises should it have?
-          </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <ItemCount count={count} setCount={setCount} block />
-            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-              {COUNTS.map((c) => (
-                <SpecChip key={c} on={count === c} onClick={() => setCount(() => c)}>
-                  {c}
-                </SpecChip>
-              ))}
-            </div>
-          </div>
+        {/* FIRST, and always. The engine's questions change from brief to
+            brief; these do not, and this modal is the LAST point at which any
+            of them still does anything — `proceed` sends them to the plan
+            endpoint, and `build` afterwards sends only the plan. */}
+        <div style={{ padding: "18px 20px", borderRadius: 22, background: WASH }}>
+          <Specs
+            level={level}
+            setLevel={setLevel}
+            focus={focus}
+            setFocus={setFocus}
+            count={count}
+            setCount={setCount}
+            language={language}
+            setLanguage={setLanguage}
+          />
         </div>
 
         {questions.map((q) => (
