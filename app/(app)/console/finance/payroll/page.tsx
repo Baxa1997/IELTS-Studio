@@ -196,6 +196,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Sear
         />
       </Card>
 
+      <div className="h-[12px]" />
+
       <KpiRow>
         <Kpi label="Gross" value={money(gross)} sub="before your corrections" />
         <Kpi
