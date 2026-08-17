@@ -267,12 +267,18 @@ export function Composer() {
         blueprint?: string | null;
       }>("intake", { brief: text, language });
 
-      const questions = intake.questions ?? [];
-      if (questions.length === 0) {
-        await proceed({}, intake.blueprint ?? null, override);
-        return;
-      }
-      setPhase({ step: "asking", questions, blueprint: intake.blueprint ?? null, brief: text });
+      // ALWAYS STOP HERE, even when the engine asked nothing. It used to skip
+      // straight to planning on an empty question list, which quietly made the
+      // settings unreachable: the specs live in this dialog, so a brief the
+      // engine understood perfectly gave a teacher no moment to say how long
+      // the lesson should be. The dialog now always has something to show, so
+      // the old argument for making it conditional no longer holds.
+      setPhase({
+        step: "asking",
+        questions: intake.questions ?? [],
+        blueprint: intake.blueprint ?? null,
+        brief: text,
+      });
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
     }
@@ -1201,13 +1207,19 @@ function SpecChip({
 }
 
 /**
- * The engine's own questions, and only those.
+ * The last stop before a lesson is written.
  *
- * It used to open every time and carry the exercise count and the explanation
- * language too. Both are on the page now, so this appears only when a model
- * genuinely could not tell what a teacher meant — which is the only case where
- * interrupting them is worth it. Everything stays skippable: "just build it"
- * has to remain possible at every step.
+ * Carries TWO things: the settings, always, and the engine's own questions when
+ * it had any. That pairing is why this opens every time. It was made
+ * conditional on the engine asking something, on the reasoning that a modal
+ * offering choices already made on the page gets dismissed without being read —
+ * but the settings are the choices, and skipping the dialog left a teacher no
+ * moment to make them on the briefs the engine understood best.
+ *
+ * This is also the last point at which any of it does anything: `proceed` sends
+ * the settings to the plan endpoint, and `build` afterwards sends only the
+ * plan. Everything stays skippable — "just build it" has to remain possible at
+ * every step.
  */
 function SetupDialog({
   questions,
@@ -1254,10 +1266,12 @@ function SetupDialog({
           margin: 0,
         }}
       >
-        One thing first
+        {questions.length > 0 ? "One thing first" : "Ready when you are"}
       </h2>
       <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 0", lineHeight: 1.55 }}>
-        Skip anything and I&apos;ll choose sensibly.
+        {questions.length > 0
+          ? "Check the settings and answer what you like — skip anything and I'll choose sensibly."
+          : "Check the settings before I write it. Leave them as they are and I'll choose sensibly."}
       </p>
 
       <div style={{ display: "grid", gap: 22, margin: "24px 0" }}>
@@ -1309,9 +1323,11 @@ function SetupDialog({
         <button type="button" onClick={onGo} className="pa-ember" style={emberPill}>
           {planFirst ? "Continue" : "Write it"}
         </button>
-        <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
-          Skip — you decide
-        </button>
+        {questions.length > 0 ? (
+          <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
+            Skip — you decide
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onCancel}
