@@ -780,7 +780,13 @@ function Item({
           </div>
 
           {closedEx && isSequence(closedEx) && closedEx.options ? (
-            <SequenceAnswer exercise={closedEx} value={value} onChange={onChange} locked={locked} />
+            <SequenceAnswer
+              exercise={closedEx}
+              value={value}
+              onChange={onChange}
+              locked={locked}
+              matching={closedEx.type === "matching"}
+            />
           ) : closedEx?.options ? (
             <div style={{ display: "grid", gap: 12 }}>
               {closedEx.options.map((opt, i) => {
@@ -1188,11 +1194,17 @@ function SequenceAnswer({
   value,
   onChange,
   locked,
+  matching = false,
 }: {
   exercise: { id: string; options?: string[] | null };
   value: string | string[] | undefined;
   onChange: (v: string | string[]) => void;
   locked: boolean;
+  /** Matching pairs against a list in the prompt; ordering sorts into a
+   *  sequence. Same interaction, and the instruction has to say which — "tap
+   *  them in the right order" is meaningless when the order is someone else's
+   *  list. */
+  matching?: boolean;
 }) {
   const options = exercise.options ?? [];
   const picked = Array.isArray(value) ? value : [];
@@ -1206,7 +1218,9 @@ function SequenceAnswer({
     <div style={{ display: "grid", gap: 10 }}>
       <div style={{ fontSize: 14, color: SOFT }}>
         {picked.length === 0
-          ? "Tap them in the right order."
+          ? matching
+            ? "Tap them in the order they pair with the list above."
+            : "Tap them in the right order."
           : picked.length < options.length
             ? `${picked.length} of ${options.length} placed — tap one again to take it back.`
             : "All placed. Tap one to change it."}
