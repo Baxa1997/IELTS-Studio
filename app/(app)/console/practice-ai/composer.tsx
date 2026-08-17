@@ -18,7 +18,6 @@ import {
   SOFT,
   TROUGH,
   TROUGH_DEEP,
-  WASH,
 } from "@/lib/lessons/theme";
 import { createClient } from "@/lib/supabase/client";
 
@@ -26,11 +25,14 @@ import { createClient } from "@/lib/supabase/client";
  * Type what your group needs; get a lesson page.
  *
  * THE BOX HOLDS THE BRIEF AND NOTHING ELSE. Level, focus, how many exercises
- * and whether the hard part gets a note in the learner's own language all live
- * in the setup dialog, which opens on send, every time — one place to look
- * rather than a panel here and a modal there. What stays on the face is the two
- * things that are about this press rather than about the lesson: whether to see
- * the outline first, and send.
+ * and whether the hard part gets a note in the learner's own language are all
+ * behind the gear beside Plan, in a modal. They lived in a panel that expanded
+ * inside this box, which pushed send off the bottom of a laptop screen the
+ * moment it opened — the control you reach for next was the one it hid.
+ *
+ * What stays on the face is the three things that are about this press rather
+ * than about the lesson: the settings door, whether to see the outline first,
+ * and send.
  *
  * A starter chip FILLS THE BOX and stops. Send is the only thing that builds:
  * the point of putting a suggestion in the brief is that it can be edited
@@ -180,6 +182,7 @@ export function Composer() {
   const router = useRouter();
   const [brief, setBrief] = useState("");
   const [planFirst, setPlanFirst] = useState(true);
+  const [specsOpen, setSpecsOpen] = useState(false);
   const [level, setLevel] = useState(AUTO);
   const [focus, setFocus] = useState(AUTO);
   const [count, setCount] = useState(12);
@@ -264,18 +267,16 @@ export function Composer() {
         blueprint?: string | null;
       }>("intake", { brief: text, language });
 
-      // ALWAYS STOP HERE, even when the engine asked nothing. It used to skip
-      // straight to planning on an empty question list, which quietly made the
-      // settings unreachable: the specs live in this dialog, so a brief the
-      // engine understood perfectly gave a teacher no moment to say how long
-      // the lesson should be. The dialog now always has something to show, so
-      // the old argument for making it conditional no longer holds.
-      setPhase({
-        step: "asking",
-        questions: intake.questions ?? [],
-        blueprint: intake.blueprint ?? null,
-        brief: text,
-      });
+      // Only stop if the engine actually wants something. The settings have
+      // their own door now — the gear beside Plan — so this no longer has to
+      // open just to make them reachable, and a modal whose only content is a
+      // Continue button is a modal that teaches people to dismiss modals.
+      const questions = intake.questions ?? [];
+      if (questions.length === 0) {
+        await proceed({}, intake.blueprint ?? null, override);
+        return;
+      }
+      setPhase({ step: "asking", questions, blueprint: intake.blueprint ?? null, brief: text });
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
     }
@@ -374,6 +375,49 @@ export function Composer() {
             flexWrap: "wrap",
           }}
         >
+          {/* SETTINGS, one press from the brief. The panel that used to sit
+              under the box pushed the send button off the bottom of a laptop
+              screen the moment it opened; a modal costs the same one press and
+              takes no room until it is wanted. */}
+          <button
+            type="button"
+            onClick={() => setSpecsOpen(true)}
+            aria-label="Lesson settings"
+            title="Level, focus, how many exercises, first-language support"
+            className="pa-tap"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 16px 8px 13px",
+              borderRadius: 999,
+              border: 0,
+              background: "#fff",
+              color: BODY_INK,
+              fontFamily: "inherit",
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              boxShadow: "inset 0 0 0 1px #e4e0d6",
+            }}
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            Settings
+          </button>
+
           <button
             type="button"
             onClick={() => setPlanFirst((v) => !v)}
@@ -498,13 +542,8 @@ export function Composer() {
         </p>
       ) : null}
 
-      {busy ? <Working stage={phase.stage} count={count} /> : null}
-
-      {phase.step === "asking" ? (
-        <SetupDialog
-          questions={phase.questions}
-          answers={answers}
-          onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
+      {specsOpen ? (
+        <SpecsModal
           level={level}
           setLevel={setLevel}
           focus={focus}
@@ -513,6 +552,17 @@ export function Composer() {
           setCount={setCount}
           language={language}
           setLanguage={setLanguage}
+          onClose={() => setSpecsOpen(false)}
+        />
+      ) : null}
+
+      {busy ? <Working stage={phase.stage} count={count} /> : null}
+
+      {phase.step === "asking" ? (
+        <SetupDialog
+          questions={phase.questions}
+          answers={answers}
+          onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
           planFirst={planFirst}
           onCancel={() => setPhase({ step: "idle" })}
           onGo={guard(() => proceed(answers, phase.blueprint, phase.brief))}
@@ -960,6 +1010,47 @@ function SpecRow({
 }
 
 /**
+ * The settings, on demand.
+ *
+ * Opened by the gear beside Plan, closed by Done, Escape or the backdrop. It is
+ * a modal rather than a panel because the panel it replaces expanded INSIDE the
+ * composer and pushed send off the bottom of a laptop screen — the control you
+ * reach for next was the one it hid.
+ */
+function SpecsModal({
+  onClose,
+  ...spec
+}: React.ComponentProps<typeof Specs> & { onClose: () => void }) {
+  return (
+    <Overlay label="Lesson settings" onClose={onClose}>
+      <h2
+        style={{
+          fontFamily: SERIF,
+          fontWeight: 600,
+          fontSize: 30,
+          letterSpacing: "-.02em",
+          color: INK,
+          margin: 0,
+        }}
+      >
+        Settings
+      </h2>
+      <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 22px", lineHeight: 1.55 }}>
+        Anything left on Auto, I&apos;ll choose from your brief.
+      </p>
+
+      <Specs {...spec} />
+
+      <div style={{ display: "flex", marginTop: 24 }}>
+        <button type="button" onClick={onClose} className="pa-ember" style={emberPill}>
+          Done
+        </button>
+      </div>
+    </Overlay>
+  );
+}
+
+/**
  * Every setting that shapes the lesson, in one place.
  *
  * ONE COMPONENT, TWO SURFACES: the panel under the composer and the setup
@@ -1161,32 +1252,18 @@ function SpecChip({
 }
 
 /**
- * The last stop before a lesson is written.
+ * The engine's own questions, and only those.
  *
- * Carries TWO things: the settings, always, and the engine's own questions when
- * it had any. That pairing is why this opens every time. It was made
- * conditional on the engine asking something, on the reasoning that a modal
- * offering choices already made on the page gets dismissed without being read —
- * but the settings are the choices, and skipping the dialog left a teacher no
- * moment to make them on the briefs the engine understood best.
- *
- * This is also the last point at which any of it does anything: `proceed` sends
- * the settings to the plan endpoint, and `build` afterwards sends only the
- * plan. Everything stays skippable — "just build it" has to remain possible at
- * every step.
+ * Opens only when a model genuinely could not tell what a teacher meant, which
+ * is the one case where interrupting them is worth it. The settings are not
+ * here — they have their own door on the composer — so this never appears with
+ * nothing in it but a Continue button. Everything stays skippable: "just build
+ * it" has to remain possible at every step.
  */
 function SetupDialog({
   questions,
   answers,
   onAnswer,
-  level,
-  setLevel,
-  focus,
-  setFocus,
-  count,
-  setCount,
-  language,
-  setLanguage,
   planFirst,
   onCancel,
   onGo,
@@ -1195,14 +1272,6 @@ function SetupDialog({
   questions: Question[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
-  level: string;
-  setLevel: (v: string) => void;
-  focus: string;
-  setFocus: (v: string) => void;
-  count: number;
-  setCount: (fn: (c: number) => number) => void;
-  language: string;
-  setLanguage: (v: string) => void;
   planFirst: boolean;
   onCancel: () => void;
   onGo: () => void;
@@ -1220,32 +1289,13 @@ function SetupDialog({
           margin: 0,
         }}
       >
-        {questions.length > 0 ? "One thing first" : "Ready when you are"}
+        One thing first
       </h2>
       <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 0", lineHeight: 1.55 }}>
-        {questions.length > 0
-          ? "Check the settings and answer what you like — skip anything and I'll choose sensibly."
-          : "Check the settings before I write it. Leave them as they are and I'll choose sensibly."}
+        Skip anything and I&apos;ll choose sensibly.
       </p>
 
       <div style={{ display: "grid", gap: 22, margin: "24px 0" }}>
-        {/* FIRST, and always. The engine's questions change from brief to
-            brief; these do not, and this modal is the LAST point at which any
-            of them still does anything — `proceed` sends them to the plan
-            endpoint, and `build` afterwards sends only the plan. */}
-        <div style={{ padding: "18px 20px", borderRadius: 22, background: WASH }}>
-          <Specs
-            level={level}
-            setLevel={setLevel}
-            focus={focus}
-            setFocus={setFocus}
-            count={count}
-            setCount={setCount}
-            language={language}
-            setLanguage={setLanguage}
-          />
-        </div>
-
         {questions.map((q) => (
           <div key={q.id} style={{ display: "grid", gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{q.label}</span>
@@ -1277,11 +1327,9 @@ function SetupDialog({
         <button type="button" onClick={onGo} className="pa-ember" style={emberPill}>
           {planFirst ? "Continue" : "Write it"}
         </button>
-        {questions.length > 0 ? (
-          <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
-            Skip — you decide
-          </button>
-        ) : null}
+        <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
+          Skip — you decide
+        </button>
         <button
           type="button"
           onClick={onCancel}
