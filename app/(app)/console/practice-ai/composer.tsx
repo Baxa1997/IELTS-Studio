@@ -1,42 +1,49 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { clientEnv } from "@/lib/env";
+import {
+  EMBER,
+  EMBER_OFF,
+  FAINT,
+  GHOST,
+  GOOD_INK,
+  INK,
+  MUTED,
+  PAPER,
+  SOFT,
+  TROUGH,
+  TROUGH_DEEP,
+  WASH,
+} from "@/lib/lessons/theme";
 import { createClient } from "@/lib/supabase/client";
 
 /**
  * Type what your group needs; get a lesson page.
  *
- * Laid out after the reference the owner supplied: a centred hero, one large
- * brief box, and the affordances along its foot.
+ * The redesign moved the settings OUT of a dialog and into the box: level,
+ * focus, how many exercises and whether the hard part gets a note in the
+ * learner's own language now sit one press away under "+ Specs", visible while
+ * the brief is still being written. The dialog they used to live in is still
+ * here — but only for the questions the ENGINE asks, and only when it asks any.
+ * A modal that opened every time to offer choices already made on the page is
+ * a modal that gets dismissed without being read.
  *
- * Every control here does something. A `+` that opened nothing and a mic that
+ * Every control does something. A `+` that opened nothing and a mic that
  * listened to nothing would match the picture and lie about the product, so the
- * `+` adds real context to the brief and the mic dictates into it — and the mic
+ * `+` opens the real specs and the mic dictates into the brief — and the mic
  * only renders where the browser can actually do it.
  *
  * Calls the ENGINE directly with the user's Supabase token, the way reading and
  * listening do: a full build runs well past the 60s a Vercel function gets.
  */
 
-const INK = "#15171C";
-const MUTED = "#5C616C";
-const FAINT = "#8B909B";
-const LINE = "rgba(21,23,28,0.08)";
-/* The reference's ember. The owner asked for the UI exactly as pictured, and
-   the accent is the most recognisable part of it — so this page departs from
-   the console indigo deliberately rather than by accident. */
-const EMBER = "#E85A2C";
-const EMBER_OFF = "#D0D6DE";
-const HERO_INK = "#15171C";
-const HERO_BODY = "#2A2D34";
-
 const PLACEHOLDERS = [
   "Explain the present perfect, with practice",
   "Collocations for the education topic",
-  "Task 2 introductions — how to paraphrase the question",
+  "True / False / Not Given under time pressure",
   "Articles: a, an, the — my B1 group keeps dropping them",
 ];
 
@@ -54,34 +61,45 @@ type Plan = Record<string, unknown> & { title?: string; level?: string; objectiv
 
 type Phase =
   | { step: "idle" }
-  | { step: "thinking"; label: string }
+  | { step: "working"; stage: number; label: string }
   | { step: "asking"; questions: Question[]; blueprint: string | null }
   | { step: "planned"; plan: Plan }
   | { step: "error"; message: string };
 
-/**
- * The two questions the ENGINE must never ask, because the answer is a fact
- * about this teacher's class rather than about the teaching, and asking costs
- * one of the three questions it is allowed.
- *
- * Both live here, always shown, so a teacher never has to accept a default they
- * were not offered — the language note used to be a lozenge in the composer
- * footer that nobody noticed, and the exercise count was not a choice at all.
- */
-const LANGUAGE_CHOICES = [
-  { value: "en", label: "English only" },
-  { value: "uz", label: "+ O'zbekcha izoh" },
-  { value: "ru", label: "+ пояснение по-русски" },
+/* ── the specs ──────────────────────────────────────────────────────────────
+   Four rows, and the reason each is here rather than left to the model:
+
+   LEVEL and FOCUS steer what gets written, and a teacher knows both before
+   they finish typing. Left unset they stay "Auto" and the engine decides —
+   which is the honest default, not a placeholder.
+
+   ITEMS and SUPPORT are facts about this class, never about the teaching. How
+   long the lesson is depends on how long the class is, and whether the hard
+   part needs a line of Uzbek depends on who is in the room. A model that
+   guesses either is guessing about something it cannot see. */
+
+const AUTO = "Auto";
+
+const LEVELS = [AUTO, "A1", "A2", "B1", "B2", "C1", "C2"];
+
+/** Matches `BLUEPRINT_LABEL` — the engine's own four kinds, not a new list. */
+const FOCUSES = [
+  { value: AUTO, label: AUTO },
+  { value: "grammar", label: "Grammar" },
+  { value: "vocabulary", label: "Vocabulary" },
+  { value: "skill", label: "Skill" },
+  { value: "exam_technique", label: "Exam technique" },
 ];
 
 /** Sizes a real class actually needs: a warm-up, a normal lesson, a long one,
  *  and a full worksheet. Anything is allowed by the engine — these are the ones
  *  worth one press. */
-const COUNT_CHOICES = [
-  { value: 8, label: "8", hint: "quick" },
-  { value: 12, label: "12", hint: "standard" },
-  { value: 16, label: "16", hint: "long" },
-  { value: 20, label: "20", hint: "worksheet" },
+const COUNTS = [8, 12, 16, 20];
+
+const LANGUAGES = [
+  { value: "en", label: "English only" },
+  { value: "uz", label: "+ O'zbekcha izoh" },
+  { value: "ru", label: "+ по-русски" },
 ];
 
 /** The browser's own dictation. No server, no cost — and absent in browsers
@@ -143,18 +161,16 @@ async function callEngine<T>(path: string, body: unknown): Promise<T> {
 export function Composer() {
   const router = useRouter();
   const [brief, setBrief] = useState("");
-  const [context, setContext] = useState("");
-  const [showContext, setShowContext] = useState(false);
+  const [showSpecs, setShowSpecs] = useState(false);
   const [planFirst, setPlanFirst] = useState(true);
-  const [language, setLanguage] = useState("en");
+  const [level, setLevel] = useState(AUTO);
+  const [focus, setFocus] = useState(AUTO);
   const [count, setCount] = useState(12);
+  const [language, setLanguage] = useState("en");
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [listening, setListening] = useState(false);
   const recognition = useRef<SpeechSession | null>(null);
-  const [placeholder] = useState(
-    () => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)],
-  );
 
   // Whether this browser can dictate is a browser-only fact, so it is read the
   // way React wants browser-only facts read: a server snapshot of `false` and a
@@ -167,11 +183,24 @@ export function Composer() {
     () => false,
   );
 
-  const busy = phase.step === "thinking";
+  const typed = useTypedPlaceholder(brief === "");
+  const busy = phase.step === "working";
 
-  /** The brief as the engine sees it: what they typed, plus any context. */
-  const fullBrief = () =>
-    context.trim() ? `${brief.trim()}\n\nContext from the teacher:\n${context.trim()}` : brief.trim();
+  /**
+   * The brief as the engine sees it.
+   *
+   * Level and focus ride in the TEXT rather than in the answers map, because
+   * the answers map is keyed by ids the engine minted for its own questions and
+   * a key it never asked for is a key it is free to drop. A sentence at the end
+   * of a brief is read by every model, every time.
+   */
+  const fullBrief = () => {
+    const notes = [
+      level !== AUTO ? `Level: ${level}.` : null,
+      focus !== AUTO ? `Focus on ${FOCUSES.find((f) => f.value === focus)?.label.toLowerCase()}.` : null,
+    ].filter(Boolean);
+    return notes.length > 0 ? `${brief.trim()}\n\n${notes.join(" ")}` : brief.trim();
+  };
 
   function toggleDictation() {
     const Ctor = speechCtor();
@@ -181,10 +210,9 @@ export function Composer() {
       return;
     }
     const rec = new Ctor();
-    // The BROWSER's language, not the lesson's. These were the same setting
-    // until the explanation language moved into the dialog, and conflating them
-    // was always slightly wrong: which language a teacher dictates a brief in
-    // says nothing about which language their learners need a note in.
+    // The BROWSER's language, not the lesson's. Which language a teacher
+    // dictates a brief in says nothing about which language their learners need
+    // a note in — that is the Support row, and it is a separate question.
     rec.lang = navigator.language || "en-US";
     rec.continuous = false;
     rec.interimResults = false;
@@ -200,19 +228,17 @@ export function Composer() {
   }
 
   /**
-   * Press generate and the dialog opens — ALWAYS, even when the engine says it
-   * has everything it needs.
+   * Press send and the engine reads the brief.
    *
-   * It used to appear only when the model decided to ask something, so whether
-   * a teacher was offered any say at all depended on how confidently a model
-   * had read their sentence. Two of the choices in it are not the model's to
-   * make in any case: how long the class is, and whether the group needs the
-   * hard part explained in Uzbek or Russian. Those are always worth a press.
+   * If it wants to know something the specs panel does not cover, it asks —
+   * otherwise this goes straight on to planning. The dialog is no longer
+   * unconditional: everything it used to insist on asking is now on the page.
    */
-  async function start(text: string) {
+  async function start() {
+    const text = fullBrief();
     if (!text.trim() || busy) return;
     setAnswers({});
-    setPhase({ step: "thinking", label: "Reading your brief…" });
+    setPhase({ step: "working", stage: 0, label: "Reading your brief…" });
     try {
       const intake = await callEngine<{
         status: string;
@@ -220,24 +246,25 @@ export function Composer() {
         blueprint?: string | null;
       }>("intake", { brief: text, language });
 
-      setPhase({
-        step: "asking",
-        questions: intake.questions ?? [],
-        blueprint: intake.blueprint ?? null,
-      });
+      const questions = intake.questions ?? [];
+      if (questions.length === 0) {
+        await proceed({}, intake.blueprint ?? null);
+        return;
+      }
+      setPhase({ step: "asking", questions, blueprint: intake.blueprint ?? null });
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
     }
   }
 
-  /** Leaving the dialog: plan and show it, or go straight to writing. */
+  /** Leaving the questions: plan and show it, or go straight to writing. */
   async function proceed(given: Record<string, string>, blueprint: string | null) {
     const text = fullBrief();
-    setPhase({ step: "thinking", label: "Planning the lesson…" });
+    setPhase({ step: "working", stage: 1, label: "Drafting the explanation…" });
     const plan = await callEngine<Plan>("plan", {
       brief: text,
       answers: given,
-      blueprint,
+      blueprint: blueprint ?? (focus === AUTO ? null : focus),
       language,
       exercise_total: count,
     });
@@ -249,80 +276,111 @@ export function Composer() {
   }
 
   async function build(text: string, plan: Plan) {
-    setPhase({ step: "thinking", label: "Writing it — about a minute…" });
+    setPhase({ step: "working", stage: 2, label: `Writing ${count} exercises…` });
     const made = await callEngine<{ id: string }>("build", { plan, brief: text });
+    setPhase({ step: "working", stage: 3, label: "Checking every answer key…" });
     router.push(`/console/practice-ai/${made.id}`);
   }
 
   const guard = (fn: () => Promise<void>) => () =>
     void fn().catch((e) => setPhase({ step: "error", message: (e as Error).message }));
 
+  const specSummary = [
+    level === AUTO ? null : level,
+    focus === AUTO ? null : FOCUSES.find((f) => f.value === focus)?.label,
+    `${count} items`,
+    language === "en" ? null : language === "uz" ? "+ Uzbek" : "+ Russian",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       {/* ── the box ─────────────────────────────────────────────────────── */}
       <div
         className="pa-composer"
         style={{
           width: "100%",
-          maxWidth: 660,
-          background: "rgba(255,255,255,.78)",
-          border: "1px solid rgba(255,255,255,.8)",
-          borderRadius: 22,
-          boxShadow:
-            "0 1px 0 rgba(255,255,255,.85) inset, 0 30px 60px -28px rgba(21,23,28,.30), 0 12px 28px -12px rgba(21,23,28,.10)",
-          backdropFilter: "blur(22px) saturate(150%)",
-          WebkitBackdropFilter: "blur(22px) saturate(150%)",
+          maxWidth: 880,
+          borderRadius: 30,
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 30px 60px -28px rgba(20,35,46,.28)",
           overflow: "hidden",
+          textAlign: "left",
         }}
       >
-        <textarea
-          value={brief}
-          onChange={(e) => setBrief(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void start(fullBrief());
-            }
-          }}
-          placeholder={placeholder}
-          rows={3}
-          disabled={busy}
-          style={{
-            width: "100%",
-            border: 0,
-            outline: "none",
-            resize: "none",
-            padding: "18px 22px 4px",
-            minHeight: 56,
-            fontFamily: "inherit",
-            fontSize: 16,
-            lineHeight: 1.5,
-            color: HERO_INK,
-            background: "transparent",
-          }}
-        />
+        <div style={{ padding: "26px 28px 10px" }}>
+          <textarea
+            value={brief}
+            onChange={(e) => setBrief(e.target.value.slice(0, 400))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void start();
+              }
+            }}
+            placeholder={typed}
+            disabled={busy}
+            style={{
+              width: "100%",
+              minHeight: 92,
+              border: 0,
+              background: "transparent",
+              outline: "none",
+              resize: "none",
+              fontSize: 21,
+              lineHeight: 1.5,
+              fontFamily: "inherit",
+              color: INK,
+            }}
+          />
+        </div>
 
-        {showContext ? (
-          <div style={{ padding: "0 26px 6px" }}>
-            <textarea
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              rows={3}
-              placeholder="Anything else that should shape it — the mistakes you keep seeing, what you covered last week, the coursebook point it follows."
-              style={{
-                width: "100%",
-                border: `1px solid ${LINE}`,
-                borderRadius: 10,
-                outline: "none",
-                resize: "vertical",
-                padding: "10px 12px",
-                fontFamily: "inherit",
-                fontSize: 13.5,
-                lineHeight: 1.5,
-                color: MUTED,
-                background: "#FBFAF8",
-              }}
-            />
+        {showSpecs ? (
+          <div
+            className="pa-slide"
+            style={{
+              margin: "0 20px 6px",
+              padding: "18px 20px",
+              borderRadius: 22,
+              background: WASH,
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <SpecRow label="Level">
+              {LEVELS.map((l) => (
+                <SpecChip key={l} on={level === l} onClick={() => setLevel(l)}>
+                  {l}
+                </SpecChip>
+              ))}
+            </SpecRow>
+            <SpecRow label="Focus">
+              {FOCUSES.map((f) => (
+                <SpecChip key={f.value} on={focus === f.value} onClick={() => setFocus(f.value)}>
+                  {f.label}
+                </SpecChip>
+              ))}
+            </SpecRow>
+            <SpecRow label="Items">
+              {COUNTS.map((c) => (
+                <SpecChip key={c} on={count === c} onClick={() => setCount(c)}>
+                  {c}
+                </SpecChip>
+              ))}
+            </SpecRow>
+            {/* Said here because it is the one thing teachers get wrong about
+                this control: it is not "translate the lesson". A learner who
+                reads the rule only in Uzbek has practised nothing. */}
+            <SpecRow label="Support" hint="The lesson stays in English — this adds a short note per section.">
+              {LANGUAGES.map((l) => (
+                <SpecChip key={l.value} on={language === l.value} onClick={() => setLanguage(l.value)}>
+                  {l.label}
+                </SpecChip>
+              ))}
+            </SpecRow>
           </div>
         ) : null}
 
@@ -330,67 +388,56 @@ export function Composer() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10,
-            padding: "6px 12px 12px",
-            borderTop: "1px solid rgba(21,23,28,.06)",
+            gap: 12,
+            padding: "14px 18px 18px",
             flexWrap: "wrap",
           }}
         >
           <button
             type="button"
-            onClick={() => setShowContext((v) => !v)}
-            aria-expanded={showContext}
-            title="Add context — what you've covered, what they keep getting wrong"
-            className="pa-icon-btn"
+            onClick={() => setShowSpecs((v) => !v)}
+            aria-expanded={showSpecs}
+            className="pa-tap"
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: 9,
-              borderColor: showContext ? "rgba(232,90,44,.4)" : "transparent",
-              background: showContext ? "rgba(232,90,44,.08)" : "transparent",
-              color: showContext ? EMBER : HERO_BODY,
+              padding: "8px 16px",
+              borderRadius: 999,
+              background: showSpecs ? INK : "#fff",
+              color: showSpecs ? PAPER : BODY_INK,
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: "inherit",
               cursor: "pointer",
-              display: "grid",
-              placeItems: "center",
+              boxShadow: showSpecs ? "none" : "inset 0 0 0 1px #e4e0d6",
             }}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 4v10M4 9h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
+            {showSpecs ? "− Specs" : "+ Specs"}
           </button>
 
           <button
             type="button"
             onClick={() => setPlanFirst((v) => !v)}
-            title={
-              planFirst
-                ? "On: I'll ask a couple of questions and show you the outline before writing"
-                : "Off: go straight to writing the lesson"
-            }
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 10,
-              background: "rgba(255,255,255,.55)",
-              border: `1px solid ${LINE}`,
+              padding: "6px 16px 6px 6px",
               borderRadius: 999,
-              padding: "6px 14px 6px 6px",
+              background: "#fff",
+              boxShadow: "inset 0 0 0 1px #e4e0d6",
               cursor: "pointer",
               fontFamily: "inherit",
-              fontSize: 14,
-              fontWeight: 500,
-              color: HERO_BODY,
+              color: BODY_INK,
             }}
           >
             <span
               aria-hidden
               style={{
-                width: 30,
-                height: 18,
+                width: 34,
+                height: 20,
                 borderRadius: 999,
                 background: planFirst ? EMBER : EMBER_OFF,
                 position: "relative",
-                transition: "background .15s",
+                transition: "background .18s",
                 flex: "none",
               }}
             >
@@ -398,41 +445,28 @@ export function Composer() {
                 style={{
                   position: "absolute",
                   top: 2,
-                  left: planFirst ? 14 : 2,
-                  width: 14,
-                  height: 14,
+                  left: planFirst ? 16 : 2,
+                  width: 16,
+                  height: 16,
                   borderRadius: "50%",
                   background: "#fff",
                   boxShadow: "0 1px 2px rgba(0,0,0,.18)",
-                  transition: "left .15s",
+                  transition: "left .18s",
                 }}
               />
             </span>
-            Plan
-            <span
-              aria-hidden
-              title="On: I ask a couple of questions and show the outline before writing"
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                border: `1.2px solid ${FAINT}`,
-                color: FAINT,
-                fontSize: 10,
-                fontWeight: 600,
-                display: "grid",
-                placeItems: "center",
-              }}
-            >
-              i
-            </span>
+            <span style={{ fontWeight: 600, fontSize: 15 }}>Plan</span>
           </button>
 
-          {/* The explanation language used to be a lozenge here, next to the
-              plan toggle, where it was one control among several and easy never
-              to notice. It is now a question in the dialog, asked every time. */}
+          <span className="pa-bar-hide" style={{ fontSize: 13, color: SOFT }}>
+            {planFirst ? "I'll show the outline first" : "Straight to writing"}
+          </span>
 
-          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+            <span className="pa-bar-hide" style={{ fontSize: 13, color: SOFT }}>
+              {specSummary}
+            </span>
+
             {canDictate ? (
               <button
                 type="button"
@@ -441,61 +475,62 @@ export function Composer() {
                 title={listening ? "Stop dictating" : "Dictate your brief"}
                 className="pa-icon-btn"
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 9,
-                  background: listening ? "rgba(232,90,44,.12)" : "transparent",
-                  color: listening ? EMBER : HERO_BODY,
-                  cursor: "pointer",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 999,
                   display: "grid",
                   placeItems: "center",
+                  background: listening ? "rgba(236,106,69,.12)" : "transparent",
+                  color: listening ? EMBER : "#4a5c66",
+                  cursor: "pointer",
                 }}
               >
-                <MicIcon />
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <path d="M12 19v3" />
+                  <path d="M8 22h8" />
+                  <rect x="9" y="2" width="6" height="12" rx="3" />
+                  <path d="M5 10a7 7 0 0 0 14 0" />
+                </svg>
               </button>
             ) : null}
 
             <button
               type="button"
-              onClick={() => void start(fullBrief())}
+              onClick={() => void start()}
               disabled={busy || brief.trim() === ""}
               aria-label="Make this lesson"
               className="pa-send"
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
+                width: 48,
+                height: 48,
+                borderRadius: 999,
                 border: 0,
                 background: EMBER,
                 color: "#fff",
-                opacity: brief.trim() === "" ? 0.8 : 1,
-                cursor: busy || brief.trim() === "" ? "default" : "pointer",
                 display: "grid",
                 placeItems: "center",
-                boxShadow:
-                  "0 1px 0 rgba(255,255,255,.3) inset, 0 10px 22px -8px rgba(232,90,44,.6)",
+                opacity: brief.trim() === "" ? 0.55 : 1,
+                cursor: busy || brief.trim() === "" ? "default" : "pointer",
+                boxShadow: "0 8px 20px -6px rgba(236,106,69,.7)",
               }}
             >
-              {busy ? (
-                "…"
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 13V3m0 0L4 7m4-4l4 4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5" />
+                <path d="M5 12l7-7 7 7" />
+              </svg>
             </button>
-          </span>
+          </div>
         </div>
+
+        {busy ? <Progress stage={phase.stage} count={count} /> : null}
       </div>
 
-      {/* ── state ───────────────────────────────────────────────────────── */}
-      {phase.step === "thinking" ? (
-        <p style={{ fontSize: 14, color: MUTED, margin: 0 }} role="status">
-          {phase.label}
-        </p>
-      ) : null}
+      {/* ── what came back ──────────────────────────────────────────────── */}
       {phase.step === "error" ? (
-        <p style={{ fontSize: 14, color: "#A63A30", margin: 0, maxWidth: 640, textAlign: "center" }} role="alert">
+        <p
+          style={{ fontSize: 15, color: "#a63a30", margin: "18px 0 0", maxWidth: 640, textAlign: "center" }}
+          role="alert"
+        >
           {phase.message}
         </p>
       ) : null}
@@ -505,10 +540,6 @@ export function Composer() {
           questions={phase.questions}
           answers={answers}
           onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
-          language={language}
-          onLanguage={setLanguage}
-          count={count}
-          onCount={setCount}
           planFirst={planFirst}
           onCancel={() => setPhase({ step: "idle" })}
           onGo={guard(() => proceed(answers, phase.blueprint))}
@@ -517,26 +548,56 @@ export function Composer() {
       ) : null}
 
       {phase.step === "planned" ? (
-        <div style={panel}>
-          <div>
-            <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: FAINT }}>
-              Here&apos;s the plan
-            </div>
-            <div style={{ fontSize: 19, fontWeight: 650, color: INK, marginTop: 5 }}>
-              {String(phase.plan.title ?? "Lesson")}
-            </div>
-            {phase.plan.objective ? (
-              <div style={{ fontSize: 13.5, color: MUTED, marginTop: 5 }}>{String(phase.plan.objective)}</div>
-            ) : null}
-            {phase.plan.level ? (
-              <div style={{ fontSize: 12.5, color: FAINT, marginTop: 6 }}>Level {String(phase.plan.level)}</div>
-            ) : null}
+        <div
+          className="pa-slide"
+          style={{
+            width: "100%",
+            maxWidth: 880,
+            marginTop: 18,
+            padding: "24px 26px",
+            borderRadius: 26,
+            background: "#fff",
+            boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 16px 34px -24px rgba(20,35,46,.35)",
+            textAlign: "left",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+              color: FAINT,
+            }}
+          >
+            Here&apos;s the plan
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" onClick={guard(() => build(fullBrief(), phase.plan))} style={primaryButton}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: INK, marginTop: 8, letterSpacing: "-.01em" }}>
+            {String(phase.plan.title ?? "Lesson")}
+          </div>
+          {phase.plan.objective ? (
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: MUTED, margin: "8px 0 0" }}>
+              {String(phase.plan.objective)}
+            </p>
+          ) : null}
+          {phase.plan.level ? (
+            <div style={{ fontSize: 13, color: FAINT, marginTop: 8 }}>Level {String(phase.plan.level)}</div>
+          ) : null}
+          <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={guard(() => build(fullBrief(), phase.plan))}
+              className="pa-ember"
+              style={emberPill}
+            >
               Build it
             </button>
-            <button type="button" onClick={() => setPhase({ step: "idle" })} style={ghostButton}>
+            <button
+              type="button"
+              onClick={() => setPhase({ step: "idle" })}
+              className="pa-ghost"
+              style={ghostPill}
+            >
               Start again
             </button>
           </div>
@@ -546,198 +607,163 @@ export function Composer() {
       {/* ── starters ──────────────────────────────────────────────────────
           Always on screen. They are the menu, not a first-run hint — the person
           most likely to want a lesson is the one who just made one. */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 30 }}>
-          <span
-            style={{
-              fontFamily: "var(--font-mono-data), ui-monospace, monospace",
-              fontSize: 11,
-              letterSpacing: ".2em",
-              textTransform: "uppercase",
-              color: MUTED,
-            }}
-          >
-            Not sure where to start? Try one of these:
-          </span>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", maxWidth: 760 }}>
-            {STARTERS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setBrief(s)}
-                className="pa-chip"
-                aria-pressed={brief.trim() === s}
-                style={{
-                  border: `1px solid ${brief.trim() === s ? "rgba(232,90,44,.45)" : LINE}`,
-                  background: brief.trim() === s ? "rgba(232,90,44,.08)" : "rgba(255,255,255,.7)",
-                  borderRadius: 999,
-                  padding: "11px 22px",
-                  fontFamily: "inherit",
-                  fontSize: 14.5,
-                  fontWeight: 500,
-                  lineHeight: 1,
-                  letterSpacing: "-.005em",
-                  color: brief.trim() === s ? "#6B2810" : HERO_BODY,
-                  cursor: "pointer",
-                  backdropFilter: "blur(12px) saturate(150%)",
-                  WebkitBackdropFilter: "blur(12px) saturate(150%)",
-                  boxShadow:
-                    "0 1px 0 rgba(255,255,255,.7) inset, 0 4px 12px -8px rgba(21,23,28,.16)",
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+      <div style={{ marginTop: 40, textAlign: "center" }}>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: ".16em",
+            textTransform: "uppercase",
+            color: SOFT,
+          }}
+        >
+          Not sure where to start? Try one of these
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 10,
+            marginTop: 18,
+          }}
+        >
+          {STARTERS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setBrief(s)}
+              aria-pressed={brief.trim() === s}
+              className="pa-chip"
+              style={{
+                padding: "13px 22px",
+                borderRadius: 999,
+                border: 0,
+                background: brief.trim() === s ? INK : "#fff",
+                color: brief.trim() === s ? PAPER : INK,
+                fontSize: 15,
+                fontWeight: 500,
+                fontFamily: "inherit",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 8px 20px -14px rgba(20,35,46,.3)",
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
+
+const BODY_INK = "#3d5560";
 
 /**
- * The dialog between pressing generate and paying for a lesson.
+ * A brief being typed by nobody.
  *
- * Three kinds of question, deliberately in this order: what the model needs to
- * know about the TEACHING (it asks these, and only when they would change the
- * lesson), then the two the model may never decide — how many exercises, and
- * whether the hard part gets a note in the learner's own language.
+ * The placeholder types itself, deletes itself and moves on. It is the one
+ * animation on this page that carries information rather than decoration: an
+ * empty box with a grey line in it looks like a search field, and this box is
+ * not a search field — watching it write "Explain the present perfect, with
+ * practice" says what to put there faster than any label.
  *
- * Everything is skippable. "Just build it" has to stay possible at every step,
- * so both buttons lead somewhere and neither is a dead end.
+ * Stops dead the moment there is a real brief, so it never competes with what
+ * a teacher is actually writing.
  */
-function SetupDialog({
-  questions,
-  answers,
-  onAnswer,
-  language,
-  onLanguage,
-  count,
-  onCount,
-  planFirst,
-  onCancel,
-  onGo,
-  onSkip,
-}: {
-  questions: Question[];
-  answers: Record<string, string>;
-  onAnswer: (id: string, value: string) => void;
-  language: string;
-  onLanguage: (v: string) => void;
-  count: number;
-  onCount: (n: number) => void;
-  planFirst: boolean;
-  onCancel: () => void;
-  onGo: () => void;
-  onSkip: () => void;
-}) {
+function useTypedPlaceholder(active: boolean): string {
+  const [text, setText] = useState("");
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!active) return;
+    // Motion-sensitive readers get the phrase whole, with no cursor. Checked
+    // here rather than in CSS because this animation is JavaScript, and a media
+    // query cannot reach it.
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setText(PLACEHOLDERS[0]);
+      return;
+    }
+    const full = PLACEHOLDERS[phraseIdx % PLACEHOLDERS.length];
+    let delay = 55;
+    if (!deleting && text.length === full.length) delay = 1800;
+    else if (deleting) delay = text.length === 0 ? 320 : 22;
+
+    const t = setTimeout(() => {
+      if (!deleting) {
+        const next = full.slice(0, text.length + 1);
+        setText(next);
+        if (next.length === full.length) setDeleting(true);
+      } else if (text.length === 0) {
+        setDeleting(false);
+        setPhraseIdx((i) => i + 1);
+      } else {
+        setText(full.slice(0, text.length - 1));
+      }
+    }, delay);
+    return () => clearTimeout(t);
+  }, [active, text, deleting, phraseIdx]);
+
+  return active ? `${text}▏` : "";
+}
+
+/** The bar under the box while the engine works.
+ *
+ *  Four named steps rather than one spinner, because this takes about a minute
+ *  and a minute of "…" is indistinguishable from a minute of nothing. */
+function Progress({ stage, count }: { stage: number; count: number }) {
+  const steps = [
+    "Reading the brief",
+    "Drafting the explanation",
+    `Writing ${count} exercises`,
+    "Checking every answer key",
+  ];
   return (
-    <div
-      role="presentation"
-      onClick={onCancel}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 60,
-        background: "rgba(21,23,28,.34)",
-        backdropFilter: "blur(3px)",
-        WebkitBackdropFilter: "blur(3px)",
-        display: "grid",
-        placeItems: "center",
-        padding: 20,
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Before I write this lesson"
-        // The backdrop closes; the sheet must not close when its own controls
-        // are pressed, which is what a click inside it would otherwise do.
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          maxHeight: "min(86vh, 760px)",
-          overflowY: "auto",
-          background: "#fff",
-          border: `1px solid ${LINE}`,
-          borderRadius: 20,
-          padding: 24,
-          display: "flex",
-          flexDirection: "column",
-          gap: 22,
-          textAlign: "left",
-          boxShadow: "0 40px 80px -30px rgba(21,23,28,.45)",
-        }}
-      >
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 650, color: INK }}>
-            Before I write it
-          </div>
-          <div style={{ fontSize: 13.5, color: MUTED, marginTop: 4 }}>
-            Skip anything and I&apos;ll choose sensibly.
-          </div>
-        </div>
-
-        {questions.map((q) => (
-          <Field key={q.id} label={q.label}>
-            {q.options.map((opt) => (
-              <Pill
-                key={opt}
-                on={answers[q.id] === opt}
-                onClick={() => onAnswer(q.id, opt)}
+    <div className="pa-slide" style={{ padding: "0 22px 22px" }}>
+      <div style={{ height: 5, borderRadius: 999, background: TROUGH_DEEP, overflow: "hidden" }}>
+        <div
+          style={{
+            height: "100%",
+            width: `${((stage + 1) / steps.length) * 100}%`,
+            borderRadius: 999,
+            background: EMBER,
+            transition: "width .6s cubic-bezier(.2,.7,.3,1)",
+          }}
+        />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 18, marginTop: 14 }}>
+        {steps.map((label, i) => {
+          const done = stage > i;
+          const active = stage === i;
+          return (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+              <span
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: 999,
+                  display: "block",
+                  background: done ? GOOD_INK : active ? EMBER : "#dcd8cf",
+                }}
+              />
+              <span
+                style={{
+                  color: done ? GOOD_INK : active ? INK : "#a6b0b6",
+                  fontWeight: active ? 700 : 500,
+                }}
               >
-                {opt}
-              </Pill>
-            ))}
-          </Field>
-        ))}
-
-        <Field
-          label="How many exercises?"
-          hint="Your call, not mine — it depends how long the class is."
-        >
-          {COUNT_CHOICES.map((c) => (
-            <Pill key={c.value} on={count === c.value} onClick={() => onCount(c.value)}>
-              {c.label}
-              <span style={{ opacity: 0.62, marginLeft: 6, fontWeight: 400 }}>{c.hint}</span>
-            </Pill>
-          ))}
-        </Field>
-
-        <Field
-          label="Explanations"
-          // Said here because it is the one thing teachers get wrong about this
-          // control: it is not "translate the lesson". A learner who reads the
-          // rule only in Uzbek has practised nothing.
-          hint="The lesson is always in English. A second language adds a short note per section, for the part your group actually finds hard."
-        >
-          {LANGUAGE_CHOICES.map((l) => (
-            <Pill key={l.value} on={language === l.value} onClick={() => onLanguage(l.value)}>
-              {l.label}
-            </Pill>
-          ))}
-        </Field>
-
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button type="button" onClick={onGo} style={primaryButton}>
-            {planFirst ? "Continue" : "Write it"}
-          </button>
-          <button type="button" onClick={onSkip} style={ghostButton}>
-            Skip — you decide
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{ ...ghostButton, border: 0, marginLeft: "auto", color: FAINT }}
-          >
-            Cancel
-          </button>
-        </div>
+                {label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function Field({
+function SpecRow({
   label,
   hint,
   children,
@@ -747,17 +773,30 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{label}</span>
-      {hint ? (
-        <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginTop: -3 }}>{hint}</span>
-      ) : null}
-      <span style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>{children}</span>
+    <div style={{ display: "grid", gridTemplateColumns: "74px 1fr", alignItems: "start", gap: 14 }}>
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: ".06em",
+          textTransform: "uppercase",
+          color: "#7b8891",
+          paddingTop: 9,
+        }}
+      >
+        {label}
+      </span>
+      <div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>{children}</div>
+        {hint ? (
+          <div style={{ fontSize: 12.5, color: FAINT, marginTop: 7, lineHeight: 1.5 }}>{hint}</div>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-function Pill({
+function SpecChip({
   on,
   onClick,
   children,
@@ -771,16 +810,18 @@ function Pill({
       type="button"
       aria-pressed={on}
       onClick={onClick}
+      className="pa-tap"
       style={{
-        border: `1px solid ${on ? EMBER : LINE}`,
-        background: on ? "rgba(232,90,44,.08)" : "#fff",
-        color: on ? "#6B2810" : INK,
-        borderRadius: 999,
         padding: "8px 15px",
+        borderRadius: 999,
+        border: 0,
+        fontSize: 14,
+        fontWeight: on ? 700 : 500,
         fontFamily: "inherit",
-        fontSize: 13,
         cursor: "pointer",
-        fontWeight: on ? 600 : 400,
+        background: on ? INK : "#fff",
+        color: on ? PAPER : BODY_INK,
+        boxShadow: on ? "none" : "inset 0 0 0 1px #e4e0d6",
       }}
     >
       {children}
@@ -788,47 +829,137 @@ function Pill({
   );
 }
 
-function MicIcon() {
+/**
+ * The engine's own questions, and only those.
+ *
+ * It used to open every time and carry the exercise count and the explanation
+ * language too. Both are on the page now, so this appears only when a model
+ * genuinely could not tell what a teacher meant — which is the only case where
+ * interrupting them is worth it. Everything stays skippable: "just build it"
+ * has to remain possible at every step.
+ */
+function SetupDialog({
+  questions,
+  answers,
+  onAnswer,
+  planFirst,
+  onCancel,
+  onGo,
+  onSkip,
+}: {
+  questions: Question[];
+  answers: Record<string, string>;
+  onAnswer: (id: string, value: string) => void;
+  planFirst: boolean;
+  onCancel: () => void;
+  onGo: () => void;
+  onSkip: () => void;
+}) {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <rect x="9" y="2" width="6" height="11" rx="3" />
-      <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4" />
-    </svg>
+    <div
+      role="presentation"
+      onClick={onCancel}
+      className="pa-slide"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        background: "rgba(20,35,46,0.42)",
+        backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+        display: "grid",
+        placeItems: "center",
+        padding: 24,
+        overflow: "auto",
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Before I write this lesson"
+        // The backdrop closes; the sheet must not close when its own controls
+        // are pressed, which is what a click inside it would otherwise do.
+        onClick={(e) => e.stopPropagation()}
+        className="pa-pop"
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          maxHeight: "min(86vh, 760px)",
+          overflowY: "auto",
+          background: PAPER,
+          borderRadius: 32,
+          padding: "30px 32px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          textAlign: "left",
+          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6)",
+        }}
+      >
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: INK, margin: 0, letterSpacing: "-.02em" }}>
+            One thing first
+          </h2>
+          <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 0", lineHeight: 1.55 }}>
+            Skip anything and I&apos;ll choose sensibly.
+          </p>
+        </div>
+
+        {questions.map((q) => (
+          <div key={q.id} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{q.label}</span>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+              {q.options.map((opt) => (
+                <SpecChip key={opt} on={answers[q.id] === opt} onClick={() => onAnswer(q.id, opt)}>
+                  {opt}
+                </SpecChip>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={onGo} className="pa-ember" style={emberPill}>
+            {planFirst ? "Continue" : "Write it"}
+          </button>
+          <button type="button" onClick={onSkip} className="pa-ghost" style={ghostPill}>
+            Skip — you decide
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="pa-ghost"
+            style={{ ...ghostPill, background: "transparent", color: GHOST, marginLeft: "auto" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-const panel: React.CSSProperties = {
-  width: "100%",
-  maxWidth: 720,
-  background: "#fff",
-  border: `1px solid ${LINE}`,
-  borderRadius: 16,
-  padding: 20,
-  display: "flex",
-  flexDirection: "column",
-  gap: 16,
-  textAlign: "left",
-};
-
-const primaryButton: React.CSSProperties = {
+const emberPill: React.CSSProperties = {
   border: 0,
-  borderRadius: 10,
+  borderRadius: 999,
   background: EMBER,
   color: "#fff",
-  padding: "10px 18px",
+  padding: "13px 26px",
   fontFamily: "inherit",
-  fontSize: 14,
-  fontWeight: 600,
+  fontSize: 15,
+  fontWeight: 700,
   cursor: "pointer",
+  boxShadow: "0 10px 24px -12px rgba(236,106,69,.9)",
 };
 
-const ghostButton: React.CSSProperties = {
-  border: `1px solid ${LINE}`,
-  borderRadius: 10,
-  background: "#fff",
+const ghostPill: React.CSSProperties = {
+  border: 0,
+  borderRadius: 999,
+  background: TROUGH,
   color: MUTED,
-  padding: "10px 16px",
+  padding: "13px 22px",
   fontFamily: "inherit",
-  fontSize: 14,
+  fontSize: 15,
+  fontWeight: 500,
   cursor: "pointer",
 };

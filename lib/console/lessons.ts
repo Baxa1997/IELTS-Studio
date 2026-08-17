@@ -45,39 +45,45 @@ export const BLUEPRINT_LABEL: Record<string, string> = {
 
 /**
  * A visual identity per lesson kind, so a wall of cards is scannable rather
- * than uniform: its own accent, its own wash, and its own mark.
+ * than uniform: its own wash, its own accent, and its own two-letter code.
  *
- * `wash` is the card's header band and `mark` the glyph on it — a grammar
- * lesson and a vocabulary lesson should be tellable apart across the room,
- * which is the whole job of a library grid.
+ * `wash` is the card's colour plate and `code` the large glyph on it — a
+ * grammar lesson and a vocabulary lesson should be tellable apart across the
+ * room, which is the whole job of a library grid. Two letters rather than a
+ * symbol because the plate is 108px tall and set at 30px: a "¶" at that size
+ * reads as a smudge, and "GR" reads as grammar.
  */
 export const BLUEPRINT_TINT: Record<
   string,
-  { bg: string; ink: string; wash: string; mark: string }
+  { bg: string; ink: string; wash: string; mark: string; code: string }
 > = {
   grammar: {
-    bg: "#EEEDF8",
-    ink: "#4340CB",
-    wash: "linear-gradient(135deg,#EDECFA 0%,#F7F6FD 100%)",
+    bg: "#eeeefb",
+    ink: "#4b46a8",
+    wash: "#eeeefb",
     mark: "¶",
+    code: "GR",
   },
   vocabulary: {
-    bg: "#EAF4EE",
-    ink: "#16794C",
-    wash: "linear-gradient(135deg,#E7F3EC 0%,#F5FAF7 100%)",
+    bg: "#e4f1ea",
+    ink: "#1c6b52",
+    wash: "#e4f1ea",
     mark: "A",
+    code: "VO",
   },
   skill: {
-    bg: "#FBEEE0",
-    ink: "#A9721F",
-    wash: "linear-gradient(135deg,#FBEEDF 0%,#FDF8F1 100%)",
+    bg: "#fdf4e3",
+    ink: "#9a6b1f",
+    wash: "#fdf4e3",
     mark: "→",
+    code: "SK",
   },
   exam_technique: {
-    bg: "#F7E4E2",
-    ink: "#A63A30",
-    wash: "linear-gradient(135deg,#F8E6E3 0%,#FDF5F4 100%)",
+    bg: "#fdefe9",
+    ink: "#c1502f",
+    wash: "#fdefe9",
     mark: "★",
+    code: "EX",
   },
 };
 

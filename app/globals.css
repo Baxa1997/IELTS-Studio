@@ -984,40 +984,90 @@
 }
 .lp-lesson .lp-form th { width: 22%; }
 
+/* ── Practice AI ────────────────────────────────────────────────────────────
+   Everything here is a :hover, :focus-within, keyframe or media query — the
+   states an inline style genuinely cannot express. The palette itself stays in
+   lib/lessons/theme.ts and is applied inline, deliberately: a stale stylesheet
+   should be able to cost this surface its animations, never its colours. */
+
+@keyframes pa-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pa-pop {
+  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pa-slide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pa-rise { animation: pa-rise .45s cubic-bezier(.2,.7,.3,1) both; }
+.pa-pop { animation: pa-pop .35s cubic-bezier(.2,.7,.3,1) both; }
+.pa-slide { animation: pa-slide .28s ease both; }
+
+/* Someone who has asked for less motion gets the layout and none of the
+   travel. `both` fill means these must resolve to a real end state, not to
+   `none` — an animation removed outright would leave opacity at 0. */
+@media (prefers-reduced-motion: reduce) {
+  .pa-rise, .pa-pop, .pa-slide { animation-duration: .01ms; }
+  .pa-card:hover, .pa-chip:hover, .pa-lift:hover { transform: none; }
+}
+
 /* The composer's focus ring — a :focus-within state cannot be an inline style. */
 .pa-composer {
-  transition: border-color .15s, box-shadow .15s;
+  transition: box-shadow .18s;
 }
 .pa-composer:focus-within {
-  border-color: rgba(232, 90, 44, .45);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.85) inset,
-    0 30px 60px -28px rgba(21,23,28,.30),
-    0 12px 28px -12px rgba(21,23,28,.10),
-    0 0 0 4px rgba(232,90,44,.12);
+    0 1px 2px rgba(20,35,46,.05),
+    0 30px 60px -28px rgba(20,35,46,.28),
+    0 0 0 4px rgba(236,106,69,.14);
 }
 
 /* Icon buttons along the composer's foot. */
 .pa-icon-btn {
-  transition: background .15s, border-color .15s;
-  border: 1px solid transparent;
+  transition: background .18s, color .18s;
+  border: 0;
 }
-.pa-icon-btn:hover {
-  border-color: #E5EAF0;
-  background: rgba(21,23,28,.04);
-}
+.pa-icon-btn:hover { background: #f1efe9; }
 
-/* Starter chips: lift on hover, ember edge. */
+/* Starter chips: lift on hover. */
 .pa-chip {
-  transition: border-color .15s, background .15s, color .15s, transform .15s;
+  transition: background .18s, color .18s, transform .18s, box-shadow .18s;
 }
 .pa-chip:hover {
-  transform: translateY(-1px);
-  border-color: rgba(232,90,44,.4);
-  background: rgba(255,255,255,.95);
-  color: #6B2810;
+  transform: translateY(-2px);
+  box-shadow: 0 1px 2px rgba(20,35,46,.05), 0 14px 26px -14px rgba(20,35,46,.35);
 }
 .pa-chip:active { transform: translateY(0); }
+
+/* Anything that rises a pixel under the pointer: pill buttons in the sticky
+   bars, the rail's primary action, the modal's link button. */
+.pa-lift { transition: background .18s, transform .18s, box-shadow .18s; }
+.pa-lift:hover:not(:disabled) { transform: translateY(-1px); }
+.pa-lift:active:not(:disabled) { transform: translateY(0); }
+
+.pa-ember { transition: background .18s, transform .18s; }
+.pa-ember:hover:not(:disabled) { background: #d95936; transform: translateY(-1px); }
+.pa-ember:active:not(:disabled) { transform: translateY(0); }
+
+.pa-dark { transition: background .18s, transform .18s; }
+.pa-dark:hover:not(:disabled) { background: #22384a; transform: translateY(-1px); }
+
+.pa-ghost { transition: background .18s, color .18s; }
+.pa-ghost:hover:not(:disabled) { background: #e7e4dc; }
+
+/* A spec chip, a navigator cell, an answer option — small targets that need a
+   visible pointer state without moving. */
+.pa-tap { transition: background .15s, box-shadow .15s, color .15s; }
+.pa-tap:hover:not(:disabled) { box-shadow: inset 0 0 0 2px rgba(20,35,46,.14); }
+
+/* Typed answers. A ring inside the field rather than a border, so nothing
+   reflows by a pixel when it lands. */
+.pa-field { transition: box-shadow .18s; }
+.pa-field:focus { box-shadow: inset 0 0 0 2px #ec6a45 !important; }
 
 /* ── Printing a lesson ──────────────────────────────────────────────────────
    "Download PDF" is the browser's own print-to-PDF, and that is a deliberate
@@ -1086,21 +1136,77 @@
   }
 }
 
-/* Lesson cards: lift on hover, ember edge — the same gesture as the starter
-   chips above them, so the whole page answers to the pointer the same way. */
+/* Lesson cards: lift on hover — the same gesture as the starter chips above
+   them, so the whole page answers to the pointer the same way. */
 .pa-card {
-  transition: border-color .15s, box-shadow .15s, transform .15s;
+  transition: box-shadow .25s ease, transform .25s cubic-bezier(.2,.7,.3,1);
 }
 .pa-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(232, 90, 44, .35);
-  box-shadow: 0 10px 24px -12px rgba(21, 23, 28, .18);
+  transform: translateY(-4px);
+  box-shadow: 0 1px 2px rgba(20,35,46,.05), 0 26px 44px -24px rgba(20,35,46,.45);
 }
 .pa-card:active { transform: translateY(0); }
 
-.pa-send { transition: background .15s, transform .15s, opacity .15s; }
-.pa-send:hover:not(:disabled) { background: #d8501f; }
-.pa-send:active:not(:disabled) { transform: translateY(1px); }
+.pa-send { transition: background .18s, transform .18s, opacity .18s; }
+.pa-send:hover:not(:disabled) { background: #d95936; transform: translateY(-1px); }
+.pa-send:active:not(:disabled) { transform: translateY(0); }
+
+/* ── the runner's two columns ───────────────────────────────────────────────
+   The navigator is a rail beside the item on a laptop and a strip above it on
+   anything narrower. It is never dropped: it is the only way to reach question
+   9 from question 3, and a runner that shows one item at a time with no way to
+   move between them is a dead end on a phone. */
+.pa-runner {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  flex: 1;
+  min-height: 0;
+}
+.pa-runner-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #fdfbf7;
+  border-left: 1px solid rgba(20,35,46,.07);
+}
+@media (max-width: 1000px) {
+  .pa-runner { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .pa-runner-rail {
+    grid-row: 1;
+    border-left: 0;
+    border-bottom: 1px solid rgba(20,35,46,.07);
+    max-height: 190px;
+  }
+}
+
+/* The lesson page's reading column + sticky rail, on the same terms. */
+.pa-lesson-grid {
+  display: grid;
+  grid-template-columns: 1.62fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 1040px) {
+  .pa-lesson-grid { grid-template-columns: 1fr; gap: 22px; }
+  .pa-lesson-rail { position: static !important; }
+}
+
+/* Three cards, then two, then one. */
+.pa-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+@media (max-width: 1100px) { .pa-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .pa-grid { grid-template-columns: 1fr; } }
+
+/* The library hero's headline. clamp() handles the sizing; this only stops the
+   sticky bars and the hero from crowding on a narrow window. */
+@media (max-width: 760px) {
+  .pa-hero-pad { padding-left: 18px !important; padding-right: 18px !important; }
+  .pa-bar { padding-left: 16px !important; padding-right: 16px !important; }
+  .pa-bar-hide { display: none !important; }
+}
 
 /* Scrolls, but shows no bar.
 
