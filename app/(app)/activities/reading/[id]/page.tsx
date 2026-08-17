@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
+import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +54,7 @@ export default async function ReadingFeedbackPage({ params }: PageProps) {
 
   const { data: attempt } = await supabase
     .from("reading_attempts")
-    .select("test_id, passage_id, band, percent, correct_count, total_questions, type_breakdown, details, submitted_at")
+    .select("test_id, passage_id, band, percent, correct_count, total_questions, type_breakdown, details, submitted_at, student_id")
     .eq("id", id)
     .maybeSingle();
   // Same reasoning as the essay page: staff have no learner history to
@@ -78,14 +79,21 @@ export default async function ReadingFeedbackPage({ params }: PageProps) {
     title = (passage?.title as string | undefined) ?? "Reading passage";
   }
 
+  const back = await reportBackLink({
+    viewer: profile,
+    studentId: attempt.student_id as string,
+    learnerHref: "/activities",
+    learnerLabel: "Activities",
+  });
+
   const groups = groupByPassage(items);
   const grouped = isTest && groups.length > 1;
 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/activities" className="text-muted-foreground hover:text-foreground text-sm">
-          ← Activities
+        <Link href={back.href} className="text-muted-foreground hover:text-foreground text-sm">
+          ← {back.label}
         </Link>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h1>
         {isTest ? (

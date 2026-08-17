@@ -1285,6 +1285,24 @@
 .cn-page {
   padding: 26px 28px 60px;
 }
+/* WHY THIS EXISTS, AND WHY IT ONLY SURFACED NOW.
+   `cardStyle` carries no margin — vertical rhythm came from `Stack`'s gap or
+   from `KpiRow`'s bottom margin, so any page that put two <Card>s side by side
+   as plain siblings had them touching, edge to edge. That was always true. It
+   was invisible while the card border sat at 1.26:1 against white; raising it
+   to 1.75 so the lines could actually be seen turned a pre-existing layout bug
+   into two cards that look welded together.
+
+   Done at the page level, on top-level children only, so it cannot double up
+   with the `gap` inside a Stack or a Split — which is exactly what putting the
+   margin on the card itself would have caused. */
+.cn-page > * + * {
+  margin-top: 16px;
+}
+/* PageHead already owns the space under itself. */
+.cn-page > .cn-pagehead + * {
+  margin-top: 0;
+}
 @media (max-width: 640px) {
   .cn-page {
     padding: 18px 16px 48px;

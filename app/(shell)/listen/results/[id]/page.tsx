@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 
 import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../trap-explain";
@@ -110,16 +111,24 @@ export default async function ListeningResultPage({ params }: PageProps) {
   // report. No role check is needed — RLS decides which attempts are readable
   // (own row for a student, can_view_student for staff), so an attempt they
   // shouldn't see simply isn't found below.
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
   const { id } = await params;
 
   const supabase = await createClient();
   const { data: attempt } = await supabase
     .from("listening_attempts")
-    .select("id, score, max_score, created_at, result")
+    .select("id, score, max_score, created_at, result, student_id")
     .eq("id", id)
     .maybeSingle();
   if (!attempt) notFound();
+
+  // Staff open this from a student's page; "All results" is the learner's list.
+  const back = await reportBackLink({
+    viewer: profile,
+    studentId: attempt.student_id as string,
+    learnerHref: "/listen/results",
+    learnerLabel: "All results",
+  });
 
   const result = (attempt.result ?? {}) as StoredResult;
   const results = result.results ?? [];
@@ -138,10 +147,10 @@ export default async function ListeningResultPage({ params }: PageProps) {
     <div style={{ width: "100%", padding: "26px 24px 64px", fontFamily: SANS, color: INK }}>
       <div style={{ maxWidth: 880, margin: "0 auto" }}>
         <Link
-          href="/listen/results"
+          href={back.href}
           style={{ fontSize: 14, fontWeight: 600, color: MUTED, textDecoration: "none" }}
         >
-          ← All results
+          ← {back.label}
         </Link>
         <h1
           style={{
