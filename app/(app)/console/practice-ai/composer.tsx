@@ -25,13 +25,18 @@ import { createClient } from "@/lib/supabase/client";
 /**
  * Type what your group needs; get a lesson page.
  *
- * The redesign moved the settings OUT of a dialog and into the box: level,
- * focus, how many exercises and whether the hard part gets a note in the
- * learner's own language now sit one press away under "+ Specs", visible while
- * the brief is still being written. The dialog they used to live in is still
- * here — but only for the questions the ENGINE asks, and only when it asks any.
- * A modal that opened every time to offer choices already made on the page is
- * a modal that gets dismissed without being read.
+ * The redesign moved the settings OUT of a dialog and into the box. HOW MANY
+ * EXERCISES sits on the face of it, because it is the one a teacher changes
+ * every time and a collapsed panel meant every lesson quietly came out at the
+ * default; level, focus and first-language support are a press away under
+ * "+ Specs". The dialog they used to live in is still here — but only for the
+ * questions the ENGINE asks, and only when it asks any. A modal that opened
+ * every time to offer choices already made on the page is a modal that gets
+ * dismissed without being read.
+ *
+ * A starter chip FILLS THE BOX and stops. Send is the only thing that builds:
+ * the point of putting a suggestion in the brief is that it can be edited
+ * before anything is written.
  *
  * Every control does something. A `+` that opened nothing and a mic that
  * listened to nothing would match the picture and lie about the product, so the
@@ -64,10 +69,10 @@ type Plan = Record<string, unknown> & { title?: string; level?: string; objectiv
 type Phase =
   | { step: "idle" }
   | { step: "working"; stage: number; label: string }
-  // Both carry the brief they were built from. A starter chip sets the brief
-  // and starts in the same tick, so re-reading `brief` state a step later gets
-  // the value from BEFORE the click — the lesson would be built from whatever
-  // was in the box previously, or from nothing at all.
+  // Both carry the brief they were built from, rather than re-reading state a
+  // step later. The box stays editable while the setup dialog is open, and a
+  // lesson has to be built from the words that were actually sent to intake —
+  // otherwise the plan describes one brief and the lesson answers another.
   | { step: "asking"; questions: Question[]; blueprint: string | null; brief: string }
   | { step: "planned"; plan: Plan; brief: string }
   | { step: "error"; message: string };
@@ -102,11 +107,14 @@ const FOCUSES = [
  *  them takes any number, because how long a lesson is depends on how long the
  *  class is and a teacher is the only one who knows that. */
 const COUNTS = [8, 12, 16, 20];
-/** The engine needs enough items to build all three stages, and a lesson past
- *  40 stops being a lesson. Enforced here AND on blur, so a typed 999 is pulled
- *  back to something the generator can actually deliver. */
-const COUNT_MIN = 4;
-const COUNT_MAX = 40;
+/** MIRRORS THE ENGINE'S OWN LIMITS (`lessons/blueprints.py`: MIN_EXERCISES 6,
+ *  MAX_EXERCISES 30). Six is the fewest that can still be staged across
+ *  controlled/semi-controlled/freer; past thirty nobody finishes and the answer
+ *  keys get thin. Offering a number the engine will silently clamp is worse
+ *  than not offering it — a teacher who types 40 and gets 30 back learns not to
+ *  trust the field. */
+const COUNT_MIN = 6;
+const COUNT_MAX = 30;
 
 const LANGUAGES = [
   { value: "en", label: "English only" },
@@ -305,7 +313,6 @@ export function Composer() {
   const specSummary = [
     level === AUTO ? null : level,
     focus === AUTO ? null : FOCUSES.find((f) => f.value === focus)?.label,
-    `${count} items`,
     language === "en" ? null : language === "uz" ? "+ Uzbek" : "+ Russian",
   ]
     .filter(Boolean)
@@ -390,47 +397,6 @@ export function Composer() {
                   {c}
                 </SpecChip>
               ))}
-              {/* The presets are shortcuts; this is the actual control. A class
-                  that needs 14 is not an edge case, and a teacher who cannot
-                  type 14 quietly settles for 12 — which is exactly what
-                  happened when the chips were the only way in. */}
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "4px 6px 4px 14px",
-                  borderRadius: 999,
-                  background: "#fff",
-                  boxShadow: `inset 0 0 0 ${COUNTS.includes(count) ? 1 : 2}px ${COUNTS.includes(count) ? "#e4e0d6" : EMBER}`,
-                }}
-              >
-                <span style={{ fontSize: 13, color: SOFT }}>or</span>
-                <input
-                  type="number"
-                  min={COUNT_MIN}
-                  max={COUNT_MAX}
-                  value={count}
-                  aria-label="How many exercises"
-                  onChange={(e) => setCount(Number(e.target.value))}
-                  onBlur={(e) =>
-                    setCount(
-                      Math.max(COUNT_MIN, Math.min(COUNT_MAX, Number(e.target.value) || 12)),
-                    )
-                  }
-                  style={{
-                    width: 62,
-                    border: 0,
-                    outline: "none",
-                    background: "transparent",
-                    fontFamily: "inherit",
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: INK,
-                    padding: "6px 0",
-                  }}
-                />
-              </span>
             </SpecRow>
             {/* Said here because it is the one thing teachers get wrong about
                 this control: it is not "translate the lesson". A learner who
@@ -518,6 +484,53 @@ export function Composer() {
             </span>
             <span style={{ fontWeight: 600, fontSize: 15 }}>Plan</span>
           </button>
+
+          {/* HOW MANY, on the face of the box rather than inside the specs
+              panel. It was one press away and that was one press too many: the
+              panel is shut by default, so every lesson quietly came out at the
+              default 12 and there was no sign the number was ever a choice. */}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+              padding: 4,
+              borderRadius: 999,
+              background: "#fff",
+              boxShadow: "inset 0 0 0 1px #e4e0d6",
+            }}
+          >
+            <Step label="Fewer exercises" onClick={() => setCount((c) => Math.max(COUNT_MIN, c - 1))}>
+              −
+            </Step>
+            <input
+              type="number"
+              min={COUNT_MIN}
+              max={COUNT_MAX}
+              value={count}
+              aria-label="How many exercises"
+              onChange={(e) => setCount(Number(e.target.value))}
+              onBlur={(e) =>
+                setCount(Math.max(COUNT_MIN, Math.min(COUNT_MAX, Number(e.target.value) || 12)))
+              }
+              style={{
+                width: 34,
+                border: 0,
+                outline: "none",
+                background: "transparent",
+                fontFamily: "inherit",
+                fontSize: 15,
+                fontWeight: 700,
+                color: INK,
+                textAlign: "center",
+                padding: 0,
+              }}
+            />
+            <Step label="More exercises" onClick={() => setCount((c) => Math.min(COUNT_MAX, c + 1))}>
+              +
+            </Step>
+            <span style={{ fontSize: 13.5, color: SOFT, padding: "0 10px 0 4px" }}>items</span>
+          </span>
 
           <span className="pa-bar-hide" style={{ fontSize: 13, color: SOFT }}>
             {planFirst ? "I'll show the outline first" : "Straight to writing"}
@@ -647,28 +660,20 @@ export function Composer() {
         >
           {STARTERS.map((s) => {
             const mine = brief.trim() === s;
-            const working = busy && mine;
             return (
               <button
                 key={s}
                 type="button"
-                // A starter is a finished brief, so pressing one BUILDS. It used
-                // to only fill the box — 40px above the fold on a laptop, which
-                // read as "nothing happened" and left the teacher pressing it
-                // again. The spinner is on the chip they pressed, because that
-                // is where they are looking.
-                onClick={() => {
-                  if (busy) return;
-                  setBrief(s);
-                  void start(s);
-                }}
+                // A starter FILLS THE BOX and stops there. It is a suggestion,
+                // not a command: the whole point of putting it in the brief is
+                // that a teacher can add "for my Tuesday group, they keep
+                // dropping the auxiliary" before anything is built. Send is the
+                // only thing that starts a lesson.
+                onClick={() => setBrief(s)}
                 disabled={busy}
                 aria-pressed={mine}
                 className="pa-chip"
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 9,
                   padding: "13px 22px",
                   borderRadius: 999,
                   border: 0,
@@ -678,11 +683,10 @@ export function Composer() {
                   fontWeight: 500,
                   fontFamily: "inherit",
                   cursor: busy ? "default" : "pointer",
-                  opacity: busy && !mine ? 0.5 : 1,
+                  opacity: busy ? 0.5 : 1,
                   boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 8px 20px -14px rgba(20,35,46,.3)",
                 }}
               >
-                {working ? <Spinner size={15} /> : null}
                 {s}
               </button>
             );
@@ -1057,6 +1061,42 @@ function SpecRow({
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** One end of the items stepper. A real button, so the count is reachable by
+ *  tap and by keyboard without typing into a number field. */
+function Step({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="pa-icon-btn"
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: 999,
+        display: "grid",
+        placeItems: "center",
+        background: "transparent",
+        color: BODY_INK,
+        fontFamily: "inherit",
+        fontSize: 17,
+        lineHeight: 1,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 

@@ -39,7 +39,11 @@ import sanitizeHtml from "sanitize-html";
 const ALLOWED_TAGS = [
   "h2", "h3", "h4",
   "p", "span", "div", "br", "hr",
-  "strong", "em", "b", "i", "u", "mark", "sub", "sup",
+  // `del` and `s` earn their place on a GRAMMAR page specifically: the clearest
+  // way to teach a form is to show the wrong one struck through beside the
+  // right one, and a tint alone does not survive a black-and-white printout.
+  // Neither tag takes an attribute we allow or carries any behaviour.
+  "strong", "em", "b", "i", "u", "mark", "sub", "sup", "del", "s",
   "ul", "ol", "li",
   "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption",
   "blockquote", "code", "pre", "kbd", "abbr", "dl", "dt", "dd",

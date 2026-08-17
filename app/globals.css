@@ -958,20 +958,71 @@
 
 /* The named boxes the prompt offers the model. Each one is a different KIND of
    aside, and looking different is the whole point — a learner skimming should
-   be able to tell a rule from a warning without reading either. */
-.lp-lesson .lp-tip,
-.lp-lesson .lp-warn,
-.lp-lesson .lp-example,
-.lp-lesson .lp-key {
+   be able to tell a rule from a warning without reading either.
+
+   SCOPED TO BLOCK ELEMENTS, and that qualifier is load-bearing. These names
+   were written for `<div class="lp-warn">`, but a model reaches for lp-warn to
+   flag a wrong form mid-sentence too — `<span class="lp-warn">I am agreeing</span>`
+   — and an inline box does not reserve vertical space for its own padding. The
+   result was a 12px-tall peach rectangle painting straight over the lines above
+   and below it, which is exactly what "words overwriting the text" was. Inline
+   uses get their own treatment below instead of inheriting a block one. */
+.lp-lesson div.lp-tip,
+.lp-lesson div.lp-warn,
+.lp-lesson div.lp-example,
+.lp-lesson div.lp-key,
+.lp-lesson p.lp-tip,
+.lp-lesson p.lp-warn,
+.lp-lesson p.lp-example,
+.lp-lesson p.lp-key,
+.lp-lesson blockquote.lp-tip,
+.lp-lesson blockquote.lp-warn,
+.lp-lesson blockquote.lp-example,
+.lp-lesson blockquote.lp-key {
+  display: block;
   border-radius: 10px;
   padding: 12px 14px;
   margin: 0 0 14px;
   border: 1px solid;
 }
+
+/* The same names used inline: a highlight, not a box. No vertical padding, so
+   it can never overlap its neighbours; `box-decoration-break: clone` keeps the
+   rounded ends when a phrase wraps across two lines. */
+.lp-lesson span.lp-tip,
+.lp-lesson span.lp-warn,
+.lp-lesson span.lp-example,
+.lp-lesson span.lp-key,
+.lp-lesson code.lp-tip,
+.lp-lesson code.lp-warn,
+.lp-lesson code.lp-example,
+.lp-lesson code.lp-key,
+.lp-lesson mark {
+  display: inline;
+  border: 0;
+  margin: 0;
+  padding: .08em .38em;
+  border-radius: 5px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
 .lp-lesson .lp-tip { background: #EEF4F5; border-color: #CFE0E3; }
 .lp-lesson .lp-warn { background: #FBEEE0; border-color: #E9CDA6; }
 .lp-lesson .lp-example { background: #FAFAF8; border-color: #E7E5DF; }
 .lp-lesson .lp-key { background: #F3F1FB; border-color: #D8D4F0; }
+.lp-lesson mark { background: #FBEEE0; color: inherit; }
+
+/* A wrong form, however the model spells the intent. Struck through rather
+   than only tinted, so it reads as "not this" on a black-and-white printout
+   too. */
+.lp-lesson del,
+.lp-lesson s,
+.lp-lesson .lp-wrong {
+  text-decoration: line-through;
+  text-decoration-color: #C1502F;
+  color: #8A7F79;
+}
 .lp-lesson .lp-timeline {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;

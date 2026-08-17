@@ -100,8 +100,6 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           className="pa-lesson-grid pa-hero-pad"
           style={{
             position: "relative",
-            maxWidth: 1200,
-            margin: "0 auto",
             padding: "46px 28px 96px",
           }}
         >

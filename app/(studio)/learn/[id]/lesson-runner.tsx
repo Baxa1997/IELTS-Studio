@@ -410,7 +410,11 @@ export function LessonRunner({
       {/* ── the explanation ──────────────────────────────────────────────── */}
       {tab === "explain" && explanation ? (
         <div>
-          <div className="pa-pop" style={{ maxWidth: 880, margin: "0 auto", padding: "32px 22px 64px" }}>
+          {/* FULL WIDTH, like the practice beside it. A centred 880px column
+              left two grey gutters on a laptop and squeezed the form tables —
+              which are the densest, most-read thing on a grammar page — into
+              half the room they need. */}
+          <div className="pa-pop pa-runner-main">
             <div
               style={{
                 borderRadius: 28,
