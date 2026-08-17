@@ -59,6 +59,31 @@ type Phase =
   | { step: "planned"; plan: Plan }
   | { step: "error"; message: string };
 
+/**
+ * The two questions the ENGINE must never ask, because the answer is a fact
+ * about this teacher's class rather than about the teaching, and asking costs
+ * one of the three questions it is allowed.
+ *
+ * Both live here, always shown, so a teacher never has to accept a default they
+ * were not offered — the language note used to be a lozenge in the composer
+ * footer that nobody noticed, and the exercise count was not a choice at all.
+ */
+const LANGUAGE_CHOICES = [
+  { value: "en", label: "English only" },
+  { value: "uz", label: "+ O'zbekcha izoh" },
+  { value: "ru", label: "+ пояснение по-русски" },
+];
+
+/** Sizes a real class actually needs: a warm-up, a normal lesson, a long one,
+ *  and a full worksheet. Anything is allowed by the engine — these are the ones
+ *  worth one press. */
+const COUNT_CHOICES = [
+  { value: 8, label: "8", hint: "quick" },
+  { value: 12, label: "12", hint: "standard" },
+  { value: 16, label: "16", hint: "long" },
+  { value: 20, label: "20", hint: "worksheet" },
+];
+
 /** The browser's own dictation. No server, no cost — and absent in browsers
  *  that can't do it, which is why the button is conditional. */
 interface SpeechSession {
@@ -122,6 +147,7 @@ export function Composer() {
   const [showContext, setShowContext] = useState(false);
   const [planFirst, setPlanFirst] = useState(true);
   const [language, setLanguage] = useState("en");
+  const [count, setCount] = useState(12);
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [listening, setListening] = useState(false);
@@ -155,7 +181,11 @@ export function Composer() {
       return;
     }
     const rec = new Ctor();
-    rec.lang = language === "uz" ? "uz-UZ" : language === "ru" ? "ru-RU" : "en-US";
+    // The BROWSER's language, not the lesson's. These were the same setting
+    // until the explanation language moved into the dialog, and conflating them
+    // was always slightly wrong: which language a teacher dictates a brief in
+    // says nothing about which language their learners need a note in.
+    rec.lang = navigator.language || "en-US";
     rec.continuous = false;
     rec.interimResults = false;
     rec.onresult = (e) => {
@@ -169,37 +199,53 @@ export function Composer() {
     rec.start();
   }
 
+  /**
+   * Press generate and the dialog opens — ALWAYS, even when the engine says it
+   * has everything it needs.
+   *
+   * It used to appear only when the model decided to ask something, so whether
+   * a teacher was offered any say at all depended on how confidently a model
+   * had read their sentence. Two of the choices in it are not the model's to
+   * make in any case: how long the class is, and whether the group needs the
+   * hard part explained in Uzbek or Russian. Those are always worth a press.
+   */
   async function start(text: string) {
     if (!text.trim() || busy) return;
     setAnswers({});
+    setPhase({ step: "thinking", label: "Reading your brief…" });
     try {
-      if (planFirst) {
-        setPhase({ step: "thinking", label: "Reading your brief…" });
-        const intake = await callEngine<{
-          status: string;
-          questions?: Question[];
-          blueprint?: string | null;
-        }>("intake", { brief: text, language });
+      const intake = await callEngine<{
+        status: string;
+        questions?: Question[];
+        blueprint?: string | null;
+      }>("intake", { brief: text, language });
 
-        if (intake.status === "ask" && (intake.questions?.length ?? 0) > 0) {
-          setPhase({ step: "asking", questions: intake.questions ?? [], blueprint: intake.blueprint ?? null });
-          return;
-        }
-        await makePlan(text, {}, intake.blueprint ?? null);
-        return;
-      }
-      setPhase({ step: "thinking", label: "Planning the lesson…" });
-      const plan = await callEngine<Plan>("plan", { brief: text, language });
-      await build(text, plan);
+      setPhase({
+        step: "asking",
+        questions: intake.questions ?? [],
+        blueprint: intake.blueprint ?? null,
+      });
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
     }
   }
 
-  async function makePlan(text: string, given: Record<string, string>, blueprint: string | null) {
+  /** Leaving the dialog: plan and show it, or go straight to writing. */
+  async function proceed(given: Record<string, string>, blueprint: string | null) {
+    const text = fullBrief();
     setPhase({ step: "thinking", label: "Planning the lesson…" });
-    const plan = await callEngine<Plan>("plan", { brief: text, answers: given, blueprint, language });
-    setPhase({ step: "planned", plan });
+    const plan = await callEngine<Plan>("plan", {
+      brief: text,
+      answers: given,
+      blueprint,
+      language,
+      exercise_total: count,
+    });
+    if (planFirst) {
+      setPhase({ step: "planned", plan });
+      return;
+    }
+    await build(text, plan);
   }
 
   async function build(text: string, plan: Plan) {
@@ -382,29 +428,9 @@ export function Composer() {
             </span>
           </button>
 
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            title="The lesson is always in English. Pick a second language to add a short note per section for the parts your learners find hardest."
-            style={{
-              border: `1px solid ${LINE}`,
-              borderRadius: 999,
-              padding: "7px 11px",
-              fontFamily: "inherit",
-              fontSize: 13.5,
-              color: MUTED,
-              background: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            {/* Not "which language is the lesson in" — the lesson is always in
-                English, because that is the language being learned. This adds a
-                short note per section in the learner's own, for the part that is
-                genuinely hard. English means no note at all. */}
-            <option value="en">English only</option>
-            <option value="uz">+ O&apos;zbekcha izoh</option>
-            <option value="ru">+ пояснение по-русски</option>
-          </select>
+          {/* The explanation language used to be a lozenge here, next to the
+              plan toggle, where it was one control among several and easy never
+              to notice. It is now a question in the dialog, asked every time. */}
 
           <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
             {canDictate ? (
@@ -475,49 +501,19 @@ export function Composer() {
       ) : null}
 
       {phase.step === "asking" ? (
-        <div style={panel}>
-          <p style={{ margin: 0, fontSize: 13.5, color: MUTED }}>
-            A couple of things would change what I make. Skip any of them and I&apos;ll decide.
-          </p>
-          {phase.questions.map((q) => (
-            <div key={q.id} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{q.label}</span>
-              <span style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                {q.options.map((opt) => {
-                  const on = answers[q.id] === opt;
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setAnswers((a) => ({ ...a, [q.id]: opt }))}
-                      style={{
-                        border: `1px solid ${on ? EMBER : LINE}`,
-                        background: on ? "#EEEDF8" : "#fff",
-                        color: on ? EMBER : INK,
-                        borderRadius: 999,
-                        padding: "7px 14px",
-                        fontFamily: "inherit",
-                        fontSize: 13,
-                        cursor: "pointer",
-                        fontWeight: on ? 600 : 400,
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  );
-                })}
-              </span>
-            </div>
-          ))}
-          <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" onClick={guard(() => makePlan(fullBrief(), answers, phase.blueprint))} style={primaryButton}>
-              Continue
-            </button>
-            <button type="button" onClick={guard(() => makePlan(fullBrief(), {}, phase.blueprint))} style={ghostButton}>
-              Skip — you decide
-            </button>
-          </div>
-        </div>
+        <SetupDialog
+          questions={phase.questions}
+          answers={answers}
+          onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
+          language={language}
+          onLanguage={setLanguage}
+          count={count}
+          onCount={setCount}
+          planFirst={planFirst}
+          onCancel={() => setPhase({ step: "idle" })}
+          onGo={guard(() => proceed(answers, phase.blueprint))}
+          onSkip={guard(() => proceed({}, phase.blueprint))}
+        />
       ) : null}
 
       {phase.step === "planned" ? (
@@ -594,6 +590,201 @@ export function Composer() {
           </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The dialog between pressing generate and paying for a lesson.
+ *
+ * Three kinds of question, deliberately in this order: what the model needs to
+ * know about the TEACHING (it asks these, and only when they would change the
+ * lesson), then the two the model may never decide — how many exercises, and
+ * whether the hard part gets a note in the learner's own language.
+ *
+ * Everything is skippable. "Just build it" has to stay possible at every step,
+ * so both buttons lead somewhere and neither is a dead end.
+ */
+function SetupDialog({
+  questions,
+  answers,
+  onAnswer,
+  language,
+  onLanguage,
+  count,
+  onCount,
+  planFirst,
+  onCancel,
+  onGo,
+  onSkip,
+}: {
+  questions: Question[];
+  answers: Record<string, string>;
+  onAnswer: (id: string, value: string) => void;
+  language: string;
+  onLanguage: (v: string) => void;
+  count: number;
+  onCount: (n: number) => void;
+  planFirst: boolean;
+  onCancel: () => void;
+  onGo: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div
+      role="presentation"
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        background: "rgba(21,23,28,.34)",
+        backdropFilter: "blur(3px)",
+        WebkitBackdropFilter: "blur(3px)",
+        display: "grid",
+        placeItems: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Before I write this lesson"
+        // The backdrop closes; the sheet must not close when its own controls
+        // are pressed, which is what a click inside it would otherwise do.
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 560,
+          maxHeight: "min(86vh, 760px)",
+          overflowY: "auto",
+          background: "#fff",
+          border: `1px solid ${LINE}`,
+          borderRadius: 20,
+          padding: 24,
+          display: "flex",
+          flexDirection: "column",
+          gap: 22,
+          textAlign: "left",
+          boxShadow: "0 40px 80px -30px rgba(21,23,28,.45)",
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 18, fontWeight: 650, color: INK }}>
+            Before I write it
+          </div>
+          <div style={{ fontSize: 13.5, color: MUTED, marginTop: 4 }}>
+            Skip anything and I&apos;ll choose sensibly.
+          </div>
+        </div>
+
+        {questions.map((q) => (
+          <Field key={q.id} label={q.label}>
+            {q.options.map((opt) => (
+              <Pill
+                key={opt}
+                on={answers[q.id] === opt}
+                onClick={() => onAnswer(q.id, opt)}
+              >
+                {opt}
+              </Pill>
+            ))}
+          </Field>
+        ))}
+
+        <Field
+          label="How many exercises?"
+          hint="Your call, not mine — it depends how long the class is."
+        >
+          {COUNT_CHOICES.map((c) => (
+            <Pill key={c.value} on={count === c.value} onClick={() => onCount(c.value)}>
+              {c.label}
+              <span style={{ opacity: 0.62, marginLeft: 6, fontWeight: 400 }}>{c.hint}</span>
+            </Pill>
+          ))}
+        </Field>
+
+        <Field
+          label="Explanations"
+          // Said here because it is the one thing teachers get wrong about this
+          // control: it is not "translate the lesson". A learner who reads the
+          // rule only in Uzbek has practised nothing.
+          hint="The lesson is always in English. A second language adds a short note per section, for the part your group actually finds hard."
+        >
+          {LANGUAGE_CHOICES.map((l) => (
+            <Pill key={l.value} on={language === l.value} onClick={() => onLanguage(l.value)}>
+              {l.label}
+            </Pill>
+          ))}
+        </Field>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button type="button" onClick={onGo} style={primaryButton}>
+            {planFirst ? "Continue" : "Write it"}
+          </button>
+          <button type="button" onClick={onSkip} style={ghostButton}>
+            Skip — you decide
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ ...ghostButton, border: 0, marginLeft: "auto", color: FAINT }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{label}</span>
+      {hint ? (
+        <span style={{ fontSize: 12.5, color: MUTED, lineHeight: 1.5, marginTop: -3 }}>{hint}</span>
+      ) : null}
+      <span style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>{children}</span>
+    </div>
+  );
+}
+
+function Pill({
+  on,
+  onClick,
+  children,
+}: {
+  on: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      style={{
+        border: `1px solid ${on ? EMBER : LINE}`,
+        background: on ? "rgba(232,90,44,.08)" : "#fff",
+        color: on ? "#6B2810" : INK,
+        borderRadius: 999,
+        padding: "8px 15px",
+        fontFamily: "inherit",
+        fontSize: 13,
+        cursor: "pointer",
+        fontWeight: on ? 600 : 400,
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
