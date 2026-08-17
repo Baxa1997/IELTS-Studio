@@ -4,6 +4,7 @@ import { AttemptReview } from "@/components/console/attempt-review";
 import { EssayFeedback, type CriterionScore } from "@/components/writing/essay-feedback";
 import { cleanAnnotations } from "@/components/writing/annotations";
 import { requireOrgUser } from "@/lib/auth";
+import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 import { parseFigure } from "@/lib/writing/figure";
 
@@ -31,7 +32,7 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
 
   const { data: essay } = await supabase
     .from("essays")
-    .select("id, task_type, content, prompt_id")
+    .select("id, task_type, content, prompt_id, student_id")
     .eq("id", id)
     .maybeSingle();
   if (!essay) redirect(nowhere);
@@ -58,8 +59,19 @@ export default async function EssayFeedbackPage({ params }: PageProps) {
   const blocker = (grading.score_blocker ?? null) as { criterion: string; why: string } | null;
   const annotations = cleanAnnotations(grading.annotations);
 
+  // A teacher arriving from a student's page needs to get back to that student,
+  // not to their own (empty) activity list.
+  const back = await reportBackLink({
+    viewer: profile,
+    studentId: essay.student_id as string,
+    learnerHref: "/activities",
+    learnerLabel: "Activities",
+  });
+
   return (
     <EssayFeedback
+      backHref={back.href}
+      backLabel={back.label}
       taskType={taskType}
       topicFamily={(promptRes.data?.topic_family as string | null) ?? null}
       figure={parseFigure(promptRes.data?.figure)}

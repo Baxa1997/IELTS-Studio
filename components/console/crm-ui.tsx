@@ -151,7 +151,7 @@ export function PageHead({
   media?: React.ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div className="cn-pagehead" style={{ marginBottom: 20 }}>
       {back ? (
         <Link
           href={back.href}
@@ -234,7 +234,6 @@ export function KpiRow({ children, min = 168 }: { children: React.ReactNode; min
         display: "grid",
         gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`,
         gap: 12,
-        marginBottom: 16,
       }}
     >
       {children}

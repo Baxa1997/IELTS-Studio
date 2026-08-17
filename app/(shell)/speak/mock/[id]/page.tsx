@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
+import { reportBackLink } from "@/lib/console/report-back";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,15 +44,23 @@ export default async function MockResultPage({ params }: PageProps) {
   // Students see their own; center staff open this from a student's practice
   // report. RLS decides (own row for a student, can_view_student for staff), so
   // a session they shouldn't see simply isn't found below.
-  await requireOrgUser();
+  const { profile } = await requireOrgUser();
 
   const supabase = await createClient();
   const { data: s } = await supabase
     .from("speaking_sessions")
-    .select("id, started_at, state, candidate_audio_path, transcript, metrics, result")
+    .select("id, started_at, state, candidate_audio_path, transcript, metrics, result, student_id")
     .eq("id", id)
     .maybeSingle();
   if (!s) notFound();
+
+  // Staff reach this from a student's page; "Speaking" is the learner's hub.
+  const back = await reportBackLink({
+    viewer: profile,
+    studentId: s.student_id as string,
+    learnerHref: "/speak",
+    learnerLabel: "Speaking",
+  });
 
   let audioUrl: string | null = null;
   if (s.candidate_audio_path) {
@@ -127,10 +136,10 @@ export default async function MockResultPage({ params }: PageProps) {
           <span style={{ fontSize: 14, color: MUTED, fontFamily: SANS }}>· {when}</span>
         </h1>
         <Link
-          href="/speak"
+          href={back.href}
           style={{ fontSize: 13.5, fontWeight: 700, color: INDIGO, textDecoration: "none" }}
         >
-          ← Speaking
+          ← {back.label}
         </Link>
       </div>
 
