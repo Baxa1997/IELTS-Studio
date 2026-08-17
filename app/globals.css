@@ -1299,8 +1299,11 @@
 .cn-page > * + * {
   margin-top: 16px;
 }
-/* PageHead already owns the space under itself. */
-.cn-page > .cn-pagehead + * {
+/* Two elements own the space under themselves, and must not be given more:
+   PageHead (20px) and the KPI strip (12px, matching the gap between its own
+   tiles). Without these the page rhythm would add to theirs — 36 and 28. */
+.cn-page > .cn-pagehead + *,
+.cn-page > .cn-kpirow + * {
   margin-top: 0;
 }
 @media (max-width: 640px) {

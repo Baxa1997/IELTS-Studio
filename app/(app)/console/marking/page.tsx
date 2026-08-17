@@ -74,7 +74,7 @@ export default async function MarkingPage() {
         }
       />
 
-      <KpiRow>
+      <KpiRow mb={12}>
         <Kpi label="Waiting" value={queue.length} deltaTone={queue.length > 0 ? "bad" : "good"} />
         <Kpi
           label={`Over ${OVERDUE_HOURS} hours`}
@@ -138,12 +138,18 @@ export default async function MarkingPage() {
               Nothing is waiting.
             </p>
             <p
-              style={{ margin: "6px 0 0", fontFamily: SANS, fontSize: 13, color: FAINT, lineHeight: 1.6 }}
+              style={{
+                margin: "6px 0 0",
+                fontFamily: SANS,
+                fontSize: 13,
+                color: FAINT,
+                lineHeight: 1.6,
+              }}
             >
               Work appears here as soon as the AI has graded it. Putting a teacher&rsquo;s name
-              against a band is what lets your centre show it to a parent — and every band a
-              teacher confirms or corrects is kept beside the AI&rsquo;s own, which is how the
-              grader gets better.
+              against a band is what lets your centre show it to a parent — and every band a teacher
+              confirms or corrects is kept beside the AI&rsquo;s own, which is how the grader gets
+              better.
             </p>
           </div>
         )}

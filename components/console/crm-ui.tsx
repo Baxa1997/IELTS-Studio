@@ -227,13 +227,26 @@ export function PageHead({
 /* ── KPI strip ────────────────────────────────────────────────────────────── */
 
 /** The strip of small stat tiles under a page head. */
-export function KpiRow({ children, min = 168 }: { children: React.ReactNode; min?: number }) {
+export function KpiRow({
+  children,
+  min = 168,
+  mb = 12,
+}: {
+  children: React.ReactNode;
+  min?: number;
+  /** Space under the strip. 12 matches the gap between its own tiles, so the
+   *  row reads as one block with even air around it. Pass 0 where a KPI row is
+   *  the last thing in its container and the padding already covers it. */
+  mb?: number;
+}) {
   return (
     <div
+      className="cn-kpirow"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`,
         gap: 12,
+        marginBottom: mb,
       }}
     >
       {children}

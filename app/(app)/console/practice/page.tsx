@@ -23,7 +23,11 @@ import {
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/console/attempts";
-import { loadPracticeBoard, type PracticeBoardRow, type PracticeStatus } from "@/lib/console/practice-board";
+import {
+  loadPracticeBoard,
+  type PracticeBoardRow,
+  type PracticeStatus,
+} from "@/lib/console/practice-board";
 import { libraryFacets, loadLibrary } from "@/lib/console/practice-library";
 
 import { LibraryPanel } from "./library-panel";
@@ -96,7 +100,7 @@ export default async function PracticePage({
         }
       />
 
-      <KpiRow>
+      <KpiRow mb={12}>
         <Kpi label="Practices set" value={board.rows.length} sub="most recent first" />
         <Kpi
           label="Handed in"
@@ -167,7 +171,12 @@ export default async function PracticePage({
             method="GET"
             style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}
           >
-            <select name="group" defaultValue={sp.group ?? ""} aria-label="Group" style={fieldStyle}>
+            <select
+              name="group"
+              defaultValue={sp.group ?? ""}
+              aria-label="Group"
+              style={fieldStyle}
+            >
               <option value="">All groups</option>
               {board.groups.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -190,7 +199,12 @@ export default async function PracticePage({
                 ))}
               </select>
             ) : null}
-            <select name="skill" defaultValue={sp.skill ?? ""} aria-label="Skill" style={fieldStyle}>
+            <select
+              name="skill"
+              defaultValue={sp.skill ?? ""}
+              aria-label="Skill"
+              style={fieldStyle}
+            >
               <option value="">All skills</option>
               {(["writing", "reading", "listening"] as const).map((k) => (
                 <option key={k} value={k}>
@@ -218,7 +232,8 @@ export default async function PracticePage({
             </button>
           </form>
           <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>
-            {shown.length} shown{shown.length !== board.rows.length ? ` of ${board.rows.length}` : ""}
+            {shown.length} shown
+            {shown.length !== board.rows.length ? ` of ${board.rows.length}` : ""}
           </span>
         </Toolbar>
 
@@ -284,7 +299,10 @@ function PracticeRow({ row: r }: { row: PracticeBoardRow }) {
         </span>
       </TD>
       <TD tone="soft">
-        <a href={`/console/groups/${r.groupId}`} style={{ color: "inherit", textDecoration: "none" }}>
+        <a
+          href={`/console/groups/${r.groupId}`}
+          style={{ color: "inherit", textDecoration: "none" }}
+        >
           {r.groupName}
         </a>
         {r.teacherName ? (
@@ -305,12 +323,7 @@ function PracticeRow({ row: r }: { row: PracticeBoardRow }) {
               a reminder to nobody is a button that teaches people to ignore
               buttons. */}
           {r.missing.length > 0 ? (
-            <RemindButton
-              groupId={r.groupId}
-              title={r.title}
-              missing={r.missing}
-              dueAt={r.dueAt}
-            />
+            <RemindButton groupId={r.groupId} title={r.title} missing={r.missing} dueAt={r.dueAt} />
           ) : null}
         </span>
       </TD>
