@@ -1238,14 +1238,15 @@
   grid-template-columns: minmax(0, 1fr) 296px;
   align-items: start;
 }
-/* Sticky rather than a second scrolling pane. The page owns the scroll now, so
-   the navigator follows the reader down it and parks under the bar (62px) —
-   and its own overflow only engages when a very long lesson makes the cell
-   grid taller than the screen. */
+/* Sticky rather than a second scrolling pane. The surface owns the scroll now,
+   so the navigator follows the reader down it and parks under the bar (62px) —
+   and its own overflow only engages when a very long lesson makes the cell grid
+   taller than the screen. The 92px allows for the bar plus the shell's own 10px
+   of padding either side of the surface. */
 .pa-runner-rail {
   position: sticky;
   top: 62px;
-  max-height: calc(100dvh - 62px);
+  max-height: calc(100dvh - 92px);
   overflow: auto;
   display: flex;
   flex-direction: column;

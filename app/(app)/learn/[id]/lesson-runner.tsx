@@ -246,7 +246,11 @@ export function LessonRunner({
         // with two independently scrolling panes, which meant the page never
         // scrolled — the browser's own scrollbar, momentum and find-in-page all
         // stopped working, and on a phone the address bar never retracted.
-        minHeight: "100dvh",
+        //
+        // 100% rather than 100dvh: this now sits inside the app shell, whose
+        // surface is the scroll container. Against the viewport it would stand
+        // taller than the box holding it and scroll a few pixels for no reason.
+        minHeight: "100%",
         background: WASH,
         fontFamily: SANS,
         color: INK,

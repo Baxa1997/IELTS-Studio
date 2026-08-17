@@ -51,11 +51,17 @@ function readCollapsed(fallback: boolean): boolean {
  *
  * Practice AI drops the console's bar and padding and lays out its own hero
  * edge to edge; an expanded rail eats 240px of a page built around a centred
- * headline and a three-card grid. Collapsing is a DEFAULT, not a lock — the
- * toggle still works, and the choice made here is remembered like any other.
+ * headline and a three-card grid. The lesson runner is the same argument twice
+ * over: it is a test, it puts a navigator down its own right-hand side, and a
+ * second rail beside that one is just noise while someone is answering.
+ *
+ * Collapsed, NOT removed. A learner has to be able to get back to their
+ * assignments without hunting, and a teacher previewing has to be able to leave
+ * — the rail is the way out of both. Collapsing is a DEFAULT, not a lock: the
+ * toggle still works and the choice made here is remembered like any other.
  */
 function ownsTheSurface(pathname: string): boolean {
-  return pathname.startsWith("/console/practice-ai");
+  return pathname.startsWith("/console/practice-ai") || pathname.startsWith("/learn/");
 }
 
 /**
@@ -383,9 +389,18 @@ export function AppShell({
             }}
           >
             {quotaBar}
-            {/* The console gets no padding here: its own layout owns the sticky
-                top bar, which has to run full-bleed to the surface edges. */}
-            <div className={contentClassName ?? (isConsole ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")}>
+            {/* No padding for anything that lays itself out: the console's own
+                layout owns a sticky top bar, and the lesson runner is a bar, a
+                column and a navigator that all have to reach the surface edges.
+                Decided here rather than passed down because only this component
+                knows the route — the layout above it is a server component and
+                cannot read the pathname. */}
+            <div
+              className={
+                contentClassName ??
+                (isConsole || ownsTheSurface(pathname) ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")
+              }
+            >
               {children}
             </div>
           </div>

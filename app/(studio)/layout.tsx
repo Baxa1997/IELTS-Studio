@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, JetBrains_Mono, Manrope, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
+import { Bricolage_Grotesque, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { getSession } from "@/lib/auth";
@@ -12,11 +12,6 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "
 // wpm, section kickers. A proportional font makes a running clock jitter as the
 // digits change width; this is why the design specifies a mono for them.
 const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-mono-data", display: "swap", preload: false });
-// The lesson runner at /learn/[id]. Its type has to match the teacher's lesson
-// page one route group away — a student and the teacher who set the work are
-// looking at the same lesson, and it should not change typeface between them.
-const manrope = Manrope({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-manrope", display: "swap", preload: false });
-const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-newsreader", display: "swap", preload: false });
 
 /**
  * Distraction-free shell for the writing/reading studio — deliberately no global
@@ -33,7 +28,7 @@ export default async function StudioLayout({ children }: { children: React.React
     if (!plan) return <OnboardingTakeover />;
   }
   return (
-    <div className={`${bricolage.variable} ${jakarta.variable} ${jetbrains.variable} ${manrope.variable} ${newsreader.variable} bg-background text-foreground min-h-screen`}>
+    <div className={`${bricolage.variable} ${jakarta.variable} ${jetbrains.variable} bg-background text-foreground min-h-screen`}>
       {children}
     </div>
   );
