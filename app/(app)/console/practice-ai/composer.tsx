@@ -25,14 +25,12 @@ import { createClient } from "@/lib/supabase/client";
 /**
  * Type what your group needs; get a lesson page.
  *
- * The redesign moved the settings OUT of a dialog and into the box. HOW MANY
- * EXERCISES sits on the face of it, because it is the one a teacher changes
- * every time and a collapsed panel meant every lesson quietly came out at the
- * default; level, focus and first-language support are a press away under
- * "+ Specs". The dialog they used to live in is still here — but only for the
- * questions the ENGINE asks, and only when it asks any. A modal that opened
- * every time to offer choices already made on the page is a modal that gets
- * dismissed without being read.
+ * THE BOX HOLDS THE BRIEF AND NOTHING ELSE. Level, focus, how many exercises
+ * and whether the hard part gets a note in the learner's own language all live
+ * in the setup dialog, which opens on send, every time — one place to look
+ * rather than a panel here and a modal there. What stays on the face is the two
+ * things that are about this press rather than about the lesson: whether to see
+ * the outline first, and send.
  *
  * A starter chip FILLS THE BOX and stops. Send is the only thing that builds:
  * the point of putting a suggestion in the brief is that it can be edited
@@ -181,7 +179,6 @@ async function callEngine<T>(path: string, body: unknown): Promise<T> {
 export function Composer() {
   const router = useRouter();
   const [brief, setBrief] = useState("");
-  const [showSpecs, setShowSpecs] = useState(false);
   const [planFirst, setPlanFirst] = useState(true);
   const [level, setLevel] = useState(AUTO);
   const [focus, setFocus] = useState(AUTO);
@@ -368,29 +365,6 @@ export function Composer() {
           />
         </div>
 
-        {showSpecs ? (
-          <div
-            className="pa-slide"
-            style={{
-              margin: "0 20px 6px",
-              padding: "18px 20px",
-              borderRadius: 22,
-              background: WASH,
-            }}
-          >
-            <Specs
-              level={level}
-              setLevel={setLevel}
-              focus={focus}
-              setFocus={setFocus}
-              count={count}
-              setCount={setCount}
-              language={language}
-              setLanguage={setLanguage}
-            />
-          </div>
-        ) : null}
-
         <div
           style={{
             display: "flex",
@@ -400,26 +374,6 @@ export function Composer() {
             flexWrap: "wrap",
           }}
         >
-          <button
-            type="button"
-            onClick={() => setShowSpecs((v) => !v)}
-            aria-expanded={showSpecs}
-            className="pa-tap"
-            style={{
-              padding: "8px 16px",
-              borderRadius: 999,
-              background: showSpecs ? INK : "#fff",
-              color: showSpecs ? PAPER : BODY_INK,
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: "inherit",
-              cursor: "pointer",
-              boxShadow: showSpecs ? "none" : "inset 0 0 0 1px #e4e0d6",
-            }}
-          >
-            {showSpecs ? "− Specs" : "+ Specs"}
-          </button>
-
           <button
             type="button"
             onClick={() => setPlanFirst((v) => !v)}
