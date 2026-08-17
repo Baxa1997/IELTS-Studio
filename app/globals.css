@@ -1903,27 +1903,33 @@
    together?) and then DOWN one column to total it. Both readings need the
    columns ruled.
 
-   The one `!important` is unavoidable and contained: TRow and THead set
-   `gap: 12` as an inline style, and inline always beats a stylesheet whatever
-   the specificity. The gap has to collapse so the rule can sit ON the cell
-   boundary rather than floating 12px off it; the padding below puts the
-   breathing room back inside each cell instead. */
-.cn-table--grid {
-  border: 1px solid var(--cn-line, #c5c4be);
-  border-radius: 10px;
-  overflow: hidden;
-}
+   NO BORDER AND NO RADIUS OF ITS OWN. These tables live inside a Card, which
+   already draws a rounded outline; adding a second produced two nested rounded
+   rectangles and a stray vertical line down the right edge. The table rules its
+   INSIDE and lets the card own the outside.
+
+   The `!important`s are unavoidable and contained: TRow and THead set `gap` and
+   `align-items` as inline styles, and inline always beats a stylesheet whatever
+   the specificity. The gap has to collapse so a rule can sit ON the cell
+   boundary rather than floating 12px off it, and the alignment has to stretch
+   or each rule is only as tall as its own cell's text — which is what made them
+   read as floating ticks of uneven length rather than lines. */
 .cn-table--grid .cn-thead,
 .cn-table--grid .cn-row {
   gap: 0 !important;
+  align-items: stretch !important;
 }
+/* Column, not row, so `text-align: right` on a money cell still applies to the
+   text inside it — which `display: flex` alone would have broken. */
 .cn-table--grid .cn-thead > *,
 .cn-table--grid .cn-row > * {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 0 12px;
   min-width: 0;
 }
-/* Every cell after the first carries the rule, so there is never one hanging
-   off the outside edge. */
+/* Every cell after the first carries the rule, so none hangs off the outside. */
 .cn-table--grid .cn-thead > * + *,
 .cn-table--grid .cn-row > * + * {
   border-left: 1px solid var(--cn-hair, #dededa);
@@ -1936,8 +1942,8 @@
 .cn-table--grid .cn-thead {
   border-bottom: 1px solid var(--cn-line, #c5c4be);
 }
-/* The last row's own border would double with the container's, leaving a 2px
-   edge that looks like a rendering fault. */
+/* The last row's own border would sit just inside the card's, leaving what
+   looks like a 2px edge. */
 .cn-table--grid .cn-row:last-child {
   border-bottom: 0;
 }
