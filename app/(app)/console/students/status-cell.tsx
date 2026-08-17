@@ -27,7 +27,7 @@ import { type GroupFormState } from "../groups/actions";
  */
 
 const INK = "#16162E";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 const TINT: Record<MemberStatus, { bg: string; fg: string }> = {
   active: { bg: "#EAF4EE", fg: "#16794C" },
@@ -96,7 +96,7 @@ export function StudentStatusCell({
               style={{
                 background: s === status ? TINT[s].bg : "#fff",
                 color: s === status ? TINT[s].fg : INK,
-                border: `1px solid ${s === status ? TINT[s].fg : "#E4E2DC"}`,
+                border: `1px solid ${s === status ? TINT[s].fg : "#C5C4BE"}`,
                 borderRadius: 7,
                 padding: "4px 8px",
                 fontFamily: "inherit",

@@ -546,7 +546,7 @@ function Tick({ done }: { done: boolean }) {
         width: 20,
         height: 20,
         borderRadius: 999,
-        border: `1.5px solid ${done ? INDIGO : "#E4E2DC"}`,
+        border: `1.5px solid ${done ? INDIGO : "#C5C4BE"}`,
         background: done ? INDIGO : "#fff",
         display: "inline-flex",
         alignItems: "center",

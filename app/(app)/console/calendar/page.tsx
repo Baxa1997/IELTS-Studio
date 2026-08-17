@@ -347,7 +347,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                           fontSize: 11,
                           fontWeight: 600,
                           color: on ? INDIGO : FAINT,
-                          background: on ? "#EDEBFB" : "#E4E2DC",
+                          background: on ? "#EDEBFB" : "#C5C4BE",
                           borderRadius: 20,
                           padding: "1px 7px",
                         }}
@@ -626,7 +626,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                       label={
                         <span>
                           {group.name}
-                          <span style={{ color: "#93919F", marginLeft: 6, fontWeight: 400 }}>
+                          <span style={{ color: "#777581", marginLeft: 6, fontWeight: 400 }}>
                             {group.teacherName ?? "no teacher"}
                           </span>
                         </span>
@@ -686,7 +686,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                         fontSize: 12,
                         color: slot.clashesWith.length > 0 ? "#A63A30" : MUTED,
                         background: "#F4F3EF",
-                        border: "1px solid #E4E2DC",
+                        border: "1px solid #C5C4BE",
                         borderRadius: 8,
                         padding: "5px 10px",
                       }}
@@ -719,7 +719,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   );
 }
 
-const HAIRLINE = "#E4E2DC";
+const HAIRLINE = "#C5C4BE";
 
 const weekBtn: React.CSSProperties = {
   display: "inline-flex",
@@ -755,7 +755,7 @@ function toggle(on: boolean): React.CSSProperties {
     fontFamily: SANS,
     fontSize: 12.5,
     textDecoration: "none",
-    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+    border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
     background: on ? INDIGO : "#fff",
     color: on ? "#fff" : "#4C4A63",
   };

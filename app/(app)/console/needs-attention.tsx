@@ -20,7 +20,7 @@ import { dismissAlert, restoreAlert, type ActionState } from "./center-actions";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 const TONE_OF: Record<Severity, Tone> = { high: "red", medium: "amber", low: "indigo" };
 
@@ -61,7 +61,7 @@ export function NeedsAttention({
               alignItems: "center",
               gap: 12,
               padding: "12px 18px",
-              borderBottom: "1px solid #F5F4F0",
+              borderBottom: "1px solid #DEDEDA",
             }}
           >
             <span
@@ -148,7 +148,7 @@ export function NeedsAttention({
                 fontWeight: 600,
                 color: "#4340CB",
                 textDecoration: "none",
-                border: "1px solid #E4E2DC",
+                border: "1px solid #C5C4BE",
                 borderRadius: 8,
                 padding: "6px 11px",
                 background: "#fff",

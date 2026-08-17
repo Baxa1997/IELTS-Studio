@@ -77,7 +77,7 @@ export function GenerateInvoicesForm({
           </Field>
         </FieldGrid>
       </div>
-      <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
         Anyone already invoiced for that month is skipped, so running this again after two students
         join tops up the group rather than charging the rest twice.
       </p>
@@ -138,7 +138,7 @@ export function GroupFeeForm({
           </Field>
         </FieldGrid>
       </div>
-      <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
         Both are for a full month. A student who joins part-way through is charged for the lessons
         left, and the teacher is paid for the same ones — leave either blank to clear it.
       </p>

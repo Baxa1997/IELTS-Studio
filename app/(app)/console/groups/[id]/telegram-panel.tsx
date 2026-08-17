@@ -32,7 +32,7 @@ const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const TELEGRAM = "#229ED9";
 
 export function TelegramPanel({
@@ -91,7 +91,7 @@ export function TelegramPanel({
             disabled={unlinking}
             style={{
               background: "#fff",
-              border: "1px solid #E4E2DC",
+              border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "8px 13px",
               fontFamily: "inherit",
@@ -130,7 +130,7 @@ export function TelegramPanel({
             gap: 8,
             background: code ? "#fff" : INDIGO,
             color: code ? MUTED : "#fff",
-            border: code ? "1px solid #E4E2DC" : 0,
+            border: code ? "1px solid #C5C4BE" : 0,
             borderRadius: 9,
             padding: "10px 15px",
             fontFamily: "inherit",
@@ -193,7 +193,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
     <div
       style={{
         background: "#F7F6F2",
-        border: "1px solid #E4E2DC",
+        border: "1px solid #C5C4BE",
         borderRadius: 11,
         padding: 14,
       }}
@@ -253,7 +253,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
               fontSize: 15,
               color: INDIGO,
               background: "#fff",
-              border: "1px solid #E4E2DC",
+              border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "9px 11px",
               margin: "9px 0 0",

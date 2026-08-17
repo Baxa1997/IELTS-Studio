@@ -18,7 +18,7 @@ import { useState } from "react";
 const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 export function MonthsExport({
   months,
@@ -60,7 +60,7 @@ export function MonthsExport({
                 padding: "5px 12px",
                 fontSize: 12.5,
                 fontWeight: on ? 600 : 500,
-                border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : hasRun ? INK : FAINT,
                 cursor: "pointer",

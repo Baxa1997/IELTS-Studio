@@ -122,7 +122,7 @@ export function PanelButton({
         whiteSpace: "nowrap",
         cursor: "pointer",
         flex: "none",
-        border: primary ? 0 : "1px solid #E0DED8",
+        border: primary ? 0 : "1px solid #C5C4BE",
         background: primary ? INDIGO : "#fff",
         color: primary ? "#fff" : INK,
       }}
@@ -209,7 +209,7 @@ export function ConsoleChrome({
           zIndex: 20,
           background: "rgba(244,243,239,.88)",
           backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #E4E2DC",
+          borderBottom: "1px solid #C5C4BE",
           padding: "12px 28px",
           display: "flex",
           alignItems: "center",
@@ -225,7 +225,7 @@ export function ConsoleChrome({
               alignItems: "center",
               gap: 7,
               background: "#fff",
-              border: "1px solid #E0DED8",
+              border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "7px 11px",
               fontSize: 12.5,
@@ -244,7 +244,7 @@ export function ConsoleChrome({
               group detail), where the thing it creates is already on screen.
               The panels themselves are unchanged — pages open them through
               <PanelButton>, which is why they are still handed to this chrome. */}
-          <div className="cn-hide-sm" style={{ width: 1, height: 24, background: "#E0DED8" }} />
+          <div className="cn-hide-sm" style={{ width: 1, height: 24, background: "#C5C4BE" }} />
           <div
             className="cn-hide-sm"
             title={userName}
@@ -368,7 +368,7 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
             <div style={{ height: 10 }} />
             <Cred label="Password" value={flash.credentials.password} />
           </div>
-          <p style={{ fontSize: 12, color: "#93919F", margin: 0, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 12, color: "#777581", margin: 0, lineHeight: 1.55 }}>
             The password isn&apos;t shown again — copy it now if you still need to hand it over.
           </p>
         </>
@@ -588,7 +588,7 @@ function PanelHead({
         style={{
           marginLeft: "auto",
           background: CANVAS,
-          border: "1px solid #E4E2DC",
+          border: "1px solid #C5C4BE",
           borderRadius: 8,
           width: 30,
           height: 30,

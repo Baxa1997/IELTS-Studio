@@ -19,7 +19,7 @@ import { useActionFeedback } from "@/components/console/toast";
 const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -163,7 +163,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
                       padding: "11px 12px",
                       fontFamily: "inherit",
                       cursor: "pointer",
-                      border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                      border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                       background: on ? "#F5F5FC" : "#fff",
                     }}
                   >
@@ -171,7 +171,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
                       <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: INK }}>
                         {g.name}
                       </span>
-                      <span style={{ display: "block", fontSize: 11.5, color: "#7C7A93" }}>
+                      <span style={{ display: "block", fontSize: 11.5, color: "#737189" }}>
                         {g.meta}
                       </span>
                     </span>
@@ -179,7 +179,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
                       style={{
                         fontSize: 11.5,
                         fontWeight: 600,
-                        color: on ? INDIGO : "#7C7A93",
+                        color: on ? INDIGO : "#737189",
                         whiteSpace: "nowrap",
                       }}
                     >

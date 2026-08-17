@@ -9,7 +9,7 @@ const INK = "#16162E";
 const FAINT = "#6E6C87";
 const RED = "#C24539";
 const AMBER = "#9A6B1F";
-const RULE = "#E7E5DF";
+const RULE = "#C5C4BE";
 
 /**
  * §5: "Rename `Remove` → `Move or remove`, opening a small sheet with: move to
@@ -178,7 +178,7 @@ function Option({
   return (
     <form
       action={formAction}
-      style={{ borderTop: `1px solid #F2F0EB`, paddingTop: 9, display: "grid", gap: 6 }}
+      style={{ borderTop: `1px solid #D4D3CE`, paddingTop: 9, display: "grid", gap: 6 }}
     >
       {Object.entries(hidden).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />

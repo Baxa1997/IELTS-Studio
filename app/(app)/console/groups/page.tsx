@@ -317,7 +317,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: 8,
-          borderTop: "1px solid #F0EEE9",
+          borderTop: "1px solid #D4D3CE",
           paddingTop: 12,
         }}
       >

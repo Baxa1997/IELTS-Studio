@@ -47,7 +47,7 @@ function useRefreshingAction(
 const ROOM_COLORS = ["#4340CB", "#16794C", "#B8791F", "#C2453A", "#6B44A2", "#2F5D8C"];
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 export interface RoomRow {
   id: string;
@@ -84,7 +84,7 @@ export function RoomsManager({
       />
 
       {rooms.length > 0 ? (
-        <div style={{ marginTop: 24, borderTop: "1px solid #F0EEE9", paddingTop: 16 }}>
+        <div style={{ marginTop: 24, borderTop: "1px solid #D4D3CE", paddingTop: 16 }}>
           <div
             style={{
               fontSize: 11,
@@ -136,7 +136,7 @@ function RoomEditor({
           alignItems: "center",
           gap: 10,
           padding: "10px 12px",
-          border: "1px solid #E7E5DF",
+          border: "1px solid #C5C4BE",
           borderRadius: 10,
           background: room.active ? "#fff" : "#FAFAF8",
         }}
@@ -186,7 +186,7 @@ function RoomEditor({
       action={formAction}
       key={state.ok ?? "form"}
       style={{
-        border: "1px solid #E7E5DF",
+        border: "1px solid #C5C4BE",
         borderRadius: 10,
         padding: "12px 13px",
         background: "#fff",

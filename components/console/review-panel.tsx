@@ -22,8 +22,8 @@ import { WRITING_CRITERIA, type AttemptKind } from "@/lib/console/attempts";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
-const LINE = "#E4E2DC";
+const FAINT = "#777581";
+const LINE = "#C5C4BE";
 const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const AMBER = "#8A5A12";

@@ -209,7 +209,7 @@ function DeleteDeskButton({ id, name }: { id: string; name: string }) {
           onClick={() => setConfirming(false)}
           style={{
             background: "#fff",
-            border: "1px solid #E0DED8",
+            border: "1px solid #C5C4BE",
             borderRadius: 8,
             padding: "7px 13px",
             fontFamily: "inherit",
@@ -311,7 +311,7 @@ export function TransferForm({
           <input name="note" placeholder="Bank deposit" style={fieldStyle} />
         </Field>
       </div>
-      <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
         Recorded as two entries — out of one desk, into the other — so the center&apos;s net
         position is unchanged and both balances move.
       </p>

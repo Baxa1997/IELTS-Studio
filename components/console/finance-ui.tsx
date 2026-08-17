@@ -54,7 +54,7 @@ export function Field({
     <div style={span ? { gridColumn: "1 / -1" } : undefined}>
       <label style={labelStyle}>
         {label}
-        {hint ? <span style={{ color: "#93919F" }}> · {hint}</span> : null}
+        {hint ? <span style={{ color: "#777581" }}> · {hint}</span> : null}
       </label>
       {children}
     </div>
@@ -189,7 +189,7 @@ export function Drawer({
       ? {
           background: "#fff",
           color: INK,
-          border: "1px solid #E0DED8",
+          border: "1px solid #C5C4BE",
           fontWeight: 500,
         }
       : {
@@ -282,7 +282,7 @@ export function Drawer({
                 style={{
                   marginLeft: "auto",
                   background: CANVAS,
-                  border: "1px solid #E4E2DC",
+                  border: "1px solid #C5C4BE",
                   borderRadius: 8,
                   width: 30,
                   height: 30,

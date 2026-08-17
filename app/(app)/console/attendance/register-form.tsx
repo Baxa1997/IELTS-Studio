@@ -92,10 +92,10 @@ export function RegisterForm({
           gap: 12,
           flexWrap: "wrap",
           padding: "16px 18px",
-          borderBottom: "1px solid #F0EEE9",
+          borderBottom: "1px solid #D4D3CE",
         }}
       >
-        <div style={{ fontSize: 12.5, color: "#7C7A93" }}>
+        <div style={{ fontSize: 12.5, color: "#737189" }}>
           {counts.present} present · {counts.late} late · {counts.absent} absent
           {counts.excused > 0 ? ` · ${counts.excused} excused` : ""}
         </div>
@@ -109,7 +109,7 @@ export function RegisterForm({
             className="cn-btn cn-btn--ghost"
             style={{
               background: "#F4F3EF",
-              border: "1px solid #E4E2DC",
+              border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "8px 12px",
               fontFamily: "inherit",
@@ -159,7 +159,7 @@ export function RegisterForm({
               alignItems: "center",
               gap: 14,
               padding: "11px 18px",
-              borderBottom: "1px solid #F5F4F0",
+              borderBottom: "1px solid #DEDEDA",
               flexWrap: "wrap",
             }}
           >
@@ -183,7 +183,7 @@ export function RegisterForm({
             </span>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{s.name}</div>
-              <div style={{ fontSize: 11.5, color: "#93919F" }}>{s.meta}</div>
+              <div style={{ fontSize: 11.5, color: "#777581" }}>{s.meta}</div>
             </div>
             <div
               style={{ display: "flex", gap: 6 }}
@@ -207,7 +207,7 @@ export function RegisterForm({
                       fontWeight: 500,
                       cursor: locked ? "default" : "pointer",
                       whiteSpace: "nowrap",
-                      border: `1px solid ${on ? o.ink : "#E4E2DC"}`,
+                      border: `1px solid ${on ? o.ink : "#C5C4BE"}`,
                       background: on ? o.bg : "#fff",
                       color: on ? o.ink : "#6E6C87",
                     }}
@@ -222,7 +222,7 @@ export function RegisterForm({
       })}
 
       {students.length === 0 ? (
-        <div style={{ padding: 18, fontSize: 13, color: "#93919F" }}>
+        <div style={{ padding: 18, fontSize: 13, color: "#777581" }}>
           This group has no students yet, so there is nobody to mark.
         </div>
       ) : null}

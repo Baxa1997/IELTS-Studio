@@ -19,7 +19,7 @@ import { useActionFeedback } from "@/components/console/toast";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const RED = "#B3261E";
 const GREEN = "#16794C";
 
@@ -27,7 +27,7 @@ const field: React.CSSProperties = {
   width: "100%",
   height: 34,
   borderRadius: 8,
-  border: "1px solid #E4E2DC",
+  border: "1px solid #C5C4BE",
   background: "#fff",
   padding: "0 10px",
   fontSize: 13.5,

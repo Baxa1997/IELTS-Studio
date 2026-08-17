@@ -52,7 +52,7 @@ export function DownloadLink({
         alignItems: "center",
         gap: 6,
         borderRadius: 9,
-        border: "1px solid #E0DED8",
+        border: "1px solid #C5C4BE",
         background: "#fff",
         padding: "7px 12px",
         fontFamily: "inherit",

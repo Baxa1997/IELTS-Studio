@@ -190,7 +190,7 @@ export default async function SettingsPage() {
               note="fixed by the permission model, not configurable"
             />
             {ROLES.map((r) => (
-              <div key={r.name} style={{ padding: "14px 18px", borderBottom: "1px solid #F5F4F0" }}>
+              <div key={r.name} style={{ padding: "14px 18px", borderBottom: "1px solid #DEDEDA" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: INK }}>
                     {r.name}
@@ -258,7 +258,7 @@ export default async function SettingsPage() {
                   display: "flex",
                   gap: 12,
                   padding: "11px 18px",
-                  borderBottom: "1px solid #F5F4F0",
+                  borderBottom: "1px solid #DEDEDA",
                   fontFamily: SANS,
                   fontSize: 12.5,
                 }}

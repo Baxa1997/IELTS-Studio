@@ -23,7 +23,7 @@ const GREEN = "#16794C";
 const RED = "#A63A30";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
@@ -199,7 +199,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
                 onClick={onDone}
                 style={{
                   background: "#F4F3EF",
-                  border: "1px solid #E4E2DC",
+                  border: "1px solid #C5C4BE",
                   borderRadius: 8,
                   padding: "11px 16px",
                   fontFamily: "inherit",

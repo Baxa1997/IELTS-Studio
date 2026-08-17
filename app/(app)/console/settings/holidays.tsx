@@ -18,7 +18,7 @@ import { deleteHoliday, saveHoliday, type ActionState } from "../center-actions"
  */
 
 const INK = "#16162E";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const MUTED = "#6E6C87";
 
 export interface Holiday {
@@ -119,7 +119,7 @@ export function Holidays({ holidays }: { holidays: Holiday[] }) {
             alignItems: "center",
             gap: 12,
             padding: "11px 18px",
-            borderTop: "1px solid #F5F4F0",
+            borderTop: "1px solid #DEDEDA",
             fontFamily: "inherit",
             fontSize: 12.5,
             opacity: h.endsOn < today ? 0.6 : 1,

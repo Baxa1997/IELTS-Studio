@@ -23,7 +23,7 @@ import { ShareModal, type GroupOption } from "./share-modal";
 const INK = "#15171C";
 const MUTED = "#5C616C";
 const FAINT = "#8B909B";
-const LINE = "#E7E5DF";
+const LINE = "#C5C4BE";
 const EMBER = "#E85A2C";
 const GREEN = "#16794C";
 
@@ -42,7 +42,7 @@ const STATUS_COPY: Record<string, { label: string; tone: string; bg: string; not
   },
   archived: {
     label: "Archived",
-    tone: "#7C7A93",
+    tone: "#737189",
     bg: "#F1F0EB",
     note: "Retired. Anyone who already did it keeps their result.",
   },
@@ -167,7 +167,7 @@ export function LessonStaffBar({
       {status === "published" ? (
         <div
           style={{
-            borderTop: `1px solid #F2F0EB`,
+            borderTop: `1px solid #D4D3CE`,
             paddingTop: 12,
             display: "flex",
             alignItems: "center",
@@ -235,7 +235,7 @@ export function LessonStaffBar({
       ) : null}
 
       {hasAttempts ? (
-        <p style={{ margin: 0, fontSize: 12, color: FAINT, borderTop: `1px solid #F2F0EB`, paddingTop: 10 }}>
+        <p style={{ margin: 0, fontSize: 12, color: FAINT, borderTop: `1px solid #D4D3CE`, paddingTop: 10 }}>
           Someone has already done this lesson, so its content is frozen — a score has to mean the
           lesson they actually sat. Make a new one to change anything.
         </p>

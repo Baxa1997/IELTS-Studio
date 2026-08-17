@@ -32,7 +32,7 @@ import { MoveOrRemove } from "./move-or-remove";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const LINE = "#EAE8E1";
 const GREEN = "#16794C";
 const AMBER = "#9A6B00";

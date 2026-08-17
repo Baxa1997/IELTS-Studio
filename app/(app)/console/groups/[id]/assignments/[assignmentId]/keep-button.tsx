@@ -9,7 +9,7 @@ const INK = "#16162E";
 const FAINT = "#6E6C87";
 const GREEN = "#166C4C";
 const RED = "#C24539";
-const RULE = "#E7E5DF";
+const RULE = "#C5C4BE";
 
 /**
  * "Keep this" — §9's way onto the shelf.

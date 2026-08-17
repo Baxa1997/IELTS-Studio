@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import {
+  Bell,
   ChevronsLeft,
   ChevronsRight,
   ChevronUp,
@@ -72,6 +73,7 @@ export function AppShell({
   sidebarFooter,
   quotaBar,
   bell,
+  unread = 0,
   initialCollapsed = false,
   children,
 }: {
@@ -103,6 +105,9 @@ export function AppShell({
   /** Notification bell, rendered in the rail footer and in the mobile top bar.
    *  Server-loaded by the layout so the badge is right on first paint. */
   bell?: React.ReactNode;
+  /** Unread notifications. The rail shows this on the avatar; the bell above is
+   *  the mobile top bar's copy and keeps its own badge. */
+  unread?: number;
   /** Desktop rail starts collapsed — read from a cookie by the layout so the choice
    *  survives navigation across route groups (which remounts this component). */
   initialCollapsed?: boolean;
@@ -311,16 +316,19 @@ export function AppShell({
             }}
           >
             {sidebarFooter}
-            {bell ? (
-              <div className="lp-sb-bell" style={{ display: "flex", justifyContent: "flex-end" }}>
-                {bell}
-              </div>
-            ) : null}
+            {/* The bell used to sit here, above the profile button. It is gone
+                from the rail — but this was the ONLY way to reach notifications
+                on desktop (the top bar carrying the other one is hidden above
+                768px), so removing it outright would have quietly deleted the
+                feature. It moved into the account menu, and the unread count
+                rides on the avatar so it is still visible without opening
+                anything. */}
             <ProfileMenu
               name={name}
               roleLabel={roleLabel}
               email={email}
               items={accountItemsFor(role)}
+              unread={unread}
             />
           </div>
         </aside>
@@ -341,7 +349,7 @@ export function AppShell({
               // depend on `:has()` reaching a descendant.
               background: isConsole ? "#F4F3EF" : "#fff",
               borderRadius: 18,
-              border: `1px solid ${isConsole ? "#E4E2DC" : "#E9E7F2"}`,
+              border: `1px solid ${isConsole ? "#C5C4BE" : "#E9E7F2"}`,
               boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
             }}
           >
@@ -413,11 +421,14 @@ function ProfileMenu({
   roleLabel,
   email,
   items = [],
+  unread = 0,
 }: {
   name: string;
   roleLabel: string;
   email?: string;
   items?: AccountItem[];
+  /** Unread notifications, shown on the avatar and beside the menu item. */
+  unread?: number;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -484,6 +495,48 @@ function ProfileMenu({
             </div>
           </div>
           <div style={{ height: 1, background: RAIL_LINE, margin: "2px 4px 6px" }} />
+
+          <Link
+            href="/notifications"
+            role="menuitem"
+            className="lp-menu-item"
+            onClick={() => setOpen(false)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              height: 40,
+              padding: "0 10px",
+              borderRadius: 9,
+              fontFamily: SANS,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#E7E9F5",
+              textDecoration: "none",
+            }}
+          >
+            <Bell size={17} strokeWidth={2} />
+            Notifications
+            {unread > 0 ? (
+              <span
+                style={{
+                  marginLeft: "auto",
+                  minWidth: 20,
+                  padding: "0 6px",
+                  height: 20,
+                  borderRadius: 10,
+                  background: "#F0857A",
+                  color: "#241016",
+                  fontSize: 11.5,
+                  fontWeight: 800,
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                {unread > 9 ? "9+" : unread}
+              </span>
+            ) : null}
+          </Link>
 
           {items.length > 0 ? (
             <>
@@ -570,7 +623,38 @@ function ProfileMenu({
           textAlign: "left",
         }}
       >
-        <Avatar name={name} size={36} />
+        {/* The avatar carries the unread count, because the bell it replaced was
+            visible at a glance and a menu item is not. It survives the rail
+            being collapsed to icons, which is when the old bell disappeared
+            anyway. */}
+        <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
+          <Avatar name={name} size={36} />
+          {unread > 0 ? (
+            <span
+              aria-label={`${unread} unread`}
+              style={{
+                position: "absolute",
+                top: -2,
+                right: -3,
+                minWidth: 17,
+                height: 17,
+                padding: "0 4px",
+                borderRadius: 9,
+                background: "#F0857A",
+                color: "#241016",
+                fontSize: 10.5,
+                fontWeight: 800,
+                display: "grid",
+                placeItems: "center",
+                // Rings the rail's own navy so the badge reads as sitting ON
+                // the avatar rather than floating behind it.
+                boxShadow: "0 0 0 2px #1A1E3C",
+              }}
+            >
+              {unread > 9 ? "9+" : unread}
+            </span>
+          ) : null}
+        </span>
         <div className="lp-sb-profile-text" style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
             <span

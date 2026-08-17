@@ -24,7 +24,7 @@ import { useActionFeedback } from "@/components/console/toast";
  */
 
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const LINE = "#EAE8E1";
 const INDIGO = "#4340CB";
 

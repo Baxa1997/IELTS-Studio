@@ -24,7 +24,7 @@ const field: React.CSSProperties = {
   color: INK,
   background: "#fff",
 };
-const readOnly: React.CSSProperties = { ...field, background: "#F7F6F2", color: "#7C7A93" };
+const readOnly: React.CSSProperties = { ...field, background: "#F7F6F2", color: "#737189" };
 
 /**
  * The center's own profile. Only the name is editable, and that is a database
@@ -75,7 +75,7 @@ export function CenterProfileForm({
           <input value={plan} readOnly style={readOnly} />
         </div>
       </div>
-      <p style={{ fontSize: 11.5, color: "#93919F", margin: "0 0 14px", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 11.5, color: "#777581", margin: "0 0 14px", lineHeight: 1.55 }}>
         Status and plan aren&apos;t editable here by design — they&apos;re not writable by any
         client at all, only by the platform. That&apos;s what stops a center approving or upgrading
         itself.

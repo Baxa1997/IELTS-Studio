@@ -16,7 +16,7 @@ import { FiCheckCircle, FiExternalLink, FiSend } from "react-icons/fi";
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const LINE = "#EFEDE7";
 const GREEN = "#16794C";
 const INDIGO = "#4340CB";
