@@ -267,7 +267,7 @@ export default async function CentersPage({
             download
             title="Export centers (Excel)"
             aria-label="Export centers to Excel"
-            className="ad-act"
+            className="sa-act"
             style={{ color: TONE.green.ink, textDecoration: "none" }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -277,7 +277,7 @@ export default async function CentersPage({
           </a>
         </div>
 
-        <div className="ad-scroll">
+        <div className="sa-scroll">
           <div>
             <TableHead cols={COLS}>
               <div>CENTER</div>

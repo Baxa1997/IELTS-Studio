@@ -110,7 +110,7 @@ export default async function ModerationPage() {
           return (
             <div
               key={f.id}
-              className="ad-row"
+              className="sa-row"
               style={{
                 display: "flex",
                 alignItems: "flex-start",

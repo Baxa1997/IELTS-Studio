@@ -227,7 +227,7 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
           {[...admins, ...teachers].map((s) => (
             <div
               key={s.id}
-              className="ad-row"
+              className="sa-row"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -264,7 +264,7 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
           {groups.map((g) => (
             <div
               key={g.id}
-              className="ad-row"
+              className="sa-row"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -322,7 +322,7 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
             title="Students"
             note="Ordered by how much they have practised, so an idle roll shows itself."
           />
-          <div className="ad-scroll" style={{ maxHeight: 340, overflowY: "auto" }}>
+          <div className="sa-scroll" style={{ maxHeight: 340, overflowY: "auto" }}>
             <div>
               <TableHead cols={STUDENT_COLS}>
                 <div>NAME</div>

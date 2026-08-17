@@ -162,7 +162,7 @@ export default async function UsersPage({
       {/* The design's split: four small tiles in a 2×2 on the left, the plan
           mix filling the same height on the right. */}
       <div
-        className="ad-split-users"
+        className="sa-split-users"
         style={{ display: "grid", gridTemplateColumns: "1.1fr 1.9fr", gap: 12, marginBottom: 16 }}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>

@@ -123,7 +123,7 @@ export default async function PlansPage() {
 
       {/* ── the plans themselves ───────────────────────────────────────── */}
       <div
-        className="ad-kpis"
+        className="sa-kpis"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, minmax(0, 1fr))",

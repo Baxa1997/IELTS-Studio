@@ -32,7 +32,7 @@ export function OrgReviewRow({
   return (
     <form
       action={formAction}
-      className="ad-row"
+      className="sa-row"
       style={{
         display: "flex",
         alignItems: "center",
@@ -88,7 +88,7 @@ export function OrgReviewRow({
           value="reject"
           disabled={pending}
           title="Reject this application"
-          className="ad-act ad-act--danger"
+          className="sa-act sa-act--danger"
           style={{ color: TONE.red.ink, fontFamily: "inherit", fontSize: 15 }}
         >
           ✕

@@ -128,7 +128,7 @@ export function AlertsBell({ alerts, count }: { alerts: AlertRow[]; count: numbe
                     key={a.title}
                     href={a.href}
                     onClick={() => setOpen(false)}
-                    className="ad-menu-item"
+                    className="sa-menu-item"
                     style={{
                       display: "flex",
                       gap: 11,

@@ -163,7 +163,7 @@ export function OverflowMenu({ items, label = "More actions" }: { items: MenuIte
                     <Link
                       key={item.label}
                       href={item.href}
-                      className="ad-menu-item"
+                      className="sa-menu-item"
                       style={style}
                       onClick={() => setOpen(false)}
                       {...(item.download ? { download: "" } : null)}
@@ -174,7 +174,7 @@ export function OverflowMenu({ items, label = "More actions" }: { items: MenuIte
                     <button
                       key={item.label}
                       type="button"
-                      className="ad-menu-item"
+                      className="sa-menu-item"
                       style={style}
                       onClick={() => {
                         setOpen(false);

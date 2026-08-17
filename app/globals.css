@@ -52,6 +52,13 @@
    Distinct from competitors' purple / blue / honey. Hues: ~165 teal-emerald,
    ~85 warm sand. All semantic tokens, so the whole app reskins from here. */
 :root {
+  /* Console hairlines, mirroring crm-ui.tsx's palette so CSS and the inline
+     styles cannot drift apart. The ratios beside each are against white; the
+     old values sat at 1.10–1.26, which is why nobody could see them. */
+  --cn-line: #c5c4be; /* card edge / table outline   1.75:1 */
+  --cn-rule: #d4d3ce; /* header divider              1.50:1 */
+  --cn-hair: #dededa; /* row + column divider        1.35:1 */
+
   --background: oklch(0.992 0.004 95);
   --foreground: oklch(0.21 0.02 175);
   --card: oklch(1 0 0);
@@ -1808,11 +1815,11 @@
    inline in components/admin/ui.tsx, so a stale stylesheet can never leave the
    page half-painted — the lesson from the Practice AI hero. */
 
-.ad-row:hover {
+.sa-row:hover {
   background: #fbfbf9;
 }
 
-.ad-act {
+.sa-act {
   width: 32px;
   height: 32px;
   border: 1px solid #e0ded8;
@@ -1825,56 +1832,117 @@
     background 0.12s,
     border-color 0.12s;
 }
-.ad-act:hover {
+.sa-act:hover {
   background: #f4f3ef;
 }
-.ad-act--go:hover {
+.sa-act--go:hover {
   background: #f1f0fb;
   border-color: #c9c7e4;
 }
-.ad-act--warn:hover {
+.sa-act--warn:hover {
   background: #fdf4e7;
   border-color: #ebd3a8;
 }
-.ad-act--danger:hover {
+.sa-act--danger:hover {
   background: #fbedeb;
   border-color: #eabcb6;
 }
+
+/* WHY THESE ARE `sa-` AND NOT `ad-`.
+   They were `ad-` for "admin". Every content blocker on the internet reads that
+   as "advertisement": `.ad-row` in particular is a stock class on news sites for
+   a row of adverts, and EasyList-derived filters hide it with
+   `display: none !important`. The result was a super-admin table that rendered
+   perfectly on the server, arrived complete in the HTML, and showed the user an
+   empty card — while `.ad-kpis` survived, because nobody names an ad slot that.
+   Nothing in a build, a test or a server log can see this: the markup is right
+   and the browser throws it away. `sa-` = super admin. */
 
 /* Tables are grids with fixed templates, so below a laptop they have to scroll
    inside the card rather than squeeze — a 8-column row at 380px is unreadable
    however it wraps. The card clips; this lets the grid keep its width. */
 @media (max-width: 1100px) {
-  .ad-scroll {
+  .sa-scroll {
     overflow-x: auto;
   }
-  .ad-scroll > * {
+  .sa-scroll > * {
     min-width: 900px;
   }
-  .ad-kpis {
+  .sa-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
-  .ad-split {
+  .sa-split {
     grid-template-columns: 1fr !important;
   }
 }
 @media (max-width: 640px) {
-  .ad-kpis {
+  .sa-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 /* The Users screen's KPI-plus-plan-mix split, per the design's 1.1fr/1.9fr. */
 @media (max-width: 1100px) {
-  .ad-split-users {
+  .sa-split-users {
     grid-template-columns: 1fr !important;
   }
 }
 
 /* Menu and alert rows share one hover, so a dropdown never feels inert. */
-.ad-menu-item:hover {
+.sa-menu-item:hover {
   background: #f4f3ef;
 }
-.ad-act:disabled {
+.sa-act:disabled {
   cursor: default;
+}
+
+/* ── the ledger table ───────────────────────────────────────────────────────
+   `<Table gridded>` — column rules as well as row rules, for transaction
+   tables only. A roster is a list you scan down and boxing it up hurts; a
+   ledger is read ACROSS (does this date, category, account and amount belong
+   together?) and then DOWN one column to total it. Both readings need the
+   columns ruled.
+
+   The one `!important` is unavoidable and contained: TRow and THead set
+   `gap: 12` as an inline style, and inline always beats a stylesheet whatever
+   the specificity. The gap has to collapse so the rule can sit ON the cell
+   boundary rather than floating 12px off it; the padding below puts the
+   breathing room back inside each cell instead. */
+.cn-table--grid {
+  border: 1px solid var(--cn-line, #c5c4be);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cn-table--grid .cn-thead,
+.cn-table--grid .cn-row {
+  gap: 0 !important;
+}
+.cn-table--grid .cn-thead > *,
+.cn-table--grid .cn-row > * {
+  padding: 0 12px;
+  min-width: 0;
+}
+/* Every cell after the first carries the rule, so there is never one hanging
+   off the outside edge. */
+.cn-table--grid .cn-thead > * + *,
+.cn-table--grid .cn-row > * + * {
+  border-left: 1px solid var(--cn-hair, #dededa);
+}
+.cn-table--grid .cn-thead > * + * {
+  border-left-color: var(--cn-rule, #d4d3ce);
+}
+/* The header earns a heavier bottom edge: it is the line that says "figures
+   start here", and at the row weight it read as just another row. */
+.cn-table--grid .cn-thead {
+  border-bottom: 1px solid var(--cn-line, #c5c4be);
+}
+/* The last row's own border would double with the container's, leaving a 2px
+   edge that looks like a rendering fault. */
+.cn-table--grid .cn-row:last-child {
+  border-bottom: 0;
+}
+/* Money lines up only if the digits are the same width. */
+.cn-table--grid .cn-row > *,
+.cn-table--grid .cn-thead > * {
+  font-variant-numeric: tabular-nums;
 }

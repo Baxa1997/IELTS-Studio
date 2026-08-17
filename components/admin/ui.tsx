@@ -198,7 +198,7 @@ export function CardHead({
 export function KpiRow({ cols, children }: { cols: number; children: React.ReactNode }) {
   return (
     <div
-      className="ad-kpis"
+      className="sa-kpis"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
@@ -399,13 +399,13 @@ export function TableRow({
   };
   if (href) {
     return (
-      <a className="ad-row" href={href} style={style}>
+      <a className="sa-row" href={href} style={style}>
         {children}
       </a>
     );
   }
   return (
-    <div className="ad-row" style={style}>
+    <div className="sa-row" style={style}>
       {children}
     </div>
   );
@@ -549,7 +549,7 @@ export function Split({
 }) {
   return (
     <div
-      className="ad-split"
+      className="sa-split"
       style={{ display: "grid", gridTemplateColumns: ratio, gap: 16, marginBottom: 16 }}
     >
       {children}
