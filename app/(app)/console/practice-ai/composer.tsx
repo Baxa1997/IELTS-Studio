@@ -489,48 +489,7 @@ export function Composer() {
               panel. It was one press away and that was one press too many: the
               panel is shut by default, so every lesson quietly came out at the
               default 12 and there was no sign the number was ever a choice. */}
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-              padding: 4,
-              borderRadius: 999,
-              background: "#fff",
-              boxShadow: "inset 0 0 0 1px #e4e0d6",
-            }}
-          >
-            <Step label="Fewer exercises" onClick={() => setCount((c) => Math.max(COUNT_MIN, c - 1))}>
-              −
-            </Step>
-            <input
-              type="number"
-              min={COUNT_MIN}
-              max={COUNT_MAX}
-              value={count}
-              aria-label="How many exercises"
-              onChange={(e) => setCount(Number(e.target.value))}
-              onBlur={(e) =>
-                setCount(Math.max(COUNT_MIN, Math.min(COUNT_MAX, Number(e.target.value) || 12)))
-              }
-              style={{
-                width: 34,
-                border: 0,
-                outline: "none",
-                background: "transparent",
-                fontFamily: "inherit",
-                fontSize: 15,
-                fontWeight: 700,
-                color: INK,
-                textAlign: "center",
-                padding: 0,
-              }}
-            />
-            <Step label="More exercises" onClick={() => setCount((c) => Math.min(COUNT_MAX, c + 1))}>
-              +
-            </Step>
-            <span style={{ fontSize: 13.5, color: SOFT, padding: "0 10px 0 4px" }}>items</span>
-          </span>
+          <ItemCount count={count} setCount={setCount} />
 
           <span className="pa-bar-hide" style={{ fontSize: 13, color: SOFT }}>
             {planFirst ? "I'll show the outline first" : "Straight to writing"}
@@ -618,6 +577,8 @@ export function Composer() {
           questions={phase.questions}
           answers={answers}
           onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
+          count={count}
+          setCount={setCount}
           planFirst={planFirst}
           onCancel={() => setPhase({ step: "idle" })}
           onGo={guard(() => proceed(answers, phase.blueprint, phase.brief))}
@@ -1064,6 +1025,74 @@ function SpecRow({
   );
 }
 
+/**
+ * How many exercises — the one setting a teacher changes every time.
+ *
+ * Rendered in TWO places on purpose, which is not duplication but the fix for a
+ * real complaint: on the face of the composer while the brief is being written,
+ * and again in the setup dialog, because the dialog is the last moment the
+ * number still does anything. After it the plan is drafted around a count, and
+ * `build` sends only the plan — so a control offered any later would look live
+ * and change nothing.
+ */
+function ItemCount({
+  count,
+  setCount,
+  block = false,
+}: {
+  count: number;
+  setCount: (fn: (c: number) => number) => void;
+  /** Full-width inside the dialog; a pill in the composer's button row. */
+  block?: boolean;
+}) {
+  return (
+    <span
+      style={{
+        display: block ? "flex" : "inline-flex",
+        alignItems: "center",
+        gap: 2,
+        padding: 4,
+        borderRadius: 999,
+        background: "#fff",
+        boxShadow: "inset 0 0 0 1px #e4e0d6",
+      }}
+    >
+      <Step label="Fewer exercises" onClick={() => setCount((c) => Math.max(COUNT_MIN, c - 1))}>
+        −
+      </Step>
+      <input
+        type="number"
+        min={COUNT_MIN}
+        max={COUNT_MAX}
+        value={count}
+        aria-label="How many exercises"
+        onChange={(e) => setCount(() => Number(e.target.value))}
+        onBlur={(e) =>
+          setCount(() => Math.max(COUNT_MIN, Math.min(COUNT_MAX, Number(e.target.value) || 12)))
+        }
+        style={{
+          width: 34,
+          border: 0,
+          outline: "none",
+          background: "transparent",
+          fontFamily: "inherit",
+          fontSize: 15,
+          fontWeight: 700,
+          color: INK,
+          textAlign: "center",
+          padding: 0,
+        }}
+      />
+      <Step label="More exercises" onClick={() => setCount((c) => Math.min(COUNT_MAX, c + 1))}>
+        +
+      </Step>
+      <span style={{ fontSize: 13.5, color: SOFT, padding: "0 10px 0 4px" }}>
+        {block ? `exercises (${COUNT_MIN}–${COUNT_MAX})` : "items"}
+      </span>
+    </span>
+  );
+}
+
 /** One end of the items stepper. A real button, so the count is reachable by
  *  tap and by keyboard without typing into a number field. */
 function Step({
@@ -1146,6 +1175,8 @@ function SetupDialog({
   questions,
   answers,
   onAnswer,
+  count,
+  setCount,
   planFirst,
   onCancel,
   onGo,
@@ -1154,6 +1185,8 @@ function SetupDialog({
   questions: Question[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
+  count: number;
+  setCount: (fn: (c: number) => number) => void;
   planFirst: boolean;
   onCancel: () => void;
   onGo: () => void;
@@ -1178,6 +1211,25 @@ function SetupDialog({
       </p>
 
       <div style={{ display: "grid", gap: 22, margin: "24px 0" }}>
+        {/* FIRST, and always — the engine's questions change from brief to
+            brief, but "how long is this lesson" is asked every time and is the
+            last point at which the answer still does anything. */}
+        <div style={{ display: "grid", gap: 10 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>
+            How many exercises should it have?
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <ItemCount count={count} setCount={setCount} block />
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+              {COUNTS.map((c) => (
+                <SpecChip key={c} on={count === c} onClick={() => setCount(() => c)}>
+                  {c}
+                </SpecChip>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {questions.map((q) => (
           <div key={q.id} style={{ display: "grid", gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{q.label}</span>
