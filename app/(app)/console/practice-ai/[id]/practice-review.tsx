@@ -21,7 +21,7 @@ const INK = "#15171C";
 const BODY = "#2A2D34";
 const MUTED = "#5C616C";
 const FAINT = "#8B909B";
-const LINE = "#E7E5DF";
+const LINE = "#C5C4BE";
 const GREEN = "#16794C";
 
 const STAGES = [

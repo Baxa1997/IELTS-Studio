@@ -168,7 +168,7 @@ export default async function AdminPage() {
         {conduct.slice(0, 3).map((c) => (
           <div
             key={c.id}
-            className="ad-row"
+            className="sa-row"
             style={{
               display: "flex",
               alignItems: "center",
@@ -439,7 +439,7 @@ export default async function AdminPage() {
             <Link
               key={c.id}
               href={`/admin/centers/${c.id}`}
-              className="ad-row"
+              className="sa-row"
               style={{
                 display: "flex",
                 alignItems: "center",

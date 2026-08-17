@@ -20,17 +20,40 @@ export const SANS = "var(--font-work), system-ui, sans-serif";
 export const SERIF = "var(--font-serif4), Georgia, serif";
 
 /* ── palette ──────────────────────────────────────────────────────────────── */
+/*
+ * MEASURED, NOT EYEBALLED — and the old values were measurably wrong.
+ *
+ * They were picked for calm and went past it. The row divider was #F5F4F0:
+ * 1.10:1 against white and 1.01:1 against the page ground — a line nobody can
+ * see, drawn under every row of every table in the product. The card edge sat
+ * at 1.26:1. The caption colour failed WCAG AA outright at 3.09:1, where text
+ * below 18pt needs 4.5:1.
+ *
+ * Each replacement was solved for a contrast target rather than nudged until it
+ * looked right, keeping its hue by scaling the channels together — these are
+ * warm greys and they should stay warm. The comments carry the ratio so the
+ * next person can see what a change costs.
+ *
+ * The text ladder is now compressed, which is the deliberate trade: SOFT and
+ * FAINT sit close to MUTED because AA does not care about our tonal hierarchy.
+ * Size and weight carry that hierarchy instead, which is most of what they were
+ * doing anyway.
+ *
+ * 39 files declare their own copies of these constants, so the values here are
+ * the canonical ones but not the only ones — a change has to be applied across
+ * the console, not just here.
+ */
 export const CANVAS = "#F4F3EF"; // page ground
-export const INK = "#16162E"; // primary text
-export const MUTED = "#6E6C87"; // secondary text
-export const SOFT = "#7C7A93"; // tertiary text
-export const FAINT = "#93919F"; // captions
-export const BODY = "#4C4A63"; // table body text
-export const LINE = "#E7E5DF"; // card border
-export const RULE = "#F0EEE9"; // header divider inside a card
-export const HAIR = "#F5F4F0"; // row divider
+export const INK = "#16162E"; // primary text             17.7:1
+export const MUTED = "#6E6C87"; // secondary text           5.1:1
+export const SOFT = "#737189"; // tertiary text             4.7:1  (was 4.15)
+export const FAINT = "#777581"; // captions                 4.5:1  (was 3.09 — failed AA)
+export const BODY = "#4C4A63"; // table body text           8.5:1
+export const LINE = "#C5C4BE"; // card border              1.75:1 (was 1.26)
+export const RULE = "#D4D3CE"; // header divider in a card  1.50:1 (was 1.16)
+export const HAIR = "#DEDEDA"; // row divider              1.35:1 (was 1.10 — invisible)
 export const HEADBG = "#FAFAF8"; // table header / input fill
-/* Form-control border. Deliberately darker than the card hairline (#E7E5DF):
+/* Form-control border. Deliberately darker than the card hairline (#C5C4BE):
    a card edge only has to separate two surfaces, but a field edge has to say
    "you can type here", and at the card's weight it disappeared on white. */
 export const FIELD_LINE = "#CFCABC";
@@ -416,15 +439,32 @@ export function Split({
 export function Table({
   cols,
   minWidth = 0,
+  gridded = false,
   children,
 }: {
   cols: string;
   minWidth?: number;
+  /**
+   * Rule every column as well as every row — the ledger treatment.
+   *
+   * OFF EVERYWHERE ELSE, ON PURPOSE. A roster or a marking queue is a list of
+   * people you scan down; column rules chop it into boxes and make the scan
+   * harder. A transaction table is the opposite: you read ACROSS a row to check
+   * that a date, a category, an account and an amount belong together, and then
+   * down a single column to add it up. Ruling the columns is what makes both
+   * readings possible, which is why every accounting package ever written does
+   * it and no CRM contact list does.
+   */
+  gridded?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="cn-noscrollbar" style={{ overflowX: "auto" }}>
-      <div style={{ minWidth: minWidth || undefined }} data-cols={cols}>
+      <div
+        className={gridded ? "cn-table cn-table--grid" : "cn-table"}
+        style={{ minWidth: minWidth || undefined }}
+        data-cols={cols}
+      >
         {children}
       </div>
     </div>
@@ -450,6 +490,7 @@ export function THead({
 }) {
   return (
     <div
+      className="cn-thead"
       style={{
         display: "grid",
         gridTemplateColumns: cols,
@@ -973,7 +1014,7 @@ export function buttonStyle(
     ...btnBase,
     background: "#fff",
     color: INK,
-    border: `1px solid #E0DED8`,
+    border: `1px solid #C5C4BE`,
     fontWeight: 500,
   };
 }
@@ -1003,7 +1044,7 @@ export function ChipLink({ href, children }: { href: string; children: React.Rea
       style={{
         display: "inline-block",
         background: CANVAS,
-        border: `1px solid #E4E2DC`,
+        border: `1px solid #C5C4BE`,
         borderRadius: 7,
         padding: "6px 11px",
         fontFamily: SANS,
@@ -1047,7 +1088,7 @@ export function Tabs({ tabs }: { tabs: { href: string; label: string; active: bo
       style={{
         display: "flex",
         gap: 4,
-        borderBottom: `1px solid #E4E2DC`,
+        borderBottom: `1px solid #C5C4BE`,
         marginBottom: 16,
         overflowX: "auto",
       }}
@@ -1096,7 +1137,7 @@ export function Chip({
         fontSize: 12.5,
         textDecoration: "none",
         whiteSpace: "nowrap",
-        border: `1px solid ${active ? INDIGO : "#E4E2DC"}`,
+        border: `1px solid ${active ? INDIGO : "#C5C4BE"}`,
         background: active ? INDIGO : "#fff",
         color: active ? "#fff" : BODY,
       }}

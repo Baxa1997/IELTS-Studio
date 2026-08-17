@@ -27,7 +27,7 @@ import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
  */
 
 const INK = "#16162E";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const HAIR = "#EFEDE8";
 const BAND_H = 34;
 
@@ -490,7 +490,7 @@ export function TimetableGrid({
                 style={{
                   marginLeft: "auto",
                   background: "#F4F3EF",
-                  border: "1px solid #E4E2DC",
+                  border: "1px solid #C5C4BE",
                   borderRadius: 8,
                   width: 30,
                   height: 30,

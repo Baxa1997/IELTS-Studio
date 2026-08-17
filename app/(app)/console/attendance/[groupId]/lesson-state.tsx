@@ -66,7 +66,7 @@ export function CancelledBanner({
   useActionFeedback(state, { keepOpen: true });
 
   return (
-    <form action={action} style={banner("#F4F3EF", "#E4E2DC", MUTED)}>
+    <form action={action} style={banner("#F4F3EF", "#C5C4BE", MUTED)}>
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="held_on" value={heldOn} />
       <FiSlash size={15} aria-hidden />
@@ -95,7 +95,7 @@ export function LockedBanner({
   useActionFeedback(state, { keepOpen: true });
 
   return (
-    <form action={action} style={banner("#F4F3EF", "#E4E2DC", MUTED)}>
+    <form action={action} style={banner("#F4F3EF", "#C5C4BE", MUTED)}>
       <input type="hidden" name="session_id" value={sessionId ?? ""} />
       <FiLock size={15} aria-hidden />
       <span>

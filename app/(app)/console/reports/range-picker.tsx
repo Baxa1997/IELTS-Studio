@@ -24,7 +24,7 @@ export function RangePicker({ value }: { value: RangeKey }) {
 
   return (
     <label style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-      <span style={{ fontSize: 12, color: "#93919F" }}>Showing</span>
+      <span style={{ fontSize: 12, color: "#777581" }}>Showing</span>
       <select
         aria-label="Date range"
         value={value}

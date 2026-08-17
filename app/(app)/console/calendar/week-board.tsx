@@ -28,7 +28,7 @@ import { type GridRoom, TimetableGrid } from "./timetable-grid";
 
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
 const INDIGO = "#4340CB";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const INK = "#16162E";
 
 export interface DayTab {
@@ -119,7 +119,7 @@ export function WeekBoard({
                 fontFamily: SANS,
                 fontSize: 13.5,
                 fontWeight: on ? 600 : 500,
-                border: `1px solid ${on ? INDIGO : isToday ? "#B9B7E8" : "#E4E2DC"}`,
+                border: `1px solid ${on ? INDIGO : isToday ? "#B9B7E8" : "#C5C4BE"}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : "#4C4A63",
                 display: "flex",

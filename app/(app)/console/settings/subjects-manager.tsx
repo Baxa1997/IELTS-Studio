@@ -22,8 +22,8 @@ import {
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
-const LINE = "#E4E2DC";
+const FAINT = "#777581";
+const LINE = "#C5C4BE";
 const INDIGO = "#4340CB";
 
 /** A small fixed palette. Free-form hex in the column, chosen from here in the

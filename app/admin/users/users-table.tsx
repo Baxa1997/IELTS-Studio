@@ -230,7 +230,7 @@ export function UsersTable({
           href="/api/admin/export?kind=users"
           title="Export users (Excel)"
           aria-label="Export users to Excel"
-          className="ad-act"
+          className="sa-act"
           style={{ marginLeft: "auto", color: TONE.green.ink, textDecoration: "none" }}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -240,7 +240,7 @@ export function UsersTable({
         </a>
       </div>
 
-      <div className="ad-scroll">
+      <div className="sa-scroll">
         <div>
           <TableHead cols={COLS}>
             <div>USER</div>
@@ -299,7 +299,7 @@ export function UsersTable({
                   type="button"
                   title="Plan and limits"
                   aria-label={`Plan and limits for ${u.name}`}
-                  className="ad-act ad-act--go"
+                  className="sa-act sa-act--go"
                   style={{ color: INDIGO }}
                   onClick={() =>
                     setManage({
@@ -328,7 +328,7 @@ export function UsersTable({
                   type="button"
                   title={u.orgStatus === "suspended" ? "Suspended — open to restore" : "Suspend account"}
                   aria-label={`Suspend ${u.name}`}
-                  className="ad-act ad-act--danger"
+                  className="sa-act sa-act--danger"
                   style={{ color: u.orgStatus === "suspended" ? TONE.green.ink : TONE.red.ink }}
                   onClick={() =>
                     setManage({
@@ -379,7 +379,7 @@ export function UsersTable({
         <span style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
           <button
             type="button"
-            className="ad-act"
+            className="sa-act"
             disabled={safePage <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             aria-label="Previous page"
@@ -389,7 +389,7 @@ export function UsersTable({
           </button>
           <button
             type="button"
-            className="ad-act"
+            className="sa-act"
             disabled={safePage >= pages}
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             aria-label="Next page"

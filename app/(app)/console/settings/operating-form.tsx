@@ -20,7 +20,7 @@ import { saveCenterSettings, type ActionState } from "../center-actions";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 /** The zones this is actually sold into, plus a UTC escape hatch. Typing an
  *  IANA name by hand is a support ticket; a list of five is a decision. */

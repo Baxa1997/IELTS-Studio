@@ -37,7 +37,7 @@ export function AnnouncementTabs({
         style={{
           display: "flex",
           gap: 4,
-          borderBottom: "1px solid #E7E5DF",
+          borderBottom: "1px solid #C5C4BE",
           marginBottom: 14,
           flex: "none",
         }}

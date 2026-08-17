@@ -24,7 +24,7 @@ import { type ActionState, saveAlertSettings } from "../center-actions";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const LINE = "#EAE8E1";
 const INDIGO = "#4340CB";
 const AMBER = "#9A6B00";

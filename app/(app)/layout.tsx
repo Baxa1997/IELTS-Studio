@@ -129,6 +129,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         sidebarFooter={sidebarFooter}
         quotaBar={quotaBar}
         bell={<NotificationBell inbox={inbox} />}
+        unread={inbox.unread}
         initialCollapsed={collapsed}
       >
         {children}

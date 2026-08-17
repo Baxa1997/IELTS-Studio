@@ -883,7 +883,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               desk on the left.
             </Empty>
           ) : (
-            <Table cols={COLS} minWidth={LEDGER_MIN_WIDTH}>
+            <Table cols={COLS} minWidth={LEDGER_MIN_WIDTH} gridded>
               <THead
                 cols={COLS}
                 labels={["№", "Date", "Who", "Group", "What it was for", "Desk", "Amount", "Status"]}
@@ -1012,7 +1012,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                   ...chip,
                   padding: "7px 11px",
                   cursor: "pointer",
-                  border: "1px solid #E4E2DC",
+                  border: "1px solid #C5C4BE",
                 }}
               >
                 Set
@@ -1083,7 +1083,7 @@ const LEDGER_MIN_WIDTH = 820;
 
 const chip: React.CSSProperties = {
   background: "#F4F3EF",
-  border: "1px solid #E4E2DC",
+  border: "1px solid #C5C4BE",
   borderRadius: 7,
   padding: "6px 11px",
   fontFamily: SANS,

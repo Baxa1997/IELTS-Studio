@@ -188,7 +188,7 @@ export default async function BillingPage() {
                 lineHeight: 1.55,
                 color: SOFT,
                 margin: 0,
-                borderTop: "1px solid #F0EEE9",
+                borderTop: "1px solid #D4D3CE",
                 paddingTop: 12,
               }}
             >
@@ -275,7 +275,7 @@ function PlanCard({
       style={{
         display: "flex",
         flexDirection: "column",
-        border: `1px solid ${isCurrent ? INDIGO : "#E7E5DF"}`,
+        border: `1px solid ${isCurrent ? INDIGO : "#C5C4BE"}`,
         background: isCurrent ? "#FBFBFF" : "#fff",
         borderRadius: 12,
         padding: 16,

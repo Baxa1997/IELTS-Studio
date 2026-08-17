@@ -22,7 +22,7 @@ import { DAY_PRESETS, describeDays, orderedWeekdays } from "@/lib/console/timeta
  */
 
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 const INDIGO = "#4340CB";
 
 export interface RoomChoice {
@@ -91,7 +91,7 @@ export function ScheduleFields({
                 padding: "4px 10px",
                 fontSize: 11.5,
                 fontFamily: "inherit",
-                border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : MUTED,
                 cursor: "pointer",
@@ -120,7 +120,7 @@ export function ScheduleFields({
                 fontSize: 12,
                 fontWeight: on ? 600 : 500,
                 fontFamily: "inherit",
-                border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : MUTED,
                 cursor: "pointer",
@@ -186,7 +186,7 @@ export function ScheduleFields({
 const timeField: React.CSSProperties = {
   height: 34,
   borderRadius: 8,
-  border: "1px solid #E4E2DC",
+  border: "1px solid #C5C4BE",
   background: "#fff",
   padding: "0 9px",
   fontSize: 13.5,

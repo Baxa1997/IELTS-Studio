@@ -173,7 +173,7 @@ export function StudentReportView({
                   }
                   fill={
                     b.current == null
-                      ? "#E4E2DC"
+                      ? "#C5C4BE"
                       : behind == null || behind >= 0
                         ? GREEN
                         : behind >= -1
@@ -208,7 +208,7 @@ export function StudentReportView({
                 fontSize: 11.5,
                 color: FAINT,
                 marginTop: 12,
-                borderTop: "1px solid #F0EEE9",
+                borderTop: "1px solid #D4D3CE",
                 paddingTop: 10,
                 lineHeight: 1.55,
               }}
@@ -350,7 +350,7 @@ export function StudentReportView({
                   justifyContent: "space-between",
                   gap: 12,
                   padding: "9px 0",
-                  borderBottom: "1px solid #F5F4F0",
+                  borderBottom: "1px solid #DEDEDA",
                   fontFamily: SANS,
                   fontSize: 12.5,
                 }}
@@ -432,7 +432,7 @@ function ExportPdfLink({ studentId }: { studentId: string }) {
         textDecoration: "none",
         background: "#FFF",
         color: INK,
-        border: "1px solid #E0DED8",
+        border: "1px solid #C5C4BE",
       }}
     >
       Export report (PDF)

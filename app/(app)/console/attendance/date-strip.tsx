@@ -12,7 +12,7 @@ import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
  */
 
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
-const HAIRLINE = "#E4E2DC";
+const HAIRLINE = "#C5C4BE";
 const INK = "#16162E";
 const INDIGO = "#4340CB";
 const GREEN = "#16794C";

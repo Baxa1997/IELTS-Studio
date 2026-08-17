@@ -19,7 +19,7 @@ const INK = "#16162E";
 const FAINT = "#6E6C87";
 const GREEN = "#166C4C";
 const RED = "#C24539";
-const RULE = "#E7E5DF";
+const RULE = "#C5C4BE";
 
 /**
  * §12's Automatic tab: six messages, each on/off with editable wording.
@@ -169,7 +169,7 @@ function MessageRow({
             color: FAINT,
             marginTop: 8,
             paddingTop: 8,
-            borderTop: `1px solid #F2F0EB`,
+            borderTop: `1px solid #D4D3CE`,
             fontStyle: "italic",
           }}
         >

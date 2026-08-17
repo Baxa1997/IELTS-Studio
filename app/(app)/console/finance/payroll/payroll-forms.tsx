@@ -69,7 +69,7 @@ export function PayrollStatusForm({
         className="cn-btn cn-btn--ghost"
         style={{
           background: "#fff",
-          border: "1px solid #E0DED8",
+          border: "1px solid #C5C4BE",
           borderRadius: 9,
           padding: "8px 15px",
           fontFamily: "inherit",
@@ -152,7 +152,7 @@ export function PayTeacherForm({
           />
         </Field>
       </div>
-      <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
         This writes one expense in the ledger under Teacher salaries, so {teacherName}&apos;s pay
         shows up in the month&apos;s expenses without being typed twice.
       </p>
@@ -211,7 +211,7 @@ export function AdjustPayslipForm({
           />
         </Field>
       </div>
-      <p style={{ fontSize: 12, color: "#93919F", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
         Adjustments survive a recompute — they are your decision, not the rule&apos;s output.
       </p>
       <div style={{ marginTop: 16 }}>

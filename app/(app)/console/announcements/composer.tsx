@@ -10,7 +10,7 @@ import { useActionFeedback } from "@/components/console/toast";
 const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -109,7 +109,7 @@ export function AnnouncementComposer({
                 fontSize: 12.5,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-                border: `1px solid ${on ? "#14133A" : "#E4E2DC"}`,
+                border: `1px solid ${on ? "#14133A" : "#C5C4BE"}`,
                 background: on ? "#14133A" : "#fff",
                 color: on ? "#fff" : "#4C4A63",
               }}
@@ -188,7 +188,7 @@ export function AnnouncementComposer({
             background: "#FAFAF7",
           }}
         >
-          <FiSend size={15} color="#93919F" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
+          <FiSend size={15} color="#777581" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
           <span>
             <span style={{ display: "block", fontSize: 13, color: MUTED }}>
               No Telegram channel connected
@@ -209,7 +209,7 @@ export function AnnouncementComposer({
           style={{
             marginTop: 14,
             borderRadius: 10,
-            border: `1px solid ${toTelegram ? "#B7E0F5" : "#E4E2DC"}`,
+            border: `1px solid ${toTelegram ? "#B7E0F5" : "#C5C4BE"}`,
             background: toTelegram ? "#F7FCFF" : "#fff",
             overflow: "hidden",
           }}
@@ -320,7 +320,7 @@ export function AnnouncementComposer({
           {pending ? "Sending…" : "Send now"}
         </button>
       </div>
-      <div style={{ fontSize: 11.5, color: "#93919F", marginTop: 10, lineHeight: 1.55 }}>
+      <div style={{ fontSize: 11.5, color: "#777581", marginTop: 10, lineHeight: 1.55 }}>
         Reaches {reach} {reach === 1 ? "person" : "people"} in the app. A center student may have no
         address that can receive mail, so the bell is the one channel that reaches everybody.
       </div>

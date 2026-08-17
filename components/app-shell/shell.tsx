@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronsLeft, ChevronsRight, ChevronUp, LogOut, Menu } from "lucide-react";
+import {
+  Bell,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronUp,
+  CreditCard,
+  LogOut,
+  type LucideIcon,
+  Megaphone,
+  Menu,
+  Settings,
+} from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
 import { EngProgressLogo, EngProgressMark } from "@/components/brand/engprogress-logo";
@@ -37,7 +48,8 @@ function readCollapsed(fallback: boolean): boolean {
 /**
  * The authenticated app shell (Option A brand). The sidebar is the only chrome: it
  * owns the brand (top), navigation (middle), and the signed-in user as a profile
- * menu pinned to the bottom — clicking it reveals account options (Sign out). There
+ * menu pinned to the bottom — clicking it reveals the account menu: Announcements,
+ * Billing & plan and Settings (by role), then Sign out. There
  * is no desktop top header, so <main> runs the full height of the viewport; on
  * mobile a slim bar carries the hamburger + brand and the sidebar slides in as a
  * drawer. The frame itself doesn't scroll; only <main> does.
@@ -61,6 +73,7 @@ export function AppShell({
   sidebarFooter,
   quotaBar,
   bell,
+  unread = 0,
   initialCollapsed = false,
   children,
 }: {
@@ -92,6 +105,9 @@ export function AppShell({
   /** Notification bell, rendered in the rail footer and in the mobile top bar.
    *  Server-loaded by the layout so the badge is right on first paint. */
   bell?: React.ReactNode;
+  /** Unread notifications. The rail shows this on the avatar; the bell above is
+   *  the mobile top bar's copy and keeps its own badge. */
+  unread?: number;
   /** Desktop rail starts collapsed — read from a cookie by the layout so the choice
    *  survives navigation across route groups (which remounts this component). */
   initialCollapsed?: boolean;
@@ -300,12 +316,20 @@ export function AppShell({
             }}
           >
             {sidebarFooter}
-            {bell ? (
-              <div className="lp-sb-bell" style={{ display: "flex", justifyContent: "flex-end" }}>
-                {bell}
-              </div>
-            ) : null}
-            <ProfileMenu name={name} roleLabel={roleLabel} email={email} />
+            {/* The bell used to sit here, above the profile button. It is gone
+                from the rail — but this was the ONLY way to reach notifications
+                on desktop (the top bar carrying the other one is hidden above
+                768px), so removing it outright would have quietly deleted the
+                feature. It moved into the account menu, and the unread count
+                rides on the avatar so it is still visible without opening
+                anything. */}
+            <ProfileMenu
+              name={name}
+              roleLabel={roleLabel}
+              email={email}
+              items={accountItemsFor(role)}
+              unread={unread}
+            />
           </div>
         </aside>
 
@@ -325,7 +349,7 @@ export function AppShell({
               // depend on `:has()` reaching a descendant.
               background: isConsole ? "#F4F3EF" : "#fff",
               borderRadius: 18,
-              border: `1px solid ${isConsole ? "#E4E2DC" : "#E9E7F2"}`,
+              border: `1px solid ${isConsole ? "#C5C4BE" : "#E9E7F2"}`,
               boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
             }}
           >
@@ -342,19 +366,69 @@ export function AppShell({
   );
 }
 
+export interface AccountItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+/**
+ * What moves out of the rail and under the avatar.
+ *
+ * WHY THESE THREE. The rail answers "what has to happen today"; these three
+ * are things you go and do occasionally and then leave alone — the centre's
+ * own settings, its plan, and writing to everybody. Keeping them as permanent
+ * sections meant two of the rail's six headings were for pages an owner opens
+ * about once a month, which pushed the daily work further down every screen.
+ *
+ * ROLE STILL DECIDES. This is the same split the rail enforced: the front desk
+ * runs people and money-in and never sees billing or settings, and a teacher
+ * announces only to their own groups. A menu is a hint, not a gate — the pages
+ * redirect and RLS refuses independently — but it should not offer somebody a
+ * door that will shut in their face.
+ */
+export function accountItemsFor(role: string): AccountItem[] {
+  const announcements = {
+    label: "Announcements",
+    href: "/console/announcements",
+    icon: Megaphone,
+  };
+  switch (role) {
+    case "center_admin":
+      return [
+        announcements,
+        { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
+        { label: "Settings", href: "/console/settings", icon: Settings },
+      ];
+    case "administrator":
+    case "teacher":
+      return [announcements];
+    default:
+      // Students and the platform owner have none of these.
+      return [];
+  }
+}
+
 /**
  * The signed-in user, pinned to the bottom of the sidebar. Click to reveal a small
- * account menu (opening upward) with Sign out. A transparent full-screen backdrop
- * closes it on any outside click. When the rail is collapsed only the avatar shows.
+ * account menu (opening upward): the occasional pages first, Sign out last and
+ * separated, because it is the one item you can press by accident and regret.
+ * A transparent full-screen backdrop closes it on any outside click. When the
+ * rail is collapsed only the avatar shows.
  */
 function ProfileMenu({
   name,
   roleLabel,
   email,
+  items = [],
+  unread = 0,
 }: {
   name: string;
   roleLabel: string;
   email?: string;
+  items?: AccountItem[];
+  /** Unread notifications, shown on the avatar and beside the menu item. */
+  unread?: number;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -421,6 +495,82 @@ function ProfileMenu({
             </div>
           </div>
           <div style={{ height: 1, background: RAIL_LINE, margin: "2px 4px 6px" }} />
+
+          <Link
+            href="/notifications"
+            role="menuitem"
+            className="lp-menu-item"
+            onClick={() => setOpen(false)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              height: 40,
+              padding: "0 10px",
+              borderRadius: 9,
+              fontFamily: SANS,
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#E7E9F5",
+              textDecoration: "none",
+            }}
+          >
+            <Bell size={17} strokeWidth={2} />
+            Notifications
+            {unread > 0 ? (
+              <span
+                style={{
+                  marginLeft: "auto",
+                  minWidth: 20,
+                  padding: "0 6px",
+                  height: 20,
+                  borderRadius: 10,
+                  background: "#F0857A",
+                  color: "#241016",
+                  fontSize: 11.5,
+                  fontWeight: 800,
+                  display: "grid",
+                  placeItems: "center",
+                }}
+              >
+                {unread > 9 ? "9+" : unread}
+              </span>
+            ) : null}
+          </Link>
+
+          {items.length > 0 ? (
+            <>
+              {items.map(({ label, href, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  role="menuitem"
+                  className="lp-menu-item"
+                  onClick={() => setOpen(false)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    height: 40,
+                    padding: "0 10px",
+                    borderRadius: 9,
+                    fontFamily: SANS,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#E7E9F5",
+                    textDecoration: "none",
+                  }}
+                >
+                  <Icon size={17} strokeWidth={2} />
+                  {label}
+                </Link>
+              ))}
+              {/* Sign out is fenced off. It is the only irreversible thing in
+                  here and it sits where a mis-aimed click lands. */}
+              <div style={{ height: 1, background: RAIL_LINE, margin: "6px 4px" }} />
+            </>
+          ) : null}
+
           <form action={signOut}>
             {/* No inline background — the .lp-menu-item:hover wash (globals.css)
                 can't beat an inline value. */}
@@ -473,7 +623,38 @@ function ProfileMenu({
           textAlign: "left",
         }}
       >
-        <Avatar name={name} size={36} />
+        {/* The avatar carries the unread count, because the bell it replaced was
+            visible at a glance and a menu item is not. It survives the rail
+            being collapsed to icons, which is when the old bell disappeared
+            anyway. */}
+        <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
+          <Avatar name={name} size={36} />
+          {unread > 0 ? (
+            <span
+              aria-label={`${unread} unread`}
+              style={{
+                position: "absolute",
+                top: -2,
+                right: -3,
+                minWidth: 17,
+                height: 17,
+                padding: "0 4px",
+                borderRadius: 9,
+                background: "#F0857A",
+                color: "#241016",
+                fontSize: 10.5,
+                fontWeight: 800,
+                display: "grid",
+                placeItems: "center",
+                // Rings the rail's own navy so the badge reads as sitting ON
+                // the avatar rather than floating behind it.
+                boxShadow: "0 0 0 2px #1A1E3C",
+              }}
+            >
+              {unread > 9 ? "9+" : unread}
+            </span>
+          ) : null}
+        </span>
         <div className="lp-sb-profile-text" style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
             <span

@@ -38,7 +38,7 @@ function useRefreshingAction(
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
+const FAINT = "#777581";
 
 export interface BranchRow {
   id: string;
@@ -60,7 +60,7 @@ export function BranchesManager({ branches }: { branches: BranchRow[] }) {
       <BranchEditor key={`new-${branches.length}`} />
 
       {branches.length > 0 ? (
-        <div style={{ marginTop: 24, borderTop: "1px solid #F0EEE9", paddingTop: 16 }}>
+        <div style={{ marginTop: 24, borderTop: "1px solid #D4D3CE", paddingTop: 16 }}>
           <div
             style={{
               fontSize: 11,
@@ -96,7 +96,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
           alignItems: "center",
           gap: 10,
           padding: "10px 12px",
-          border: "1px solid #E7E5DF",
+          border: "1px solid #C5C4BE",
           borderRadius: 10,
           background: branch.active ? "#fff" : "#FAFAF8",
         }}
@@ -134,7 +134,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
       action={formAction}
       key={state.ok ?? "form"}
       style={{
-        border: "1px solid #E7E5DF",
+        border: "1px solid #C5C4BE",
         borderRadius: 10,
         padding: "12px 13px",
         background: "#fff",

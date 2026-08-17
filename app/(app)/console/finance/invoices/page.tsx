@@ -240,7 +240,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
               className="cn-btn cn-btn--ghost"
               style={{
                 background: "#fff",
-                border: "1px solid #E0DED8",
+                border: "1px solid #C5C4BE",
                 borderRadius: 8,
                 padding: "7px 13px",
                 fontFamily: SANS,
@@ -275,7 +275,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
             group in one go.
           </Empty>
         ) : (
-          <Table cols={COLS}>
+          <Table cols={COLS} gridded>
             <THead
               cols={COLS}
               labels={["Student", "Group", "Due", "Paid", "Balance", "Status", ""]}

@@ -282,7 +282,7 @@ export default async function TeachersPage({
               Apply
             </button>
           </form>
-          <span style={{ fontFamily: SANS, fontSize: 12, color: "#93919F" }}>
+          <span style={{ fontFamily: SANS, fontSize: 12, color: "#777581" }}>
             {rows.length} shown{rows.length !== teachers.length ? ` of ${teachers.length}` : ""}
           </span>
         </Toolbar>
@@ -318,7 +318,7 @@ export default async function TeachersPage({
                 </a>
                 <TD>
                   {t.role === "administrator" ? (
-                    <span style={{ color: "#93919F" }}>—</span>
+                    <span style={{ color: "#777581" }}>—</span>
                   ) : (
                     <TeacherSubjectsCell
                       teacherId={t.id}
@@ -339,13 +339,13 @@ export default async function TeachersPage({
                   <span title={`${t.turnaround.reviews} marked`}>
                     {describeTurnaround(t.turnaround)}
                     {t.turnaround.medianHours != null && t.turnaround.provisional ? (
-                      <span style={{ color: "#93919F", fontSize: 11 }}> provisional</span>
+                      <span style={{ color: "#777581", fontSize: 11 }}> provisional</span>
                     ) : null}
                   </span>
                 </TD>
                 <TD>
                   {attendance == null ? (
-                    <span style={{ color: "#93919F" }}>—</span>
+                    <span style={{ color: "#777581" }}>—</span>
                   ) : (
                     <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Bar

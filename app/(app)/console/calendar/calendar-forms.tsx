@@ -197,7 +197,7 @@ export function SlotForm({
                   title={preset.note}
                   className="cn-chip"
                   style={{
-                    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                    border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                     background: on ? "#F2F1FB" : "#F4F3EF",
                     color: on ? INDIGO : "#4C4A63",
                     borderRadius: 20,
@@ -227,7 +227,7 @@ export function SlotForm({
                     width: 42,
                     height: 34,
                     borderRadius: 9,
-                    border: `1px solid ${on ? INDIGO : "#E4E2DC"}`,
+                    border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                     background: on ? INDIGO : "#fff",
                     color: on ? "#fff" : "#4C4A63",
                     fontFamily: "inherit",
@@ -241,7 +241,7 @@ export function SlotForm({
               );
             })}
           </div>
-          <p style={{ fontSize: 11.5, color: "#93919F", margin: "7px 0 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11.5, color: "#777581", margin: "7px 0 0", lineHeight: 1.5 }}>
             {perWeek === 0
               ? "Pick at least one day."
               : `${perWeek} lesson${perWeek === 1 ? "" : "s"} a week${
@@ -283,7 +283,7 @@ export function SlotForm({
               onClick={() => setEndsAt(addMinutes(startsAt, length))}
               className="cn-chip"
               style={{
-                border: `1px solid ${minutes === length ? INDIGO : "#E4E2DC"}`,
+                border: `1px solid ${minutes === length ? INDIGO : "#C5C4BE"}`,
                 background: minutes === length ? "#F2F1FB" : "#F4F3EF",
                 color: minutes === length ? INDIGO : "#4C4A63",
                 borderRadius: 20,

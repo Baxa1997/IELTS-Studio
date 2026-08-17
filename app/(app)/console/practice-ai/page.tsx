@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const FAINT = "#93919F";
-const LINE = "#E7E5DF";
+const FAINT = "#777581";
+const LINE = "#C5C4BE";
 const INDIGO = "#4340CB";
 
 const TABS: { key: LessonStatus; label: string; blurb: string }[] = [

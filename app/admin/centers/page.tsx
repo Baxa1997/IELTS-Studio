@@ -207,6 +207,11 @@ export default async function CentersPage({
               <Link
                 key={t.key}
                 href={`/admin/centers?tab=${t.key}&sort=${sort}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
+                // Four tabs, four prefetches of THIS page with different
+                // params — each one re-running loadCenters(). The filtering is
+                // done in memory from a list already loaded; there is nothing
+                // to warm.
+                prefetch={false}
                 style={{
                   borderRadius: 20,
                   padding: "7px 13px",
@@ -262,7 +267,7 @@ export default async function CentersPage({
             download
             title="Export centers (Excel)"
             aria-label="Export centers to Excel"
-            className="ad-act"
+            className="sa-act"
             style={{ color: TONE.green.ink, textDecoration: "none" }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -272,7 +277,7 @@ export default async function CentersPage({
           </a>
         </div>
 
-        <div className="ad-scroll">
+        <div className="sa-scroll">
           <div>
             <TableHead cols={COLS}>
               <div>CENTER</div>
