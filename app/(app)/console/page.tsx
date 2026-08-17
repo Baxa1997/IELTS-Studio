@@ -195,7 +195,7 @@ export default async function ConsolePage() {
           running 3" above "2 idle" — a KPI that contradicts its own sub-line
           teaches the reader to stop reading the strip. Each of these is one
           definition, stated in the label. */}
-      <KpiRow min={165}>
+      <KpiRow mb={12} min={165}>
         <Kpi
           label={isAdmin ? "Students enrolled" : "Your students"}
           value={students.toLocaleString()}
@@ -281,12 +281,12 @@ export default async function ConsolePage() {
               <CardHead
                 title={`Today · ${prettyDay(todayIso)}`}
                 divided
-                actions={<TextLink href={`/console/attendance?date=${todayIso}`}>Attendance →</TextLink>}
+                actions={
+                  <TextLink href={`/console/attendance?date=${todayIso}`}>Attendance →</TextLink>
+                }
               />
               {day.holiday ? (
-                <Empty>
-                  {day.holiday.name} — the center is closed, so nothing is timetabled.
-                </Empty>
+                <Empty>{day.holiday.name} — the center is closed, so nothing is timetabled.</Empty>
               ) : null}
               {todayLessons.map((l) => (
                 <ListRow
