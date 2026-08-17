@@ -1,38 +1,67 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { gradeClosed, type Answers } from "@/lib/lessons/grade";
-import { isOpen, type Exercise, type ExerciseResult, type LessonContent } from "@/lib/lessons/types";
-import { isOpenResult } from "@/lib/lessons/types";
+import {
+  EMBER,
+  FAINT,
+  GHOST,
+  GOOD_BG,
+  GOOD_INK,
+  HAIRLINE,
+  INK,
+  LIFT_SHEET,
+  MUTED,
+  NOTE_BG,
+  NOTE_INK,
+  PAPER,
+  READING,
+  RULE,
+  SANS,
+
+  SOFT,
+  STAGE_META,
+  TROUGH,
+  TROUGH_DEEP,
+  WARN_BG,
+  WARN_INK,
+  WASH,
+} from "@/lib/lessons/theme";
+import {
+  isOpen,
+  isOpenResult,
+  type ClosedExercise,
+  type ClosedResult,
+  type Exercise,
+  type ExerciseResult,
+  type LessonContent,
+  type OpenExercise,
+  type OpenResult,
+} from "@/lib/lessons/types";
 
 /**
  * Doing a lesson: read it, answer it, hand it in, see what you got wrong.
  *
- * TEST MODE, deliberately. Answers go in on the page itself, nothing is marked
- * until they submit, and the key only appears afterwards — a page that told you
- * the answer as you typed would be a worksheet, not practice.
+ * ONE ITEM AT A TIME, with a navigator — not a scroll of every question. The
+ * whole worksheet on one page is the teacher's view (see `PracticeReview`),
+ * because their question is "is this any good?". A learner's question is "can
+ * you do this?", and twelve visible questions answer it badly: the eye reads
+ * ahead, the hard one gets skipped in favour of the easy one below it, and
+ * nothing is ever finished. The navigator is what makes that safe — it is the
+ * only way to reach item 9 from item 3, so it is never dropped, only moved
+ * above the item on a narrow window.
+ *
+ * TEST MODE stays the default. Nothing is marked until they hand in, and the
+ * key only appears afterwards — a page that tells you the answer as you type is
+ * a worksheet, not practice. `instantFeedback` opens the other door for the
+ * surfaces where no score is being recorded, and defaults to exactly that case.
  *
  * The browser marks the closed half with the SAME function the server uses, so
  * the score appears instantly instead of after a round trip. The server marks
  * it again on submit and stores that — a client that posts its own score is a
  * client that can post 10/10.
  */
-
-const INK = "#15171C";
-const BODY = "#2A2D34";
-const MUTED = "#5C616C";
-const FAINT = "#8B909B";
-const LINE = "#E7E5DF";
-const GREEN = "#16794C";
-const RED = "#A63A30";
-const EMBER = "#E85A2C";
-
-const STAGE_LABEL: Record<string, string> = {
-  controlled: "Warm up",
-  semi_controlled: "Now change it",
-  freer: "Now write your own",
-};
 
 export interface RunnerResult {
   attemptId: string;
@@ -43,38 +72,98 @@ export interface RunnerResult {
   notice?: string;
 }
 
+const KIND_LABEL: Record<string, string> = {
+  mcq_single: "Choose one",
+  mcq_multi: "Choose all that apply",
+  gap_fill: "Fill the gap",
+  transform: "Rewrite it",
+  error_correction: "Correct the mistake",
+  matching: "Match them up",
+  ordering: "Put them in order",
+  short_answer: "Write it",
+  write_sentence: "Write it",
+  write_short_text: "Write it",
+};
+
 export function LessonRunner({
   lessonId,
   content,
   /** Off for the public page: nothing is stored and nothing is model-marked. */
   canSubmit = true,
+  /**
+   * Check each answer as you go, rather than only on hand-in.
+   *
+   * Defaults to "wherever nothing is being scored". Turning it on for assigned
+   * homework would make the recorded score meaningless — a learner can retry
+   * every item until it goes green — so that is a product decision, not a
+   * default.
+   */
+  instantFeedback,
+  /** The teaching half, server-rendered — the runner's first tab. */
+  explanation,
+  title,
 }: {
   lessonId: string;
   content: LessonContent;
   canSubmit?: boolean;
+  instantFeedback?: boolean;
+  explanation?: React.ReactNode;
+  title: string;
 }) {
+  const items = content.exercises;
+  const total = items.length;
+  const checkable = instantFeedback ?? !canSubmit;
+
+  const [tab, setTab] = useState<"explain" | "practice">(explanation ? "explain" : "practice");
+  const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
+  const [flags, setFlags] = useState<Record<string, boolean>>({});
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [elapsed, setElapsed] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<RunnerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
   // Set in an effect, not during render: reading the clock while rendering is
   // an impure call, and a re-render would move the start time anyway.
   const startedAt = useRef(0);
   useEffect(() => {
     startedAt.current = Date.now();
   }, []);
-  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // The clock runs on the practice, not on the reading. A learner who spends
+  // ten minutes on the explanation has not spent ten minutes on the test.
+  useEffect(() => {
+    if (tab !== "practice" || result) return;
+    const t = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(t);
+  }, [tab, result]);
 
   const done = result != null;
+  const current = items[Math.min(idx, Math.max(0, total - 1))];
+
+  const answered = useCallback(
+    (e: Exercise) => {
+      const v = answers[e.id];
+      return Array.isArray(v) ? v.length > 0 : String(v ?? "").trim() !== "";
+    },
+    [answers],
+  );
+  const answeredCount = useMemo(() => items.filter(answered).length, [items, answered]);
+
+  const go = useCallback(
+    (i: number) => setIdx(Math.max(0, Math.min(total - 1, i))),
+    [total],
+  );
   const set = (id: string, value: string | string[]) =>
     setAnswers((a) => ({ ...a, [id]: value }));
 
-  const answeredCount = content.exercises.filter((e) => {
-    const v = answers[e.id];
-    return Array.isArray(v) ? v.length > 0 : String(v ?? "").trim() !== "";
-  }).length;
+  const check = useCallback(() => {
+    if (!current || !checkable || !answered(current)) return;
+    setChecked((c) => ({ ...c, [current.id]: true }));
+  }, [current, checkable, answered]);
 
-  async function submit() {
+  const submit = useCallback(async () => {
     if (submitting || done) return;
     setSubmitting(true);
     setError(null);
@@ -92,7 +181,7 @@ export function LessonRunner({
         gradingStatus: "complete",
       });
       setSubmitting(false);
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIdx(0);
       return;
     }
 
@@ -118,98 +207,920 @@ export function LessonRunner({
         return;
       }
       setResult(body);
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setIdx(0);
     } catch {
       setError("Couldn't reach the server. Your answers are still here — try again.");
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [submitting, done, content, answers, canSubmit, lessonId]);
 
-  const stages = ["controlled", "semi_controlled", "freer"] as const;
+  // Arrows move between items. Deliberately inert while the caret is in a field
+  // — ← and → belong to the text being typed there, and stealing them makes the
+  // longer written answers unusable.
+  useEffect(() => {
+    if (tab !== "practice") return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing =
+        el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable;
+      if (typing) return;
+      if (e.key === "ArrowRight") go(idx + 1);
+      if (e.key === "ArrowLeft") go(idx - 1);
+      if (e.key === "Enter" && checkable && !done) {
+        e.preventDefault();
+        check();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tab, idx, go, check, checkable, done]);
+
+  const stageOf = (e: Exercise) => STAGE_META.find((s) => s.key === e.stage) ?? STAGE_META[0];
+  const clock = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(elapsed % 60).padStart(2, "0")}`;
 
   return (
-    <div>
-      <div ref={resultsRef} />
+    <div
+      style={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        background: WASH,
+        fontFamily: SANS,
+        color: INK,
+      }}
+      className="pa-rise"
+    >
+      {/* ── the bar ──────────────────────────────────────────────────────── */}
+      <div
+        className="pa-bar"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 18,
+          padding: "14px 24px",
+          background: "rgba(253,251,247,0.92)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          borderBottom: `1px solid ${HAIRLINE}`,
+          flexWrap: "wrap",
+        }}
+      >
+        <a
+          href="/assignments"
+          aria-label="Leave this lesson"
+          className="pa-lift"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: 999,
+            background: "#fff",
+            display: "grid",
+            placeItems: "center",
+            color: MUTED,
+            textDecoration: "none",
+            boxShadow: "0 1px 2px rgba(20,35,46,.08)",
+            flex: "none",
+          }}
+        >
+          ✕
+        </a>
 
-      {done ? (
-        <ScoreCard result={result} canSubmit={canSubmit} />
-      ) : null}
+        <span
+          className="pa-bar-hide"
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {title}
+        </span>
 
-      {stages.map((stage) => {
-        const items = content.exercises.filter((e) => e.stage === stage);
-        if (items.length === 0) return null;
-        return (
-          <section key={stage} style={{ marginBottom: 34 }}>
-            <h3
-              style={{
-                fontSize: 12,
-                letterSpacing: ".1em",
-                textTransform: "uppercase",
-                color: FAINT,
-                fontWeight: 600,
-                margin: "0 0 14px",
-              }}
-            >
-              {STAGE_LABEL[stage]}
-            </h3>
-            {items.map((exercise, i) => (
-              <ExerciseCard
-                key={exercise.id}
-                exercise={exercise}
-                n={content.exercises.indexOf(exercise) + 1}
-                value={answers[exercise.id]}
-                onChange={(v) => set(exercise.id, v)}
-                result={result?.results[exercise.id]}
-                locked={done}
-                first={i === 0}
-              />
-            ))}
-          </section>
-        );
-      })}
+        {explanation ? (
+          <div style={{ display: "flex", gap: 4, padding: 4, borderRadius: 999, background: TROUGH_DEEP, flex: "none" }}>
+            <button type="button" onClick={() => setTab("explain")} style={tabStyle(tab === "explain")}>
+              Explanation
+            </button>
+            <button type="button" onClick={() => setTab("practice")} style={tabStyle(tab === "practice")}>
+              Practice
+            </button>
+          </div>
+        ) : null}
 
-      {!done ? (
         <div
           style={{
-            position: "sticky",
-            bottom: 0,
-            background: "linear-gradient(180deg, rgba(253,253,253,0) 0%, #FDFDFD 42%)",
-            padding: "22px 0 24px",
+            marginLeft: "auto",
             display: "flex",
             alignItems: "center",
             gap: 14,
             flexWrap: "wrap",
+            justifyContent: "flex-end",
           }}
         >
-          <button
-            type="button"
-            onClick={() => void submit()}
-            disabled={submitting}
-            style={{
-              border: 0,
-              borderRadius: 11,
-              background: EMBER,
-              color: "#fff",
-              padding: "13px 26px",
-              fontFamily: "inherit",
-              fontSize: 15.5,
-              fontWeight: 600,
-              cursor: submitting ? "default" : "pointer",
-              boxShadow: "0 10px 22px -8px rgba(232,90,44,.6)",
-            }}
-          >
-            {submitting ? "Checking…" : "Hand it in"}
-          </button>
-          <span style={{ fontSize: 13.5, color: MUTED }}>
-            {answeredCount} of {content.exercises.length} answered
-            {answeredCount < content.exercises.length ? " — you can hand in anyway" : ""}
-          </span>
-          {error ? (
-            <span style={{ flexBasis: "100%", fontSize: 13.5, color: RED }} role="alert">
-              {error}
+          {tab === "practice" && current ? (
+            <span
+              className="pa-bar-hide"
+              style={{
+                padding: "6px 14px",
+                borderRadius: 999,
+                background: NOTE_BG,
+                color: NOTE_INK,
+                fontSize: 13,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {stageOf(current).label}
             </span>
           ) : null}
+
+          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-.01em", fontVariantNumeric: "tabular-nums" }}>
+            {tab === "practice"
+              ? `${String(idx + 1).padStart(2, "0")} / ${total}`
+              : `${total} item${total === 1 ? "" : "s"}`}
+          </span>
+
+          <div
+            className="pa-bar-hide"
+            style={{ width: 200, height: 8, borderRadius: 999, background: RULE, overflow: "hidden" }}
+          >
+            <div
+              style={{
+                height: "100%",
+                borderRadius: 999,
+                width: total > 0 ? `${((tab === "practice" ? idx + 1 : 0) / total) * 100}%` : "0%",
+                background: EMBER,
+                transition: "width .35s cubic-bezier(.2,.7,.3,1)",
+              }}
+            />
+          </div>
+
+          {tab === "practice" ? (
+            <span
+              className="pa-bar-hide"
+              style={{
+                padding: "8px 14px",
+                borderRadius: 999,
+                background: "#fff",
+                fontSize: 14,
+                fontWeight: 600,
+                color: READING,
+                fontVariantNumeric: "tabular-nums",
+                boxShadow: "0 1px 2px rgba(20,35,46,.06)",
+              }}
+            >
+              {clock}
+            </span>
+          ) : null}
+
+          {tab === "practice" && current && !done ? (
+            <button
+              type="button"
+              onClick={() => setFlags((f) => ({ ...f, [current.id]: !f[current.id] }))}
+              aria-pressed={Boolean(flags[current.id])}
+              className="pa-lift"
+              style={{
+                padding: "9px 16px",
+                borderRadius: 999,
+                border: 0,
+                background: flags[current.id] ? WARN_BG : "#fff",
+                color: flags[current.id] ? WARN_INK : MUTED,
+                fontFamily: "inherit",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(20,35,46,.06)",
+              }}
+            >
+              Flag
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ── the explanation ──────────────────────────────────────────────── */}
+      {tab === "explain" && explanation ? (
+        <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+          <div className="pa-pop" style={{ maxWidth: 900, margin: "0 auto", padding: "40px 24px 56px" }}>
+            <div
+              style={{
+                borderRadius: 32,
+                background: "#fff",
+                padding: "40px 44px",
+                boxShadow: LIFT_SHEET,
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 9,
+                  padding: "7px 16px",
+                  borderRadius: 999,
+                  background: GOOD_BG,
+                  color: GOOD_INK,
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                Read this first
+              </div>
+
+              <div style={{ marginTop: 18 }}>{explanation}</div>
+
+              <button
+                type="button"
+                onClick={() => setTab("practice")}
+                className="pa-ember"
+                style={{
+                  width: "100%",
+                  marginTop: 32,
+                  padding: 18,
+                  borderRadius: 999,
+                  border: 0,
+                  background: EMBER,
+                  color: "#fff",
+                  fontFamily: "inherit",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 14px 30px -12px rgba(236,106,69,.9)",
+                }}
+              >
+                Start the practice → {total} item{total === 1 ? "" : "s"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── the practice ─────────────────────────────────────────────────── */}
+      {tab === "practice" ? (
+        <div className="pa-runner">
+          <div style={{ overflow: "auto", display: "flex", minHeight: 0 }}>
+            <div style={{ maxWidth: 820, margin: "0 auto", width: "100%", padding: "44px 24px 48px" }}>
+              {done ? <ScoreCard result={result} canSubmit={canSubmit} /> : null}
+
+              {current ? (
+                <Item
+                  key={current.id}
+                  exercise={current}
+                  n={idx + 1}
+                  value={answers[current.id]}
+                  onChange={(v) => set(current.id, v)}
+                  checked={Boolean(checked[current.id])}
+                  checkable={checkable && !done}
+                  onCheck={check}
+                  result={result?.results[current.id]}
+                  locked={done}
+                  atStart={idx === 0}
+                  atEnd={idx === total - 1}
+                  onPrev={() => go(idx - 1)}
+                  onNext={() => go(idx + 1)}
+                />
+              ) : (
+                <p style={{ color: SOFT }}>This lesson has no exercises.</p>
+              )}
+            </div>
+          </div>
+
+          {/* ── the navigator ────────────────────────────────────────────── */}
+          <div className="pa-runner-rail">
+            <div style={{ padding: "24px 22px 18px" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: ".1em",
+                  textTransform: "uppercase",
+                  color: FAINT,
+                }}
+              >
+                Navigator
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", marginTop: 6 }}>
+                {done ? `${result.score} of ${result.maxScore}` : `${answeredCount} of ${total} answered`}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "0 22px",
+                display: "grid",
+                gap: 22,
+                overflow: "auto",
+                flex: 1,
+                alignContent: "start",
+              }}
+            >
+              {STAGE_META.map((stage) => {
+                const group = items.filter((e) => e.stage === stage.key);
+                if (group.length === 0) return null;
+                return (
+                  <div key={stage.key}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: SOFT,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <span>{stage.label}</span>
+                      <span>
+                        {group.filter(answered).length}/{group.length}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                      {group.map((e) => {
+                        const at = items.indexOf(e);
+                        const r = result?.results[e.id];
+                        const kind =
+                          at === idx
+                            ? "current"
+                            : r && !isOpenResult(r)
+                              ? r.correct
+                                ? "done"
+                                : "wrong"
+                              : flags[e.id]
+                                ? "flag"
+                                : answered(e)
+                                  ? "done"
+                                  : "todo";
+                        return (
+                          <button
+                            key={e.id}
+                            type="button"
+                            onClick={() => go(at)}
+                            aria-current={at === idx ? "true" : undefined}
+                            aria-label={`Item ${at + 1}`}
+                            className="pa-tap"
+                            style={cellStyle(kind)}
+                          >
+                            {at + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div style={{ display: "grid", gap: 9, fontSize: 13, color: SOFT, paddingTop: 4 }}>
+                {[
+                  { label: done ? "Right" : "Answered", swatch: GOOD_BG, ring: null },
+                  { label: "Current", swatch: EMBER, ring: null },
+                  { label: "Flagged", swatch: "#fff", ring: "#f6c3b1" },
+                ].map((l) => (
+                  <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 6,
+                        background: l.swatch,
+                        boxShadow: l.ring ? `inset 0 0 0 2px ${l.ring}` : "none",
+                      }}
+                    />
+                    <span>{l.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ padding: "20px 22px 24px" }}>
+              {done ? (
+                <a
+                  href="/assignments"
+                  className="pa-dark"
+                  style={{ ...railButton, display: "block", textAlign: "center", textDecoration: "none" }}
+                >
+                  Back to assignments
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void submit()}
+                  disabled={submitting}
+                  className="pa-dark"
+                  style={{ ...railButton, cursor: submitting ? "default" : "pointer" }}
+                >
+                  {submitting ? "Checking…" : "Finish & submit"}
+                </button>
+              )}
+              <div style={{ fontSize: 13, color: FAINT, marginTop: 10, lineHeight: 1.5 }}>
+                {error ? (
+                  <span style={{ color: WARN_INK }} role="alert">
+                    {error}
+                  </span>
+                ) : done ? (
+                  canSubmit
+                    ? "Handed in. Every item now shows what was right and why."
+                    : "Nothing was saved, because you're not signed in."
+                ) : answeredCount === total ? (
+                  `All ${total} answered — ready to submit.`
+                ) : (
+                  `${total - answeredCount} item${total - answeredCount === 1 ? "" : "s"} still empty. You can hand in anyway.`
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ── one item ──────────────────────────────────────────────────────────────── */
+
+function Item({
+  exercise,
+  n,
+  value,
+  onChange,
+  checked,
+  checkable,
+  onCheck,
+  result,
+  locked,
+  atStart,
+  atEnd,
+  onPrev,
+  onNext,
+}: {
+  exercise: Exercise;
+  n: number;
+  value: string | string[] | undefined;
+  onChange: (v: string | string[]) => void;
+  checked: boolean;
+  checkable: boolean;
+  onCheck: () => void;
+  result: ExerciseResult | undefined;
+  locked: boolean;
+  atStart: boolean;
+  atEnd: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  // Narrow the union ONCE, here. Reaching for `exercise.criteria` further down
+  // without this is what the compiler rightly refuses — half the fields only
+  // exist on one arm.
+  const openEx = isOpen(exercise) ? exercise : null;
+  const closedEx = isOpen(exercise) ? null : exercise;
+  const closedResult = result && !isOpenResult(result) ? result : null;
+  const openResult = result && isOpenResult(result) ? result : null;
+
+  // A gap-fill whose prompt carries the blank is shown AS the sentence rather
+  // than as an instruction with a box underneath — the blank is the question,
+  // and splitting them makes a learner read the same words twice.
+  const gap = closedEx && !closedEx.options && exercise.prompt.includes("___");
+  const [before, ...rest] = gap ? exercise.prompt.split("___") : [];
+  const after = rest.join("___");
+
+  const typed = String(value ?? "");
+  const words = typed.trim() ? typed.trim().split(/\s+/).length : 0;
+
+  return (
+    <div
+      className="pa-pop"
+      style={{
+        borderRadius: 32,
+        background: "#fff",
+        padding: "40px 32px 44px",
+        boxShadow: LIFT_SHEET,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <span
+          aria-hidden
+          style={{
+            flex: "none",
+            width: 46,
+            height: 46,
+            borderRadius: 999,
+            background: INK,
+            color: PAPER,
+            display: "grid",
+            placeItems: "center",
+            fontSize: 17,
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {String(n).padStart(2, "0")}
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: READING }}>
+            {KIND_LABEL[exercise.type] ?? "Answer"}
+          </div>
+          <div style={{ fontSize: 13, color: FAINT }}>{exercise.tag.replaceAll("-", " ")}</div>
+        </div>
+      </div>
+
+      {gap ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 10,
+            flexWrap: "wrap",
+            fontSize: 23,
+            lineHeight: 1.6,
+            padding: "24px 26px",
+            borderRadius: 24,
+            background: WASH,
+            margin: "26px 0 0",
+          }}
+        >
+          <span>{before}</span>
+          <input
+            value={typed}
+            onChange={(e) => onChange(e.target.value)}
+            disabled={locked}
+            placeholder="type here"
+            aria-label="Your answer"
+            className="pa-field"
+            style={{
+              border: 0,
+              borderRadius: 999,
+              background: "#fff",
+              outline: "none",
+              fontFamily: "inherit",
+              fontSize: 22,
+              width: 240,
+              maxWidth: "100%",
+              padding: "8px 18px",
+              color: INK,
+              boxShadow: "inset 0 0 0 2px #dbd6cb",
+            }}
+          />
+          <span>{after}</span>
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              fontSize: 28,
+              lineHeight: 1.45,
+              letterSpacing: "-.015em",
+              margin: "26px 0 28px",
+              textWrap: "pretty",
+            }}
+          >
+            {exercise.prompt}
+          </div>
+
+          {closedEx && isSequence(closedEx) && closedEx.options ? (
+            <SequenceAnswer exercise={closedEx} value={value} onChange={onChange} locked={locked} />
+          ) : closedEx?.options ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              {closedEx.options.map((opt, i) => {
+                const multi = closedEx.type === "mcq_multi";
+                const chosen = multi
+                  ? Array.isArray(value) && value.includes(String(i))
+                  : value === String(i);
+                const isKey = locked && closedEx.answers.includes(String(i));
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    disabled={locked}
+                    onClick={() => {
+                      if (locked) return;
+                      if (multi) {
+                        const cur = Array.isArray(value) ? value : [];
+                        onChange(
+                          cur.includes(String(i))
+                            ? cur.filter((v) => v !== String(i))
+                            : [...cur, String(i)],
+                        );
+                      } else {
+                        onChange(String(i));
+                      }
+                    }}
+                    className="pa-tap"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 16,
+                      textAlign: "left",
+                      padding: "18px 22px",
+                      borderRadius: 22,
+                      border: 0,
+                      fontFamily: "inherit",
+                      fontSize: 20,
+                      cursor: locked ? "default" : "pointer",
+                      background: isKey ? GOOD_BG : chosen ? INK : WASH,
+                      color: isKey ? GOOD_INK : chosen ? PAPER : INK,
+                      transform: chosen && !isKey ? "translateX(4px)" : "none",
+                      transition: "all .2s cubic-bezier(.2,.7,.3,1)",
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        flex: "none",
+                        width: 34,
+                        height: 34,
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        fontSize: 15,
+                        fontWeight: 700,
+                        background: chosen && !isKey ? EMBER : "#fff",
+                        color: chosen && !isKey ? "#fff" : SOFT,
+                      }}
+                    >
+                      {String.fromCharCode(65 + i)}
+                    </span>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : openEx ? (
+            <div style={{ borderRadius: 24, background: WASH, padding: "20px 22px" }}>
+              <textarea
+                value={typed}
+                onChange={(e) => onChange(e.target.value)}
+                disabled={locked}
+                placeholder="Write your answer — an examiner-style comment comes back on submit."
+                style={{
+                  width: "100%",
+                  minHeight: 150,
+                  border: 0,
+                  background: "transparent",
+                  outline: "none",
+                  resize: "none",
+                  fontFamily: "inherit",
+                  fontSize: 19,
+                  lineHeight: 1.65,
+                  color: INK,
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingTop: 12,
+                  fontSize: 13,
+                  color: SOFT,
+                }}
+              >
+                <span
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 999,
+                    background: NOTE_BG,
+                    color: NOTE_INK,
+                    fontWeight: 700,
+                  }}
+                >
+                  AI-marked
+                </span>
+                <span>
+                  {words} word{words === 1 ? "" : "s"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <input
+              value={typed}
+              onChange={(e) => onChange(e.target.value)}
+              disabled={locked}
+              placeholder="Your answer…"
+              className="pa-field"
+              style={{
+                width: "100%",
+                border: 0,
+                borderRadius: 22,
+                background: WASH,
+                padding: "20px 24px",
+                fontFamily: "inherit",
+                fontSize: 20,
+                color: INK,
+                outline: "none",
+                boxShadow: "inset 0 0 0 2px transparent",
+              }}
+            />
+          )}
+        </>
+      )}
+
+      <Feedback
+        exercise={exercise}
+        openEx={openEx}
+        closedEx={closedEx}
+        closedResult={closedResult}
+        openResult={openResult}
+        checked={checked}
+        locked={locked}
+      />
+
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 32, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={atStart}
+          className="pa-ghost"
+          style={{
+            padding: "14px 20px",
+            borderRadius: 999,
+            border: 0,
+            background: TROUGH,
+            color: MUTED,
+            fontFamily: "inherit",
+            fontSize: 15,
+            fontWeight: 500,
+            cursor: atStart ? "default" : "pointer",
+            opacity: atStart ? 0.45 : 1,
+          }}
+        >
+          ← Back
+        </button>
+
+        {checkable && !checked ? (
+          <button
+            type="button"
+            onClick={onCheck}
+            className="pa-ember"
+            style={{
+              padding: "14px 30px",
+              borderRadius: 999,
+              border: 0,
+              background: EMBER,
+              color: "#fff",
+              fontFamily: "inherit",
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 10px 24px -12px rgba(236,106,69,.9)",
+            }}
+          >
+            Check answer
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={atEnd}
+          className="pa-dark"
+          style={{
+            padding: "14px 24px",
+            borderRadius: 999,
+            border: 0,
+            background: checked || locked ? INK : TROUGH,
+            color: checked || locked ? PAPER : MUTED,
+            fontFamily: "inherit",
+            fontSize: 15,
+            fontWeight: 600,
+            cursor: atEnd ? "default" : "pointer",
+            opacity: atEnd ? 0.45 : 1,
+          }}
+        >
+          Next →
+        </button>
+
+        <span className="pa-bar-hide" style={{ marginLeft: "auto", fontSize: 13, color: GHOST }}>
+          ← → to move{checkable ? " · ⏎ check" : ""}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What came back — after hand-in, or after checking this one item.
+ *
+ * Both routes land here so a learner never meets two different shapes of
+ * feedback for the same mistake.
+ */
+function Feedback({
+  exercise,
+  openEx,
+  closedEx,
+  closedResult,
+  openResult,
+  checked,
+  locked,
+}: {
+  exercise: Exercise;
+  openEx: OpenExercise | null;
+  closedEx: ClosedExercise | null;
+  closedResult: ClosedResult | null;
+  openResult: OpenResult | null;
+  checked: boolean;
+  locked: boolean;
+}) {
+  const show = checked || locked;
+  if (!show) return null;
+
+  const good = closedResult ? closedResult.correct : null;
+
+  return (
+    <div
+      className="pa-slide"
+      style={{
+        marginTop: 22,
+        padding: "20px 22px",
+        borderRadius: 22,
+        background: good === false ? WARN_BG : GOOD_BG,
+        color: good === false ? "#8f3a1e" : "#155442",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
+        <span
+          aria-hidden
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: 999,
+            background: good === false ? EMBER : GOOD_INK,
+          }}
+        />
+        <span>
+          {closedResult
+            ? closedResult.correct
+              ? "Correct"
+              : "Not quite"
+            : openResult
+              ? `${openResult.score} of ${openResult.max} checks passed`
+              : openEx
+                ? "Sent for marking"
+                : "Checked"}
+        </span>
+      </div>
+
+      {closedResult && !closedResult.correct ? (
+        <div style={{ marginTop: 8, fontSize: 17, lineHeight: 1.55 }}>
+          Model answer: {closedResult.expected}
+        </div>
+      ) : null}
+
+      {/* Checked in place, before hand-in: the key comes from the exercise
+          rather than from a server result that does not exist yet. */}
+      {!closedResult && closedEx && checked && !locked ? (
+        <div style={{ marginTop: 8, fontSize: 17, lineHeight: 1.55 }}>
+          Model answer: {closedEx.answers.join("  /  ")}
+        </div>
+      ) : null}
+
+      {openResult ? (
+        <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none" }}>
+          {openEx?.criteria.map((c: string, i: number) => {
+            const verdict = openResult.criteria[i];
+            return (
+              <li key={c} style={{ display: "flex", gap: 8, fontSize: 16, marginBottom: 4 }}>
+                <span style={{ flex: "none" }}>{verdict?.met ? "✓" : "✕"}</span>
+                <span>
+                  {c}
+                  {verdict?.evidence ? <span style={{ opacity: 0.75 }}> — {verdict.evidence}</span> : null}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+
+      {openResult?.corrected ? (
+        <div style={{ marginTop: 8, fontSize: 16, lineHeight: 1.55 }}>
+          <strong style={{ fontWeight: 700 }}>Better:</strong> {openResult.corrected}
+        </div>
+      ) : null}
+      {openResult?.note ? (
+        <div style={{ marginTop: 5, fontSize: 15, opacity: 0.85 }}>{openResult.note}</div>
+      ) : null}
+
+      {/* Nothing model-marked here, so the checklist and a model answer are
+          shown to check yourself against instead. */}
+      {openEx && !openResult ? (
+        <div style={{ marginTop: 10, fontSize: 16 }}>
+          <div style={{ opacity: 0.8, marginBottom: 5 }}>Check yourself:</div>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {openEx.criteria.map((c: string) => (
+              <li key={c} style={{ marginBottom: 3 }}>
+                {c}
+              </li>
+            ))}
+          </ul>
+          <div style={{ marginTop: 8 }}>
+            <strong style={{ fontWeight: 700 }}>One good answer:</strong> {openEx.model_answer}
+          </div>
+        </div>
+      ) : null}
+
+      {exercise.why ? (
+        <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.55, opacity: 0.85 }}>
+          {exercise.why}
         </div>
       ) : null}
     </div>
@@ -220,239 +1131,34 @@ function ScoreCard({ result, canSubmit }: { result: RunnerResult; canSubmit: boo
   const pct = result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : 0;
   return (
     <div
+      className="pa-slide"
       style={{
-        background: "#fff",
-        border: `1px solid ${LINE}`,
-        borderRadius: 14,
-        padding: "22px 24px",
-        marginBottom: 28,
+        borderRadius: 28,
+        background: INK,
+        color: "#f3f1ec",
+        padding: "24px 28px",
+        marginBottom: 22,
         display: "flex",
         alignItems: "center",
-        gap: 20,
+        gap: 22,
         flexWrap: "wrap",
+        boxShadow: "0 20px 44px -28px rgba(20,35,46,.7)",
       }}
     >
       <div>
-        <div style={{ fontSize: 34, fontWeight: 700, color: INK, letterSpacing: "-.02em" }}>
+        <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: "-.03em", lineHeight: 1 }}>
           {result.score}
-          <span style={{ fontSize: 20, color: FAINT, fontWeight: 500 }}> / {result.maxScore}</span>
+          <span style={{ fontSize: 22, opacity: 0.6, fontWeight: 500 }}> / {result.maxScore}</span>
         </div>
-        <div style={{ fontSize: 13.5, color: MUTED }}>{pct}% correct</div>
+        <div style={{ fontSize: 14, color: "#a9b8c0", marginTop: 4 }}>{pct}% correct</div>
       </div>
-      <p style={{ margin: 0, fontSize: 14, color: BODY, flex: 1, minWidth: 220, lineHeight: 1.55 }}>
+      <p style={{ margin: 0, fontSize: 15, color: "#a9b8c0", flex: 1, minWidth: 220, lineHeight: 1.6 }}>
         {result.notice
           ? result.notice
           : canSubmit
-            ? "Scroll down — every answer now shows what was right and why."
-            : "Answers are shown below. Nothing was saved, because you're not signed in."}
+            ? "Step through the items — each one now shows what was right and why."
+            : "Answers are shown on each item. Nothing was saved, because you're not signed in."}
       </p>
-    </div>
-  );
-}
-
-function ExerciseCard({
-  exercise,
-  n,
-  value,
-  onChange,
-  result,
-  locked,
-  first,
-}: {
-  exercise: Exercise;
-  n: number;
-  value: string | string[] | undefined;
-  onChange: (v: string | string[]) => void;
-  result: ExerciseResult | undefined;
-  locked: boolean;
-  first: boolean;
-}) {
-  // Narrow the union ONCE, here. Reaching for `exercise.criteria` further down
-  // without this is what the compiler rightly refuses — half the fields only
-  // exist on one arm.
-  const openEx = isOpen(exercise) ? exercise : null;
-  const closedEx = isOpen(exercise) ? null : exercise;
-  const closedResult = result && !isOpenResult(result) ? result : null;
-  const openResult = result && isOpenResult(result) ? result : null;
-
-  const tone = closedResult ? (closedResult.correct ? GREEN : RED) : null;
-
-  return (
-    <div
-      style={{
-        borderTop: first ? 0 : `1px solid #F2F0EB`,
-        padding: "18px 0",
-      }}
-    >
-      <div style={{ display: "flex", gap: 12 }}>
-        <span
-          style={{
-            flex: "none",
-            width: 24,
-            fontSize: 13,
-            color: tone ?? FAINT,
-            fontWeight: tone ? 700 : 400,
-            fontVariantNumeric: "tabular-nums",
-            paddingTop: 2,
-          }}
-        >
-          {closedResult ? (closedResult.correct ? "✓" : "✕") : n}
-        </span>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15.5, color: BODY, lineHeight: 1.6, marginBottom: 10 }}>
-            {exercise.prompt}
-          </div>
-
-          {/* ---- the answer control ---- */}
-          {closedEx && isSequence(closedEx) && closedEx.options ? (
-            <SequenceAnswer
-              exercise={closedEx}
-              value={value}
-              onChange={onChange}
-              locked={locked}
-            />
-          ) : closedEx?.options ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              {closedEx.options.map((opt, i) => {
-                const multi = closedEx.type === "mcq_multi";
-                const chosen = multi
-                  ? Array.isArray(value) && value.includes(String(i))
-                  : value === String(i);
-                const isKey = locked && closedEx.answers.includes(String(i));
-                return (
-                  <label
-                    key={opt}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      border: `1px solid ${isKey ? "#B6D9C4" : chosen ? EMBER : LINE}`,
-                      background: isKey ? "#EAF4EE" : chosen ? "rgba(232,90,44,.06)" : "#fff",
-                      borderRadius: 10,
-                      padding: "10px 13px",
-                      cursor: locked ? "default" : "pointer",
-                      fontSize: 15,
-                      color: BODY,
-                    }}
-                  >
-                    <input
-                      type={multi ? "checkbox" : "radio"}
-                      name={exercise.id}
-                      checked={chosen}
-                      disabled={locked}
-                      onChange={() => {
-                        if (multi) {
-                          const cur = Array.isArray(value) ? value : [];
-                          onChange(
-                            cur.includes(String(i))
-                              ? cur.filter((v) => v !== String(i))
-                              : [...cur, String(i)],
-                          );
-                        } else {
-                          onChange(String(i));
-                        }
-                      }}
-                    />
-                    {opt}
-                  </label>
-                );
-              })}
-            </div>
-          ) : openEx ? (
-            <textarea
-              value={String(value ?? "")}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={locked}
-              rows={3}
-              placeholder="Write your answer…"
-              style={inputStyle}
-            />
-          ) : (
-            <input
-              value={String(value ?? "")}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={locked}
-              placeholder="Your answer…"
-              style={{ ...inputStyle, maxWidth: 420 }}
-            />
-          )}
-
-          {/* ---- feedback, only after handing in ---- */}
-          {closedResult && !closedResult.correct ? (
-            <div style={{ marginTop: 9, fontSize: 14, color: GREEN }}>
-              <strong style={{ fontWeight: 600 }}>Answer:</strong> {closedResult.expected}
-            </div>
-          ) : null}
-
-          {openResult ? (
-            <div style={{ marginTop: 11 }}>
-              <div style={{ fontSize: 13, color: MUTED, marginBottom: 6 }}>
-                {openResult.score} of {openResult.max} checks passed
-              </div>
-              <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                {openEx?.criteria.map((c: string, i: number) => {
-                  const verdict = openResult.criteria[i];
-                  return (
-                    <li
-                      key={c}
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        fontSize: 14,
-                        color: verdict?.met ? GREEN : RED,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span style={{ flex: "none" }}>{verdict?.met ? "✓" : "✕"}</span>
-                      <span>
-                        {c}
-                        {verdict?.evidence ? (
-                          <span style={{ color: MUTED }}> — {verdict.evidence}</span>
-                        ) : null}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-              {openResult.corrected ? (
-                <div style={{ marginTop: 8, fontSize: 14, color: BODY }}>
-                  <strong style={{ fontWeight: 600, color: GREEN }}>Better:</strong>{" "}
-                  {openResult.corrected}
-                </div>
-              ) : null}
-              {openResult.note ? (
-                <div style={{ marginTop: 5, fontSize: 13.5, color: MUTED }}>{openResult.note}</div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {/* On the public page nothing is model-marked, so the checklist and a
-              model answer are shown to check yourself against instead. */}
-          {locked && openEx && !openResult ? (
-            <div style={{ marginTop: 11, fontSize: 14, color: BODY }}>
-              <div style={{ fontSize: 13, color: MUTED, marginBottom: 5 }}>Check yourself:</div>
-              <ul style={{ margin: 0, paddingLeft: 18, color: MUTED }}>
-                {openEx.criteria.map((c: string) => (
-                  <li key={c} style={{ marginBottom: 3 }}>
-                    {c}
-                  </li>
-                ))}
-              </ul>
-              <div style={{ marginTop: 7, color: GREEN }}>
-                <strong style={{ fontWeight: 600 }}>One good answer:</strong>{" "}
-                {openEx.model_answer}
-              </div>
-            </div>
-          ) : null}
-
-          {locked && exercise.why ? (
-            <div style={{ marginTop: 8, fontSize: 13.5, color: MUTED, lineHeight: 1.5 }}>
-              {exercise.why}
-            </div>
-          ) : null}
-        </div>
-      </div>
     </div>
   );
 }
@@ -495,8 +1201,8 @@ function SequenceAnswer({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      <div style={{ fontSize: 12.5, color: FAINT }}>
+    <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ fontSize: 14, color: SOFT }}>
         {picked.length === 0
           ? "Tap them in the right order."
           : picked.length < options.length
@@ -512,19 +1218,20 @@ function SequenceAnswer({
             type="button"
             onClick={() => place(String(i))}
             disabled={locked}
+            className="pa-tap"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              gap: 16,
               textAlign: "left",
-              border: `1px solid ${on ? EMBER : LINE}`,
-              background: on ? "rgba(232,90,44,.06)" : "#fff",
-              borderRadius: 10,
-              padding: "10px 13px",
-              cursor: locked ? "default" : "pointer",
+              padding: "16px 22px",
+              borderRadius: 22,
+              border: 0,
+              background: on ? INK : WASH,
+              color: on ? PAPER : INK,
               fontFamily: "inherit",
-              fontSize: 15,
-              color: BODY,
+              fontSize: 18,
+              cursor: locked ? "default" : "pointer",
               width: "100%",
             }}
           >
@@ -532,16 +1239,15 @@ function SequenceAnswer({
               aria-hidden
               style={{
                 flex: "none",
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
+                width: 30,
+                height: 30,
+                borderRadius: 999,
                 display: "grid",
                 placeItems: "center",
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: 700,
-                border: `1px solid ${on ? EMBER : LINE}`,
                 background: on ? EMBER : "#fff",
-                color: on ? "#fff" : FAINT,
+                color: on ? "#fff" : SOFT,
               }}
             >
               {on ? at + 1 : ""}
@@ -554,16 +1260,55 @@ function SequenceAnswer({
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  border: `1px solid ${LINE}`,
-  borderRadius: 10,
-  padding: "11px 13px",
+/* ── small styles ──────────────────────────────────────────────────────────── */
+
+const tabStyle = (on: boolean): React.CSSProperties => ({
+  padding: "9px 18px",
+  borderRadius: 999,
+  border: 0,
+  background: on ? INK : "transparent",
+  color: on ? PAPER : SOFT,
   fontFamily: "inherit",
-  fontSize: 15,
-  lineHeight: 1.5,
-  color: INK,
-  background: "#fff",
-  outline: "none",
-  resize: "vertical",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+});
+
+function cellStyle(kind: "current" | "done" | "wrong" | "flag" | "todo"): React.CSSProperties {
+  const base: React.CSSProperties = {
+    height: 40,
+    borderRadius: 14,
+    border: 0,
+    fontFamily: "inherit",
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: "pointer",
+    fontVariantNumeric: "tabular-nums",
+  };
+  if (kind === "current")
+    return {
+      ...base,
+      background: EMBER,
+      color: "#fff",
+      boxShadow: "0 8px 18px -8px rgba(236,106,69,.9)",
+      transform: "scale(1.04)",
+    };
+  if (kind === "done") return { ...base, background: GOOD_BG, color: GOOD_INK };
+  if (kind === "wrong") return { ...base, background: WARN_BG, color: WARN_INK };
+  if (kind === "flag")
+    return { ...base, background: "#fff", color: WARN_INK, boxShadow: "inset 0 0 0 2px #f6c3b1" };
+  return { ...base, background: "#fff", color: GHOST, boxShadow: "inset 0 0 0 1px #e4e0d6" };
+}
+
+const railButton: React.CSSProperties = {
+  width: "100%",
+  padding: 15,
+  borderRadius: 999,
+  border: 0,
+  background: INK,
+  color: PAPER,
+  fontFamily: "inherit",
+  fontSize: 16,
+  fontWeight: 700,
 };

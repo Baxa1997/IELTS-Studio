@@ -678,12 +678,16 @@ function useTypedPlaceholder(active: boolean): string {
 
   useEffect(() => {
     if (!active) return;
-    // Motion-sensitive readers get the phrase whole, with no cursor. Checked
-    // here rather than in CSS because this animation is JavaScript, and a media
-    // query cannot reach it.
+    // Motion-sensitive readers get the phrase whole. Checked here rather than
+    // in CSS because this animation is JavaScript and a media query cannot
+    // reach it — and applied through the same timeout the typing uses, because
+    // a setState in the effect BODY runs on every mount and cascades a render.
+    // Reading the preference during render instead would be worse: the server
+    // cannot know it, so it would hydrate mismatched.
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-      setText(PLACEHOLDERS[0]);
-      return;
+      if (text === PLACEHOLDERS[0]) return;
+      const whole = setTimeout(() => setText(PLACEHOLDERS[0]), 0);
+      return () => clearTimeout(whole);
     }
     const full = PLACEHOLDERS[phraseIdx % PLACEHOLDERS.length];
     let delay = 55;
