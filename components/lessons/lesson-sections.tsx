@@ -42,12 +42,16 @@ export function LessonSections({
           </h2>
           <div dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(section.html) }} />
 
-          {/* Collapsed by default, and native <details> so it costs no
-              JavaScript. A learner who reads English fine should see one quiet
-              line, not a second copy of the section they have just read; a
-              learner who is stuck is one click from help. */}
+          {/* OPEN by default, and still a <details> so it can be shut.
+              It used to start collapsed, on the reasoning that a learner who
+              reads English fine should not scroll past a second copy of what
+              they just read. That reasoning ignored who is looking: nobody
+              sees this unless a teacher explicitly chose a support language
+              for the lesson, and hiding what they asked for behind a click on
+              every one of eleven sections works against the choice they made.
+              A learner who does not need it collapses it once. */}
           {section.html_l1 ? (
-            <details className="lp-l1">
+            <details className="lp-l1" open>
               <summary>{L1_LABEL[language] ?? "In your language"}</summary>
               <div dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(section.html_l1) }} />
             </details>
