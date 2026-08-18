@@ -61,6 +61,26 @@ const baseExercise = z.object({
   /** The point being practised, e.g. "third-person-s". This is what lets a
    *  report say WHICH thing a class missed rather than only how many marks. */
   tag: z.string().min(1).max(60),
+  /**
+   * What this item practises, named against the topic spec the lesson was
+   * generated from: which use, which form, and which misconception a wrong
+   * answer here reveals.
+   *
+   * MUST BE MIRRORED HERE, not just in the engine. Zod strips unknown keys, so
+   * a field the engine writes and this schema does not declare is silently
+   * dropped the moment a lesson is loaded — the column would hold it and no
+   * page could ever read it.
+   *
+   * All optional: a lesson generated before the topic spec existed has none,
+   * and the spec call is allowed to fail without taking the build with it.
+   * Anything reading these has to handle their absence rather than assuming
+   * every lesson is tagged.
+   */
+  use: z.string().max(60).optional(),
+  form: z.string().max(40).optional(),
+  /** The handle a diagnostic report is built on: "you drop the auxiliary be",
+   *  not "8 out of 20". */
+  misconception: z.string().max(60).optional(),
   prompt: z.string().min(1),
   /** Shown after marking, whatever the outcome — the reason, not just a tick. */
   why: z.string().optional(),
