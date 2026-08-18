@@ -45,6 +45,12 @@ const ALLOWED_TAGS = [
   // Neither tag takes an attribute we allow or carries any behaviour.
   "strong", "em", "b", "i", "u", "mark", "sub", "sup", "del", "s",
   "ul", "ol", "li",
+  // The quick-check questions hide their answers until the learner commits,
+  // and `<details>` is the only disclosure control that needs no script — which
+  // is exactly why it can be allowed here. It is the sole interactive tag on
+  // the list, it takes no attribute we permit, and `open` is not one of them,
+  // so a lesson cannot ship an answer already revealed.
+  "details", "summary",
   "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption",
   "blockquote", "code", "pre", "kbd", "abbr", "dl", "dt", "dd",
 ];

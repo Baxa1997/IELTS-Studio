@@ -1033,6 +1033,74 @@
   margin: 0 0 14px;
   white-space: pre-wrap;
 }
+/* The one line the lesson turns on. Deliberately the loudest thing in the prose
+   column — it is the sentence a teacher writes on the board and a learner
+   photographs, so it has to win against a form table three inches below it.
+   Left rule rather than a full box: it reads as a pull quote, which is what it
+   is, and a fourth tinted rectangle would just join the other three. */
+.lp-lesson .lp-idea {
+  display: block;
+  margin: 0 0 16px;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid #C1502F;
+  font-family: var(--font-serif4), Georgia, serif;
+  font-size: 19px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #15171C;
+  text-wrap: pretty;
+}
+
+/* Quick check: the answer stays hidden until the learner commits to a guess.
+   Retrieval only works if they actually try first, so the reveal is the whole
+   mechanism rather than a space-saving device.
+
+   EXCLUDING .lp-l1, and that is not tidiness. The first-language note is also a
+   <details>, styled above at (0,1,0); an unscoped `.lp-lesson details` scores
+   (0,1,1) and would silently repaint it — its teal box turning grey, and its ▸
+   joined by a second marker on the other side. The two disclosures on this page
+   mean different things and have to keep looking different. */
+.lp-lesson details:not(.lp-l1) {
+  border: 1px solid #E7E5DF;
+  border-radius: 10px;
+  padding: 0;
+  margin: 0 0 8px;
+  background: #FAFAF8;
+  overflow: hidden;
+}
+.lp-lesson details:not(.lp-l1) > summary {
+  cursor: pointer;
+  padding: 11px 40px 11px 14px;
+  font-weight: 550;
+  color: #15171C;
+  list-style: none;
+  position: relative;
+}
+/* The default triangle sits inconsistently across browsers and cannot be
+   positioned; replaced with our own marker on the right. */
+.lp-lesson details:not(.lp-l1) > summary::-webkit-details-marker { display: none; }
+.lp-lesson details:not(.lp-l1) > summary::after {
+  content: "＋";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #7C7A93;
+}
+.lp-lesson details:not(.lp-l1)[open] > summary::after { content: "－"; }
+.lp-lesson details:not(.lp-l1)[open] > summary { border-bottom: 1px solid #E7E5DF; }
+.lp-lesson details:not(.lp-l1) > *:not(summary) {
+  margin: 0;
+  padding: 11px 14px;
+  color: #3F4147;
+}
+.lp-lesson details:not(.lp-l1) > summary:hover { background: #F3F2EE; }
+.lp-lesson details:not(.lp-l1) > summary:focus-visible {
+  outline: 2px solid #C1502F;
+  outline-offset: -2px;
+}
+
 .lp-lesson .lp-form th { width: 22%; }
 
 /* ── Practice AI ────────────────────────────────────────────────────────────
@@ -1155,6 +1223,14 @@
 
 @media print {
   .pa-print-only { display: block !important; }
+
+  /* A closed disclosure prints its summary and silently drops the answer, so a
+     worksheet handed to a class would carry three questions nobody can check.
+     Forced open on paper, where there is nothing to click anyway. */
+  .lp-lesson details > *:not(summary) { display: block !important; }
+  .lp-lesson .lp-l1 > summary::before { content: "" !important; }
+  .lp-lesson details::details-content { content-visibility: visible !important; }
+  .lp-lesson summary::after { content: "" !important; }
   /* Each stage starts a fresh sheet, so a class gets clean handouts. */
   .pa-print-only > div { break-before: auto; }
 

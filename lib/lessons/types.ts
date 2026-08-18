@@ -151,7 +151,12 @@ export const lessonContentSchema = z.object({
     /** One measurable line: "by the end you can …". */
     objective: z.string().min(1),
   }),
-  sections: z.array(sectionSchema).min(1).max(12),
+  // Twelve was the cap while the grammar blueprint had seven sections. It now
+  // has eleven, which left one slot of headroom before a model that volunteered
+  // a section nobody asked for would fail the whole document at PARSE time,
+  // long after the engine had validated and stored it. The ceiling is a sanity
+  // bound, not a design constraint, so it moves.
+  sections: z.array(sectionSchema).min(1).max(16),
   exercises: z.array(exerciseSchema).min(1).max(40),
 });
 
