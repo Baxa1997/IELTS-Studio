@@ -101,6 +101,17 @@ const closedExercise = baseExercise.extend({
   answers: z.array(z.string()).min(1),
   /** `a`/`an` and British/American pairs are accepted unless this is false. */
   strict: z.boolean().optional(),
+  /**
+   * Which error each WRONG option diagnoses, keyed by option index as a string
+   * — the same convention `answers` uses. `{ "0": "drop_aux_be" }` on an item
+   * whose key is index 1; the key's own index is absent, because the key is not
+   * a mistake.
+   *
+   * This is what lets a wrong answer be reported as a misunderstanding rather
+   * than a lost mark. Optional for the same reason the other tags are: lessons
+   * generated before the topic spec existed carry none.
+   */
+  option_misconceptions: z.record(z.string(), z.string()).optional(),
 });
 
 const openExercise = baseExercise.extend({
