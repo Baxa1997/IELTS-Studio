@@ -113,19 +113,24 @@ export function ShareModal({
         backdropFilter: "blur(3px)",
         WebkitBackdropFilter: "blur(3px)",
         display: "grid",
-        alignItems: "start",
-        justifyItems: "center",
-        overflow: "auto",
-        padding: 32,
+        placeItems: "center",
+        padding: 20,
       }}
     >
+      {/* A COLUMN with a capped height: the header stays put and only the body
+          scrolls. It used to be one tall block inside a scrolling backdrop, so
+          on a laptop the two buttons that finish the job — "Create a link" and
+          "Done" — sat below the fold of a dialog that looked complete. */}
       <div
         onClick={(e) => e.stopPropagation()}
         className="pa-pop"
         style={{
-          width: 620,
+          width: 520,
           maxWidth: "100%",
-          borderRadius: 32,
+          maxHeight: "calc(100dvh - 40px)",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: 24,
           background: PAPER,
           overflow: "hidden",
           boxShadow: "0 40px 80px -30px rgba(20,35,46,.6)",
@@ -134,7 +139,8 @@ export function ShareModal({
         {/* ── header ───────────────────────────────────────────────────────── */}
         <div
           style={{
-            padding: "30px 32px 24px",
+            flex: "none",
+            padding: "18px 22px 14px",
             background: `linear-gradient(180deg, ${GOOD_BG} 0%, ${PAPER} 100%)`,
           }}
         >
@@ -142,11 +148,11 @@ export function ShareModal({
             <div style={{ minWidth: 0 }}>
               <span
                 style={{
-                  padding: "6px 14px",
+                  padding: "4px 11px",
                   borderRadius: 999,
                   background: "#fff",
                   color: GOOD_INK,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: ".06em",
                   textTransform: "uppercase",
@@ -158,15 +164,15 @@ export function ShareModal({
                 style={{
                   fontFamily: SERIF,
                   fontWeight: 600,
-                  fontSize: 40,
+                  fontSize: 25,
                   letterSpacing: "-.025em",
                   color: INK,
-                  margin: "14px 0 6px",
+                  margin: "10px 0 4px",
                 }}
               >
                 Who gets it?
               </h2>
-              <p style={{ margin: 0, fontSize: 15, color: MUTED }}>
+              <p style={{ margin: 0, fontSize: 14, color: MUTED }}>
                 It is ready. Pick where it goes.
               </p>
             </div>
@@ -177,8 +183,8 @@ export function ShareModal({
               className="pa-lift"
               style={{
                 flex: "none",
-                width: 38,
-                height: 38,
+                width: 32,
+                height: 32,
                 borderRadius: 999,
                 border: 0,
                 background: "rgba(255,255,255,0.8)",
@@ -193,21 +199,22 @@ export function ShareModal({
         </div>
 
         {/* ── 01 · set it to a group ────────────────────────────────────────── */}
-        <form action={assignAction} style={{ padding: "4px 32px 0" }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+        <form action={assignAction} style={{ padding: "2px 22px 0" }}>
           <input type="hidden" name="id" value={lessonId} />
 
           <Step n="01" bg={NOTE_BG} ink={NOTE_INK} title="Set it to a group" />
-          <p style={{ margin: "10px 0 16px", fontSize: 15, lineHeight: 1.6, color: MUTED }}>
+          <p style={{ margin: "7px 0 11px", fontSize: 13.5, lineHeight: 1.5, color: MUTED }}>
             It appears in their assignments. Written answers are AI-marked, and every score and
             mistake lands in your reports.
           </p>
 
           {groups.length === 0 ? (
-            <p style={{ fontSize: 15, color: FAINT, margin: "0 0 8px" }}>
+            <p style={{ fontSize: 13.5, color: FAINT, margin: "0 0 8px" }}>
               You have no groups yet — make one first, and this lesson will be waiting.
             </p>
           ) : (
-            <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gap: 7 }}>
               {groups.map((g) => {
                 const on = picked.includes(g.id);
                 return (
@@ -218,10 +225,10 @@ export function ShareModal({
                       position: "relative",
                       display: "flex",
                       alignItems: "center",
-                      gap: 14,
+                      gap: 11,
                       textAlign: "left",
-                      padding: "16px 18px",
-                      borderRadius: 20,
+                      padding: "10px 13px",
+                      borderRadius: 13,
                       cursor: "pointer",
                       background: on ? GOOD_BG : TROUGH,
                       boxShadow: on ? "inset 0 0 0 2px #79b79c" : "none",
@@ -242,9 +249,9 @@ export function ShareModal({
                       aria-hidden
                       style={{
                         flex: "none",
-                        width: 24,
-                        height: 24,
-                        borderRadius: 8,
+                        width: 20,
+                        height: 20,
+                        borderRadius: 6,
                         display: "grid",
                         placeItems: "center",
                         fontSize: 13,
@@ -256,8 +263,8 @@ export function ShareModal({
                     >
                       {on ? "✓" : ""}
                     </span>
-                    <span style={{ fontSize: 17, fontWeight: 600, color: INK }}>{g.name}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 14, color: SOFT }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: INK }}>{g.name}</span>
+                    <span style={{ marginLeft: "auto", fontSize: 13, color: SOFT }}>
                       {g.students} student{g.students === 1 ? "" : "s"}
                     </span>
                   </label>
@@ -268,16 +275,16 @@ export function ShareModal({
 
           <div
             className="pa-modal-fields"
-            style={{ display: "grid", gridTemplateColumns: "190px 1fr", gap: 12, marginTop: 16 }}
+            style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 9, marginTop: 12 }}
           >
             <label>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: SOFT, marginBottom: 7 }}>
+              <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: SOFT, marginBottom: 5 }}>
                 Due (optional)
               </span>
               <input type="date" name="due_at" className="pa-field" style={field} />
             </label>
             <label>
-              <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: SOFT, marginBottom: 7 }}>
+              <span style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: SOFT, marginBottom: 5 }}>
                 A note for them
               </span>
               <input
@@ -295,14 +302,14 @@ export function ShareModal({
             className="pa-ember"
             style={{
               width: "100%",
-              marginTop: 18,
-              padding: 16,
+              marginTop: 13,
+              padding: 12,
               borderRadius: 999,
               border: 0,
               background: EMBER,
               color: "#fff",
               fontFamily: "inherit",
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: 700,
               cursor: picked.length === 0 || assigning ? "not-allowed" : "pointer",
               opacity: picked.length === 0 ? 0.4 : 1,
@@ -318,19 +325,19 @@ export function ShareModal({
           </button>
 
           {assignState.ok ? (
-            <p style={{ fontSize: 14, color: GOOD_INK, margin: "12px 0 0" }}>{assignState.ok}</p>
+            <p style={{ fontSize: 13.5, color: GOOD_INK, margin: "10px 0 0" }}>{assignState.ok}</p>
           ) : null}
           {assignState.error ? (
-            <p style={{ fontSize: 14, color: WARN_INK, margin: "12px 0 0" }} role="alert">
+            <p style={{ fontSize: 13.5, color: WARN_INK, margin: "10px 0 0" }} role="alert">
               {assignState.error}
             </p>
           ) : null}
         </form>
 
         {/* ── 02 · or share a link ──────────────────────────────────────────── */}
-        <div style={{ margin: "22px 20px 20px", padding: "22px 24px", borderRadius: 26, background: WASH }}>
+        <div style={{ margin: "14px 14px 14px", padding: "14px 16px", borderRadius: 18, background: WASH }}>
           <Step n="02" bg={WARN_BG} ink={WARN_INK} title="Or share a link" />
-          <p style={{ margin: "10px 0 16px", fontSize: 15, lineHeight: 1.6, color: MUTED }}>
+          <p style={{ margin: "7px 0 11px", fontSize: 13.5, lineHeight: 1.5, color: MUTED }}>
             Anyone can open it, no account needed. Nothing they do reaches your reports, and written
             answers are not AI-checked — they see the model answer instead.
           </p>
@@ -340,12 +347,12 @@ export function ShareModal({
               <code
                 style={{
                   flex: 1,
-                  minWidth: 200,
-                  fontSize: 13,
+                  minWidth: 160,
+                  fontSize: 12.5,
                   color: MUTED,
                   background: "#fff",
                   borderRadius: 999,
-                  padding: "11px 16px",
+                  padding: "9px 13px",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -398,10 +405,11 @@ export function ShareModal({
           )}
 
           {shareState.error || rotateState.error ? (
-            <p style={{ fontSize: 14, color: WARN_INK, margin: "12px 0 0" }} role="alert">
+            <p style={{ fontSize: 13.5, color: WARN_INK, margin: "10px 0 0" }} role="alert">
               {shareState.error ?? rotateState.error}
             </p>
           ) : null}
+        </div>
         </div>
       </div>
     </div>,
@@ -411,24 +419,25 @@ export function ShareModal({
 
 function Step({ n, bg, ink, title }: { n: string; bg: string; ink: string; title: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span
         aria-hidden
         style={{
-          width: 28,
-          height: 28,
+          flex: "none",
+          width: 23,
+          height: 23,
           borderRadius: 999,
           background: bg,
           color: ink,
           display: "grid",
           placeItems: "center",
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: 700,
         }}
       >
         {n}
       </span>
-      <h3 style={{ fontSize: 19, fontWeight: 700, color: INK, margin: 0 }}>{title}</h3>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: INK, margin: 0 }}>{title}</h3>
     </div>
   );
 }
@@ -436,24 +445,24 @@ function Step({ n, bg, ink, title }: { n: string; bg: string; ink: string; title
 const field: React.CSSProperties = {
   width: "100%",
   border: 0,
-  borderRadius: 16,
+  borderRadius: 12,
   background: TROUGH,
-  padding: "13px 16px",
+  padding: "9px 12px",
   fontFamily: "inherit",
-  fontSize: 15,
+  fontSize: 14,
   color: INK,
   outline: "none",
   boxShadow: "inset 0 0 0 2px transparent",
 };
 
 const white: React.CSSProperties = {
-  padding: "13px 22px",
+  padding: "10px 17px",
   borderRadius: 999,
   border: 0,
   background: "#fff",
   color: INK,
   fontFamily: "inherit",
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: 600,
   cursor: "pointer",
   whiteSpace: "nowrap",
