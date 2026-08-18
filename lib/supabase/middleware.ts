@@ -14,6 +14,9 @@ const PUBLIC_PATHS = [
   "/sign-in",
   "/sign-up",
   "/accept-invite",
+  // A shared lesson. The token in the path is the whole credential, and a
+  // student opening a teacher's link has no account to be redirected to.
+  "/p",
   "/auth",
   "/grade",
   "/demo",
