@@ -958,66 +958,263 @@
 
 /* The named boxes the prompt offers the model. Each one is a different KIND of
    aside, and looking different is the whole point — a learner skimming should
-   be able to tell a rule from a warning without reading either. */
-.lp-lesson .lp-tip,
-.lp-lesson .lp-warn,
-.lp-lesson .lp-example,
-.lp-lesson .lp-key {
+   be able to tell a rule from a warning without reading either.
+
+   SCOPED TO BLOCK ELEMENTS, and that qualifier is load-bearing. These names
+   were written for `<div class="lp-warn">`, but a model reaches for lp-warn to
+   flag a wrong form mid-sentence too — `<span class="lp-warn">I am agreeing</span>`
+   — and an inline box does not reserve vertical space for its own padding. The
+   result was a 12px-tall peach rectangle painting straight over the lines above
+   and below it, which is exactly what "words overwriting the text" was. Inline
+   uses get their own treatment below instead of inheriting a block one. */
+.lp-lesson div.lp-tip,
+.lp-lesson div.lp-warn,
+.lp-lesson div.lp-example,
+.lp-lesson div.lp-key,
+.lp-lesson p.lp-tip,
+.lp-lesson p.lp-warn,
+.lp-lesson p.lp-example,
+.lp-lesson p.lp-key,
+.lp-lesson blockquote.lp-tip,
+.lp-lesson blockquote.lp-warn,
+.lp-lesson blockquote.lp-example,
+.lp-lesson blockquote.lp-key {
+  display: block;
   border-radius: 10px;
   padding: 12px 14px;
   margin: 0 0 14px;
   border: 1px solid;
 }
+
+/* The same names used inline: a highlight, not a box. No vertical padding, so
+   it can never overlap its neighbours; `box-decoration-break: clone` keeps the
+   rounded ends when a phrase wraps across two lines. */
+.lp-lesson span.lp-tip,
+.lp-lesson span.lp-warn,
+.lp-lesson span.lp-example,
+.lp-lesson span.lp-key,
+.lp-lesson code.lp-tip,
+.lp-lesson code.lp-warn,
+.lp-lesson code.lp-example,
+.lp-lesson code.lp-key,
+.lp-lesson mark {
+  display: inline;
+  border: 0;
+  margin: 0;
+  padding: .08em .38em;
+  border-radius: 5px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
 .lp-lesson .lp-tip { background: #EEF4F5; border-color: #CFE0E3; }
 .lp-lesson .lp-warn { background: #FBEEE0; border-color: #E9CDA6; }
 .lp-lesson .lp-example { background: #FAFAF8; border-color: #E7E5DF; }
 .lp-lesson .lp-key { background: #F3F1FB; border-color: #D8D4F0; }
+.lp-lesson mark { background: #FBEEE0; color: inherit; }
+
+/* A wrong form, however the model spells the intent. Struck through rather
+   than only tinted, so it reads as "not this" on a black-and-white printout
+   too. */
+.lp-lesson del,
+.lp-lesson s,
+.lp-lesson .lp-wrong {
+  text-decoration: line-through;
+  text-decoration-color: #C1502F;
+  color: #8A7F79;
+}
+/* A timeline is a DIAGRAM, and this used to be styled as a code block: grey
+   box, hard border, monospace. On a projector it read as source code, which is
+   the complaint that started this. The blueprint now asks for a small table
+   instead of dashes-and-arrows, so this is the fallback for a model that draws
+   one anyway — monospace is kept because ASCII alignment collapses without it,
+   but nothing else about it says "code". */
 .lp-lesson .lp-timeline {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  background: #FAFAF8;
-  border: 1px solid #E7E5DF;
-  border-radius: 10px;
-  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #3F4147;
+  background: #FBF6F2;
+  border: 0;
+  border-left: 3px solid #E0BFA8;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
   margin: 0 0 14px;
   white-space: pre-wrap;
+  overflow-x: auto;
 }
+/* The one line the lesson turns on. Deliberately the loudest thing in the prose
+   column — it is the sentence a teacher writes on the board and a learner
+   photographs, so it has to win against a form table three inches below it.
+   Left rule rather than a full box: it reads as a pull quote, which is what it
+   is, and a fourth tinted rectangle would just join the other three. */
+.lp-lesson .lp-idea {
+  display: block;
+  margin: 0 0 16px;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid #C1502F;
+  font-family: var(--font-serif4), Georgia, serif;
+  font-size: 19px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #15171C;
+  text-wrap: pretty;
+}
+
+/* Quick check: the answer stays hidden until the learner commits to a guess.
+   Retrieval only works if they actually try first, so the reveal is the whole
+   mechanism rather than a space-saving device.
+
+   EXCLUDING .lp-l1, and that is not tidiness. The first-language note is also a
+   <details>, styled above at (0,1,0); an unscoped `.lp-lesson details` scores
+   (0,1,1) and would silently repaint it — its teal box turning grey, and its ▸
+   joined by a second marker on the other side. The two disclosures on this page
+   mean different things and have to keep looking different. */
+.lp-lesson details:not(.lp-l1) {
+  border: 1px solid #E7E5DF;
+  border-radius: 10px;
+  padding: 0;
+  margin: 0 0 8px;
+  background: #FAFAF8;
+  overflow: hidden;
+}
+.lp-lesson details:not(.lp-l1) > summary {
+  cursor: pointer;
+  padding: 11px 40px 11px 14px;
+  font-weight: 550;
+  color: #15171C;
+  list-style: none;
+  position: relative;
+}
+/* The default triangle sits inconsistently across browsers and cannot be
+   positioned; replaced with our own marker on the right. */
+.lp-lesson details:not(.lp-l1) > summary::-webkit-details-marker { display: none; }
+.lp-lesson details:not(.lp-l1) > summary::after {
+  content: "＋";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #7C7A93;
+}
+.lp-lesson details:not(.lp-l1)[open] > summary::after { content: "－"; }
+.lp-lesson details:not(.lp-l1)[open] > summary { border-bottom: 1px solid #E7E5DF; }
+.lp-lesson details:not(.lp-l1) > *:not(summary) {
+  margin: 0;
+  padding: 11px 14px;
+  color: #3F4147;
+}
+.lp-lesson details:not(.lp-l1) > summary:hover { background: #F3F2EE; }
+.lp-lesson details:not(.lp-l1) > summary:focus-visible {
+  outline: 2px solid #C1502F;
+  outline-offset: -2px;
+}
+
 .lp-lesson .lp-form th { width: 22%; }
+
+/* ── Practice AI ────────────────────────────────────────────────────────────
+   Everything here is a :hover, :focus-within, keyframe or media query — the
+   states an inline style genuinely cannot express. The palette itself stays in
+   lib/lessons/theme.ts and is applied inline, deliberately: a stale stylesheet
+   should be able to cost this surface its animations, never its colours. */
+
+@keyframes pa-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pa-pop {
+  from { opacity: 0; transform: translateY(18px) scale(.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pa-slide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes pa-spin { to { transform: rotate(360deg); } }
+@keyframes pa-shimmer { to { background-position: -200% 0; } }
+
+/* Skeleton blocks. A moving BACKGROUND rather than a transform or an opacity
+   pulse: the placeholder must not reflow or flicker, because the eye reads
+   either as the page still changing after it has arrived. */
+.pa-shimmer {
+  background-image: linear-gradient(90deg, #eeeeeb 0%, #f6f5f2 40%, #eeeeeb 80%);
+  background-size: 200% 100%;
+  animation: pa-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pa-shimmer { animation: none; background-image: none; background-color: #eeeeeb; }
+}
+
+.pa-rise { animation: pa-rise .45s cubic-bezier(.2,.7,.3,1) both; }
+.pa-pop { animation: pa-pop .35s cubic-bezier(.2,.7,.3,1) both; }
+.pa-slide { animation: pa-slide .28s ease both; }
+/* The one animation that must survive prefers-reduced-motion: it is not
+   decoration, it is the only sign the app is still working. */
+.pa-spin { animation: pa-spin .8s linear infinite; }
+
+/* Someone who has asked for less motion gets the layout and none of the
+   travel. `both` fill means these must resolve to a real end state, not to
+   `none` — an animation removed outright would leave opacity at 0. */
+@media (prefers-reduced-motion: reduce) {
+  .pa-rise, .pa-pop, .pa-slide { animation-duration: .01ms; }
+  .pa-card:hover, .pa-chip:hover, .pa-lift:hover { transform: none; }
+}
 
 /* The composer's focus ring — a :focus-within state cannot be an inline style. */
 .pa-composer {
-  transition: border-color .15s, box-shadow .15s;
+  transition: box-shadow .18s;
 }
 .pa-composer:focus-within {
-  border-color: rgba(232, 90, 44, .45);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.85) inset,
-    0 30px 60px -28px rgba(21,23,28,.30),
-    0 12px 28px -12px rgba(21,23,28,.10),
-    0 0 0 4px rgba(232,90,44,.12);
+    0 1px 2px rgba(20,35,46,.05),
+    0 30px 60px -28px rgba(20,35,46,.28),
+    0 0 0 4px rgba(236,106,69,.14);
 }
 
 /* Icon buttons along the composer's foot. */
 .pa-icon-btn {
-  transition: background .15s, border-color .15s;
-  border: 1px solid transparent;
+  transition: background .18s, color .18s;
+  border: 0;
 }
-.pa-icon-btn:hover {
-  border-color: #E5EAF0;
-  background: rgba(21,23,28,.04);
-}
+.pa-icon-btn:hover { background: #f1efe9; }
 
-/* Starter chips: lift on hover, ember edge. */
+/* Starter chips: lift on hover. */
 .pa-chip {
-  transition: border-color .15s, background .15s, color .15s, transform .15s;
+  transition: background .18s, color .18s, transform .18s, box-shadow .18s;
 }
 .pa-chip:hover {
-  transform: translateY(-1px);
-  border-color: rgba(232,90,44,.4);
-  background: rgba(255,255,255,.95);
-  color: #6B2810;
+  transform: translateY(-2px);
+  box-shadow: 0 1px 2px rgba(20,35,46,.05), 0 14px 26px -14px rgba(20,35,46,.35);
 }
 .pa-chip:active { transform: translateY(0); }
+
+/* Anything that rises a pixel under the pointer: pill buttons in the sticky
+   bars, the rail's primary action, the modal's link button. */
+.pa-lift { transition: background .18s, transform .18s, box-shadow .18s; }
+.pa-lift:hover:not(:disabled) { transform: translateY(-1px); }
+.pa-lift:active:not(:disabled) { transform: translateY(0); }
+
+.pa-ember { transition: background .18s, transform .18s; }
+.pa-ember:hover:not(:disabled) { background: #d95936; transform: translateY(-1px); }
+.pa-ember:active:not(:disabled) { transform: translateY(0); }
+
+.pa-dark { transition: background .18s, transform .18s; }
+.pa-dark:hover:not(:disabled) { background: #22384a; transform: translateY(-1px); }
+
+.pa-ghost { transition: background .18s, color .18s; }
+.pa-ghost:hover:not(:disabled) { background: #e7e4dc; }
+
+/* A spec chip, a navigator cell, an answer option — small targets that need a
+   visible pointer state without moving. */
+.pa-tap { transition: background .15s, box-shadow .15s, color .15s; }
+.pa-tap:hover:not(:disabled) { box-shadow: inset 0 0 0 2px rgba(20,35,46,.14); }
+
+/* Typed answers. A ring inside the field rather than a border, so nothing
+   reflows by a pixel when it lands. */
+.pa-field { transition: box-shadow .18s; }
+.pa-field:focus { box-shadow: inset 0 0 0 2px #ec6a45 !important; }
 
 /* ── Printing a lesson ──────────────────────────────────────────────────────
    "Download PDF" is the browser's own print-to-PDF, and that is a deliberate
@@ -1030,7 +1227,23 @@
    page's own buttons are removed, so a teacher hands out a worksheet rather
    than a screenshot of software. Whether the answer key is on follows the
    toggle on screen — one page, two documents. */
+/* The worksheet exists only on paper: it is the document a teacher hands out,
+   and it has no business competing with the lesson on screen. */
+.pa-print-only { display: none; }
+
 @media print {
+  .pa-print-only { display: block !important; }
+
+  /* A closed disclosure prints its summary and silently drops the answer, so a
+     worksheet handed to a class would carry three questions nobody can check.
+     Forced open on paper, where there is nothing to click anyway. */
+  .lp-lesson details > *:not(summary) { display: block !important; }
+  .lp-lesson .lp-l1 > summary::before { content: "" !important; }
+  .lp-lesson details::details-content { content-visibility: visible !important; }
+  .lp-lesson summary::after { content: "" !important; }
+  /* Each stage starts a fresh sheet, so a class gets clean handouts. */
+  .pa-print-only > div { break-before: auto; }
+
   /* The app around the lesson. */
   .lp-shell-sidebar,
   .lp-shell-topbar,
@@ -1086,21 +1299,110 @@
   }
 }
 
-/* Lesson cards: lift on hover, ember edge — the same gesture as the starter
-   chips above them, so the whole page answers to the pointer the same way. */
+/* Lesson cards: lift on hover — the same gesture as the starter chips above
+   them, so the whole page answers to the pointer the same way. */
 .pa-card {
-  transition: border-color .15s, box-shadow .15s, transform .15s;
+  transition: box-shadow .25s ease, transform .25s cubic-bezier(.2,.7,.3,1);
 }
 .pa-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(232, 90, 44, .35);
-  box-shadow: 0 10px 24px -12px rgba(21, 23, 28, .18);
+  transform: translateY(-4px);
+  box-shadow: 0 1px 2px rgba(20,35,46,.05), 0 26px 44px -24px rgba(20,35,46,.45);
 }
 .pa-card:active { transform: translateY(0); }
 
-.pa-send { transition: background .15s, transform .15s, opacity .15s; }
-.pa-send:hover:not(:disabled) { background: #d8501f; }
-.pa-send:active:not(:disabled) { transform: translateY(1px); }
+.pa-send { transition: background .18s, transform .18s, opacity .18s; }
+.pa-send:hover:not(:disabled) { background: #d95936; transform: translateY(-1px); }
+.pa-send:active:not(:disabled) { transform: translateY(0); }
+
+/* ── the runner's two columns ───────────────────────────────────────────────
+   The navigator is a rail beside the item on a laptop and a strip above it on
+   anything narrower. It is never dropped: it is the only way to reach question
+   9 from question 3, and a runner that shows one item at a time with no way to
+   move between them is a dead end on a phone. */
+.pa-runner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 296px;
+  align-items: start;
+}
+/* Sticky rather than a second scrolling pane. The surface owns the scroll now,
+   so the navigator follows the reader down it and parks under the bar (62px) —
+   and its own overflow only engages when a very long lesson makes the cell grid
+   taller than the screen. The 92px allows for the bar plus the shell's own 10px
+   of padding either side of the surface. */
+.pa-runner-rail {
+  position: sticky;
+  top: 62px;
+  max-height: calc(100dvh - 92px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  background: #fdfbf7;
+  border-left: 1px solid rgba(20,35,46,.07);
+}
+/* Narrow: the rail stops being a column beside the item and becomes the next
+   thing DOWN the page — item, then navigator, then submit — and the runner
+   scrolls as one document instead of two independent panes.
+
+   It deliberately does not become a capped strip above the item. A fixed-height
+   rail has to fit a heading, the cells and the submit button into ~190px, and
+   what actually gets squeezed out is the submit button: the one control that
+   ends the lesson becomes unreachable on the device most likely to be used for
+   homework. */
+.pa-runner-main { width: 100%; padding: 30px 26px 56px; }
+.pa-item { padding: 30px 28px 34px; }
+
+@media (max-width: 1000px) {
+  .pa-runner { grid-template-columns: 1fr; }
+  .pa-runner-rail {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    border-left: 0;
+    border-top: 1px solid rgba(20,35,46,.07);
+  }
+}
+
+/* Phones. The item keeps its card, because losing the card loses the sense of
+   "one thing at a time" that the whole runner is built on — it just stops
+   spending 28px a side on air it hasn't got. */
+@media (max-width: 620px) {
+  .pa-runner-main { padding: 18px 14px 40px; }
+  .pa-item { padding: 22px 18px 24px; }
+}
+
+/* The lesson page's reading column + sticky rail, on the same terms. */
+.pa-lesson-grid {
+  display: grid;
+  grid-template-columns: 1.62fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 1040px) {
+  .pa-lesson-grid { grid-template-columns: 1fr; gap: 22px; }
+  .pa-lesson-rail { position: static !important; }
+}
+
+/* Three cards, then two, then one. */
+.pa-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+@media (max-width: 1100px) { .pa-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .pa-grid { grid-template-columns: 1fr; } }
+
+/* Due date beside the note, until there is no room for both. */
+@media (max-width: 560px) {
+  .pa-modal-fields { grid-template-columns: 1fr !important; }
+}
+
+/* The library hero's headline. clamp() handles the sizing; this only stops the
+   sticky bars and the hero from crowding on a narrow window. */
+@media (max-width: 760px) {
+  .pa-hero-pad { padding-left: 18px !important; padding-right: 18px !important; }
+  .pa-bar { padding-left: 16px !important; padding-right: 16px !important; }
+  .pa-bar-hide { display: none !important; }
+}
 
 /* Scrolls, but shows no bar.
 

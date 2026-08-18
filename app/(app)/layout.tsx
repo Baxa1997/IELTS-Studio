@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Hanken_Grotesk, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
+import { Hanken_Grotesk, Manrope, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
 
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
@@ -40,6 +40,16 @@ const serif4 = Source_Serif_4({
   weight: ["600", "700"],
   variable: "--font-serif4",
   display: "swap",
+});
+/* Practice AI's sans. The 300 is load-bearing: the library hero sets "Where
+   lessons" at 300 against "come to life" at 700 on one line, and a stack
+   without a light weight collapses both to 400 and loses the headline. */
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-manrope",
+  display: "swap",
+  preload: false,
 });
 
 const ROLE_LABEL: Record<string, string> = {
@@ -112,7 +122,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${work.variable} ${serif4.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${work.variable} ${serif4.variable} ${manrope.variable} lp-root`}
     >
       <AppShell
         role={profile.role}

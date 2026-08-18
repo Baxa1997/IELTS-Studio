@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { SERIF } from "@/components/console/crm-ui";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import {
   BLUEPRINT_LABEL,
@@ -10,21 +9,36 @@ import {
   type LessonCard,
   type LessonStatus,
 } from "@/lib/console/lessons";
+import {
+  FAINT,
+  HERO_SKY,
+  INK,
+  LIFT_CARD,
+  PAPER,
+  SANS,
+  SERIF,
+  SOFT,
+  TROUGH,
+  WASH,
+} from "@/lib/lessons/theme";
 
 import { Composer } from "./composer";
 
 export const dynamic = "force-dynamic";
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
-const LINE = "#C5C4BE";
-const INDIGO = "#4340CB";
-
-const TABS: { key: LessonStatus; label: string; blurb: string }[] = [
-  { key: "draft", label: "Drafts", blurb: "Made, not published. Only you can see these." },
-  { key: "published", label: "Published", blurb: "Ready to set to a group or share." },
-  { key: "archived", label: "Archived", blurb: "Retired, but kept — attempts point at them." },
+const TABS: { key: LessonStatus; label: string; empty: string }[] = [
+  {
+    key: "draft",
+    label: "Drafts",
+    empty:
+      "Nothing yet. Type what your group needs in the box above — a lesson takes about a minute to write.",
+  },
+  {
+    key: "published",
+    label: "Published",
+    empty: "Nothing published yet. Open a draft and publish it once you're happy with it.",
+  },
+  { key: "archived", label: "Archived", empty: "Nothing archived." },
 ];
 
 /**
@@ -33,6 +47,10 @@ const TABS: { key: LessonStatus; label: string; blurb: string }[] = [
  * Teacher-only. A lesson is something you MAKE, and an administrator runs the
  * front desk rather than the teaching — the RLS write policy says the same, so
  * this redirect is the readable half of a rule the database also enforces.
+ *
+ * The page owns its whole surface: the console chrome drops its bar and its
+ * padding for this route, which is why the hero can be full-bleed and why the
+ * library below has to put its own padding back.
  */
 export default async function PracticeAiPage({
   searchParams,
@@ -50,180 +68,157 @@ export default async function PracticeAiPage({
   const count = (key: LessonStatus) => all.filter((l) => l.status === key).length;
 
   return (
-    // The page owns the whole surface — the console chrome drops its bar and its
-    // padding for this route. #FDFDFD is where the hero gradient ENDS, so the
-    // library below continues the same sheet of paper instead of sitting on the
-    // console's cream and reading as a separate panel bolted underneath.
-    <div style={{ background: "#FDFDFD", minHeight: "100%" }}>
-      {/* A centred hero, following the reference the owner supplied — and
-          full-bleed, so the gradient reaches the edges of the content area. The
-          negative margins cancel `.cn-page`'s 26/28px padding exactly; the
-          padding below puts it back inside. */}
-      <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          padding: "76px 28px 68px",
-          /* Inline rather than a stylesheet group, deliberately.
-             This is a static value with no pseudo-selector, so a group buys
-             nothing — and it costs something real: a group lives in globals.css,
-             which a dev server or a browser can serve a stale copy of, and then
-             the page renders with the inline styles applied and the gradient
-             missing. Which is exactly what happened. Only :hover and
-             :focus-within states are left in CSS, because those genuinely
-             cannot be expressed inline.
-
-             Stops copied verbatim from lucid-ai's `.lucid-hero-bg`. It ends at
-             #FDFDFD rather than the console cream so the library below joins
-             without a seam. */
-          background:
-            "linear-gradient(180deg, #A4CFD6 0%, #A4CFD6 8%, #A8D2D8 18%, #AED5DB 28%, #B6D8DD 38%, #C2DDE0 48%, #D2E2E2 58%, #E2E9E6 66%, #EFEEEA 72%, #F7F6F2 77%, #FBFBF8 81%, #FDFDFD 84%, #FDFDFD 100%)",
-        }}
-      >
-        {/* Radial highlights + grain, masked so they fade before the gradient
-            reaches paper — without the mask there is a visible band at the join. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            overflow: "hidden",
-            maskImage: "linear-gradient(to bottom, #000 0%, #000 45%, transparent 75%)",
-            WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 45%, transparent 75%)",
-          }}
-        >
+    <div className="pa-rise" style={{ background: PAPER, minHeight: "100%", fontFamily: SANS }}>
+      {/* The sky. It ends on PAPER exactly, so the library below continues the
+          same sheet instead of reading as a panel bolted underneath. */}
+      <div className="pa-hero-pad" style={{ background: HERO_SKY, padding: "58px 28px 76px" }}>
+        <div style={{ maxWidth: 940, margin: "0 auto", textAlign: "center" }}>
           <div
             style={{
-              position: "absolute",
-              inset: "-10%",
-              background:
-                "radial-gradient(60% 40% at 50% 14%, rgba(255,255,255,.20), transparent 65%), radial-gradient(55% 45% at 86% 18%, rgba(120,170,180,.18), transparent 70%), radial-gradient(55% 45% at 14% 18%, rgba(100,160,175,.16), transparent 70%)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              opacity: 0.16,
-              mixBlendMode: "multiply",
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09  0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
-            }}
-          />
-        </div>
-
-        <div style={{ position: "relative", maxWidth: 880, margin: "0 auto", textAlign: "center" }}>
-          <h1
-            style={{
-              fontWeight: 400,
-              fontSize: "clamp(34px, 6vw, 60px)",
-              lineHeight: 1.02,
-              letterSpacing: "-.04em",
-              color: "#15171C",
-              margin: "0 0 22px",
-              textWrap: "balance",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 9,
+              padding: "8px 18px",
+              borderRadius: 999,
+              background: INK,
+              color: PAPER,
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: ".02em",
             }}
           >
-            Where lessons come to life
+            <span
+              aria-hidden
+              style={{ width: 7, height: 7, borderRadius: 999, background: "#ec6a45" }}
+            />
+            Explanation + practice in one page
+          </div>
+
+          {/* Two weights on one headline, which is why Manrope is loaded with a
+              300: without a light weight both halves render at 400 and the
+              contrast the line is built on disappears. */}
+          <h1
+            style={{
+              fontWeight: 300,
+              fontSize: "clamp(42px, 7vw, 46px)",
+              lineHeight: 1,
+              color: INK,
+              margin: "20px 0 18px",
+            }}
+          >
+            Where lessons <span style={{ fontWeight: 700 }}>come to life</span>
           </h1>
           <p
             style={{
-              fontSize: 18,
-              lineHeight: 1.5,
-              letterSpacing: "-.01em",
-              color: "rgba(42,45,52,.85)",
               margin: "0 auto",
-              maxWidth: "68ch",
+              fontSize: 21,
+              lineHeight: 1.45,
+              color: "#33505c",
+              maxWidth: "40ch",
             }}
           >
-            Say what your group needs and get a lesson page — the explanation and the practice.
-            <span style={{ display: "block", marginTop: 4, fontWeight: 500, color: "#15171C" }}>
-              Ready to set as homework, or share as a link.
-            </span>
+            Type what your group needs. Assign it in one click.
           </p>
+        </div>
 
-          <div style={{ marginTop: 44 }}>
-            <Composer />
-          </div>
+        <div style={{ maxWidth: 880, margin: "42px auto 0" }}>
+          <Composer />
         </div>
       </div>
 
-      <div style={{ padding: "10px 32px 96px" }}>
-      <h2
-        style={{
-          fontFamily: SERIF,
-          fontSize: 24,
-          fontWeight: 700,
-          color: INK,
-          letterSpacing: "-.015em",
-          margin: "0 0 2px",
-        }}
+      <div
+        className="pa-hero-pad"
+        style={{ maxWidth: 1200, margin: "0 auto", padding: "26px 28px 90px" }}
       >
-        Your lessons
-      </h2>
-      <p style={{ fontSize: 14, color: MUTED, margin: "0 0 18px" }}>
-        Everything you&apos;ve made, and where it has been.
-      </p>
-
-      <div style={{ display: "flex", gap: 4, margin: "0 0 18px", flexWrap: "wrap" }}>
-        {TABS.map((t) => {
-          const on = t.key === tab;
-          return (
-            <Link
-              key={t.key}
-              href={`/console/practice-ai?tab=${t.key}`}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            gap: 20,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <h2
               style={{
-                padding: "8px 15px",
-                borderRadius: 999,
-                textDecoration: "none",
-                fontSize: 13.5,
-                fontWeight: on ? 600 : 500,
-                color: on ? INDIGO : MUTED,
-                background: on ? "#EEEDF8" : "transparent",
-                border: `1px solid ${on ? "#C7C5F0" : "transparent"}`,
+                fontFamily: SERIF,
+                fontWeight: 600,
+                fontSize: "clamp(28px, 4vw, 40px)",
+                letterSpacing: "-.02em",
+                color: INK,
+                margin: 0,
               }}
             >
-              {t.label}
-              <span style={{ marginLeft: 7, fontSize: 12, color: on ? INDIGO : FAINT, opacity: 0.8 }}>
-                {count(t.key)}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+              Your lessons
+            </h2>
+            <p style={{ margin: "6px 0 0", fontSize: 16, color: SOFT }}>
+              Everything you&apos;ve made, and where it has been.
+            </p>
+          </div>
 
-      {rows.length === 0 ? (
-        <div
-          style={{
-            background: "#fff",
-            border: `1px solid ${LINE}`,
-            borderRadius: 14,
-            padding: "34px 24px",
-            textAlign: "center",
-            color: MUTED,
-            fontSize: 14,
-          }}
-        >
-          {tab === "draft"
-            ? "Nothing yet. Type what your group needs in the box above — a lesson takes about a minute to write."
-            : tab === "published"
-              ? "Nothing published yet. Open a draft and publish it once you're happy with it."
-              : "Nothing archived."}
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              padding: 5,
+              borderRadius: 999,
+              background: TROUGH,
+            }}
+          >
+            {TABS.map((t) => {
+              const on = t.key === tab;
+              return (
+                <Link
+                  key={t.key}
+                  href={`/console/practice-ai?tab=${t.key}`}
+                  aria-current={on ? "page" : undefined}
+                  className="pa-tap"
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 999,
+                    textDecoration: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: on ? INK : SOFT,
+                    background: on ? "#fff" : "transparent",
+                    boxShadow: on ? "0 1px 2px rgba(20,35,46,.1)" : "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t.label}{" "}
+                  <span style={{ opacity: 0.55, fontVariantNumeric: "tabular-nums" }}>
+                    {count(t.key)}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: 18,
-          }}
-        >
-          {rows.map((lesson) => (
-            <Card key={lesson.id} lesson={lesson} />
-          ))}
-        </div>
-      )}
+
+        {rows.length === 0 ? (
+          <div
+            style={{
+              marginTop: 30,
+              borderRadius: 26,
+              background: "#fff",
+              padding: "44px 28px",
+              textAlign: "center",
+              color: SOFT,
+              fontSize: 15.5,
+              lineHeight: 1.6,
+              boxShadow: LIFT_CARD,
+            }}
+          >
+            {TABS.find((t) => t.key === tab)?.empty}
+          </div>
+        ) : (
+          <div className="pa-grid" style={{ marginTop: 30 }}>
+            {rows.map((lesson) => (
+              <Card key={lesson.id} lesson={lesson} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -232,90 +227,99 @@ export default async function PracticeAiPage({
 /**
  * One lesson.
  *
- * Each KIND of lesson looks different — its own wash, accent and mark on the
- * header band. A library where every card is identical is a library you have to
- * read word by word; giving grammar, vocabulary, skills and exam technique
- * distinct faces means the grid can be scanned instead.
+ * Each KIND of lesson gets its own colour plate and its own two-letter code, so
+ * a wall of cards can be scanned rather than read word by word. Two letters
+ * rather than a symbol because the plate is 108px tall and the glyph is set at
+ * 30px: a "¶" at that size reads as a smudge, and "GR" reads as grammar.
  *
- * The band also carries the thing a teacher most wants to know at a glance and
- * would otherwise have to open the lesson for: whether anyone has been set it.
+ * The plate also carries the thing a teacher most wants to know at a glance and
+ * would otherwise have to open the lesson for: where it stands.
  */
 function Card({ lesson }: { lesson: LessonCard }) {
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
-  const used = lesson.groups.length > 0;
+  const published = lesson.status === "published";
+
+  const kicker = [BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint, lesson.level]
+    .filter(Boolean)
+    .join(" · ");
+
+  // One line, and it answers "is this doing anything?" — how big it is, and
+  // where it has been. A lesson set to nobody says so rather than staying quiet.
+  const meta = [
+    `${lesson.exerciseCount} exercise${lesson.exerciseCount === 1 ? "" : "s"}`,
+    lesson.groups.length > 0
+      ? `${lesson.completed}/${lesson.assigned} done${lesson.averagePercent != null ? ` · ${lesson.averagePercent}%` : ""}`
+      : lesson.shareEnabled
+        ? "link on"
+        : "not set to anyone",
+  ].join(" · ");
 
   return (
     <Link
       href={`/console/practice-ai/${lesson.id}`}
       className="pa-card"
       style={{
-        display: "flex",
-        flexDirection: "column",
+        display: "block",
+        borderRadius: 26,
         background: "#fff",
-        border: `1px solid ${LINE}`,
-        borderRadius: 16,
         overflow: "hidden",
         textDecoration: "none",
-        boxShadow: "0 1px 2px rgba(21,23,28,.04)",
+        color: INK,
+        boxShadow: LIFT_CARD,
       }}
     >
       <div
         style={{
-          background: tint.wash,
-          padding: "14px 18px",
+          height: 108,
           display: "flex",
-          alignItems: "center",
-          gap: 11,
-          borderBottom: `1px solid ${LINE}`,
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          padding: "18px 20px",
+          background: tint.wash,
         }}
       >
         <span
           aria-hidden
+          style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", color: tint.ink }}
+        >
+          {tint.code}
+        </span>
+        <span
           style={{
-            width: 30,
-            height: 30,
-            borderRadius: 9,
-            background: "#fff",
-            color: tint.ink,
-            display: "grid",
-            placeItems: "center",
-            fontSize: 15,
+            padding: "6px 14px",
+            borderRadius: 999,
+            fontSize: 12,
             fontWeight: 700,
-            flex: "none",
-            boxShadow: "0 1px 2px rgba(21,23,28,.08)",
+            background: published ? INK : "rgba(255,255,255,0.85)",
+            color: published ? PAPER : "#4d5f68",
+            whiteSpace: "nowrap",
           }}
         >
-          {tint.mark}
-        </span>
-        <span style={{ minWidth: 0 }}>
-          <span
-            style={{
-              display: "block",
-              fontSize: 10.5,
-              letterSpacing: ".12em",
-              textTransform: "uppercase",
-              color: tint.ink,
-              fontWeight: 700,
-            }}
-          >
-            {BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}
-          </span>
-          <span style={{ display: "block", fontSize: 12, color: MUTED, marginTop: 1 }}>
-            {lesson.level ? `${lesson.level} · ` : ""}
-            {lesson.exerciseCount} exercise{lesson.exerciseCount === 1 ? "" : "s"}
-            {lesson.language !== "en" ? ` · +${lesson.language.toUpperCase()}` : ""}
-          </span>
+          {published ? "Published" : lesson.status === "archived" ? "Archived" : "Draft"}
         </span>
       </div>
 
-      <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+      <div style={{ padding: "20px 22px 22px" }}>
         <div
           style={{
-            fontSize: 16.5,
-            fontWeight: 650,
-            color: "#15171C",
-            lineHeight: 1.32,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: ".08em",
+            textTransform: "uppercase",
+            color: FAINT,
+          }}
+        >
+          {kicker}
+        </div>
+        <h3
+          style={{
+            fontFamily: SERIF,
+            fontWeight: 600,
+            fontSize: 25,
+            lineHeight: 1.2,
             letterSpacing: "-.01em",
+            color: INK,
+            margin: "9px 0 16px",
             display: "-webkit-box",
             WebkitLineClamp: 3,
             WebkitBoxOrient: "vertical",
@@ -323,35 +327,42 @@ function Card({ lesson }: { lesson: LessonCard }) {
           }}
         >
           {lesson.title}
-        </div>
-
+        </h3>
         <div
           style={{
-            marginTop: "auto",
-            paddingTop: 12,
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            fontSize: 12.5,
+            justifyContent: "space-between",
+            gap: 12,
+            fontSize: 14,
+            color: SOFT,
           }}
         >
           <span
             style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: used ? "#16794C" : "#D5D2CA",
-              flex: "none",
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
-          />
-          <span style={{ color: used ? "#16794C" : FAINT, fontWeight: used ? 600 : 400 }}>
-            {used
-              ? `${lesson.completed}/${lesson.assigned} done${lesson.averagePercent != null ? ` · ${lesson.averagePercent}%` : ""}`
-              : "Not set to anyone"}
+          >
+            {meta}
           </span>
-          {lesson.shareEnabled ? (
-            <span style={{ marginLeft: "auto", color: "#A9721F", fontSize: 11.5 }}>link on</span>
-          ) : null}
+          <span
+            aria-hidden
+            style={{
+              flex: "none",
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              background: WASH,
+              display: "grid",
+              placeItems: "center",
+              color: INK,
+            }}
+          >
+            →
+          </span>
         </div>
       </div>
     </Link>

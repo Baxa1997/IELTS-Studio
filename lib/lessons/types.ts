@@ -61,6 +61,26 @@ const baseExercise = z.object({
   /** The point being practised, e.g. "third-person-s". This is what lets a
    *  report say WHICH thing a class missed rather than only how many marks. */
   tag: z.string().min(1).max(60),
+  /**
+   * What this item practises, named against the topic spec the lesson was
+   * generated from: which use, which form, and which misconception a wrong
+   * answer here reveals.
+   *
+   * MUST BE MIRRORED HERE, not just in the engine. Zod strips unknown keys, so
+   * a field the engine writes and this schema does not declare is silently
+   * dropped the moment a lesson is loaded — the column would hold it and no
+   * page could ever read it.
+   *
+   * All optional: a lesson generated before the topic spec existed has none,
+   * and the spec call is allowed to fail without taking the build with it.
+   * Anything reading these has to handle their absence rather than assuming
+   * every lesson is tagged.
+   */
+  use: z.string().max(60).optional(),
+  form: z.string().max(40).optional(),
+  /** The handle a diagnostic report is built on: "you drop the auxiliary be",
+   *  not "8 out of 20". */
+  misconception: z.string().max(60).optional(),
   prompt: z.string().min(1),
   /** Shown after marking, whatever the outcome — the reason, not just a tick. */
   why: z.string().optional(),
@@ -81,6 +101,17 @@ const closedExercise = baseExercise.extend({
   answers: z.array(z.string()).min(1),
   /** `a`/`an` and British/American pairs are accepted unless this is false. */
   strict: z.boolean().optional(),
+  /**
+   * Which error each WRONG option diagnoses, keyed by option index as a string
+   * — the same convention `answers` uses. `{ "0": "drop_aux_be" }` on an item
+   * whose key is index 1; the key's own index is absent, because the key is not
+   * a mistake.
+   *
+   * This is what lets a wrong answer be reported as a misunderstanding rather
+   * than a lost mark. Optional for the same reason the other tags are: lessons
+   * generated before the topic spec existed carry none.
+   */
+  option_misconceptions: z.record(z.string(), z.string()).optional(),
 });
 
 const openExercise = baseExercise.extend({
@@ -151,7 +182,12 @@ export const lessonContentSchema = z.object({
     /** One measurable line: "by the end you can …". */
     objective: z.string().min(1),
   }),
-  sections: z.array(sectionSchema).min(1).max(12),
+  // Twelve was the cap while the grammar blueprint had seven sections. It now
+  // has eleven, which left one slot of headroom before a model that volunteered
+  // a section nobody asked for would fail the whole document at PARSE time,
+  // long after the engine had validated and stored it. The ceiling is a sanity
+  // bound, not a design constraint, so it moves.
+  sections: z.array(sectionSchema).min(1).max(16),
   exercises: z.array(exerciseSchema).min(1).max(40),
 });
 

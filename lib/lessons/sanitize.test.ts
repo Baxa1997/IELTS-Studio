@@ -20,6 +20,30 @@ describe("what a lesson may contain", () => {
     expect(out).toContain("<li>one</li>");
   });
 
+  it("keeps the quick check's hidden answers", () => {
+    // <details> is the only interactive tag on the allow-list. It earns that
+    // because it needs no script — the disclosure is the browser's, not ours.
+    const out = sanitizeLessonHtml(
+      "<details><summary>Is this forever?</summary><p>No — temporary.</p></details>",
+    );
+    expect(out).toContain("<details>");
+    expect(out).toContain("<summary>Is this forever?</summary>");
+    expect(out).toContain("No — temporary.");
+  });
+
+  it("refuses to let a lesson ship its answers already showing", () => {
+    // `open` is not an allowed attribute, so a generated `<details open>`
+    // arrives closed and the learner still has to commit to a guess first.
+    const out = sanitizeLessonHtml("<details open><summary>Q</summary><p>A</p></details>");
+    expect(out).toContain("<details>");
+    expect(out).not.toContain("open");
+  });
+
+  it("keeps the core-idea box's class", () => {
+    const out = sanitizeLessonHtml('<div class="lp-idea">Simple = always true.</div>');
+    expect(out).toContain('class="lp-idea"');
+  });
+
   it("keeps a table, including the attributes that hold it together", () => {
     const out = sanitizeLessonHtml(
       '<table><caption>Forms</caption><tr><th scope="col" colspan="2">Past</th></tr>' +

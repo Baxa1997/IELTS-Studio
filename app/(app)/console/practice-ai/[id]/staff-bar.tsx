@@ -1,81 +1,64 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { useActionFeedback } from "@/components/console/toast";
-
 import {
-  rotateShareLink,
-  setLessonSharing,
-  setLessonStatus,
-  type LessonActionState,
-} from "./actions";
+  GOOD_BG,
+  GOOD_INK,
+  HAIRLINE,
+  INK,
+  MUTED,
+  PAPER,
+  SOFT,
+  TROUGH,
+  WARN_BG,
+  WARN_INK,
+} from "@/lib/lessons/theme";
+
+import { setLessonStatus, type LessonActionState } from "./actions";
 import { ShareModal, type GroupOption } from "./share-modal";
 
 /**
- * The things only a teacher can do to a lesson: publish it, share it, retire it.
+ * The things only a teacher can do to a lesson: publish it, set it, retire it.
  *
- * Sits above the lesson rather than inside it, so what is below stays exactly
- * the page a learner sees. Mixing staff controls into the content is how a
- * "preview" stops being a preview.
+ * A STICKY BAR above the lesson rather than a panel inside it. Two reasons.
+ * What is below has to stay exactly the page a learner sees — mixing staff
+ * controls into the content is how a "preview" stops being a preview. And the
+ * lesson page is long: a teacher who has scrolled to the last exercise and
+ * decided to set it should not have to scroll back up to do it.
+ *
+ * Sharing moved OUT of here and into the modal, where it belongs beside the
+ * other way a lesson reaches people. It used to be a second row of controls
+ * that was only ever relevant after publishing, competing with the row above it.
  */
 
-const INK = "#15171C";
-const MUTED = "#5C616C";
-const FAINT = "#8B909B";
-const LINE = "#C5C4BE";
-const EMBER = "#E85A2C";
-const GREEN = "#16794C";
-
-const STATUS_COPY: Record<string, { label: string; tone: string; bg: string; note: string }> = {
-  draft: {
-    label: "Draft",
-    tone: "#A9721F",
-    bg: "#FBEEE0",
-    note: "Only you can see this. Publish it to set it to a group or share a link.",
-  },
-  published: {
-    label: "Published",
-    tone: GREEN,
-    bg: "#EAF4EE",
-    note: "Ready to set as homework or share.",
-  },
-  archived: {
-    label: "Archived",
-    tone: "#737189",
-    bg: "#F1F0EB",
-    note: "Retired. Anyone who already did it keeps their result.",
-  },
+const STATUS: Record<string, { label: string; bg: string; ink: string }> = {
+  draft: { label: "Draft", bg: WARN_BG, ink: WARN_INK },
+  published: { label: "Published", bg: GOOD_BG, ink: GOOD_INK },
+  archived: { label: "Archived", bg: TROUGH, ink: SOFT },
 };
 
 export function LessonStaffBar({
   id,
+  title,
   status,
   shareEnabled,
   shareToken,
-  hasAttempts,
   groups,
 }: {
   id: string;
+  title: string;
   status: "draft" | "published" | "archived";
   shareEnabled: boolean;
   shareToken: string | null;
-  hasAttempts: boolean;
   groups: GroupOption[];
 }) {
   const [statusState, statusAction, statusPending] = useActionState(
     setLessonStatus,
     {} as LessonActionState,
   );
-  const [shareState, shareAction, sharePending] = useActionState(
-    setLessonSharing,
-    {} as LessonActionState,
-  );
-  const [rotateState, rotateAction, rotatePending] = useActionState(
-    rotateShareLink,
-    {} as LessonActionState,
-  );
-  const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   // Publishing opens the modal, because "published" on its own does nothing for
@@ -90,156 +73,97 @@ export function LessonStaffBar({
   }
 
   useActionFeedback(statusState, { keepOpen: true });
-  useActionFeedback(shareState, { keepOpen: true });
-  useActionFeedback(rotateState, { keepOpen: true });
 
-  const copy = STATUS_COPY[status];
-  const shareUrl =
-    shareToken && typeof window !== "undefined" ? `${window.location.origin}/p/${shareToken}` : null;
+  const badge = STATUS[status] ?? STATUS.draft;
 
   return (
     <div
-      className="pa-staffbar"
+      className="pa-bar"
       style={{
-        background: "#fff",
-        border: `1px solid ${LINE}`,
-        borderRadius: 14,
-        padding: "14px 16px",
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
         display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        maxWidth: 820,
+        alignItems: "center",
+        gap: 16,
+        padding: "14px 28px",
+        background: "rgba(253,251,247,0.9)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderBottom: `1px solid ${HAIRLINE}`,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <span
-          style={{
-            background: copy.bg,
-            color: copy.tone,
-            borderRadius: 999,
-            padding: "4px 12px",
-            fontSize: 12.5,
-            fontWeight: 600,
-          }}
-        >
-          {copy.label}
-        </span>
-        <span style={{ fontSize: 12.5, color: MUTED, flex: 1, minWidth: 200 }}>{copy.note}</span>
+      <Link href="/console/practice-ai" className="pa-ghost" style={{ ...pill, color: INK, textDecoration: "none" }}>
+        ← Lessons
+      </Link>
 
-        <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {status !== "published" ? (
-            <form action={statusAction}>
-              <input type="hidden" name="id" value={id} />
-              <input type="hidden" name="status" value="published" />
-              <button type="submit" disabled={statusPending} style={primary}>
-                {statusPending ? "…" : "Publish"}
-              </button>
-            </form>
-          ) : null}
-          {status === "published" ? (
-            <>
-              <button type="button" onClick={() => setShareOpen(true)} style={primary}>
-                Set to a group
-              </button>
-              <form action={statusAction}>
-                <input type="hidden" name="id" value={id} />
-                <input type="hidden" name="status" value="archived" />
-                <button type="submit" disabled={statusPending} style={ghost}>
-                  Archive
-                </button>
-              </form>
-            </>
-          ) : null}
-          {status === "archived" ? (
-            <form action={statusAction}>
-              <input type="hidden" name="id" value={id} />
-              <input type="hidden" name="status" value="published" />
-              <button type="submit" disabled={statusPending} style={ghost}>
-                Restore
-              </button>
-            </form>
-          ) : null}
-        </span>
-      </div>
+      <span
+        style={{
+          padding: "6px 14px",
+          borderRadius: 999,
+          background: badge.bg,
+          color: badge.ink,
+          fontSize: 13,
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {badge.label}
+      </span>
 
-      {/* Sharing only makes sense once it is published — a draft handed to a
-          stranger is a half-finished lesson with your name on it. */}
-      {status === "published" ? (
-        <div
-          style={{
-            borderTop: `1px solid #D4D3CE`,
-            paddingTop: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <form action={shareAction}>
+      <span
+        className="pa-bar-hide"
+        style={{
+          fontSize: 14,
+          color: SOFT,
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {title}
+      </span>
+
+      <div
+        style={{
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
+        }}
+      >
+        {status !== "published" ? (
+          <form action={statusAction}>
             <input type="hidden" name="id" value={id} />
-            <input type="hidden" name="enable" value={shareEnabled ? "off" : "on"} />
-            <button type="submit" disabled={sharePending} style={shareEnabled ? ghost : primary}>
-              {shareEnabled ? "Turn the link off" : "Share a link"}
+            <input type="hidden" name="status" value="published" />
+            <button type="submit" disabled={statusPending} className="pa-lift" style={raised}>
+              {statusPending ? "…" : status === "archived" ? "Restore" : "Publish"}
             </button>
           </form>
-
-          {shareEnabled && shareUrl ? (
-            <>
-              <code
-                style={{
-                  flex: 1,
-                  minWidth: 220,
-                  fontSize: 12.5,
-                  color: MUTED,
-                  background: "#FAFAF8",
-                  border: `1px solid ${LINE}`,
-                  borderRadius: 8,
-                  padding: "7px 10px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {shareUrl}
-              </code>
-              <button
-                type="button"
-                onClick={() => {
-                  void navigator.clipboard?.writeText(shareUrl);
-                  setCopied(true);
-                }}
-                style={ghost}
-              >
-                {copied ? "Copied" : "Copy"}
+        ) : (
+          <>
+            <button type="button" onClick={() => setShareOpen(true)} className="pa-lift" style={raised}>
+              Set to a group
+            </button>
+            <form action={statusAction}>
+              <input type="hidden" name="id" value={id} />
+              <input type="hidden" name="status" value="archived" />
+              <button type="submit" disabled={statusPending} className="pa-lift" style={raised}>
+                Archive
               </button>
-              <form action={rotateAction}>
-                <input type="hidden" name="id" value={id} />
-                <button
-                  type="submit"
-                  disabled={rotatePending}
-                  title="Mint a new link. Every link you have already sent stops working."
-                  style={{ ...ghost, color: EMBER, borderColor: "rgba(232,90,44,.35)" }}
-                >
-                  New link
-                </button>
-              </form>
-            </>
-          ) : null}
+            </form>
+          </>
+        )}
 
-          {shareEnabled ? (
-            <span style={{ flexBasis: "100%", fontSize: 12, color: FAINT }}>
-              Results from this link stay private — nothing anyone does here reaches your reports.
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      {hasAttempts ? (
-        <p style={{ margin: 0, fontSize: 12, color: FAINT, borderTop: `1px solid #D4D3CE`, paddingTop: 10 }}>
-          Someone has already done this lesson, so its content is frozen — a score has to mean the
-          lesson they actually sat. Make a new one to change anything.
-        </p>
-      ) : null}
+        {/* The one thing on this bar a teacher does for themselves rather than
+            to the lesson: see it the way the class will. */}
+        <Link href={`/learn/${id}`} className="pa-dark" style={{ ...dark, textDecoration: "none" }}>
+          Open practice →
+        </Link>
+      </div>
 
       <ShareModal
         lessonId={id}
@@ -250,34 +174,56 @@ export function LessonStaffBar({
         onClose={() => setShareOpen(false)}
       />
 
-      {statusState.error || shareState.error || rotateState.error ? (
-        <p style={{ margin: 0, fontSize: 12.5, color: "#A63A30" }} role="alert">
-          {statusState.error ?? shareState.error ?? rotateState.error}
+      {statusState.error ? (
+        <p
+          style={{ flexBasis: "100%", margin: 0, fontSize: 13, color: WARN_INK }}
+          role="alert"
+        >
+          {statusState.error}
         </p>
       ) : null}
     </div>
   );
 }
 
-const primary: React.CSSProperties = {
+const pill: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "9px 16px",
+  borderRadius: 999,
   border: 0,
-  borderRadius: 9,
-  background: INK,
-  color: "#fff",
-  padding: "8px 15px",
+  background: "transparent",
   fontFamily: "inherit",
-  fontSize: 13,
-  fontWeight: 600,
+  fontSize: 14,
+  fontWeight: 500,
   cursor: "pointer",
+  whiteSpace: "nowrap",
 };
 
-const ghost: React.CSSProperties = {
-  border: `1px solid ${LINE}`,
-  borderRadius: 9,
+const raised: React.CSSProperties = {
+  padding: "11px 18px",
+  borderRadius: 999,
+  border: 0,
   background: "#fff",
   color: MUTED,
-  padding: "8px 13px",
   fontFamily: "inherit",
-  fontSize: 13,
+  fontSize: 14,
+  fontWeight: 500,
   cursor: "pointer",
+  whiteSpace: "nowrap",
+  boxShadow: "0 1px 2px rgba(20,35,46,.06), 0 8px 18px -14px rgba(20,35,46,.4)",
+};
+
+const dark: React.CSSProperties = {
+  padding: "11px 20px",
+  borderRadius: 999,
+  border: 0,
+  background: INK,
+  color: PAPER,
+  fontFamily: "inherit",
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
 };

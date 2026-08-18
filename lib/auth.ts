@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -107,7 +108,23 @@ export function safeNextPath(raw: string | null | undefined): string | null {
  * their role from their profile row, read under RLS (own row only).
  * Returns null when unauthenticated or authenticated-but-not-onboarded.
  */
-export async function getSession(): Promise<Session | null> {
+/**
+ * Who is asking, once per request.
+ *
+ * WRAPPED IN `cache()`, and that wrapper is worth more than it looks. This
+ * function makes a network call to Supabase Auth (`getUser` verifies the token
+ * with the auth server — it does not merely read a cookie) and then a second
+ * query for the profile and its organisation. It is called by the app layout,
+ * by the console layout, and again by every page inside them, so a single
+ * navigation was paying for that pair three or four times over, in series,
+ * before anything rendered.
+ *
+ * `cache()` is React's own request-scoped memo: the first caller in a render
+ * pass does the work and the rest get the same promise. It is per-REQUEST, so
+ * nothing leaks between users — which is the property that makes it safe to use
+ * on the function that decides who someone is.
+ */
+export const getSession = cache(async function getSession(): Promise<Session | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -136,7 +153,7 @@ export async function getSession(): Promise<Session | null> {
   const profile: Profile = { ...rest, org };
 
   return { user: { id: user.id, email: user.email }, role: profile.role, profile };
-}
+});
 
 /** Guard for org-scoped pages (/dashboard, /console). Sends super_admins to /admin. */
 export async function requireOrgUser(): Promise<{
