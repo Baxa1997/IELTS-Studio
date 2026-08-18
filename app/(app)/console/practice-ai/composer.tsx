@@ -267,15 +267,14 @@ export function Composer() {
         blueprint?: string | null;
       }>("intake", { brief: text, language });
 
-      // Only stop if the engine actually wants something. The settings have
-      // their own door now — the gear beside Plan — so this no longer has to
-      // open just to make them reachable, and a modal whose only content is a
-      // Continue button is a modal that teaches people to dismiss modals.
+      // ALWAYS STOP HERE. It used to skip straight past when the engine had no
+      // questions, on the reasoning that a modal whose only content is a
+      // Continue button teaches people to dismiss modals. That was right while
+      // the dialog held nothing else — it no longer does. The exercise count
+      // lives here now, and it is the one spec a teacher changes on almost
+      // every lesson, because it is how long their class is. Skipping the
+      // dialog meant they only found out they had got twelve afterwards.
       const questions = intake.questions ?? [];
-      if (questions.length === 0) {
-        await proceed({}, intake.blueprint ?? null, override);
-        return;
-      }
       setPhase({ step: "asking", questions, blueprint: intake.blueprint ?? null, brief: text });
     } catch (err) {
       setPhase({ step: "error", message: (err as Error).message });
@@ -563,6 +562,8 @@ export function Composer() {
           questions={phase.questions}
           answers={answers}
           onAnswer={(id, value) => setAnswers((a) => ({ ...a, [id]: value }))}
+          count={count}
+          setCount={setCount}
           planFirst={planFirst}
           onCancel={() => setPhase({ step: "idle" })}
           onGo={guard(() => proceed(answers, phase.blueprint, phase.brief))}
@@ -1264,6 +1265,8 @@ function SetupDialog({
   questions,
   answers,
   onAnswer,
+  count,
+  setCount,
   planFirst,
   onCancel,
   onGo,
@@ -1272,6 +1275,8 @@ function SetupDialog({
   questions: Question[];
   answers: Record<string, string>;
   onAnswer: (id: string, value: string) => void;
+  count: number;
+  setCount: (fn: (c: number) => number) => void;
   planFirst: boolean;
   onCancel: () => void;
   onGo: () => void;
@@ -1308,6 +1313,22 @@ function SetupDialog({
             </div>
           </div>
         ))}
+
+        {/* HOW MANY, on the way in.
+            This lives in Settings too, but Settings is a door you have to know
+            to open — and the count is the one spec a teacher changes on almost
+            every lesson, because it is how long their class is. Asking here, in
+            the dialog they are already looking at, is the difference between a
+            teacher setting it and a teacher discovering afterwards that they
+            got twelve. */}
+        <div style={{ display: "grid", gap: 10 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>
+            How many exercises?
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <ItemCount count={count} setCount={setCount} />
+          </div>
+        </div>
       </div>
 
       {/* Sticks to the bottom of the sheet, so a long list of questions can

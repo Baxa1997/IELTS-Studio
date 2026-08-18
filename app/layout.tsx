@@ -89,7 +89,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
+      {/* `suppressHydrationWarning` for the BODY TAG ONLY, and only its own
+          attributes — React still reports every mismatch inside it.
+
+          Grammarly and similar extensions write `data-gr-ext-installed` and
+          `data-new-gr-c-s-check-loaded` onto <body> before React hydrates, so
+          the client tree has attributes the server never sent. It is not our
+          bug and cannot be fixed from our side: the markup is modified in the
+          user's browser. What it DID cost us is real, though — a permanent red
+          error badge on every page in dev, which is exactly how a genuine
+          hydration bug goes unnoticed. */}
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         {children}
         <Analytics />
       </body>
