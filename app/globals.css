@@ -1023,15 +1023,25 @@
   text-decoration-color: #C1502F;
   color: #8A7F79;
 }
+/* A timeline is a DIAGRAM, and this used to be styled as a code block: grey
+   box, hard border, monospace. On a projector it read as source code, which is
+   the complaint that started this. The blueprint now asks for a small table
+   instead of dashes-and-arrows, so this is the fallback for a model that draws
+   one anyway — monospace is kept because ASCII alignment collapses without it,
+   but nothing else about it says "code". */
 .lp-lesson .lp-timeline {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  background: #FAFAF8;
-  border: 1px solid #E7E5DF;
-  border-radius: 10px;
-  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #3F4147;
+  background: #FBF6F2;
+  border: 0;
+  border-left: 3px solid #E0BFA8;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px;
   margin: 0 0 14px;
   white-space: pre-wrap;
+  overflow-x: auto;
 }
 /* The one line the lesson turns on. Deliberately the loudest thing in the prose
    column — it is the sentence a teacher writes on the board and a learner
