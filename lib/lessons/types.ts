@@ -88,8 +88,21 @@ const baseExercise = z.object({
 
 const closedExercise = baseExercise.extend({
   type: z.enum(CLOSED_TYPES),
-  /** MCQ choices. Absent for typed answers. */
-  options: z.array(z.string().min(1)).min(2).max(8).optional(),
+  /**
+   * The choices. Absent for typed answers.
+   *
+   * THE CEILING IS FOR `ordering`, NOT FOR MULTIPLE CHOICE. It was 8, written
+   * when this field only ever held MCQ options — and then an `ordering` item
+   * arrived holding one entry per WORD of a sentence to rearrange. Twelve
+   * tokens failed the parse, `loadLesson` returned null, and the whole lesson
+   * 404'd: one item over a limit nobody had thought about took out a page of
+   * finished teaching. Two of fifteen stored lessons were dead this way.
+   *
+   * A multiple-choice item must still be 2–4 options; that is enforced where it
+   * can be acted on, in the engine's validator, which can drop a single bad
+   * item rather than losing the lesson. This number is only a sanity bound.
+   */
+  options: z.array(z.string().min(1)).min(2).max(24).optional(),
   /**
    * Every answer that counts as right, compared after normalisation.
    *
