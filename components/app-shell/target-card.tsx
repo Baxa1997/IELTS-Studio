@@ -6,8 +6,18 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
  * current target band and whether they've been calibrated by the diagnostic. Shared
  * by the app layout (dashboard/activities) and the writing library so the rail looks
  * the same everywhere.
+ *
+ * NOTHING IMPORTS THIS TODAY. The rail it was drawn for no longer mounts it,
+ * and the only surviving reference is a doc comment in lib/plan/service.ts. It
+ * is kept rather than deleted because the design it belongs to is still live —
+ * but if the rail has not taken it back by the next pass over this folder, it
+ * should go, and git will still have it.
+ *
+ * The `done` prop went with the line that used it: that line had been commented
+ * out, so the component took a boolean it could not act on and every caller had
+ * to invent one.
  */
-export function TargetCard({ target, done }: { target: number; done: boolean }) {
+export function TargetCard({ target }: { target: number }) {
   // Sits on the dark green rail (see shell.tsx) — a quiet translucent tile
   // rather than a loud gradient card.
   return (
@@ -40,9 +50,6 @@ export function TargetCard({ target, done }: { target: number; done: boolean }) 
           overall
         </span>
       </div>
-      {/* <div style={{ fontFamily: SANS, fontWeight: 400, fontSize: 12, lineHeight: 1.4, color: "#cdcffb", marginTop: 6 }}>
-        {done ? "You're being tracked — keep practising to close the gap." : ""}
-      </div> */}
     </div>
   );
 }

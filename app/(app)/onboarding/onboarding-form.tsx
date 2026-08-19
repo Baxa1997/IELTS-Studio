@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 
 import { SELF_REPORT_BANDS, TARGET_BANDS, type StudyPlanInput } from "@/lib/plan/types";
 
@@ -27,6 +27,10 @@ interface Props {
  * level-matched immediately and the paced plan has a date to work from. On first
  * setup we then route into the diagnostic to confirm the real baseline.
  */
+/** Nothing changes after the first client render, so there is nothing to
+ *  subscribe to — the two snapshots carry the whole answer. */
+const subscribeNever = () => () => {};
+
 export function OnboardingForm({ mode, initial }: Props) {
   // "" = "not sure yet" → null self-report (difficulty falls back to default).
   const [self, setSelf] = useState<string>(initial.selfReportedBand != null ? String(initial.selfReportedBand) : "");
@@ -35,10 +39,19 @@ export function OnboardingForm({ mode, initial }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // Compute "today" on the client only — avoids an SSR/CSR hydration mismatch from
-  // the date boundary differing between server and browser.
-  const [minDate, setMinDate] = useState<string>("");
-  useEffect(() => setMinDate(new Date().toISOString().slice(0, 10)), []);
+  // Compute "today" on the client only — avoids an SSR/CSR hydration mismatch
+  // from the date boundary differing between server and browser.
+  //
+  // Asked as a snapshot rather than written into state from an effect. It was
+  // `useState("")` plus a setState in an effect, which is an extra render for a
+  // value that is fixed the moment the browser has it; `useSyncExternalStore`
+  // returns "" on the server and the date on the client, which is the same
+  // outcome in one pass.
+  const minDate = useSyncExternalStore(
+    subscribeNever,
+    () => new Date().toISOString().slice(0, 10),
+    () => "",
+  );
 
   function submit() {
     setError(null);

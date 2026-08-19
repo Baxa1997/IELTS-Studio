@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import type { DemoTab } from "./demo-content";
 import { DemoScreen } from "./demo-screens";
@@ -26,12 +26,21 @@ export function DemoTabs({
 }) {
   const [active, setActive] = useState(0);
 
-  useEffect(() => {
-    if (!hashSync) return;
-    const slug = window.location.hash.slice(1);
-    const i = tabs.findIndex((t) => t.slug === slug);
-    if (i >= 0) setActive(i);
-  }, [hashSync, tabs]);
+  // THE HASH READ DURING RENDER, not written in from an effect.
+  //
+  // It was an effect that setState on mount, so the page painted tab one and
+  // then jumped to the linked tab — visible on a slow phone, and an extra
+  // render every time. Reading it during the first client render and adjusting
+  // there means the linked tab is the first thing drawn. Guarded by a ref so it
+  // happens once: after that the hash follows the tabs rather than leading
+  // them, and re-reading it would fight the user's own clicks. State rather
+  // than a ref because refs may not be read during render.
+  const [readHash, setReadHash] = useState(false);
+  if (hashSync && !readHash && typeof window !== "undefined") {
+    setReadHash(true);
+    const i = tabs.findIndex((t) => t.slug === window.location.hash.slice(1));
+    if (i >= 0 && i !== active) setActive(i);
+  }
 
   const select = (i: number) => {
     setActive(i);

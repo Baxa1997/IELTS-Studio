@@ -65,14 +65,25 @@ export function WordLookup({
   const reqIdRef = useRef(0);
 
   // Restore the last-used language so repeat lookups are one-tap.
-  useEffect(() => {
+  //
+  // Adjusted during the FIRST client render rather than written in from an
+  // effect. It cannot be a `useState` initialiser: this component is rendered
+  // on the server too, where there is no localStorage, and returning a
+  // different value there than in the browser is a hydration mismatch. Doing it
+  // during render, once, gets the remembered language into the first paint
+  // without a second render — the "adjusting state while rendering" pattern
+  // React documents. A ref would read more naturally and is not allowed: refs
+  // may not be READ during render, because a render can be thrown away.
+  const [restored, setRestored] = useState(false);
+  if (!restored && typeof window !== "undefined") {
+    setRestored(true);
     try {
       const saved = window.localStorage.getItem(LANG_KEY);
       if (saved) setLanguage(saved);
     } catch {
-      /* ignore */
+      /* a browser with storage disabled just does not remember */
     }
-  }, []);
+  }
 
   const close = useCallback(() => {
     reqIdRef.current++; // discard any reply still in flight
@@ -175,9 +186,23 @@ export function WordLookup({
     [],
   );
 
-  // When a new word is selected and we already know the language, look it up at once.
+  // When a new word is selected and we already know the language, look it up.
+  //
+  // Through a timeout, which is doing two jobs. It keeps the state writes
+  // inside `translate` out of the effect body — an effect that sets state
+  // synchronously is an extra render before the browser has painted the word
+  // the reader just tapped. And the cleanup CANCELS it, so tapping through five
+  // words in a second makes one request instead of five; before, all five went
+  // out and four were discarded on arrival by the request-id guard.
   useEffect(() => {
-    if (sel && language.trim()) void translate(sel.word, sel.sentence, language);
+    if (!sel || !language.trim()) return;
+    const word = sel.word;
+    const sentence = sel.sentence;
+    const timer = setTimeout(() => void translate(word, sentence, language), 0);
+    return () => clearTimeout(timer);
+    // `language` is read but deliberately not a dependency: changing it while a
+    // card is open re-runs the lookup through its own handler, and listing it
+    // here would fire a second one the moment the select is touched.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sel]);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import type { AxisFigure, Figure, PieFigure, TableFigure } from "@/lib/writing/figure";
@@ -25,10 +25,20 @@ const AXIS = "#C7C3B4";
 /** Up to 8 distinct series/slice colours (brand indigo first). */
 const PALETTE = ["#3B43B5", "#2F8F5B", "#C7853A", "#5B55D6", "#2C7A9A", "#9A4F8E", "#B5852A", "#6E7388"];
 
+/** Nothing to subscribe to: `mounted` changes once, when React reaches the
+ *  client, and `useSyncExternalStore` gets that from its two snapshots alone. */
+const subscribeNever = () => () => {};
+
 export function FigureView({ figure, expandable = true }: { figure: Figure; expandable?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // WHETHER WE ARE IN THE BROWSER, without a state write in an effect.
+  //
+  // It was `useState(false)` plus `useEffect(() => setMounted(true), [])`,
+  // which is the classic hydration guard and also a synchronous setState in an
+  // effect — an extra render for a value that never changes again.
+  // `useSyncExternalStore` asks the question directly: the server snapshot is
+  // false, the client snapshot is true, and nothing ever needs to re-subscribe.
+  const mounted = useSyncExternalStore(subscribeNever, () => true, () => false);
 
   // Close the modal on Escape.
   useEffect(() => {
@@ -307,16 +317,29 @@ function PieFigureView({ figure, big = false }: { figure: PieFigure; big?: boole
   const cy = 110;
   const r = 100;
   const u = figure.unit ?? "";
-  let acc = -Math.PI / 2; // start at 12 o'clock
+
+  // ANGLES COMPUTED UP FRONT, not accumulated inside the map.
+  //
+  // This was a `let acc` mutated during the render of each slice, which reads
+  // fine and is a real hazard: React may render a component more than once for
+  // one commit, and a variable carried across those calls is state pretending
+  // not to be. A running total belongs in a value derived before the JSX, where
+  // rendering twice produces the same answer twice.
+  // Each wedge's start is the sum of everything before it — computed rather
+  // than carried, so rendering twice for one commit gives the same answer
+  // twice. Quadratic in the number of slices, which is at most eight.
+  const START = -Math.PI / 2; // 12 o'clock
+  const fracs = figure.slices.map((slice) => slice.value / total);
+  const wedges = figure.slices.map((slice, i) => {
+    const before = fracs.slice(0, i).reduce((sum, f) => sum + f, 0);
+    const start = START + before * Math.PI * 2;
+    return { slice, frac: fracs[i], start, end: start + fracs[i] * Math.PI * 2 };
+  });
 
   return (
     <div ref={wrapRef} style={{ position: "relative", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "center" }} onMouseLeave={clear}>
       <svg viewBox="0 0 220 220" width={big ? 300 : 210} height={big ? 300 : 210} role="img" aria-label={figure.title} style={{ flexShrink: 0, maxWidth: "100%" }}>
-        {figure.slices.map((s, i) => {
-          const frac = s.value / total;
-          const start = acc;
-          const end = acc + frac * Math.PI * 2;
-          acc = end;
+        {wedges.map(({ slice: s, frac, start, end }, i) => {
           const color = PALETTE[i % PALETTE.length];
           const pct = `${Math.round(frac * 100)}%`;
           const onMove = (e: React.MouseEvent) => report(e, s.label, `${fmt(s.value)}${u} · ${pct}`);
