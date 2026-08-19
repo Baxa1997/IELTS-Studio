@@ -1113,29 +1113,55 @@ function SpecsModal({
 }: React.ComponentProps<typeof Specs> & { onClose: () => void }) {
   return (
     <Overlay label="Lesson settings" onClose={onClose}>
-      <h2
+      {/* DONE TRAVELS WITH THE TITLE. It used to sit under the last setting, so
+          on a laptop it was off the bottom of a dialog that is now taller than
+          the screen — the way out of the settings was reachable only by
+          scrolling past all of them. Sticky at the top of the scroll port, with
+          the panel's own padding cancelled by negative margins so the bar spans
+          the full width and nothing shows through underneath it as the rows
+          pass behind. */}
+      <div
         style={{
-          fontFamily: SERIF,
-          fontWeight: 600,
-          fontSize: 30,
-          letterSpacing: "-.02em",
-          color: INK,
-          margin: 0,
+          position: "sticky",
+          top: 0,
+          zIndex: 2,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 16,
+          margin: "-30px -30px 20px",
+          padding: "26px 30px 14px",
+          background: PAPER,
+          borderBottom: `1px solid ${HAIRLINE}`,
         }}
       >
-        Settings
-      </h2>
-      <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 22px", lineHeight: 1.55 }}>
-        Anything left on Auto, I&apos;ll choose from your brief.
-      </p>
-
-      <Specs {...spec} />
-
-      <div style={{ display: "flex", marginTop: 24 }}>
-        <button type="button" onClick={onClose} className="pa-ember" style={emberPill}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 600,
+              fontSize: 27,
+              letterSpacing: "-.02em",
+              color: INK,
+              margin: 0,
+            }}
+          >
+            Settings
+          </h2>
+          <p style={{ fontSize: 14.5, color: MUTED, margin: "5px 0 0", lineHeight: 1.5 }}>
+            Anything left on Auto, I&apos;ll choose from your brief.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="pa-ember"
+          style={{ ...emberPill, padding: "11px 24px", flex: "none" }}
+        >
           Done
         </button>
       </div>
+
+      <Specs {...spec} />
     </Overlay>
   );
 }
