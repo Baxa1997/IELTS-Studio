@@ -151,33 +151,7 @@ export async function POST(req: Request): Promise<Response> {
   // on.
   const isPrivate = chat.type === "private" || (chat.type == null && chat.id > 0);
   if (isPrivate && /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/.test(text.toUpperCase())) {
-    const bare = text.toUpperCase();
-    if (await bindStudent(bare, chat.id)) return ok();
-
-    // A CLASS code rather than a personal one. It identifies the roster to
-    // search and nothing else — the bind is decided by the phone, which is why
-    // this code is safe to post in a channel where thirty people can read it.
-    const group = await groupForInviteCode(bare);
-    if (group) {
-      pendingGroup.set(chat.id, group);
-      await callTelegram("sendMessage", {
-        chat_id: chat.id,
-        text:
-          "Almost there. Tap the button below to confirm your phone number — that is how " +
-          "I know which account is yours.\n\nI only use it to find you on your class list.",
-        reply_markup: {
-          keyboard: [[{ text: "📱 Share my number", request_contact: true }]],
-          resize_keyboard: true,
-          one_time_keyboard: true,
-        },
-      });
-      return ok();
-    }
-    await sendMessage(
-      chat.id,
-      "I don't recognise that code. Ask your teacher for a new one — codes stop working " +
-        "after 7 days, and each one can only be used once.",
-    );
+    await handlePrivateCode(text.toUpperCase(), chat.id, { explainUnknown: true });
     return ok();
   }
 
@@ -185,16 +159,16 @@ export async function POST(req: Request): Promise<Response> {
   if (!match) return ok();
   const code = match[1].toUpperCase();
 
-  // ── a student binding their own chat ────────────────────────────────────
-  // Tried BEFORE the private-chat rejection below, because for a student a
-  // private chat is the whole point: this is where their password goes. The two
-  // code spaces cannot collide — a channel code lives in telegram_links and a
-  // student code in telegram_students, and this only looks in the latter, so a
-  // channel code pasted here still falls through to the warning it deserves.
-  if (isPrivate) {
-    const bound = await bindStudent(code, chat.id);
-    if (bound) return ok();
-    // Not a student code either — fall through and explain.
+  // ── a code in a private chat ────────────────────────────────────────────
+  // The SAME handler as a bare code above, and that is the fix rather than a
+  // tidy-up: these were two branches doing nearly the same thing, and the
+  // deep-link one only ever tried the per-student table. So tapping "get your
+  // login" in a class channel — which sends `/start CODE`, not a bare code —
+  // fell past the class invite entirely and answered with the warning meant for
+  // somebody pasting a CHANNEL code into a DM. One path cannot drift from
+  // itself.
+  if (isPrivate && (await handlePrivateCode(code, chat.id, { explainUnknown: false }))) {
+    return ok();
   }
 
   // A CLASS CHANNEL IS NEVER A PRIVATE CHAT, and this check is not pedantry —
@@ -271,6 +245,56 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   return ok();
+}
+
+/**
+ * A code someone sent the bot privately — however it arrived.
+ *
+ * Three things it can be, tried in order: their own student code, a class
+ * invite, or nothing we know. Reached both from a bare code pasted into the
+ * chat and from `/start CODE` behind a deep link, because those are the same
+ * intent typed two ways and keeping them separate is precisely how the class
+ * invite came to work for one and not the other.
+ *
+ * Returns false ONLY for an unrecognised code with `explainUnknown` off, which
+ * is the caller's signal to carry on and treat it as a channel code — a real
+ * case, since `/start CODE` in a DM can also be a mis-opened group link.
+ */
+async function handlePrivateCode(
+  code: string,
+  chatId: number,
+  opts: { explainUnknown: boolean },
+): Promise<boolean> {
+  // Their own code: binds and greets, nothing else needed.
+  if (await bindStudent(code, chatId)) return true;
+
+  // A CLASS code. It identifies the roster to search and nothing else — the
+  // bind is decided by the phone, which is why this one is safe to post in a
+  // channel thirty people can read.
+  const group = await groupForInviteCode(code);
+  if (group) {
+    pendingGroup.set(chatId, group);
+    await callTelegram("sendMessage", {
+      chat_id: chatId,
+      text:
+        "Almost there. Tap the button below to confirm your phone number — that is how " +
+        "I know which account is yours.\n\nI only use it to find you on your class list.",
+      reply_markup: {
+        keyboard: [[{ text: "📱 Share my number", request_contact: true }]],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    });
+    return true;
+  }
+
+  if (!opts.explainUnknown) return false;
+  await sendMessage(
+    chatId,
+    "I don't recognise that code. Ask your teacher for a new one — codes stop working " +
+      "after 7 days, and each one can only be used once.",
+  );
+  return true;
 }
 
 /**
