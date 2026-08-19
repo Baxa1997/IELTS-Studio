@@ -672,9 +672,9 @@ function Modal({
         zIndex: 70,
         background: "rgba(22,22,46,.35)",
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "center",
-        padding: "6vh 16px",
+        padding: "24px 16px",
         overflowY: "auto",
       }}
     >
@@ -685,6 +685,13 @@ function Modal({
         aria-label={title}
         style={{
           width: `min(${width}px, 100%)`,
+          // CENTRED, AND STILL SCROLLABLE WHEN IT IS TALLER THAN THE SCREEN.
+          // `align-items: center` alone clips the TOP of an over-tall child in
+          // a scrolling flex container — you can scroll down but never up to
+          // reach the title. `margin: auto` centres it while it fits and hands
+          // the spare space back when it does not, which is the one combination
+          // that behaves in both cases.
+          margin: "auto",
           background: "#fff",
           borderRadius: 14,
           padding: 20,
@@ -692,9 +699,16 @@ function Modal({
           textAlign: "left",
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
-          <h2 style={{ margin: 0, fontSize: 17, color: INK }}>{title}</h2>
-          <span style={{ fontSize: 12.5, color: FAINT }}>{note}</span>
+        {/* Title and note stack rather than sitting on one baseline: side by
+            side, a note of any length either wrapped under a hanging heading or
+            pushed the close button off the row. */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 650, color: INK }}>{title}</h2>
+            <p style={{ margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.45, color: FAINT }}>
+              {note}
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}

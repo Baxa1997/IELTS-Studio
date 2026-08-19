@@ -56,8 +56,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               required
             />
             <p className="text-muted-foreground text-xs">
-              That&apos;s all we need — no email required. A login and password are made for them
-              and shown here once you add them.
+              A login and password are generated and shown once you add them.
             </p>
           </div>
 
@@ -73,8 +72,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               placeholder="student@example.com"
             />
             <p className="text-muted-foreground text-xs">
-              Give one and their login is emailed to them. It is not how they sign in, so an address
-              that already has a personal account here is fine.
+              Their login gets emailed there. Not used to sign in.
             </p>
           </div>
 
@@ -95,8 +93,7 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
               placeholder="+998 90 123 45 67"
             />
             <p className="text-muted-foreground text-xs">
-              Their own number, the one on their Telegram. It is how they collect their login from
-              the class invite — without it they have to be given it by hand.
+              The number on their Telegram — how they collect their own login.
             </p>
           </div>
 

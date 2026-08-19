@@ -143,6 +143,26 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
             />
           </div>
 
+          {/* THE FIELD THIS FORM ALSO NEVER HAD. There are two ways to create a
+              student — this drawer and the panel inside a group — and adding a
+              phone to one of them leaves half the roster unidentifiable. The
+              phone is what lets a student collect their own login from the
+              class invite, so a form that cannot capture it quietly creates
+              accounts that have to be handed over by hand. */}
+          <div>
+            <label htmlFor="enrol-phone" style={label}>
+              Phone <span style={{ color: FAINT }}>(optional)</span>
+            </label>
+            <input
+              id="enrol-phone"
+              name="phone"
+              type="tel"
+              autoComplete="off"
+              placeholder="+998 90 123 45 67"
+              style={field}
+            />
+          </div>
+
           <div>
             <span style={{ ...label, marginBottom: 6 }}>Group</span>
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
