@@ -6,6 +6,7 @@ import { requireOrgUser, roleHome } from "@/lib/auth";
 import { BLUEPRINT_LABEL, BLUEPRINT_TINT } from "@/lib/console/lessons";
 import { loadGroups } from "@/lib/console/groups";
 import { loadLesson } from "@/lib/lessons/load";
+import { createClient } from "@/lib/supabase/server";
 import {
   EMBER,
   FAINT,
@@ -64,6 +65,20 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const [lesson, { groups }] = await Promise.all([loadLesson(id), loadGroups(profile)]);
   if (!lesson) notFound();
 
+  // WHICH CLASSES CAN ACTUALLY BE TOLD. Setting a lesson posts to the group's
+  // Telegram channel, and only a VERIFIED link has one — so a group without it
+  // gets the homework in silence. The picker is where a teacher is thinking
+  // about reaching a class, and the connect screen is the third section of a
+  // drawer behind the group page, so the status belongs here rather than being
+  // something to go and discover afterwards.
+  const linked = await loadTelegramLinks(groups.map((g) => g.id));
+  const groupOptions = groups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    students: g.memberCount,
+    telegram: linked.has(g.id),
+  }));
+
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
   const total = lesson.content.exercises.length;
   const stageCount = (stage: string) =>
@@ -79,7 +94,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         status={lesson.status}
         shareEnabled={lesson.shareEnabled}
         shareToken={lesson.shareToken}
-        groups={groups.map((g) => ({ id: g.id, name: g.name, students: g.memberCount }))}
+        groups={groupOptions}
       />
 
       <div style={{ position: "relative" }}>
@@ -283,7 +298,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
                 <GiveToStudents
                   lessonId={lesson.id}
                   status={lesson.status}
-                  groups={groups.map((g) => ({ id: g.id, name: g.name, students: g.memberCount }))}
+                  groups={groupOptions}
                   shareEnabled={lesson.shareEnabled}
                   shareToken={lesson.shareToken}
                 />
@@ -381,6 +396,27 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       <PrintableWorksheet title={lesson.title} exercises={lesson.content.exercises} />
     </div>
   );
+}
+
+/**
+ * Which of these groups has a verified Telegram channel.
+ *
+ * Read through the RLS client, so it can only see this centre's links — and the
+ * ids going in are already the teacher's own groups. A half-finished handshake
+ * does not count: `notifyAssignmentTelegram` requires `verified_at`, so
+ * anything less would put a tick beside a class that will still be told
+ * nothing.
+ */
+async function loadTelegramLinks(groupIds: string[]): Promise<Set<string>> {
+  if (groupIds.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("telegram_links")
+    .select("group_id")
+    .in("group_id", groupIds)
+    .not("verified_at", "is", null)
+    .not("chat_id", "is", null);
+  return new Set((data ?? []).map((r) => r.group_id as string));
 }
 
 /** One number in the dark panel. Small on purpose — this is a glance, not a

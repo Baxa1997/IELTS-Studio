@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -51,6 +52,9 @@ export interface GroupOption {
   id: string;
   name: string;
   students: number;
+  /** True only for a VERIFIED link — a half-finished handshake announces
+   *  nothing, so it must not read as connected here. */
+  telegram: boolean;
 }
 
 export function ShareModal({
@@ -283,7 +287,34 @@ export function ShareModal({
                       {on ? "✓" : ""}
                     </span>
                     <span style={{ fontSize: 15, fontWeight: 600, color: INK }}>{g.name}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 13, color: SOFT }}>
+                    {/* SAID WHERE IT MATTERS. Setting a lesson announces it in
+                        the group's Telegram channel — but only a verified link
+                        has one, and a group without it gets the homework in
+                        silence. A teacher who did not know that reads the
+                        silence as the assignment having failed. The connect
+                        screen is the third section of a drawer behind the group
+                        page, which is why nobody finds it. */}
+                    <span
+                      title={
+                        g.telegram
+                          ? "This class has a Telegram channel — it will be told"
+                          : "No Telegram channel: this class gets the homework silently. Open the group's Settings to connect one."
+                      }
+                      style={{
+                        marginLeft: "auto",
+                        flex: "none",
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        padding: "3px 8px",
+                        borderRadius: 999,
+                        background: g.telegram ? GOOD_BG : WARN_BG,
+                        color: g.telegram ? GOOD_INK : WARN_INK,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {g.telegram ? "Telegram ✓" : "No Telegram"}
+                    </span>
+                    <span style={{ fontSize: 13, color: SOFT, flex: "none" }}>
                       {g.students} student{g.students === 1 ? "" : "s"}
                     </span>
                   </label>
@@ -291,6 +322,23 @@ export function ShareModal({
               })}
             </div>
           )}
+
+          {/* A badge that only diagnoses is half a fix. This says what to do
+              about it, and names where — "Settings" is a drawer on the group
+              page, so there is no URL to send anyone to. */}
+          {groups.some((g) => !g.telegram) ? (
+            <p style={{ margin: "9px 2px 0", fontSize: 12.5, lineHeight: 1.5, color: SOFT }}>
+              A class with no channel still gets the homework — it just is not announced. To
+              connect one, open the group and use{" "}
+              <Link
+                href="/console/groups"
+                style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}
+              >
+                Groups
+              </Link>{" "}
+              → the class → <strong>Settings</strong> → Telegram channel.
+            </p>
+          ) : null}
 
           <div
             className="pa-modal-fields"
