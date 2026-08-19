@@ -476,7 +476,13 @@ export function LessonRunner({
         <div className="pa-runner">
           <div style={{ minWidth: 0 }}>
             <div className="pa-runner-main">
-              {done ? <ScoreCard result={result} canSubmit={canSubmit} /> : null}
+              {done ? (
+                <ScoreCard
+                  result={result}
+                  canSubmit={canSubmit}
+                  questionCount={items.length}
+                />
+              ) : null}
 
               {current ? (
                 <Item
@@ -1139,7 +1145,26 @@ function Feedback({
   );
 }
 
-function ScoreCard({ result, canSubmit }: { result: RunnerResult; canSubmit: boolean }) {
+/**
+ * The score, said in a way that cannot be misread as a question count.
+ *
+ * IT NEVER WAS ONE. A closed item is worth one point; a written item is worth
+ * one point PER CRITERION, because "used the target form" and "answered the
+ * question asked" are separate things to get right. So an eleven-question
+ * lesson with three written items scores out of seventeen — and "13 / 17" on
+ * its own reads as thirteen questions out of seventeen, which is what a teacher
+ * reported it as. The number was right and the page was lying about what it
+ * counted.
+ */
+function ScoreCard({
+  result,
+  canSubmit,
+  questionCount,
+}: {
+  result: RunnerResult;
+  canSubmit: boolean;
+  questionCount: number;
+}) {
   const pct = result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : 0;
   return (
     <div
@@ -1162,7 +1187,10 @@ function ScoreCard({ result, canSubmit }: { result: RunnerResult; canSubmit: boo
           {result.score}
           <span style={{ fontSize: 22, opacity: 0.6, fontWeight: 500 }}> / {result.maxScore}</span>
         </div>
-        <div style={{ fontSize: 14, color: "#a9b8c0", marginTop: 4 }}>{pct}% correct</div>
+        <div style={{ fontSize: 14, color: "#a9b8c0", marginTop: 4 }}>
+          {pct}% — {result.maxScore} point{result.maxScore === 1 ? "" : "s"} across{" "}
+          {questionCount} question{questionCount === 1 ? "" : "s"}
+        </div>
       </div>
       <p style={{ margin: 0, fontSize: 15, color: "#a9b8c0", flex: 1, minWidth: 220, lineHeight: 1.6 }}>
         {result.notice
