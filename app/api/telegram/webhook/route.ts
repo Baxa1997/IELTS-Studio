@@ -105,6 +105,16 @@ export async function POST(req: Request): Promise<Response> {
   const chat = msg?.chat;
   if (!text || !chat) return ok();
 
+  // ── the name that separates two siblings ────────────────────────────────
+  // Only reachable when a number has already matched more than one student, so
+  // this is never a way to be identified BY name — it chooses between people
+  // who have already proved they share a phone.
+  const waiting = pendingGroup.get(chat.id);
+  if (waiting?.phone && !text.startsWith("/")) {
+    await resolve(chat.id, waiting, waiting.phone, text);
+    return ok();
+  }
+
   // `/start CODE` (deep link) or `/link CODE` (typed), tolerating the @botname
   // suffix Telegram adds in groups.
   // A bare `/start` in the bot's own chat — what you get by tapping the bot in
@@ -340,7 +350,16 @@ async function bindStudent(code: string, chatId: number): Promise<boolean> {
  * to expire and clean up for a step that takes ten seconds. Revisit if it
  * proves common.
  */
-const pendingGroup = new Map<number, { groupId: string; organizationId: string }>();
+const pendingGroup = new Map<
+  number,
+  {
+    groupId: string;
+    organizationId: string;
+    /** Kept after a phone that pointed at several people, so the name they
+     *  type next can be applied without asking for the number again. */
+    phone?: string;
+  }
+>();
 
 /**
  * Bind the student whose phone this is, and send their sign-in details.
@@ -374,16 +393,54 @@ async function claimByPhone(
     return;
   }
 
-  const student = await matchStudentByPhone({
+  await resolve(chatId, pending, contact.phone_number);
+}
+
+/**
+ * Turn a phone (and possibly a name) into one student, then finish the job.
+ *
+ * Split out because it is reached twice: once when the number arrives, and
+ * again if that number belonged to more than one person and the student has now
+ * typed their name.
+ */
+async function resolve(
+  chatId: number,
+  pending: { groupId: string; organizationId: string; phone?: string },
+  phone: string,
+  name?: string,
+): Promise<void> {
+  const { match: student, ambiguous } = await matchStudentByPhone({
     groupId: pending.groupId,
-    phone: contact.phone_number,
+    phone,
+    name,
   });
+
+  if (ambiguous) {
+    // Two people share this number — siblings, almost always. Remember the
+    // phone so the name they type next completes it, rather than making them
+    // press the share button again.
+    pendingGroup.set(chatId, { ...pending, phone });
+    await callTelegram("sendMessage", {
+      chat_id: chatId,
+      text:
+        name
+          ? "That name did not match anyone on this number. Send your full name exactly as " +
+            "your teacher wrote it, or ask them to check."
+          : "More than one student uses this number. Send me your full name and I'll finish " +
+            "connecting you.",
+      reply_markup: { remove_keyboard: true },
+    });
+    return;
+  }
+
   if (!student) {
-    await sendMessage(
-      chatId,
-      "I could not find that number on this class list. Ask your teacher to check the " +
+    await callTelegram("sendMessage", {
+      chat_id: chatId,
+      text:
+        "I could not find that number on this class list. Ask your teacher to check the " +
         "number they have for you, then try again.",
-    );
+      reply_markup: { remove_keyboard: true },
+    });
     return;
   }
 

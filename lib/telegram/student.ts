@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { nameLooksLike } from "@/lib/names";
 import { phoneKey } from "@/lib/phone";
 
 import { escapeHtml, sendMessage, telegramConfigured } from "./send";
@@ -234,12 +235,21 @@ export async function groupForInviteCode(
  *    than rebound, so a lost or forwarded code cannot take over an account that
  *    is already working.
  */
+export interface RosterMatch {
+  profileId: string;
+  fullName: string;
+  login: string;
+}
+
 export async function matchStudentByPhone(args: {
   groupId: string;
   phone: string;
-}): Promise<{ profileId: string; fullName: string; login: string } | null> {
+  /** Typed by the student, and only ever consulted when the phone alone points
+   *  at more than one person. Never enough on its own. */
+  name?: string;
+}): Promise<{ match: RosterMatch | null; ambiguous: boolean }> {
   const key = phoneKey(args.phone);
-  if (!key) return null;
+  if (!key) return { match: null, ambiguous: false };
 
   const admin = createAdminClient();
   const { data: members } = await admin
@@ -247,29 +257,55 @@ export async function matchStudentByPhone(args: {
     .select("student_id")
     .eq("group_id", args.groupId);
   const ids = (members ?? []).map((m) => m.student_id as string);
-  if (ids.length === 0) return null;
+  if (ids.length === 0) return { match: null, ambiguous: false };
 
   const { data: rows } = await admin
     .from("profiles")
     .select("id, full_name, username, phone")
     .in("id", ids);
 
-  const hits = (rows ?? []).filter((r) => phoneKey(r.phone as string | null) === key);
-  // Exactly one, or nobody. See the note above about shared numbers.
-  if (hits.length !== 1) return null;
+  const onThisPhone = (rows ?? []).filter((r) => phoneKey(r.phone as string | null) === key);
+  if (onThisPhone.length === 0) return { match: null, ambiguous: false };
 
-  const hit = hits[0];
-  const { data: existing } = await admin
+  // Anyone already bound is out of the running before the name is considered,
+  // so a sibling who has connected does not have to be disambiguated from again
+  // — and a forwarded code cannot take over an account that already works.
+  const { data: bound } = await admin
     .from("telegram_students")
-    .select("verified_at")
-    .eq("profile_id", hit.id as string)
-    .maybeSingle();
-  if (existing?.verified_at) return null;
+    .select("profile_id")
+    .in("profile_id", onThisPhone.map((r) => r.id as string))
+    .not("verified_at", "is", null);
+  const taken = new Set((bound ?? []).map((b) => b.profile_id as string));
+  let candidates = onThisPhone.filter((r) => !taken.has(r.id as string));
+  if (candidates.length === 0) return { match: null, ambiguous: false };
 
+  // THE NAME IS A TIE-BREAK, NOT A CHECK. Siblings on one parent's phone is a
+  // real case and the phone cannot separate them, so the name is asked for only
+  // here — among two or three people already proved to share a number. Using it
+  // as a general identity test would lock out half a roster, because the same
+  // student is spelled "Nurullayev", "Nurullaev" and "BahridNur" in this very
+  // database.
+  if (candidates.length > 1 && args.name) {
+    const narrowed = candidates.filter((r) =>
+      nameLooksLike(args.name as string, (r.full_name as string | null) ?? ""),
+    );
+    if (narrowed.length === 1) candidates = narrowed;
+  }
+
+  if (candidates.length !== 1) {
+    // Several people, and the name did not separate them. Ask rather than guess:
+    // guessing here gives one child the other's account.
+    return { match: null, ambiguous: true };
+  }
+
+  const hit = candidates[0];
   return {
-    profileId: hit.id as string,
-    fullName: (hit.full_name as string | null) ?? "Student",
-    login: (hit.username as string | null) ?? "—",
+    match: {
+      profileId: hit.id as string,
+      fullName: (hit.full_name as string | null) ?? "Student",
+      login: (hit.username as string | null) ?? "—",
+    },
+    ambiguous: false,
   };
 }
 

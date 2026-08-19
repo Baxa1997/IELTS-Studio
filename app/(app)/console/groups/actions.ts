@@ -17,6 +17,7 @@ import { notifyAssignmentTelegram, postGroupInvite } from "@/lib/telegram/send";
 import { createGroupInvite, sendCredentialsTelegram } from "@/lib/telegram/student";
 import { serverEnv } from "@/lib/env";
 import { phoneKey } from "@/lib/phone";
+import { transliterate } from "@/lib/names";
 import { generatePassword } from "@/lib/passwords";
 import {
   generateWritingPrompt,
@@ -1722,57 +1723,6 @@ function loginFromName(name: string): string {
   // LOGIN_RE needs at least three characters, first and last alphanumeric.
   while (base.length > 0 && base.length < 3) base += "1";
   return base || "student";
-}
-
-const CYRILLIC: Record<string, string> = {
-  а: "a",
-  б: "b",
-  в: "v",
-  г: "g",
-  д: "d",
-  е: "e",
-  ё: "yo",
-  ж: "j",
-  з: "z",
-  и: "i",
-  й: "y",
-  к: "k",
-  л: "l",
-  м: "m",
-  н: "n",
-  о: "o",
-  п: "p",
-  р: "r",
-  с: "s",
-  т: "t",
-  у: "u",
-  ф: "f",
-  х: "x",
-  ц: "ts",
-  ч: "ch",
-  ш: "sh",
-  щ: "sh",
-  ъ: "",
-  ы: "i",
-  ь: "",
-  э: "e",
-  ю: "yu",
-  я: "ya",
-  ў: "o",
-  қ: "q",
-  ғ: "g",
-  ҳ: "h",
-};
-
-function transliterate(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // strip accents (é → e)
-    .replace(/[ʻʼ'’`]/g, "") // Uzbek Latin oʻ/gʻ and stray apostrophes
-    .split("")
-    .map((ch) => CYRILLIC[ch] ?? ch)
-    .join("");
 }
 
 /** First free login in the `base, base2, base3…` series — free both on the
