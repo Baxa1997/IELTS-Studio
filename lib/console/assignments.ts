@@ -3,7 +3,7 @@ import "server-only";
 import { weakestCriteria } from "@/lib/console/criteria";
 import { createClient } from "@/lib/supabase/server";
 
-export type AssignmentKind = "writing" | "reading" | "listening";
+export type AssignmentKind = "writing" | "reading" | "listening" | "lesson";
 
 export interface AssignmentSummary {
   id: string;
@@ -13,6 +13,15 @@ export interface AssignmentSummary {
   createdAt: string;
   /** Group members who have a graded attempt at this content. */
   completed: number;
+  /** Members who have STARTED it — a superset of `completed`. The board needs
+   *  both: 3 of 3 submitted with 1 marked is a different sentence from 1 of 3
+   *  handed in, and `completed` alone cannot tell them apart. */
+  submitted: number;
+  /** Mean band across the members who have one, rounded to the IELTS half.
+   *  Null where the kind has no band at all (listening stores a raw score;
+   *  lessons store marks out of a maximum) — an averaged number in a column
+   *  headed "Band" has to BE a band. */
+  band: number | null;
 }
 
 export interface AssignmentReportRow {
@@ -64,7 +73,9 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
 
   const { data: rows } = await supabase
     .from("assignments")
-    .select("id, kind, title, due_at, created_at, prompt_id, reading_test_id, listening_library_id")
+    .select(
+      "id, kind, title, due_at, created_at, prompt_id, reading_test_id, listening_library_id, lesson_id",
+    )
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
   if (!rows || rows.length === 0) return [];
@@ -80,20 +91,21 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
   const listeningIds = rows
     .filter((r) => r.listening_library_id)
     .map((r) => r.listening_library_id as string);
+  const lessonIds = rows.filter((r) => r.lesson_id).map((r) => r.lesson_id as string);
 
   // A few queries for the whole list rather than one per assignment.
-  const [essaysRes, attemptsRes, listeningRes] = await Promise.all([
+  const [essaysRes, attemptsRes, listeningRes, lessonRes] = await Promise.all([
     promptIds.length > 0 && memberIds.length > 0
       ? supabase
           .from("essays")
-          .select("prompt_id, student_id, status")
+          .select("id, prompt_id, student_id, status")
           .in("prompt_id", promptIds)
           .in("student_id", memberIds)
       : Promise.resolve({ data: [] }),
     testIds.length > 0 && memberIds.length > 0
       ? supabase
           .from("reading_attempts")
-          .select("test_id, student_id, status")
+          .select("test_id, student_id, status, band")
           .in("test_id", testIds)
           .in("student_id", memberIds)
       : Promise.resolve({ data: [] }),
@@ -104,38 +116,116 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
           .in("library_id", listeningIds)
           .in("student_id", memberIds)
       : Promise.resolve({ data: [] }),
+    lessonIds.length > 0 && memberIds.length > 0
+      ? supabase
+          .from("lesson_attempts")
+          .select("lesson_id, student_id, score, max_score")
+          .in("lesson_id", lessonIds)
+          .in("student_id", memberIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
+  // Writing is the one kind whose band is not on the attempt: `gradings` holds
+  // one row per marking run, so the essays have to be resolved in a second
+  // pass. Only graded essays are asked for, which is usually a short list.
+  const essays = (essaysRes.data ?? []) as {
+    id: string;
+    prompt_id: string;
+    student_id: string;
+    status: string;
+  }[];
+  const bandByEssay = new Map<string, number>();
+  const gradedEssayIds = essays.filter((e) => e.status === "graded").map((e) => e.id);
+  if (gradedEssayIds.length > 0) {
+    const { data: gradings } = await supabase
+      .from("gradings")
+      .select("essay_id, overall_band, created_at")
+      .in("essay_id", gradedEssayIds)
+      .order("created_at", { ascending: true });
+    // Ascending, so the last write wins: after a revision is re-marked, the
+    // current band is the newest run, not the first.
+    for (const g of (gradings ?? []) as { essay_id: string; overall_band: number | null }[]) {
+      if (g.overall_band != null) bandByEssay.set(g.essay_id, Number(g.overall_band));
+    }
+  }
+
   const done = new Map<string, Set<string>>();
+  const started = new Map<string, Set<string>>();
+  const bands = new Map<string, number[]>();
   const mark = (key: string, student: string) => {
     const set = done.get(key) ?? new Set<string>();
     set.add(student);
     done.set(key, set);
   };
-  for (const e of (essaysRes.data ?? []) as { prompt_id: string; student_id: string; status: string }[]) {
-    if (e.status === "graded") mark(e.prompt_id, e.student_id);
+  const touch = (key: string, student: string) => {
+    const set = started.get(key) ?? new Set<string>();
+    set.add(student);
+    started.set(key, set);
+  };
+  const score = (key: string, band: number) => bands.set(key, [...(bands.get(key) ?? []), band]);
+
+  for (const e of essays) {
+    touch(e.prompt_id, e.student_id);
+    if (e.status !== "graded") continue;
+    mark(e.prompt_id, e.student_id);
+    const band = bandByEssay.get(e.id);
+    if (band != null) score(e.prompt_id, band);
   }
-  for (const a of (attemptsRes.data ?? []) as { test_id: string; student_id: string; status: string }[]) {
-    if (a.status === "graded") mark(a.test_id, a.student_id);
+  for (const a of (attemptsRes.data ?? []) as {
+    test_id: string;
+    student_id: string;
+    status: string;
+    band: number | null;
+  }[]) {
+    touch(a.test_id, a.student_id);
+    if (a.status !== "graded") continue;
+    mark(a.test_id, a.student_id);
+    if (a.band != null) score(a.test_id, Number(a.band));
   }
-  // Listening has no status column — a score is the grade.
+  // Listening has no status column — a score is the grade. It has no band
+  // either, so it contributes nothing to the average.
   for (const l of (listeningRes.data ?? []) as {
     library_id: string;
     student_id: string;
     score: number | null;
   }[]) {
+    touch(l.library_id, l.student_id);
     if (l.score != null) mark(l.library_id, l.student_id);
   }
+  // A lesson attempt row IS the hand-in: it is written when the student
+  // submits, and it is marked out of a maximum rather than banded.
+  for (const l of (lessonRes.data ?? []) as {
+    lesson_id: string;
+    student_id: string;
+    max_score: number | null;
+  }[]) {
+    touch(l.lesson_id, l.student_id);
+    mark(l.lesson_id, l.student_id);
+  }
 
-  return rows.map((r) => ({
-    id: r.id as string,
-    kind: r.kind as AssignmentKind,
-    title: r.title as string,
-    dueAt: (r.due_at as string | null) ?? null,
-    createdAt: r.created_at as string,
-    completed:
-      done.get((r.prompt_id ?? r.reading_test_id ?? r.listening_library_id) as string)?.size ?? 0,
-  }));
+  return rows.map((r) => {
+    // `lesson_id` belongs in this chain. Without it every practice-AI lesson
+    // set to a class resolved to `undefined`, found nothing, and reported nobody
+    // had done it — for ever, however many students had.
+    const key = (r.prompt_id ??
+      r.reading_test_id ??
+      r.listening_library_id ??
+      r.lesson_id) as string;
+    const measured = bands.get(key) ?? [];
+    return {
+      id: r.id as string,
+      kind: r.kind as AssignmentKind,
+      title: r.title as string,
+      dueAt: (r.due_at as string | null) ?? null,
+      createdAt: r.created_at as string,
+      completed: done.get(key)?.size ?? 0,
+      submitted: started.get(key)?.size ?? 0,
+      band:
+        measured.length > 0
+          ? Math.round((measured.reduce((n, b) => n + b, 0) / measured.length) * 2) / 2
+          : null,
+    };
+  });
 }
 
 /**

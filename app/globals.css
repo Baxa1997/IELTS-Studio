@@ -1614,6 +1614,46 @@
   }
 }
 
+/* ── group page, "CRM v2" ───────────────────────────────────────────────────
+   Scoped to that page rather than added to the shared console kit: rolling v2
+   across every console screen is its own job, and these selectors only bite
+   where the markup opts in. */
+
+/* How the class RUNS on the left, how it is REACHED on the right. One column
+   below 1080px, where 320px of sidebar plus two columns stops fitting. */
+.cn-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .cn-settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cn-root .cn-pipe {
+  transition: border-color .12s ease, background .12s ease;
+}
+.cn-root .cn-pipe:hover {
+  border-color: #b9b4f0;
+  background: #fbfbfd;
+}
+.cn-root .cn-pill {
+  transition: border-color .12s ease, color .12s ease;
+}
+.cn-root .cn-pill:hover {
+  border-color: #b9b4f0;
+  color: #3730a3;
+}
+.cn-root .cn-boardrow {
+  transition: background .12s ease;
+}
+.cn-root .cn-boardrow:hover {
+  background: #faf9f5;
+}
+
 /* Table + list rows: whole-row hover, matching the design's style-hover. */
 .cn-root .cn-row {
   transition: background 0.15s ease;

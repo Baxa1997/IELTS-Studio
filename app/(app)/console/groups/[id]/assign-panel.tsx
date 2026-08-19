@@ -24,14 +24,18 @@ export function AssignPanel({
   groupId,
   libraryTests,
   library = [],
+  onDone,
 }: {
   groupId: string;
   libraryTests: { id: string; label: string }[];
   /** §9's shelf: content the centre has already made and kept. */
   library?: { id: string; title: string; skill: string; level: string | null }[];
+  /** Called once the assignment is actually created — how the sheet that
+   *  wraps this knows to close itself. */
+  onDone?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(createAssignment, initial);
-  useActionFeedback(state);
+  useActionFeedback(state, { onSuccess: onDone });
   const [kind, setKind] = useState<"writing" | "reading" | "library">(
     // The shelf goes FIRST when there is one. Generating is the expensive path
     // — it costs quota, takes seconds, and produces a paper no other group has

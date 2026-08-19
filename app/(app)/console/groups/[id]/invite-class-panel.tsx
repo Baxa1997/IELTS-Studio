@@ -28,18 +28,7 @@ export function InviteClassPanel({ groupId }: { groupId: string }) {
   useActionFeedback(state, { keepOpen: true });
 
   return (
-    <section style={card}>
-      <h3 style={heading}>Get the class signed in</h3>
-      <p style={note}>
-        Posts one message to the class Telegram channel. Each student taps it, confirms their
-        phone number, and receives their own login privately — no passwords in the channel, and
-        nothing for you to hand out.
-      </p>
-      <p style={{ ...note, marginTop: -4 }}>
-        <b>Their phone number must be on the roster</b> — that is how they are identified. The
-        student import reads a phone column.
-      </p>
-
+    <div>
       <form action={action}>
         <input type="hidden" name="group_id" value={groupId} />
         <button type="submit" disabled={pending} style={button}>
@@ -74,17 +63,10 @@ export function InviteClassPanel({ groupId }: { groupId: string }) {
           </div>
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
 
-const card: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #E2E0DA",
-  borderRadius: 14,
-  padding: "16px 18px",
-};
-const heading: React.CSSProperties = { margin: 0, fontSize: 16, fontWeight: 650, color: "#15171C" };
 const note: React.CSSProperties = {
   margin: "8px 0 12px",
   fontSize: 13.5,
@@ -92,14 +74,16 @@ const note: React.CSSProperties = {
   color: "#5C5A70",
 };
 const button: React.CSSProperties = {
-  padding: "10px 18px",
+  width: "100%",
+  marginTop: 4,
+  padding: "13px 18px",
   borderRadius: 999,
   border: 0,
-  background: "#15171C",
+  background: "#1b2340",
   color: "#fff",
   fontFamily: "inherit",
-  fontSize: 14,
-  fontWeight: 600,
+  fontSize: 15,
+  fontWeight: 700,
   cursor: "pointer",
 };
 const ghost: React.CSSProperties = {

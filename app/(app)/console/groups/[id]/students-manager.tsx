@@ -30,14 +30,15 @@ import { MoveOrRemove } from "./move-or-remove";
  * a full-width strip under a single row, which a shared column grid can't do.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
-const LINE = "#EAE8E1";
-const GREEN = "#16794C";
-const AMBER = "#9A6B00";
-const RED = "#B3261E";
-const INDIGO = "#4340CB";
+const INK = "#16203a";
+const MUTED = "#5f6878";
+const FAINT = "#6f7788";
+const LINE = "#f2f0e6";
+const RULE = "#edebe1";
+const GREEN = "#1f6b45";
+const AMBER = "#9a5b16";
+const RED = "#a13a2c";
+const INDIGO = "#4f46e5";
 
 const COLS = "minmax(200px, 2.4fr) 1.1fr .6fr .8fr 1fr auto";
 
@@ -76,7 +77,7 @@ export function StudentsManager({
 }) {
   if (students.length === 0) {
     return (
-      <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: MUTED, margin: 0, padding: "40px 20px", textAlign: "center", lineHeight: 1.6 }}>
         Nobody in this group yet. Add them one at a time, or import the register you already keep —
         logins and passwords are made for you.
       </p>
@@ -91,13 +92,12 @@ export function StudentsManager({
             display: "grid",
             gridTemplateColumns: COLS,
             gap: 12,
-            padding: "0 0 8px",
-            borderBottom: `1px solid ${LINE}`,
-            fontSize: 11.5,
-            fontWeight: 600,
+            padding: "13px 20px",
+            borderBottom: `1px solid ${RULE}`,
+            fontSize: 11,
             color: FAINT,
             textTransform: "uppercase",
-            letterSpacing: ".04em",
+            letterSpacing: ".07em",
           }}
         >
           <span>Student</span>
@@ -150,7 +150,7 @@ function StudentLine({
   }
 
   return (
-    <div style={{ borderBottom: `1px solid ${LINE}`, padding: "10px 0" }}>
+    <div style={{ borderBottom: `1px solid ${LINE}`, padding: "15px 20px" }}>
       <div style={{ display: "grid", gridTemplateColumns: COLS, gap: 12, alignItems: "center" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <Avatar name={student.name} photoUrl={student.photoUrl} />
@@ -158,7 +158,7 @@ function StudentLine({
             <span
               style={{
                 display: "block",
-                fontSize: 13.5,
+                fontSize: 15,
                 fontWeight: 600,
                 color: INK,
                 overflow: "hidden",
@@ -168,7 +168,7 @@ function StudentLine({
             >
               {student.name}
             </span>
-            <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 1 }}>
+            <span style={{ display: "block", fontSize: 13, color: FAINT, marginTop: 2 }}>
               {student.login ? (
                 <code style={{ fontFamily: "ui-monospace, monospace" }}>{student.login}</code>
               ) : (

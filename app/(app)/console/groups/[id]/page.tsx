@@ -1,25 +1,21 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import {
-  Bar,
   Card,
   CardHead,
   CardNote,
   Empty,
   FAINT,
   GREEN,
-  INDIGO,
-  INK,
   Kpi,
   KpiRow,
-  KindBadge,
-  LINE,
   ListRow,
   PageHead,
   PersonCell,
   RED,
   SANS,
-  SOFT,
+  SERIF,
   Stack,
   Table,
   Tabs,
@@ -30,13 +26,14 @@ import {
   TRow,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
-import { loadGroupAssignments } from "@/lib/console/assignments";
+import { type AssignmentKind, loadGroupAssignments } from "@/lib/console/assignments";
 import { attendanceRateFrom } from "@/lib/console/attendance-marks";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
 import { ENROLLED, STUDENT_STATUS_LABEL } from "@/lib/console/status";
 import { loadGroupActivity } from "@/lib/console/student-report";
 import { loadClassMoney } from "@/lib/finance/class-money";
 import { formatMoney, toMajor } from "@/lib/finance/money";
+import { phoneKey } from "@/lib/phone";
 import { monthLabel, monthStart, prettyDate, today } from "@/lib/finance/period";
 import { describeProration } from "@/lib/finance/tuition";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
@@ -49,19 +46,72 @@ import { InviteClassPanel } from "./invite-class-panel";
 import { TelegramPanel } from "./telegram-panel";
 import { loadLibrary } from "@/lib/console/practice-library";
 
-import { AssignPanel } from "./assign-panel";
+import { AssignSheet } from "./assign-sheet";
 import { BulkAddPanel } from "./bulk-add-panel";
 import { PricingPanel } from "./pricing-panel";
 import { SchedulePanel } from "./schedule-panel";
 import { RosterToolbar, StudentsManager } from "./students-manager";
+import {
+  Board,
+  BoardHead,
+  CheckRow,
+  FilterPill,
+  MiniBar,
+  Pill,
+  PipeTile,
+  SectionCard,
+  SkillChip,
+  serifHead,
+  V2,
+  card as v2card,
+} from "./ui";
 
 export const dynamic = "force-dynamic";
 
 const TABS = ["students", "practice", "attendance", "money", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
+const FLOWS = ["open", "overdue", "done"] as const;
+type Flow = (typeof FLOWS)[number];
+const SKILLS = ["writing", "reading", "listening", "lesson"] as const;
+
+const FLOW_LABEL: Record<Flow, string> = {
+  open: "Open",
+  overdue: "Overdue",
+  done: "Done",
+};
+const FLOW_TONE: Record<Flow, "open" | "overdue" | "done"> = {
+  open: "open",
+  overdue: "overdue",
+  done: "done",
+};
+const SKILL_LABEL: Record<AssignmentKind, string> = {
+  writing: "Writing",
+  reading: "Reading",
+  listening: "Listening",
+  lesson: "Lesson",
+};
+
+/** The practice board's columns, shared by its head and its rows so the two
+ *  can never drift apart. */
+const BOARD_COLS =
+  "minmax(0, 2.4fr) minmax(0, 96px) minmax(0, 112px) minmax(0, 118px) minmax(0, 64px) minmax(0, 104px)";
+
 const MONEY_COLS = "2fr 1.4fr 1.1fr 1.1fr 1.1fr";
-const KIND_LABEL: Record<string, string> = { writing: "W", reading: "R", listening: "L" };
+
+/** The register's columns: a name, one square per session, a rate. */
+const REGISTER_COLS = (sessions: number) =>
+  `minmax(0, 1.4fr) repeat(${sessions}, minmax(0, 46px)) minmax(0, 72px)`;
+
+/** A mark says its letter as well as its colour — colour alone is not a label,
+ *  and on a touch screen the tooltip that carried the meaning never opens. */
+const MARK: Record<string, { letter: string; bg: string; fg: string }> = {
+  present: { letter: "P", bg: "#eaf5ee", fg: "#1f6b45" },
+  late: { letter: "L", bg: "#fdf1e3", fg: "#9a5b16" },
+  absent: { letter: "A", bg: "#fdeceb", fg: "#a13a2c" },
+  excused: { letter: "E", bg: "#eceaf4", fg: "#413a63" },
+  none: { letter: "·", bg: "#f4f3ee", fg: "#8b91a0" },
+};
 
 /** One group: its roster, practice, progress and settings. RLS decides
  *  visibility — a teacher who doesn't own this group can't read its
@@ -71,7 +121,7 @@ export default async function GroupDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; flow?: string; skill?: string; q?: string }>;
 }) {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
@@ -184,6 +234,20 @@ export default async function GroupDetailPage({
     .maybeSingle();
   const telegramLinked =
     tgRow?.verified_at != null ? { chatTitle: (tgRow.chat_title as string | null) ?? null } : null;
+
+  // THE CLASS INVITE MATCHES A STUDENT BY PHONE. A roster with blanks in it is
+  // the single reason that flow fails, and a teacher should learn it before
+  // sending thirty students a message that cannot work for some of them —
+  // not afterwards, from the ones who complain. Counted with `phoneKey`, the
+  // same function the bot matches on, so this cannot claim a number is usable
+  // when the matcher would reject it.
+  const { data: phoneRows } =
+    memberIds.length > 0
+      ? await supabase.from("profiles").select("id, phone").in("id", memberIds)
+      : { data: [] as { id: string; phone: string | null }[] };
+  const withPhone = ((phoneRows ?? []) as { id: string; phone: string | null }[]).filter(
+    (r) => phoneKey(r.phone) != null,
+  ).length;
 
   // The last dozen registers for this group, oldest-to-newest across the row so
   // the strip reads left to right like a calendar.
@@ -326,6 +390,56 @@ export default async function GroupDetailPage({
     };
   });
 
+  // How many lessons a week the timetable actually holds. `series` groups the
+  // bookings, so a series that meets twice a week is two slots, not one.
+  const weeklyLessons = series.reduce((n, e) => n + e.weekdays.length, 0);
+
+  // ── the practice board ─────────────────────────────────────────────────────
+  // Every assignment gets a state a teacher would recognise on sight. There is
+  // deliberately NO "to mark" bucket: this product marks with a model the
+  // moment work is handed in, so a queue waiting on a human would read zero for
+  // ever and teach everybody to ignore the strip above the board.
+  const flowOf = (a: { completed: number; dueAt: string | null }): Flow => {
+    if (roster.length > 0 && a.completed >= roster.length) return "done";
+    // Compared by DATE, not by instant: something due today is not late until
+    // tomorrow, and `today()` is the clock the rest of this page already reads.
+    if (a.dueAt && a.dueAt.slice(0, 10) < today()) return "overdue";
+    return "open";
+  };
+  const board = assignments.map((a) => ({ ...a, flow: flowOf(a) }));
+  const openCount = board.filter((a) => a.flow === "open").length;
+  const overdueCount = board.filter((a) => a.flow === "overdue").length;
+  const doneCount = board.filter((a) => a.flow === "done").length;
+
+  const flowFilter = (FLOWS as readonly string[]).includes(sp.flow ?? "")
+    ? (sp.flow as Flow)
+    : null;
+  const skillFilter = (SKILLS as readonly string[]).includes(sp.skill ?? "")
+    ? (sp.skill as AssignmentKind)
+    : null;
+  const query = (sp.q ?? "").trim();
+  const needle = query.toLowerCase();
+  const visible = board.filter(
+    (a) =>
+      (!flowFilter || a.flow === flowFilter) &&
+      (!skillFilter || a.kind === skillFilter) &&
+      (!needle || a.title.toLowerCase().includes(needle)),
+  );
+
+  /** A board link that keeps the filters you already have and changes one of
+   *  them. Filters in the URL rather than in component state, so "what is
+   *  overdue in this class" is a link a teacher can bookmark or send on. */
+  const boardHref = (patch: { flow?: Flow | null; skill?: AssignmentKind | null; q?: string }) => {
+    const next = new URLSearchParams({ tab: "practice" });
+    const flow = patch.flow === undefined ? flowFilter : patch.flow;
+    const skill = patch.skill === undefined ? skillFilter : patch.skill;
+    const text = patch.q === undefined ? query : patch.q;
+    if (flow) next.set("flow", flow);
+    if (skill) next.set("skill", skill);
+    if (text) next.set("q", text);
+    return `/console/groups/${id}?${next.toString()}`;
+  };
+
   const tabHref = (t: Tab) =>
     t === "students" ? `/console/groups/${id}` : `/console/groups/${id}?tab=${t}`;
 
@@ -337,20 +451,32 @@ export default async function GroupDetailPage({
         subtitle={
           <>
             {group.teacherName ? group.teacherName : "No teacher assigned"} · {roster.length}{" "}
-            student{roster.length === 1 ? "" : "s"} · {assignments.length} practice
-            {assignments.length === 1 ? "" : "s"} set
+            student{roster.length === 1 ? "" : "s"}
+            {weeklyLessons > 0 ? (
+              <>
+                {" "}
+                · {weeklyLessons} weekly slot{weeklyLessons === 1 ? "" : "s"}
+              </>
+            ) : null}
           </>
         }
         actions={
-          /* SETTINGS IS A TAB NOW, not a drawer.
+          /* SETTINGS IS A TAB, not a drawer.
 
              A drawer has no URL, so nothing anywhere could send a teacher to
              it — every prompt to "go and connect Telegram" had to describe
              the route in words and hope. It was also invisible: three of the
-             four things in here are set once and then needed again months
+             four things in there are set once and then needed again months
              later, by which time nobody remembers there is a button in the
-             header. A tab is both addressable and on the page. */
-          null
+             header. A tab is both addressable and on the page.
+
+             What DOES belong up here is the one thing a teacher opens this
+             page to do. Only the group's own teacher may set practice —
+             createAssignment refuses anyone else, so an admin is not shown a
+             button that will turn them away. */
+          group.teacherId === profile.id ? (
+            <AssignSheet groupId={group.id} libraryTests={libraryTests} library={shelf} />
+          ) : null
         }
       />
 
@@ -360,7 +486,11 @@ export default async function GroupDetailPage({
           value={roster.length}
           sub={`${activeCount} active in 30 days`}
         />
-        <Kpi label="Practice set" value={assignments.length} />
+        <Kpi
+          label="Practice set"
+          value={assignments.length}
+          sub={openCount > 0 ? `${openCount} still open` : "nothing outstanding"}
+        />
         <Kpi
           label="Completion"
           value={completionPct == null ? "—" : `${completionPct}%`}
@@ -403,265 +533,508 @@ export default async function GroupDetailPage({
       />
 
       {tab === "settings" ? (
-        <div style={{ display: "grid", gap: 20, maxWidth: 760, marginTop: 18 }}>
-              <section>
-                <h3 style={settingsHeading}>When it meets</h3>
-                <p style={settingsNote}>
-                  This fills the timetable, decides what the register offers to mark, and is the
-                  lesson count a part-month fee is divided by.
-                </p>
-                <SchedulePanel
+        /* TWO COLUMNS, NOT ONE 760px STACK. Settings holds two unrelated jobs:
+           how the class runs (times, who teaches it, whether it still exists)
+           and how the class gets reached (its channel, and getting everyone
+           signed in). Stacked, the second job sat below the fold behind the
+           first, which is why nobody found it. */
+        <div className="cn-settings-grid" style={{ marginTop: 18 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
+            <SectionCard
+              title="When it meets"
+              note="Fills the register, decides which lessons can be marked, and is the lesson count a part-month fee is divided by."
+              aside={
+                weeklyLessons > 0 ? (
+                  <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint }}>
+                    {weeklyLessons} slot{weeklyLessons === 1 ? "" : "s"} a week
+                  </span>
+                ) : null
+              }
+            >
+              <SchedulePanel
+                groupId={group.id}
+                rooms={allRooms}
+                branchId={(groupRow?.branch_id as string) ?? ""}
+                series={series}
+              />
+            </SectionCard>
+
+            {isAdmin ? (
+              <SectionCard
+                title="Teacher"
+                note="Who owns this group — they are the only person who can set it practice."
+              >
+                <AssignTeacherForm
                   groupId={group.id}
-                  rooms={allRooms}
-                  branchId={(groupRow?.branch_id as string) ?? ""}
-                  series={series}
+                  teacherId={group.teacherId}
+                  teachers={teachers}
                 />
-              </section>
+              </SectionCard>
+            ) : null}
 
-              {/* THIS SLOT USED TO HOLD "Invite link" — a tokenised link a
-                  person accepts to create their own account and join. It is
-                  gone from here rather than sitting beside this one, because
-                  two things called "invite" on one screen, doing different
-                  jobs, is how a teacher picks the wrong one. The capability is
-                  not lost: the same panel is in the console chrome's own
-                  Invite, which is where an invite that is not about a specific
-                  class belongs.
-
-                  This is the path that matches how a centre actually onboards —
-                  accounts already exist from the register, and what is missing
-                  is getting each student their own login. */}
-              <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
-                <h3 style={settingsHeading}>Get the class signed in</h3>
-                <p style={settingsNote}>
-                  One message to the class channel; every student collects their own login from
-                  it. Needs a connected channel and phone numbers on the roster.
-                </p>
-                <InviteClassPanel groupId={group.id} />
-              </section>
-
-              <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
-                <h3 style={settingsHeading}>Telegram channel</h3>
-                <p style={settingsNote}>
-                  Announce new practice where the group already talks. One channel per group.
-                </p>
-                <TelegramPanel
-                  groupId={group.id}
-                  linked={telegramLinked}
-                  botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
-                />
-              </section>
-
-              {isAdmin ? (
-                <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
-                  <h3 style={settingsHeading}>Teacher</h3>
-                  <AssignTeacherForm
-                    groupId={group.id}
-                    teacherId={group.teacherId}
-                    teachers={teachers}
-                  />
-                  <div
-                    style={{
-                      borderTop: `1px solid ${LINE}`,
-                      marginTop: 18,
-                      paddingTop: 16,
-                      display: "grid",
-                      gap: 18,
-                    }}
-                  >
-                    <CloseGroupButton groupId={group.id} status={group.status} />
-                    <DeleteGroupButton groupId={group.id} />
+            {isAdmin ? (
+              <section
+                style={{
+                  ...v2card,
+                  background: "#fdfbf8",
+                  borderColor: "#e9d9d3",
+                  padding: "18px 22px",
+                  display: "grid",
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: V2.ink }}>
+                    Closing and deleting
                   </div>
-                </section>
-              ) : null}
+                  <div style={{ fontFamily: SANS, fontSize: 13, color: "#8b7f7a", marginTop: 2 }}>
+                    Closing keeps every report, band and invoice and takes the group out of
+                    timetables and assigning. Deleting is only for a group created by mistake.
+                  </div>
+                </div>
+                <CloseGroupButton groupId={group.id} status={group.status} />
+                <DeleteGroupButton groupId={group.id} />
+              </section>
+            ) : null}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
+            <SectionCard
+              title="Telegram channel"
+              note="One channel per group — where new practice is announced and sign-in links are delivered."
+              aside={
+                <Pill tone={telegramLinked ? "done" : "idle"}>
+                  {telegramLinked ? "Connected" : "Not connected"}
+                </Pill>
+              }
+            >
+              <TelegramPanel
+                groupId={group.id}
+                linked={telegramLinked}
+                botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
+              />
+            </SectionCard>
+
+            {/* THIS SLOT USED TO HOLD "Invite link" — a tokenised link a
+                person accepts to create their own account and join. It is gone
+                rather than sitting beside this one, because two things called
+                "invite" on one screen, doing different jobs, is how a teacher
+                picks the wrong one. The capability is not lost: the same panel
+                is in the console chrome's own Invite, which is where an invite
+                that is not about a specific class belongs.
+
+                This is the path that matches how a centre actually onboards —
+                accounts already exist from the register, and what is missing is
+                getting each student their own login. */}
+            <SectionCard
+              title="Get the class signed in"
+              note="One message to the channel; each student taps it, confirms their phone number and receives their own login privately. No passwords in the channel, nothing for you to hand out."
+            >
+              <CheckRow
+                ok={telegramLinked != null}
+                label="Channel linked"
+                note={
+                  telegramLinked
+                    ? telegramLinked.chatTitle ?? "connected"
+                    : "without one the invite has nowhere to be posted"
+                }
+              />
+              <CheckRow
+                ok={roster.length > 0 && withPhone >= roster.length}
+                label="Phone numbers on the roster"
+                note={
+                  roster.length === 0
+                    ? "nobody in the group yet"
+                    : `${withPhone} of ${roster.length} students — logins are matched by phone`
+                }
+                action={
+                  withPhone < roster.length
+                    ? { href: `/console/groups/${id}`, label: "Fix roster" }
+                    : undefined
+                }
+              />
+              <InviteClassPanel groupId={group.id} />
+            </SectionCard>
+          </div>
         </div>
       ) : null}
 
       {tab === "practice" ? (
-        <Stack>
-          {/* Setting practice lives with the practice, not on a separate admin
-              tab — it used to be two clicks away from the list it changes.
-              Only the group's own teacher may set it; see createAssignment. */}
-          {group.teacherId === profile.id ? (
-            <Card>
-              <CardHead title="Assign practice" />
-              <CardNote>
-                Everyone in the group gets the same prompt or test, so their results are comparable.
-                You can also set practice from the Writing, Reading or Listening screens themselves.
-              </CardNote>
-              <AssignPanel groupId={group.id} libraryTests={libraryTests} library={shelf} />
-            </Card>
-          ) : null}
-
-          <Card flush>
-            <CardHead
-              title="Practice set for this group"
-              divided
-              note="everyone gets identical content, so the bands compare"
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 18 }}>
+          {/* The strip is a filter, not decoration. A teacher opening this tab
+              is nearly always answering one of three questions — what is late,
+              what is still out, what is finished — and each is one tap. */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <PipeTile
+              href={boardHref({ flow: "overdue", skill: null, q: "" })}
+              label="Overdue"
+              value={overdueCount}
+              note="past the deadline"
+              active={flowFilter === "overdue"}
             />
-            {assignments.map((a) => {
-              const pct =
-                roster.length > 0
-                  ? Math.round((a.completed / roster.length) * 100)
-                  : 0;
-              return (
-                <ListRow
-                  key={a.id}
-                  href={`/console/groups/${group.id}/assignments/${a.id}`}
-                  lead={
-                    <KindBadge
-                      tone={
-                        a.kind === "writing" ? "indigo" : a.kind === "reading" ? "green" : "amber"
-                      }
-                    >
-                      {KIND_LABEL[a.kind] ?? "?"}
-                    </KindBadge>
-                  }
-                  title={a.title}
-                  meta={
-                    <>
-                      <span style={{ textTransform: "capitalize" }}>{a.kind}</span> · set{" "}
-                      {new Date(a.createdAt).toLocaleDateString()}
-                      {a.dueAt ? ` · due ${new Date(a.dueAt).toLocaleDateString()}` : ""}
-                    </>
-                  }
-                  trail={
-                    <div style={{ width: 170 }}>
-                      <div
+            <PipeTile
+              href={boardHref({ flow: "open", skill: null, q: "" })}
+              label="Open"
+              value={openCount}
+              note="still with the students"
+              active={flowFilter === "open"}
+            />
+            <PipeTile
+              href={boardHref({ flow: "done", skill: null, q: "" })}
+              label="Done"
+              value={doneCount}
+              note="everyone marked"
+              active={flowFilter === "done"}
+            />
+            <PipeTile
+              href={`/console/groups/${id}?tab=practice`}
+              label="All practice"
+              value={board.length}
+              note="clear the filters"
+              active={!flowFilter && !skillFilter && !query}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {/* A GET form, so a search is a URL like every other filter here. */}
+            <form action={`/console/groups/${id}`} style={{ margin: 0 }}>
+              <input type="hidden" name="tab" value="practice" />
+              {flowFilter ? <input type="hidden" name="flow" value={flowFilter} /> : null}
+              {skillFilter ? <input type="hidden" name="skill" value={skillFilter} /> : null}
+              <input
+                name="q"
+                defaultValue={query}
+                placeholder="Search practice by title"
+                aria-label="Search practice by title"
+                style={{
+                  width: 280,
+                  maxWidth: "100%",
+                  padding: "10px 14px",
+                  borderRadius: 12,
+                  border: `1px solid ${V2.field}`,
+                  background: "#fff",
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  color: V2.ink,
+                  outline: "none",
+                }}
+              />
+            </form>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <FilterPill href={boardHref({ skill: null })} label="All" active={!skillFilter} />
+              {SKILLS.map((k) => (
+                <FilterPill
+                  key={k}
+                  href={boardHref({ skill: k })}
+                  label={SKILL_LABEL[k]}
+                  active={skillFilter === k}
+                />
+              ))}
+            </div>
+            <span
+              style={{ marginLeft: "auto", fontFamily: SANS, fontSize: 13, color: V2.faint }}
+            >
+              {visible.length === board.length
+                ? `${board.length} set in total`
+                : `${visible.length} of ${board.length} shown`}
+            </span>
+          </div>
+
+          <Board>
+            <BoardHead
+              cols={BOARD_COLS}
+              labels={["Practice", "Skill", "Set / due", "Submitted", "Band", "Status"]}
+            />
+            {visible.map((a) => {
+              const pct = roster.length > 0 ? Math.round((a.completed / roster.length) * 100) : 0;
+              const row = (
+                <>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <SkillChip kind={a.kind} />
+                      <span
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
                           fontFamily: SANS,
-                          fontSize: 11.5,
-                          color: SOFT,
-                          marginBottom: 5,
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: V2.ink,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        <span>
-                          {a.completed}/{roster.length} submitted
-                        </span>
-                        <span>{pct}%</span>
-                      </div>
-                      <Bar pct={pct} fill={pct >= 60 ? GREEN : INDIGO} />
+                        {a.title}
+                      </span>
                     </div>
-                  }
-                />
+                  </div>
+                  <div style={{ fontFamily: SANS, fontSize: 13, color: V2.body, minWidth: 0 }}>
+                    {SKILL_LABEL[a.kind]}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: SANS,
+                      fontSize: 13,
+                      color: V2.body,
+                      minWidth: 0,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    <div>set {new Date(a.createdAt).toLocaleDateString()}</div>
+                    <div style={{ color: V2.faint }}>
+                      {a.dueAt ? `due ${new Date(a.dueAt).toLocaleDateString()}` : "no deadline"}
+                    </div>
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: SANS, fontSize: 13, color: V2.body }}>
+                      {a.completed} / {roster.length}
+                    </div>
+                    <MiniBar pct={pct} />
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: SERIF,
+                      fontWeight: 700,
+                      fontSize: 19,
+                      color: a.band == null ? V2.faint : V2.ink,
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {a.band == null ? "—" : a.band.toFixed(1)}
+                  </div>
+                  <div style={{ textAlign: "right", minWidth: 0 }}>
+                    <Pill tone={FLOW_TONE[a.flow]}>{FLOW_LABEL[a.flow]}</Pill>
+                  </div>
+                </>
+              );
+              const rowStyle: React.CSSProperties = {
+                display: "grid",
+                gridTemplateColumns: BOARD_COLS,
+                alignItems: "center",
+                gap: 12,
+                padding: "15px 20px",
+                borderBottom: `1px solid ${V2.hair}`,
+                textDecoration: "none",
+                color: "inherit",
+              };
+              // A LESSON HAS NO RESULTS PAGE YET. loadAssignmentReport knows
+              // essays, reading attempts and listening attempts; a lesson's
+              // marks live in lesson_attempts and nothing reads them back. So
+              // its row is not a link — a link that 404s is worse than a row
+              // that plainly does not offer one.
+              return a.kind === "lesson" ? (
+                <div key={a.id} style={rowStyle}>
+                  {row}
+                </div>
+              ) : (
+                <Link
+                  key={a.id}
+                  href={`/console/groups/${group.id}/assignments/${a.id}`}
+                  className="cn-boardrow"
+                  style={rowStyle}
+                >
+                  {row}
+                </Link>
               );
             })}
-            {assignments.length === 0 ? (
-              <Empty>Nothing assigned yet — set the first one above.</Empty>
+            {visible.length === 0 ? (
+              <div
+                style={{
+                  padding: "44px 20px",
+                  textAlign: "center",
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  color: V2.faint,
+                }}
+              >
+                {board.length === 0
+                  ? "Nothing assigned yet."
+                  : "No practice matches this filter."}
+              </div>
             ) : null}
-          </Card>
-        </Stack>
+            {group.teacherId === profile.id ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  padding: "14px 20px",
+                  background: V2.wash,
+                  flexWrap: "wrap",
+                }}
+              >
+                <AssignSheet
+                  groupId={group.id}
+                  libraryTests={libraryTests}
+                  library={shelf}
+                  label="+ Assign practice"
+                  variant="quiet"
+                />
+                <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint }}>
+                  Everyone in the group receives identical content, so the bands stay comparable.
+                </span>
+              </div>
+            ) : null}
+          </Board>
+        </div>
       ) : null}
 
       {/* ── attendance ──────────────────────────────────────────────────────── */}
       {tab === "attendance" ? (
-        <Card>
-          <CardHead
-            title={`Last ${sessions.length || 12} sessions`}
-            note="a late arrival still counts as attended"
-            actions={
-              <TextLink href={`/console/attendance?group=${group.id}`}>Mark today →</TextLink>
-            }
-          />
-          {sessions.length === 0 ? (
-            <p style={{ fontFamily: SANS, fontSize: 13, color: FAINT, margin: 0 }}>
-              No registers taken for this group yet. Open Attendance and mark one — the strip fills
-              in from there.
-            </p>
-          ) : (
-            <>
-              {roster.map((m) => {
-                const row = marks.get(m.id);
-                const rate = attendanceRate(m.id);
-                return (
-                  <div
-                    key={m.id}
-                    style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 9 }}
-                  >
-                    <div
-                      style={{
-                        width: 150,
-                        flex: "0 0 150px",
-                        fontFamily: SANS,
-                        fontSize: 12.5,
-                        color: INK,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {m.name}
-                    </div>
-                    <div style={{ display: "flex", gap: 4, flex: 1, flexWrap: "wrap" }}>
-                      {sessions.map((s) => {
-                        const status = row?.get(s.id);
-                        const color =
-                          status === "present"
-                            ? GREEN
-                            : status === "late"
-                              ? "#E5A85C"
-                              : status === "absent"
-                                ? "#E0A9A3"
-                                : "#EFEDE8";
-                        return (
-                          <span
-                            key={s.id}
-                            title={`${new Date(`${s.held_on}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })} · ${status ?? "not marked"}`}
-                            style={{ width: 18, height: 18, borderRadius: 5, background: color }}
-                          />
-                        );
-                      })}
-                    </div>
-                    <div
-                      style={{
-                        width: 50,
-                        textAlign: "right",
-                        fontFamily: SANS,
-                        fontSize: 12.5,
-                        fontWeight: 600,
-                        color: rate == null ? FAINT : INK,
-                      }}
-                    >
-                      {rate == null ? "—" : `${rate}%`}
-                    </div>
-                  </div>
-                );
-              })}
-              <div
+        <div style={{ marginTop: 18 }}>
+          {/* THE REGISTER NOW SAYS WHAT IT MEANS. It was a row of coloured
+              squares with no dates on them and no letters in them, so which
+              lesson a mark belonged to, and what the colour stood for, were
+              both only available on hover — and on a touch screen, not at all. */}
+          <Board min={Math.max(640, 260 + sessions.length * 50 + 90)}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "18px 20px",
+                borderBottom: `1px solid ${V2.rule}`,
+                flexWrap: "wrap",
+              }}
+            >
+              <h3 style={serifHead}>Register</h3>
+              <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint }}>
+                P present · L late · A absent · E excused. A late arrival still counts as
+                attended; an excused lesson counts as neither.
+              </span>
+              <Link
+                href={`/console/attendance?group=${group.id}`}
                 style={{
-                  display: "flex",
-                  gap: 16,
-                  marginTop: 16,
+                  marginLeft: "auto",
+                  padding: "11px 18px",
+                  borderRadius: 12,
+                  background: V2.indigo,
+                  color: "#fff",
                   fontFamily: SANS,
-                  fontSize: 11.5,
-                  color: SOFT,
-                  flexWrap: "wrap",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {[
-                  ["Present", GREEN],
-                  ["Late", "#E5A85C"],
-                  ["Absent", "#E0A9A3"],
-                  ["Not marked", "#EFEDE8"],
-                ].map(([text, color]) => (
-                  <span key={text} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <i
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 3,
-                        background: color,
-                        display: "inline-block",
-                      }}
-                    />
-                    {text}
-                  </span>
-                ))}
+                Mark today
+              </Link>
+            </div>
+
+            {sessions.length === 0 ? (
+              <div
+                style={{
+                  padding: "44px 20px",
+                  textAlign: "center",
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  color: V2.faint,
+                }}
+              >
+                No registers taken for this group yet — mark one and it fills in from there.
               </div>
-            </>
-          )}
-        </Card>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: REGISTER_COLS(sessions.length),
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "13px 20px",
+                    borderBottom: `1px solid ${V2.rule}`,
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    letterSpacing: ".07em",
+                    textTransform: "uppercase",
+                    color: V2.faint,
+                  }}
+                >
+                  <span>Student</span>
+                  {sessions.map((sn) => (
+                    <span key={sn.id} title={sn.held_on}>
+                      {sn.held_on.slice(8, 10)}
+                    </span>
+                  ))}
+                  <span style={{ textAlign: "right" }}>Rate</span>
+                </div>
+                {roster.map((m) => {
+                  const row = marks.get(m.id);
+                  const rate = attendanceRate(m.id);
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: REGISTER_COLS(sessions.length),
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "14px 20px",
+                        borderBottom: `1px solid ${V2.hair}`,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: SANS,
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: V2.ink,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {m.name}
+                      </span>
+                      {sessions.map((sn) => {
+                        const status = row?.get(sn.id);
+                        const mk = MARK[status ?? "none"] ?? MARK.none;
+                        return (
+                          <span
+                            key={sn.id}
+                            title={`${new Date(`${sn.held_on}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })} · ${status ?? "not marked"}`}
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 10,
+                              display: "grid",
+                              placeItems: "center",
+                              fontFamily: SANS,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              background: mk.bg,
+                              color: mk.fg,
+                            }}
+                          >
+                            {mk.letter}
+                          </span>
+                        );
+                      })}
+                      <span
+                        style={{
+                          textAlign: "right",
+                          fontFamily: SANS,
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: rate == null ? V2.faint : V2.ink,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {rate == null ? "—" : `${rate}%`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </Board>
+        </div>
       ) : null}
 
       {/* ── money ───────────────────────────────────────────────────────────── */}
@@ -808,33 +1181,47 @@ export default async function GroupDetailPage({
       {/* ── students ────────────────────────────────────────────────────────── */}
       {tab === "students" ? (
         <Stack>
-          <Card>
-            <CardHead
-              title={
-                group.capacity
+          {/* The roster on the same surface as the practice board: same card,
+              same column rule, same row rhythm. They are the two boards a
+              teacher moves between all day. */}
+          <div style={{ ...v2card, overflow: "hidden" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "18px 20px",
+                borderBottom: `1px solid ${V2.rule}`,
+                flexWrap: "wrap",
+              }}
+            >
+              <h3 style={serifHead}>
+                {group.capacity
                   ? `Students (${roster.length}/${group.capacity})`
-                  : `Students (${roster.length})`
-              }
-              note={
-                group.capacity && roster.length >= group.capacity
+                  : `Students (${roster.length})`}
+              </h3>
+              <span
+                style={{ fontFamily: SANS, fontSize: 13, color: V2.faint, flex: "1 1 240px" }}
+              >
+                {group.capacity && roster.length >= group.capacity
                   ? `This group is full — ${roster.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
-                  : "Everyone here signs in with their own login — that is how homework is handed in and graded."
-              }
-              actions={
+                  : "Everyone here signs in with their own login — that is how homework is handed in and graded."}
+              </span>
+              <div style={{ marginLeft: "auto" }}>
                 <RosterToolbar
                   students={studentRows}
                   groupName={group.name}
                   addForm={<AddStudentPanel groupId={group.id} />}
                   importForm={<BulkAddPanel groupId={group.id} />}
                 />
-              }
-            />
+              </div>
+            </div>
             <StudentsManager
               groupId={group.id}
               students={studentRows}
               otherGroups={siblingGroups}
             />
-          </Card>
+          </div>
 
           {/* Students who left. Kept on the page and out of every count above
               it — someone asks about last term's student, and "we deleted
@@ -881,19 +1268,3 @@ export default async function GroupDetailPage({
     </div>
   );
 }
-
-const settingsHeading: React.CSSProperties = {
-  margin: "0 0 6px",
-  fontFamily: SANS,
-  fontSize: 13.5,
-  fontWeight: 600,
-  color: INK,
-};
-
-const settingsNote: React.CSSProperties = {
-  margin: "0 0 10px",
-  fontFamily: SANS,
-  fontSize: 12.5,
-  color: SOFT,
-  lineHeight: 1.55,
-};
