@@ -198,6 +198,64 @@ export async function createGroupInvite(args: {
   return { code, url: bot ? `https://t.me/${bot}?start=${code}` : null, expiresAt };
 }
 
+/* ── a handshake half-finished ─────────────────────────────────────────────
+   Two updates make one join: the class code, then the shared phone. Every
+   webhook call is a separate serverless invocation, so what is remembered
+   between them cannot live in memory — a module-scope Map is empty for the
+   second message almost every time, and the student is told to send the code
+   they have just sent. Ten minutes is generous for a handshake measured in
+   seconds, and short enough that nothing needs sweeping. */
+
+const PENDING_TTL_MS = 10 * 60 * 1000;
+
+export interface PendingJoin {
+  groupId: string;
+  organizationId: string;
+  /** Set once a number has arrived and matched more than one student. */
+  phone?: string;
+}
+
+export async function setPendingJoin(chatId: number, join: PendingJoin): Promise<void> {
+  const admin = createAdminClient();
+  await admin
+    .from("telegram_pending")
+    .upsert(
+      {
+        chat_id: chatId,
+        organization_id: join.organizationId,
+        group_id: join.groupId,
+        phone: join.phone ?? null,
+        expires_at: new Date(Date.now() + PENDING_TTL_MS).toISOString(),
+      },
+      { onConflict: "chat_id" },
+    )
+    .select("chat_id");
+}
+
+export async function getPendingJoin(chatId: number): Promise<PendingJoin | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("telegram_pending")
+    .select("group_id, organization_id, phone, expires_at")
+    .eq("chat_id", chatId)
+    .maybeSingle();
+  if (!data) return null;
+  if (new Date(data.expires_at as string) < new Date()) {
+    await clearPendingJoin(chatId);
+    return null;
+  }
+  return {
+    groupId: data.group_id as string,
+    organizationId: data.organization_id as string,
+    phone: (data.phone as string | null) ?? undefined,
+  };
+}
+
+export async function clearPendingJoin(chatId: number): Promise<void> {
+  const admin = createAdminClient();
+  await admin.from("telegram_pending").delete().eq("chat_id", chatId).select("chat_id");
+}
+
 /** The class a code belongs to, if it is live. Null for unknown or expired. */
 export async function groupForInviteCode(
   code: string,

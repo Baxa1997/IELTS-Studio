@@ -6,9 +6,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { callTelegram, escapeHtml, sendMessage } from "@/lib/telegram/send";
 import {
   bindStudentChat,
+  clearPendingJoin,
+  getPendingJoin,
   groupForInviteCode,
   matchStudentByPhone,
   sendCredentialsTelegram,
+  setPendingJoin,
 } from "@/lib/telegram/student";
 
 // Writes with the service-role client and calls out to Telegram — Node runtime,
@@ -109,7 +112,7 @@ export async function POST(req: Request): Promise<Response> {
   // Only reachable when a number has already matched more than one student, so
   // this is never a way to be identified BY name — it chooses between people
   // who have already proved they share a phone.
-  const waiting = pendingGroup.get(chat.id);
+  const waiting = await getPendingJoin(chat.id);
   if (waiting?.phone && !text.startsWith("/")) {
     await resolve(chat.id, waiting, waiting.phone, text);
     return ok();
@@ -273,7 +276,7 @@ async function handlePrivateCode(
   // channel thirty people can read.
   const group = await groupForInviteCode(code);
   if (group) {
-    pendingGroup.set(chatId, group);
+    await setPendingJoin(chatId, group);
     await callTelegram("sendMessage", {
       chat_id: chatId,
       text:
@@ -365,27 +368,6 @@ async function bindStudent(code: string, chatId: number): Promise<boolean> {
 }
 
 /**
- * Which class a chat is part-way through joining.
- *
- * IN MEMORY, and that is a real limitation rather than a shortcut: serverless
- * instances do not share it, so a student whose code and phone land on
- * different instances is asked to send the code again. That is a recoverable
- * annoyance, and the alternative — a row per half-finished attempt — is state
- * to expire and clean up for a step that takes ten seconds. Revisit if it
- * proves common.
- */
-const pendingGroup = new Map<
-  number,
-  {
-    groupId: string;
-    organizationId: string;
-    /** Kept after a phone that pointed at several people, so the name they
-     *  type next can be applied without asking for the number again. */
-    phone?: string;
-  }
->();
-
-/**
  * Bind the student whose phone this is, and send their sign-in details.
  *
  * The phone is the whole authentication. Everything before it is public: the
@@ -400,9 +382,18 @@ async function claimByPhone(
   contact: { phone_number?: string; user_id?: number },
   senderId: number | undefined,
 ): Promise<void> {
-  const pending = pendingGroup.get(chatId);
+  const pending = await getPendingJoin(chatId);
   if (!pending) {
-    await sendMessage(chatId, "Send me your class code first, then share your number.");
+    // A student who pressed the button out of context has no idea what a
+    // "class code" is or where one comes from, and Telegram keeps that keyboard
+    // on screen long after the conversation has moved on — so this is reachable
+    // by accident. Say where to find it.
+    await sendMessage(
+      chatId,
+      "First send me the code from your class — your teacher posted it in the class " +
+        "Telegram channel, next to the link. It looks like <code>RFSGC9E6</code>.\n\n" +
+        "Then I'll ask for your number.",
+    );
     return;
   }
 
@@ -443,7 +434,7 @@ async function resolve(
     // Two people share this number — siblings, almost always. Remember the
     // phone so the name they type next completes it, rather than making them
     // press the share button again.
-    pendingGroup.set(chatId, { ...pending, phone });
+    await setPendingJoin(chatId, { ...pending, phone });
     await callTelegram("sendMessage", {
       chat_id: chatId,
       text:
@@ -477,7 +468,7 @@ async function resolve(
     await sendMessage(chatId, "Something went wrong connecting you. Ask your teacher.");
     return;
   }
-  pendingGroup.delete(chatId);
+  await clearPendingJoin(chatId);
 
   // A NEW PASSWORD, not the old one, because the old one cannot be read back —
   // Supabase stores a hash. Setting one here is what makes this self-service:
