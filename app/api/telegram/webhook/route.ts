@@ -95,8 +95,10 @@ export async function POST(req: Request): Promise<Response> {
   if (/^\/start(?:@\w+)?$/.test(text) && (chat.type === "private" || chat.id > 0)) {
     await sendMessage(
       chat.id,
-      "👋 I post class announcements into your center's Telegram groups.\n\n" +
-        "I don't do anything in this chat. To connect a class: open it in the console → " +
+      "👋 I'm the EngProgress bot.\n\n" +
+        "<b>Students:</b> open the link your teacher gave you and I'll send your sign-in " +
+        "details here. A bare /start can't identify you — I need the link.\n\n" +
+        "<b>Teachers:</b> to connect a class channel, open the class in the console → " +
         "<b>Settings → Telegram</b>, press <b>Add to a group</b>, and pick the group there.",
     );
     return ok();
@@ -105,6 +107,19 @@ export async function POST(req: Request): Promise<Response> {
   const match = /^\/(?:start|link)(?:@\w+)?\s+([A-Za-z0-9-]{4,20})$/.exec(text);
   if (!match) return ok();
   const code = match[1].toUpperCase();
+
+  // ── a student binding their own chat ────────────────────────────────────
+  // Tried BEFORE the private-chat rejection below, because for a student a
+  // private chat is the whole point: this is where their password goes. The two
+  // code spaces cannot collide — a channel code lives in telegram_links and a
+  // student code in telegram_students, and this only looks in the latter, so a
+  // channel code pasted here still falls through to the warning it deserves.
+  const isPrivateChat = chat.type === "private" || (chat.type == null && chat.id > 0);
+  if (isPrivateChat) {
+    const bound = await bindStudent(code, chat.id);
+    if (bound) return ok();
+    // Not a student code either — fall through and explain.
+  }
 
   // A CLASS CHANNEL IS NEVER A PRIVATE CHAT, and this check is not pedantry —
   // it is the failure we actually hit. Opening the `?startgroup=` deep link on
@@ -117,8 +132,7 @@ export async function POST(req: Request): Promise<Response> {
   // Private chat ids are positive; groups, supergroups and channels are
   // negative. `type` is checked first because it says so explicitly, with the
   // sign as a fallback for updates that omit it.
-  const isPrivate = chat.type === "private" || (chat.type == null && chat.id > 0);
-  if (isPrivate) {
+  if (isPrivateChat) {
     await sendMessage(
       chat.id,
       "That connected nothing — this is our private chat, not your class channel.\n\n" +
@@ -181,6 +195,67 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   return ok();
+}
+
+/**
+ * Bind a student to this private chat, and greet them.
+ *
+ * Returns false when the code is not a student code at all, so the caller can
+ * carry on and treat it as a channel code. Returns TRUE for a student code that
+ * is expired or used — those are answered here, because the person holding one
+ * is a learner who needs telling what went wrong, not a channel admin.
+ *
+ * Nothing secret is sent here. The credentials go out through
+ * `sendCredentialsTelegram`, called by the staff action that knows the
+ * password; this only confirms the chat is theirs. A webhook is a public
+ * endpoint and the code arrives in the clear, so binding is all it may do.
+ */
+async function bindStudent(code: string, chatId: number): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: row } = await admin
+    .from("telegram_students")
+    .select("id, verified_at, code_expires_at")
+    .eq("link_code", code)
+    .maybeSingle();
+  if (!row) return false;
+
+  if (row.verified_at) {
+    await sendMessage(chatId, "That link has already been used. Ask your teacher for a new one.");
+    return true;
+  }
+  if (row.code_expires_at && new Date(row.code_expires_at as string) < new Date()) {
+    await sendMessage(chatId, "That link has expired. Ask your teacher for a new one.");
+    return true;
+  }
+
+  const { error } = await admin
+    .from("telegram_students")
+    .update({
+      chat_id: chatId,
+      verified_at: new Date().toISOString(),
+      // Burned, so the slip cannot bind a second phone if it is passed around.
+      link_code: null,
+      code_expires_at: null,
+    })
+    .eq("id", row.id)
+    .select("id");
+
+  if (error) {
+    // Almost certainly the (organization_id, chat_id) unique: this Telegram
+    // account is already bound to a different student in the same centre.
+    console.error("[telegram/webhook] student bind failed:", error.message);
+    await sendMessage(
+      chatId,
+      "This Telegram account is already connected to another student. Ask your teacher to check.",
+    );
+    return true;
+  }
+
+  await sendMessage(
+    chatId,
+    "✅ Connected. Your sign-in details and homework reminders will come here.",
+  );
+  return true;
 }
 
 function ok() {

@@ -5,6 +5,8 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadStudentReport } from "@/lib/console/student-report";
 import { createClient } from "@/lib/supabase/server";
 
+import { TelegramInvitePanel } from "../telegram-panel";
+
 /**
  * The same student report, reached from the center roster instead of a group —
  * which is the only way to open a student who is in no group at all, and the
@@ -36,7 +38,26 @@ export default async function RosterStudentPage({ params }: { params: Promise<{ 
   const report = await loadStudentReport(id);
   if (!report) notFound();
 
+  // Has this student completed the one tap that lets anything personal reach
+  // them? Read through RLS, which already restricts it to students this staff
+  // member may see.
+  const supabase2 = await createClient();
+  const { data: tg } = await supabase2
+    .from("telegram_students")
+    .select("verified_at")
+    .eq("profile_id", id)
+    .maybeSingle();
+
   return (
-    <StudentReportView report={report} back={{ href: "/console/students", label: "Students" }} />
+    <div>
+      <StudentReportView report={report} back={{ href: "/console/students", label: "Students" }} />
+      <div style={{ maxWidth: 760, margin: "18px auto 40px", padding: "0 16px" }}>
+        <TelegramInvitePanel
+          studentId={id}
+          studentName={report.name}
+          connected={Boolean(tg?.verified_at)}
+        />
+      </div>
+    </div>
   );
 }
