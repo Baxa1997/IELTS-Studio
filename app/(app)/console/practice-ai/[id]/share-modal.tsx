@@ -88,21 +88,37 @@ export function ShareModal({
   // line under the button, inside a body that scrolls — after an action the
   // teacher was specifically waiting to have confirmed. The console has a toast
   // for exactly this and every other action in it uses one; this modal was the
-  // exception. `keepOpen` because the picker should stay up: setting a lesson
-  // to one class is often the first of several.
-  useActionFeedback(assignState, { keepOpen: true });
+  // exception.
+  //
+  // SETTING IT CLOSES THE DIALOG. It stayed open at first, on the reasoning
+  // that one class is often the first of several — but the picker takes as many
+  // classes as you tick in a single submit, so there is rarely a second trip,
+  // and a dialog that sits there afterwards makes a teacher wonder whether the
+  // thing they just did actually happened. The toast carries the confirmation
+  // out to where it is read.
+  //
+  // `keepOpen` stays on: it governs the console DRAWER, which this dialog is
+  // not inside, and letting the hook close a drawer nobody opened would shut
+  // something else on the page.
+  useActionFeedback(assignState, { keepOpen: true, onSuccess: onClose });
+  // The share link is the opposite case — the whole point is to copy the URL it
+  // has just produced, so closing on success would take it away.
   useActionFeedback(shareState, { keepOpen: true });
 
   const [picked, setPicked] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
-  // Once a set has landed, the ticks beside those classes are describing
-  // something that already happened. Clearing them makes the button go back to
-  // "Pick a group first", which is the truth: there is nothing left to set.
-  const [seenAssign, setSeenAssign] = useState<string | undefined>(undefined);
-  if (assignState.ok && assignState.ok !== seenAssign) {
-    setSeenAssign(assignState.ok);
-    setPicked([]);
+
+  // A CLOSED DIALOG IS NOT AN UNMOUNTED ONE. The early return below happens
+  // after the hooks, so this component keeps its state the whole time the page
+  // is open — which means the classes ticked on the last visit are still ticked
+  // on the next one, describing work that has already been set. Cleared on the
+  // transition into open, during render rather than in an effect, so the first
+  // paint is never the stale list.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setPicked([]);
   }
+  const [copied, setCopied] = useState(false);
 
   // Escape closes it. A dialog you can only leave by finding a 38px × in the
   // corner is a dialog that traps the one person in a hurry.

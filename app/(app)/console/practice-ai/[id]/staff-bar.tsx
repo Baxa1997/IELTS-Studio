@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 
 import { useActionFeedback } from "@/components/console/toast";
 import {
+  EMBER,
   GOOD_BG,
   GOOD_INK,
   HAIRLINE,
@@ -135,17 +136,23 @@ export function LessonStaffBar({
           justifyContent: "flex-end",
         }}
       >
-        {status !== "published" ? (
+        {/* ONE PRIMARY ACTION, and it is the same one everywhere on this page.
+            "Publish" used to sit here on a draft — a status change dressed as
+            the main button, which then silently swapped itself for "Set to a
+            group" once pressed. Two labels, one slot, and neither said what a
+            teacher was actually trying to do. Publishing is now a step inside
+            setting, not a thing to remember first. */}
+        {status === "archived" ? (
           <form action={statusAction}>
             <input type="hidden" name="id" value={id} />
             <input type="hidden" name="status" value="published" />
             <button type="submit" disabled={statusPending} className="pa-lift" style={raised}>
-              {statusPending ? "…" : status === "archived" ? "Restore" : "Publish"}
+              {statusPending ? "…" : "Restore"}
             </button>
           </form>
-        ) : (
+        ) : status === "published" ? (
           <>
-            <button type="button" onClick={() => setShareOpen(true)} className="pa-lift" style={raised}>
+            <button type="button" onClick={() => setShareOpen(true)} className="pa-ember" style={ember}>
               Set to a group
             </button>
             <form action={statusAction}>
@@ -156,6 +163,17 @@ export function LessonStaffBar({
               </button>
             </form>
           </>
+        ) : (
+          /* A draft: publishing is what has to happen first, so the button
+             does it and the picker follows by itself — the same path the
+             panel's button takes, because there should not be two. */
+          <form action={statusAction}>
+            <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="status" value="published" />
+            <button type="submit" disabled={statusPending} className="pa-ember" style={ember}>
+              {statusPending ? "Publishing…" : "Set to a group"}
+            </button>
+          </form>
         )}
 
         {/* The one thing on this bar a teacher does for themselves rather than
@@ -199,6 +217,20 @@ const pill: React.CSSProperties = {
   fontWeight: 500,
   cursor: "pointer",
   whiteSpace: "nowrap",
+};
+
+const ember: React.CSSProperties = {
+  padding: "11px 18px",
+  borderRadius: 999,
+  border: 0,
+  background: EMBER,
+  color: "#fff",
+  fontFamily: "inherit",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  boxShadow: "0 10px 24px -12px rgba(236,106,69,.9)",
 };
 
 const raised: React.CSSProperties = {
