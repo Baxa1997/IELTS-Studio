@@ -29,7 +29,6 @@ import {
   THead,
   TRow,
 } from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupAssignments } from "@/lib/console/assignments";
 import { attendanceRateFrom } from "@/lib/console/attendance-marks";
@@ -58,7 +57,7 @@ import { RosterToolbar, StudentsManager } from "./students-manager";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["students", "practice", "attendance", "money"] as const;
+const TABS = ["students", "practice", "attendance", "money", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 const MONEY_COLS = "2fr 1.4fr 1.1fr 1.1fr 1.1fr";
@@ -343,14 +342,68 @@ export default async function GroupDetailPage({
           </>
         }
         actions={
-          <Drawer
-            label="Settings"
-            variant="ghost"
-            eyebrow={group.name}
-            title="Group settings"
-            note="The things you set once: who teaches it, where it announces, whether it exists."
-          >
-            <div style={{ display: "grid", gap: 20 }}>
+          /* SETTINGS IS A TAB NOW, not a drawer.
+
+             A drawer has no URL, so nothing anywhere could send a teacher to
+             it — every prompt to "go and connect Telegram" had to describe
+             the route in words and hope. It was also invisible: three of the
+             four things in here are set once and then needed again months
+             later, by which time nobody remembers there is a button in the
+             header. A tab is both addressable and on the page. */
+          null
+        }
+      />
+
+      <KpiRow>
+        <Kpi
+          label="Students"
+          value={roster.length}
+          sub={`${activeCount} active in 30 days`}
+        />
+        <Kpi label="Practice set" value={assignments.length} />
+        <Kpi
+          label="Completion"
+          value={completionPct == null ? "—" : `${completionPct}%`}
+          sub={
+            assignments.length === 0
+              ? "nothing set yet"
+              : `${totalCompleted} of ${assignments.length * roster.length} finished`
+          }
+        />
+        <Kpi
+          label="Measured"
+          value={`${measuredMembers.length}/${roster.length}`}
+          sub="have a graded band"
+        />
+        <Kpi
+          label="At target"
+          value={atTarget}
+          sub="on their weakest skill"
+          deltaTone={atTarget > 0 ? "good" : "flat"}
+        />
+      </KpiRow>
+
+      {/* Four tabs, from six. "Roster" and "Manage" both listed the same
+          students and neither just showed the group; they are one Students tab
+          now, and the single Progress card folded into its columns. */}
+      <Tabs
+        tabs={[
+          { href: tabHref("students"), label: "Students", active: tab === "students" },
+          {
+            href: tabHref("practice"),
+            label: `Practice (${assignments.length})`,
+            active: tab === "practice",
+          },
+          { href: tabHref("attendance"), label: "Attendance", active: tab === "attendance" },
+          ...(moneyData
+            ? [{ href: tabHref("money"), label: "Money", active: tab === "money" }]
+            : []),
+          { href: tabHref("settings"), label: "Settings", active: tab === "settings" },
+        ]}
+      />
+
+      {tab === "settings" ? (
+        <div style={{ display: "grid", gap: 20, maxWidth: 760, marginTop: 18 }}>
               <section>
                 <h3 style={settingsHeading}>When it meets</h3>
                 <p style={settingsNote}>
@@ -408,57 +461,8 @@ export default async function GroupDetailPage({
                   </div>
                 </section>
               ) : null}
-            </div>
-          </Drawer>
-        }
-      />
-
-      <KpiRow>
-        <Kpi
-          label="Students"
-          value={roster.length}
-          sub={`${activeCount} active in 30 days`}
-        />
-        <Kpi label="Practice set" value={assignments.length} />
-        <Kpi
-          label="Completion"
-          value={completionPct == null ? "—" : `${completionPct}%`}
-          sub={
-            assignments.length === 0
-              ? "nothing set yet"
-              : `${totalCompleted} of ${assignments.length * roster.length} finished`
-          }
-        />
-        <Kpi
-          label="Measured"
-          value={`${measuredMembers.length}/${roster.length}`}
-          sub="have a graded band"
-        />
-        <Kpi
-          label="At target"
-          value={atTarget}
-          sub="on their weakest skill"
-          deltaTone={atTarget > 0 ? "good" : "flat"}
-        />
-      </KpiRow>
-
-      {/* Four tabs, from six. "Roster" and "Manage" both listed the same
-          students and neither just showed the group; they are one Students tab
-          now, and the single Progress card folded into its columns. */}
-      <Tabs
-        tabs={[
-          { href: tabHref("students"), label: "Students", active: tab === "students" },
-          {
-            href: tabHref("practice"),
-            label: `Practice (${assignments.length})`,
-            active: tab === "practice",
-          },
-          { href: tabHref("attendance"), label: "Attendance", active: tab === "attendance" },
-          ...(moneyData
-            ? [{ href: tabHref("money"), label: "Money", active: tab === "money" }]
-            : []),
-        ]}
-      />
+        </div>
+      ) : null}
 
       {tab === "practice" ? (
         <Stack>

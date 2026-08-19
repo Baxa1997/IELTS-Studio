@@ -130,36 +130,37 @@ const COUNT_MAX = 30;
  * only from the first group is exactly how you end up with a set that drills
  * and never asks anyone to write anything.
  */
-const EXERCISE_KINDS: { group: string; note: string; types: { value: string; label: string }[] }[] = [
-  {
-    group: "Recognise",
-    note: "supported — the form is in front of them",
-    types: [
-      { value: "gap_fill", label: "Fill the gap" },
-      { value: "mcq_single", label: "Choose one" },
-      { value: "mcq_multi", label: "Choose several" },
-      { value: "matching", label: "Match them up" },
-    ],
-  },
-  {
-    group: "Change",
-    note: "where understanding shows",
-    types: [
-      { value: "transform", label: "Rewrite it" },
-      { value: "error_correction", label: "Correct the mistake" },
-      { value: "ordering", label: "Put in order" },
-    ],
-  },
-  {
-    group: "Produce",
-    note: "the only proof they can use it",
-    types: [
-      { value: "short_answer", label: "Short answer" },
-      { value: "write_sentence", label: "Write a sentence" },
-      { value: "write_short_text", label: "Write a paragraph" },
-    ],
-  },
-];
+const EXERCISE_KINDS: { group: string; note: string; types: { value: string; label: string }[] }[] =
+  [
+    {
+      group: "Recognise",
+      note: "supported — the form is in front of them",
+      types: [
+        { value: "gap_fill", label: "Fill the gap" },
+        { value: "mcq_single", label: "Choose one" },
+        { value: "mcq_multi", label: "Choose several" },
+        { value: "matching", label: "Match them up" },
+      ],
+    },
+    {
+      group: "Change",
+      note: "where understanding shows",
+      types: [
+        { value: "transform", label: "Rewrite it" },
+        { value: "error_correction", label: "Correct the mistake" },
+        { value: "ordering", label: "Put in order" },
+      ],
+    },
+    {
+      group: "Produce",
+      note: "the only proof they can use it",
+      types: [
+        { value: "short_answer", label: "Short answer" },
+        { value: "write_sentence", label: "Write a sentence" },
+        { value: "write_short_text", label: "Write a paragraph" },
+      ],
+    },
+  ];
 
 const LANGUAGES = [
   { value: "en", label: "English only" },
@@ -183,7 +184,10 @@ type SpeechCtor = new () => SpeechSession;
 
 function speechCtor(): SpeechCtor | null {
   if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor };
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechCtor;
+    webkitSpeechRecognition?: SpeechCtor;
+  };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
@@ -267,7 +271,9 @@ export function Composer() {
     const body = (override ?? brief).trim();
     const notes = [
       level !== AUTO ? `Level: ${level}.` : null,
-      focus !== AUTO ? `Focus on ${FOCUSES.find((f) => f.value === focus)?.label.toLowerCase()}.` : null,
+      focus !== AUTO
+        ? `Focus on ${FOCUSES.find((f) => f.value === focus)?.label.toLowerCase()}.`
+        : null,
     ].filter(Boolean);
     return notes.length > 0 ? `${body}\n\n${notes.join(" ")}` : body;
   };
@@ -287,7 +293,10 @@ export function Composer() {
     rec.continuous = false;
     rec.interimResults = false;
     rec.onresult = (e) => {
-      const said = Array.from({ length: e.results.length }, (_, i) => e.results[i][0].transcript).join(" ");
+      const said = Array.from(
+        { length: e.results.length },
+        (_, i) => e.results[i][0].transcript,
+      ).join(" ");
       setBrief((b) => (b ? `${b} ${said}` : said));
     };
     rec.onend = () => setListening(false);
@@ -540,7 +549,15 @@ export function Composer() {
                   cursor: "pointer",
                 }}
               >
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                <svg
+                  width="19"
+                  height="19"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                >
                   <path d="M12 19v3" />
                   <path d="M8 22h8" />
                   <rect x="9" y="2" width="6" height="12" rx="3" />
@@ -572,7 +589,16 @@ export function Composer() {
               {busy ? (
                 <Spinner size={20} />
               ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M12 19V5" />
                   <path d="M5 12l7-7 7 7" />
                 </svg>
@@ -585,7 +611,13 @@ export function Composer() {
       {/* ── what came back ──────────────────────────────────────────────── */}
       {phase.step === "error" ? (
         <p
-          style={{ fontSize: 15, color: "#a63a30", margin: "18px 0 0", maxWidth: 640, textAlign: "center" }}
+          style={{
+            fontSize: 15,
+            color: "#a63a30",
+            margin: "18px 0 0",
+            maxWidth: 640,
+            textAlign: "center",
+          }}
           role="alert"
         >
           {phase.message}
@@ -914,7 +946,10 @@ function Working({ stage, count }: { stage: number; count: number }) {
           const done = stage > i;
           const active = stage === i;
           return (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 11, fontSize: 15 }}>
+            <div
+              key={label}
+              style={{ display: "flex", alignItems: "center", gap: 11, fontSize: 15 }}
+            >
               <span
                 aria-hidden
                 style={{
@@ -1190,7 +1225,10 @@ function Specs({
       {/* Said here because it is the one thing teachers get wrong about this
           control: it is not "translate the lesson". A learner who reads the
           rule only in Uzbek has practised nothing. */}
-      <SpecRow label="Support" hint="The lesson stays in English — this adds a short note per section.">
+      <SpecRow
+        label="Support"
+        hint="The lesson stays in English — this adds a short note per section."
+      >
         {LANGUAGES.map((l) => (
           <SpecChip key={l.value} on={language === l.value} onClick={() => setLanguage(l.value)}>
             {l.label}
@@ -1256,9 +1294,7 @@ function ItemCount({
       <Step label="More exercises" onClick={() => setCount((c) => Math.min(COUNT_MAX, c + 1))}>
         +
       </Step>
-      <span style={{ fontSize: 13.5, color: SOFT, padding: "0 10px 0 4px" }}>
-        or type it
-      </span>
+      <span style={{ fontSize: 13.5, color: SOFT, padding: "0 10px 0 4px" }}>or type it</span>
     </span>
   );
 }
@@ -1402,9 +1438,7 @@ function SetupDialog({
             teacher setting it and a teacher discovering afterwards that they
             got twelve. */}
         <div style={{ display: "grid", gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>
-            How many exercises?
-          </span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>How many exercises?</span>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <ItemCount count={count} setCount={setCount} />
           </div>

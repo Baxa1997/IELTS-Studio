@@ -41,17 +41,6 @@ const TABS: { key: LessonStatus; label: string; empty: string }[] = [
   { key: "archived", label: "Archived", empty: "Nothing archived." },
 ];
 
-/**
- * Practice AI: type what you need, get a lesson page.
- *
- * Teacher-only. A lesson is something you MAKE, and an administrator runs the
- * front desk rather than the teaching — the RLS write policy says the same, so
- * this redirect is the readable half of a rule the database also enforces.
- *
- * The page owns its whole surface: the console chrome drops its bar and its
- * padding for this route, which is why the hero can be full-bleed and why the
- * library below has to put its own padding back.
- */
 export default async function PracticeAiPage({
   searchParams,
 }: {
@@ -71,7 +60,7 @@ export default async function PracticeAiPage({
     <div className="pa-rise" style={{ background: PAPER, minHeight: "100%", fontFamily: SANS }}>
       {/* The sky. It ends on PAPER exactly, so the library below continues the
           same sheet instead of reading as a panel bolted underneath. */}
-      <div className="pa-hero-pad" style={{ background: HERO_SKY, padding: "58px 28px 76px" }}>
+      <div className="pa-hero-pad" style={{ background: HERO_SKY, padding: "58px 28px 26px" }}>
         <div style={{ maxWidth: 940, margin: "0 auto", textAlign: "center" }}>
           <div
             style={{
@@ -94,9 +83,6 @@ export default async function PracticeAiPage({
             Explanation + practice in one page
           </div>
 
-          {/* Two weights on one headline, which is why Manrope is loaded with a
-              300: without a light weight both halves render at 400 and the
-              contrast the line is built on disappears. */}
           <h1
             style={{
               fontWeight: 300,
@@ -224,17 +210,6 @@ export default async function PracticeAiPage({
   );
 }
 
-/**
- * One lesson.
- *
- * Each KIND of lesson gets its own colour plate and its own two-letter code, so
- * a wall of cards can be scanned rather than read word by word. Two letters
- * rather than a symbol because the plate is 108px tall and the glyph is set at
- * 30px: a "¶" at that size reads as a smudge, and "GR" reads as grammar.
- *
- * The plate also carries the thing a teacher most wants to know at a glance and
- * would otherwise have to open the lesson for: where it stands.
- */
 function Card({ lesson }: { lesson: LessonCard }) {
   const tint = BLUEPRINT_TINT[lesson.blueprint] ?? BLUEPRINT_TINT.grammar;
   const published = lesson.status === "published";

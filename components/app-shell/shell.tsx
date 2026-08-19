@@ -12,6 +12,7 @@ import {
   LogOut,
   type LucideIcon,
   Megaphone,
+  Send,
   Menu,
   Settings,
 } from "lucide-react";
@@ -437,16 +438,25 @@ export function accountItemsFor(role: string): AccountItem[] {
     href: "/console/announcements",
     icon: Megaphone,
   };
+  // Under the avatar for the same reason as the others here: something you set
+  // up once and then leave alone. It is not in the rail because a permanent
+  // heading for it would cost one of the six the rail has, and it is not buried
+  // in a group any more because "why did nothing get announced?" is a question
+  // about the whole centre rather than about one class.
+  const telegram = { label: "Telegram channels", href: "/console/telegram", icon: Send };
   switch (role) {
     case "center_admin":
       return [
         announcements,
+        telegram,
         { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
         { label: "Settings", href: "/console/settings", icon: Settings },
       ];
     case "administrator":
     case "teacher":
-      return [announcements];
+      // A teacher sees it too: they own groups, and they are the ones who
+      // notice the announcement did not arrive.
+      return [announcements, telegram];
     default:
       // Students and the platform owner have none of these.
       return [];

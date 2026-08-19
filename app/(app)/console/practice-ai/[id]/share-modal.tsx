@@ -344,15 +344,13 @@ export function ShareModal({
               page, so there is no URL to send anyone to. */}
           {groups.some((g) => !g.telegram) ? (
             <p style={{ margin: "9px 2px 0", fontSize: 12.5, lineHeight: 1.5, color: SOFT }}>
-              A class with no channel still gets the homework — it just is not announced. To
-              connect one, open the group and use{" "}
+              A class with no channel still gets the homework — it just is not announced.{" "}
               <Link
-                href="/console/groups"
+                href="/console/telegram"
                 style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}
               >
-                Groups
-              </Link>{" "}
-              → the class → <strong>Settings</strong> → Telegram channel.
+                Connect one →
+              </Link>
             </p>
           ) : null}
 
