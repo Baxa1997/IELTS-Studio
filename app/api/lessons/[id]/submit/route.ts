@@ -125,9 +125,16 @@ export async function POST(
       gradingStatus: "complete",
     });
   } catch (err) {
-    // The attempt survives. Their closed score stands, the written answers are
-    // stored, and the row stays 'pending' for the drainer to pick up — which is
-    // the whole reason it was written before this call rather than after.
+    // The attempt survives: their closed score stands and the written answers
+    // are stored, which is why the row is written before this call rather than
+    // after.
+    //
+    // BUT NOTHING RETRIES IT. There is no drainer for lesson_attempts — the
+    // reading and writing queues do not cover this table — so 'failed' is
+    // final and those answers get no feedback ever. `markOpenAnswers` retries
+    // once internally for that reason; if it still fails, a teacher marking by
+    // hand is the only remaining path, which is what the notice below promises.
+    // A drainer is the real fix and does not exist yet.
     console.error("[lessons/submit] open marking failed:", attemptId, err);
     await supabase
       .from("lesson_attempts")

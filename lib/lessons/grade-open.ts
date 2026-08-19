@@ -23,21 +23,47 @@ import type { OpenExercise } from "./types";
  * lesson cannot spend money however it is called.
  */
 
+/**
+ * Long text is TRIMMED, not rejected.
+ *
+ * These were `.max(n)`, which made an over-long quote a parse failure — and a
+ * parse failure throws away the marking for EVERY item in the batch, not just
+ * the one that ran on. The caps exist to stop a runaway string reaching the
+ * database; they were never a judgement about whether the marking was any good.
+ * A learner losing all their written feedback because the model quoted forty
+ * words instead of twenty is the worst possible trade.
+ */
+const capped = (max: number) =>
+  z.string().transform((t) => (t.length > max ? `${t.slice(0, max - 1)}…` : t));
+
 const criterionSchema = z.object({
-  met: z.boolean(),
+  /**
+   * TRUE ONLY IF IT SAYS TRUE. Was `z.boolean()`, which rejected the whole
+   * batch when a model wrote `"true"` or `1` — a formatting slip, not a
+   * disagreement about the answer. Anything unrecognised, including a missing
+   * verdict, becomes NOT met: the same round-down rule the band grader follows,
+   * because a learner told they were right when they were not is worse off than
+   * one told nothing.
+   */
+  met: z.unknown().optional().transform((v) => v === true || v === "true" || v === 1),
   /** The learner's own words. A verdict with nothing quoted is a guess. */
-  evidence: z.string().max(300).default(""),
+  evidence: capped(300).nullish().transform((t) => t ?? ""),
 });
 
 const markedSchema = z.object({
   id: z.string(),
   criteria: z.array(criterionSchema).min(1),
   /** Their sentence, put right. The single most useful thing they get back. */
-  corrected: z.string().max(600).nullable().default(null),
-  note: z.string().max(400).nullable().default(null),
+  corrected: capped(600).nullish().transform((t) => t ?? null),
+  note: capped(400).nullish().transform((t) => t ?? null),
 });
 
-export const openMarkingSchema = z.object({ marked: z.array(markedSchema) });
+/** `{marked:[…]}` is what is asked for; a bare array is the one other shape a
+ *  model reliably returns, and refusing it costs a whole batch over a wrapper. */
+export const openMarkingSchema = z.union([
+  z.object({ marked: z.array(markedSchema) }),
+  z.array(markedSchema).transform((marked) => ({ marked })),
+]);
 
 export interface OpenMarkResult {
   criteria: { met: boolean; evidence: string }[];
@@ -58,6 +84,14 @@ export interface OpenMarkRequest {
  * lets the model see the whole set, so it marks a learner consistently rather
  * than drifting between items.
  */
+/** The first few problems, each with its path, for a log that can be acted on. */
+function describe(error: z.ZodError): string {
+  return error.issues
+    .slice(0, 3)
+    .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+    .join("; ");
+}
+
 export async function markOpenAnswers(
   requests: OpenMarkRequest[],
   meta: { organizationId: string; userId: string; lessonTitle: string },
@@ -75,15 +109,25 @@ export async function markOpenAnswers(
     student_answer: r.answer.slice(0, 1200),
   }));
 
-  const raw = await markLessonOpenItems({
-    lessonTitle: meta.lessonTitle,
-    items: payload,
-    meta,
-  });
-
-  const parsed = openMarkingSchema.safeParse(raw);
+  // ONE RETRY ON A MALFORMED REPLY. A batch that comes back the wrong shape is
+  // usually a formatting slip rather than a model that cannot do the task, and
+  // the cost of giving up is total: every written answer in the attempt loses
+  // its feedback permanently, because nothing retries a lesson attempt later.
+  // One more call is cheap against that.
+  let parsed = openMarkingSchema.safeParse(
+    await markLessonOpenItems({ lessonTitle: meta.lessonTitle, items: payload, meta }),
+  );
   if (!parsed.success) {
-    throw new Error(`Open marking came back malformed: ${parsed.error.issues[0]?.message ?? ""}`);
+    console.warn("[lessons/open-marking] malformed reply, retrying:", describe(parsed.error));
+    parsed = openMarkingSchema.safeParse(
+      await markLessonOpenItems({ lessonTitle: meta.lessonTitle, items: payload, meta }),
+    );
+  }
+  if (!parsed.success) {
+    // Names WHERE it broke, not just that it did. "Required" on its own — which
+    // is all this used to report — tells whoever reads the log nothing about
+    // which field of which item to look at.
+    throw new Error(`Open marking came back malformed: ${describe(parsed.error)}`);
   }
 
   const byId = new Map(answered.map((r) => [r.exercise.id, r.exercise]));

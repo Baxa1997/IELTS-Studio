@@ -15,6 +15,14 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./", import.meta.url)),
+      // `server-only` throws the moment it is imported outside a React Server
+      // Component, which put every server module's PURE logic — schemas,
+      // parsers, pricing maths — out of reach of a test for no benefit. It is a
+      // BUNDLER guard: its job is to fail a build that would ship server code
+      // to a browser, and a vitest run is not that build. Stubbed here so the
+      // rule keeps protecting the bundle and stops blocking the tests — the
+      // same reason the `@` alias above exists.
+      "server-only": fileURLToPath(new URL("./test/server-only-stub.ts", import.meta.url)),
     },
   },
   test: {
