@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { clientEnv } from "@/lib/env";
 import {
   EMBER,
+  HAIRLINE,
   EMBER_OFF,
   FAINT,
   GHOST,
@@ -1075,7 +1076,7 @@ function SpecRow({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "74px 1fr", alignItems: "start", gap: 14 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "88px 1fr", alignItems: "start", gap: 14 }}>
       <span
         style={{
           fontSize: 12,
@@ -1176,65 +1177,122 @@ function Specs({
     setKinds((k) => (k.includes(value) ? k.filter((x) => x !== value) : [...k, value]));
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
-      <SpecRow label="Level">
-        {LEVELS.map((l) => (
-          <SpecChip key={l} on={level === l} onClick={() => setLevel(l)}>
-            {l}
-          </SpecChip>
-        ))}
-      </SpecRow>
-      <SpecRow label="Focus">
-        {FOCUSES.map((f) => (
-          <SpecChip key={f.value} on={focus === f.value} onClick={() => setFocus(f.value)}>
-            {f.label}
-          </SpecChip>
-        ))}
-      </SpecRow>
-      <SpecRow
-        label="Items"
-        hint={`How many exercises to write, split across the three stages. Anything from ${COUNT_MIN} to ${COUNT_MAX}.`}
-      >
-        {COUNTS.map((c) => (
-          <SpecChip key={c} on={count === c} onClick={() => setCount(() => c)}>
-            {c}
-          </SpecChip>
-        ))}
-        <ItemCount count={count} setCount={setCount} />
-      </SpecRow>
-      {/* AUTO IS A REAL CHOICE, not an empty state, so it gets its own chip —
-          otherwise "none selected" and "all selected" look identical and a
-          teacher cannot tell whether their selection took. */}
-      <SpecRow
-        label="Question kinds"
-        hint="Leave it on Auto for a mix. Choosing only recognition kinds means nobody writes anything."
-      >
-        <SpecChip on={kinds.length === 0} onClick={() => setKinds(() => [])}>
-          Auto
-        </SpecChip>
-      </SpecRow>
-      {EXERCISE_KINDS.map((group) => (
-        <SpecRow key={group.group} label={group.group} hint={group.note}>
-          {group.types.map((t) => (
-            <SpecChip key={t.value} on={kinds.includes(t.value)} onClick={() => toggle(t.value)}>
-              {t.label}
+    <div style={{ display: "grid", gap: 26 }}>
+      {/* TWO GROUPS, because there are two questions. What is the lesson ABOUT
+          (and who is it for), and what does the practice look like. Everything
+          used to be one flat run of eight label rows, which is how "Question
+          kinds" ended up occupying four of them and reading as four settings
+          rather than one. */}
+      <SpecGroup title="The lesson">
+        <SpecRow label="Level">
+          {LEVELS.map((l) => (
+            <SpecChip key={l} on={level === l} onClick={() => setLevel(l)}>
+              {l}
             </SpecChip>
           ))}
         </SpecRow>
-      ))}
-      {/* Said here because it is the one thing teachers get wrong about this
-          control: it is not "translate the lesson". A learner who reads the
-          rule only in Uzbek has practised nothing. */}
-      <SpecRow
-        label="Support"
-        hint="The lesson stays in English — this adds a short note per section."
-      >
-        {LANGUAGES.map((l) => (
-          <SpecChip key={l.value} on={language === l.value} onClick={() => setLanguage(l.value)}>
-            {l.label}
+        <SpecRow label="Focus">
+          {FOCUSES.map((f) => (
+            <SpecChip key={f.value} on={focus === f.value} onClick={() => setFocus(f.value)}>
+              {f.label}
+            </SpecChip>
+          ))}
+        </SpecRow>
+        {/* Said here because it is the one thing teachers get wrong about this
+            control: it is not "translate the lesson". A learner who reads the
+            rule only in Uzbek has practised nothing. */}
+        <SpecRow
+          label="Support"
+          hint="The lesson stays in English — this adds a short note per section."
+        >
+          {LANGUAGES.map((l) => (
+            <SpecChip key={l.value} on={language === l.value} onClick={() => setLanguage(l.value)}>
+              {l.label}
+            </SpecChip>
+          ))}
+        </SpecRow>
+      </SpecGroup>
+
+      <SpecGroup title="The practice">
+        <SpecRow
+          label="How many"
+          hint={`Split across the three stages. Anything from ${COUNT_MIN} to ${COUNT_MAX}.`}
+        >
+          {COUNTS.map((c) => (
+            <SpecChip key={c} on={count === c} onClick={() => setCount(() => c)}>
+              {c}
+            </SpecChip>
+          ))}
+          <ItemCount count={count} setCount={setCount} />
+        </SpecRow>
+
+        {/* ONE ROW, not four. The three clusters are sub-labelled inside it, so
+            the left column keeps saying "one label, one setting" — and Auto
+            sits with them rather than above them, because it is one of the
+            choices and not a heading for the rest. */}
+        <SpecRow
+          label="Kinds"
+          hint="Auto gives a mix across all three. Picking only from Recognise means nobody writes anything."
+        >
+          <SpecChip on={kinds.length === 0} onClick={() => setKinds(() => [])}>
+            Auto
           </SpecChip>
-        ))}
-      </SpecRow>
+          <div style={{ flexBasis: "100%", display: "grid", gap: 9, marginTop: 4 }}>
+            {EXERCISE_KINDS.map((group) => (
+              <div
+                key={group.group}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "72px 1fr",
+                  alignItems: "start",
+                  gap: 10,
+                }}
+              >
+                <span
+                  title={group.note}
+                  style={{ fontSize: 11.5, color: FAINT, paddingTop: 8, whiteSpace: "nowrap" }}
+                >
+                  {group.group}
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  {group.types.map((t) => (
+                    <SpecChip
+                      key={t.value}
+                      on={kinds.includes(t.value)}
+                      onClick={() => toggle(t.value)}
+                    >
+                      {t.label}
+                    </SpecChip>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SpecRow>
+      </SpecGroup>
+    </div>
+  );
+}
+
+/** A titled run of settings. The rule under the title is the whole device —
+ *  it is what stops eight rows reading as one undifferentiated list. */
+function SpecGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontFamily: SERIF,
+          fontSize: 17,
+          fontWeight: 600,
+          color: INK,
+          paddingBottom: 9,
+          marginBottom: 14,
+          borderBottom: `1px solid ${HAIRLINE}`,
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ display: "grid", gap: 15 }}>{children}</div>
     </div>
   );
 }
