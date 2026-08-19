@@ -1502,7 +1502,16 @@ export interface BulkStudentState {
   error?: string;
   /** Accounts created this run, in the order pasted — this IS the credentials
    *  sheet, and the passwords are never retrievable again. */
-  created?: { name: string; login: string; email: string | null; password: string }[];
+  created?: {
+    name: string;
+    login: string;
+    email: string | null;
+    password: string;
+    /** Shown on the credentials sheet so a missing one is VISIBLE. Without a
+     *  phone a student cannot collect their own login over Telegram, and
+     *  finding that out later means chasing thirty people. */
+    phone: string | null;
+  }[];
   /** Lines that produced no account, each with the reason. */
   skipped?: { line: string; reason: string }[];
 }
@@ -1661,7 +1670,7 @@ export async function addStudentsBulk(
     }
 
     loginsThisBatch.add(login);
-    created.push({ name: parsed.name, login, email: contactEmail, password });
+    created.push({ name: parsed.name, login, email: contactEmail, password, phone: parsed.phone });
   }
 
   revalidatePath(`/console/groups/${groupId}`);

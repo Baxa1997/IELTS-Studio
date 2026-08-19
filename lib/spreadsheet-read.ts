@@ -345,6 +345,11 @@ export function toRosterLines(
 
   const loginAt = roles.indexOf("login");
   const emailAt = roles.indexOf("email");
+  // The phone was guessed, offered in the mapping dropdown, and then dropped
+  // here — so a centre could map the column, see it in the preview, and still
+  // end up with a roster nobody could identify. It is not a contact detail any
+  // more: it is how a student proves who they are to the bot.
+  const phoneAt = roles.indexOf("phone");
 
   const lines: string[] = [];
   let skipped = 0;
@@ -358,8 +363,10 @@ export function toRosterLines(
     const parts = [name];
     const login = loginAt >= 0 ? (row[loginAt] ?? "").trim().toLowerCase() : "";
     const email = emailAt >= 0 ? (row[emailAt] ?? "").trim().toLowerCase() : "";
+    const phone = phoneAt >= 0 ? (row[phoneAt] ?? "").replace(/[,;\t]/g, " ").trim() : "";
     if (login) parts.push(login);
     if (email.includes("@")) parts.push(email);
+    if (phone) parts.push(phone);
     lines.push(parts.join(", "));
   }
   return { lines, skipped };

@@ -78,6 +78,28 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
             </p>
           </div>
 
+          {/* THE FIELD THE ACTION ALREADY READ AND NO FORM EVER SENT.
+              `phone` has been pulled off this formData since the panel was
+              written; there was simply nowhere to type it, so every student was
+              created without one. It stopped being a contact detail when the
+              bot started using it to decide who is asking for a password. */}
+          <div className="space-y-2">
+            <Label htmlFor="student-phone">
+              Phone <span className="text-muted-foreground font-normal">(optional)</span>
+            </Label>
+            <Input
+              id="student-phone"
+              name="phone"
+              type="tel"
+              autoComplete="off"
+              placeholder="+998 90 123 45 67"
+            />
+            <p className="text-muted-foreground text-xs">
+              Their own number, the one on their Telegram. It is how they collect their login from
+              the class invite — without it they have to be given it by hand.
+            </p>
+          </div>
+
           {/* Rare enough to fold away, real enough to keep: a center that has
               already told a student their login has to be able to honour it. */}
           <button

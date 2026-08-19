@@ -23,8 +23,8 @@ const initial: BulkStudentState = {};
  *  dying half-way with passwords that were never shown to anyone. */
 const BATCH = 30;
 
-const PLACEHOLDER = `Aziza Karimova
-Bekzod Toshmatov, bekzod.t
+const PLACEHOLDER = `Aziza Karimova, +998901234567
+Bekzod Toshmatov, bekzod.t, +998911112233
 Dilnoza Rashidova, dilnoza@example.com`;
 
 /**
@@ -49,8 +49,8 @@ export function BulkAddPanel({ groupId }: { groupId: string }) {
 
   function credentialsCsv(): string {
     const rows = [
-      ["Name", "Login", "Password", "Contact email"],
-      ...created.map((s) => [s.name, s.login, s.password, s.email ?? ""]),
+      ["Name", "Login", "Password", "Contact email", "Phone"],
+      ...created.map((s) => [s.name, s.login, s.password, s.email ?? "", s.phone ?? ""]),
     ];
     return rows.map((r) => r.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(",")).join("\n");
   }
@@ -100,7 +100,9 @@ export function BulkAddPanel({ groupId }: { groupId: string }) {
           />
           <p className="text-muted-foreground text-xs">
             Name only is enough — the login is built from it (<code>dilnoza.r</code>) and passwords
-            are generated. Add a login or a contact email after a comma to set them yourself. Up to
+            are generated. Add a login, a contact email or a <b>phone number</b> after a comma, in
+            any order. <b>Include the phone</b> if you want the class to collect its own logins
+            over Telegram — it is how each student is identified. Up to
             30 at a time. Students sign in by login, so a contact address that already has a
             personal account here is fine.
           </p>
