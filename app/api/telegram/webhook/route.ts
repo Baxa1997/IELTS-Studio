@@ -278,9 +278,15 @@ async function bindStudent(code: string, chatId: number): Promise<boolean> {
     return true;
   }
 
+  // Careful about the tense. Connecting does not itself deliver anything: a
+  // stored password cannot be read back, so an existing student's details only
+  // arrive when a teacher creates the account or resets the password. Saying
+  // "your details will come here" to someone whose account already exists
+  // leaves them waiting for a message nobody is going to send.
   await sendMessage(
     chatId,
-    "✅ Connected. Your sign-in details and homework reminders will come here.",
+    "✅ Connected.\n\nHomework reminders will arrive here. If you are waiting for your " +
+      "sign-in details, ask your teacher to send them now — they will land in this chat.",
   );
   return true;
 }

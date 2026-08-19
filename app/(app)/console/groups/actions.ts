@@ -14,6 +14,7 @@ import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
 import { notifyAssignment } from "@/lib/notifications/send";
 import { notifyAssignmentTelegram } from "@/lib/telegram/send";
+import { sendCredentialsTelegram } from "@/lib/telegram/student";
 import { serverEnv } from "@/lib/env";
 import {
   generateWritingPrompt,
@@ -47,6 +48,8 @@ export interface AddStudentState {
   warning?: string;
   /** What happened to the credentials email, when an address was given. */
   emailNote?: string;
+  /** Set when their Telegram was already connected and got the details too. */
+  telegramNote?: string;
 }
 
 /** Logins are typed by hand, often from a whiteboard: letters, digits and a few
@@ -1232,20 +1235,37 @@ export async function addStudentAccount(
   // A real address means the credentials can be delivered rather than dictated.
   // Never fatal: the teacher still has them on screen to hand over in person.
   let emailNote: string | null = null;
+  let telegramSent = false;
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", profile.organization_id)
+    .maybeSingle();
+  const centerName = (org?.name as string | null) ?? "your center";
+
   if (contactEmail) {
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("name")
-      .eq("id", profile.organization_id)
-      .maybeSingle();
     emailNote = await sendCredentials({
       to: contactEmail,
       name: fullName,
       login: finalLogin,
       password,
-      centerName: (org?.name as string | null) ?? "your center",
+      centerName,
     });
   }
+
+  // AND TELEGRAM, where they have already connected. Free, no template
+  // moderation, and in this country it reaches far more people than email —
+  // which is why a student created without an address is not a student who
+  // cannot be told their password. Returns false when they are not bound, so
+  // this costs nothing for everyone else.
+  telegramSent = await sendCredentialsTelegram({
+    profileId: created.user.id,
+    fullName,
+    login: finalLogin,
+    password,
+    centerName,
+    signInUrl: `${serverEnv.outboundSiteUrl}/sign-in`,
+  });
 
   revalidatePath(`/console/groups/${groupId}`);
   revalidatePath("/console/students");
@@ -1253,13 +1273,22 @@ export async function addStudentAccount(
     created: { name: fullName, login: finalLogin, email: contactEmail, password },
     warning: photoWarning ?? undefined,
     emailNote: emailNote ?? undefined,
+    telegramNote: telegramSent ? "Sent to their Telegram too." : undefined,
   };
 }
 
 export interface ResetPasswordState {
   error?: string;
   /** The new password, shown once. Never retrievable again. */
-  done?: { studentId: string; name: string; login: string; password: string };
+  done?: {
+    studentId: string;
+    name: string;
+    login: string;
+    password: string;
+    /** True when the new password reached their Telegram, so the teacher knows
+     *  whether they still have to hand it over in person. */
+    sentTelegram?: boolean;
+  };
 }
 
 /**
@@ -1335,13 +1364,34 @@ export async function resetStudentPassword(
   const { error } = await admin.auth.admin.updateUserById(studentId, { password });
   if (error) return { error: error.message };
 
+  // THE ONLY WAY AN EXISTING STUDENT CAN BE SENT THEIR DETAILS. A stored
+  // password cannot be read back — Supabase keeps a hash — so "send me my
+  // login" is necessarily "set a new one and send that". Which is why this
+  // lives here rather than in a separate send action that would have nothing
+  // to send.
+  const { data: org2 } = await admin
+    .from("organizations")
+    .select("name")
+    .eq("id", profile.organization_id)
+    .maybeSingle();
+  const sentTelegram = await sendCredentialsTelegram({
+    profileId: studentId,
+    fullName: (student.full_name as string | null) ?? "Student",
+    login: (student.username as string | null) ?? "—",
+    password,
+    centerName: (org2?.name as string | null) ?? "your center",
+    signInUrl: `${serverEnv.outboundSiteUrl}/sign-in`,
+  });
+
   revalidatePath(`/console/groups/${groupId}`);
+  revalidatePath(`/console/students/${studentId}`);
   return {
     done: {
       studentId,
       name: (student.full_name as string | null) ?? "This student",
       login: (student.username as string | null) ?? "—",
       password,
+      sentTelegram,
     },
   };
 }
