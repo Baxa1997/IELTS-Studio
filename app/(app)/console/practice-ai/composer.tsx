@@ -116,6 +116,51 @@ const COUNTS = [8, 12, 16, 20];
 const COUNT_MIN = 6;
 const COUNT_MAX = 30;
 
+/**
+ * The kinds of exercise a teacher can ask for.
+ *
+ * MIRRORS `TYPE_STAGE` in the engine's `lessons/blueprints.py`, ids included —
+ * a name that does not match there is silently dropped, so the two lists have
+ * to be kept together. Labels are the learner-facing ones the runner already
+ * uses, because a teacher choosing "Fill the gap" should see the same words on
+ * the item their class gets.
+ *
+ * Grouped by what the kind is FOR, because that is the choice being made: a
+ * teacher wants recognition work, or manipulation, or production, and picking
+ * only from the first group is exactly how you end up with a set that drills
+ * and never asks anyone to write anything.
+ */
+const EXERCISE_KINDS: { group: string; note: string; types: { value: string; label: string }[] }[] = [
+  {
+    group: "Recognise",
+    note: "supported — the form is in front of them",
+    types: [
+      { value: "gap_fill", label: "Fill the gap" },
+      { value: "mcq_single", label: "Choose one" },
+      { value: "mcq_multi", label: "Choose several" },
+      { value: "matching", label: "Match them up" },
+    ],
+  },
+  {
+    group: "Change",
+    note: "where understanding shows",
+    types: [
+      { value: "transform", label: "Rewrite it" },
+      { value: "error_correction", label: "Correct the mistake" },
+      { value: "ordering", label: "Put in order" },
+    ],
+  },
+  {
+    group: "Produce",
+    note: "the only proof they can use it",
+    types: [
+      { value: "short_answer", label: "Short answer" },
+      { value: "write_sentence", label: "Write a sentence" },
+      { value: "write_short_text", label: "Write a paragraph" },
+    ],
+  },
+];
+
 const LANGUAGES = [
   { value: "en", label: "English only" },
   { value: "uz", label: "+ O'zbekcha izoh" },
@@ -187,6 +232,10 @@ export function Composer() {
   const [focus, setFocus] = useState(AUTO);
   const [count, setCount] = useState(12);
   const [language, setLanguage] = useState("en");
+  /** Empty is "Auto" and means no constraint — the right default, because a
+   *  teacher who has not thought about item kinds should get the full range
+   *  rather than whatever a half-made selection implies. */
+  const [kinds, setKinds] = useState<string[]>([]);
   const [phase, setPhase] = useState<Phase>({ step: "idle" });
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [listening, setListening] = useState(false);
@@ -295,6 +344,7 @@ export function Composer() {
       blueprint: blueprint ?? (focus === AUTO ? null : focus),
       language,
       exercise_total: count,
+      exercise_types: kinds,
     });
     if (planFirst) {
       setPhase({ step: "planned", plan, brief: text });
@@ -317,6 +367,7 @@ export function Composer() {
     level === AUTO ? null : level,
     focus === AUTO ? null : FOCUSES.find((f) => f.value === focus)?.label,
     language === "en" ? null : language === "uz" ? "+ Uzbek" : "+ Russian",
+    kinds.length === 0 ? null : `${kinds.length} kind${kinds.length === 1 ? "" : "s"}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -551,6 +602,8 @@ export function Composer() {
           setCount={setCount}
           language={language}
           setLanguage={setLanguage}
+          kinds={kinds}
+          setKinds={setKinds}
           onClose={() => setSpecsOpen(false)}
         />
       ) : null}
@@ -1070,6 +1123,8 @@ function Specs({
   setCount,
   language,
   setLanguage,
+  kinds,
+  setKinds,
 }: {
   level: string;
   setLevel: (v: string) => void;
@@ -1079,7 +1134,12 @@ function Specs({
   setCount: (fn: (c: number) => number) => void;
   language: string;
   setLanguage: (v: string) => void;
+  kinds: string[];
+  setKinds: (fn: (k: string[]) => string[]) => void;
 }) {
+  const toggle = (value: string) =>
+    setKinds((k) => (k.includes(value) ? k.filter((x) => x !== value) : [...k, value]));
+
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <SpecRow label="Level">
@@ -1107,6 +1167,26 @@ function Specs({
         ))}
         <ItemCount count={count} setCount={setCount} />
       </SpecRow>
+      {/* AUTO IS A REAL CHOICE, not an empty state, so it gets its own chip —
+          otherwise "none selected" and "all selected" look identical and a
+          teacher cannot tell whether their selection took. */}
+      <SpecRow
+        label="Question kinds"
+        hint="Leave it on Auto for a mix. Choosing only recognition kinds means nobody writes anything."
+      >
+        <SpecChip on={kinds.length === 0} onClick={() => setKinds(() => [])}>
+          Auto
+        </SpecChip>
+      </SpecRow>
+      {EXERCISE_KINDS.map((group) => (
+        <SpecRow key={group.group} label={group.group} hint={group.note}>
+          {group.types.map((t) => (
+            <SpecChip key={t.value} on={kinds.includes(t.value)} onClick={() => toggle(t.value)}>
+              {t.label}
+            </SpecChip>
+          ))}
+        </SpecRow>
+      ))}
       {/* Said here because it is the one thing teachers get wrong about this
           control: it is not "translate the lesson". A learner who reads the
           rule only in Uzbek has practised nothing. */}
