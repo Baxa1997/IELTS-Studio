@@ -23,6 +23,7 @@ import {
 } from "@/lib/lessons/theme";
 import { isOpen } from "@/lib/lessons/types";
 
+import { GiveToStudents } from "./give-to-students";
 import { PrintableWorksheet } from "./printable";
 import { LessonStaffBar } from "./staff-bar";
 import { WorksheetButton } from "./worksheet";
@@ -273,41 +274,66 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
                 })}
               </div>
 
-              <Link
-                href={`/learn/${lesson.id}`}
-                className="pa-ember"
+              {/* THE POINT OF THE PANEL. Handing the lesson out used to take
+                  two unrelated-looking controls in the top bar, the second of
+                  which only appeared after the first — and both server actions
+                  refuse a draft, so a teacher who found the group picker early
+                  got nothing from it. One button now does whatever is needed. */}
+              <div style={{ marginTop: 18 }}>
+                <GiveToStudents
+                  lessonId={lesson.id}
+                  status={lesson.status}
+                  groups={groups.map((g) => ({ id: g.id, name: g.name, students: g.memberCount }))}
+                  shareEnabled={lesson.shareEnabled}
+                  shareToken={lesson.shareToken}
+                />
+              </div>
+
+              {/* The two things a teacher does for themselves, side by side:
+                  neither is the main action, and stacking them full-width gave
+                  each the same weight as handing the lesson out. */}
+              <div
                 style={{
-                  display: "block",
-                  marginTop: 18,
-                  padding: "12px 14px",
-                  borderRadius: 999,
-                  background: EMBER,
-                  color: "#fff",
-                  fontSize: 14.5,
-                  fontWeight: 700,
-                  textAlign: "center",
-                  textDecoration: "none",
-                  boxShadow: "0 10px 24px -10px rgba(236,106,69,.8)",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                  marginTop: 12,
                 }}
               >
-                Preview as student
-              </Link>
-              <WorksheetButton
-                className="pa-ghost"
-                style={{
-                  width: "100%",
-                  marginTop: 8,
-                  padding: "11px 14px",
-                  borderRadius: 999,
-                  border: 0,
-                  background: "rgba(243,241,236,0.1)",
-                  color: "#dfe6ea",
-                  fontFamily: "inherit",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              />
+                <Link
+                  href={`/learn/${lesson.id}`}
+                  className="pa-ghost"
+                  title="See it exactly as a student will"
+                  style={{
+                    display: "block",
+                    padding: "11px 10px",
+                    borderRadius: 999,
+                    background: "rgba(243,241,236,0.1)",
+                    color: "#dfe6ea",
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    textAlign: "center",
+                    textDecoration: "none",
+                  }}
+                >
+                  Preview
+                </Link>
+                <WorksheetButton
+                  className="pa-ghost"
+                  style={{
+                    width: "100%",
+                    padding: "11px 10px",
+                    borderRadius: 999,
+                    border: 0,
+                    background: "rgba(243,241,236,0.1)",
+                    color: "#dfe6ea",
+                    fontFamily: "inherit",
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                />
+              </div>
             </div>
 
             {tags.length > 0 ? (
