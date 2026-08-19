@@ -5,7 +5,9 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 
 import { requireOrgUser } from "@/lib/auth";
+import { serverEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAssignmentTelegram } from "@/lib/telegram/send";
 
 /**
  * What a teacher does to a lesson after reading it.
@@ -221,8 +223,28 @@ export async function assignLessonToGroup(
     return { error: "You do not have permission to set work for those classes." };
   }
 
+  // ANNOUNCE IT WHERE THE CLASS ACTUALLY IS. Every other way of setting work —
+  // the groups console, the practices console — has told the group's Telegram
+  // channel since those were built. Practice AI grew its own assignment path
+  // and was never wired to it, so a lesson set from here landed silently and a
+  // teacher who had come to rely on the announcement assumed the assignment had
+  // not worked.
+  //
+  // Failures are swallowed inside the notifier: a channel that has been deleted
+  // must not undo an assignment that is already in the table.
+  await notifyAssignmentTelegram({
+    organizationId: profile.organization_id,
+    groupIds: fresh.map((g) => g.id as string),
+    kind: "lesson",
+    title: lesson.title as string,
+    siteUrl: serverEnv.outboundSiteUrl,
+    note: instructions,
+    dueAt: dueAt ? dueAt.toISOString() : null,
+  });
+
   refresh(id);
   revalidatePath("/console/groups");
+  for (const g of fresh) revalidatePath(`/console/groups/${g.id as string}`);
   const names = fresh.map((g) => g.name as string).join(", ");
   return { ok: `Set to ${names}. Students will see it in their assignments.` };
 }

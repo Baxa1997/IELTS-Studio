@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { useActionFeedback } from "@/components/console/toast";
+
 import {
   EMBER,
   FAINT,
@@ -78,8 +80,25 @@ export function ShareModal({
     rotateShareLink,
     {} as LessonActionState,
   );
+  // THE SUCCESS WAS THERE AND NOBODY SAW IT. It rendered as a 13.5px green
+  // line under the button, inside a body that scrolls — after an action the
+  // teacher was specifically waiting to have confirmed. The console has a toast
+  // for exactly this and every other action in it uses one; this modal was the
+  // exception. `keepOpen` because the picker should stay up: setting a lesson
+  // to one class is often the first of several.
+  useActionFeedback(assignState, { keepOpen: true });
+  useActionFeedback(shareState, { keepOpen: true });
+
   const [picked, setPicked] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  // Once a set has landed, the ticks beside those classes are describing
+  // something that already happened. Clearing them makes the button go back to
+  // "Pick a group first", which is the truth: there is nothing left to set.
+  const [seenAssign, setSeenAssign] = useState<string | undefined>(undefined);
+  if (assignState.ok && assignState.ok !== seenAssign) {
+    setSeenAssign(assignState.ok);
+    setPicked([]);
+  }
 
   // Escape closes it. A dialog you can only leave by finding a 38px × in the
   // corner is a dialog that traps the one person in a hurry.
