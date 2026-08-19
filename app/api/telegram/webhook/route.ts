@@ -96,10 +96,38 @@ export async function POST(req: Request): Promise<Response> {
     await sendMessage(
       chat.id,
       "👋 I'm the EngProgress bot.\n\n" +
-        "<b>Students:</b> open the link your teacher gave you and I'll send your sign-in " +
-        "details here. A bare /start can't identify you — I need the link.\n\n" +
+        "<b>Students:</b> send me your code and I'll connect you — just the code on its " +
+        "own, like <code>K7M4PQ2X</code>. Your teacher has it.\n\n" +
+        "<i>(If you opened a link and nothing happened, that is why: Telegram only passes " +
+        "the code the very first time you start a bot. Sending it as a message always " +
+        "works.)</i>\n\n" +
         "<b>Teachers:</b> to connect a class channel, open the class in the console → " +
         "<b>Settings → Telegram</b>, press <b>Add to a group</b>, and pick the group there.",
+    );
+    return ok();
+  }
+
+  // A BARE CODE, PASTED INTO THE BOT'S OWN CHAT.
+  //
+  // This is the path most students will actually take, because the deep link
+  // silently does nothing for anyone who has started the bot before: Telegram
+  // passes `?start=CODE` ONLY on the very first start, and afterwards tapping
+  // the link just opens the existing chat. That is invisible from our side —
+  // we receive a bare /start — so the recovery has to be something the student
+  // can do without understanding any of it.
+  //
+  // Safe to accept without a command because the alphabet is ours: eight
+  // characters, uppercase, no 0/O or 1/I/L. Ordinary chat does not look like
+  // that, and a string that is not a live code is answered rather than acted
+  // on.
+  const isPrivate = chat.type === "private" || (chat.type == null && chat.id > 0);
+  if (isPrivate && /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/.test(text.toUpperCase())) {
+    const bare = text.toUpperCase();
+    if (await bindStudent(bare, chat.id)) return ok();
+    await sendMessage(
+      chat.id,
+      "I don't recognise that code. Ask your teacher for a new one — codes stop working " +
+        "after 7 days, and each one can only be used once.",
     );
     return ok();
   }
@@ -114,8 +142,7 @@ export async function POST(req: Request): Promise<Response> {
   // code spaces cannot collide — a channel code lives in telegram_links and a
   // student code in telegram_students, and this only looks in the latter, so a
   // channel code pasted here still falls through to the warning it deserves.
-  const isPrivateChat = chat.type === "private" || (chat.type == null && chat.id > 0);
-  if (isPrivateChat) {
+  if (isPrivate) {
     const bound = await bindStudent(code, chat.id);
     if (bound) return ok();
     // Not a student code either — fall through and explain.
@@ -132,7 +159,7 @@ export async function POST(req: Request): Promise<Response> {
   // Private chat ids are positive; groups, supergroups and channels are
   // negative. `type` is checked first because it says so explicitly, with the
   // sign as a fallback for updates that omit it.
-  if (isPrivateChat) {
+  if (isPrivate) {
     await sendMessage(
       chat.id,
       "That connected nothing — this is our private chat, not your class channel.\n\n" +

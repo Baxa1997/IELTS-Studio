@@ -31,6 +31,7 @@ export function TelegramInvitePanel({
 }) {
   const [state, action, pending] = useActionState(createTelegramInvite, {} as InviteState);
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   useActionFeedback(state, { keepOpen: true });
 
   return (
@@ -58,6 +59,17 @@ export function TelegramInvitePanel({
       {state.url ? (
         <div style={{ marginTop: 12 }}>
           <div style={linkBox}>{state.url}</div>
+          {/* THE CODE IS NOT A BACKUP, it is the reliable half.
+              Telegram passes `?start=CODE` only the FIRST time someone starts a
+              bot; anyone who has opened it before gets the link doing nothing
+              at all, with no way to tell. Sending the code as a message always
+              works, so the student is told both — and the message says which
+              to use when. */}
+          <p style={{ ...note, margin: "9px 0 0" }}>
+            Send them <b>both</b>. If the link opens the bot but nothing happens — which is
+            what Telegram does for anyone who has used the bot before — they send the code
+            to <b>@engprogress_bot</b> as an ordinary message and it connects straight away.
+          </p>
           <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
             <button
               type="button"
@@ -70,9 +82,17 @@ export function TelegramInvitePanel({
             >
               {copied ? "Copied" : "Copy link"}
             </button>
-            {/* The code is for reading aloud or printing on a slip — a URL is
-                not something anyone types off paper. */}
-            <span style={codeChip}>or code: {state.code}</span>
+            <button
+              type="button"
+              style={ghost}
+              onClick={() => {
+                void navigator.clipboard?.writeText(state.code as string);
+                setCopiedCode(true);
+                setTimeout(() => setCopiedCode(false), 2000);
+              }}
+            >
+              {copiedCode ? "Copied" : `Copy code ${state.code}`}
+            </button>
           </div>
         </div>
       ) : null}
@@ -130,10 +150,4 @@ const linkBox: React.CSSProperties = {
   fontSize: 12.5,
   wordBreak: "break-all",
   color: "#15171C",
-};
-const codeChip: React.CSSProperties = {
-  alignSelf: "center",
-  fontSize: 12.5,
-  color: "#5C5A70",
-  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
 };
