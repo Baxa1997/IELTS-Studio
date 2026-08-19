@@ -44,7 +44,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import { AssignTeacherForm, CloseGroupButton, DeleteGroupButton } from "../group-forms";
-import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
 import { InviteClassPanel } from "./invite-class-panel";
 import { TelegramPanel } from "./telegram-panel";
@@ -419,15 +418,18 @@ export default async function GroupDetailPage({
                 />
               </section>
 
-              <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
-                <h3 style={settingsHeading}>Invite link</h3>
-                <p style={settingsNote}>
-                  They join {group.name} automatically when they accept it. Adding students directly
-                  is usually faster.
-                </p>
-                <InviteMemberPanel fixedGroupId={group.id} canInviteTeachers={false} />
-              </section>
+              {/* THIS SLOT USED TO HOLD "Invite link" — a tokenised link a
+                  person accepts to create their own account and join. It is
+                  gone from here rather than sitting beside this one, because
+                  two things called "invite" on one screen, doing different
+                  jobs, is how a teacher picks the wrong one. The capability is
+                  not lost: the same panel is in the console chrome's own
+                  Invite, which is where an invite that is not about a specific
+                  class belongs.
 
+                  This is the path that matches how a centre actually onboards —
+                  accounts already exist from the register, and what is missing
+                  is getting each student their own login. */}
               <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
                 <h3 style={settingsHeading}>Get the class signed in</h3>
                 <p style={settingsNote}>
