@@ -13,9 +13,11 @@ import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { parseMoney } from "@/lib/finance/money";
 import { notifyAssignment } from "@/lib/notifications/send";
-import { notifyAssignmentTelegram } from "@/lib/telegram/send";
-import { sendCredentialsTelegram } from "@/lib/telegram/student";
+import { notifyAssignmentTelegram, postGroupInvite } from "@/lib/telegram/send";
+import { createGroupInvite, sendCredentialsTelegram } from "@/lib/telegram/student";
 import { serverEnv } from "@/lib/env";
+import { phoneKey } from "@/lib/phone";
+import { generatePassword } from "@/lib/passwords";
 import {
   generateWritingPrompt,
   reviewWritingPrompt,
@@ -1396,6 +1398,105 @@ export async function resetStudentPassword(
   };
 }
 
+export interface GroupInviteState {
+  error?: string;
+  ok?: string;
+  url?: string;
+  code?: string;
+  /** True when it was also posted to the class's Telegram channel, which is
+   *  the whole point — a teacher who has to forward it by hand has not been
+   *  saved any work. */
+  posted?: boolean;
+}
+
+/**
+ * One invite for a whole class, posted where the class already is.
+ *
+ * THE ACTION A TEACHER ACTUALLY WANTS after importing a spreadsheet: thirty
+ * accounts exist and nobody can sign in. This posts a single message to the
+ * class channel; each student taps it, confirms their phone, and receives their
+ * own login privately. No slips, no thirty codes, no passwords in the channel.
+ *
+ * Safe to post publicly because the code identifies a CLASS, not a person. It
+ * lets the holder ask the bot "who am I?" and the bot answers only if the phone
+ * Telegram reports matches someone on that roster — so the secret that decides
+ * the bind is the student's own phone, which the code neither contains nor can
+ * reveal.
+ */
+export async function inviteGroupToTelegram(
+  _prev: GroupInviteState,
+  formData: FormData,
+): Promise<GroupInviteState> {
+  const { profile } = await requireOrgUser();
+  if (!canManagePeople(profile.role) && profile.role !== "teacher") {
+    return { error: "Only center staff can invite a class." };
+  }
+  const groupId = String(formData.get("group_id") ?? "").trim();
+  if (!groupId) return { error: "Missing class." };
+
+  const supabase = await createClient();
+  // RLS hides other teachers' groups, so a hit here proves the caller manages it.
+  const { data: group } = await supabase
+    .from("groups")
+    .select("id, name, teacher_id")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "Class not found." };
+  if (profile.role === "teacher" && group.teacher_id !== profile.id) {
+    return { error: "You can only invite your own classes." };
+  }
+  if (!process.env.TELEGRAM_BOT_USERNAME) {
+    return { error: "The Telegram bot isn't configured for this environment yet." };
+  }
+
+  // HOW MANY OF THEM COULD ACTUALLY CONNECT. The phone is the identity check,
+  // so a roster imported without numbers produces an invite that refuses
+  // everyone — and finding that out from thirty confused students is worse than
+  // being told now.
+  const { data: members } = await supabase
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", groupId);
+  const ids = (members ?? []).map((m) => m.student_id as string);
+  if (ids.length === 0) return { error: "That class has no students yet." };
+
+  const admin = createAdminClient();
+  const { data: rows } = await admin.from("profiles").select("id, phone").in("id", ids);
+  const withPhone = (rows ?? []).filter((r) => phoneKey(r.phone as string | null)).length;
+  if (withPhone === 0) {
+    return {
+      error:
+        "None of these students has a phone number on file, so nobody could be identified. " +
+        "Add numbers to the roster first — the import reads a phone column.",
+    };
+  }
+
+  const invite = await createGroupInvite({
+    organizationId: profile.organization_id,
+    groupId,
+    createdBy: profile.id,
+  });
+
+  const posted = await postGroupInvite({
+    organizationId: profile.organization_id,
+    groupId,
+    groupName: (group.name as string | null) ?? "your class",
+    url: invite.url,
+    code: invite.code,
+  });
+
+  revalidatePath(`/console/groups/${groupId}`);
+  const missing = ids.length - withPhone;
+  return {
+    ok: posted
+      ? `Posted to the class channel.${missing > 0 ? ` ${missing} student${missing === 1 ? " has" : "s have"} no phone on file and won't be able to connect.` : ""}`
+      : `Link ready — send it to the class.${missing > 0 ? ` ${missing} student${missing === 1 ? " has" : "s have"} no phone on file.` : ""}`,
+    url: invite.url ?? undefined,
+    code: invite.code,
+    posted,
+  };
+}
+
 export interface BulkStudentState {
   error?: string;
   /** Accounts created this run, in the order pasted — this IS the credentials
@@ -1531,6 +1632,11 @@ export async function addStudentsBulk(
       fullName: parsed.name,
       username: login,
       contactEmail,
+      // Carried through because it is now an IDENTITY, not a contact detail:
+      // the bot binds a student to their account by matching the number
+      // Telegram reports against this one. A roster imported without phones is
+      // a class that cannot self-connect.
+      phone: parsed.phone,
     });
     if (placeError) {
       await admin.auth.admin.deleteUser(account.user.id);
@@ -1570,7 +1676,7 @@ export async function addStudentsBulk(
  *  after the name, comma- or tab-separated (a paste from a spreadsheet). */
 function parseRosterLine(
   line: string,
-): { name: string; login: string | null; email: string } | null {
+): { name: string; login: string | null; email: string; phone: string | null } | null {
   const parts = line
     .split(/[\t,;]/)
     .map((p) => p.trim())
@@ -1580,11 +1686,25 @@ function parseRosterLine(
 
   let login: string | null = null;
   let email = "";
+  let phone: string | null = null;
   for (const part of parts) {
-    if (part.includes("@")) email = part.toLowerCase();
-    else login = part.toLowerCase();
+    if (part.includes("@")) {
+      email = part.toLowerCase();
+      continue;
+    }
+    // A PHONE, TOLD APART BY SHAPE rather than by column. The fields here are
+    // deliberately order-free — a centre's spreadsheet puts them in whatever
+    // order it already had — so each one has to identify itself. A phone is the
+    // only field that is mostly digits: `phoneKey` returns null for anything
+    // with fewer than nine of them, which rules out a login like `aziza2` and
+    // a name like `10B` without a second rule.
+    if (phoneKey(part)) {
+      phone = part;
+      continue;
+    }
+    login = part.toLowerCase();
   }
-  return { name, login, email };
+  return { name, login, email, phone };
 }
 
 /** Build a login from a name the way a teacher would: `dilnoza.r`. Cyrillic is
@@ -1834,14 +1954,6 @@ function escapeHtml(s: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
-}
-
-/** Readable throwaway password — the student can change it later. Avoids
- *  look-alike characters so it survives being written on a whiteboard. */
-function generatePassword(): string {
-  const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
-  const bytes = randomBytes(10);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
 }
 
 type RlsClient = Awaited<ReturnType<typeof createClient>>;

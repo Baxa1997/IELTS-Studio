@@ -46,6 +46,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AssignTeacherForm, CloseGroupButton, DeleteGroupButton } from "../group-forms";
 import { InviteMemberPanel } from "../invite-member-panel";
 import { AddStudentPanel } from "./add-student-panel";
+import { InviteClassPanel } from "./invite-class-panel";
 import { TelegramPanel } from "./telegram-panel";
 import { loadLibrary } from "@/lib/console/practice-library";
 
@@ -425,6 +426,15 @@ export default async function GroupDetailPage({
                   is usually faster.
                 </p>
                 <InviteMemberPanel fixedGroupId={group.id} canInviteTeachers={false} />
+              </section>
+
+              <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>
+                <h3 style={settingsHeading}>Get the class signed in</h3>
+                <p style={settingsNote}>
+                  One message to the class channel; every student collects their own login from
+                  it. Needs a connected channel and phone numbers on the roster.
+                </p>
+                <InviteClassPanel groupId={group.id} />
               </section>
 
               <section style={{ borderTop: `1px solid ${LINE}`, paddingTop: 18 }}>

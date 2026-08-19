@@ -138,6 +138,56 @@ const KIND_LABEL: Record<string, { emoji: string; noun: string; where: string }>
 };
 
 /**
+ * Post the class's joining invite into its Telegram channel.
+ *
+ * The ONE message in this file that is meant to be acted on rather than read.
+ * Everything else here is deliberately contentless because a channel is visible
+ * to everyone in it, parents included — and this stays within that rule: the
+ * code names a class, not a person, and produces nothing without the student's
+ * own phone. No name, no login and no password appears here or ever will.
+ *
+ * Returns false when the class has no verified channel, so the caller can show
+ * the link for the teacher to send by hand instead.
+ */
+export async function postGroupInvite(args: {
+  organizationId: string;
+  groupId: string;
+  groupName: string;
+  url: string | null;
+  code: string;
+}): Promise<boolean> {
+  if (!telegramConfigured()) return false;
+
+  const admin = createAdminClient();
+  const { data: link } = await admin
+    .from("telegram_links")
+    .select("chat_id")
+    .eq("organization_id", args.organizationId)
+    .eq("group_id", args.groupId)
+    .not("verified_at", "is", null)
+    .not("chat_id", "is", null)
+    .maybeSingle();
+  if (!link?.chat_id) return false;
+
+  const open = args.url
+    ? `<a href="${escapeAttr(args.url)}">Tap here to get your login</a>`
+    : `Send this code to me in a private chat: <code>${escapeHtml(args.code)}</code>`;
+
+  const html = [
+    `🔑 <b>${escapeHtml(args.groupName)} — your accounts are ready.</b>`,
+    "",
+    open,
+    "",
+    "I'll ask you to confirm your phone number, then send your login and password " +
+      "<b>privately</b> — not here.",
+    "",
+    `<i>If the link does nothing, send me the code <code>${escapeHtml(args.code)}</code> as a message.</i>`,
+  ].join("\n");
+
+  return sendMessage(Number(link.chat_id), html);
+}
+
+/**
  * Announce an assignment in each linked group's channel.
  *
  * Deliberately says only that work exists. No student names, no bands, no

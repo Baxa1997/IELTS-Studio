@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 
+import { serverEnv } from "@/lib/env";
+import { generatePassword } from "@/lib/passwords";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { escapeHtml, sendMessage } from "@/lib/telegram/send";
+import { callTelegram, escapeHtml, sendMessage } from "@/lib/telegram/send";
+import {
+  bindStudentChat,
+  groupForInviteCode,
+  matchStudentByPhone,
+  sendCredentialsTelegram,
+} from "@/lib/telegram/student";
 
 // Writes with the service-role client and calls out to Telegram — Node runtime,
 // never cached.
@@ -82,6 +90,17 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const msg = update.message ?? update.channel_post;
+
+  // ── the phone that decides who this is ──────────────────────────────────
+  // Only ever accepted from the person who sent it: `contact.user_id` is who
+  // the number belongs to according to Telegram, and requiring it to equal the
+  // sender is what stops somebody forwarding a classmate's contact card to
+  // claim their account.
+  if (msg?.contact && msg.chat) {
+    await claimByPhone(msg.chat.id, msg.contact, msg.from?.id);
+    return ok();
+  }
+
   const text = msg?.text?.trim();
   const chat = msg?.chat;
   if (!text || !chat) return ok();
@@ -124,6 +143,26 @@ export async function POST(req: Request): Promise<Response> {
   if (isPrivate && /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$/.test(text.toUpperCase())) {
     const bare = text.toUpperCase();
     if (await bindStudent(bare, chat.id)) return ok();
+
+    // A CLASS code rather than a personal one. It identifies the roster to
+    // search and nothing else — the bind is decided by the phone, which is why
+    // this code is safe to post in a channel where thirty people can read it.
+    const group = await groupForInviteCode(bare);
+    if (group) {
+      pendingGroup.set(chat.id, group);
+      await callTelegram("sendMessage", {
+        chat_id: chat.id,
+        text:
+          "Almost there. Tap the button below to confirm your phone number — that is how " +
+          "I know which account is yours.\n\nI only use it to find you on your class list.",
+        reply_markup: {
+          keyboard: [[{ text: "📱 Share my number", request_contact: true }]],
+          resize_keyboard: true,
+          one_time_keyboard: true,
+        },
+      });
+      return ok();
+    }
     await sendMessage(
       chat.id,
       "I don't recognise that code. Ask your teacher for a new one — codes stop working " +
@@ -291,6 +330,104 @@ async function bindStudent(code: string, chatId: number): Promise<boolean> {
   return true;
 }
 
+/**
+ * Which class a chat is part-way through joining.
+ *
+ * IN MEMORY, and that is a real limitation rather than a shortcut: serverless
+ * instances do not share it, so a student whose code and phone land on
+ * different instances is asked to send the code again. That is a recoverable
+ * annoyance, and the alternative — a row per half-finished attempt — is state
+ * to expire and clean up for a step that takes ten seconds. Revisit if it
+ * proves common.
+ */
+const pendingGroup = new Map<number, { groupId: string; organizationId: string }>();
+
+/**
+ * Bind the student whose phone this is, and send their sign-in details.
+ *
+ * The phone is the whole authentication. Everything before it is public: the
+ * class code was posted in a channel and no names were ever shown. So the
+ * failures here are deliberately quiet about WHY — "no match" reads the same
+ * whether the number is absent from the roster, shared with a sibling, or
+ * already bound, because a bot that explains which of those it was becomes a
+ * tool for working out who is on a class list.
+ */
+async function claimByPhone(
+  chatId: number,
+  contact: { phone_number?: string; user_id?: number },
+  senderId: number | undefined,
+): Promise<void> {
+  const pending = pendingGroup.get(chatId);
+  if (!pending) {
+    await sendMessage(chatId, "Send me your class code first, then share your number.");
+    return;
+  }
+
+  // Somebody else's contact card, forwarded. Telegram tells us who the number
+  // belongs to; if that is not the sender, this is not their number to claim.
+  if (contact.user_id != null && senderId != null && contact.user_id !== senderId) {
+    await sendMessage(chatId, "That is somebody else's number. Share your own to connect.");
+    return;
+  }
+  if (!contact.phone_number) {
+    await sendMessage(chatId, "I did not get a number. Try the button again.");
+    return;
+  }
+
+  const student = await matchStudentByPhone({
+    groupId: pending.groupId,
+    phone: contact.phone_number,
+  });
+  if (!student) {
+    await sendMessage(
+      chatId,
+      "I could not find that number on this class list. Ask your teacher to check the " +
+        "number they have for you, then try again.",
+    );
+    return;
+  }
+
+  const bound = await bindStudentChat({
+    organizationId: pending.organizationId,
+    profileId: student.profileId,
+    chatId,
+  });
+  if (!bound) {
+    await sendMessage(chatId, "Something went wrong connecting you. Ask your teacher.");
+    return;
+  }
+  pendingGroup.delete(chatId);
+
+  // A NEW PASSWORD, not the old one, because the old one cannot be read back —
+  // Supabase stores a hash. Setting one here is what makes this self-service:
+  // the student ends the conversation able to sign in, with no teacher step.
+  const password = generatePassword();
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(student.profileId, { password });
+  if (error) {
+    await sendMessage(
+      chatId,
+      "✅ Connected — but I could not set your password. Ask your teacher to reset it.",
+    );
+    return;
+  }
+
+  const { data: org } = await admin
+    .from("organizations")
+    .select("name")
+    .eq("id", pending.organizationId)
+    .maybeSingle();
+
+  await sendCredentialsTelegram({
+    profileId: student.profileId,
+    fullName: student.fullName,
+    login: student.login,
+    password,
+    centerName: (org?.name as string | null) ?? "your center",
+    signInUrl: `${serverEnv.outboundSiteUrl}/sign-in`,
+  });
+}
+
 function ok() {
   return NextResponse.json({ ok: true });
 }
@@ -303,6 +440,10 @@ interface TelegramChat {
 interface TelegramMessage {
   text?: string;
   chat?: TelegramChat;
+  from?: { id?: number };
+  /** Sent when the student taps "Share my number". `user_id` is whose number
+   *  Telegram says it is, which is what makes a forwarded card detectable. */
+  contact?: { phone_number?: string; user_id?: number };
 }
 interface TelegramUpdate {
   message?: TelegramMessage;

@@ -4,6 +4,8 @@ import { randomBytes } from "node:crypto";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { phoneKey } from "@/lib/phone";
+
 import { escapeHtml, sendMessage, telegramConfigured } from "./send";
 
 /**
@@ -150,6 +152,149 @@ export async function sendCredentialsTelegram(args: {
   ].join("\n");
 
   return sendMessage(chatId, html);
+}
+
+/* ── the whole class at once ───────────────────────────────────────────────── */
+
+/**
+ * A code the class shares, so thirty students connect from one message.
+ *
+ * NOT A CREDENTIAL, and the distinction is what makes it safe to post in a
+ * channel. On its own it names a class and nothing more; holding it lets
+ * somebody ask the bot "who am I?", and the bot answers only if the phone
+ * number Telegram reports matches a student on that roster. The secret that
+ * decides the bind is the student's own phone, which this code neither contains
+ * nor can reveal.
+ *
+ * Re-inviting REPLACES the class's code, which revokes the old one — what a
+ * teacher means by "make a new link" after a code has been forwarded somewhere
+ * it should not have gone.
+ */
+export async function createGroupInvite(args: {
+  organizationId: string;
+  groupId: string;
+  createdBy: string;
+}): Promise<StudentInvite> {
+  const code = newCode();
+  const expiresAt = new Date(Date.now() + CODE_TTL_DAYS * 86_400_000).toISOString();
+
+  const admin = createAdminClient();
+  await admin
+    .from("telegram_group_invites")
+    .upsert(
+      {
+        organization_id: args.organizationId,
+        group_id: args.groupId,
+        code,
+        expires_at: expiresAt,
+        created_by: args.createdBy,
+      },
+      { onConflict: "group_id" },
+    )
+    .select("id");
+
+  const bot = process.env.TELEGRAM_BOT_USERNAME;
+  return { code, url: bot ? `https://t.me/${bot}?start=${code}` : null, expiresAt };
+}
+
+/** The class a code belongs to, if it is live. Null for unknown or expired. */
+export async function groupForInviteCode(
+  code: string,
+): Promise<{ groupId: string; organizationId: string } | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("telegram_group_invites")
+    .select("group_id, organization_id, expires_at")
+    .eq("code", code)
+    .maybeSingle();
+  if (!data) return null;
+  if (new Date(data.expires_at as string) < new Date()) return null;
+  return {
+    groupId: data.group_id as string,
+    organizationId: data.organization_id as string,
+  };
+}
+
+/**
+ * Who, on this class roster, owns the number Telegram just reported.
+ *
+ * THE MATCH IS THE AUTHENTICATION. Everything else in this flow is public — the
+ * class code goes in a channel, the names are never shown — so this comparison
+ * is the only thing standing between a student and someone else's password. It
+ * is therefore written to fail closed:
+ *
+ *  - a student with no phone on file can never match, because `phoneKey`
+ *    returns null for both sides and null is not equal to null. In a table
+ *    where most rows have no number, matching blanks would hand the first
+ *    person who asked the first empty row.
+ *  - two students sharing a number match NOBODY. Siblings on one parent's phone
+ *    is a real case, and guessing between them is exactly the kind of guess
+ *    that gives one child the other's account.
+ *  - a student already bound to a different Telegram account is refused rather
+ *    than rebound, so a lost or forwarded code cannot take over an account that
+ *    is already working.
+ */
+export async function matchStudentByPhone(args: {
+  groupId: string;
+  phone: string;
+}): Promise<{ profileId: string; fullName: string; login: string } | null> {
+  const key = phoneKey(args.phone);
+  if (!key) return null;
+
+  const admin = createAdminClient();
+  const { data: members } = await admin
+    .from("group_members")
+    .select("student_id")
+    .eq("group_id", args.groupId);
+  const ids = (members ?? []).map((m) => m.student_id as string);
+  if (ids.length === 0) return null;
+
+  const { data: rows } = await admin
+    .from("profiles")
+    .select("id, full_name, username, phone")
+    .in("id", ids);
+
+  const hits = (rows ?? []).filter((r) => phoneKey(r.phone as string | null) === key);
+  // Exactly one, or nobody. See the note above about shared numbers.
+  if (hits.length !== 1) return null;
+
+  const hit = hits[0];
+  const { data: existing } = await admin
+    .from("telegram_students")
+    .select("verified_at")
+    .eq("profile_id", hit.id as string)
+    .maybeSingle();
+  if (existing?.verified_at) return null;
+
+  return {
+    profileId: hit.id as string,
+    fullName: (hit.full_name as string | null) ?? "Student",
+    login: (hit.username as string | null) ?? "—",
+  };
+}
+
+/** Record the binding once the phone has decided who this is. */
+export async function bindStudentChat(args: {
+  organizationId: string;
+  profileId: string;
+  chatId: number;
+}): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("telegram_students")
+    .upsert(
+      {
+        organization_id: args.organizationId,
+        profile_id: args.profileId,
+        chat_id: args.chatId,
+        verified_at: new Date().toISOString(),
+        link_code: null,
+        code_expires_at: null,
+      },
+      { onConflict: "profile_id" },
+    )
+    .select("id");
+  return Boolean(data && data.length > 0);
 }
 
 /** Anything else personal: homework due, a result, a reminder. Same rule —
