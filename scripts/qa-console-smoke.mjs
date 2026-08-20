@@ -137,6 +137,41 @@ async function loadPage(cookie, path, mustContain) {
   return { ok: true, detail: `${(html.length / 1024).toFixed(0)}kB` };
 }
 
+/**
+ * A COLUMN HEADING THAT DOES NOT SIT OVER ITS VALUES.
+ *
+ * Every board on the group page draws its heading row and its body rows from
+ * ONE `grid-template-columns` string, so the two can only stay in line while
+ * they really do use the same one. A `auto` track breaks that silently: it is
+ * sized by its own content, so an empty header cell computes to 0px where the
+ * body's holds two buttons, and every `fr` track soaks up the difference —
+ * walking each heading further right of the values beneath it. The page still
+ * returns 200 and every other check passes.
+ *
+ * So: no `auto` in a template on this page, and every use of the roster's
+ * template — its head and each row — has to be byte-identical. Counting rows
+ * is deliberately not part of it: the roster shows the ENROLLED members, which
+ * is not the same number as the students on the page.
+ */
+function checkGrids(html, { roster: wantRoster = true } = {}) {
+  const templates = [...html.matchAll(/grid-template-columns:([^";]+)/g)].map((m) =>
+    m[1].trim(),
+  );
+  const withAuto = templates.filter((t) => /(^|[\s,])auto([\s,]|$)/.test(t));
+  if (withAuto.length > 0) {
+    return { ok: false, detail: `content-sized track in a shared template: ${withAuto[0]}` };
+  }
+  if (!wantRoster) return { ok: true, detail: `${new Set(templates).size} templates, none content-sized` };
+  const roster = templates.filter((t) => t.includes("minmax(200px"));
+  if (roster.length < 2) {
+    return { ok: false, detail: `roster head and rows are not sharing a template (${roster.length} uses)` };
+  }
+  if (new Set(roster).size !== 1) {
+    return { ok: false, detail: `roster head and rows disagree: ${new Set(roster).size} templates` };
+  }
+  return { ok: true, detail: `${new Set(templates).size} templates, all aligned` };
+}
+
 async function main() {
   console.log(`\nConsole smoke test against ${BASE} — ${TAG}\n`);
 
@@ -243,6 +278,25 @@ async function main() {
 
   console.log("center_admin");
   const ownerCookie = await signInAs(`${TAG}-owner@example.com`);
+
+  {
+    const res = await fetch(`${BASE}/console/groups/${group.id}`, { headers: { cookie: ownerCookie } });
+    const r = checkGrids(await res.text());
+    check("roster columns line up with their headings", r.ok, r.detail);
+
+    // The practice board and the register draw their heads and rows from one
+    // template too, and are just as able to drift.
+    for (const [tab, label] of [
+      ["practice", "practice board"],
+      ["attendance", "register"],
+    ]) {
+      const t = await fetch(`${BASE}/console/groups/${group.id}?tab=${tab}`, {
+        headers: { cookie: ownerCookie },
+      });
+      const g = checkGrids(await t.text(), { roster: false });
+      check(`${label} columns line up with their headings`, g.ok, g.detail);
+    }
+  }
 
   const ownerPages = [
     ["/console", "Today"],

@@ -40,7 +40,8 @@ const AMBER = "#9a5b16";
 const RED = "#a13a2c";
 const INDIGO = "#4f46e5";
 
-const COLS = "minmax(200px, 2.4fr) 1.1fr .6fr .8fr 1fr auto";
+const COLS =
+  "minmax(200px, 2.2fr) minmax(0, 126px) minmax(0, 74px) minmax(0, 92px) minmax(0, 104px) minmax(0, 178px)";
 
 export interface StudentRow {
   id: string;
@@ -86,7 +87,7 @@ export function StudentsManager({
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <div style={{ minWidth: 820 }}>
+      <div style={{ minWidth: 900 }}>
         <div
           style={{
             display: "grid",
@@ -103,9 +104,9 @@ export function StudentsManager({
           <span>Student</span>
           <span>Weakest skill</span>
           <span>Target</span>
-          <span>30-day practice</span>
+          <span>30-day</span>
           <span>Last active</span>
-          <span />
+          <span style={{ textAlign: "right" }}>Manage</span>
         </div>
         {students.map((s) => (
           <StudentLine key={s.id} groupId={groupId} student={s} otherGroups={otherGroups} />
