@@ -294,8 +294,8 @@ async function handlePrivateCode(
   if (!opts.explainUnknown) return false;
   await sendMessage(
     chatId,
-    "I don't recognise that code. Ask your teacher for a new one — codes stop working " +
-      "after 7 days, and each one can only be used once.",
+    "I don't recognise that code. Check it for typos, or ask your teacher — a class " +
+      "code keeps working, but a personal one is single use.",
   );
   return true;
 }

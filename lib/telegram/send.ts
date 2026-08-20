@@ -182,9 +182,36 @@ export async function postGroupInvite(args: {
       "<b>privately</b> — not here.",
     "",
     `<i>If the link does nothing, send me the code <code>${escapeHtml(args.code)}</code> as a message.</i>`,
+    "",
+    "<i>This message stays pinned — join the class later and it still works.</i>",
   ].join("\n");
 
-  return sendMessage(Number(link.chat_id), html);
+  const chatId = Number(link.chat_id);
+  const sent = await callTelegram<{ message_id?: number }>("sendMessage", {
+    chat_id: chatId,
+    text: html,
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+  });
+  if (!sent) return false;
+
+  // PINNED, BECAUSE THE CODE NO LONGER EXPIRES AND THIS IS THE ONLY COPY.
+  // The invite is posted once and then scrolls away under a term of chatter —
+  // so the student who joins in week three, or reinstalls Telegram in month
+  // two, has to scroll for it or ask. Pinned, it stays one tap from the top of
+  // the channel for as long as the class exists.
+  //
+  // Best effort: pinning needs the bot to be an admin with that right, which a
+  // centre may not have granted. A channel that will not pin is not a failed
+  // invite — the message is already sent, and saying so would be a lie.
+  if (sent.message_id != null) {
+    await callTelegram("pinChatMessage", {
+      chat_id: chatId,
+      message_id: sent.message_id,
+      disable_notification: true,
+    });
+  }
+  return true;
 }
 
 /**

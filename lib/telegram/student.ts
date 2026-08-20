@@ -32,11 +32,13 @@ import { escapeHtml, sendMessage, telegramConfigured } from "./send";
  * account proves the account is theirs.
  */
 
-/** How long a student has to tap the link before it stops working.
+/** How long a PER-STUDENT code lives. Only that one — a class code no longer
+ *  expires at all, see `createGroupInvite`.
  *
- *  A week rather than an hour: this gets printed on a slip and handed out in
- *  class, and a code that dies before the lesson ends is a code that generates
- *  a support message instead of a login. */
+ *  This one keeps its expiry because it genuinely is a credential: whoever taps
+ *  it becomes that student, with no phone check. A week rather than an hour
+ *  because it gets printed on a slip and handed out in class, and a code that
+ *  dies before the lesson ends is a support message instead of a login. */
 const CODE_TTL_DAYS = 7;
 
 /** 40 bits, unambiguous alphabet. No 0/O or 1/I/L, because this gets read off
@@ -54,7 +56,9 @@ export interface StudentInvite {
   code: string;
   /** What the student taps. Null when no bot username is configured. */
   url: string | null;
-  expiresAt: string;
+  /** Null for a class code, which never expires. Always set for a per-student
+   *  code, which IS a credential and must. */
+  expiresAt: string | null;
 }
 
 /**
@@ -167,9 +171,13 @@ export async function sendCredentialsTelegram(args: {
  * decides the bind is the student's own phone, which this code neither contains
  * nor can reveal.
  *
- * Re-inviting REPLACES the class's code, which revokes the old one — what a
- * teacher means by "make a new link" after a code has been forwarded somewhere
- * it should not have gone.
+ * IT DOES NOT EXPIRE. The invite is posted once and then scrolls away up the
+ * channel, so a student who joins in week three — or who reinstalls Telegram in
+ * month two — would otherwise find a dead link and have to ask for a new one.
+ * An expiry was buying almost nothing here, because the code is not the secret:
+ * the phone is. Revoking is still deliberate and still works — re-inviting
+ * REPLACES the class's code, which is what a teacher means by "make a new link"
+ * after one has been forwarded somewhere it should not have gone.
  */
 export async function createGroupInvite(args: {
   organizationId: string;
@@ -177,7 +185,6 @@ export async function createGroupInvite(args: {
   createdBy: string;
 }): Promise<StudentInvite> {
   const code = newCode();
-  const expiresAt = new Date(Date.now() + CODE_TTL_DAYS * 86_400_000).toISOString();
 
   const admin = createAdminClient();
   await admin
@@ -187,7 +194,7 @@ export async function createGroupInvite(args: {
         organization_id: args.organizationId,
         group_id: args.groupId,
         code,
-        expires_at: expiresAt,
+        expires_at: null,
         created_by: args.createdBy,
       },
       { onConflict: "group_id" },
@@ -195,7 +202,7 @@ export async function createGroupInvite(args: {
     .select("id");
 
   const bot = process.env.TELEGRAM_BOT_USERNAME;
-  return { code, url: bot ? `https://t.me/${bot}?start=${code}` : null, expiresAt };
+  return { code, url: bot ? `https://t.me/${bot}?start=${code}` : null, expiresAt: null };
 }
 
 /* ── a handshake half-finished ─────────────────────────────────────────────
@@ -256,7 +263,9 @@ export async function clearPendingJoin(chatId: number): Promise<void> {
   await admin.from("telegram_pending").delete().eq("chat_id", chatId).select("chat_id");
 }
 
-/** The class a code belongs to, if it is live. Null for unknown or expired. */
+/** The class a code belongs to. Null only for a code we have never issued —
+ *  a class code has no expiry, so `expires_at` is normally null and any value
+ *  still there is honoured for the few that predate the change. */
 export async function groupForInviteCode(
   code: string,
 ): Promise<{ groupId: string; organizationId: string } | null> {
@@ -267,7 +276,8 @@ export async function groupForInviteCode(
     .eq("code", code)
     .maybeSingle();
   if (!data) return null;
-  if (new Date(data.expires_at as string) < new Date()) return null;
+  const until = data.expires_at as string | null;
+  if (until != null && new Date(until) < new Date()) return null;
   return {
     groupId: data.group_id as string,
     organizationId: data.organization_id as string,

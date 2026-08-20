@@ -156,23 +156,23 @@ export default async function GroupDetailPage({
   // the UI below, and RLS scopes both to what this person may touch anyway.
   const [{ teachers, groups: manageable }, assignments, activity, libTestsRes, estimatesRes] =
     await Promise.all([
-    loadGroups(profile),
-    loadGroupAssignments(group.id),
-    loadGroupActivity(memberIds),
-    admin
-      .from("reading_tests")
-      .select("id, target_band")
-      .eq("organization_id", READING_LIBRARY_ORG_ID)
-      .eq("is_library", true)
-      .order("target_band", { ascending: true })
-      .limit(12),
-    memberIds.length > 0
-      ? supabase
-          .from("skill_estimates")
-          .select("student_id, skill, current_band, target_band")
-          .in("student_id", memberIds)
-      : Promise.resolve({ data: null }),
-  ]);
+      loadGroups(profile),
+      loadGroupAssignments(group.id),
+      loadGroupActivity(memberIds),
+      admin
+        .from("reading_tests")
+        .select("id, target_band")
+        .eq("organization_id", READING_LIBRARY_ORG_ID)
+        .eq("is_library", true)
+        .order("target_band", { ascending: true })
+        .limit(12),
+      memberIds.length > 0
+        ? supabase
+            .from("skill_estimates")
+            .select("student_id, skill, current_band, target_band")
+            .in("student_id", memberIds)
+        : Promise.resolve({ data: null }),
+    ]);
 
   // ── the money side of the group ────────────────────────────────────────────
   // Owner only: a teacher must not read what the center charges, and RLS on
@@ -481,11 +481,7 @@ export default async function GroupDetailPage({
       />
 
       <KpiRow>
-        <Kpi
-          label="Students"
-          value={roster.length}
-          sub={`${activeCount} active in 30 days`}
-        />
+        <Kpi label="Students" value={roster.length} sub={`${activeCount} active in 30 days`} />
         <Kpi
           label="Practice set"
           value={assignments.length}
@@ -600,7 +596,7 @@ export default async function GroupDetailPage({
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
             <SectionCard
-              title="Telegram channel"
+              title="Telegram group"
               note="One channel per group — where new practice is announced and sign-in links are delivered."
               aside={
                 <Pill tone={telegramLinked ? "done" : "idle"}>
@@ -635,7 +631,7 @@ export default async function GroupDetailPage({
                 label="Channel linked"
                 note={
                   telegramLinked
-                    ? telegramLinked.chatTitle ?? "connected"
+                    ? (telegramLinked.chatTitle ?? "connected")
                     : "without one the invite has nowhere to be posted"
                 }
               />
@@ -737,9 +733,7 @@ export default async function GroupDetailPage({
                 />
               ))}
             </div>
-            <span
-              style={{ marginLeft: "auto", fontFamily: SANS, fontSize: 13, color: V2.faint }}
-            >
+            <span style={{ marginLeft: "auto", fontFamily: SANS, fontSize: 13, color: V2.faint }}>
               {visible.length === board.length
                 ? `${board.length} set in total`
                 : `${visible.length} of ${board.length} shown`}
@@ -852,9 +846,7 @@ export default async function GroupDetailPage({
                   color: V2.faint,
                 }}
               >
-                {board.length === 0
-                  ? "Nothing assigned yet."
-                  : "No practice matches this filter."}
+                {board.length === 0 ? "Nothing assigned yet." : "No practice matches this filter."}
               </div>
             ) : null}
             {group.teacherId === profile.id ? (
@@ -904,8 +896,8 @@ export default async function GroupDetailPage({
             >
               <h3 style={serifHead}>Register</h3>
               <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint }}>
-                P present · L late · A absent · E excused. A late arrival still counts as
-                attended; an excused lesson counts as neither.
+                P present · L late · A absent · E excused. A late arrival still counts as attended;
+                an excused lesson counts as neither.
               </span>
               <Link
                 href={`/console/attendance?group=${group.id}`}
@@ -1200,9 +1192,7 @@ export default async function GroupDetailPage({
                   ? `Students (${roster.length}/${group.capacity})`
                   : `Students (${roster.length})`}
               </h3>
-              <span
-                style={{ fontFamily: SANS, fontSize: 13, color: V2.faint, flex: "1 1 240px" }}
-              >
+              <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint, flex: "1 1 240px" }}>
                 {group.capacity && roster.length >= group.capacity
                   ? `This group is full — ${roster.length} of ${group.capacity} seats. You can still add, it just won't fit the room.`
                   : "Everyone here signs in with their own login — that is how homework is handed in and graded."}
