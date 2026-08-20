@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 /**
@@ -218,6 +220,32 @@ export function ConsoleChrome({
       >
         <div style={{ fontSize: 12.5, color: "#6E6C87" }}>{crumb ?? "Center"}</div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          {/* ON EVERY PAGE, because the moment you need it is the moment you do
+              not know which page would have answered you. It navigates rather
+              than opening a panel: one conversation, in one place, that you can
+              come back to — not a popover whose contents depend on where you
+              happened to be standing. */}
+          <Link
+            href="/console/assistant"
+            className="cn-askai"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              background: "#fff",
+              border: "1px solid #C5C4BE",
+              borderRadius: 8,
+              padding: "7px 11px",
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: INK,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Sparkles size={14} aria-hidden />
+            Ask AI
+          </Link>
           <span
             className="cn-hide-sm"
             style={{

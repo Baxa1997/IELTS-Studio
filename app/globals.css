@@ -1658,6 +1658,10 @@
 .cn-menuitem:hover {
   background: #f4f3ee;
 }
+.cn-root .cn-askai:hover {
+  border-color: #b9b4f0;
+  color: #3730a3;
+}
 .cn-root .cn-reportbtn:hover {
   border-color: #b9b4f0;
   color: #3730a3;

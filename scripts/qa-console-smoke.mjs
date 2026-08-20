@@ -284,6 +284,24 @@ async function main() {
     const r = checkGrids(await res.text());
     check("roster columns line up with their headings", r.ok, r.detail);
 
+    const ask = await fetch(`${BASE}/api/console/assistant`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "How many classes do I have, and can they all sign in?" }),
+    });
+    const answer = await ask.json().catch(() => ({}));
+    check(
+      "the assistant answers from the centre snapshot",
+      ask.status === 200 && typeof answer.reply === "string" && answer.reply.length > 0,
+      ask.status === 200 ? `"${String(answer.reply ?? "").slice(0, 90)}…"` : `HTTP ${ask.status}`,
+    );
+    check(
+      "it proposes only allow-listed actions",
+      Array.isArray(answer.proposals) &&
+        answer.proposals.every((p) => p && p.action === "invite_class_telegram"),
+      `${(answer.proposals ?? []).length} proposal(s)`,
+    );
+
     // The practice board and the register draw their heads and rows from one
     // template too, and are just as able to drift.
     for (const [tab, label] of [
@@ -308,6 +326,7 @@ async function main() {
     [`/console/groups/${group.id}?tab=attendance`, "Register"],
     [`/console/groups/${group.id}?tab=settings`, "Get the class signed in"],
     [`/console/groups/${group.id}?tab=money`, null],
+    ["/console/assistant", "Ask about your centre"],
     ["/console/students", null],
     [`/console/students/${students[0].id}`, "Band by skill"],
     ["/console/teachers", "Marking"],

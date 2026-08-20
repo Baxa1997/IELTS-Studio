@@ -105,6 +105,7 @@ const ADMIN: Section[] = [
   {
     title: "Run",
     items: [
+      { label: "Assistant", href: "/console/assistant", icon: Sparkles },
       { label: "Today", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
@@ -157,6 +158,7 @@ const ADMINISTRATOR: Section[] = [
   {
     title: "Run",
     items: [
+      { label: "Assistant", href: "/console/assistant", icon: Sparkles },
       { label: "Today", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
@@ -186,6 +188,7 @@ const TEACHER: Section[] = [
   {
     title: "Run",
     items: [
+      { label: "Assistant", href: "/console/assistant", icon: Sparkles },
       { label: "Today", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },

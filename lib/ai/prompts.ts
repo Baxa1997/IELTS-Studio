@@ -217,6 +217,39 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     return { system: rules.join(" "), user };
   }
 
+  // console_assistant — the centre's own assistant, inside the staff console. It
+  // answers from a SNAPSHOT it is handed (classes, rosters, phone coverage,
+  // marking waiting) and never from memory, and it may PROPOSE an action from a
+  // fixed list but can never run one: the proposal goes back to the person as a
+  // button. See lib/console/assistant.ts for why that split is the whole design.
+  if (input.kind === "console_assistant") {
+    const question = String(input.spec.question ?? "");
+    const snapshot = String(input.spec.snapshot ?? "");
+    const history = String(input.spec.history ?? "");
+    const actions = String(input.spec.actions ?? "");
+
+    const rules = [
+      "You are the assistant inside an IELTS education centre's staff console, talking to the person who runs or teaches there. Be direct, warm and brief — the tone of a good colleague, not a corporate helpdesk. Use contractions; never say 'As an AI' or 'Certainly!'.",
+      "ANSWER ONLY FROM THE SNAPSHOT BELOW. It is the whole truth you have about this centre. If the answer is not in it, say plainly that you cannot see it from here and name the page that would show them — never estimate, never invent a name, a number or a band.",
+      "Numbers matter more than fluency: quote them exactly as the snapshot gives them. If a class has 2 of 5 phones on file, say 2 of 5.",
+      "When something is blocking them, say what to do about it in one concrete sentence. The commonest one: the Telegram sign-in only works for students whose phone number is on the roster, so a class with missing numbers cannot all collect their logins.",
+      "You may PROPOSE an action from the list below when it is clearly what they are asking for. You never perform it — the person gets a button and decides. Propose at most one, only when you are confident, and never as a way of avoiding an answer. If no action fits, propose none; that is the normal case.",
+      "Reply in the same language they write in.",
+    ];
+
+    const shape =
+      'Return ONLY JSON, no prose outside it: {"reply": "<your answer, 1-5 short sentences, plain text>", "proposals": [{"action": "<id from the list>", "args": {"<name>": "<value>"}, "why": "<one short line naming what will happen>"}]}. "proposals" is usually an empty array.';
+
+    const user = [
+      `SNAPSHOT OF THIS CENTRE:\n${snapshot}`,
+      actions ? `\nACTIONS YOU MAY PROPOSE:\n${actions}` : "\nACTIONS YOU MAY PROPOSE: none.",
+      history ? `\nRECENT CONVERSATION:\n${history}` : "",
+      "",
+      `THEIR MESSAGE:\n${question}`,
+    ].join("\n");
+    return { system: `${rules.join(" ")} ${shape}`, user };
+  }
+
   // writing_samples — original band-targeted model answers for the EXACT task, for
   // the "Model answers" comparison panel (the Band-8 sample feature). The GENERATOR
   // writes these (never the grader), and they must sit HONESTLY at their stated band

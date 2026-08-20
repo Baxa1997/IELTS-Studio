@@ -392,11 +392,16 @@ export async function generate(rawInput: GenerateInput): Promise<GenerateResult>
     input.kind === "reading_validation" ||
     input.kind === "writing_task1_academic" ||
     input.kind === "writing_samples" ||
+    input.kind === "console_assistant" ||
     input.kind === "vocabulary_translate";
   // A dictionary lookup and the answer-key checker both want a stable, repeatable
   // answer; everything else wants variety.
   const temperature =
-    input.kind === "reading_validation" || input.kind === "vocabulary_translate"
+    input.kind === "reading_validation" ||
+    input.kind === "vocabulary_translate" ||
+    // The assistant reports facts it was handed. The same question about the
+    // same roster must not come back with a different number the second time.
+    input.kind === "console_assistant"
       ? GRADING_TEMPERATURE
       : GENERATION_TEMPERATURE;
   const resilience = wantsJson ? READING_RESILIENCE : GENERATE_RESILIENCE;

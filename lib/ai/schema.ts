@@ -92,6 +92,7 @@ export const generateInputSchema = z.object({
     "reading_validation",
     "reading_tutor",
     "study_coach",
+    "console_assistant",
     "vocabulary_translate",
   ]),
   /** Free-form spec: task_type, topic_family, difficulty, … */
