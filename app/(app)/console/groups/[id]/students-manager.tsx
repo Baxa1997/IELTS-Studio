@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { FaFileCsv, FaFileExcel } from "react-icons/fa6";
 import { FiChevronDown, FiKey, FiUserPlus } from "react-icons/fi";
 
 import { resetStudentPassword, type ResetPasswordState } from "../actions";
 import { useActionFeedback } from "@/components/console/toast";
 
-import { MoveOrRemove } from "./move-or-remove";
+import { MarkLeftBody, MoveBody, RemoveBody } from "./move-or-remove";
 
 /**
  * The group, as one table.
@@ -124,30 +124,10 @@ function StudentLine({
   student: StudentRow;
   otherGroups: { id: string; name: string }[];
 }) {
-  const [reset, resetAction, resetting] = useActionState(
-    resetStudentPassword,
-    {} as ResetPasswordState,
-  );
-  // Never closes the dialog: the new password is shown inside it, once.
-  // `showResult` is local rather than derived from `reset.done`, because
-  // useActionState keeps its result forever — without this, reopening the
-  // dialog next week would greet you with the password from last time instead
-  // of a form.
-  useActionFeedback(reset, { keepOpen: true, onSuccess: () => setShowResult(true) });
-  const [resetOpen, setResetOpen] = useState(false);
-  const [showResult, setShowResult] = useState(false);
-  const [copied, setCopied] = useState(false);
-
   const behind =
     student.weakestBand != null && student.targetBand != null
       ? student.weakestBand - student.targetBand
       : null;
-
-  async function copy(text: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
 
   return (
     <div style={{ borderBottom: `1px solid ${LINE}`, padding: "15px 20px" }}>
@@ -220,42 +200,155 @@ function StudentLine({
           {student.lastActive ? new Date(student.lastActive).toLocaleDateString() : "never"}
         </span>
 
-        <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-          <a href={`/console/groups/${groupId}/students/${student.id}`} style={linkStyle}>
+        <span
+          style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}
+        >
+          <a
+            href={`/console/groups/${groupId}/students/${student.id}`}
+            className="cn-reportbtn"
+            style={reportStyle}
+          >
             Report
           </a>
-
-          {/* Opens a dialog rather than resetting on the click. A reset takes
-              effect immediately and locks the student out of the password they
-              have — that deserves a deliberate second step, and it is also
-              where the teacher gets to CHOOSE the password. */}
-          <button
-            type="button"
-            onClick={() => setResetOpen(true)}
-            style={quietStyle}
-            title="Give them a new password"
-          >
-            <FiKey size={13} aria-hidden />
-            Password
-          </button>
-
-          {/* §5: one button, three ways out. Remove used to be the only one,
-              which meant a student who simply stopped coming was deleted from
-              the roster — off the teacher's list, off every report, with their
-              unpaid invoices attached to nobody anyone could now find. */}
-          <MoveOrRemove
-            groupId={groupId}
-            student={{ id: student.id, name: student.name }}
-            otherGroups={otherGroups}
-            owedLabel={student.owedLabel ?? null}
-          />
+          {/* FOUR ACTIONS BEHIND ONE WORD. They used to sit on the row as
+              "Report · Password · Move or remove", which made the widest column
+              on the table the one nobody uses daily — and "Move or remove"
+              opened a 260px panel INSIDE the row, shoving every other column
+              out of line while it was up. */}
+          <ManageMenu groupId={groupId} student={student} otherGroups={otherGroups} />
         </span>
       </div>
+    </div>
+  );
+}
 
-      {resetOpen ? (
+/**
+ * Everything you can do TO a student, behind one word on the row.
+ *
+ * WHY A MENU AND NOT FOUR BUTTONS. Three of these four are used a handful of
+ * times a term — a password reset, a move, a leaver — and they were taking up
+ * more of the table than the columns a teacher reads every day. Behind one
+ * button the row stays legible and nothing is buried: the menu names all four
+ * in full words, and each one opens a dialog that explains what it does before
+ * it does it.
+ *
+ * The menu is `position: fixed` off the button's own rectangle, not absolute.
+ * The board it lives in scrolls sideways, and an absolutely positioned menu in
+ * a scroll container is clipped by it — the last row's menu would open into a
+ * box you cannot see the bottom of.
+ */
+function ManageMenu({
+  groupId,
+  student,
+  otherGroups,
+}: {
+  groupId: string;
+  student: StudentRow;
+  otherGroups: { id: string; name: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [at, setAt] = useState<{ top: number; right: number } | null>(null);
+  const [sheet, setSheet] = useState<null | "password" | "move" | "left" | "remove">(null);
+  const btn = useRef<HTMLButtonElement>(null);
+
+  const [reset, resetAction, resetting] = useActionState(
+    resetStudentPassword,
+    {} as ResetPasswordState,
+  );
+  // Never closes the dialog: the new password is shown inside it, once.
+  // `showResult` is local rather than derived from `reset.done`, because
+  // useActionState keeps its result forever — without this, reopening the
+  // dialog next week would greet you with the password from last time instead
+  // of a form.
+  useActionFeedback(reset, { keepOpen: true, onSuccess: () => setShowResult(true) });
+  const [showResult, setShowResult] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function copy(text: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  // A fixed menu is placed once, so anything that moves the button underneath
+  // it has to close it rather than leave it floating somewhere wrong.
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  function toggle() {
+    const r = btn.current?.getBoundingClientRect();
+    if (r) setAt({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    setOpen((v) => !v);
+  }
+
+  function pick(which: "password" | "move" | "left" | "remove") {
+    setOpen(false);
+    setShowResult(false);
+    setSheet(which);
+  }
+
+  const owed = student.owedLabel ?? null;
+  const person = { id: student.id, name: student.name };
+
+  return (
+    <>
+      <button ref={btn} type="button" onClick={toggle} style={manageStyle} aria-expanded={open}>
+        Manage
+      </button>
+
+      {open && at ? (
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 79 }}
+            aria-hidden
+          />
+          <div
+            role="menu"
+            style={{
+              position: "fixed",
+              top: at.top,
+              right: at.right,
+              zIndex: 80,
+              minWidth: 230,
+              background: "#fff",
+              border: `1px solid ${LINE_STRONG}`,
+              borderRadius: 14,
+              padding: 6,
+              boxShadow: "0 18px 40px -18px rgba(20,32,58,.35)",
+              display: "grid",
+              gap: 2,
+            }}
+          >
+            <ActionItem onClick={() => pick("password")}>
+              <FiKey size={14} aria-hidden /> Reset password
+            </ActionItem>
+            <ActionItem onClick={() => pick("move")}>Move to another group</ActionItem>
+            <ActionItem onClick={() => pick("left")}>Mark as left</ActionItem>
+            <ActionItem danger onClick={() => pick("remove")}>
+              Remove from this group
+            </ActionItem>
+          </div>
+        </>
+      ) : null}
+
+      {sheet === "password" ? (
         <Modal
           onClose={() => {
-            setResetOpen(false);
+            setSheet(null);
             setShowResult(false);
           }}
           title="New password"
@@ -274,7 +367,77 @@ function StudentLine({
           />
         </Modal>
       ) : null}
-    </div>
+
+      {sheet === "move" ? (
+        <Modal onClose={() => setSheet(null)} title="Move to another group" note={student.name} width={460}>
+          <MoveBody
+            groupId={groupId}
+            student={person}
+            otherGroups={otherGroups}
+            owedLabel={owed}
+            onDone={() => setSheet(null)}
+          />
+        </Modal>
+      ) : null}
+
+      {sheet === "left" ? (
+        <Modal onClose={() => setSheet(null)} title="Mark as left" note={student.name} width={460}>
+          <MarkLeftBody student={person} owedLabel={owed} onDone={() => setSheet(null)} />
+        </Modal>
+      ) : null}
+
+      {sheet === "remove" ? (
+        <Modal
+          onClose={() => setSheet(null)}
+          title="Remove from this group"
+          note={student.name}
+          width={460}
+        >
+          <RemoveBody
+            groupId={groupId}
+            student={person}
+            owedLabel={owed}
+            onDone={() => setSheet(null)}
+          />
+        </Modal>
+      ) : null}
+    </>
+  );
+}
+
+function ActionItem({
+  onClick,
+  danger,
+  children,
+}: {
+  onClick: () => void;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="cn-menuitem"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        width: "100%",
+        textAlign: "left",
+        border: 0,
+        background: "none",
+        borderRadius: 10,
+        padding: "9px 11px",
+        fontSize: 13.5,
+        fontWeight: 500,
+        color: danger ? RED : INK,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -799,9 +962,31 @@ const quietStyle: React.CSSProperties = {
  * click, which is the one that actually does something.
  */
 
-const linkStyle: React.CSSProperties = {
-  ...quietStyle,
-  color: INDIGO,
+const reportStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "7px 12px",
+  borderRadius: 999,
+  border: `1px solid ${RULE}`,
+  background: "#fff",
+  fontSize: 13,
+  fontWeight: 600,
+  color: INK,
   textDecoration: "none",
-  display: "inline-block",
+  whiteSpace: "nowrap",
 };
+
+const manageStyle: React.CSSProperties = {
+  padding: "7px 12px",
+  borderRadius: 999,
+  border: "1px solid transparent",
+  background: "none",
+  fontSize: 13,
+  fontWeight: 600,
+  color: MUTED,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const LINE_STRONG = "#dedcd2";
+

@@ -1653,6 +1653,15 @@
 .cn-root .cn-boardrow:hover {
   background: #faf9f5;
 }
+/* The Manage menu is fixed-positioned, so it escapes .cn-root — the selector
+   has to be global for the hover to reach it. */
+.cn-menuitem:hover {
+  background: #f4f3ee;
+}
+.cn-root .cn-reportbtn:hover {
+  border-color: #b9b4f0;
+  color: #3730a3;
+}
 
 /* Table + list rows: whole-row hover, matching the design's style-hover. */
 .cn-root .cn-row {
