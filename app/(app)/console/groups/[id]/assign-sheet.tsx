@@ -21,12 +21,14 @@ export function AssignSheet({
   groupId,
   libraryTests,
   library,
+  hasPlacement = false,
   label = "Assign practice",
   variant = "primary",
 }: {
   groupId: string;
   libraryTests: { id: string; label: string }[];
   library: { id: string; title: string; skill: string; level: string | null }[];
+  hasPlacement?: boolean;
   label?: string;
   variant?: "primary" | "quiet";
 }) {
@@ -154,6 +156,7 @@ export function AssignSheet({
                 groupId={groupId}
                 libraryTests={libraryTests}
                 library={library}
+                hasPlacement={hasPlacement}
                 onDone={() => setOpen(false)}
               />
             </div>

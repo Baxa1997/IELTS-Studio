@@ -24,24 +24,38 @@ export function AssignPanel({
   groupId,
   libraryTests,
   library = [],
+  hasPlacement = false,
   onDone,
 }: {
   groupId: string;
   libraryTests: { id: string; label: string }[];
   /** §9's shelf: content the centre has already made and kept. */
   library?: { id: string; title: string; skill: string; level: string | null }[];
+  /** This class already has a diagnostic. Said out loud at the checkbox,
+   *  because the rule is counter-intuitive and silently ignoring the tick is
+   *  how a teacher comes to believe the baseline moved when it did not. */
+  hasPlacement?: boolean;
   /** Called once the assignment is actually created — how the sheet that
    *  wraps this knows to close itself. */
   onDone?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(createAssignment, initial);
   useActionFeedback(state, { onSuccess: onDone });
+  const [libraryId, setLibraryId] = useState(library[0]?.id ?? "");
   const [kind, setKind] = useState<"writing" | "reading" | "library">(
     // The shelf goes FIRST when there is one. Generating is the expensive path
     // — it costs quota, takes seconds, and produces a paper no other group has
     // sat — so it should be the deliberate choice, not the default.
     library.length > 0 ? "library" : "writing",
   );
+
+  // Writing and reading produce a band. Nothing else does, so nothing else can
+  // anchor "how far they have come".
+  const librarySkill = library.find((i) => i.id === libraryId)?.skill;
+  const canPlace =
+    kind === "writing" ||
+    kind === "reading" ||
+    (kind === "library" && (librarySkill === "writing" || librarySkill === "reading"));
 
   return (
     <form action={formAction} className="space-y-4">
@@ -68,7 +82,14 @@ export function AssignPanel({
         {kind === "library" ? (
           <div className="w-80 space-y-2">
             <Label htmlFor="assign-library">Saved practice</Label>
-            <select id="assign-library" name="library_id" className={FIELD} required>
+            <select
+              id="assign-library"
+              name="library_id"
+              className={FIELD}
+              required
+              value={libraryId}
+              onChange={(e) => setLibraryId(e.target.value)}
+            >
               {library.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.title}
@@ -123,19 +144,25 @@ export function AssignPanel({
           <Label htmlFor="assign-due">Due date (optional)</Label>
           <Input id="assign-due" name="due_at" type="date" />
         </div>
+        {/* Offered only where it can do something. A baseline is frozen from a
+            writing or a reading band; tick it on a listening paper and the
+            flag is stored, no baseline is ever set, and the teacher has been
+            told their progress figures are anchored when they are not. */}
+        {canPlace ? (
         <div className="space-y-2">
           <label className="flex items-start gap-2.5 text-sm">
             <input type="checkbox" name="is_placement" className="mt-0.5" />
             <span>
               This is a placement test
               <span className="text-muted-foreground block text-xs">
-                Its band becomes where these students started, so every later report can say how
-                far they have come. Set one per group, at the beginning — a second placement does
-                not move the baseline.
+                {hasPlacement
+                  ? "This class already has one, and a baseline only moves once — ticking this will not replace it. Re-testing a student who has improved would erase the very progress you are showing."
+                  : "Its band becomes where these students started, so every later report can say how far they have come. Set one per group, at the beginning."}
               </span>
             </span>
           </label>
         </div>
+        ) : null}
       </div>
 
       <div className="space-y-2">

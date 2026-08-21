@@ -17,6 +17,10 @@ export interface AssignmentSummary {
    *  both: 3 of 3 submitted with 1 marked is a different sentence from 1 of 3
    *  handed in, and `completed` alone cannot tell them apart. */
   submitted: number;
+  /** This practice is the class's diagnostic: its band is what every later
+   *  "since they started" claim is measured from. Worth a badge on the board —
+   *  it is the one row a teacher must not delete by accident. */
+  isPlacement: boolean;
   /** Mean band across the members who have one, rounded to the IELTS half.
    *  Null where the kind has no band at all (listening stores a raw score;
    *  lessons store marks out of a maximum) — an averaged number in a column
@@ -78,7 +82,7 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
   const { data: rows } = await supabase
     .from("assignments")
     .select(
-      "id, kind, title, due_at, created_at, prompt_id, reading_test_id, listening_library_id, lesson_id",
+      "id, kind, title, due_at, created_at, is_placement, prompt_id, reading_test_id, listening_library_id, lesson_id",
     )
     .eq("group_id", groupId)
     .order("created_at", { ascending: false });
@@ -222,6 +226,7 @@ export async function loadGroupAssignments(groupId: string): Promise<AssignmentS
       title: r.title as string,
       dueAt: (r.due_at as string | null) ?? null,
       createdAt: r.created_at as string,
+      isPlacement: (r.is_placement as boolean | null) ?? false,
       completed: done.get(key)?.size ?? 0,
       submitted: started.get(key)?.size ?? 0,
       band:

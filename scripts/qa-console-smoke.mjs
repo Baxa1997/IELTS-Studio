@@ -371,6 +371,7 @@ async function main() {
     ["/console/groups", null],
     [`/console/groups/${group.id}`, "QA Active"],
     [`/console/groups/${group.id}?tab=practice`, "All practice"],
+    [`/console/groups/${group.id}?tab=practice`, "Baseline"],
     [`/console/groups/${group.id}?tab=practice&flow=overdue`, "Overdue"],
     [`/console/groups/${group.id}?tab=practice&skill=writing&q=zzz`, "No practice matches"],
     [`/console/groups/${group.id}?tab=attendance`, "Register"],

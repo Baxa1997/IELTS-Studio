@@ -407,6 +407,7 @@ export default async function GroupDetailPage({
     return "open";
   };
   const board = assignments.map((a) => ({ ...a, flow: flowOf(a) }));
+  const hasPlacement = assignments.some((a) => a.isPlacement);
   const openCount = board.filter((a) => a.flow === "open").length;
   const overdueCount = board.filter((a) => a.flow === "overdue").length;
   const doneCount = board.filter((a) => a.flow === "done").length;
@@ -475,7 +476,12 @@ export default async function GroupDetailPage({
              createAssignment refuses anyone else, so an admin is not shown a
              button that will turn them away. */
           group.teacherId === profile.id ? (
-            <AssignSheet groupId={group.id} libraryTests={libraryTests} library={shelf} />
+            <AssignSheet
+              groupId={group.id}
+              libraryTests={libraryTests}
+              library={shelf}
+              hasPlacement={hasPlacement}
+            />
           ) : null
         }
       />
@@ -765,6 +771,29 @@ export default async function GroupDetailPage({
                       >
                         {a.title}
                       </span>
+                      {/* A PLACEMENT ONLY SETS A BASELINE FOR WRITING AND
+                          READING — `placementBand` covers those two, and says
+                          so: a centre that placement-tests listening gets
+                          `first_attempt`, which is the honest answer rather
+                          than a wrong one. So the badge is not shown on a kind
+                          where it would promise an anchor that never arrives. */}
+                      {a.isPlacement && (a.kind === "writing" || a.kind === "reading") ? (
+                        <span
+                          title="Where this class started. Every later progress figure is measured from its band."
+                          style={{
+                            flex: "none",
+                            padding: "3px 9px",
+                            borderRadius: 999,
+                            background: V2.indigoTint,
+                            color: V2.indigoInk,
+                            fontFamily: SANS,
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          Baseline
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                   <div style={{ fontFamily: SANS, fontSize: 13, color: V2.body, minWidth: 0 }}>
@@ -855,6 +884,7 @@ export default async function GroupDetailPage({
                   groupId={group.id}
                   libraryTests={libraryTests}
                   library={shelf}
+                  hasPlacement={hasPlacement}
                   label="+ Assign practice"
                   variant="quiet"
                 />
