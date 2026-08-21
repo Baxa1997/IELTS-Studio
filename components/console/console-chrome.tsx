@@ -200,6 +200,12 @@ export function ConsoleChrome({
    */
   const bare = pathname.startsWith("/console/practice-ai");
 
+  /* The assistant keeps the breadcrumb bar — it is a page you arrive at from
+     everywhere and have to be able to leave — but gives up the canvas padding.
+     A conversation framed inside 28px of margin reads as a widget somebody
+     embedded; the transcript should own the width and set its own. */
+  const flush = pathname.startsWith("/console/assistant");
+
   return (
     <PanelContext.Provider value={api}>
       {bare ? null : (
@@ -296,7 +302,10 @@ export function ConsoleChrome({
       </header>
       )}
 
-      <div className="cn-page" style={bare ? { padding: 0 } : { padding: "26px 28px 60px" }}>
+      <div
+        className="cn-page"
+        style={bare || flush ? { padding: 0 } : { padding: "26px 28px 60px" }}
+      >
         {children}
       </div>
 

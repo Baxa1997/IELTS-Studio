@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { PageHead } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadCentreSnapshot } from "@/lib/console/assistant";
 
@@ -33,13 +32,5 @@ export default async function AssistantPage() {
       ]
     : ["What should I set up first?", "How do students get their logins?"];
 
-  return (
-    <div>
-      <PageHead
-        title="Assistant"
-        subtitle={`Ask anything about ${snapshot.centreName}. It sees exactly what your account sees — nothing more.`}
-      />
-      <AssistantChat suggestions={suggestions} />
-    </div>
-  );
+  return <AssistantChat suggestions={suggestions} centreName={snapshot.centreName} />;
 }

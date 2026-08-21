@@ -10,6 +10,7 @@ const FAINT = "#6f7788";
 const LINE = "#e6e4da";
 const FIELD = "#e2e0d6";
 const INDIGO = "#4f46e5";
+const SERIF = "var(--font-serif4), Georgia, serif";
 
 export interface Proposal {
   action: string;
@@ -34,7 +35,21 @@ interface Turn {
  * pressed nothing has changed, and pressing it runs a server action that
  * re-checks the whole thing from the session up — see `runProposal`.
  */
-export function AssistantChat({ suggestions }: { suggestions: string[] }) {
+/* THE THREAD DOES NOT SURVIVE LEAVING THIS PAGE YET, and that is a real gap:
+   the assistant's job is to answer questions about pages you then go and look
+   at, so following its advice currently costs you the conversation. It wants
+   storing server-side, per person, which is a table and a loader — not a
+   sessionStorage mirror, which would have to be read during render to avoid
+   an effect that sets state, and would then disagree with the server's first
+   paint. Doing it badly here would have made the proper version harder. */
+
+export function AssistantChat({
+  suggestions,
+  centreName,
+}: {
+  suggestions: string[];
+  centreName: string;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -79,105 +94,189 @@ export function AssistantChat({ suggestions }: { suggestions: string[] }) {
     }
   }
 
+  function reset() {
+    setTurns([]);
+    setError(null);
+  }
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div
+    /* A CONVERSATION, NOT A CARD ON A PAGE. The transcript owns the canvas and
+       the composer stays on the glass at the bottom, so the thing you type into
+       is in the same place after forty turns as after one. `minHeight` rather
+       than a fixed height: the page still scrolls normally, which is what makes
+       the sticky composer behave on a phone keyboard. */
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "calc(100dvh - 56px)",
+      }}
+    >
+      <header
         style={{
-          background: "#fff",
-          border: `1px solid ${LINE}`,
-          borderRadius: 18,
-          padding: turns.length === 0 ? 0 : "20px 22px",
-          minHeight: 260,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "18px 28px",
+          borderBottom: `1px solid ${LINE}`,
+          flexWrap: "wrap",
         }}
       >
-        {turns.length === 0 ? (
-          <div style={{ padding: "34px 22px" }}>
-            <p style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 600, color: INK }}>
-              Ask about your centre.
-            </p>
-            <p style={{ margin: "0 0 18px", fontSize: 13.5, color: FAINT, lineHeight: 1.6 }}>
-              It reads your classes, rosters and marking queue — only what your account can
-              already see. It never changes anything without showing you the button first.
-            </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => void ask(s)}
-                  style={{
-                    padding: "9px 14px",
-                    borderRadius: 999,
-                    border: `1px solid ${FIELD}`,
-                    background: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: BODY,
-                    cursor: "pointer",
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
+        <div style={{ minWidth: 0 }}>
+          <h1
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 700,
+              fontSize: 26,
+              lineHeight: 1.15,
+              color: INK,
+              margin: 0,
+            }}
+          >
+            Assistant
+          </h1>
+          <p style={{ margin: "3px 0 0", fontSize: 13, color: FAINT }}>
+            {centreName} · it sees exactly what your account sees, and nothing more
+          </p>
+        </div>
+        {turns.length > 0 ? (
+          <button
+            type="button"
+            onClick={reset}
+            style={{
+              marginLeft: "auto",
+              padding: "9px 15px",
+              borderRadius: 999,
+              border: `1px solid ${FIELD}`,
+              background: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+              color: BODY,
+              cursor: "pointer",
+            }}
+          >
+            New chat
+          </button>
+        ) : null}
+      </header>
+
+      <div style={{ flex: 1, padding: "30px 28px 26px" }}>
+        <div style={{ maxWidth: 780, margin: "0 auto" }}>
+          {turns.length === 0 ? (
+            <div style={{ paddingTop: 24 }}>
+              <p style={{ margin: "0 0 6px", fontSize: 17, fontWeight: 600, color: INK }}>
+                Ask about your centre.
+              </p>
+              <p
+                style={{
+                  margin: "0 0 22px",
+                  fontSize: 14,
+                  color: FAINT,
+                  lineHeight: 1.65,
+                  maxWidth: 560,
+                }}
+              >
+                It reads your classes, rosters and marking queue. It can also do things — assign
+                practice, add a student, invite a class — but only ever by handing you a button
+                first.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => void ask(s)}
+                    style={{
+                      padding: "10px 15px",
+                      borderRadius: 999,
+                      border: `1px solid ${FIELD}`,
+                      background: "#fff",
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      color: BODY,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {turns.map((t, i) => (
-              <Bubble key={i} turn={t} />
-            ))}
-            {busy ? (
-              <div style={{ fontSize: 13.5, color: FAINT }}>Reading your centre…</div>
-            ) : null}
-            <div ref={endRef} />
-          </div>
-        )}
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              {turns.map((t, i) => (
+                <Bubble key={i} turn={t} />
+              ))}
+              {busy ? (
+                <div style={{ fontSize: 14, color: FAINT }}>Reading your centre…</div>
+              ) : null}
+              <div ref={endRef} />
+            </div>
+          )}
+        </div>
       </div>
 
-      {error ? <p style={{ margin: 0, fontSize: 13, color: "#a13a2c" }}>{error}</p> : null}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void ask(draft);
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          borderTop: `1px solid ${LINE}`,
+          background: "rgba(244,243,239,.9)",
+          backdropFilter: "blur(10px)",
+          padding: "14px 28px 16px",
         }}
-        style={{ display: "flex", gap: 8 }}
       >
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Which classes can't collect their logins yet?"
-          aria-label="Ask the assistant"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            padding: "12px 16px",
-            borderRadius: 999,
-            border: `1px solid ${FIELD}`,
-            background: "#fff",
-            fontSize: 14,
-            color: INK,
-            outline: "none",
-          }}
-        />
-        <button
-          type="submit"
-          disabled={busy || draft.trim().length === 0}
-          style={{
-            padding: "12px 22px",
-            borderRadius: 999,
-            border: 0,
-            background: INDIGO,
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: busy ? "default" : "pointer",
-            opacity: busy || draft.trim().length === 0 ? 0.5 : 1,
-          }}
-        >
-          Ask
-        </button>
-      </form>
+        <div style={{ maxWidth: 780, margin: "0 auto" }}>
+          {error ? (
+            <p style={{ margin: "0 0 8px", fontSize: 13, color: "#a13a2c" }}>{error}</p>
+          ) : null}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void ask(draft);
+            }}
+            style={{ display: "flex", gap: 8 }}
+          >
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Which classes can't collect their logins yet?"
+              aria-label="Ask the assistant"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "13px 18px",
+                borderRadius: 999,
+                border: `1px solid ${FIELD}`,
+                background: "#fff",
+                fontSize: 14.5,
+                color: INK,
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={busy || draft.trim().length === 0}
+              style={{
+                padding: "13px 24px",
+                borderRadius: 999,
+                border: 0,
+                background: INDIGO,
+                color: "#fff",
+                fontSize: 14.5,
+                fontWeight: 600,
+                cursor: busy ? "default" : "pointer",
+                opacity: busy || draft.trim().length === 0 ? 0.5 : 1,
+              }}
+            >
+              Ask
+            </button>
+          </form>
+          <p style={{ margin: "9px 0 0", fontSize: 12, color: FAINT, textAlign: "center" }}>
+            It proposes; you confirm. Nothing changes until you press a button.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
