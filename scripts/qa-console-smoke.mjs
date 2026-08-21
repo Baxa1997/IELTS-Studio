@@ -350,6 +350,9 @@ async function main() {
     const ALLOWED = new Set([
       "invite_class_telegram",
       "add_student",
+      "add_students_bulk",
+      "add_teacher",
+      "assign_teacher",
       "assign_practice",
       "move_student",
       "mark_student_left",

@@ -2,6 +2,13 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import {
+  guessRoles,
+  readSpreadsheet,
+  SpreadsheetError,
+  toRosterLines,
+} from "@/lib/spreadsheet-read";
+
 import { runProposal, type RunState } from "./actions";
 
 const INK = "#16203a";
@@ -25,6 +32,17 @@ interface Turn {
   role: "user" | "assistant";
   content: string;
   proposals?: Proposal[];
+  /** The roster that was attached when this turn was sent. Kept ON THE TURN so
+   *  a proposal answering it still has the right file after another is
+   *  attached — the alternative is a card that silently imports the newest
+   *  spreadsheet instead of the one it was talking about. */
+  roster?: string[];
+}
+
+interface Attachment {
+  name: string;
+  lines: string[];
+  skipped: number;
 }
 
 /**
@@ -54,7 +72,9 @@ export function AssistantChat({
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attached, setAttached] = useState<Attachment | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -66,13 +86,24 @@ export function AssistantChat({
     setError(null);
     setDraft("");
     const history = turns.map((t) => ({ role: t.role, content: t.content }));
-    setTurns((prev) => [...prev, { role: "user", content: text }]);
+    // ONLY THE COUNT TRAVELS. The model is told a roster is attached and how
+    // big it is; the names and phone numbers go straight from this browser to
+    // the server action when the button is pressed, and are never sent to a
+    // language model at all.
+    const carried = attached;
+    const sent = carried
+      ? `${text}\n\n(A roster file "${carried.name}" is attached, with ${carried.lines.length} student${carried.lines.length === 1 ? "" : "s"} in it.)`
+      : text;
+    setTurns((prev) => [
+      ...prev,
+      { role: "user", content: text, roster: carried?.lines },
+    ]);
     setBusy(true);
     try {
       const res = await fetch("/api/console/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: text, history }),
+        body: JSON.stringify({ question: sent, history }),
       });
       const data = (await res.json()) as {
         reply?: string;
@@ -85,12 +116,47 @@ export function AssistantChat({
       }
       setTurns((prev) => [
         ...prev,
-        { role: "assistant", content: data.reply ?? "", proposals: data.proposals ?? [] },
+        {
+          role: "assistant",
+          content: data.reply ?? "",
+          proposals: data.proposals ?? [],
+          roster: carried?.lines,
+        },
       ]);
     } catch {
       setError("Couldn't reach the assistant. Check your connection.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function attach(file: File | null | undefined) {
+    if (!file) return;
+    setError(null);
+    try {
+      const grid = await readSpreadsheet(file);
+      if (grid.length === 0) {
+        setError("That file has no rows in it.");
+        return;
+      }
+      // The same reader, guesser and mapper the roster importer uses — so a
+      // sheet that works there works here, and one that does not fails the
+      // same way with the same words.
+      const { roles, hasHeader } = guessRoles(grid);
+      const { lines, skipped } = toRosterLines(grid, roles, hasHeader);
+      if (lines.length === 0) {
+        setError("I couldn't find a name column in that file. Use the roster importer on the class page, which lets you map the columns by hand.");
+        return;
+      }
+      setAttached({ name: file.name, lines, skipped });
+    } catch (err) {
+      setError(
+        err instanceof SpreadsheetError
+          ? err.message
+          : "I couldn't read that file. .xlsx and .csv both work.",
+      );
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -230,6 +296,44 @@ export function AssistantChat({
           {error ? (
             <p style={{ margin: "0 0 8px", fontSize: 13, color: "#a13a2c" }}>{error}</p>
           ) : null}
+          {attached ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 9,
+                padding: "9px 13px",
+                borderRadius: 12,
+                border: `1px solid ${FIELD}`,
+                background: "#fff",
+                fontSize: 13,
+                color: BODY,
+              }}
+            >
+              <span style={{ fontWeight: 600, color: INK }}>{attached.name}</span>
+              <span style={{ color: FAINT }}>
+                {attached.lines.length} student{attached.lines.length === 1 ? "" : "s"}
+                {attached.skipped > 0 ? ` · ${attached.skipped} row(s) skipped` : ""}
+              </span>
+              <button
+                type="button"
+                onClick={() => setAttached(null)}
+                aria-label="Remove the attached roster"
+                style={{
+                  marginLeft: "auto",
+                  border: 0,
+                  background: "none",
+                  color: FAINT,
+                  cursor: "pointer",
+                  fontSize: 16,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ) : null}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -237,6 +341,31 @@ export function AssistantChat({
             }}
             style={{ display: "flex", gap: 8 }}
           >
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,text/csv"
+              onChange={(e) => void attach(e.target.files?.[0])}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              title="Attach a roster (.xlsx or .csv)"
+              aria-label="Attach a roster"
+              style={{
+                flex: "none",
+                width: 46,
+                borderRadius: 999,
+                border: `1px solid ${FIELD}`,
+                background: "#fff",
+                color: BODY,
+                fontSize: 18,
+                cursor: "pointer",
+              }}
+            >
+              +
+            </button>
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -306,14 +435,18 @@ function Bubble({ turn }: { turn: Turn }) {
         {turn.content}
       </div>
       {(turn.proposals ?? []).map((p) => (
-        <ProposalCard key={p.action + JSON.stringify(p.args)} proposal={p} />
+        <ProposalCard
+          key={p.action + JSON.stringify(p.args)}
+          proposal={p}
+          roster={turn.roster}
+        />
       ))}
     </div>
   );
 }
 
 /** What it would do, and the button that does it. Never runs on render. */
-function ProposalCard({ proposal }: { proposal: Proposal }) {
+function ProposalCard({ proposal, roster }: { proposal: Proposal; roster?: string[] }) {
   const [state, action, pending] = useActionState(runProposal, {} as RunState);
 
   return (
@@ -335,6 +468,8 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
       {Object.entries(proposal.args).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
+      {/* The roster goes browser → server action, never past the model. */}
+      {roster ? <input type="hidden" name="roster" value={roster.join("\n")} /> : null}
       <div style={{ minWidth: 0, flex: "1 1 220px" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{proposal.verb}</div>
         <div style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>
@@ -349,6 +484,11 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               <b style={{ color: BODY, fontWeight: 600 }}>{k.replace(/_/g, " ")}:</b> {v}
             </span>
           ))}
+          {roster ? (
+            <span>
+              <b style={{ color: BODY, fontWeight: 600 }}>students:</b> {roster.length}
+            </span>
+          ) : null}
         </div>
       </div>
       {state.ok ? (

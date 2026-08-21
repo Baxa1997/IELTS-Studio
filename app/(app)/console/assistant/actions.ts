@@ -8,6 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 import { sendAnnouncement } from "../center-actions";
 import {
   addStudentAccount,
+  addStudentsBulk,
+  addTeacherAccount,
+  assignTeacher,
   createAssignment,
   createGroup,
   inviteGroupToTelegram,
@@ -108,6 +111,45 @@ export async function runProposal(_prev: RunState, formData: FormData): Promise<
       const r = await addStudentAccount({}, fd);
       if (r.error) return { error: r.error };
       return { ok: `${arg("full_name")} added to ${g.name}. Their login is on the class roster.` };
+    }
+
+    case "add_students_bulk": {
+      const g = await findGroup(arg("group"));
+      if (!g) return { error: notFound(arg("group")) };
+      // THE ROSTER NEVER WENT THROUGH THE MODEL. It is parsed in the browser
+      // and posted straight here with the confirm, so a sheet of real names and
+      // phone numbers is never sent to a language model to be summarised back.
+      // All the model was told is how many rows there were.
+      const roster = arg("roster");
+      if (!roster) return { error: "No roster came through — attach the file again." };
+      fd.set("group_id", g.id);
+      fd.set("roster", roster);
+      const r = await addStudentsBulk({}, fd);
+      if (r.error) return { error: r.error };
+      const count = roster.split("\n").filter((l) => l.trim()).length;
+      return { ok: `${count} student${count === 1 ? "" : "s"} added to ${g.name}.` };
+    }
+
+    case "add_teacher": {
+      fd.set("full_name", arg("full_name"));
+      fd.set("staff_role", arg("staff_role"));
+      const r = await addTeacherAccount({}, fd);
+      if (r.error) return { error: r.error };
+      return { ok: `${arg("full_name")} added as a ${arg("staff_role")}.` };
+    }
+
+    case "assign_teacher": {
+      const g = await findGroup(arg("group"));
+      if (!g) return { error: notFound(arg("group")) };
+      const { teachers } = await loadGroups(profile, { include: "all" });
+      const wanted = arg("teacher").toLowerCase();
+      const t = teachers.find((x) => (x.name ?? "").toLowerCase() === wanted);
+      if (!t) return { error: notFound(arg("teacher")) };
+      fd.set("group_id", g.id);
+      fd.set("teacher_id", t.id);
+      const r = await assignTeacher({}, fd);
+      if (r.error) return { error: r.error };
+      return { ok: `${t.name} now teaches ${g.name}.` };
     }
 
     case "assign_practice": {

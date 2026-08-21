@@ -277,6 +277,41 @@ export const ACTIONS: readonly ActionSpec[] = [
     ],
   },
   {
+    id: "add_students_bulk",
+    verb: "Add them all",
+    describe:
+      "Add a whole roster of students at once from the spreadsheet the person attached, and put them in a class. Propose this whenever a roster is attached and they name a class. You are told only HOW MANY students are in the file — never their names, and you do not need them.",
+    roles: TEACHING,
+    args: [{ name: "group", kind: "group", describe: "the class they all join", required: true }],
+  },
+  {
+    id: "add_teacher",
+    verb: "Add them",
+    describe:
+      "Create a staff account. A login and password are generated for them the same way a student's are.",
+    roles: OWNER,
+    args: [
+      { name: "full_name", kind: "text", describe: "their full name", required: true },
+      {
+        name: "staff_role",
+        kind: "choice",
+        describe: "what they do",
+        choices: ["teacher", "administrator"],
+        required: true,
+      },
+    ],
+  },
+  {
+    id: "assign_teacher",
+    verb: "Assign them",
+    describe: "Put a teacher in charge of a class, or change who teaches it.",
+    roles: OWNER,
+    args: [
+      { name: "group", kind: "group", describe: "the class", required: true },
+      { name: "teacher", kind: "text", describe: "the teacher's name", required: true },
+    ],
+  },
+  {
     id: "create_group",
     verb: "Create the class",
     describe: "Start a new class. Name it, and name the teacher if one was given.",

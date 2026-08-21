@@ -88,6 +88,26 @@ describe("vetProposals", () => {
     expect(vetProposals(many, ctx)).toHaveLength(1);
   });
 
+  it("lets a bulk import through on a real class", () => {
+    // The roster itself is never in the proposal — it goes browser → server
+    // action — so all the vetting has to get right is the class.
+    const [p] = vetProposals(propose("add_students_bulk", { group: "Pre-IELTS" }), ctx);
+    expect(p.action).toBe("add_students_bulk");
+    expect(p.args).toEqual({ group: "Pre-IELTS" });
+  });
+
+  it("will not smuggle a roster through the model's arguments", () => {
+    const [p] = vetProposals(
+      propose("add_students_bulk", { group: "Pre-IELTS", roster: "Fake Person, +99890" }),
+      ctx,
+    );
+    expect(p.args.roster).toBeUndefined();
+  });
+
+  it("keeps bulk import away from a teacher's non-class", () => {
+    expect(vetProposals(propose("add_students_bulk", { group: "Someone Else" }), ctx)).toEqual([]);
+  });
+
   it("does not carry through an argument the action never declared", () => {
     const [p] = vetProposals(
       propose("invite_class_telegram", { group: "IELTS Evening", student_id: "smuggled" }),
