@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { loadCentreSnapshot } from "@/lib/console/assistant";
+import { loadThread } from "@/lib/console/assistant-thread";
 
 import { AssistantChat } from "./chat";
 
@@ -22,7 +23,10 @@ export default async function AssistantPage() {
   // The openers are built from the caller's OWN snapshot, so they are questions
   // this centre can actually answer — an empty console offering "which class is
   // behind?" teaches people the assistant is decorative.
-  const snapshot = await loadCentreSnapshot(profile);
+  const [snapshot, thread] = await Promise.all([
+    loadCentreSnapshot(profile),
+    loadThread(profile),
+  ]);
   const hasClasses = snapshot.groupIds.size > 0;
   const suggestions = hasClasses
     ? [
@@ -32,5 +36,11 @@ export default async function AssistantPage() {
       ]
     : ["What should I set up first?", "How do students get their logins?"];
 
-  return <AssistantChat suggestions={suggestions} centreName={snapshot.centreName} />;
+  return (
+    <AssistantChat
+      suggestions={suggestions}
+      centreName={snapshot.centreName}
+      initialTurns={thread.turns}
+    />
+  );
 }

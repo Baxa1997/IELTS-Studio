@@ -5,6 +5,7 @@ import type { RawProposal } from "@/lib/console/assistant";
 import { generate } from "@/lib/ai";
 import { requireOrgUser } from "@/lib/auth";
 import { describeActions, loadCentreSnapshot, vetProposals } from "@/lib/console/assistant";
+import { appendExchange } from "@/lib/console/assistant-thread";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,6 +68,10 @@ export async function POST(req: Request): Promise<Response> {
       groups: new Set(snapshot.groupIds.keys()),
       students: snapshot.studentNames,
     });
+
+    // After the reply exists, never before: a thread showing a question with
+    // no answer reads as though the assistant ignored somebody.
+    await appendExchange(profile, question, parsed.reply, proposals);
 
     return NextResponse.json({ reply: parsed.reply, proposals }, { status: 200 });
   } catch (err) {

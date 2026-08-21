@@ -10,6 +10,7 @@ import {
 } from "@/lib/spreadsheet-read";
 
 import { runProposal, type RunState } from "./actions";
+import { newThread } from "./thread-actions";
 
 const INK = "#16203a";
 const BODY = "#545c70";
@@ -53,22 +54,19 @@ interface Attachment {
  * pressed nothing has changed, and pressing it runs a server action that
  * re-checks the whole thing from the session up — see `runProposal`.
  */
-/* THE THREAD DOES NOT SURVIVE LEAVING THIS PAGE YET, and that is a real gap:
-   the assistant's job is to answer questions about pages you then go and look
-   at, so following its advice currently costs you the conversation. It wants
-   storing server-side, per person, which is a table and a loader — not a
-   sessionStorage mirror, which would have to be read during render to avoid
-   an effect that sets state, and would then disagree with the server's first
-   paint. Doing it badly here would have made the proper version harder. */
-
 export function AssistantChat({
   suggestions,
   centreName,
+  initialTurns,
 }: {
   suggestions: string[];
   centreName: string;
+  /** The stored thread, rendered by the server on first paint. Seeded into
+   *  state rather than read from an effect, so there is no flash of an empty
+   *  conversation and no hydration mismatch to paper over. */
+  initialTurns: Turn[];
 }) {
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [turns, setTurns] = useState<Turn[]>(initialTurns);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,9 +158,14 @@ export function AssistantChat({
     }
   }
 
-  function reset() {
+  async function reset() {
     setTurns([]);
     setError(null);
+    setAttached(null);
+    // The old thread is kept; this just starts a new one. Fired without
+    // blocking the clear — the screen should empty on the click, not after a
+    // round trip.
+    void newThread();
   }
 
   return (
@@ -208,7 +211,7 @@ export function AssistantChat({
         {turns.length > 0 ? (
           <button
             type="button"
-            onClick={reset}
+            onClick={() => void reset()}
             style={{
               marginLeft: "auto",
               padding: "9px 15px",
