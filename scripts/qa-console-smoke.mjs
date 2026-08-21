@@ -361,6 +361,28 @@ async function main() {
       "close_group",
       "reopen_group",
     ]);
+    // THE REGRESSION THIS EXISTS FOR. Asked by a centre owner to create a
+    // class, the assistant replied that it could not see how to from here and
+    // apologised for not knowing which page would — with `create_group` in its
+    // own list the whole time. The snapshot rule had been written so
+    // absolutely that it swallowed the action path. A fact question could
+    // never have caught it, because a fact question is the case that worked.
+    const doIt = await fetch(`${BASE}/api/console/assistant`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question: "Create a new class called Morning Intensive.",
+      }),
+    });
+    const did = await doIt.json().catch(() => ({}));
+    check(
+      "asked to do something on its list, it offers the button",
+      doIt.status === 200 && (did.proposals ?? []).some((p) => p.action === "create_group"),
+      doIt.status === 200
+        ? `${(did.proposals ?? []).length} proposal(s): ${(did.proposals ?? []).map((p) => p.action).join(", ") || "none"} — "${String(did.reply ?? "").slice(0, 70)}"`
+        : `HTTP ${doIt.status}`,
+    );
+
     check(
       "it proposes only allow-listed actions",
       Array.isArray(answer.proposals) &&
@@ -398,7 +420,7 @@ async function main() {
     // the class actually got wrong.
     [`/console/groups/${group.id}/assignments/${lessonAssignment.id}`, "Average mark"],
     [`/console/groups/${group.id}/assignments/${lessonAssignment.id}`, "third person s"],
-    ["/console/assistant", "Ask about your centre"],
+    ["/console/assistant", "It proposes; you confirm"],
     ["/console/students", null],
     [`/console/students/${students[0].id}`, "Band by skill"],
     ["/console/teachers", "Marking"],

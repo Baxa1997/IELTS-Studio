@@ -199,9 +199,20 @@ export interface ActionSpec {
   args: readonly ArgSpec[];
 }
 
-const STAFF = ["center_admin", "teacher", "administrator"] as const;
-const OWNER = ["center_admin"] as const;
-const TEACHING = ["center_admin", "teacher"] as const;
+/* ⚠️ THESE MIRROR THE SERVER ACTIONS' OWN GATES, AND MIRRORING IS A HAZARD.
+   Each action re-checks the caller itself, so a mistake here can only ever be
+   the assistant being MORE restrictive than the product — never less. That is
+   still a real failure, and it shipped: `create_group` was owner-only here
+   while `createGroup` has always allowed teachers, and CLAUDE.md says in so
+   many words that teachers create their own groups. A teacher asking for a new
+   class was told the assistant could not see how, which reads as broken rather
+   than as forbidden. `assistant.test.ts` pins the mapping so drift has to be
+   deliberate; the gate each one mirrors is named beside it. */
+const STAFF = ["center_admin", "administrator", "teacher"] as const; // canManagePeople || teacher
+const MANAGE = ["center_admin", "administrator"] as const; //            canManagePeople
+const OWNER = ["center_admin"] as const; //                              center_admin only
+const TEACHER_ONLY = ["teacher"] as const; //                            teacher only
+const ANNOUNCE = ["center_admin", "teacher"] as const; //                center_admin || teacher
 
 export const ACTIONS: readonly ActionSpec[] = [
   {
@@ -217,7 +228,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     verb: "Add the student",
     describe:
       "Create an account for one new student and put them in a class. A login and password are generated; give the phone number and they can collect them from Telegram themselves.",
-    roles: TEACHING,
+    roles: STAFF,
     args: [
       { name: "group", kind: "group", describe: "the class they join", required: true },
       { name: "full_name", kind: "text", describe: "their full name", required: true },
@@ -228,8 +239,8 @@ export const ACTIONS: readonly ActionSpec[] = [
     id: "assign_practice",
     verb: "Assign it",
     describe:
-      "Set a class a fresh piece of practice. Writing generates a new Task 2 prompt; reading pins a shared library test. Everyone gets identical content.",
-    roles: TEACHING,
+      "Set a class a fresh piece of practice. Writing generates a new Task 2 prompt; reading pins a shared library test. Everyone gets identical content. Only the class's own teacher can do this — if an owner asks, say that plainly.",
+    roles: TEACHER_ONLY,
     args: [
       { name: "group", kind: "group", describe: "the class", required: true },
       {
@@ -247,7 +258,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     verb: "Move them",
     describe:
       "Move one student from the class they are in into another. They keep every mark, register and invoice.",
-    roles: TEACHING,
+    roles: STAFF,
     args: [
       { name: "student", kind: "student", describe: "the student's name", required: true },
       { name: "to_group", kind: "group", describe: "the class they move to", required: true },
@@ -258,7 +269,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     verb: "Mark as left",
     describe:
       "Record that a student has stopped coming. They stay on the roster with their history and balance intact, and invoicing stops. This is almost always what is meant by removing somebody.",
-    roles: TEACHING,
+    roles: STAFF,
     args: [
       { name: "student", kind: "student", describe: "the student's name", required: true },
       { name: "note", kind: "text", describe: "why, for whoever asks later" },
@@ -269,7 +280,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     verb: "Send it",
     describe:
       "Send an announcement to a class, or to the whole centre when no class is named.",
-    roles: TEACHING,
+    roles: ANNOUNCE,
     args: [
       { name: "subject", kind: "text", describe: "a short subject line", required: true },
       { name: "body", kind: "text", describe: "the message itself", required: true },
@@ -281,7 +292,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     verb: "Add them all",
     describe:
       "Add a whole roster of students at once from the spreadsheet the person attached, and put them in a class. Propose this whenever a roster is attached and they name a class. You are told only HOW MANY students are in the file — never their names, and you do not need them.",
-    roles: TEACHING,
+    roles: STAFF,
     args: [{ name: "group", kind: "group", describe: "the class they all join", required: true }],
   },
   {
@@ -305,7 +316,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     id: "assign_teacher",
     verb: "Assign them",
     describe: "Put a teacher in charge of a class, or change who teaches it.",
-    roles: OWNER,
+    roles: MANAGE,
     args: [
       { name: "group", kind: "group", describe: "the class", required: true },
       { name: "teacher", kind: "text", describe: "the teacher's name", required: true },
@@ -315,7 +326,7 @@ export const ACTIONS: readonly ActionSpec[] = [
     id: "create_group",
     verb: "Create the class",
     describe: "Start a new class. Name it, and name the teacher if one was given.",
-    roles: OWNER,
+    roles: STAFF,
     args: [
       { name: "name", kind: "text", describe: "the class name", required: true },
       { name: "teacher", kind: "text", describe: "the teacher's name, if one was given" },
@@ -327,14 +338,14 @@ export const ACTIONS: readonly ActionSpec[] = [
     verb: "Close the class",
     describe:
       "Close a class that has finished. Every report, band and invoice is kept; it leaves timetables and can no longer be set practice.",
-    roles: OWNER,
+    roles: MANAGE,
     args: [{ name: "group", kind: "group", describe: "the class name", required: true }],
   },
   {
     id: "reopen_group",
     verb: "Reopen the class",
     describe: "Put a closed class back into service.",
-    roles: OWNER,
+    roles: MANAGE,
     args: [{ name: "group", kind: "group", describe: "the class name", required: true }],
   },
 ] as const;

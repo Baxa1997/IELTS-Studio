@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { vetProposals, type VetContext } from "./assistant";
+import { ACTIONS, describeActions, vetProposals, type VetContext } from "./assistant";
 
 /**
  * The gate between what a model said and what a person is offered a button for.
@@ -12,6 +12,8 @@ const ctx: VetContext = {
   groups: new Set(["ielts evening", "pre-ielts"]),
   students: new Set(["madina zaynidinova"]),
 };
+
+const asTeacher: VetContext = { ...ctx, role: "teacher" };
 
 const propose = (action: string, args: Record<string, unknown> = {}) => [
   { action, args, why: "because" },
@@ -30,7 +32,6 @@ describe("vetProposals", () => {
 
   it("drops an action this role may not run", () => {
     // Closing a class is the owner's, not a teacher's.
-    const asTeacher = { ...ctx, role: "teacher" };
     expect(vetProposals(propose("close_group", { group: "IELTS Evening" }), asTeacher)).toEqual([]);
     expect(vetProposals(propose("close_group", { group: "IELTS Evening" }), ctx)).toHaveLength(1);
   });
@@ -65,7 +66,10 @@ describe("vetProposals", () => {
 
   it("drops a choice outside its list", () => {
     expect(
-      vetProposals(propose("assign_practice", { group: "Pre-IELTS", skill: "telepathy" }), ctx),
+      vetProposals(
+        propose("assign_practice", { group: "Pre-IELTS", skill: "telepathy" }),
+        asTeacher,
+      ),
     ).toEqual([]);
   });
 
@@ -74,7 +78,7 @@ describe("vetProposals", () => {
     // and the action treats a missing due date as no deadline.
     const [p] = vetProposals(
       propose("assign_practice", { group: "Pre-IELTS", skill: "writing", due: "next week" }),
-      ctx,
+      asTeacher,
     );
     expect(p.args.skill).toBe("writing");
     expect(p.args.due).toBeUndefined();
@@ -114,5 +118,100 @@ describe("vetProposals", () => {
       ctx,
     );
     expect(p.args).toEqual({ group: "IELTS Evening" });
+  });
+});
+
+/**
+ * What the model is actually TOLD it can do. The first real-data failure was a
+ * centre owner asking for a new class and being told it could not be done from
+ * here — with `create_group` sitting in the owner's own list. The prompt was at
+ * fault that time, not the wiring, but nothing was checking the wiring either.
+ */
+describe("describeActions", () => {
+  it("offers an owner everything except the one job that is the teacher's", () => {
+    const text = describeActions("center_admin");
+    for (const id of ACTIONS.map((a) => a.id)) {
+      // `createAssignment` refuses anyone but the class's own teacher, so
+      // offering an owner a button that would turn them away is worse than
+      // not offering it.
+      if (id === "assign_practice") expect(text).not.toContain(id);
+      else expect(text).toContain(id);
+    }
+  });
+
+  it("names every argument, so the model has no shape to guess at", () => {
+    expect(describeActions("center_admin")).toContain("full_name");
+    expect(describeActions("teacher")).toContain("writing|reading");
+  });
+
+  it("gives a teacher their own classes and withholds hiring", () => {
+    const text = describeActions("teacher");
+    expect(text).toContain("create_group");
+    expect(text).toContain("add_students_bulk");
+    expect(text).toContain("assign_practice");
+    expect(text).not.toContain("add_teacher");
+    expect(text).not.toContain("close_group");
+  });
+
+  it("tells a role with no actions nothing at all", () => {
+    expect(describeActions("student")).toBe("");
+  });
+});
+
+/**
+ * WHO MAY RUN WHAT, pinned against the gate each server action actually
+ * applies. This duplication is unavoidable — the actions check the caller
+ * themselves and do not expose their rule — so the only protection is a table
+ * somebody has to edit on purpose.
+ *
+ * It is not theoretical. `create_group` shipped as owner-only while
+ * `createGroup` has always allowed teachers, and CLAUDE.md says teachers create
+ * their own groups: a teacher asking for a new class was told the assistant
+ * could not see how, which reads as broken rather than as forbidden. Five of
+ * the twelve were wrong the same way.
+ */
+describe("action permissions match the server actions they call", () => {
+  const EXPECTED: Record<string, string[]> = {
+    // canManagePeople(role) || role === "teacher"
+    invite_class_telegram: ["center_admin", "administrator", "teacher"],
+    add_student: ["center_admin", "administrator", "teacher"],
+    add_students_bulk: ["center_admin", "administrator", "teacher"],
+    move_student: ["center_admin", "administrator", "teacher"],
+    mark_student_left: ["center_admin", "administrator", "teacher"],
+    create_group: ["center_admin", "administrator", "teacher"],
+    // canManagePeople(role)
+    assign_teacher: ["center_admin", "administrator"],
+    close_group: ["center_admin", "administrator"],
+    reopen_group: ["center_admin", "administrator"],
+    // role === "center_admin"
+    add_teacher: ["center_admin"],
+    // role === "center_admin" || role === "teacher"
+    send_announcement: ["center_admin", "teacher"],
+    // role === "teacher" — an owner genuinely cannot set practice
+    assign_practice: ["teacher"],
+  };
+
+  it("covers every action, so a new one cannot slip in unpinned", () => {
+    expect(ACTIONS.map((a) => a.id).sort()).toEqual(Object.keys(EXPECTED).sort());
+  });
+
+  for (const [id, roles] of Object.entries(EXPECTED)) {
+    it(`${id} is offered to exactly ${roles.join(", ")}`, () => {
+      const spec = ACTIONS.find((a) => a.id === id);
+      expect([...(spec?.roles ?? [])].sort()).toEqual([...roles].sort());
+    });
+  }
+
+  it("gives a teacher the things a teacher actually does", () => {
+    const text = describeActions("teacher");
+    // The three that were wrongly withheld, and the one that is genuinely theirs alone.
+    expect(text).toContain("create_group");
+    expect(text).toContain("add_student");
+    expect(text).toContain("assign_practice");
+  });
+
+  it("still keeps hiring to the owner", () => {
+    expect(describeActions("teacher")).not.toContain("add_teacher");
+    expect(describeActions("administrator")).not.toContain("add_teacher");
   });
 });
