@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 
+import type { RawProposal } from "@/lib/console/assistant";
+
 import { generate } from "@/lib/ai";
 import { requireOrgUser } from "@/lib/auth";
-import { ACTIONS, actionById, loadCentreSnapshot } from "@/lib/console/assistant";
+import { describeActions, loadCentreSnapshot, vetProposals } from "@/lib/console/assistant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,10 +52,7 @@ export async function POST(req: Request): Promise<Response> {
   // Only the actions this person could actually run are described to the model.
   // Offering a teacher an owner's action and refusing it afterwards teaches
   // them the assistant is unreliable.
-  const allowed = ACTIONS.filter((a) => a.roles.includes(profile.role));
-  const actionText = allowed
-    .map((a) => `  • ${a.id} — ${a.describe}`)
-    .join("\n");
+  const actionText = describeActions(profile.role);
 
   try {
     const { content } = await generate({
@@ -63,31 +62,17 @@ export async function POST(req: Request): Promise<Response> {
     });
 
     const parsed = parse(content);
-    const proposals = parsed.proposals
-      .map((p) => {
-        const spec = actionById(p.action);
-        if (!spec || !spec.roles.includes(profile.role)) return null;
-        // A group named in a proposal has to be one this person can already
-        // see: the snapshot was built through RLS, so anything not in it is
-        // either a hallucination or another centre's class.
-        const group = String(p.args.group ?? "").trim();
-        if (spec.args.includes("group") && !snapshot.groupIds.has(group.toLowerCase())) return null;
-        return { action: spec.id, verb: spec.verb, why: p.why, args: { group } };
-      })
-      .filter((p): p is NonNullable<typeof p> => p != null)
-      .slice(0, 1);
+    const proposals = vetProposals(parsed.proposals, {
+      role: profile.role,
+      groups: new Set(snapshot.groupIds.keys()),
+      students: snapshot.studentNames,
+    });
 
     return NextResponse.json({ reply: parsed.reply, proposals }, { status: 200 });
   } catch (err) {
     console.error("[console-assistant]", err);
     return fail(502, "assistant_failed", "The assistant is busy — try again in a moment.");
   }
-}
-
-interface RawProposal {
-  action: string;
-  args: Record<string, unknown>;
-  why: string;
 }
 
 /** The model is asked for JSON and usually obliges. When it does not, its prose

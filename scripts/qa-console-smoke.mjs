@@ -345,10 +345,24 @@ async function main() {
       ask.status === 200 && typeof answer.reply === "string" && answer.reply.length > 0,
       ask.status === 200 ? `"${String(answer.reply ?? "").slice(0, 90)}…"` : `HTTP ${ask.status}`,
     );
+    // Not a fixed id: the registry grows, and a check that has to be edited
+    // every time it does is a check that gets edited into passing.
+    const ALLOWED = new Set([
+      "invite_class_telegram",
+      "add_student",
+      "assign_practice",
+      "move_student",
+      "mark_student_left",
+      "send_announcement",
+      "create_group",
+      "close_group",
+      "reopen_group",
+    ]);
     check(
       "it proposes only allow-listed actions",
       Array.isArray(answer.proposals) &&
-        answer.proposals.every((p) => p && p.action === "invite_class_telegram"),
+        answer.proposals.length <= 1 &&
+        answer.proposals.every((p) => p && ALLOWED.has(p.action)),
       `${(answer.proposals ?? []).length} proposal(s)`,
     );
 

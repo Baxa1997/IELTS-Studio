@@ -15,7 +15,9 @@ export interface Proposal {
   action: string;
   verb: string;
   why: string;
-  args: { group: string };
+  /** Whatever this action takes — a class, a student, a subject line. Rendered
+   *  and posted generically, so adding an action needs no change here. */
+  args: Record<string, string>;
 }
 
 interface Turn {
@@ -205,7 +207,7 @@ function Bubble({ turn }: { turn: Turn }) {
         {turn.content}
       </div>
       {(turn.proposals ?? []).map((p) => (
-        <ProposalCard key={p.action + p.args.group} proposal={p} />
+        <ProposalCard key={p.action + JSON.stringify(p.args)} proposal={p} />
       ))}
     </div>
   );
@@ -231,11 +233,23 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
       }}
     >
       <input type="hidden" name="action" value={proposal.action} />
-      <input type="hidden" name="group" value={proposal.args.group} />
+      {Object.entries(proposal.args).map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
       <div style={{ minWidth: 0, flex: "1 1 220px" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: INK }}>{proposal.verb}</div>
         <div style={{ fontSize: 13, color: FAINT, lineHeight: 1.5 }}>
-          {proposal.why || `${proposal.verb} — ${proposal.args.group}`}
+          {proposal.why || Object.values(proposal.args).join(" · ")}
+        </div>
+        {/* SPELLED OUT, ALWAYS. The one-line "why" is the model's words; this
+            is what will actually be sent, so a wrong class or a misheard name
+            is visible before the button rather than after it. */}
+        <div style={{ fontSize: 12.5, color: FAINT, marginTop: 4 }}>
+          {Object.entries(proposal.args).map(([k, v]) => (
+            <span key={k} style={{ marginRight: 10 }}>
+              <b style={{ color: BODY, fontWeight: 600 }}>{k.replace(/_/g, " ")}:</b> {v}
+            </span>
+          ))}
         </div>
       </div>
       {state.ok ? (
