@@ -274,6 +274,56 @@ async function main() {
     template: "{student}, come back",
   });
 
+  /* ── a lesson, set to the class, with one student's marks on it ──────────
+     THE ONE PATH NOTHING ELSE REACHES. `loadAssignmentReport` had no branch
+     for a lesson at all and fell through to the listening one with an
+     undefined id, which found nothing and reported a class that had all done
+     the work as having none of them started. It builds and typechecks either
+     way, so only a real assignment with a real attempt on it can tell. */
+  const { data: lesson, error: lessonError } = await admin
+    .from("lessons")
+    .insert({
+      organization_id: org.id,
+      title: `${TAG} Present Simple`,
+      blueprint: "grammar",
+      topic: "present simple",
+      brief: "smoke test lesson",
+      status: "published",
+      content: { sections: [], exercises: [] },
+      exercise_count: 4,
+    })
+    .select("id")
+    .single();
+  if (lessonError) throw new Error(`lesson: ${lessonError.message}`);
+
+  const { data: lessonAssignment, error: lessonAssignmentError } = await admin
+    .from("assignments")
+    .insert({
+      organization_id: org.id,
+      group_id: group.id,
+      kind: "lesson",
+      title: `${TAG} Present Simple`,
+      lesson_id: lesson.id,
+      created_by: ownerUser.id,
+    })
+    .select("id")
+    .single();
+  if (lessonAssignmentError) throw new Error(`lesson assignment: ${lessonAssignmentError.message}`);
+
+  const { error: attemptError } = await admin.from("lesson_attempts").insert({
+    organization_id: org.id,
+    lesson_id: lesson.id,
+    student_id: students[0].id,
+    source: "assignment",
+    score: 3,
+    max_score: 4,
+    tag_breakdown: {
+      "third-person-s": { attempted: 2, correct: 1 },
+      "auxiliary-do": { attempted: 2, correct: 2 },
+    },
+  });
+  if (attemptError) throw new Error(`lesson attempt: ${attemptError.message}`);
+
   /* ── as the owner ────────────────────────────────────────────────────── */
 
   console.log("center_admin");
@@ -326,6 +376,10 @@ async function main() {
     [`/console/groups/${group.id}?tab=attendance`, "Register"],
     [`/console/groups/${group.id}?tab=settings`, "Get the class signed in"],
     [`/console/groups/${group.id}?tab=money`, null],
+    // The lesson's own results page: the mark out of its maximum, and the tag
+    // the class actually got wrong.
+    [`/console/groups/${group.id}/assignments/${lessonAssignment.id}`, "Average mark"],
+    [`/console/groups/${group.id}/assignments/${lessonAssignment.id}`, "third person s"],
     ["/console/assistant", "Ask about your centre"],
     ["/console/students", null],
     [`/console/students/${students[0].id}`, "Band by skill"],

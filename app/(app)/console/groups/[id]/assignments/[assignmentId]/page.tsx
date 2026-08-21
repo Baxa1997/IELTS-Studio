@@ -68,14 +68,27 @@ export default async function AssignmentReportPage({
 
       <StatRow>
         <StatTile
-          value={report.averageBand?.toFixed(1) ?? "—"}
-          label="Average band (graded only)"
+          value={
+            report.kind === "lesson"
+              ? (report.averageMark ?? "—")
+              : (report.averageBand?.toFixed(1) ?? "—")
+          }
+          label={
+            report.kind === "lesson" ? "Average mark (handed in)" : "Average band (graded only)"
+          }
           tone="indigo"
         />
         <StatTile value={`${completed}/${report.rows.length}`} label="Completed" />
       </StatRow>
 
-      <Panel title="Results" description="Lowest band first — who needs attention.">
+      <Panel
+        title="Results"
+        description={
+          report.kind === "lesson"
+            ? "Who has handed it in, and what they missed."
+            : "Lowest band first — who needs attention."
+        }
+      >
         <List>
           {report.rows.map((r, i) => {
             const status = STATUS[r.status];
@@ -132,7 +145,9 @@ export default async function AssignmentReportPage({
           description={
             report.kind === "writing"
               ? "The criterion capping each student's band."
-              : "The question types most often missed."
+              : report.kind === "lesson"
+                ? "The points this class got wrong most often."
+                : "The question types most often missed."
           }
         >
           <List>

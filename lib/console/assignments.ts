@@ -63,6 +63,10 @@ export interface AssignmentReport {
   inLibrary: boolean;
   /** Mean band across graded attempts, or null when nobody has finished. */
   averageBand: number | null;
+  /** Lessons only: the class's mean mark, e.g. "6.4 / 10". A lesson has no
+   *  band, so `averageBand` is null for one and this carries the headline
+   *  number instead. */
+  averageMark: string | null;
   /** Most common weaknesses across the group, worst first. */
   commonMistakes: { label: string; count: number }[];
 }
@@ -242,7 +246,7 @@ export async function loadAssignmentReport(assignmentId: string): Promise<Assign
   const { data: a } = await supabase
     .from("assignments")
     .select(
-      "id, kind, title, instructions, due_at, group_id, prompt_id, reading_test_id, listening_library_id",
+      "id, kind, title, instructions, due_at, group_id, prompt_id, reading_test_id, listening_library_id, lesson_id",
     )
     .eq("id", assignmentId)
     .maybeSingle();
@@ -268,13 +272,30 @@ export async function loadAssignmentReport(assignmentId: string): Promise<Assign
       ? await writingRows(supabase, a.prompt_id as string, memberIds, names)
       : a.kind === "reading"
         ? await readingRows(supabase, a.reading_test_id as string, memberIds, names)
-        : await listeningRows(supabase, a.listening_library_id as string, memberIds, names);
+        : a.kind === "lesson"
+          ? await lessonRows(supabase, a.lesson_id as string, memberIds, names)
+          : await listeningRows(supabase, a.listening_library_id as string, memberIds, names);
 
   const graded = rows.filter((r) => r.band != null);
   const averageBand =
     graded.length > 0
       ? Math.round((graded.reduce((s, r) => s + (r.band ?? 0), 0) / graded.length) * 10) / 10
       : null;
+
+  // A lesson's headline number. Read back out of the score strings rather than
+  // threaded through a second return value: the format is this file's own and
+  // one regex here is cheaper than a shape every other kind has to carry null in.
+  let averageMark: string | null = null;
+  if (a.kind === "lesson") {
+    const marks = rows
+      .map((r) => /^(\d+(?:\.\d+)?) \/ (\d+)$/.exec(r.score ?? ""))
+      .filter((m): m is RegExpExecArray => m != null)
+      .map((m) => ({ got: Number(m[1]), max: Number(m[2]) }));
+    if (marks.length > 0) {
+      const mean = marks.reduce((n, m) => n + m.got, 0) / marks.length;
+      averageMark = `${Math.round(mean * 10) / 10} / ${marks[0].max}`;
+    }
+  }
 
   const tally = new Map<string, number>();
   for (const r of rows) {
@@ -318,6 +339,7 @@ export async function loadAssignmentReport(assignmentId: string): Promise<Assign
     groupName: (groupRes.data as { name: string } | null)?.name ?? "Group",
     rows: rows.sort(byBandThenName),
     averageBand,
+    averageMark,
     commonMistakes: [...tally.entries()]
       .map(([label, count]) => ({ label, count }))
       .sort((x, y) => y.count - x.count || x.label.localeCompare(y.label))
@@ -397,6 +419,114 @@ async function writingRows(
       reportHref: `/activities/essay/${essay.id}`,
     };
   });
+}
+
+/**
+ * A practice-AI lesson's results.
+ *
+ * THIS BRANCH DID NOT EXIST, and its absence was invisible: `loadAssignmentReport`
+ * fell through to `listeningRows` with an undefined library id, which found
+ * nothing and reported a class of students who had all done the work as having
+ * none of them started. Attempts have been recorded since the feature shipped —
+ * marks, and a per-tag breakdown of exactly which point each student missed —
+ * and nothing has ever read them back.
+ *
+ * NO BAND, DELIBERATELY. A lesson is marked out of a maximum, not banded. The
+ * band column stays null and the score column carries "7 / 10", because a
+ * number invented to fill a column headed Band is worse than an empty cell.
+ *
+ * The weakness column carries the tags the student actually got wrong, in the
+ * same comma-separated shape reading uses — which is what lets the report's
+ * existing "most missed" tally work on lessons without touching it.
+ */
+async function lessonRows(
+  supabase: RlsClient,
+  lessonId: string,
+  memberIds: string[],
+  names: Map<string, string>,
+): Promise<AssignmentReportRow[]> {
+  if (memberIds.length === 0 || !lessonId) return [];
+
+  const { data: attempts } = await supabase
+    .from("lesson_attempts")
+    .select("id, student_id, score, max_score, tag_breakdown, created_at")
+    .eq("lesson_id", lessonId)
+    .in("student_id", memberIds)
+    .order("created_at", { ascending: true });
+
+  // Latest attempt per student: a lesson can be redone, and the current
+  // understanding is the most recent one, not the first.
+  const byStudent = new Map<
+    string,
+    { score: number; max: number; tags: Record<string, { attempted?: number; correct?: number }> | null }
+  >();
+  for (const at of (attempts ?? []) as {
+    student_id: string;
+    score: number | null;
+    max_score: number | null;
+    tag_breakdown: Record<string, { attempted?: number; correct?: number }> | null;
+  }[]) {
+    byStudent.set(at.student_id, {
+      score: at.score ?? 0,
+      max: at.max_score ?? 0,
+      tags: at.tag_breakdown,
+    });
+  }
+
+  return memberIds.map((id) => {
+    const name = names.get(id) ?? "—";
+    const at = byStudent.get(id);
+    if (!at) {
+      return {
+        studentId: id,
+        name,
+        status: "not_started" as const,
+        band: null,
+        score: null,
+        weakness: null,
+        reportHref: null,
+      };
+    }
+    // A row with no maximum is a lesson opened and abandoned before anything
+    // was marked — handed in is what `max_score` records, not merely started.
+    if (at.max === 0) {
+      return {
+        studentId: id,
+        name,
+        status: "in_progress" as const,
+        band: null,
+        score: null,
+        weakness: null,
+        reportHref: null,
+      };
+    }
+    return {
+      studentId: id,
+      name,
+      status: "graded" as const,
+      band: null,
+      score: `${at.score} / ${at.max}`,
+      weakness: missedTags(at.tags),
+      reportHref: null,
+    };
+  });
+}
+
+/** The points this student got wrong, worst first, at most three. More than
+ *  that stops being a diagnosis and becomes the whole lesson back. */
+function missedTags(
+  breakdown: Record<string, { attempted?: number; correct?: number }> | null,
+): string | null {
+  if (!breakdown) return null;
+  const missed = Object.entries(breakdown)
+    .map(([tag, v]) => ({ tag, wrong: (v.attempted ?? 0) - (v.correct ?? 0) }))
+    .filter((t) => t.wrong > 0)
+    .sort((a, b) => b.wrong - a.wrong)
+    .slice(0, 3)
+    // The tally that consumes this splits on ", ", so a tag may not contain one.
+    .map((t) => t.tag.replace(/[-_]+/g, " ").replace(/,/g, " ").trim())
+    .filter((t) => t.length > 0);
+  return missed.length > 0 ? missed.join(", ") : null;
 }
 
 async function readingRows(

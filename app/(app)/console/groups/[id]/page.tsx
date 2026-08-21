@@ -816,16 +816,7 @@ export default async function GroupDetailPage({
                 textDecoration: "none",
                 color: "inherit",
               };
-              // A LESSON HAS NO RESULTS PAGE YET. loadAssignmentReport knows
-              // essays, reading attempts and listening attempts; a lesson's
-              // marks live in lesson_attempts and nothing reads them back. So
-              // its row is not a link — a link that 404s is worse than a row
-              // that plainly does not offer one.
-              return a.kind === "lesson" ? (
-                <div key={a.id} style={rowStyle}>
-                  {row}
-                </div>
-              ) : (
+              return (
                 <Link
                   key={a.id}
                   href={`/console/groups/${group.id}/assignments/${a.id}`}
