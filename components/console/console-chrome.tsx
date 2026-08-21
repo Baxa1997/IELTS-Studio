@@ -198,13 +198,22 @@ export function ConsoleChrome({
    * A page whose first screen IS the design gets the screen; the rail stays,
    * because that is how you leave.
    */
-  const bare = pathname.startsWith("/console/practice-ai");
+  /* The assistant is bare too, and for a sharper reason than Practice AI's.
+     It brings its OWN header — the centre it is reading, a live-data badge and
+     New chat — so the breadcrumb bar above it was a second header saying less:
+     two rows of chrome, one avatar each, and a date filter that nothing on this
+     page honours. The rail stays, because that is how you leave. */
+  const bare =
+    pathname.startsWith("/console/practice-ai") || pathname.startsWith("/console/assistant");
 
-  /* The assistant keeps the breadcrumb bar — it is a page you arrive at from
-     everywhere and have to be able to leave — but gives up the canvas padding.
-     A conversation framed inside 28px of margin reads as a widget somebody
-     embedded; the transcript should own the width and set its own. */
-  const flush = pathname.startsWith("/console/assistant");
+  /* AND IT FILLS, which is a separate thing from being bare. The shell's
+     surface is already exactly the viewport less its own 10px padding and its
+     border, so a page asking for `100dvh` overflows it by that much and pushes
+     its own composer below the fold. Height has to come DOWN the chain — 100%
+     of a parent that knows its size — rather than be guessed at from the
+     viewport. Practice AI is bare but scrolls normally, so it does not want
+     this. */
+  const fills = pathname.startsWith("/console/assistant");
 
   return (
     <PanelContext.Provider value={api}>
@@ -304,7 +313,13 @@ export function ConsoleChrome({
 
       <div
         className="cn-page"
-        style={bare || flush ? { padding: 0 } : { padding: "26px 28px 60px" }}
+        style={
+          fills
+            ? { padding: 0, height: "100%" }
+            : bare
+              ? { padding: 0 }
+              : { padding: "26px 28px 60px" }
+        }
       >
         {children}
       </div>

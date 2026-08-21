@@ -375,11 +375,26 @@ export interface RawProposal {
   why: string;
 }
 
+export interface ProposalField {
+  name: string;
+  label: string;
+  kind: ArgKind;
+  value: string;
+  choices?: readonly string[];
+  required: boolean;
+}
+
 export interface VettedProposal {
   action: string;
   verb: string;
   why: string;
   args: Record<string, string>;
+  /** The same arguments, with enough about each to draw an input. THE DRAFT IS
+   *  EDITABLE: the model is guessing at a name or a date from one sentence, and
+   *  correcting it in place is far better than arguing with it in prose. Safe
+   *  because nothing typed here is trusted either — `runProposal` re-resolves
+   *  every class and student by name through RLS whatever the field says. */
+  fields: ProposalField[];
 }
 
 /** What the vetting needs to know about the caller's world. Passed in rather
@@ -441,7 +456,20 @@ export function vetProposals(raw: RawProposal[], ctx: VetContext): VettedProposa
     }
     if (!ok) continue;
 
-    out.push({ action: spec.id, verb: spec.verb, why: String(p.why ?? "").slice(0, 300), args });
+    out.push({
+      action: spec.id,
+      verb: spec.verb,
+      why: String(p.why ?? "").slice(0, 300),
+      args,
+      fields: spec.args.map((a) => ({
+        name: a.name,
+        label: a.name.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+        kind: a.kind,
+        value: args[a.name] ?? "",
+        choices: a.choices,
+        required: a.required === true,
+      })),
+    });
     if (out.length === 1) break;
   }
   return out;

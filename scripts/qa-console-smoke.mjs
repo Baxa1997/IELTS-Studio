@@ -420,7 +420,7 @@ async function main() {
     // the class actually got wrong.
     [`/console/groups/${group.id}/assignments/${lessonAssignment.id}`, "Average mark"],
     [`/console/groups/${group.id}/assignments/${lessonAssignment.id}`, "third person s"],
-    ["/console/assistant", "It proposes; you confirm"],
+    ["/console/assistant", "Do something"],
     ["/console/students", null],
     [`/console/students/${students[0].id}`, "Band by skill"],
     ["/console/teachers", "Marking"],

@@ -1658,6 +1658,62 @@
 .cn-menuitem:hover {
   background: #f4f3ee;
 }
+/* THE ASSISTANT OWNS THE VIEWPORT, and has to be told so in absolute terms.
+   A percentage chain — surface 100% → .cn-page 100% → page 100% — collapses to
+   content height somewhere along it, which leaves the panes ending wherever
+   the conversation happens to end and a field of dead canvas underneath.
+
+   So the height is arithmetic, and the arithmetic is the shell's own: the app
+   shell is 100dvh, `.lp-shell-main` insets it by 10px on each side, and the
+   surface inside that has a 1px border on each. 10+10+1+1 = 22. If those
+   change, this changes with them.
+
+   Only above the mobile breakpoint: below it the shell shows a 56px top bar,
+   the grid is one column, and a page that scrolls normally is the right
+   behaviour anyway. */
+.cn-assistant-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+@media (min-width: 901px) {
+  .cn-assistant-page {
+    height: calc(100dvh - 22px);
+  }
+}
+
+/* The assistant's command centre. Three columns become two below 1180px —
+   the history rail is the first thing to go, because it is the one panel you
+   can still reach (every thread is a URL). Below 900px the launcher goes too
+   and the conversation has the screen, which is what a phone is for. */
+.cn-assistant-grid {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1180px) {
+  .cn-assistant-grid {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .cn-assistant-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cn-hide-md {
+    display: none !important;
+  }
+}
+.cn-root .cn-cap:hover {
+  border-color: #c7c2f5;
+  background: #f4f3ff;
+  color: #3730a3;
+}
+.cn-root .cn-thread:hover {
+  border-color: #c7c2f5;
+}
 .cn-root .cn-askai:hover {
   border-color: #b9b4f0;
   color: #3730a3;
