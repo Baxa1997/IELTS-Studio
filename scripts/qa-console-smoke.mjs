@@ -338,6 +338,21 @@ async function main() {
   });
   if (attemptError) throw new Error(`lesson attempt: ${attemptError.message}`);
 
+  /* ── somebody who owes money ──────────────────────────────────────────
+     Without this the money question is answered from an empty balance sheet,
+     which passes while proving nothing: "nobody owes anything" is the same
+     sentence whether the snapshot is working or blank. One real debt makes the
+     answer falsifiable. */
+  const { error: invoiceError } = await admin.from("student_invoices").insert({
+    organization_id: org.id,
+    student_id: students[0].id,
+    group_id: group.id,
+    period_month: `${new Date().toISOString().slice(0, 7)}-01`,
+    amount_minor: 45000000,
+    due_on: `${new Date().toISOString().slice(0, 7)}-05`,
+  });
+  if (invoiceError) throw new Error(`invoice: ${invoiceError.message}`);
+
   /* ── as the owner ────────────────────────────────────────────────────── */
 
   console.log("center_admin");
@@ -432,6 +447,27 @@ async function main() {
       "asked in Uzbek, it answers in Uzbek",
       uz.status === 200 && looksUzbek,
       `"${uzReply.slice(0, 90)}"`,
+    );
+
+    // WHO OWES WHAT, IN WORDS. The debtors file was already reachable; being
+    // unable to say anything about its contents is what made asking pointless.
+    const owed = await fetch(`${BASE}/api/console/assistant`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "Who owes me money?" }),
+    });
+    const owedBody = await owed.json().catch(() => ({}));
+    const owedReply = String(owedBody.reply ?? "");
+    check(
+      "asked who owes money, it answers from the balances",
+      owed.status === 200 &&
+        // It must NAME the debtor. "I can't see money" is the failure this
+        // exists to catch, but so is a vague answer that mentions nobody —
+        // there is exactly one person owing in this centre and the whole point
+        // is being able to say who.
+        /QA/i.test(owedReply) &&
+        !/can'?t see|cannot see|no access|don'?t have access/i.test(owedReply),
+      `"${owedReply.slice(0, 100)}"`,
     );
 
     check(

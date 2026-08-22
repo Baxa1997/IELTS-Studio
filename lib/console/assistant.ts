@@ -3,6 +3,8 @@ import "server-only";
 import { canManagePeople, type Profile } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadMarkingQueue } from "@/lib/console/marking";
+import { loadDebtors, loadFinanceSettings } from "@/lib/finance/load";
+import { formatMoney } from "@/lib/finance/money";
 import { phoneKey } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
@@ -151,7 +153,45 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
     );
   }
 
+  /* ── the money, for the people who handle it ─────────────────────────────
+     WHO OWES WHAT WAS THE BIGGEST BLIND SPOT. The assistant could hand over the
+     debtors spreadsheet and then not say a word about what was in it, which is
+     the shape of answer that makes somebody stop asking.
+
+     OWNER AND FRONT DESK ONLY. `canManagePeople` is centre_admin and
+     administrator — the two roles that take payments — and a teacher is
+     deliberately outside it. A teacher can already see their students' bands
+     and attendance; what a family owes is not theirs, and putting it in the
+     snapshot would put it one sentence away from being said out loud.
+
+     Read through the RLS client like everything else here, so even this gate
+     is belt and braces: `v_student_finance` is security_invoker, and a teacher
+     reading it gets nothing regardless of what this code does. */
   if (isAdmin) {
+    try {
+      const [debtors, settings] = await Promise.all([loadDebtors(12), loadFinanceSettings()]);
+      const owing = debtors.filter((d) => d.owedMinor > 0);
+      lines.push("");
+      if (owing.length === 0) {
+        lines.push("MONEY: nobody is carrying a balance.");
+      } else {
+        const total = owing.reduce((n, d) => n + d.owedMinor, 0);
+        lines.push(
+          `MONEY: ${owing.length} student${owing.length === 1 ? "" : "s"} owing ${formatMoney(total, settings.currency)} in total.`,
+        );
+        // Named, worst first, because "who should I ring today" is the question
+        // this actually gets asked — a total alone cannot answer it.
+        for (const d of owing.slice(0, 8)) {
+          lines.push(`  • ${d.studentName} — ${formatMoney(d.owedMinor, settings.currency)}`);
+        }
+        if (owing.length > 8) lines.push(`  …and ${owing.length - 8} more.`);
+      }
+    } catch {
+      // A centre with the finance side untouched is not a centre with a
+      // problem. Say nothing rather than apologise for a feature they are
+      // not using.
+    }
+
     const { data: staff } = await supabase
       .from("profiles")
       .select("full_name, role")
