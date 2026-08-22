@@ -465,6 +465,38 @@ export function ListeningClient({
     }
   }, []);
 
+  /**
+   * A whole 4-part test, on demand.
+   *
+   * The catalogue's full tests were all seeded offline months ago — there was
+   * no way to ask for a fresh one, so a learner who had sat the six at their
+   * level had nothing left. Same engine call the seeding scripts make, now
+   * behind the same gate as the quick practice.
+   *
+   * ONE GENERATION, not four. Measured at ~2.4 minutes end to end: the four
+   * parts compose in parallel, so 40 questions cost barely more wall-clock
+   * than the slowest single part (139s of 143s). That is why this is a button
+   * you wait on rather than a job you come back to — it is the same wait the
+   * quick practice already asks for.
+   */
+  const composeTest = useCallback(
+    async (difficulty: number) => {
+      setBusy("compose");
+      setError(null);
+      try {
+        setSource("mine");
+        const v = await callEngine<RenderView>("compose", { difficulty });
+        if (isTeacher) setFresh(v);
+        else setView(v);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Generation failed — please try again.");
+      } finally {
+        setBusy(null);
+      }
+    },
+    [isTeacher],
+  );
+
   const generate = useCallback(
     async (difficulty: number) => {
       setBusy("generate");
@@ -552,6 +584,7 @@ export function ListeningClient({
         onOpen={open}
         onOpenMine={openMine}
         onGenerate={generate}
+        onComposeTest={composeTest}
         // A library item IS a listening_library row, so it can be assigned as
         // it stands. A generated one lives in listening_items and has to be
         // cloned into the center's library first — hence the two factories.
@@ -695,6 +728,7 @@ function Hub({
   onOpen,
   onOpenMine,
   onGenerate,
+  onComposeTest,
   attachLibrary,
   attachMine,
 }: {
@@ -707,6 +741,8 @@ function Hub({
   onOpen: (item: LibraryItem) => void;
   onOpenMine: (id: string) => void;
   onGenerate: (difficulty: number) => void;
+  /** A whole 4-part test, made to order. */
+  onComposeTest: (difficulty: number) => void;
   /** Attach for a LIBRARY item — assignable as-is, it is already a
    *  listening_library row. */
   attachLibrary?: (id: string) => AttachSlot | undefined;
@@ -853,7 +889,22 @@ function Hub({
       ) : null}
 
       {tab === "tests" ? (
-        !catalogue ? (
+        <>
+          <div style={{ marginTop: 18 }}>
+            <AiGenerateSection
+              title="Generate a full test"
+              badge="AI Studio"
+              description="All four parts, forty questions, recorded as studio audio at your chosen level — the same shape as the real exam. About two and a half minutes to make, and it counts as one generation."
+              cta={
+                <GenerateCta
+                  generating={busy === "compose"}
+                  disabled={!!busy}
+                  onGo={onComposeTest}
+                />
+              }
+            />
+          </div>
+          {!catalogue ? (
           <p
             style={{
               marginTop: 30,
@@ -868,8 +919,8 @@ function Hub({
           </p>
         ) : tests.length === 0 ? (
           <EmptyHint>
-            The full practice tests are being recorded right now — each one is four parts and forty
-            questions. Check back shortly, or try a quick practice meanwhile.
+            No ready-made tests at your level yet — generate one above. Four parts, forty
+            questions, about two and a half minutes.
           </EmptyHint>
         ) : (
           <div style={{ marginTop: 20 }}>
@@ -886,7 +937,8 @@ function Hub({
               ))}
             </Grid>
           </div>
-        )
+          )}
+        </>
       ) : (
         <>
           <div style={{ marginTop: 18 }}>
