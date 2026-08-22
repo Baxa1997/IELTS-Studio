@@ -1693,8 +1693,12 @@
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 12px;
 }
+.cn-assistant-grid--wide {
+  grid-template-columns: 250px minmax(0, 1fr) 268px;
+}
 @media (max-width: 1180px) {
-  .cn-assistant-grid {
+  .cn-assistant-grid,
+  .cn-assistant-grid--wide {
     grid-template-columns: 210px minmax(0, 1fr);
   }
 }

@@ -1,7 +1,8 @@
 "use server";
 
-import { requireOrgUser } from "@/lib/auth";
+import { requireOrgUser, type Profile } from "@/lib/auth";
 import { actionById } from "@/lib/console/assistant";
+import { recordAction } from "@/lib/console/assistant-actions";
 import { loadGroups } from "@/lib/console/groups";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,6 +41,29 @@ export async function runProposal(_prev: RunState, formData: FormData): Promise<
   const { profile } = await requireOrgUser();
   if (profile.role === "student") return { error: "Not allowed." };
 
+  const result = await run(profile, formData);
+
+  // EVERY OUTCOME, INCLUDING THE REFUSALS. A refused action is the more
+  // interesting row — it is the one somebody asks about — and a log that keeps
+  // only successes answers "did that go through?" with silence in exactly the
+  // case where silence is ambiguous. Recorded here, once, rather than beside
+  // each `return`, because a return statement added later would not get one.
+  await recordAction({
+    profile,
+    action: String(formData.get("action") ?? "unknown"),
+    args: Object.fromEntries(
+      [...formData.entries()]
+        .filter(([k, v]) => k !== "action" && k !== "roster" && typeof v === "string")
+        .map(([k, v]) => [k, String(v).slice(0, 200)]),
+    ),
+    ok: result.ok != null,
+    outcome: result.ok ?? result.error ?? "",
+  });
+
+  return result;
+}
+
+async function run(profile: Profile, formData: FormData): Promise<RunState> {
   const spec = actionById(String(formData.get("action") ?? ""));
   if (!spec) return { error: "That action no longer exists." };
   if (!spec.roles.includes(profile.role)) return { error: "Your role cannot do that." };
