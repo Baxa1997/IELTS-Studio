@@ -186,6 +186,15 @@ export function AddStudentPanel({ groupId }: { groupId: string }) {
             {state.emailNote ??
               "No email on file, so this login is the only way in — and there's no email password reset. Send it over Telegram or write it down. You can always add an email later."}
           </p>
+          {/* THE MONEY, WHILE THE CONVERSATION IS STILL HAPPENING. A teacher
+              enrolling somebody is usually standing in front of the person
+              paying; telling them the figure a week later, from a batch run on
+              a different page, is the wrong moment and the wrong person. */}
+          {state.invoiceNote ? (
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {state.invoiceNote}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -413,7 +413,7 @@ async function main() {
       "asked for a spreadsheet, it hands over a download",
       wantFile.status === 200 &&
         doc?.href?.startsWith("/api/console/finance/export?report=debtors&format=xlsx"),
-      doc ? doc.href : `no document (${(filed.documents ?? []).length})`,
+      doc ? doc.href : `no document — it said: "${String(filed.reply ?? "").slice(0, 110)}"`,
     );
 
     check(

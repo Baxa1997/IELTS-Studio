@@ -46,6 +46,7 @@ export async function POST(req: Request): Promise<Response> {
     .eq("kind", "center")
     .eq("status", "active");
 
+  let chased = 0;
   let nudged = 0;
   let considered = 0;
 
@@ -114,9 +115,71 @@ export async function POST(req: Request): Promise<Response> {
         subjectKey: today,
       });
     }
+    /* ── the other scheduled one: an invoice that has come due ──────────────
+       `invoice_due` sat in the catalogue for weeks labelled "not connected
+       yet", because invoicing raises no event when a date arrives — nothing
+       happens on the 5th; the 5th simply IS. Like `gone_quiet`, it is the
+       absence of an event, so somebody has to ask.
+
+       DUE TODAY AND STILL OWED. Not overdue-and-mounting: this is one nudge on
+       the day, and `auto_message_sends` keys it to the invoice so a retried or
+       overlapping cron cannot send it twice. Chasing every day would be a
+       different feature and a worse one. */
+    const { data: due } = await admin
+      .from("student_invoices")
+      .select("id, student_id, amount_minor, discount_minor")
+      .eq("organization_id", orgId)
+      .eq("due_on", today)
+      .eq("voided", false);
+
+    const dueRows = (due ?? []) as {
+      id: string;
+      student_id: string;
+      amount_minor: number;
+      discount_minor: number;
+    }[];
+    if (dueRows.length > 0) {
+      const { data: settled } = await admin
+        .from("v_invoice_settlement")
+        .select("invoice_id, paid_minor")
+        .in(
+          "invoice_id",
+          dueRows.map((r) => r.id),
+        );
+      const paid = new Map(
+        ((settled ?? []) as { invoice_id: string; paid_minor: number }[]).map((r) => [
+          r.invoice_id,
+          Number(r.paid_minor ?? 0),
+        ]),
+      );
+      const names = new Map(
+        ((students ?? []) as { id: string; full_name: string | null }[]).map((s2) => [
+          s2.id,
+          s2.full_name ?? "",
+        ]),
+      );
+
+      for (const inv of dueRows) {
+        const owed =
+          Number(inv.amount_minor ?? 0) -
+          Number(inv.discount_minor ?? 0) -
+          (paid.get(inv.id) ?? 0);
+        // Paid already, or settled in advance: say nothing. The worst message a
+        // centre can send is one chasing money it has been given.
+        if (owed <= 0) continue;
+        chased += await sendAutoMessage({
+          organizationId: orgId,
+          key: "invoice_due",
+          recipientIds: [inv.student_id],
+          values: { student: names.get(inv.student_id) || "there" },
+          subjectKey: `invoice:${inv.id}`,
+        });
+      }
+    }
+
   }
 
-  return NextResponse.json({ ok: true, considered, nudged, date: today });
+  return NextResponse.json({ ok: true, considered, nudged, chased, date: today });
 }
 
 function isAuthorized(req: Request, secret: string): boolean {

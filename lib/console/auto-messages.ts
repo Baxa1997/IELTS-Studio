@@ -98,10 +98,11 @@ export const AUTO_MESSAGES: AutoMessageSpec[] = [
     defaultTitle: "Payment due",
     defaultTemplate: "{student}, a payment for this month is now due.",
     onByDefault: false,
-    // §12 lists this one as "(later)". It is in the catalogue so the page shows
-    // the whole set, and it is honest about not being connected: a toggle that
-    // silently does nothing is worse than one labelled as not built.
-    notWiredYet: "Not connected yet — invoicing does not raise this event.",
+    // CONNECTED NOW, by the scheduled job rather than by an event: nothing
+    // happens on the 5th, the 5th simply IS, so somebody has to ask. It sends
+    // once, on the day, only to students who still owe — chasing money already
+    // paid is the worst message a centre can send. Still needs a cron pointed
+    // at /api/jobs/auto-messages, exactly as `gone_quiet` does.
   },
 ];
 

@@ -188,15 +188,32 @@ describe("composeAutoMessage", () => {
   });
 
   it("never sends a message whose trigger does not exist yet", () => {
-    // invoice_due is in the catalogue so the page shows the whole set. Enabling
-    // it must not imply anything will arrive.
+    // A RULE, NOT A LIST. Every spec still carrying `notWiredYet` must compose
+    // to nothing, so switching its toggle on cannot imply that anything will
+    // arrive. Written this way so that connecting one — as invoice_due now is,
+    // via the scheduled job — drops it out of this check by losing the label,
+    // rather than by somebody remembering to edit a name out of a test.
+    const unwired = Object.values(AUTO_MESSAGE_BY_KEY).filter((s) => s.notWiredYet);
+    for (const spec of unwired) {
+      expect(
+        composeAutoMessage({
+          spec,
+          setting: setting({ key: spec.key, enabled: true }),
+          values: { student: "Aziza" },
+        }),
+        `${spec.key} is labelled unwired, so it must compose to nothing`,
+      ).toBeNull();
+    }
+  });
+
+  it("composes invoice_due, now that the scheduled job sends it", () => {
     expect(
       composeAutoMessage({
         spec: AUTO_MESSAGE_BY_KEY.invoice_due,
         setting: setting({ key: "invoice_due", enabled: true }),
         values: { student: "Aziza" },
       }),
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   it("respects the code default when a centre has no row at all", () => {

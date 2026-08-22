@@ -11,7 +11,8 @@ import { uploadAvatar } from "@/lib/console/avatars";
 import { isMemberStatus } from "@/lib/console/status";
 import { sendEmail } from "@/lib/email/send";
 import { loadFinanceSettings } from "@/lib/finance/load";
-import { parseMoney } from "@/lib/finance/money";
+import { formatMoney, parseMoney } from "@/lib/finance/money";
+import { invoiceOnJoin } from "@/lib/finance/invoice-on-join";
 import { notifyAssignment } from "@/lib/notifications/send";
 import { notifyAssignmentTelegram, postGroupInvite } from "@/lib/telegram/send";
 import { createGroupInvite, sendCredentialsTelegram } from "@/lib/telegram/student";
@@ -53,6 +54,10 @@ export interface AddStudentState {
   emailNote?: string;
   /** Set when their Telegram was already connected and got the details too. */
   telegramNote?: string;
+  /** What this student owes for the month they joined in, and that an invoice
+   *  now exists for it. Absent when the class has no fee — a centre not using
+   *  the finance side should never be shown money it did not ask about. */
+  invoiceNote?: string;
 }
 
 /** Logins are typed by hand, often from a whiteboard: letters, digits and a few
@@ -1270,13 +1275,30 @@ export async function addStudentAccount(
     signInUrl: `${serverEnv.outboundSiteUrl}/sign-in`,
   });
 
+  // WHAT THEY OWE, SAID WHILE THE PARENT IS STILL STANDING THERE. Invoices
+  // were otherwise raised in a batch from the Finance page, so a student added
+  // on the 5th stayed uninvoiced until somebody remembered — and the teacher,
+  // who is the one actually having the conversation about money, never saw a
+  // figure at all. Prorated by lesson using the same arithmetic the batch uses.
+  const invoice = await invoiceOnJoin({
+    organizationId: profile.organization_id,
+    studentId: created.user.id,
+    groupId,
+  });
+  const invoiceNote =
+    invoice.amountMinor != null
+      ? `${formatMoney(invoice.amountMinor, invoice.currency)} for this month — ${invoice.billed} of ${invoice.planned} lessons. Invoice raised.`
+      : (invoice.why ?? undefined);
+
   revalidatePath(`/console/groups/${groupId}`);
   revalidatePath("/console/students");
+  revalidatePath("/console/finance/invoices");
   return {
     created: { name: fullName, login: finalLogin, email: contactEmail, password },
     warning: photoWarning ?? undefined,
     emailNote: emailNote ?? undefined,
     telegramNote: telegramSent ? "Sent to their Telegram too." : undefined,
+    invoiceNote,
   };
 }
 
