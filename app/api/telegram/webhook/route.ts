@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { answerOnTelegram } from "@/lib/telegram/assistant-bot";
 import { callTelegram, escapeHtml, sendMessage } from "@/lib/telegram/send";
 import { COMMAND_QUESTIONS, KEYBOARD_QUESTIONS, STAFF_KEYBOARD } from "@/lib/telegram/menu";
+import { startNewThread } from "@/lib/console/assistant-thread";
 import { bindStaffChat, staffForChat } from "@/lib/telegram/staff";
 import {
   bindStudentChat,
@@ -182,6 +183,14 @@ export async function POST(req: Request): Promise<Response> {
 
       if (command === "help" || command === "start") {
         await sendStaffMenu(chat.id, staffProfile.full_name ?? "there");
+        return ok();
+      }
+      if (command === "new") {
+        await startNewThread(staffProfile);
+        await sendMessage(
+          chat.id,
+          "Fresh start — I've put that conversation aside. It's still in the console if you need it.",
+        );
         return ok();
       }
       if (command && !asked) {

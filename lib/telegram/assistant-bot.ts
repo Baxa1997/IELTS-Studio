@@ -9,7 +9,7 @@ import {
   vetDocuments,
   vetProposals,
 } from "@/lib/console/assistant";
-import { appendExchange } from "@/lib/console/assistant-thread";
+import { appendExchange, loadThread } from "@/lib/console/assistant-thread";
 import { serverEnv } from "@/lib/env";
 import { escapeHtml, sendMessage } from "@/lib/telegram/send";
 
@@ -27,14 +27,31 @@ import { escapeHtml, sendMessage } from "@/lib/telegram/send";
  * and every proposal is re-checked again when the button is pressed.
  */
 export async function answerOnTelegram(profile: Profile, chatId: number, question: string) {
-  const snapshot = await loadCentreSnapshot(profile);
+  const [snapshot, thread] = await Promise.all([
+    loadCentreSnapshot(profile),
+    // THE SAME THREAD THE BROWSER USES. Not a second conversation: ask on the
+    // phone, open the console, and the proposal is already on screen waiting —
+    // and equally, a question typed here follows on from one asked at a desk
+    // an hour ago. One conversation with two doors.
+    loadThread(profile),
+  ]);
+
+  /* WITHOUT THIS THE BOT HAD NO MEMORY AT ALL — every message was a fresh
+     conversation, so "yes, do that one" or "make it Tuesday instead" meant
+     nothing and the whole request had to be restated. Six turns is what the
+     web chat sends, and it is plenty: the snapshot carries the facts, so
+     history only has to carry what was being talked ABOUT. */
+  const history = thread.turns
+    .slice(-6)
+    .map((t) => `${t.role === "assistant" ? "You" : "Them"}: ${t.content.slice(0, 600)}`)
+    .join("\n");
 
   const { content } = await generate({
     kind: "console_assistant",
     spec: {
       question,
       snapshot: snapshot.text,
-      history: "",
+      history,
       actions: describeActions(profile.role),
       documents: describeDocuments(profile.role),
     },

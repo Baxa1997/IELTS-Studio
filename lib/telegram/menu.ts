@@ -20,11 +20,17 @@ export const STAFF_COMMANDS = [
   { command: "classes", description: "How every class is doing" },
   { command: "logins", description: "Who still cannot sign in" },
   { command: "reports", description: "Spreadsheets and PDFs you can get" },
+  { command: "new", description: "Start a fresh conversation" },
   { command: "help", description: "How this works, and its limits" },
 ] as const;
 
 /** The question each command really asks. The bot has one brain; a command is
  *  a shortcut to a sentence, not a separate feature with its own rules. */
+/* `/new` is not a question and deliberately has no entry below: now that the
+   bot remembers, it needs a way to FORGET. Without one, a conversation about
+   one class quietly colours the answers about the next — and the person cannot
+   tell, because the context that is misleading them is the part they cannot
+   see. */
 export const COMMAND_QUESTIONS: Record<string, string> = {
   today: "What needs my attention today?",
   classes: "How is each of my classes doing right now?",
