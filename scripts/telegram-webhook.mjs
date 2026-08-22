@@ -43,7 +43,25 @@ const arg = process.argv[2];
 
 if (!arg) {
   const me = await api("getMe");
-  const info = await api("getWebhookInfo");
+  // The `/` menu, registered alongside the webhook because both are "make the
+// live bot match this code" and doing them separately means one of them is
+// eventually forgotten. Scoped to private chats: a class channel has the bot in
+// it too, and a menu of staff commands in front of thirty students is both
+// confusing and a hint about a surface they cannot use.
+const menu = await api("setMyCommands", {
+  commands: [
+    { command: "start", description: "What I can do" },
+    { command: "today", description: "What needs your attention" },
+    { command: "classes", description: "How every class is doing" },
+    { command: "logins", description: "Who still cannot sign in" },
+    { command: "reports", description: "Spreadsheets and PDFs you can get" },
+    { command: "help", description: "How this works, and its limits" },
+  ],
+  scope: { type: "all_private_chats" },
+});
+console.log(menu.ok ? "✅ commands registered" : `❌ commands: ${menu.description}`);
+
+const info = await api("getWebhookInfo");
   console.log(`bot        @${me.result?.username ?? "?"}`);
   console.log(`webhook    ${info.result?.url || "(none set)"}`);
   console.log(`pending    ${info.result?.pending_update_count ?? 0} updates`);
@@ -79,6 +97,24 @@ const res = await api("setWebhook", {
   drop_pending_updates: true,
 });
 console.log(res.ok ? `✅ webhook → ${url}` : `❌ ${res.description}`);
+
+// The `/` menu, registered alongside the webhook because both are "make the
+// live bot match this code" and doing them separately means one of them is
+// eventually forgotten. Scoped to private chats: a class channel has the bot in
+// it too, and a menu of staff commands in front of thirty students is both
+// confusing and a hint about a surface they cannot use.
+const menu = await api("setMyCommands", {
+  commands: [
+    { command: "start", description: "What I can do" },
+    { command: "today", description: "What needs your attention" },
+    { command: "classes", description: "How every class is doing" },
+    { command: "logins", description: "Who still cannot sign in" },
+    { command: "reports", description: "Spreadsheets and PDFs you can get" },
+    { command: "help", description: "How this works, and its limits" },
+  ],
+  scope: { type: "all_private_chats" },
+});
+console.log(menu.ok ? "✅ commands registered" : `❌ commands: ${menu.description}`);
 
 const info = await api("getWebhookInfo");
 if (info.result?.last_error_message) console.log(`last error: ${info.result.last_error_message}`);

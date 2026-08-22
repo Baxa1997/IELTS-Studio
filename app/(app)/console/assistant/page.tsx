@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireOrgUser } from "@/lib/auth";
 import { ACTIONS, loadCentreSnapshot } from "@/lib/console/assistant";
 import { listThreads, loadThread } from "@/lib/console/assistant-thread";
+import { staffLinkStatus } from "@/lib/telegram/staff";
 
 import { AssistantChat } from "./chat";
 
@@ -25,10 +26,11 @@ export default async function AssistantPage({
   if (profile.role === "student") redirect("/dashboard");
 
   const { thread: wanted } = await searchParams;
-  const [snapshot, thread, threads] = await Promise.all([
+  const [snapshot, thread, threads, telegram] = await Promise.all([
     loadCentreSnapshot(profile),
     loadThread(profile, wanted),
     listThreads(profile),
+    staffLinkStatus(profile),
   ]);
 
   // The openers are built from the caller's OWN snapshot, so they are questions
@@ -58,6 +60,8 @@ export default async function AssistantPage({
       threads={threads}
       activeThread={thread.threadId}
       capabilities={capabilities}
+      telegramConnected={telegram.connected}
+      botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
     />
   );
 }

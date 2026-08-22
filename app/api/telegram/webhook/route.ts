@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { serverEnv } from "@/lib/env";
 import { generatePassword } from "@/lib/passwords";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { answerOnTelegram } from "@/lib/telegram/assistant-bot";
 import { callTelegram, escapeHtml, sendMessage } from "@/lib/telegram/send";
+import { COMMAND_QUESTIONS, KEYBOARD_QUESTIONS, STAFF_KEYBOARD } from "@/lib/telegram/menu";
+import { bindStaffChat, staffForChat } from "@/lib/telegram/staff";
 import {
   bindStudentChat,
   clearPendingJoin,
@@ -162,6 +165,43 @@ export async function POST(req: Request): Promise<Response> {
   if (!match) return ok();
   const code = match[1].toUpperCase();
 
+  // ── staff, talking to their own centre ──────────────────────────────────
+  // After the code paths, so a member of staff pasting a class code still gets
+  // the class-code behaviour, and before the fallbacks, so ordinary sentences
+  // reach the assistant rather than a "I don't recognise that" message.
+  if (isPrivate) {
+    const staffProfile = await staffForChat(chat.id);
+    if (staffProfile) {
+      // A COMMAND, A BUTTON AND A SENTENCE ARE THE SAME THING. `/today`, the
+      // "📋 Today" key and typing "what needs my attention?" all become one
+      // question for one brain — so nothing can work in one place and not
+      // another, and there is no second set of rules to keep in step.
+      const command = /^\/(\w+)/.exec(text)?.[1];
+      const asked =
+        (command ? COMMAND_QUESTIONS[command] : undefined) ?? KEYBOARD_QUESTIONS[text] ?? null;
+
+      if (command === "help" || command === "start") {
+        await sendStaffMenu(chat.id, staffProfile.full_name ?? "there");
+        return ok();
+      }
+      if (command && !asked) {
+        await sendMessage(
+          chat.id,
+          "I don't know that one. Tap <b>/</b> to see what I can do, or just ask in your own words.",
+        );
+        return ok();
+      }
+
+      try {
+        await answerOnTelegram(staffProfile, chat.id, (asked ?? text).slice(0, 1200));
+      } catch (err) {
+        console.error("[telegram-assistant]", err);
+        await sendMessage(chat.id, "Something went wrong reading your centre — try again shortly.");
+      }
+      return ok();
+    }
+  }
+
   // ── a code in a private chat ────────────────────────────────────────────
   // The SAME handler as a bare code above, and that is the fix rather than a
   // tidy-up: these were two branches doing nearly the same thing, and the
@@ -263,11 +303,58 @@ export async function POST(req: Request): Promise<Response> {
  * is the caller's signal to carry on and treat it as a channel code — a real
  * case, since `/start CODE` in a DM can also be a mis-opened group link.
  */
+/**
+ * What the bot is, in the order somebody needs it.
+ *
+ * What it can do, then what it deliberately cannot, then how to ask. The limit
+ * is stated as plainly as the capability: a person who discovers by accident
+ * that it will not change anything concludes it is broken, where a person told
+ * up front concludes it is careful.
+ */
+async function sendStaffMenu(chatId: number, name: string): Promise<void> {
+  await callTelegram("sendMessage", {
+    chat_id: chatId,
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+    text:
+      `👋 <b>Hello ${escapeHtml(name)}.</b> I'm your centre, on your phone.\n\n` +
+      "<b>Ask me anything</b> about your classes, rosters, marking or who can't sign in — " +
+      "in English, Uzbek or Russian, whichever you write in.\n\n" +
+      "<b>Or tap:</b>\n" +
+      "📋 <b>Today</b> — what needs your attention\n" +
+      "👥 <b>My classes</b> — how each one is doing\n" +
+      "⚠️ <b>Who can't sign in</b> — missing phone numbers\n" +
+      "📥 <b>Reports</b> — spreadsheets and PDFs\n\n" +
+      "<b>What I won't do here:</b> anything that changes your data. I'll draft it and " +
+      "hand you a link to confirm it in the console — that way one set of rules decides " +
+      "who may do what, instead of two.\n\n" +
+      "<i>I only ever see what your own account sees.</i>",
+    reply_markup: STAFF_KEYBOARD,
+  });
+}
+
 async function handlePrivateCode(
   code: string,
   chatId: number,
   opts: { explainUnknown: boolean },
 ): Promise<boolean> {
+  // A STAFF CODE FIRST. It is the only one that confers authority, it is
+  // fifteen minutes old at most, and it is the shortest-lived thing here — so
+  // it is checked before the codes that merely identify a learner.
+  const staff = await bindStaffChat(code, chatId);
+  if (staff) {
+    if (staff.ok) {
+      // Straight into the menu: the moment after connecting is the only moment
+      // somebody is definitely looking, and "connected ✅" on its own tells them
+      // nothing about what to do next.
+      await sendMessage(chatId, `✅ Connected, ${escapeHtml(staff.name)}.`);
+      await sendStaffMenu(chatId, staff.name);
+    } else {
+      await sendMessage(chatId, staff.why);
+    }
+    return true;
+  }
+
   // Their own code: binds and greets, nothing else needed.
   if (await bindStudent(code, chatId)) return true;
 

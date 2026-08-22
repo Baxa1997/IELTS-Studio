@@ -11,6 +11,7 @@ import {
 } from "@/lib/spreadsheet-read";
 
 import { runProposal, type RunState } from "./actions";
+import { TelegramStaffPanel } from "./telegram-panel";
 import { newThread } from "./thread-actions";
 
 const INK = "#16203a";
@@ -118,6 +119,8 @@ export function AssistantChat({
   threads,
   activeThread,
   capabilities,
+  telegramConnected,
+  botUsername,
 }: {
   suggestions: string[];
   centreName: string;
@@ -125,6 +128,8 @@ export function AssistantChat({
   threads: ThreadSummary[];
   activeThread: string | null;
   capabilities: Capability[];
+  telegramConnected: boolean;
+  botUsername: string | null;
 }) {
   const [turns, setTurns] = useState<Turn[]>(initialTurns);
   const [draft, setDraft] = useState("");
@@ -371,6 +376,13 @@ export function AssistantChat({
               ))}
             </div>
           </div>
+
+          {botUsername ? (
+            <div style={{ ...card, flex: "none", padding: 14 }}>
+              <div style={{ ...railHead, paddingBottom: 10 }}>On your phone</div>
+              <TelegramStaffPanel connected={telegramConnected} botUsername={botUsername} />
+            </div>
+          ) : null}
 
           <div
             style={{

@@ -416,6 +416,24 @@ async function main() {
       doc ? doc.href : `no document — it said: "${String(filed.reply ?? "").slice(0, 110)}"`,
     );
 
+    // THE CENTRE MARKET IS UZBEK AND RUSSIAN SPEAKING. "Reply in the same
+    // language they write in" is one line of prompt, which is exactly the kind
+    // of instruction that quietly stops working when the rules around it grow.
+    const uz = await fetch(`${BASE}/api/console/assistant`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "Nechta guruhim bor?" }),
+    });
+    const uzBody = await uz.json().catch(() => ({}));
+    const uzReply = String(uzBody.reply ?? "");
+    // Latin-script Uzbek markers, and no long stretch of plain English words.
+    const looksUzbek = /\b(guruh|guruhingiz|bor|talaba|sizda|yo'q|hozir|ta)\b/i.test(uzReply);
+    check(
+      "asked in Uzbek, it answers in Uzbek",
+      uz.status === 200 && looksUzbek,
+      `"${uzReply.slice(0, 90)}"`,
+    );
+
     check(
       "it proposes only allow-listed actions",
       Array.isArray(answer.proposals) &&
