@@ -27,6 +27,15 @@ export const maxDuration = 60;
  * invocation, or an owner curling it twice all resolve to one message, because
  * the subject key is the date and the unique index refuses the second claim.
  */
+/**
+ * Vercel Cron calls with GET, and sends `Authorization: Bearer $CRON_SECRET`
+ * itself. POST stays for a hand-run or any other pinger — one body, two verbs,
+ * rather than a second copy that drifts.
+ */
+export async function GET(req: Request): Promise<Response> {
+  return POST(req);
+}
+
 export async function POST(req: Request): Promise<Response> {
   const secret = serverEnv.cronSecret;
   if (!secret) return NextResponse.json({ error: "cron_not_configured" }, { status: 503 });
