@@ -50,7 +50,7 @@ export default async function TelegramPage() {
   return (
     <div>
       <PageHead
-        back={{ href: "/console", label: "Console" }}
+        back={{ href: "/console", label: "Dashboard" }}
         title="Telegram channels"
         subtitle={
           groups.length === 0

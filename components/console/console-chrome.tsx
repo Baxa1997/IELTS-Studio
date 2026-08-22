@@ -29,7 +29,8 @@ const CANVAS = "#F4F3EF";
  * The section half has to be the section the rail ACTUALLY shows, or the
  * breadcrumb becomes the third name for the same place — which is the exact
  * complaint §1 opens with ("Nav says Groups, breadcrumb says CLASSES"). These
- * had drifted: Reports became Results, Overview became Today, and Announcements,
+ * had drifted: Reports became Results, Overview became Today became Dashboard,
+ * and Announcements,
  * Billing and Settings left the rail for the account menu.
  */
 const CRUMBS: [string, string][] = [
@@ -51,7 +52,7 @@ const CRUMBS: [string, string][] = [
   ["/console/announcements", "Account · Announcements"],
   ["/console/billing", "Account · Billing & plan"],
   ["/console/settings", "Account · Settings"],
-  ["/console", "Run · Today"],
+  ["/console", "Run · Dashboard"],
 ];
 
 function initials(name: string): string {

@@ -92,21 +92,23 @@ const STUDENT: Section[] = [
   },
 ];
 
-/* Center staff. "Dashboard", not "Console" — it's the same word the learner
-   side uses, and nobody outside this codebase knows what a console is.
+/* Center staff. "Dashboard", not "Console" and not "Today" — it is the same
+   word the learner side uses for the same idea, and one product should not have
+   two names for "where I land". Nobody outside this codebase knows what a
+   console is, and "Today" read like a filter rather than a place.
    Cohort and Review are deliberately absent: both are parked features (see
    CLAUDE.md) and they made the menu read like an unfinished admin tool. Add the
    line back to restore either. */
 const ADMIN: Section[] = [
   /* RUN, not "Center". The section answers "what has to happen today", and
-     "Today" replaces "Overview" for the same reason: an owner opens this once a
-     morning to find out what is broken and what is on, and the old name
-     promised a summary of everything instead. */
+     The page still answers "what has to happen today"; it is the NAME that
+     stopped being useful. "Overview" promised a summary of everything, "Today"
+     promised a filter, and neither told somebody arriving where they were. */
   {
     title: "Run",
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Sparkles },
-      { label: "Today", href: "/console", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
@@ -159,7 +161,7 @@ const ADMINISTRATOR: Section[] = [
     title: "Run",
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Sparkles },
-      { label: "Today", href: "/console", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
@@ -189,7 +191,7 @@ const TEACHER: Section[] = [
     title: "Run",
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Sparkles },
-      { label: "Today", href: "/console", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Timetable", href: "/console/calendar", icon: CalendarRange },

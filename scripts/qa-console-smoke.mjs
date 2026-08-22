@@ -457,7 +457,7 @@ async function main() {
   }
 
   const ownerPages = [
-    ["/console", "Today"],
+    ["/console", "Dashboard"],
     ["/console/groups", null],
     [`/console/groups/${group.id}`, "QA Active"],
     [`/console/groups/${group.id}?tab=practice`, "All practice"],
