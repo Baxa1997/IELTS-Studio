@@ -4,7 +4,13 @@ import type { RawProposal } from "@/lib/console/assistant";
 
 import { generate } from "@/lib/ai";
 import { requireOrgUser } from "@/lib/auth";
-import { describeActions, loadCentreSnapshot, vetProposals } from "@/lib/console/assistant";
+import {
+  describeActions,
+  describeDocuments,
+  loadCentreSnapshot,
+  vetDocuments,
+  vetProposals,
+} from "@/lib/console/assistant";
 import { appendExchange } from "@/lib/console/assistant-thread";
 
 export const runtime = "nodejs";
@@ -58,22 +64,33 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const { content } = await generate({
       kind: "console_assistant",
-      spec: { question, snapshot: snapshot.text, history, actions: actionText },
+      spec: {
+        question,
+        snapshot: snapshot.text,
+        history,
+        actions: actionText,
+        documents: describeDocuments(profile.role),
+      },
       meta: { organizationId: profile.organization_id, userId: profile.id },
     });
 
     const parsed = parse(content);
-    const proposals = vetProposals(parsed.proposals, {
+    const vetCtx = {
       role: profile.role,
       groups: new Set(snapshot.groupIds.keys()),
       students: snapshot.studentNames,
+    };
+    const proposals = vetProposals(parsed.proposals, vetCtx);
+    const documents = vetDocuments(parsed.documents, {
+      ...vetCtx,
+      studentIds: snapshot.studentIds,
     });
 
     // After the reply exists, never before: a thread showing a question with
     // no answer reads as though the assistant ignored somebody.
     await appendExchange(profile, question, parsed.reply, proposals);
 
-    return NextResponse.json({ reply: parsed.reply, proposals }, { status: 200 });
+    return NextResponse.json({ reply: parsed.reply, proposals, documents }, { status: 200 });
   } catch (err) {
     console.error("[console-assistant]", err);
     return fail(502, "assistant_failed", "The assistant is busy — try again in a moment.");
@@ -83,7 +100,11 @@ export async function POST(req: Request): Promise<Response> {
 /** The model is asked for JSON and usually obliges. When it does not, its prose
  *  is still a perfectly good answer — so a parse failure degrades to "reply
  *  only" rather than to an error the person cannot act on. */
-function parse(content: string): { reply: string; proposals: RawProposal[] } {
+function parse(content: string): {
+  reply: string;
+  proposals: RawProposal[];
+  documents: { doc: string; args: Record<string, unknown> }[];
+} {
   const start = content.indexOf("{");
   const end = content.lastIndexOf("}");
   if (start >= 0 && end > start) {
@@ -91,6 +112,7 @@ function parse(content: string): { reply: string; proposals: RawProposal[] } {
       const obj = JSON.parse(content.slice(start, end + 1)) as {
         reply?: unknown;
         proposals?: unknown;
+        documents?: unknown;
       };
       const reply = String(obj.reply ?? "").trim();
       const proposals = Array.isArray(obj.proposals)
@@ -100,12 +122,18 @@ function parse(content: string): { reply: string; proposals: RawProposal[] } {
             why: String(p.why ?? ""),
           }))
         : [];
-      if (reply) return { reply, proposals };
+      const documents = Array.isArray(obj.documents)
+        ? (obj.documents as Record<string, unknown>[]).map((d) => ({
+            doc: String(d.doc ?? ""),
+            args: (d.args ?? {}) as Record<string, unknown>,
+          }))
+        : [];
+      if (reply) return { reply, proposals, documents };
     } catch {
       /* falls through to the prose below */
     }
   }
-  return { reply: content.trim(), proposals: [] };
+  return { reply: content.trim(), proposals: [], documents: [] };
 }
 
 function fail(status: number, code: string, message?: string): Response {

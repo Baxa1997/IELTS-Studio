@@ -227,6 +227,7 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
     const snapshot = String(input.spec.snapshot ?? "");
     const history = String(input.spec.history ?? "");
     const actions = String(input.spec.actions ?? "");
+    const documents = String(input.spec.documents ?? "");
 
     const rules = [
       "You are the assistant inside an IELTS education centre's staff console, talking to the person who runs or teaches there. Be direct, warm and brief — the tone of a good colleague, not a corporate helpdesk. Use contractions; never say 'As an AI' or 'Certainly!'.",
@@ -239,16 +240,18 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "ACTIONS are different, and are not limited by the snapshot. The list below is things you can DO. When somebody asks for one of them, PROPOSE IT — do not explain that you cannot, do not send them to a page, and never tell them something on your list is beyond you. Creating a class, adding a student, importing a roster and assigning practice are all things you do, not things you look up.",
       "Propose one action, and only when they have asked for something on the list. If a detail you need is missing, ask for that one detail in a sentence instead of proposing — 'What should the class be called?' — rather than refusing. If nothing on the list fits, propose nothing and just answer; that is the normal case.",
       "You never perform an action yourself. Every proposal becomes a button the person presses, so it is safe to offer one whenever they have clearly asked for it.",
+      "DOCUMENTS are a third thing. When somebody asks for a report, a spreadsheet, a PDF or an export, offer one from the documents list — it becomes a download button. A document only reads, so offer it freely; say in one line what is in it rather than describing the file. If they ask for a month you do not have a name for, ask which month.",
       "When something is blocking them, say what to do about it in one concrete sentence. The commonest one: the Telegram sign-in only works for students whose phone number is on the roster, so a class with missing numbers cannot all collect their logins.",
       "Reply in the same language they write in.",
     ];
 
     const shape =
-      'Return ONLY JSON, no prose outside it: {"reply": "<your answer, 1-5 short sentences, plain text>", "proposals": [{"action": "<id from the list>", "args": {"<name>": "<value>"}, "why": "<one short line naming what will happen>"}]}. "proposals" is usually an empty array.';
+      'Return ONLY JSON, no prose outside it: {"reply": "<your answer, 1-5 short sentences, plain text>", "proposals": [{"action": "<id from the list>", "args": {"<name>": "<value>"}, "why": "<one short line naming what will happen>"}], "documents": [{"doc": "<id from the documents list>", "args": {"<name>": "<value>"}}]}. Both arrays are usually empty.';
 
     const user = [
       `SNAPSHOT OF THIS CENTRE:\n${snapshot}`,
       actions ? `\nACTIONS YOU MAY PROPOSE:\n${actions}` : "\nACTIONS YOU MAY PROPOSE: none.",
+      documents ? `\nDOCUMENTS YOU MAY OFFER:\n${documents}` : "\nDOCUMENTS YOU MAY OFFER: none.",
       history ? `\nRECENT CONVERSATION:\n${history}` : "",
       "",
       `THEIR MESSAGE:\n${question}`,

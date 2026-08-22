@@ -397,6 +397,25 @@ async function main() {
         : `HTTP ${doIt.status}`,
     );
 
+    // Asked for a spreadsheet, the owner should get a download link — and it
+    // has to point at the export route with the month it was given, not a
+    // month the model liked the sound of.
+    const wantFile = await fetch(`${BASE}/api/console/assistant`, {
+      method: "POST",
+      headers: { cookie: ownerCookie, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question: "Give me the debtors report for August 2026 as a spreadsheet.",
+      }),
+    });
+    const filed = await wantFile.json().catch(() => ({}));
+    const doc = (filed.documents ?? [])[0];
+    check(
+      "asked for a spreadsheet, it hands over a download",
+      wantFile.status === 200 &&
+        doc?.href?.startsWith("/api/console/finance/export?report=debtors&format=xlsx"),
+      doc ? doc.href : `no document (${(filed.documents ?? []).length})`,
+    );
+
     check(
       "it proposes only allow-listed actions",
       Array.isArray(answer.proposals) &&

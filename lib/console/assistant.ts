@@ -39,6 +39,10 @@ export interface CentreSnapshot {
   groupIds: Map<string, string>;
   /** Lower-cased student names, same purpose. */
   studentNames: Set<string>;
+  /** Lower-cased name → id, for building a link to somebody's own report. The
+   *  id is resolved SERVER-SIDE and never shown to the model; it reaches the
+   *  browser only inside a URL that RLS gates anyway. */
+  studentIds: Map<string, string>;
 }
 
 const MAX_GROUPS = 25;
@@ -62,6 +66,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
   const memberPhones = new Map<string, { total: number; withPhone: number }>();
   const roster = new Map<string, string[]>();
   const studentNames = new Set<string>();
+  const studentIds = new Map<string, string>();
   if (shown.length > 0) {
     const { data: members } = await supabase
       .from("group_members")
@@ -97,6 +102,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
       const name = who?.full_name?.trim();
       if (!name) continue;
       studentNames.add(name.toLowerCase());
+      studentIds.set(name.toLowerCase(), m.student_id);
       const list = roster.get(byGroup.get(m.group_id) ?? "") ?? [];
       if (list.length < 40) {
         list.push(`${name}${hasPhone.has(m.student_id) ? "" : " (no phone)"}`);
@@ -163,6 +169,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
     text: lines.join("\n"),
     groupIds,
     studentNames,
+    studentIds,
   };
 }
 
@@ -177,7 +184,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
    assistant that can undo nothing should not be the fastest route to the
    things that cannot be undone. */
 
-export type ArgKind = "group" | "student" | "text" | "choice" | "date";
+export type ArgKind = "group" | "student" | "text" | "choice" | "date" | "month";
 
 export interface ArgSpec {
   name: string;
@@ -469,6 +476,150 @@ export function vetProposals(raw: RawProposal[], ctx: VetContext): VettedProposa
         choices: a.choices,
         required: a.required === true,
       })),
+    });
+    if (out.length === 1) break;
+  }
+  return out;
+}
+
+
+/* ── files it can hand you ──────────────────────────────────────────────────
+
+   A THIRD KIND OF REPLY, next to prose and a proposal. A document changes
+   nothing, so it does NOT get a confirm step: making somebody press twice for
+   a read-only report is friction dressed up as safety. What it does get is the
+   same role check as the route behind it — finance is the owner's alone, and a
+   teacher must never be handed a debtors sheet.
+
+   Nothing here generates a file. Each entry points at a route that already
+   exists and already authenticates; this is only a vetted way to reach one. */
+
+export interface DocSpec {
+  id: string;
+  /** Shown on the download button. */
+  verb: string;
+  describe: string;
+  roles: readonly string[];
+  args: readonly ArgSpec[];
+  /** Built from vetted args plus anything the caller's own snapshot resolves. */
+  href: (args: Record<string, string>, ctx: { studentIds: Map<string, string> }) => string | null;
+}
+
+const REPORTS = ["summary", "ledger", "expenses", "payroll", "debtors"] as const;
+
+export const DOCUMENTS: readonly DocSpec[] = [
+  {
+    id: "finance_report",
+    verb: "Download",
+    describe:
+      "A finance report as a spreadsheet or a PDF: summary, ledger, expenses, payroll or debtors, for one month. Only the centre owner can have these.",
+    roles: ["center_admin"],
+    args: [
+      {
+        name: "report",
+        kind: "choice",
+        describe: "which report",
+        choices: REPORTS,
+        required: true,
+      },
+      {
+        name: "format",
+        kind: "choice",
+        describe: "the file type",
+        choices: ["xlsx", "pdf"],
+        required: true,
+      },
+      { name: "month", kind: "month", describe: "the month as YYYY-MM", required: true },
+    ],
+    href: (a) =>
+      `/api/console/finance/export?report=${a.report}&format=${a.format}&month=${a.month}-01`,
+  },
+  {
+    id: "student_report",
+    verb: "Download the PDF",
+    describe:
+      "One student's progress report as a PDF — their bands across the four skills, what keeps coming up, and every practice they have done.",
+    roles: ["center_admin", "administrator", "teacher"],
+    args: [{ name: "student", kind: "student", describe: "the student's name", required: true }],
+    href: (a, ctx) => {
+      const id = ctx.studentIds.get((a.student ?? "").toLowerCase());
+      return id ? `/api/console/students/${id}/report` : null;
+    },
+  },
+] as const;
+
+export function documentById(id: string): DocSpec | null {
+  return DOCUMENTS.find((d) => d.id === id) ?? null;
+}
+
+export function describeDocuments(role: string): string {
+  return DOCUMENTS.filter((d) => d.roles.includes(role))
+    .map((d) => {
+      const args = d.args
+        .map(
+          (x) =>
+            `${x.name}${x.required ? "" : "?"}=<${x.describe}${x.choices ? `: ${x.choices.join("|")}` : ""}>`,
+        )
+        .join(", ");
+      return `  • ${d.id} — ${d.describe}\n    args: ${args}`;
+    })
+    .join("\n");
+}
+
+export interface VettedDocument {
+  doc: string;
+  verb: string;
+  label: string;
+  href: string;
+}
+
+/**
+ * The same gate as `vetProposals`, for files. Fails closed on an unknown id, a
+ * role that may not have it, a missing argument, a choice outside its list, a
+ * malformed month, or a student this person cannot already see.
+ */
+export function vetDocuments(
+  raw: { doc: string; args: Record<string, unknown> }[],
+  ctx: VetContext & { studentIds: Map<string, string> },
+): VettedDocument[] {
+  const out: VettedDocument[] = [];
+  for (const d of raw) {
+    const spec = documentById(d.doc);
+    if (!spec || !spec.roles.includes(ctx.role)) continue;
+
+    const args: Record<string, string> = {};
+    let ok = true;
+    for (const arg of spec.args) {
+      const value = String(d.args?.[arg.name] ?? "").trim();
+      if (!value) {
+        if (arg.required) ok = false;
+        if (!ok) break;
+        continue;
+      }
+      if (arg.kind === "student" && !ctx.students.has(value.toLowerCase())) {
+        ok = false;
+        break;
+      }
+      if (arg.kind === "choice" && !(arg.choices ?? []).includes(value)) {
+        ok = false;
+        break;
+      }
+      if (arg.kind === "month" && !/^\d{4}-\d{2}$/.test(value)) {
+        ok = false;
+        break;
+      }
+      args[arg.name] = value.slice(0, 120);
+    }
+    if (!ok) continue;
+
+    const href = spec.href(args, ctx);
+    if (!href) continue;
+
+    out.push({
+      doc: spec.id,
+      verb: spec.verb,
+      label: Object.values(args).join(" · "),
+      href,
     });
     if (out.length === 1) break;
   }

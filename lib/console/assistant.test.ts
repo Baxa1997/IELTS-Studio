@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { ACTIONS, describeActions, vetProposals, type VetContext } from "./assistant";
+import {
+  ACTIONS,
+  DOCUMENTS,
+  describeActions,
+  describeDocuments,
+  vetDocuments,
+  vetProposals,
+  type VetContext,
+} from "./assistant";
 
 /**
  * The gate between what a model said and what a person is offered a button for.
@@ -213,5 +221,71 @@ describe("action permissions match the server actions they call", () => {
   it("still keeps hiring to the owner", () => {
     expect(describeActions("teacher")).not.toContain("add_teacher");
     expect(describeActions("administrator")).not.toContain("add_teacher");
+  });
+});
+
+/**
+ * Files are the third kind of reply, and they get the same gate. The one that
+ * matters most here is finance: a teacher must never be handed a debtors
+ * sheet, and the export route refuses them — so the assistant must refuse them
+ * first, rather than offer a button that 403s.
+ */
+describe("vetDocuments", () => {
+  const docCtx = { ...ctx, studentIds: new Map([["madina zaynidinova", "stu-1"]]) };
+  const offer = (doc: string, args: Record<string, unknown>) => [{ doc, args }];
+
+  it("gives the owner a finance report with the right link", () => {
+    const [d] = vetDocuments(
+      offer("finance_report", { report: "debtors", format: "xlsx", month: "2026-08" }),
+      docCtx,
+    );
+    expect(d.href).toBe(
+      "/api/console/finance/export?report=debtors&format=xlsx&month=2026-08-01",
+    );
+  });
+
+  it("refuses a teacher the finance reports, as the route itself does", () => {
+    expect(
+      vetDocuments(offer("finance_report", { report: "debtors", format: "xlsx", month: "2026-08" }), {
+        ...docCtx,
+        role: "teacher",
+      }),
+    ).toEqual([]);
+  });
+
+  it("drops an unknown report or format", () => {
+    expect(
+      vetDocuments(offer("finance_report", { report: "everything", format: "xlsx", month: "2026-08" }), docCtx),
+    ).toEqual([]);
+    expect(
+      vetDocuments(offer("finance_report", { report: "ledger", format: "docx", month: "2026-08" }), docCtx),
+    ).toEqual([]);
+  });
+
+  it("drops a month it cannot parse rather than guessing one", () => {
+    expect(
+      vetDocuments(offer("finance_report", { report: "ledger", format: "pdf", month: "August" }), docCtx),
+    ).toEqual([]);
+  });
+
+  it("links a student report only for somebody already visible", () => {
+    const [d] = vetDocuments(offer("student_report", { student: "Madina Zaynidinova" }), docCtx);
+    expect(d.href).toBe("/api/console/students/stu-1/report");
+    expect(vetDocuments(offer("student_report", { student: "A Stranger" }), docCtx)).toEqual([]);
+  });
+
+  it("offers nothing for a document id that does not exist", () => {
+    expect(vetDocuments(offer("payroll_of_a_rival_centre", {}), docCtx)).toEqual([]);
+  });
+
+  it("tells a teacher about the student report and not the money", () => {
+    const text = describeDocuments("teacher");
+    expect(text).toContain("student_report");
+    expect(text).not.toContain("finance_report");
+    expect(describeDocuments("center_admin")).toContain("finance_report");
+  });
+
+  it("keeps every document pinned to a role", () => {
+    for (const d of DOCUMENTS) expect(d.roles.length).toBeGreaterThan(0);
   });
 });

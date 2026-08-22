@@ -44,10 +44,18 @@ export interface Proposal {
   fields: ProposalField[];
 }
 
+export interface DocumentOffer {
+  doc: string;
+  verb: string;
+  label: string;
+  href: string;
+}
+
 interface Turn {
   role: "user" | "assistant";
   content: string;
   proposals?: Proposal[];
+  documents?: DocumentOffer[];
   roster?: string[];
 }
 
@@ -156,6 +164,7 @@ export function AssistantChat({
       const data = (await res.json()) as {
         reply?: string;
         proposals?: Proposal[];
+        documents?: DocumentOffer[];
         message?: string;
       };
       if (!res.ok) {
@@ -168,6 +177,7 @@ export function AssistantChat({
           role: "assistant",
           content: data.reply ?? "",
           proposals: data.proposals ?? [],
+          documents: data.documents ?? [],
           roster: carried?.lines,
         },
       ]);
@@ -754,6 +764,9 @@ function Bubble({ turn, onAsk }: { turn: Turn; onAsk: (text: string) => void }) 
         <div style={{ fontSize: 15, lineHeight: 1.6, color: BODY, whiteSpace: "pre-wrap" }}>
           {turn.content}
         </div>
+        {(turn.documents ?? []).map((d) => (
+          <DocumentCard key={d.doc + d.href} offer={d} />
+        ))}
         {(turn.proposals ?? []).map((p) => (
           <ProposalCard
             key={p.action + JSON.stringify(p.args)}
@@ -764,6 +777,73 @@ function Bubble({ turn, onAsk }: { turn: Turn; onAsk: (text: string) => void }) 
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * A file it can hand you.
+ *
+ * NO CONFIRM STEP, and that is deliberate. A proposal needs one because it
+ * changes something; a report only reads, so a second press would be friction
+ * dressed up as safety. The route behind the link authenticates on its own —
+ * finance refuses anyone but the owner, and a student report is gated by
+ * `can_view_student` — so the link is not the permission.
+ *
+ * A real navigation rather than fetch-and-blob: the browser gets a filename
+ * and its own download UI, which is what somebody asking for a spreadsheet
+ * expects to happen.
+ */
+function DocumentCard({ offer }: { offer: DocumentOffer }) {
+  return (
+    <a
+      href={offer.href}
+      className="cn-cap"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        border: `1px solid ${FIELD}`,
+        borderRadius: 14,
+        background: "#fff",
+        padding: "13px 15px",
+        textDecoration: "none",
+      }}
+    >
+      <span
+        style={{
+          width: 34,
+          height: 34,
+          flex: "none",
+          borderRadius: 10,
+          background: "#eaf5ee",
+          color: "#1f6b45",
+          display: "grid",
+          placeItems: "center",
+        }}
+      >
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M12 4v11" />
+          <path d="m7.5 11 4.5 4.5 4.5-4.5" />
+          <path d="M5 19h14" />
+        </svg>
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: INK }}>
+          {offer.verb}
+        </span>
+        <span style={{ display: "block", fontSize: 13, color: DIM }}>{offer.label}</span>
+      </span>
+    </a>
   );
 }
 
