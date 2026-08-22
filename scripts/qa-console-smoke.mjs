@@ -113,6 +113,15 @@ async function signInAs(email) {
   return chunks.join("; ");
 }
 
+async function fetchOnce(url, cookie) {
+  try {
+    return await fetch(url, { headers: { cookie }, redirect: "manual" });
+  } catch {
+    await new Promise((r) => setTimeout(r, 1500));
+    return fetch(url, { headers: { cookie }, redirect: "manual" });
+  }
+}
+
 /**
  * A 200 is not proof. Next renders its error boundary with a 200 in dev, and a
  * loader that quietly returned nothing renders a page that is technically fine
@@ -120,7 +129,12 @@ async function signInAs(email) {
  * the page's own content actually made it out.
  */
 async function loadPage(cookie, path, mustContain) {
-  const res = await fetch(`${BASE}${path}`, { headers: { cookie }, redirect: "manual" });
+  // ONE RETRY, because a dropped connection is not a broken page. The dev
+  // server occasionally refuses a socket mid-run — twice in one afternoon —
+  // and a whole suite reporting FAILED on a network blip teaches people to
+  // re-run it rather than read it, which is how a real failure gets waved
+  // through. A genuinely broken page fails both attempts.
+  const res = await fetchOnce(`${BASE}${path}`, cookie);
   const html = res.status === 200 ? await res.text() : "";
 
   if (res.status === 307 || res.status === 302) {
@@ -495,26 +509,105 @@ async function main() {
   console.log(`\n${pass} passed, ${fail} failed\n`);
 }
 
+/**
+ * Anything a PREVIOUS run left behind.
+ *
+ * WHY THIS EXISTS. `cleanup` only knows what this process created, in memory —
+ * so a run that is killed rather than finished (a timeout, a Ctrl-C, a pkill)
+ * leaks every account it had made by then. That is not hypothetical: 36 auth
+ * users and an organisation accumulated in the real project across one
+ * afternoon of interrupted runs, and were then read back as real students,
+ * which turned a test artefact into a wrong conclusion about the product.
+ *
+ * Sweeping at the START is what makes it self-healing: a leak survives at most
+ * until the next run, whatever killed the last one — including a SIGKILL that
+ * no handler can catch.
+ *
+ * STRICTLY PREFIX-SCOPED. Everything this script creates is named
+ * `qa-smoke-<timestamp>`; anything without that prefix belongs to somebody real
+ * and is never touched, whatever else it looks like.
+ */
+async function sweepLeftovers() {
+  let orgs = 0;
+  let users = 0;
+  try {
+    const { data: stale } = await admin
+      .from("organizations")
+      .select("id")
+      .like("name", "qa-smoke-%");
+    for (const o of stale ?? []) {
+      await admin.from("organizations").delete().eq("id", o.id);
+      orgs += 1;
+    }
+    const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    for (const u of data?.users ?? []) {
+      if (!/^qa-smoke-\d+/.test(u.email ?? "")) continue;
+      await admin.auth.admin.deleteUser(u.id);
+      users += 1;
+    }
+  } catch (err) {
+    console.log(`  (could not sweep leftovers: ${err.message})`);
+  }
+  if (orgs || users) {
+    console.log(`Swept ${orgs} org(s) and ${users} account(s) left by an interrupted run.\n`);
+  }
+}
+
 async function cleanup() {
   if (keep) {
     console.log("--keep: the centre is still there.\n");
     return;
   }
-  for (const id of made.users) {
-    try {
-      await admin.auth.admin.deleteUser(id);
-    } catch {
-      /* already gone */
-    }
-  }
+  // ORGS FIRST, THEN ACCOUNTS, and the order is the whole fix.
+  //
+  // `writing_prompts.created_by` and `reading_tests.created_by` reference
+  // `profiles (id)` with no delete rule at all, which defaults to NO ACTION —
+  // so deleting the teacher's auth user cascades into their profile and is then
+  // blocked by the prompt they generated. GoTrue reports that as a bare 500
+  // with an empty body, which is why it looked like nothing was wrong.
+  //
+  // Deleting the organisation first takes the prompts and tests with it
+  // (they cascade on organization_id), leaving nothing pointing at the profile.
+  // `sweepLeftovers` already worked in this order, which is how the difference
+  // was spotted: it could delete the very account `cleanup` could not.
   for (const id of made.orgIds) {
     const { error } = await admin.from("organizations").delete().eq("id", id);
     if (error) console.log(`  (leftover org ${id}: ${error.message})`);
   }
+  for (const id of made.users) {
+    // SAY WHY IT FAILED. This used to swallow the error, and one account
+    // survived every single run while the script printed "Cleaned up." — the
+    // exact shape of bug this suite exists to catch, in the suite itself.
+    try {
+      const { error } = await admin.auth.admin.deleteUser(id);
+      if (error) {
+        console.log(
+          `  (could not delete account ${id}: ${error.message || error.name || "?"}` +
+            ` status=${error.status ?? "?"} code=${error.code ?? "?"})`,
+        );
+      }
+    } catch (err) {
+      console.log(`  (could not delete account ${id}: ${err.message})`);
+    }
+  }
   console.log("Cleaned up.\n");
 }
 
+// A killed run still tears down what it can. SIGKILL cannot be caught — which
+// is exactly why `sweepLeftovers` runs at the start as well.
+let tearingDown = false;
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.on(signal, async () => {
+    if (tearingDown) return;
+    tearingDown = true;
+    console.log(`\nInterrupted (${signal}) — cleaning up before exit.`);
+    await cleanup();
+    process.exit(1);
+  });
+}
+
 try {
+  await sweepLeftovers();
   await main();
 } catch (err) {
   console.error("\nFAILED:", err.message, "\n");
