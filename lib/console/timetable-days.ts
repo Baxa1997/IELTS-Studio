@@ -117,3 +117,148 @@ export const toHHMM = (minutes: number): string =>
 
 /** `09:00:00` from Postgres, `09:00` from a form — both land as `09:00`. */
 export const trimTime = (t: string): string => t.slice(0, 5);
+
+/* ── reading a schedule out of a sentence ─────────────────────────────────────
+
+   THE ASSISTANT NEEDS THIS AND THE FORM DOES NOT. A person ticks boxes; a
+   person TALKING to the console says "dushanba, chorshanba, juma, 15:30 dan
+   17:00 gacha" and expects the class to come out with three lessons on it. The
+   assistant used to drop every word of that — the class was created with no
+   timetable at all, which is the number every prorated fee and salary divides
+   by — so the parsing has to live somewhere both it and the tests can reach.
+
+   Three languages because that is what gets typed into this product: English,
+   Uzbek (Latin and Cyrillic) and Russian. */
+
+/** Day names, longest first so `dushanba` is never read as `shanba`. */
+const DAY_ALIASES: readonly (readonly [string, number])[] = (
+  [
+    ["sunday", 0],
+    ["sun", 0],
+    ["yakshanba", 0],
+    ["якшанба", 0],
+    ["воскресенье", 0],
+    ["вс", 0],
+    ["monday", 1],
+    ["mon", 1],
+    ["dushanba", 1],
+    ["душанба", 1],
+    ["понедельник", 1],
+    ["пн", 1],
+    ["tuesday", 2],
+    ["tues", 2],
+    ["tue", 2],
+    ["seshanba", 2],
+    ["сешанба", 2],
+    ["вторник", 2],
+    ["вт", 2],
+    ["wednesday", 3],
+    ["weds", 3],
+    ["wed", 3],
+    ["chorshanba", 3],
+    ["чоршанба", 3],
+    ["среда", 3],
+    ["ср", 3],
+    ["thursday", 4],
+    ["thurs", 4],
+    ["thur", 4],
+    ["thu", 4],
+    ["payshanba", 4],
+    ["пайшанба", 4],
+    ["четверг", 4],
+    ["чт", 4],
+    ["friday", 5],
+    ["fri", 5],
+    ["juma", 5],
+    ["жума", 5],
+    ["пятница", 5],
+    ["пт", 5],
+    ["saturday", 6],
+    ["sat", 6],
+    ["shanba", 6],
+    ["шанба", 6],
+    ["суббота", 6],
+    ["сб", 6],
+  ] as [string, number][]
+).sort((a, b) => b[0].length - a[0].length);
+
+/** Whole-string rhythms, in the words a centre actually sells them in. */
+const DAY_PHRASES: readonly (readonly [string, readonly number[]])[] = [
+  ["odd day", [1, 3, 5]],
+  ["toq kun", [1, 3, 5]],
+  ["нечет", [1, 3, 5]],
+  ["even day", [2, 4, 6]],
+  ["juft kun", [2, 4, 6]],
+  ["чет", [2, 4, 6]],
+  ["weekend", [6, 0]],
+  ["dam olish", [6, 0]],
+  ["выходн", [6, 0]],
+  ["every weekday", [1, 2, 3, 4, 5, 6]],
+  ["har kuni", [1, 2, 3, 4, 5, 6]],
+  ["ежедневно", [1, 2, 3, 4, 5, 6]],
+];
+
+/**
+ * "Monday, Wednesday and Friday" → `[1, 3, 5]`.
+ *
+ * Returns an empty array when nothing in the text is a day, which the callers
+ * read as "no schedule was asked for" — never as a schedule of no days.
+ *
+ * Matching is per WORD and longest-alias-first, not a bare substring sweep:
+ * `shanba` is Saturday but it is also the tail of four other Uzbek day names,
+ * so a sweep would put every class on a Saturday.
+ */
+export function parseWeekdays(input: string): number[] {
+  const text = input.toLowerCase();
+  if (!text.trim()) return [];
+
+  const found = new Set<number>();
+  for (const [phrase, days] of DAY_PHRASES) {
+    if (text.includes(phrase)) for (const d of days) found.add(d);
+  }
+  for (const token of text.split(/[^\p{L}]+/u)) {
+    if (!token) continue;
+    const hit = DAY_ALIASES.find(([alias]) => token.startsWith(alias));
+    if (hit) found.add(hit[1]);
+  }
+  return [...found].sort((a, b) => WEEK_ORDER.indexOf(a as never) - WEEK_ORDER.indexOf(b as never));
+}
+
+/** `[1, 3, 5]` → "Monday, Wednesday, Friday" — the editable form of a day list.
+ *  Long names rather than `describeDays`' "Mon · Wed · Fri", because this one
+ *  goes in a text box somebody may retype. */
+export function listDays(days: number[]): string {
+  return days.map((d) => WEEKDAYS[d]?.long ?? "?").join(", ");
+}
+
+/**
+ * A time, however it was written, as `HH:MM` — or null if it is not one.
+ *
+ * `15:30`, `15.30`, `1530`, `3:30 pm`, `9am` all land as a 24-hour clock,
+ * because the confirm card's field is typed by hand and refusing `15.30` for
+ * the sake of a colon is the kind of pedantry that sends people back to the
+ * form they were trying to avoid.
+ */
+export function parseClockTime(input: string): string | null {
+  const text = input.trim().toLowerCase();
+  if (!text) return null;
+
+  const m = /^(\d{1,2})(?:[:.\s]?(\d{2}))?\s*(am|pm)?$/.exec(text);
+  if (!m) return null;
+
+  // `1530` needs no special case: the leading group caps at two digits, so it
+  // backtracks to 15 + 30 on its own.
+  let hour = Number(m[1]);
+  const minute = m[2] ? Number(m[2]) : 0;
+  const meridiem = m[3];
+
+  if (meridiem === "pm" && hour < 12) hour += 12;
+  if (meridiem === "am" && hour === 12) hour = 0;
+  return clock(hour, minute);
+}
+
+function clock(hour: number, minute: number): string | null {
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}

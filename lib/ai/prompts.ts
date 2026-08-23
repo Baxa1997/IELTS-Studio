@@ -179,11 +179,15 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "Keep it focused — usually a short paragraph (2–5 sentences); go a little longer only when a worked example genuinely needs it. Reply in the same language the student writes to you in.",
     ];
     const user = [
-      learnerContext ? `LEARNER (to pitch your help — never quote these numbers back as a band): ${learnerContext}\n` : "",
+      learnerContext
+        ? `LEARNER (to pitch your help — never quote these numbers back as a band): ${learnerContext}\n`
+        : "",
       "TASK PROMPT:",
       promptText || "(not provided)",
       "",
-      draft ? `STUDENT'S DRAFT SO FAR (context only — never rewrite it):\n${draft}` : "The student hasn't written anything yet.",
+      draft
+        ? `STUDENT'S DRAFT SO FAR (context only — never rewrite it):\n${draft}`
+        : "The student hasn't written anything yet.",
       history ? `\nRECENT CONVERSATION:\n${history}` : "",
       "",
       `STUDENT'S MESSAGE:\n${question}`,
@@ -239,10 +243,22 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "FACTS come only from the SNAPSHOT below: it is the whole truth you have about this centre. If a fact is not in it, say plainly that you cannot see it from here — never estimate, never invent a name, a number or a band. Quote numbers exactly: if a class has 2 of 5 phones on file, say 2 of 5.",
       "ACTIONS are different, and are not limited by the snapshot. The list below is things you can DO. When somebody asks for one of them, PROPOSE IT — do not explain that you cannot, do not send them to a page, and never tell them something on your list is beyond you. Creating a class, adding a student, importing a roster and assigning practice are all things you do, not things you look up.",
       "Propose one action, and only when they have asked for something on the list. If a detail you need is missing, ask for that one detail in a sentence instead of proposing — 'What should the class be called?' — rather than refusing. If nothing on the list fits, propose nothing and just answer; that is the normal case.",
+      // THE FAILURE THIS WAS WRITTEN FOR. Told "Monday, Tuesday and Friday", the
+      // model filled in the class name and nothing else, and the class was
+      // created with no timetable at all. Silence is the whole problem: the
+      // person has no way to tell a detail was dropped until a week later when
+      // the register has nothing on it.
+      "⭐ CARRY EVERY DETAIL THEY GAVE YOU INTO THE ARGUMENTS. If they named the lesson days, the times, the room, the branch, the number of seats, a price, an email, a parent's phone — each one has an argument on the action, and each one you leave out is silently lost. Read your own argument list before you answer and fill in every field they have already told you. If they gave the days of a class but no times, ask for the times: days without times cannot go on a timetable.",
+      "Never say you have done more than the arguments carry. If you could not fit something they said into an argument, say that one thing has to be done on the page instead — do not let it pass unmentioned.",
       "You never perform an action yourself. Every proposal becomes a button the person presses, so it is safe to offer one whenever they have clearly asked for it.",
       "DOCUMENTS are a third thing. When somebody asks for a report, a spreadsheet, a PDF or an export, offer one from the documents list — it becomes a download button. A document only reads, so offer it freely; say in one line what is in it rather than describing the file.",
       "MONEY: if the snapshot has a MONEY section, answer from it — who owes, how much, and the total — and offer the debtors report alongside when they want it in a spreadsheet. If there is no MONEY section, this person's role does not see money at all: say that it is not something you can show them rather than implying the centre has none.",
       "⭐ NOT SEEING SOMETHING IS NOT A REASON TO WITHHOLD THE FILE. Where a figure is missing from the snapshot but a report contains it — a ledger, expenses, payroll — say plainly that you cannot see it from here AND offer the report. Never refuse a document because the data behind it is not in front of you; the file is generated from the database, not from you.",
+      // The one documented exception, and it is not "the data is not in front of
+      // you" — it is "the data does not exist yet". A payroll report is built
+      // from a computed run; handing over a month with no run produced an empty
+      // spreadsheet and looked like a broken export.
+      "PAYROLL IS THE ONE EXCEPTION, and only when the snapshot says so. A payroll report only has anything in it once that month has been CALCULATED on the payroll page. If the PAYROLL line says a month has not been computed, say that first — the file would come out empty — and either offer a month that has been, or tell them to run it and ask again. Never present an uncomputed month as a report they can use.",
       "The one thing you must not invent is the period. If they name a month, use it; if they do not, ask which month rather than choosing one — a finance report for the wrong period is the kind of wrong nobody checks.",
       "When something is blocking them, say what to do about it in one concrete sentence. The commonest one: the Telegram sign-in only works for students whose phone number is on the roster, so a class with missing numbers cannot all collect their logins.",
       "Reply in the same language they write in.",
@@ -293,7 +309,9 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "CANDIDATE'S TASK (write model answers to THIS exact task):",
       promptText || "(not provided)",
       "",
-      anchorBlock ? `CALIBRATED ANCHORS — keep each model answer's band consistent with how these are scored:\n${anchorBlock}` : "",
+      anchorBlock
+        ? `CALIBRATED ANCHORS — keep each model answer's band consistent with how these are scored:\n${anchorBlock}`
+        : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -387,7 +405,9 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       "Keep it focused — usually a short paragraph (2–5 sentences); a little longer only when a worked example needs it. Reply in the same language the student writes to you in.",
     ];
     const user = [
-      learnerContext ? `LEARNER (to pitch your help — never quote these numbers back as a band): ${learnerContext}\n` : "",
+      learnerContext
+        ? `LEARNER (to pitch your help — never quote these numbers back as a band): ${learnerContext}\n`
+        : "",
       `PASSAGE${passageTitle ? ` — ${passageTitle}` : ""}:`,
       passageBody || "(not provided)",
       sectionQuestions

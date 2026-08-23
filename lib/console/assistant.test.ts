@@ -187,6 +187,7 @@ describe("action permissions match the server actions they call", () => {
     move_student: ["center_admin", "administrator", "teacher"],
     mark_student_left: ["center_admin", "administrator", "teacher"],
     create_group: ["center_admin", "administrator", "teacher"],
+    set_schedule: ["center_admin", "administrator", "teacher"],
     // canManagePeople(role)
     assign_teacher: ["center_admin", "administrator"],
     close_group: ["center_admin", "administrator"],
