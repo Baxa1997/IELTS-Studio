@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../marketing";
 
 export const metadata: Metadata = {
-  title: "IELTS Practice Online — Writing, Reading & Listening",
+  title: "IELTS Practice Online — Writing, Reading, Listening & Speaking",
   description:
-    "Unlimited IELTS practice with strict AI band feedback: Cambridge-style Writing tasks, Reading passages and full 4-part Listening tests. Start free — no card needed.",
+    "Unlimited IELTS practice with strict AI band feedback across all four skills — Cambridge-style Writing tasks, Reading passages, full 4-part Listening tests and a three-part Speaking mock. Start free — no card needed.",
   alternates: { canonical: "/ielts-practice" },
   robots: { index: true, follow: true },
 };
@@ -15,10 +15,10 @@ export default function IeltsPracticePage() {
     <article>
       <PageTitle
         title="IELTS practice that tells you your real band"
-        lead="Most IELTS apps hand out generous scores to keep you happy. EngProgress — an AI-based platform for IELTS Writing, Reading and Listening — does the opposite: calibrated, examiner-strict feedback, so the band you see in practice is the band you can expect on exam day."
+        lead="Most IELTS apps hand out generous scores to keep you happy. EngProgress — an AI platform covering all four IELTS skills, plus CEFR / Multilevel — does the opposite: calibrated, examiner-strict feedback, so the band you see in practice is the band you can expect on exam day."
       />
 
-      <Sec title="Practice all three skills in one place">
+      <Sec title="Practice all four skills in one place">
         <P>
           <B>Writing.</B> Task 1 and Task 2 prompts generated fresh for every session, a distraction-free
           writing studio with a timer and autosave, and a deep evaluation of every criterion an examiner
@@ -42,9 +42,10 @@ export default function IeltsPracticePage() {
           forty.
         </P>
         <P>
-          Speaking is live too: a full three-part mock with an AI examiner — the interview, the
-          cue-card long turn with its preparation minute, and the discussion — scored on the four
-          official criteria.
+          <B>Speaking.</B> A full three-part mock with an AI examiner — the interview, the cue-card
+          long turn with its preparation minute, and the discussion — scored on the four official
+          criteria. Plus Part-2 cue-card drills on their own, and a{" "}
+          <A href="/ielts-speaking-practice">tutor that reacts and teaches while you talk</A>.
         </P>
       </Sec>
 
@@ -81,10 +82,29 @@ export default function IeltsPracticePage() {
         </P>
       </Sec>
 
+      <Sec title="Beyond IELTS: CEFR and Multilevel">
+        <P>
+          Preparing for the <B>Uzbekistan Multilevel (DTM)</B> exam rather than IELTS? It is a different
+          paper — five reading parts and thirty-five questions, marked to a CEFR level rather than a
+          0&ndash;9 band — so we built it separately instead of pretending IELTS practice covers it.
+          Reading and Writing are live; see{" "}
+          <A href="/cefr-multilevel-practice">CEFR / Multilevel practice</A>.
+        </P>
+      </Sec>
+
+      <Sec title="For teachers and education centres">
+        <P>
+          If you teach IELTS for a living, the same platform runs your centre: invite teachers, create
+          groups, add students, assign practice as homework that the whole group sits identically, and
+          read a per-student report across all four skills — plus attendance, timetabling, invoicing and
+          payroll. See <A href="/for-education-centers">EngProgress for education centres</A>.
+        </P>
+      </Sec>
+
       <Sec title="Start free">
         <P>
           The free plan includes 5 AI-graded practices every month — no card required. Paid plans start at
-          $5.99/month; see <A href="/pricing">pricing</A>. Comparing tools? Read how EngProgress stacks up
+          $5.99/month; see <A href="/#pricing">pricing</A>. Comparing tools? Read how EngProgress stacks up
           against <A href="/vs/engnovate">Engnovate</A> and <A href="/vs/ielts-gg">ielts.gg</A>.
         </P>
       </Sec>
@@ -101,7 +121,7 @@ export default function IeltsPracticePage() {
           },
           {
             q: "Which IELTS skills can I practice?",
-            a: "Writing (Task 1 and Task 2 with per-criterion feedback and a revision loop), Reading (all real question types with trap explanations), and Listening (full 4-part tests with multi-voice audio and band scores). Speaking is on the roadmap.",
+            a: "All four. Writing (Task 1 and Task 2 with per-criterion feedback and a revision loop), Reading (all real question types with trap explanations), Listening (full 4-part tests with multi-voice audio and band scores), and Speaking (a full three-part live mock with an AI examiner, Part-2 practice, and an AI tutor). There is also a separate CEFR / Multilevel track for the Uzbekistan DTM exam, where Reading and Writing are live.",
           },
           {
             q: "Is the practice material real IELTS content?",

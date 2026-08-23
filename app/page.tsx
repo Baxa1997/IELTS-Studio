@@ -22,7 +22,14 @@ import { BandCountUp } from "@/components/landing/band-countup";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
-import { getSiteUrl, LANDING_DESCRIPTION, PREVIEW_IMAGE, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
+import {
+  getSiteUrl,
+  LANDING_DESCRIPTION,
+  PLATFORM_FEATURES,
+  PREVIEW_IMAGE,
+  SEO_KEYWORDS,
+  SITE_NAME,
+} from "@/lib/seo";
 
 // Marketing fonts — scoped to this page via CSS variables, so the rest of the
 // app keeps Geist. Newsreader (serif display) + Hanken Grotesk (UI sans) +
@@ -70,7 +77,8 @@ const dmsans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "IELTS Practice with AI Band Feedback — Writing, Reading, Listening & CEFR",
+  title:
+    "IELTS Practice with AI Band Feedback — Writing, Reading, Listening, Speaking & CEFR",
   description: LANDING_DESCRIPTION,
   keywords: SEO_KEYWORDS,
   alternates: {
@@ -107,20 +115,79 @@ export default async function Home() {
   const session = await getSession();
   if (session) redirect(roleHome(session.role));
   const home: string | null = null;
+  // An @graph, not a lone WebApplication node. Three things drive this shape:
+  //
+  //  * `featureList` is what an answer engine actually extracts when asked what
+  //    this product does. Prose gets summarised down to its first clause — which
+  //    is exactly how we ended up being described as a Writing-only tool — but a
+  //    feature array survives whole. It is sourced from PLATFORM_FEATURES so the
+  //    list cannot drift away from the one the marketing pages render.
+  //  * The Organization node establishes who publishes this, which is what makes
+  //    an entity resolvable rather than an anonymous URL.
+  //  * `offers` is built from PLAN_TIERS, the same source the pricing section
+  //    renders from, so a price change cannot leave stale numbers in the markup.
+  const site = getSiteUrl();
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: SITE_NAME,
-    url: getSiteUrl(),
-    applicationCategory: "EducationalApplication",
-    operatingSystem: "Web",
-    description: LANDING_DESCRIPTION,
-    keywords: SEO_KEYWORDS.join(", "),
-    offers: {
-      "@type": "Offer",
-      category: "IELTS practice platform",
-    },
-    educationalUse: ["IELTS practice", "CEFR practice", "IELTS band improvement"],
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${site}/#organization`,
+        name: SITE_NAME,
+        url: site,
+        description: LANDING_DESCRIPTION,
+        slogan: "The band you see in practice is the band you get on exam day.",
+        areaServed: "Worldwide",
+        knowsAbout: [
+          "IELTS Writing",
+          "IELTS Reading",
+          "IELTS Listening",
+          "IELTS Speaking",
+          "CEFR",
+          "Uzbekistan Multilevel (DTM) exam",
+          "English language assessment",
+        ],
+      },
+      {
+        "@type": ["WebApplication", "EducationalApplication"],
+        "@id": `${site}/#application`,
+        name: SITE_NAME,
+        url: site,
+        publisher: { "@id": `${site}/#organization` },
+        applicationCategory: "EducationalApplication",
+        applicationSubCategory: "Test preparation",
+        operatingSystem: "Web",
+        description: LANDING_DESCRIPTION,
+        keywords: SEO_KEYWORDS.join(", "),
+        featureList: PLATFORM_FEATURES,
+        educationalUse: [
+          "IELTS practice",
+          "IELTS Writing practice",
+          "IELTS Reading practice",
+          "IELTS Listening practice",
+          "IELTS Speaking practice",
+          "CEFR practice",
+          "Multilevel (DTM) practice",
+          "IELTS band improvement",
+        ],
+        audience: [
+          { "@type": "EducationalAudience", educationalRole: "student" },
+          { "@type": "EducationalAudience", educationalRole: "teacher" },
+          { "@type": "Audience", audienceType: "Language schools and IELTS preparation centres" },
+        ],
+        offers: PLAN_ORDER.map((id) => {
+          const t = planTier(id);
+          return {
+            "@type": "Offer",
+            name: t.name,
+            price: t.price === null ? undefined : String(t.price),
+            priceCurrency: "USD",
+            category: "IELTS practice platform",
+            url: `${site}/pricing`,
+          };
+        }),
+      },
+    ],
   };
 
   return (
@@ -936,7 +1003,7 @@ function Skills() {
     <Band id="skills" bg="#fff">
       <SectionHead
         title="Deep on the skills that decide Band 8"
-        sub="We go deepest on Writing and Reading — where most scores are won or lost — with full Listening tests live and Speaking on the way."
+        sub="All four skills are live. We go deepest on Writing and Reading — where most scores are won or lost — with full Listening tests and a three-part Speaking mock alongside them."
       />
       <div
         className="lp-cols-2"
@@ -1053,9 +1120,10 @@ function Skills() {
             minWidth: 240,
           }}
         >
-          <b style={{ color: INK }}>Listening is live</b> — full four-section practice tests with
-          auto-marking, at every level. <b style={{ color: INK }}>Speaking is in development</b> —
-          AI mock interviews, included free for members when it launches.
+          <b style={{ color: INK }}>Listening</b> — full four-section tests with original
+          multi-voice audio and auto-marking, at every level.{" "}
+          <b style={{ color: INK }}>Speaking</b> — a three-part live mock with an AI examiner, plus
+          a tutor that reacts and teaches while you talk.
         </div>
       </div>
     </Band>
@@ -1163,7 +1231,7 @@ function Faq() {
     },
     {
       q: "What about Speaking and Listening?",
-      a: "Listening is live — full four-section practice tests with auto-marking at every level. Speaking is in development and will be included free for members when it launches.",
+      a: "Both are live. Listening gives you full four-section practice tests with original multi-voice audio, auto-marking, transcripts and trap explanations at every level. Speaking gives you a full three-part mock with an AI examiner — the interview, the cue-card long turn with its preparation minute, and the discussion — plus Part-2 practice and an AI tutor that reacts and teaches while you talk.",
     },
   ];
   return (

@@ -143,7 +143,7 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
         <Link href="/sign-up" style={{ background: INDIGO, color: "#fff", fontWeight: 700, fontSize: 15, borderRadius: 12, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
           Start free
         </Link>
-        <Link href="/pricing" style={{ color: "#c7c9e6", fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
+        <Link href="/#pricing" style={{ color: "#c7c9e6", fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
           See pricing →
         </Link>
       </div>
@@ -153,6 +153,12 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
 
 const RELATED = [
   { href: "/ielts-practice", label: "IELTS practice online" },
+  { href: "/ielts-writing-practice", label: "IELTS Writing practice" },
+  { href: "/ielts-reading-practice", label: "IELTS Reading practice" },
+  { href: "/ielts-listening-practice", label: "IELTS Listening practice" },
+  { href: "/ielts-speaking-practice", label: "IELTS Speaking practice" },
+  { href: "/cefr-multilevel-practice", label: "CEFR / Multilevel (DTM)" },
+  { href: "/for-education-centers", label: "For education centres" },
   { href: "/grade", label: "Free IELTS writing checker" },
   { href: "/cambridge-ielts-practice", label: "Cambridge-style IELTS tests" },
   { href: "/vs/engnovate", label: "EngProgress vs Engnovate" },

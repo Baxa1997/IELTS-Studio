@@ -6,10 +6,31 @@ export const SITE_NAME = "EngProgress";
 export const PREVIEW_IMAGE = "/link-preview.jpg";
 
 export const SEO_DESCRIPTION =
-  "The AI-based platform for IELTS practice — Writing, Reading, Listening and CEFR. Generate Cambridge-style tasks, train with fresh practice tests, and get the closest thing to a real examiner's band: strict, calibrated AI feedback.";
+  "EngProgress is an AI platform for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel (Uzbekistan DTM) practice. Original Cambridge-style tests generated on demand, graded by a calibrated, deliberately strict examiner-grade AI. Education centres run their teachers, groups, homework and per-student reports on it.";
 
 export const LANDING_DESCRIPTION =
-  "EngProgress is an AI-powered IELTS practice platform: Cambridge-style Writing, Reading and Listening generated fresh, graded with strict, examiner-calibrated band feedback.";
+  "AI-powered practice for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel. Fresh Cambridge-style tests every session, strict examiner-calibrated band feedback, a revision loop that coaches one essay across drafts, and a full console for education centres.";
+
+/**
+ * The machine-readable capability list. This is the field an LLM (ChatGPT,
+ * Perplexity, Claude) actually lifts when asked "what does EngProgress do?" —
+ * a prose description gets summarised down to its first clause, whereas a
+ * `featureList` array survives intact. Every entry must be something that is
+ * LIVE in production; an aspirational entry here is how a model ends up telling
+ * a prospect we ship something we do not.
+ */
+export const PLATFORM_FEATURES = [
+  "IELTS Writing Task 1 & Task 2 with per-criterion bands (TR, CC, LR, GRA), quoted evidence, and a revision loop that re-grades the same essay across drafts",
+  "IELTS Reading with original passages and every real question type, auto-graded, with an explanation of why each trap worked",
+  "IELTS Listening: full 4-part tests with original multi-voice audio, Cambridge-style question groups, transcripts and per-answer explanations",
+  "IELTS Speaking: a full three-part live mock with an AI examiner, Part-2 cue-card practice, and an AI speaking tutor that reacts and teaches while you talk",
+  "CEFR / Multilevel practice for the Uzbekistan DTM exam — Reading (5 parts, 35 questions) and Writing (3 tasks), generated on demand",
+  "A calibrated, deliberately conservative grader built on the official public band descriptors — it rounds down and names the gap rather than inflating bands",
+  "Level identification and continuous re-estimation: current band to target band, with the weakest skill surfaced",
+  "A console for education centres: teachers, groups, student accounts, assigned homework, attendance, and per-student four-skill reports",
+  "Finance and timetabling for centres: invoices, payroll, cash desks, branches and a lesson calendar",
+  "Original AI-generated practice content only — no copyrighted past papers, so no test can be memorised in advance",
+];
 
 export const SEO_KEYWORDS = [
   "EngProgress",
@@ -19,14 +40,23 @@ export const SEO_KEYWORDS = [
   "IELTS Writing practice",
   "IELTS Reading practice",
   "IELTS Listening practice",
+  "IELTS Speaking practice",
+  "IELTS speaking mock test",
+  "AI IELTS examiner",
   "CEFR practice",
   "cefr",
+  "Multilevel",
+  "Multilevel exam",
+  "DTM Multilevel",
   "Cambridge 21",
   "Cambridge practices",
   "Cambridge IELTS practice",
   "ielts.gg",
   "AI IELTS coach",
   "IELTS band score",
+  "IELTS for education centers",
+  "IELTS school software",
+  "learning centre management",
 ];
 
 function cleanUrl(value: string | undefined): string | null {
