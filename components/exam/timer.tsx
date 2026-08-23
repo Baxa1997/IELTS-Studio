@@ -75,6 +75,14 @@ export function Timer({
 
   const fired = useRef(false);
 
+  // What the display is currently showing. The clock is sampled four times a
+  // second so the seconds digit stays honest, but three of those four samples
+  // read the same whole second — and `setState` with an unchanged value still
+  // costs React a render pass before it bails out. Gating on the ref makes it
+  // exactly one render per second that actually changes, which is the same
+  // render budget the old interval-based timers had.
+  const shown = useRef(seconds);
+
   // Kept current in an effect, not assigned during render. The point is that the
   // countdown effect below depends on nothing, so a parent re-render with a fresh
   // inline `onExpire` cannot restart the interval and slide the deadline forward.
@@ -86,7 +94,10 @@ export function Timer({
   useEffect(() => {
     function tick() {
       const remaining = secondsLeft(deadline);
-      setLeft(remaining);
+      if (remaining !== shown.current) {
+        shown.current = remaining;
+        setLeft(remaining);
+      }
       if (remaining === 0 && !fired.current) {
         fired.current = true;
         expire.current?.();

@@ -117,6 +117,36 @@ describe("<Timer>", () => {
     expect(screen.getByRole("timer")).toHaveTextContent("0:39");
   });
 
+  /**
+   * A render budget, not a nicety.
+   *
+   * The clock is sampled every 250 ms so the seconds digit cannot lag, but the
+   * display only changes once a second — and this component sits inside exam
+   * runners whose render-prop draws real chrome. Without the ref gate in `tick`
+   * this measured 19 renders per 10 s (React still costs you a pass before it
+   * bails out of an unchanged `setState`), against the 10 the old interval-based
+   * timers used. Anyone tightening the sample rate should see this fail first.
+   */
+  it("renders once per changed second, not once per sample", () => {
+    let renders = 0;
+    render(
+      <Timer seconds={600}>
+        {(text) => {
+          renders++;
+          return <span>{text}</span>;
+        }}
+      </Timer>,
+    );
+    const initial = renders;
+    // 40 separate 250 ms samples, each flushed on its own — the real-world shape.
+    for (let i = 0; i < 40; i++) {
+      act(() => {
+        vi.advanceTimersByTime(250);
+      });
+    }
+    expect(renders - initial).toBe(10);
+  });
+
   it("hands the render-prop both the text and the raw seconds", () => {
     render(
       <Timer seconds={125}>
