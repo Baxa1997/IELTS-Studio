@@ -8,7 +8,7 @@ import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "l
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
-import { TASK2_CATEGORIES } from "@/lib/prompts/types";
+import { TASK2_CATEGORIES } from "@/lib/prompts/constants";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
 // These live with the full-screen runner in the (studio) group; the hub library

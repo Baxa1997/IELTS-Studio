@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Hanken_Grotesk, Manrope, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
+import { Hanken_Grotesk, Manrope, Newsreader, Source_Serif_4 } from "next/font/google";
 
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
@@ -27,19 +27,21 @@ const newsreader = Newsreader({
   variable: "--font-newsreader",
   display: "swap",
 });
-/* The console's type: Source Serif 4 headings over Work Sans. Declared here
-   rather than in the console layout because the staff shell sits above it. */
-const work = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-work",
-  display: "swap",
-});
+/* Source Serif 4 draws the Practice AI lesson headings (`.lp-section-h`,
+   `.lp-lesson .lp-idea` in globals.css) and the console's headings, so it has to
+   be declared at this level — but only those two surfaces use it. preload:false
+   keeps every OTHER student route from fetching it before first paint; the
+   browser goes and gets it when a page actually asks for the family.
+
+   Work Sans used to live here too, for the console's body type. It moved down to
+   `console/layout.tsx`, which is the only subtree that draws with it — a student
+   was downloading the staff console's typeface on every page. */
 const serif4 = Source_Serif_4({
   subsets: ["latin"],
   weight: ["600", "700"],
   variable: "--font-serif4",
   display: "swap",
+  preload: false,
 });
 /* Practice AI's sans. The 300 is load-bearing: the library hero sets "Where
    lessons" at 300 against "come to life" at 700 on one line, and a stack
@@ -122,7 +124,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${work.variable} ${serif4.variable} ${manrope.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${serif4.variable} ${manrope.variable} lp-root`}
     >
       <AppShell
         role={profile.role}

@@ -2,6 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { SANS } from "@/lib/theme/tokens";
 import {
   Activity,
   Award,
@@ -40,7 +41,6 @@ import {
  * rail to an icon-only strip purely in CSS (no prop drilling of a collapsed flag).
  */
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
 /* On-rail palette — the rail is the brand indigo taken down to a calm dark shade
    (see shell.tsx), so everything here is light-on-dark. */
 const RAIL_TEXT = "#CDD1DF"; // resting item text — near-white, calm

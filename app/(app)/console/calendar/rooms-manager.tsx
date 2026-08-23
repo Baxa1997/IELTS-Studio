@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
+import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteRoom, saveRoom } from "./actions";
@@ -45,9 +46,6 @@ function useRefreshingAction(
  */
 
 const ROOM_COLORS = ["#4340CB", "#16794C", "#B8791F", "#C2453A", "#6B44A2", "#2F5D8C"];
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 export interface RoomRow {
   id: string;

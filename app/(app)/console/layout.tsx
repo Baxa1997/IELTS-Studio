@@ -1,3 +1,5 @@
+import { Work_Sans } from "next/font/google";
+
 import { ConsoleChrome } from "@/components/console/console-chrome";
 import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
 import { ToastHost } from "@/components/console/toast";
@@ -9,6 +11,17 @@ import { loadFinanceSettings } from "@/lib/finance/load";
 import { CreateGroupForm } from "./groups/group-forms";
 import { InviteMemberPanel } from "./groups/invite-member-panel";
 import { AddTeacherPanel } from "./teachers/add-teacher-panel";
+
+/* The console's body type. It lived in `(app)/layout.tsx` until this subtree
+   claimed it — which meant every student route preloaded the staff console's
+   typeface before first paint. `.cn-root` below is where `--font-work` is
+   consumed (globals.css), so this is the level that should declare it. */
+const work = Work_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-work",
+  display: "swap",
+});
 
 /**
  * The console's own layer, inside the app's shell.
@@ -39,7 +52,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
     ]);
 
   return (
-    <div className="cn-root">
+    <div className={`${work.variable} cn-root`}>
       <ToastHost>
         <ConsoleChrome
           userName={profile.full_name ?? user.email ?? "Account"}

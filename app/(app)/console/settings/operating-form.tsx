@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 import { type CenterSettings } from "@/lib/console/center-settings";
 import { orderedWeekdays } from "@/lib/console/timetable-days";
@@ -17,10 +18,6 @@ import { saveCenterSettings, type ActionState } from "../center-actions";
  * 20:00. That is why this field exists at all, and why the note under it says
  * what it changes rather than what it is.
  */
-
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 /** The zones this is actually sold into, plus a UTC escape hatch. Typing an
  *  IANA name by hand is a support ticket; a list of five is a decision. */

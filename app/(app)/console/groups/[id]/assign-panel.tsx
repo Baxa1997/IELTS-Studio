@@ -5,7 +5,11 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TASK2_CATEGORIES, TASK2_CATEGORY_LABELS, TOPIC_FAMILIES } from "@/lib/prompts/types";
+import {
+  TASK2_CATEGORIES,
+  TASK2_CATEGORY_LABELS,
+  TOPIC_FAMILIES,
+} from "@/lib/prompts/constants";
 
 import { createAssignment, type GroupFormState } from "../actions";
 import { useActionFeedback } from "@/components/console/toast";

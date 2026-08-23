@@ -2,7 +2,11 @@
 
 import { Fragment } from "react";
 
-import { isReadingGapType, READING_GAP_MARKER, readingGroupInstruction } from "@/lib/reading/types";
+import {
+  isReadingGapType,
+  READING_GAP_MARKER,
+  readingGroupInstruction,
+} from "@/lib/reading/constants";
 
 import { GapSelectSentence, GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { INDIGO, INK, MUTED, SANS } from "./tokens";

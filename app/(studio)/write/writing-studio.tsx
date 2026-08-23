@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { SANS, SERIF } from "@/lib/theme/tokens";
+import { Timer } from "@/components/exam/timer";
 import { Typewriter } from "@/components/typewriter";
 import { cleanAnnotations, type Annotation } from "@/components/writing/annotations";
 import { EssayFeedback } from "@/components/writing/essay-feedback";
@@ -62,8 +64,6 @@ type Phase = "writing" | "results";
 
 // ---- Brand tokens ----------------------------------------------------------
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
 const EMERALD = "#2f8f5b";
 
 const AUTOSAVE_MS = 1500;
@@ -449,7 +449,7 @@ export function WritingStudio({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
           {timed ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${theme.line}`, borderRadius: 9, background: theme.soft }}><Timer seconds={taskSeconds} onExpire={onExpire} /></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${theme.line}`, borderRadius: 9, background: theme.soft }}><StudioTimer seconds={taskSeconds} onExpire={onExpire} /></div>
           ) : null}
           <SaveBadge state={saveState} />
           <div style={{ width: 1, height: 24, background: theme.line }} />
@@ -737,33 +737,44 @@ function Bubble({ msg, onReveal, onDone, accent }: { msg: TutorMsg; onReveal?: (
 
 // ---- Timer + save badge ----------------------------------------------------
 
-function Timer({ seconds, onExpire }: { seconds: number; onExpire: () => void }) {
-  const [left, setLeft] = useState(seconds);
-  const firedRef = useRef(false);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          if (!firedRef.current) {
-            firedRef.current = true;
-            onExpire();
-          }
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [onExpire]);
-  const mm = Math.floor(left / 60);
-  const ss = left % 60;
-  const urgent = left <= 300;
+/**
+ * The studio's countdown pill: the shared exam timer, wearing the studio's
+ * clock icon and its 5-minute warning threshold. The counting itself moved to
+ * `components/exam/timer.tsx` — this version used to decrement on an interval,
+ * which meant a backgrounded tab handed the candidate extra minutes.
+ */
+function StudioTimer({ seconds, onExpire }: { seconds: number; onExpire: () => void }) {
   return (
-    <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: SANS, fontWeight: 600, color: urgent ? "#c2410c" : "#4b4e63" }}>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a897c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
-      <span style={{ fontVariantNumeric: "tabular-nums" }}>{mm}:{String(ss).padStart(2, "0")}</span> left
-    </span>
+    <Timer seconds={seconds} onExpire={onExpire} warnAt={300}>
+      {(text, left) => (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: SANS,
+            fontWeight: 600,
+            color: left <= 300 ? "#c2410c" : "#4b4e63",
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#8a897c"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4l3 2" />
+          </svg>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{text}</span> left
+        </span>
+      )}
+    </Timer>
   );
 }
 

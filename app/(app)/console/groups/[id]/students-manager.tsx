@@ -5,6 +5,7 @@ import { FaFileCsv, FaFileExcel } from "react-icons/fa6";
 import { FiChevronDown, FiKey, FiUserPlus } from "react-icons/fi";
 
 import { resetStudentPassword, type ResetPasswordState } from "../actions";
+import { Modal } from "@/components/ui";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { MarkLeftBody, MoveBody, RemoveBody } from "./move-or-remove";
@@ -814,88 +815,6 @@ function MenuItem({
  * forty accounts exist — and a 460px drawer cannot show a table. Everything
  * else on this page stays a drawer.
  */
-function Modal({
-  onClose,
-  title,
-  note,
-  width,
-  children,
-}: {
-  onClose: () => void;
-  title: string;
-  note: string;
-  width: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 70,
-        background: "rgba(22,22,46,.35)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px 16px",
-        overflowY: "auto",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        style={{
-          width: `min(${width}px, 100%)`,
-          // CENTRED, AND STILL SCROLLABLE WHEN IT IS TALLER THAN THE SCREEN.
-          // `align-items: center` alone clips the TOP of an over-tall child in
-          // a scrolling flex container — you can scroll down but never up to
-          // reach the title. `margin: auto` centres it while it fits and hands
-          // the spare space back when it does not, which is the one combination
-          // that behaves in both cases.
-          margin: "auto",
-          background: "#fff",
-          borderRadius: 14,
-          padding: 20,
-          boxShadow: "0 24px 60px rgba(22,22,46,.24)",
-          textAlign: "left",
-        }}
-      >
-        {/* Title and note stack rather than sitting on one baseline: side by
-            side, a note of any length either wrapped under a hanging heading or
-            pushed the close button off the row. */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 16 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 650, color: INK }}>{title}</h2>
-            <p style={{ margin: "3px 0 0", fontSize: 12.5, lineHeight: 1.45, color: FAINT }}>
-              {note}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            style={{
-              marginLeft: "auto",
-              background: "transparent",
-              border: 0,
-              fontSize: 20,
-              lineHeight: 1,
-              color: MUTED,
-              cursor: "pointer",
-            }}
-          >
-            ×
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 /* ── bits ──────────────────────────────────────────────────────────────── */
 
 function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {

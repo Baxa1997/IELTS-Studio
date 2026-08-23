@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import { SANS } from "@/lib/theme/tokens";
 import type { UsageSummary } from "@/lib/quota";
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
 
 /**
  * The learner's PLAN, pinned to the bottom of the sidebar rail (replaces the

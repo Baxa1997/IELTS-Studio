@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 
+import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { deleteHoliday, saveHoliday, type ActionState } from "../center-actions";
@@ -16,10 +17,6 @@ import { deleteHoliday, saveHoliday, type ActionState } from "../center-actions"
  *
  * A RANGE, not a date: nobody closes for one morning of Navruz.
  */
-
-const INK = "#16162E";
-const FAINT = "#777581";
-const MUTED = "#6E6C87";
 
 export interface Holiday {
   id: string;

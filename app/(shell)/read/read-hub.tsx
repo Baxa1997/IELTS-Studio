@@ -8,7 +8,7 @@ import { ArrowRight, Check, FileText, Layers, Loader2, Sparkles } from "lucide-r
 import { AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
-import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
+import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/constants";
 
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 

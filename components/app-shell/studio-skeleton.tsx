@@ -6,8 +6,8 @@
  * splash with an instant, page-shaped skeleton.
  */
 import { Block } from "./page-skeleton";
+import { SANS } from "@/lib/theme/tokens";
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
 const BORDER = "#E7E3D5";
 const FADE: React.CSSProperties = { animation: "lp-fadeup .25s ease both" };
 const SRONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" };

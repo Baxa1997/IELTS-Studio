@@ -28,16 +28,12 @@ import {
   WARN_INK,
   WASH,
 } from "@/lib/lessons/theme";
-import {
-  isOpen,
-  isOpenResult,
-  type ClosedExercise,
-  type ClosedResult,
-  type Exercise,
-  type ExerciseResult,
-  type LessonContent,
-  type OpenExercise,
-  type OpenResult,
+import { isOpen, isOpenResult, type ClosedResult, type ExerciseResult, type OpenResult } from "@/lib/lessons/constants";
+import type {
+  ClosedExercise,
+  Exercise,
+  LessonContent,
+  OpenExercise,
 } from "@/lib/lessons/types";
 
 /**

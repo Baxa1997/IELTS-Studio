@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/constants";
+import type { NoteMeta } from "@/lib/reading/types";
 
-import { READING_GAP_MARKER, type NoteMeta, type ReadingQuestionType } from "@/lib/reading/types";
-
-import { INDIGO, INK, MUTED, RED, SANS } from "./tokens";
+import { INDIGO, INK, SANS } from "./tokens";
 
 /** Answer-free question as delivered to the browser (no key/proof/explanation). */
 export interface DeliveredQuestion {
@@ -313,47 +312,13 @@ function Radio({ name, value, label, checked, onChange }: { name: string; value:
   );
 }
 
-/** Countdown that fires `onExpire` exactly once at zero. Pass `children` to render
- *  your own chrome (e.g. the v2 timer pill) — it receives the `m:ss` text and the
- *  raw seconds left so the caller can style its own warning threshold. */
-export function Timer({
-  seconds,
-  onExpire,
-  children,
-}: {
-  seconds: number;
-  onExpire: () => void;
-  children?: (text: string, left: number) => React.ReactNode;
-}) {
-  const [left, setLeft] = useState(seconds);
-  const firedRef = useRef(false);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          if (!firedRef.current) {
-            firedRef.current = true;
-            onExpire();
-          }
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [onExpire]);
-
-  const mm = Math.floor(left / 60);
-  const ss = left % 60;
-  const text = `${mm}:${String(ss).padStart(2, "0")}`;
-  if (children) return <>{children(text, left)}</>;
-
-  const urgent = left <= 120;
-  return (
-    <span style={{ fontFamily: SANS, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: urgent ? RED : MUTED }} aria-label="time remaining">
-      {text}
-    </span>
-  );
-}
+/**
+ * The exam countdown.
+ *
+ * Re-exported rather than defined here: this one used to count with a
+ * `setInterval` that decremented a number, which handed a candidate free time in
+ * a throttled background tab. `components/exam/timer.tsx` derives from the wall
+ * clock instead and is covered by tests. The re-export keeps the four call sites
+ * that already import `Timer` from this module working unchanged.
+ */
+export { Timer, formatClock } from "@/components/exam/timer";

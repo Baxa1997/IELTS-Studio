@@ -26,7 +26,20 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["**/*.test.ts"],
+    /**
+     * `.tsx` was missing here, which meant a component test could not run even if
+     * somebody wrote one — the file would simply never be collected, and the suite
+     * would pass while testing nothing. That is why there were 19 tests and zero of
+     * them touched a component.
+     */
+    include: ["**/*.test.{ts,tsx}"],
     exclude: ["node_modules/**", ".next/**"],
+    /**
+     * Per-file, so the 19 pure-logic suites keep running in the (much faster) node
+     * environment and only the component tests pay for a DOM. Opt in with
+     * `// @vitest-environment jsdom` at the top of a test file.
+     */
+    environment: "node",
+    setupFiles: ["./test/setup-dom.ts"],
   },
 });

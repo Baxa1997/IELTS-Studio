@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SANS } from "@/lib/theme/tokens";
 
 /**
  * Small in-app footer: the IELTS® non-affiliation disclaimer plus Privacy / Terms
@@ -6,8 +7,6 @@ import Link from "next/link";
  * practice) so the legal pages are reachable from inside the app, not just the
  * marketing site. Server-safe (no "use client").
  */
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
 
 export function LegalFooter({ note }: { note?: string }) {
   return (

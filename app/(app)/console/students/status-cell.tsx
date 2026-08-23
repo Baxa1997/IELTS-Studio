@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 
+import { FAINT, INK } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 import {
   MEMBER_STATUSES,
@@ -25,9 +26,6 @@ import { type GroupFormState } from "../groups/actions";
  * "paused" and "left" look interchangeable until someone discovers which one
  * stopped the invoices.
  */
-
-const INK = "#16162E";
-const FAINT = "#777581";
 
 const TINT: Record<MemberStatus, { bg: string; fg: string }> = {
   active: { bg: "#EAF4EE", fg: "#16794C" },

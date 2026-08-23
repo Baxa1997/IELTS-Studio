@@ -19,7 +19,7 @@ import {
   TASK2_CATEGORY_LABELS,
   TOPIC_FAMILIES,
   type Task2Category,
-} from "@/lib/prompts/types";
+} from "@/lib/prompts/constants";
 import { cn } from "@/lib/utils";
 
 /** A pending prompt awaiting review (subset of writing_prompts). */

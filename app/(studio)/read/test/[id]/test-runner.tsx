@@ -5,7 +5,11 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { AlertTriangle, Highlighter as HighlighterIcon, Maximize2, Minimize2 } from "lucide-react";
 
 import type { GradedItem } from "@/lib/reading/grade";
-import { READING_QUESTION_LABELS, READING_TEST_DURATION_SECONDS } from "@/lib/reading/types";
+import { formatClock } from "@/components/exam/timer";
+import {
+  READING_QUESTION_LABELS,
+  READING_TEST_DURATION_SECONDS,
+} from "@/lib/reading/constants";
 import { bandColor } from "@/lib/ui/band";
 
 import { CoachPanel } from "../../_shared/coach-panel";
@@ -440,11 +444,12 @@ function ConfirmFinishModal({ unanswered, onCancel, onConfirm }: { unanswered: n
 
 type ReviewFilter = "all" | "incorrect" | "skipped" | "flagged";
 
+/** The shared clock, plus this screen's "not measured" case. An hour or more now
+ *  reads `1:00:00` rather than `60:00` — the full-test allowance is exactly one
+ *  hour, so this is the one place the difference shows. */
 function fmtClock(total: number | null): string {
   if (total == null || total < 0) return "—";
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return formatClock(total);
 }
 
 function TestResultsView({

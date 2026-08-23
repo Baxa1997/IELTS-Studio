@@ -2,8 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
+import { SANS } from "@/lib/theme/tokens";
 
 /**
  * The signature "AI generate" section — an aurora-gradient banner with drifting

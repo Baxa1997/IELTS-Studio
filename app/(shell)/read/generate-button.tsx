@@ -3,12 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { SANS } from "@/lib/theme/tokens";
 import { AiGenerateButton } from "@/components/ai-generate-section";
 import { isQuotaMessage, UpgradeProButton } from "@/components/billing/upgrade-notice";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
 
 type GenResult = { ok: boolean; id?: string; message?: string };
 

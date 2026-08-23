@@ -15,56 +15,70 @@ import { ArrowLeft } from "lucide-react";
  * inline style can't express `:hover`.
  */
 
-/* ── type ─────────────────────────────────────────────────────────────────── */
-export const SANS = "var(--font-work), system-ui, sans-serif";
-export const SERIF = "var(--font-serif4), Georgia, serif";
-
 /* ── palette ──────────────────────────────────────────────────────────────── */
 /*
- * MEASURED, NOT EYEBALLED — and the old values were measurably wrong.
+ * Re-exported from `lib/theme/tokens.ts`, which is now the one place these live.
  *
- * They were picked for calm and went past it. The row divider was #F5F4F0:
- * 1.10:1 against white and 1.01:1 against the page ground — a line nobody can
- * see, drawn under every row of every table in the product. The card edge sat
- * at 1.26:1. The caption colour failed WCAG AA outright at 3.09:1, where text
- * below 18pt needs 4.5:1.
+ * The values did not change. Every neutral, every status colour and both type
+ * stacks below were already identical to the shared set — the console's measured
+ * greys ARE the shared greys, because this kit is where they were solved for
+ * contrast in the first place. Moving them out means the 24 files importing from
+ * here and the 71 that don't now read the same numbers.
  *
- * Each replacement was solved for a contrast target rather than nudged until it
- * looked right, keeping its hue by scaling the channels together — these are
- * warm greys and they should stay warm. The comments carry the ratio so the
- * next person can see what a change costs.
- *
- * The text ladder is now compressed, which is the deliberate trade: SOFT and
- * FAINT sit close to MUTED because AA does not care about our tonal hierarchy.
- * Size and weight carry that hierarchy instead, which is most of what they were
- * doing anyway.
- *
- * 39 files declare their own copies of these constants, so the values here are
- * the canonical ones but not the only ones — a change has to be applied across
- * the console, not just here.
+ * ONE divergence survives, and it is deliberate rather than forgotten:
+ * the console's INDIGO is #4340CB, the shared brand indigo is #3B43B5. They are
+ * two of the four indigos that were in circulation, they are a hair apart, and
+ * unifying them is a visible change across every console screen — so it is left
+ * as a decision, not made silently here. To unify: delete the override below and
+ * add INDIGO to the re-export list.
  */
-export const CANVAS = "#F4F3EF"; // page ground
-export const INK = "#16162E"; // primary text             17.7:1
-export const MUTED = "#6E6C87"; // secondary text           5.1:1
-export const SOFT = "#737189"; // tertiary text             4.7:1  (was 4.15)
-export const FAINT = "#777581"; // captions                 4.5:1  (was 3.09 — failed AA)
-export const BODY = "#4C4A63"; // table body text           8.5:1
-export const LINE = "#C5C4BE"; // card border              1.75:1 (was 1.26)
-export const RULE = "#D4D3CE"; // header divider in a card  1.50:1 (was 1.16)
-export const HAIR = "#DEDEDA"; // row divider              1.35:1 (was 1.10 — invisible)
-export const HEADBG = "#FAFAF8"; // table header / input fill
-/* Form-control border. Deliberately darker than the card hairline (#C5C4BE):
-   a card edge only has to separate two surfaces, but a field edge has to say
-   "you can type here", and at the card's weight it disappeared on white. */
-export const FIELD_LINE = "#CFCABC";
 
+export {
+  SANS_CONSOLE as SANS,
+  SERIF_CONSOLE as SERIF,
+  INK,
+  BODY,
+  MUTED,
+  SOFT,
+  FAINT,
+  LINE,
+  RULE,
+  HAIR,
+  FIELD_LINE,
+  GREEN,
+  AMBER,
+  RED,
+  RED_DEEP,
+} from "@/lib/theme/tokens";
+
+import {
+  CONSOLE,
+  FAINT,
+  FIELD_LINE,
+  GREEN,
+  HAIR,
+  INK,
+  LINE,
+  MUTED,
+  RED_DEEP,
+  RULE,
+  SANS_CONSOLE as SANS,
+  SERIF_CONSOLE as SERIF,
+  SOFT,
+  BODY,
+  RED,
+} from "@/lib/theme/tokens";
+
+/** Page ground. */
+export const CANVAS = CONSOLE.canvas; // #F4F3EF
+/** Table header / input fill. */
+export const HEADBG = CONSOLE.well; // #FAFAF8
+
+/** The console's action colour — see the note above; the one value that has NOT
+ *  been folded into the shared token set. */
 export const INDIGO = "#4340CB";
-export const GREEN = "#16794C";
-export const AMBER = "#B8791F";
-export const RED = "#C2453A";
-export const RED_DEEP = "#A63A30";
 
-/** Rail (the dark sidebar). */
+/** Rail (the dark sidebar). Console-only: nothing else in the product has one. */
 export const RAIL = {
   bg: "#14133A",
   panel: "#1D1C4C",
@@ -78,7 +92,8 @@ export const RAIL = {
   mint: "#7FD8A8",
 };
 
-/** Tinted backgrounds, paired with the ink that reads on them. */
+/** Tinted backgrounds, paired with the ink that reads on them. Mirrors the shared
+ *  `TINT` except for the indigo pair, which follows the console's indigo above. */
 export const TINT = {
   indigo: { bg: "#EEEDF8", fg: INDIGO },
   green: { bg: "#EAF4EE", fg: GREEN },

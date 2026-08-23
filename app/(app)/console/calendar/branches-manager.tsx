@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
+import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteBranch, saveBranch } from "./actions";
@@ -35,10 +36,6 @@ function useRefreshingAction(
  * Deleting a branch leaves its rooms behind, unassigned, rather than taking a
  * day's timetable down with it.
  */
-
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 export interface BranchRow {
   id: string;

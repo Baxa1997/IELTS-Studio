@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Zap } from "lucide-react";
 
+import { SANS } from "@/lib/theme/tokens";
 import type { UsageSummary } from "@/lib/quota";
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
 
 /** Show the warning once any limited counter has this many (or fewer) left. */
 const LOW_THRESHOLD = 10;

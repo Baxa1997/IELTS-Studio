@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import type { GradedItem } from "@/lib/reading/grade";
-import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
+import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/constants";
 
 import { INK, SANS } from "./tokens";
 

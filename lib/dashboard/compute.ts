@@ -7,7 +7,7 @@
  * keep the habit, recent history, and one recommended next task.
  */
 
-import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/types";
+import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/constants";
 import type { Skill, SkillEstimateView } from "@/lib/estimates/compute";
 
 // ---- Writing criteria ------------------------------------------------------

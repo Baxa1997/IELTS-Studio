@@ -3,10 +3,7 @@
 import { useActionState } from "react";
 
 import { saveCenterProfile, type ActionState } from "../center-actions";
-
-const GREEN = "#16794C";
-const INK = "#16162E";
-const MUTED = "#6E6C87";
+import { GREEN, INK, MUTED } from "@/lib/theme/tokens";
 
 const label: React.CSSProperties = {
   fontSize: 12,

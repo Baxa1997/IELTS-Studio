@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore, useTransition } from "react";
 
-import { SELF_REPORT_BANDS, TARGET_BANDS, type StudyPlanInput } from "@/lib/plan/types";
+import { SELF_REPORT_BANDS, TARGET_BANDS } from "@/lib/plan/constants";
+import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { saveOnboarding } from "./actions";
 

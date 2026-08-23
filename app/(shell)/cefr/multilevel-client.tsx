@@ -30,6 +30,7 @@ import {
 import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
+import { Timer } from "@/components/exam/timer";
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
@@ -1633,7 +1634,7 @@ function ReadingRunner({
 
         <div style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
           {!graded ? (
-            <ReadingTimer seconds={allowance} onExpire={onExpire}>
+            <Timer seconds={allowance} onExpire={onExpire}>
               {(text, left) => {
                 const warn = left <= 120;
                 return (
@@ -1665,7 +1666,7 @@ function ReadingRunner({
                   </span>
                 );
               }}
-            </ReadingTimer>
+            </Timer>
           ) : (
             <span
               style={{
@@ -2084,38 +2085,6 @@ function cefrNavCircle(answered: boolean, current: boolean): React.CSSProperties
 }
 
 /** Countdown that fires `onExpire` once at zero; render-prop exposes raw seconds left. */
-function ReadingTimer({
-  seconds,
-  onExpire,
-  children,
-}: {
-  seconds: number;
-  onExpire: () => void;
-  children: (text: string, left: number) => React.ReactNode;
-}) {
-  const [left, setLeft] = useState(seconds);
-  const firedRef = useRef(false);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          if (!firedRef.current) {
-            firedRef.current = true;
-            onExpire();
-          }
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [onExpire]);
-  const mm = Math.floor(left / 60);
-  const ss = left % 60;
-  return <>{children(`${mm}:${String(ss).padStart(2, "0")}`, left)}</>;
-}
-
 // ---- Reading coach (inline 30% column, collapsible) ------------------------
 
 type CoachMsg = { role: "student" | "assistant"; content: string; animate?: boolean };
@@ -3391,7 +3360,7 @@ function TaskStudio({
                 background: W_SOFT,
               }}
             >
-              <ReadingTimer seconds={seconds} onExpire={onExpire}>
+              <Timer seconds={seconds} onExpire={onExpire}>
                 {(text, left) => {
                   const urgent = left <= 300;
                   return (
@@ -3411,7 +3380,7 @@ function TaskStudio({
                     </span>
                   );
                 }}
-              </ReadingTimer>
+              </Timer>
             </div>
           ) : null}
           <div style={{ width: 1, height: 24, background: W_LINE }} />

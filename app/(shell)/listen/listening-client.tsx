@@ -16,6 +16,7 @@ import { ArrowRight, Check, Headphones, Loader2, Lock, RotateCcw, Sparkles, X } 
 
 import { AiGenerateButton, AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
+import { formatClock } from "@/components/exam/timer";
 import { clientEnv } from "@/lib/env";
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 import { createClient } from "@/lib/supabase/client";
@@ -2423,11 +2424,6 @@ function RunnerFooter({
 
 const SPEEDS = [1, 1.25, 1.5, 0.75] as const;
 
-function fmtClock(sec: number): string {
-  const s = Math.max(0, Math.round(sec));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
 /** IELTS part a segment belongs to, parsed from its narrator label
  *  ("Part 3 · Discussion" → 3); falls back to the previous part. */
 function segPart(label: string, prev: number): number {
@@ -2887,7 +2883,7 @@ function ExamClock({
 }) {
   const t = usePlayerTick(player);
   const { elapsed } = derivePlayerPos(player, t);
-  return <>{fmtClock(Math.max(0, total - (isTest ? beforeSecs + elapsed : elapsed)))}</>;
+  return <>{formatClock(Math.max(0, total - (isTest ? beforeSecs + elapsed : elapsed)))}</>;
 }
 
 function AudioStrip({ player }: { player: PlayerApi }) {
@@ -3037,7 +3033,7 @@ function AudioStrip({ player }: { player: PlayerApi }) {
       </div>
 
       <span style={{ ...time, color: blue.muted, width: 42, textAlign: "right" }}>
-        {fmtClock(pos.elapsed)}
+        {formatClock(pos.elapsed)}
       </span>
 
       {/* Freely seekable scrubber */}
@@ -3099,7 +3095,7 @@ function AudioStrip({ player }: { player: PlayerApi }) {
         />
       </div>
 
-      <span style={{ ...time, color: blue.muted, width: 42 }}>{fmtClock(player.duration)}</span>
+      <span style={{ ...time, color: blue.muted, width: 42 }}>{formatClock(player.duration)}</span>
 
       {/* Speed */}
       <button

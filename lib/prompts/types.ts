@@ -1,70 +1,28 @@
 /**
  * Shared contracts for the writing-prompt library (generation + review + serving).
  *
- * Kept free of server-only imports so both server code (`./service`) and any UI can
- * import the constants/validators. The category/status/source string literals are
- * pinned 1:1 to the Postgres enums in
- * `supabase/migrations/20260617120700_prompt_generation.sql`.
+ * The zod-free vocabulary lives in `./constants` and is re-exported below, so every
+ * existing `@/lib/prompts/types` import keeps working. This module adds the
+ * validators and the stored row shape; importing it pulls in zod, so Client
+ * Components should import `./constants` instead.
  */
 
 import { z } from "zod";
 
 import type { Figure } from "@/lib/writing/figure";
 
-/** The six IELTS Writing Task 2 question shapes we generate — the full rotation
- *  the real exam draws from (Cambridge 19–21 use all six across their 12 tests). */
-export const TASK2_CATEGORIES = [
-  "opinion",
-  "discussion",
-  "problem_solution",
-  "two_part",
-  "advantages_disadvantages",
-  "positive_negative",
-] as const;
-export type Task2Category = (typeof TASK2_CATEGORIES)[number];
+import {
+  DEFAULT_DIFFICULTY,
+  ESSAY_TASK_TYPES,
+  MAX_DIFFICULTY,
+  MIN_DIFFICULTY,
+  TASK2_CATEGORIES,
+  type PromptSource,
+  type PromptStatus,
+  type Task2Category,
+} from "./constants";
 
-/** Human labels for UI / logging. */
-export const TASK2_CATEGORY_LABELS: Record<Task2Category, string> = {
-  opinion: "Opinion (agree/disagree)",
-  discussion: "Discussion (both views + opinion)",
-  problem_solution: "Problem–solution (causes/effects)",
-  two_part: "Two-part question",
-  advantages_disadvantages: "Advantages vs disadvantages",
-  positive_negative: "Positive or negative development",
-};
-
-/** `pending` is the library's Drafts tab (staff-only, RLS hides it from
- *  students), `approved` is Published, `archived` is retired-but-kept — a
- *  student's graded work points at the prompt, so it is never deleted. */
-export const PROMPT_STATUSES = ["pending", "approved", "rejected", "archived"] as const;
-export type PromptStatus = (typeof PROMPT_STATUSES)[number];
-
-export const PROMPT_SOURCES = ["ai", "manual", "seed"] as const;
-export type PromptSource = (typeof PROMPT_SOURCES)[number];
-
-/** Suggested topic families for even coverage. The DB column is free-text, so
- *  callers may pass others, but these keep tagging consistent and analytics clean. */
-export const TOPIC_FAMILIES = [
-  "environment",
-  "education",
-  "technology",
-  "health",
-  "work",
-  "society",
-  "government",
-  "globalisation",
-  "crime",
-  "media",
-  "culture",
-  "transport",
-  "tourism",
-  "family",
-] as const;
-
-/** Coarse difficulty = the target band the prompt's wording/abstraction is pitched at. */
-export const MIN_DIFFICULTY = 4;
-export const MAX_DIFFICULTY = 9;
-export const DEFAULT_DIFFICULTY = 7;
+export * from "./constants";
 
 // ---- Validation ------------------------------------------------------------
 
@@ -76,16 +34,6 @@ export const generatePromptInputSchema = z.object({
   difficulty: z.number().int().min(MIN_DIFFICULTY).max(MAX_DIFFICULTY).default(DEFAULT_DIFFICULTY),
 });
 export type GeneratePromptInput = z.infer<typeof generatePromptInputSchema>;
-
-/** The three IELTS Writing tasks a student can practice. */
-export const ESSAY_TASK_TYPES = ["task2", "task1_academic", "task1_general"] as const;
-export type EssayTaskKind = (typeof ESSAY_TASK_TYPES)[number];
-
-export const ESSAY_TASK_LABELS: Record<EssayTaskKind, string> = {
-  task2: "Task 2 — Essay",
-  task1_academic: "Task 1 — Academic",
-  task1_general: "Task 1 — Letter",
-};
 
 /** Optional filters when serving a student their next prompt. */
 export const promptFiltersSchema = z.object({

@@ -11,7 +11,8 @@ import {
 import { signOut } from "@/app/(auth)/actions";
 import { BrandLogo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
-import { pitchDifficulty, SELF_REPORT_BANDS, type StudyPlanInput } from "@/lib/plan/types";
+import { pitchDifficulty, SELF_REPORT_BANDS } from "@/lib/plan/constants";
+import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { savePlanForCurrentUser, stashOnboarding } from "./actions";
 

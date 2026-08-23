@@ -1,13 +1,6 @@
 import { matchesAny, displayAnswer } from "./normalize";
-import {
-  isOpen,
-  type ClosedExercise,
-  type ClosedResult,
-  type Exercise,
-  type ExerciseResult,
-  type LessonContent,
-  type TagBreakdown,
-} from "./types";
+import { isOpen, type ClosedResult, type ExerciseResult, type TagBreakdown } from "./constants";
+import type { ClosedExercise, Exercise, LessonContent } from "./types";
 
 /**
  * Marking the closed half of a lesson: multiple choice, gaps, transformations,

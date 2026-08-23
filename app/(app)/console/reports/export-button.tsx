@@ -1,9 +1,7 @@
 "use client";
 
+import { INDIGO, SANS } from "@/lib/theme/tokens";
 import type { GroupReportRow } from "@/lib/console/reports";
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#3B43B5";
 
 /** Downloads the group table as CSV — the shape a center owner pastes into a
  *  board report or a parent update. Built client-side; no round trip. */

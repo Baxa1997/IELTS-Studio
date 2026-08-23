@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
+import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
 import { SANS, TINT, type Tone } from "@/components/console/crm-ui";
 import { useActionFeedback } from "@/components/console/toast";
 import { type Alert, type Severity } from "@/lib/console/alert-catalogue";
@@ -17,10 +18,6 @@ import { dismissAlert, restoreAlert, type ActionState } from "./center-actions";
  * red. The tone carries it, which leaves the row's words free to say what is
  * actually wrong and how old it is.
  */
-
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 const TONE_OF: Record<Severity, Tone> = { high: "red", medium: "amber", low: "indigo" };
 

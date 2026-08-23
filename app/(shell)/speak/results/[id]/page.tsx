@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { SANS, SERIF } from "@/lib/theme/tokens";
 import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -12,9 +13,6 @@ export const dynamic = "force-dynamic";
 interface PageProps {
   params: Promise<{ id: string }>;
 }
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
 
 /**
  * One speaking attempt's full report. Ownership is enforced by RLS (the

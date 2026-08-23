@@ -1,5 +1,4 @@
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
+import { SANS, SERIF } from "@/lib/theme/tokens";
 
 /**
  * "Your target" card pinned to the bottom of the sidebar rail — the learner's
