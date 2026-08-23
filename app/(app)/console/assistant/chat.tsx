@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
 import {
   guessRoles,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/spreadsheet-read";
 
 import { runProposal, type RunState } from "./actions";
+import { liveProposalTurn } from "./live-proposal";
 import { TelegramStaffPanel } from "./telegram-panel";
 import { newThread } from "./thread-actions";
 
@@ -232,12 +233,31 @@ export function AssistantChat({
 
   async function reset() {
     setTurns([]);
+    setSettled(new Set());
     setError(null);
     setAttached(null);
     void newThread();
   }
 
-  const open = turns.some((t) => (t.proposals ?? []).length > 0);
+  /* ⚠️ ONLY THE NEWEST PROPOSAL IS LIVE, AND THIS IS A CORRECTNESS FIX.
+     Every card owned its own state and nothing else, so asking for one more
+     detail — which makes the model redraft the SAME action with more arguments
+     — left two Confirm buttons on screen, both armed. Pressing the older one
+     created a second class with the details you had just corrected. Worse, a
+     card that had already gone through stayed pressable, so the same class
+     could be created twice from one conversation.
+
+     Superseding is decided here rather than in the card, because a card cannot
+     see the turns after it. */
+  const liveTurn = liveProposalTurn(turns);
+  /* Turns whose proposal has been run or thrown away. Lifted out of the card so
+     the header can stop claiming a proposal is open after you have dealt with
+     it — it said "1 proposal open" for the rest of the conversation. */
+  const [settled, setSettled] = useState<Set<number>>(() => new Set());
+  const settle = useCallback((turn: number) => {
+    setSettled((prev) => (prev.has(turn) ? prev : new Set(prev).add(turn)));
+  }, []);
+  const open = liveTurn >= 0 && !settled.has(liveTurn);
   const title = turns.find((t) => t.role === "user")?.content ?? "New conversation";
 
   return (
@@ -317,9 +337,21 @@ export function AssistantChat({
 
       <div className="cn-assistant-grid" style={{ flex: 1, minHeight: 0 }}>
         {/* ── what it can do, and what you asked before ─────────────────── */}
+        {/* ⚠️ THE RAIL SCROLLS AS A COLUMN, AND "ON YOUR PHONE" IS WHY.
+            The launcher is twelve items for an owner, and it is `flex: none` —
+            so on anything shorter than a large desktop it ate the column and
+            pushed the Telegram card off the bottom of a page that, by design,
+            does not scroll. The card was rendered, reachable by nothing, and
+            the answer to "where do I connect the bot?" was invisible. */}
         <aside
           className="cn-hide-md"
-          style={{ minHeight: 0, display: "flex", flexDirection: "column", gap: 12 }}
+          style={{
+            minHeight: 0,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
         >
           <div style={{ ...card, flex: "none", padding: 14 }}>
             <div style={{ ...railHead, paddingBottom: 10 }}>Do something</div>
@@ -387,8 +419,12 @@ export function AssistantChat({
           <div
             style={{
               ...card,
-              flex: 1,
-              minHeight: 0,
+              /* Grow into whatever is left, but never below a usable list —
+                 `flex: 1` with `min-height: 0` let it be squeezed to a sliver
+                 by the two cards above, which is how the rail came to overflow
+                 in the first place. Past that the column scrolls. */
+              flex: "1 1 auto",
+              minHeight: 180,
               display: "grid",
               gridTemplateRows: "auto minmax(0, 1fr)",
             }}
@@ -554,7 +590,15 @@ export function AssistantChat({
                     </p>
                   </div>
                 ) : (
-                  turns.map((t, i) => <Bubble key={i} turn={t} onAsk={prefill} />)
+                  turns.map((t, i) => (
+                    <Bubble
+                      key={i}
+                      turn={t}
+                      onAsk={prefill}
+                      live={i === liveTurn}
+                      onSettled={() => settle(i)}
+                    />
+                  ))
                 )}
                 {busy ? <div style={{ fontSize: 14, color: DIM }}>Reading your centre…</div> : null}
                 <div ref={endRef} />
@@ -734,7 +778,19 @@ function when(iso: string): string {
     : d.toLocaleDateString([], { day: "numeric", month: "short" });
 }
 
-function Bubble({ turn, onAsk }: { turn: Turn; onAsk: (text: string) => void }) {
+function Bubble({
+  turn,
+  onAsk,
+  live,
+  onSettled,
+}: {
+  turn: Turn;
+  onAsk: (text: string) => void;
+  /** False once a later turn has proposed something: this card's button is a
+   *  redraft's predecessor and must not still be armed. */
+  live: boolean;
+  onSettled: () => void;
+}) {
   if (turn.role === "user") {
     return (
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -785,6 +841,8 @@ function Bubble({ turn, onAsk }: { turn: Turn; onAsk: (text: string) => void }) 
             proposal={p}
             roster={turn.roster}
             onAsk={onAsk}
+            live={live}
+            onSettled={onSettled}
           />
         ))}
       </div>
@@ -874,13 +932,25 @@ function ProposalCard({
   proposal,
   roster,
   onAsk,
+  live,
+  onSettled,
 }: {
   proposal: Proposal;
   roster?: string[];
   onAsk: (text: string) => void;
+  live: boolean;
+  onSettled: () => void;
 }) {
   const [state, action, pending] = useActionState(runProposal, {} as RunState);
   const [discarded, setDiscarded] = useState(false);
+
+  // Tell the thread this one is dealt with, so the header stops saying a
+  // proposal is open. An effect rather than a call inside the action: the
+  // result arrives as new state, and a parent cannot be updated during render.
+  const done = Boolean(state.ok) || discarded;
+  useEffect(() => {
+    if (done) onSettled();
+  }, [done, onSettled]);
 
   if (discarded) {
     return (
@@ -940,6 +1010,31 @@ function ProposalCard({
               {n}
             </button>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  /* ⚠️ SUPERSEDED, AND DELIBERATELY NOT A BUTTON.
+     Reached when a later turn has proposed something — almost always the same
+     action redrafted because you corrected a detail. Leaving the old form
+     armed is how you end up with two classes, one of them wrong. It is not
+     hidden either: it is the record of what you turned down, and a card that
+     vanished would make the conversation above it read as if it never
+     happened. */
+  if (!live) {
+    return (
+      <div
+        style={{
+          border: "1px solid #e6e6ee",
+          borderRadius: 14,
+          background: WASH,
+          padding: "12px 14px",
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: FAINT }}>{proposal.verb}</div>
+        <div style={{ fontSize: 13, color: DIM, marginTop: 3 }}>
+          Replaced by the newer draft below — nothing was saved from this one.
         </div>
       </div>
     );
