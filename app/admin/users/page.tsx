@@ -116,9 +116,9 @@ export default async function UsersPage({
   return (
     <Surface>
       <PageTitle
-        eyebrow="Platform"
+        // eyebrow="Platform"
         title="Users"
-        subtitle="Everyone on the platform, with how much work each of them owns."
+        // subtitle="Everyone on the platform, with how much work each of them owns."
         actions={
           <OverflowMenu
             label="User actions"

@@ -23,7 +23,12 @@ import {
   TONE,
   clip,
 } from "@/components/admin/ui";
-import { loadCenters, loadEngagement, loadPlatformStats, loadPlatformTrends } from "@/lib/admin/platform";
+import {
+  loadCenters,
+  loadEngagement,
+  loadPlatformStats,
+  loadPlatformTrends,
+} from "@/lib/admin/platform";
 import { loadConductFlags } from "@/lib/admin/moderation";
 import { loadRevenue } from "@/lib/admin/revenue";
 import { daysSince } from "@/lib/admin/time";
@@ -106,13 +111,13 @@ export default async function AdminPage() {
   return (
     <Surface>
       <PageTitle
-        eyebrow="Platform"
+        // eyebrow="Platform"
         title="Everything, across every tenant"
-        subtitle={
-          decisions > 0
-            ? `${today} · ${decisions} thing${decisions === 1 ? "" : "s"} need${decisions === 1 ? "s" : ""} you today.`
-            : `${today} · nothing is waiting on you.`
-        }
+        // subtitle={
+        //   decisions > 0
+        //     ? `${today} · ${decisions} thing${decisions === 1 ? "" : "s"} need${decisions === 1 ? "s" : ""} you today.`
+        //     : `${today} · nothing is waiting on you.`
+        // }
         actions={
           pending.length > 0 ? (
             <Link
@@ -193,16 +198,19 @@ export default async function AdminPage() {
             </div>
             <Link
               href="/admin/moderation"
-              style={{ fontSize: 12.5, color: INDIGO, textDecoration: "none", whiteSpace: "nowrap" }}
+              style={{
+                fontSize: 12.5,
+                color: INDIGO,
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
             >
               Review →
             </Link>
           </div>
         ))}
         {decisions === 0 ? (
-          <Empty>
-            Nothing is waiting. New center applications and flagged mocks land here.
-          </Empty>
+          <Empty>Nothing is waiting. New center applications and flagged mocks land here.</Empty>
         ) : null}
       </Card>
 
@@ -251,7 +259,9 @@ export default async function AdminPage() {
         <Card pad>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
             <div>
-              <h2 style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0, color: INK }}>
+              <h2
+                style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 700, margin: 0, color: INK }}
+              >
                 Graded practice, day by day
               </h2>
               <p style={{ margin: "4px 0 0", fontSize: 12.5, color: SOFT }}>
@@ -270,7 +280,9 @@ export default async function AdminPage() {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.02em", color: "#7C79DB" }}>
+              <div
+                style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.02em", color: "#7C79DB" }}
+              >
                 {trends.totals.signups}
               </div>
               <div style={{ fontSize: 11.5, color: SOFT }}>
@@ -362,7 +374,13 @@ export default async function AdminPage() {
                 }}
               >
                 <span
-                  style={{ width: 8, height: 8, borderRadius: 3, background: l.color, flex: "none" }}
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 3,
+                    background: l.color,
+                    flex: "none",
+                  }}
                 />
                 <span style={{ color: "#C9C7E4", ...clip }}>
                   {l.name} · {l.granted} account{l.granted === 1 ? "" : "s"}
@@ -382,9 +400,9 @@ export default async function AdminPage() {
           >
             {revenue.unpaidPaidPlans > 0 ? (
               <>
-                {revenue.unpaidPaidPlans} account{revenue.unpaidPaidPlans === 1 ? " is" : "s are"} on
-                a paid plan with no live subscription — comped, or a payment that never completed.
-                They are counted above as accounts, not as revenue.
+                {revenue.unpaidPaidPlans} account{revenue.unpaidPaidPlans === 1 ? " is" : "s are"}{" "}
+                on a paid plan with no live subscription — comped, or a payment that never
+                completed. They are counted above as accounts, not as revenue.
               </>
             ) : (
               <>
@@ -430,7 +448,10 @@ export default async function AdminPage() {
           <CardHead
             title="Busiest centers"
             right={
-              <Link href="/admin/centers" style={{ fontSize: 12.5, color: INDIGO, textDecoration: "none" }}>
+              <Link
+                href="/admin/centers"
+                style={{ fontSize: 12.5, color: INDIGO, textDecoration: "none" }}
+              >
                 All centers →
               </Link>
             }

@@ -73,9 +73,7 @@ export const BADGE: Record<Tone, { tint: string; ink: string }> = {
  * decision.
  */
 export function Surface({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ padding: "24px 28px 70px", fontFamily: SANS, color: INK }}>{children}</div>
-  );
+  return <div style={{ padding: "24px 28px 70px", fontFamily: SANS, color: INK }}>{children}</div>;
 }
 
 export function PageTitle({
@@ -84,8 +82,8 @@ export function PageTitle({
   subtitle,
   actions,
 }: {
-  eyebrow: string;
-  title: string;
+  eyebrow?: string;
+  title?: string;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
 }) {
@@ -252,7 +250,9 @@ export function Kpi({
         {value}
       </div>
       {delta || sub ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+        <div
+          style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}
+        >
           {delta ? (
             <span style={{ fontSize: 11.5, fontWeight: 600, color: TONE[deltaTone].ink }}>
               {delta}

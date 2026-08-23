@@ -31,15 +31,31 @@ export const dynamic = "force-dynamic";
 const dateFmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-const initials = (name: string) => name.replace(/[^\p{L}\p{N} ]/gu, "").slice(0, 2).toUpperCase() || "—";
+const initials = (name: string) =>
+  name
+    .replace(/[^\p{L}\p{N} ]/gu, "")
+    .slice(0, 2)
+    .toUpperCase() || "—";
 
 const COLS = "2.4fr 1fr .7fr .7fr .8fr 1.3fr 1fr";
 
 const SORTS = {
-  practice: { label: "Busiest first", cmp: (a: CenterRow, b: CenterRow) => b.practice30d - a.practice30d },
-  recent: { label: "Newest first", cmp: (a: CenterRow, b: CenterRow) => b.createdAt.localeCompare(a.createdAt) },
-  students: { label: "Most students", cmp: (a: CenterRow, b: CenterRow) => b.students - a.students },
-  idle: { label: "Least active", cmp: (a: CenterRow, b: CenterRow) => a.practice30d - b.practice30d },
+  practice: {
+    label: "Busiest first",
+    cmp: (a: CenterRow, b: CenterRow) => b.practice30d - a.practice30d,
+  },
+  recent: {
+    label: "Newest first",
+    cmp: (a: CenterRow, b: CenterRow) => b.createdAt.localeCompare(a.createdAt),
+  },
+  students: {
+    label: "Most students",
+    cmp: (a: CenterRow, b: CenterRow) => b.students - a.students,
+  },
+  idle: {
+    label: "Least active",
+    cmp: (a: CenterRow, b: CenterRow) => a.practice30d - b.practice30d,
+  },
   name: { label: "Name A–Z", cmp: (a: CenterRow, b: CenterRow) => a.name.localeCompare(b.name) },
 } as const;
 
@@ -101,9 +117,9 @@ export default async function CentersPage({
   return (
     <Surface>
       <PageTitle
-        eyebrow="Platform"
+        // eyebrow="Platform"
         title="Education centers"
-        subtitle="Every organization, and how much of it is actually being used."
+        // subtitle="Every organization, and how much of it is actually being used."
         actions={
           <OverflowMenu
             label="Center actions"
@@ -155,8 +171,18 @@ export default async function CentersPage({
       />
 
       <KpiRow cols={5}>
-        <Kpi label="Active centers" value={active.length} accent={INDIGO} sub={`${all.length} in total`} />
-        <Kpi label="Teachers" value={totals.teachers} accent="#7C79DB" sub="across active centers" />
+        <Kpi
+          label="Active centers"
+          value={active.length}
+          accent={INDIGO}
+          sub={`${all.length} in total`}
+        />
+        <Kpi
+          label="Teachers"
+          value={totals.teachers}
+          accent="#7C79DB"
+          sub="across active centers"
+        />
         <Kpi label="Groups" value={totals.groups} accent="#7FD8A8" sub="classes running" />
         <Kpi label="Students" value={totals.students} accent="#E5A85C" sub="on a centre roll" />
         <Kpi
@@ -225,9 +251,7 @@ export default async function CentersPage({
                 }}
               >
                 {t.label}
-                <span style={{ marginLeft: 6, color: on ? "#B9B7EC" : FAINT }}>
-                  {count(t.key)}
-                </span>
+                <span style={{ marginLeft: 6, color: on ? "#B9B7EC" : FAINT }}>{count(t.key)}</span>
               </Link>
             );
           })}
@@ -270,7 +294,14 @@ export default async function CentersPage({
             className="sa-act"
             style={{ color: TONE.green.ink, textDecoration: "none" }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            >
               <rect x="4" y="4" width="16" height="16" rx="2" />
               <path d="M4 10h16M10 10v10" />
             </svg>
@@ -298,7 +329,10 @@ export default async function CentersPage({
                       {c.name}
                       {!c.billingEnforced ? (
                         <span style={{ marginLeft: 7 }}>
-                          <Pill tone="indigo" title="Quota and seat checks are skipped for this centre">
+                          <Pill
+                            tone="indigo"
+                            title="Quota and seat checks are skipped for this centre"
+                          >
                             unmetered
                           </Pill>
                         </span>
@@ -309,7 +343,9 @@ export default async function CentersPage({
                 />
                 <div>
                   <Pill
-                    tone={c.status === "active" ? "green" : c.status === "pending" ? "amber" : "red"}
+                    tone={
+                      c.status === "active" ? "green" : c.status === "pending" ? "amber" : "red"
+                    }
                   >
                     {c.status}
                   </Pill>
