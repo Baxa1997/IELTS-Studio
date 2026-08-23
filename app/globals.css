@@ -843,6 +843,11 @@
     background: transparent !important;
     border-color: transparent !important;
   }
+  /* The icon's own row: the 11px flex gap to the (now zero-width) label is still
+     real space, and it would push the glyph off the centre we just fixed. */
+  .lp-shell-sidebar--collapsed .lp-sb-link > span {
+    gap: 0 !important;
+  }
   /* Let the rail overflow so hover tooltips can sit beside the icons. */
   .lp-shell-sidebar--collapsed .lp-sb-scroll {
     overflow: visible !important;
@@ -857,6 +862,20 @@
      name shows once labels are hidden). */
   .lp-shell-sidebar--collapsed .lp-sb-link {
     position: relative;
+    /* CENTRE THE GLYPH, PROPERLY.
+       It used to be left-anchored and the rail padding was expected to
+       "≈centre" it. It does not, and the arithmetic says by how much: the
+       collapsed rail is 72px with 12px of padding, so the link box is 48px;
+       the link carries 11px of its own padding and the icon is 18px, which
+       puts the glyph's centre at 20px against a box centre of 24px. Every
+       icon in the rail sat 4px left, which is exactly enough to look like a
+       mistake without looking like anything in particular.
+       `!important` because the link sets `justify-content: space-between`
+       and its padding inline (for the label/trail split when expanded), and
+       an inline style beats an external rule. */
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-link:hover::after {
     content: attr(data-label);

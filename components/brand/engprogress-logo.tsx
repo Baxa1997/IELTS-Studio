@@ -193,13 +193,28 @@ export function CentreWordmark({
   );
 }
 
-/** Initials of a centre, for the collapsed rail. Two letters at most — the
- *  square is 36px and three initials in it are a smudge. */
+/**
+ * The centre's logo letter — ONE character, the first of its name.
+ *
+ * It was two letters, taken from the first two words, and that was the wrong
+ * read of what this square is. It is not an avatar standing in for a person; it
+ * is a LOGOMARK, and a logomark is one glyph. "CA" in a rounded tan square looks
+ * like a monogram badge; "C" looks like a mark, at the same weight and size our
+ * own "P" carries.
+ *
+ * It also survives the real names better. "Cambridge Academy of Tashkent" gives
+ * "CA", which says nothing "C" doesn't, and a two-letter pair has to be set
+ * ~30% smaller to fit the same square — so the compromise cost legibility to
+ * add no meaning.
+ *
+ * Skips anything that is not a letter or a digit, so "«Ilm» Markazi" marks as
+ * "I" rather than as a quotation mark.
+ */
 export function centreInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
+  for (const ch of name.trim()) {
+    if (/\p{L}|\p{N}/u.test(ch)) return ch.toLocaleUpperCase();
+  }
+  return "?";
 }
 
 /** The collapsed-rail square, wearing a centre's initials instead of our "P". */
@@ -234,11 +249,11 @@ export function CentreMark({
       <span
         style={{
           fontWeight: 700,
-          // Two letters need to be smaller than one to fit the same square.
-          fontSize: Math.round(size * (text.length > 1 ? 0.42 : 0.6)),
+          // The same proportion our own "P" mark uses, so a centre's square and
+          // ours are visibly the same object wearing a different letter.
+          fontSize: Math.round(size * 0.6),
           lineHeight: 1,
           color: WHITE,
-          letterSpacing: text.length > 1 ? "-.02em" : undefined,
         }}
       >
         {text}

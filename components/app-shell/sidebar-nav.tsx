@@ -178,7 +178,7 @@ const ADMIN: Section[] = [
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       {
-        label: "Timetable",
+        label: "Calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
@@ -235,7 +235,7 @@ const ADMINISTRATOR: Section[] = [
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       {
-        label: "Timetable",
+        label: "Calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
@@ -268,7 +268,7 @@ const TEACHER: Section[] = [
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       {
-        label: "Timetable",
+        label: "Calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.

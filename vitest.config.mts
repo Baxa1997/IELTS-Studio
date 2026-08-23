@@ -23,6 +23,11 @@ export default defineConfig({
       // rule keeps protecting the bundle and stops blocking the tests — the
       // same reason the `@` alias above exists.
       "server-only": fileURLToPath(new URL("./test/server-only-stub.ts", import.meta.url)),
+      // `next/font/google` is compile-time magic — the loaders only exist once
+      // Next has rewritten the call. Same reasoning as the stub above: its job
+      // is to produce a build artefact, and a test run is not that build. This
+      // keeps every module that declares a typeface testable.
+      "next/font/google": fileURLToPath(new URL("./test/next-font-stub.ts", import.meta.url)),
     },
   },
   test: {
