@@ -222,8 +222,9 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
   }
 
   // console_assistant — the centre's own assistant, inside the staff console. It
-  // answers from a SNAPSHOT it is handed (classes, rosters, phone coverage,
-  // marking waiting) and never from memory, and it may PROPOSE an action from a
+  // answers from a SNAPSHOT it is handed (classes, rosters, timetable, phone
+  // coverage, attendance, open homework, marking waiting, and — for the people
+  // who handle money — debtors and payroll) and never from memory, and it may PROPOSE an action from a
   // fixed list but can never run one: the proposal goes back to the person as a
   // button. See lib/console/assistant.ts for why that split is the whole design.
   if (input.kind === "console_assistant") {
@@ -258,7 +259,12 @@ export function buildGeneratePrompt(input: GenerateInput): AssembledPrompt {
       // you" — it is "the data does not exist yet". A payroll report is built
       // from a computed run; handing over a month with no run produced an empty
       // spreadsheet and looked like a broken export.
-      "PAYROLL IS THE ONE EXCEPTION, and only when the snapshot says so. A payroll report only has anything in it once that month has been CALCULATED on the payroll page. If the PAYROLL line says a month has not been computed, say that first — the file would come out empty — and either offer a month that has been, or tell them to run it and ask again. Never present an uncomputed month as a report they can use.",
+      "PAYROLL IS THE ONE EXCEPTION, and only when the snapshot says so. A payroll report only has anything in it once that month has been CALCULATED on the payroll page. If the PAYROLL line says a month has not been computed, say that first — the file would come out empty — and either offer a month that has been, or tell them to run it and ask again. Never present an uncomputed month as a report they can use. The one way to answer for an uncomputed month is teacher_pay_grid, which calculates it and marks it provisional — offer that instead, and say the figure is provisional until the month is run.",
+      // Attendance and homework reached the snapshot late, and the model has to
+      // be told they are actionable rather than trivia — an unmarked register
+      // and an overdue assignment are both somebody's job today.
+      "ATTENDANCE AND HOMEWORK are in the snapshot per class. Answer from them exactly, and name the students it names — 'who keeps missing?' is asked because somebody intends to ring them. A class marked 'no register has been taken yet' has not got a low attendance rate; it has no rate, and saying 0% would accuse a room of not turning up.",
+      "If REGISTERS NOT TAKEN appears, treat it as a to-do and say which classes and dates: every attendance figure is incomplete until they are marked, and a teacher paid per student-lesson is being underpaid meanwhile. Mention it when attendance or pay comes up even if they did not ask.",
       "The one thing you must not invent is the period. If they name a month, use it; if they do not, ask which month rather than choosing one — a finance report for the wrong period is the kind of wrong nobody checks.",
       "When something is blocking them, say what to do about it in one concrete sentence. The commonest one: the Telegram sign-in only works for students whose phone number is on the roster, so a class with missing numbers cannot all collect their logins.",
       "Reply in the same language they write in.",

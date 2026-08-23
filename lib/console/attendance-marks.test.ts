@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { attendanceRateFrom, markCounts } from "./attendance-marks";
+import { attendanceRateFrom, classAttendance, markCounts } from "./attendance-marks";
 
 /**
  * `excused` is a salary bug, not just an attendance nicety.
@@ -88,5 +88,63 @@ describe("attendanceRateFrom", () => {
     // 2 present, 1 absent, 1 excused. Old rule: 3/4 = 75% (excused counted as
     // attended). New: 2/3 = 67%. Lower, and true.
     expect(attendanceRateFrom(["present", "present", "absent", "excused"])).toBe(67);
+  });
+});
+
+/**
+ * The class rate the assistant reads out. Every case here is a sentence it
+ * could say to a teacher, and the wrong one is worse than silence: telling
+ * somebody a class is at 0% when nobody has taken a register sends them to
+ * chase a room that did nothing wrong.
+ */
+describe("classAttendance", () => {
+  const of = (rows: [string, number, number][]) =>
+    rows.map(([id, sessions, attended]) => ({ id, tally: { sessions, attended } }));
+
+  it("sums the class rather than averaging the students", () => {
+    // A settled student at 20 of 20, and a joiner who has missed both of
+    // theirs. Summed, the class is 20 of 22 — 91%. Averaging the two
+    // percentages instead gives 50%, and would report a healthy class as
+    // half-empty on the strength of one person's two lessons.
+    const { rate } = classAttendance(
+      of([
+        ["a", 20, 20],
+        ["b", 2, 0],
+      ]),
+    );
+    expect(rate).toBe(91);
+  });
+
+  it("has no rate at all when no register has been taken", () => {
+    expect(classAttendance(of([["a", 0, 0]])).rate).toBeNull();
+    expect(classAttendance([{ id: "a", tally: undefined }]).rate).toBeNull();
+    expect(classAttendance([]).rate).toBeNull();
+  });
+
+  it("names the students below the line, worst first", () => {
+    const { poor } = classAttendance(
+      of([
+        ["good", 10, 10],
+        ["bad", 10, 5],
+        ["worst", 10, 2],
+      ]),
+    );
+    expect(poor.map((p) => p.id)).toEqual(["worst", "bad"]);
+    expect(poor[0]!.rate).toBe(20);
+  });
+
+  it("will not call somebody a problem on one missed lesson", () => {
+    // 1 of 2 is 50%, well under the line, but two lessons say nothing.
+    expect(classAttendance(of([["new", 2, 1]])).poor).toEqual([]);
+    expect(classAttendance(of([["settled", 4, 2]])).poor).toHaveLength(1);
+  });
+
+  it("counts a student with no marks yet as neither present nor absent", () => {
+    // The joiner must not drag the class down before their first lesson.
+    const { rate } = classAttendance([
+      { id: "here", tally: { sessions: 10, attended: 9 } },
+      { id: "joined-today", tally: undefined },
+    ]);
+    expect(rate).toBe(90);
   });
 });

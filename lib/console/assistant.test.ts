@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACTIONS,
   DOCUMENTS,
+  monthSpan,
   describeActions,
   describeDocuments,
   vetDocuments,
@@ -288,5 +289,74 @@ describe("vetDocuments", () => {
 
   it("keeps every document pinned to a role", () => {
     for (const d of DOCUMENTS) expect(d.roles.length).toBeGreaterThan(0);
+  });
+
+  /* The pay grid is the answer to the month nobody has run yet — the case that
+     produced the blank spreadsheet. It has to reach the multi-month endpoint,
+     not the single-period one, or it inherits the same emptiness. */
+  it("sends the pay grid to the months endpoint, not the payroll report", () => {
+    const [d] = vetDocuments(offer("teacher_pay_grid", { from: "2026-05", to: "2026-08" }), docCtx);
+    expect(d.href).toBe("/api/console/finance/export?months=2026-05,2026-06,2026-07,2026-08");
+  });
+
+  it("takes a single month for the pay grid without a second one", () => {
+    const [d] = vetDocuments(offer("teacher_pay_grid", { from: "2026-08" }), docCtx);
+    expect(d.href).toBe("/api/console/finance/export?months=2026-08");
+  });
+
+  it("keeps teacher pay away from the teachers", () => {
+    expect(
+      vetDocuments(offer("teacher_pay_grid", { from: "2026-08" }), { ...docCtx, role: "teacher" }),
+    ).toEqual([]);
+    expect(
+      vetDocuments(offer("teacher_pay_grid", { from: "2026-08" }), {
+        ...docCtx,
+        role: "administrator",
+      }),
+    ).toEqual([]);
+  });
+
+  it("refuses a pay grid with no first month rather than picking one", () => {
+    expect(vetDocuments(offer("teacher_pay_grid", { to: "2026-08" }), docCtx)).toEqual([]);
+  });
+});
+
+/**
+ * The span behind the pay grid. Every case here is something a person says out
+ * loud — "May to August", "just August", "from July back to May" — and each one
+ * that came out wrong would be a spreadsheet of the wrong months, which is the
+ * kind of wrong nobody checks.
+ */
+describe("monthSpan", () => {
+  it("fills in the months between the two ends", () => {
+    expect(monthSpan("2026-05", "2026-08")).toEqual(["2026-05", "2026-06", "2026-07", "2026-08"]);
+  });
+
+  it("crosses the new year", () => {
+    expect(monthSpan("2025-11", "2026-02")).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
+  });
+
+  it("gives one month when both ends are the same", () => {
+    expect(monthSpan("2026-08", "2026-08")).toEqual(["2026-08"]);
+  });
+
+  it("swaps a backwards range instead of returning nothing", () => {
+    expect(monthSpan("2026-08", "2026-06")).toEqual(["2026-06", "2026-07", "2026-08"]);
+  });
+
+  it("keeps the LAST twelve of a long range, matching the export's own cap", () => {
+    const span = monthSpan("2020-01", "2026-08");
+    expect(span).toHaveLength(12);
+    expect(span[11]).toBe("2026-08");
+    expect(span[0]).toBe("2025-09");
+  });
+
+  it("returns nothing for a month it cannot parse, so no file is offered", () => {
+    expect(monthSpan("August", "2026-08")).toEqual([]);
+    expect(monthSpan("2026-13", "2026-14")).toEqual([]);
+    expect(monthSpan("2026-00", "2026-03")).toEqual([]);
+    // Shape-valid but not a month, at the far end: the walk would never reach
+    // it and would hand back twelve columns nobody asked for.
+    expect(monthSpan("2026-01", "2026-13")).toEqual([]);
   });
 });
