@@ -121,7 +121,6 @@ export function AssistantChat({
   capabilities,
   telegramConnected,
   botUsername,
-  recent,
 }: {
   suggestions: string[];
   centreName: string;
@@ -131,7 +130,6 @@ export function AssistantChat({
   capabilities: Capability[];
   telegramConnected: boolean;
   botUsername: string | null;
-  recent: { action: string; actor: string; outcome: string; ok: boolean; at: string }[];
 }) {
   const [turns, setTurns] = useState<Turn[]>(initialTurns);
   const [draft, setDraft] = useState("");
@@ -317,10 +315,7 @@ export function AssistantChat({
         </div>
       </header>
 
-      <div
-        className={recent.length > 0 ? "cn-assistant-grid cn-assistant-grid--wide" : "cn-assistant-grid"}
-        style={{ flex: 1, minHeight: 0 }}
-      >
+      <div className="cn-assistant-grid" style={{ flex: 1, minHeight: 0 }}>
         {/* ── what it can do, and what you asked before ─────────────────── */}
         <aside
           className="cn-hide-md"
@@ -707,42 +702,6 @@ export function AssistantChat({
             </form>
           </div>
         </div>
-
-        {/* ── what it has actually done ──────────────────────────────────
-            Held back until there is something in it: an empty "Confirmed
-            today" is a column of nothing taking a fifth of the screen, and it
-            teaches people the panel is decorative before it has ever had
-            anything to say. */}
-        {recent.length > 0 ? (
-          <aside className="cn-hide-md" style={{ minHeight: 0, overflow: "auto" }}>
-            <div style={{ ...card, padding: 14 }}>
-              <div style={{ ...railHead, paddingBottom: 10 }}>What it has done</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-                {recent.map((r, i) => (
-                  <div key={i} style={{ display: "flex", gap: 9 }}>
-                    <span
-                      title={r.ok ? "went through" : "refused"}
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: 999,
-                        background: r.ok ? "#1f8a4c" : "#c9862f",
-                        flex: "none",
-                        marginTop: 6,
-                      }}
-                    />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, lineHeight: 1.4, color: INK }}>{r.outcome}</div>
-                      <div style={{ fontSize: 12, color: DIM }}>
-                        {r.actor} · {when(r.at)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </aside>
-        ) : null}
       </div>
     </div>
   );
@@ -989,7 +948,12 @@ function ProposalCard({
   return (
     <form
       action={action}
-      style={{ border: "1px solid #ddd9fb", borderRadius: 14, overflow: "hidden", background: "#fff" }}
+      style={{
+        border: "1px solid #ddd9fb",
+        borderRadius: 14,
+        overflow: "hidden",
+        background: "#fff",
+      }}
     >
       <input type="hidden" name="action" value={proposal.action} />
       {roster ? <input type="hidden" name="roster" value={roster.join("\n")} /> : null}
@@ -1020,7 +984,9 @@ function ProposalCard({
           Needs confirming
         </span>
         <span style={{ fontSize: 13, fontWeight: 700, color: INK }}>{proposal.verb}</span>
-        <span style={{ marginLeft: "auto", fontSize: 12, color: "#6f6a9e" }}>Nothing saved yet</span>
+        <span style={{ marginLeft: "auto", fontSize: 12, color: "#6f6a9e" }}>
+          Nothing saved yet
+        </span>
       </div>
 
       <div

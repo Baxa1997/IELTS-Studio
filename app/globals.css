@@ -823,6 +823,14 @@
   .lp-shell-sidebar--collapsed .lp-sb-logo-full {
     display: none;
   }
+  /* The role chip sits BENEATH a centre's name, so the shared `max-width: 0`
+     that collapses inline text is not enough for it: a zero-width box on its
+     own row still carries its padding and line-height, and the collapsed rail
+     grew a 22px gap under the logomark. Taken out of flow entirely, like the
+     wordmark it sits under — the brand row's collapse is a swap, not a tween. */
+  .lp-shell-sidebar--collapsed .lp-sb-rolechip {
+    display: none;
+  }
   .lp-shell-sidebar--collapsed .lp-sb-logo-mark {
     display: inline-flex;
   }
@@ -2020,9 +2028,35 @@
   padding: 16px;
   min-width: 0;
 }
+/* ⚠️ ONE SCREEN, AND THE HEIGHT IS INHERITED RATHER THAN GUESSED.
+   This was `height: calc(100dvh - 22px)` — the viewport less the shell
+   surface's padding and border, worked out by hand. It was right only while
+   nothing else shared the surface, and the quota bar does: the page came out
+   taller than the box holding it, so the whole surface scrolled, taking the
+   composer below the fold and the header off the top. The rule now is that
+   every link in the chain has a definite height handed DOWN to it, starting
+   from the surface, which is the only element that actually knows.
+
+   Desktop only. On a phone the page scrolls normally — a fixed frame with a
+   scrolling middle is worth having on a wide screen and hostile on a small
+   one — so the chain must NOT be pinned there, or a tall page would be cut
+   off inside a wrapper that cannot grow. */
 @media (min-width: 901px) {
+  .lp-shell-surface--fills {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Whatever is left after the quota bar and anything else above it. */
+  .lp-shell-surface--fills > .lp-shell-content {
+    flex: 1;
+    min-height: 0;
+  }
+  /* The console's own brand wrapper, and then its page box — both are plain
+     containers in the middle of the chain, and a percentage height dies at the
+     first ancestor that has none. */
+  .lp-shell-surface--fills .cn-root,
   .cn-assistant-page {
-    height: calc(100dvh - 22px);
+    height: 100%;
   }
 }
 
@@ -2035,12 +2069,8 @@
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 12px;
 }
-.cn-assistant-grid--wide {
-  grid-template-columns: 250px minmax(0, 1fr) 268px;
-}
 @media (max-width: 1180px) {
-  .cn-assistant-grid,
-  .cn-assistant-grid--wide {
+  .cn-assistant-grid {
     grid-template-columns: 210px minmax(0, 1fr);
   }
 }
