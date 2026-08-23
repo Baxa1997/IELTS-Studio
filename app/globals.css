@@ -843,8 +843,9 @@
     background: transparent !important;
     border-color: transparent !important;
   }
-  /* The icon's own row: the 11px flex gap to the (now zero-width) label is still
-     real space, and it would push the glyph off the centre we just fixed. */
+  /* And the same inside the icon's own wrapper, where an 11px gap sits between
+     the glyph and the zero-width label. Both gaps have to go: zeroing only one
+     of them moves the icon halfway and reads as "still not centred". */
   .lp-shell-sidebar--collapsed .lp-sb-link > span {
     gap: 0 !important;
   }
@@ -876,6 +877,14 @@
     justify-content: center !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
+    /* The LINK'S OWN gap, which is the one that was still doing the damage.
+       The link is a flex row of TWO children — the icon's wrapper and the
+       trailing count/badge strip — and `itemBase` puts 11px between them. The
+       trail collapses to zero WIDTH but the gap beside it does not collapse
+       with it, so `justify-content: center` was centring an 18 + 11 + 0 = 29px
+       group and leaving the glyph 5.5px left of centre. Zero here and the group
+       is the glyph alone. */
+    gap: 0 !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-link:hover::after {
     content: attr(data-label);
