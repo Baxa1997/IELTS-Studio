@@ -31,9 +31,11 @@ import { Typewriter } from "@/components/typewriter";
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { Timer } from "@/components/exam/timer";
-import { clientEnv } from "@/lib/env";
-import { createClient } from "@/lib/supabase/client";
+import { engineClient } from "@/lib/engine/client";
 import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
+
+/** Every engine call on this screen goes to the engine's `multilevel` namespace. */
+const callEngine = engineClient("multilevel");
 
 /**
  * Multilevel (DTM) runner. Generation + grading live on the AI engine; the browser
@@ -73,36 +75,6 @@ const D_SLATE3 = "#334155";
 const D_INK = "#1e293b"; // body text
 
 // ---- Engine call -----------------------------------------------------------
-
-async function callEngine<T>(path: string, body: unknown): Promise<T> {
-  const backend = clientEnv.aiBackendUrl;
-  if (!backend) {
-    throw new Error(
-      "AI backend isn’t configured. Set NEXT_PUBLIC_AI_BACKEND_URL to the engine URL.",
-    );
-  }
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  if (!token) throw new Error("Your session expired — please sign in again.");
-
-  const res = await fetch(`${backend}/multilevel/${path}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
-    detail?: string | { message?: string };
-    message?: string;
-  };
-  if (!res.ok) {
-    const detail = typeof json.detail === "string" ? json.detail : json.detail?.message;
-    throw new Error(detail ?? json.message ?? `Request failed (${res.status}).`);
-  }
-  return json as T;
-}
 
 // ---- Types (mirror the engine render views) --------------------------------
 

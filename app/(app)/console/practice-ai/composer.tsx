@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
-import { clientEnv } from "@/lib/env";
+import { engineClient } from "@/lib/engine/client";
 import {
   EMBER,
   HAIRLINE,
@@ -20,7 +20,9 @@ import {
   TROUGH,
   TROUGH_DEEP,
 } from "@/lib/lessons/theme";
-import { createClient } from "@/lib/supabase/client";
+
+/** Every engine call on this screen goes to the engine's `lessons` namespace. */
+const callEngine = engineClient("lessons");
 
 /**
  * Type what your group needs; get a lesson page.
@@ -190,42 +192,6 @@ function speechCtor(): SpeechCtor | null {
     webkitSpeechRecognition?: SpeechCtor;
   };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
-async function callEngine<T>(path: string, body: unknown): Promise<T> {
-  const backend = clientEnv.aiBackendUrl;
-  if (!backend) throw new Error("The AI engine isn't configured for this environment.");
-
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  if (!token) throw new Error("Your session expired — please sign in again.");
-
-  let res: Response;
-  try {
-    res = await fetch(`${backend}/lessons/${path}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    // A rejected fetch is a network fact, not an HTTP status. Saying so beats
-    // the browser's bare "Failed to fetch", which sent us hunting for a timeout
-    // when the engine box was simply switched off.
-    throw new Error("Couldn't reach the AI engine. It may be restarting — try again shortly.");
-  }
-
-  const json = (await res.json().catch(() => ({}))) as Record<string, unknown> & {
-    detail?: string | { message?: string };
-    message?: string;
-  };
-  if (!res.ok) {
-    const detail = typeof json.detail === "string" ? json.detail : json.detail?.message;
-    throw new Error(detail ?? json.message ?? `That didn't work (${res.status}).`);
-  }
-  return json as T;
 }
 
 export function Composer() {
