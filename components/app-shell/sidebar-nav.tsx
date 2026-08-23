@@ -7,6 +7,7 @@ import {
   Activity,
   Award,
   Banknote,
+  Bot,
   BookA,
   BookOpen,
   Building2,
@@ -20,15 +21,14 @@ import {
   History,
   LayoutDashboard,
   Mic,
-  NotebookPen,
   Receipt,
   ShieldAlert,
-  Sparkles,
   SquarePen,
   Target,
   UserRound,
   Users,
   Wallet,
+  WandSparkles,
 } from "lucide-react";
 
 /**
@@ -47,9 +47,18 @@ const RAIL_TEXT = "#CDD1DF"; // resting item text — near-white, calm
 const RAIL_MUTED = "#6F7599"; // section titles / disabled
 const RAIL_ACTIVE_BG = "rgba(255,255,255,.07)"; // active tile — a calm lighter panel
 const RAIL_ACTIVE_LINE = "rgba(255,255,255,.09)";
-/* The Assistant's mint — the same accent the role chip uses in shell.tsx, so the
-   rail has one highlight colour rather than two competing ones. */
-const RAIL_AI = "#5BDD9B";
+/* The two accent rows. Both were mint at first, which was the wrong instinct:
+   mint is already the role chip beside the logo, so an accented row read as
+   "another chip" rather than as its own thing. These two are the rail's only
+   colour, and they are far enough apart to be told apart at 18px. */
+const ACCENTS = {
+  // Violet — unused anywhere else on the rail, and the colour the product
+  // already reaches for when something is thinking (the listening runner).
+  assistant: { fg: "#A78BFA", bg: "rgba(167,139,250,.10)", line: "rgba(167,139,250,.26)" },
+  // Gold — picked up from the brand's tan logomark, so the "make something"
+  // row echoes the mark rather than inventing a fourth hue.
+  generate: { fg: "#E5A85C", bg: "rgba(229,168,92,.09)", line: "rgba(229,168,92,.24)" },
+} as const;
 
 type Item = {
   label: string;
@@ -81,17 +90,23 @@ type Item = {
    */
   alsoMatches?: string[];
   /**
-   * The one item in the rail that is not a place — it is a thing that answers.
+   * The two rows in the rail that are not places.
    *
-   * Exactly one item carries this, and that is the point: the Assistant sat in a
-   * list of nine identical rows wearing the same sparkle as Practice AI, so the
-   * feature the console is built around read as the ninth link down. It gets a
-   * mint tint, its own hairline, and a slow breath on the icon (`.lp-sb-ai`,
-   * globals.css) so the eye finds it without the row shouting.
+   * Everything else takes you somewhere. These two DO something, and they were
+   * both wearing the same sparkle as each other, so the two features the console
+   * is built around read as links seven and eight in a list of nine.
    *
-   * If a second item ever wants this, the answer is no — two accents is none.
+   *   "assistant" — the thing that answers. Violet, and the only animated row in
+   *     the product: a slow breath on the icon, because it is the one item whose
+   *     whole proposition is that something is listening.
+   *   "generate"  — the thing that makes a lesson. Gold, tinted and outlined the
+   *     same way, and deliberately STILL. Two animated rows is a busy rail and
+   *     neither one wins; the colour alone is enough to lift it out of the list.
+   *
+   * Three would be too many. If a third row wants an accent, the honest move is
+   * to take one away from these.
    */
-  accent?: boolean;
+  accent?: "assistant" | "generate";
 };
 type Section = { title?: string; items: Item[] };
 
@@ -157,7 +172,7 @@ const ADMIN: Section[] = [
      the reader has actually crossed a boundary. */
   {
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Sparkles, accent: true },
+      { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
@@ -214,7 +229,7 @@ const ADMIN: Section[] = [
 const ADMINISTRATOR: Section[] = [
   {
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Sparkles, accent: true },
+      { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
@@ -248,7 +263,7 @@ const ADMINISTRATOR: Section[] = [
 const TEACHER: Section[] = [
   {
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Sparkles, accent: true },
+      { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
@@ -274,7 +289,12 @@ const TEACHER: Section[] = [
     items: [
       // First in the section: it is the only one a teacher MAKES rather than
       // sits, and it is the reason they open this rail on a planning day.
-      { label: "Practice AI", href: "/console/practice-ai", icon: NotebookPen },
+      {
+        label: "Practice AI",
+        href: "/console/practice-ai",
+        icon: WandSparkles,
+        accent: "generate",
+      },
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
       { label: "Listening", href: "/listen", icon: Headphones },
@@ -556,22 +576,22 @@ export function SidebarNav({
                       color: active ? "#fff" : RAIL_TEXT,
                       // No inline background when inactive — the .lp-sb-item:hover wash
                       // (globals.css) can't beat an inline value, even "transparent".
-                      background: active
-                        ? RAIL_ACTIVE_BG
-                        : accent
-                          ? "rgba(91,221,155,.07)"
-                          : undefined,
+                      background: active ? RAIL_ACTIVE_BG : accent ? ACCENTS[accent].bg : undefined,
                       border: `1px solid ${
-                        active ? RAIL_ACTIVE_LINE : accent ? "rgba(91,221,155,.22)" : "transparent"
+                        active ? RAIL_ACTIVE_LINE : accent ? ACCENTS[accent].line : "transparent"
                       }`,
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
                       <span
-                        className={accent ? "lp-sb-ai" : undefined}
+                        /* Only the Assistant breathes, and only while you are
+                           not on it: once you are ON the page, an icon nudging
+                           for attention is asking you to go somewhere you
+                           already are. */
+                        className={accent === "assistant" && !active ? "lp-sb-ai" : undefined}
                         style={{
                           display: "inline-flex",
-                          color: accent && !active ? RAIL_AI : undefined,
+                          color: accent && !active ? ACCENTS[accent].fg : undefined,
                         }}
                       >
                         <Icon size={18} strokeWidth={1.8} />

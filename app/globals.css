@@ -241,16 +241,24 @@
   }
 }
 /* ── the Assistant's mark ─────────────────────────────────────────────────────
-   ONE item in the rail gets this, and only because it is not a place.
-   Every other row takes you somewhere; the Assistant answers. It had been
-   sitting ninth in a list of identical rows wearing the same sparkle icon as
-   Practice AI, which is how the thing the console is built around came to read
-   as another menu entry.
+   THE ONLY ANIMATED THING IN THE RAIL, and that exclusivity is the whole
+   mechanism. Two moving items is a busy sidebar in which neither one wins, so
+   Practice AI — the other row that does something rather than going somewhere —
+   is given its own colour (gold, in sidebar-nav.tsx) and left deliberately
+   still. One thing moves; everything else is quiet around it.
 
-   A slow breath, not a pulse: ~4s, and the opacity floor is high (0.72) so the
-   icon never looks like it is loading or failing. The row itself is styled
-   inline in sidebar-nav.tsx from the same mint; this file only carries the
-   parts an inline style cannot express. */
+   A BREATH, NOT A PULSE. ~4.2s, and the opacity floor sits at 0.72 — high
+   enough that the icon never dips into looking disabled, stalled or mid-fetch.
+   The scale peaks at 1.06; past about 1.1 at 18px the strokes visibly resample
+   and the icon looks like it is wobbling rather than breathing.
+
+   The halo is a second, slower layer on the same element so the two never sync
+   up into a single throb: a soft violet glow that swells behind the icon. It is
+   drawn with `filter: drop-shadow` rather than a box-shadow so it follows the
+   icon's actual silhouette instead of a rectangle around it.
+
+   Colour lives here as a literal because a keyframe cannot read the inline
+   accent it belongs to; it is the same violet as ACCENTS.assistant. */
 @keyframes lp-sb-ai-breathe {
   0%,
   100% {
@@ -259,22 +267,37 @@
   }
   50% {
     opacity: 1;
-    transform: scale(1.07);
+    transform: scale(1.06);
+  }
+}
+@keyframes lp-sb-ai-halo {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(167, 139, 250, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.55));
   }
 }
 .lp-sb-ai {
-  animation: lp-sb-ai-breathe 4s ease-in-out infinite;
+  animation:
+    lp-sb-ai-breathe 4.2s ease-in-out infinite,
+    lp-sb-ai-halo 6.4s ease-in-out infinite;
   transform-origin: center;
+  will-change: transform, opacity;
 }
-/* The row it sits in warms up on hover, rather than taking the neutral wash
-   every other row gets — the accent should feel like it belongs to this item. */
+/* Hovering the row is a question being asked — it quickens, and the two layers
+   stay on different periods so the effect never collapses into one flash. */
 .lp-sb-link:hover .lp-sb-ai {
-  animation-duration: 2.2s;
+  animation-duration: 2.4s, 3.2s;
 }
 @media (prefers-reduced-motion: reduce) {
   .lp-sb-ai {
     animation: none;
     opacity: 1;
+    /* The glow is the identity, not the motion — so a static one stays, and the
+       row still reads as the accented item without anything moving. */
+    filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.4));
   }
 }
 
