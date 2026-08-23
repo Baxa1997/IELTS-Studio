@@ -5,8 +5,24 @@
  * (`.lp-skel`) — no client JS. Each route's `loading.tsx` picks the matching variant;
  * `PageSkeleton` is the group-wide default (dashboard-shaped).
  */
-export function Block({ w, h, r = 8, mt = 0 }: { w: number | string; h: number; r?: number; mt?: number }) {
-  return <div className="lp-skel" style={{ width: w, height: h, borderRadius: r, marginTop: mt }} aria-hidden />;
+export function Block({
+  w,
+  h,
+  r = 8,
+  mt = 0,
+}: {
+  w: number | string;
+  h: number;
+  r?: number;
+  mt?: number;
+}) {
+  return (
+    <div
+      className="lp-skel"
+      style={{ width: w, height: h, borderRadius: r, marginTop: mt }}
+      aria-hidden
+    />
+  );
 }
 
 export function Card({ children, accent }: { children: React.ReactNode; accent?: boolean }) {
@@ -26,7 +42,13 @@ export function Card({ children, accent }: { children: React.ReactNode; accent?:
 }
 
 const FADE: React.CSSProperties = { animation: "lp-fadeup .25s ease both" };
-const SRONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" };
+const SRONLY: React.CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+};
 
 function Heading({ titleW = 240, subW = 320 }: { titleW?: number; subW?: number }) {
   return (
@@ -42,7 +64,16 @@ function Rows({ n = 3 }: { n?: number }) {
   return (
     <Card>
       {Array.from({ length: n }).map((_, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid #F0EEE2" }}>
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "10px 0",
+            borderTop: i === 0 ? "none" : "1px solid #F0EEE2",
+          }}
+        >
           <Block w={40} h={40} r={10} />
           <div style={{ flex: 1 }}>
             <Block w={`${60 - i * 8}%`} h={13} r={7} />
@@ -60,12 +91,23 @@ export function PageSkeleton() {
   return (
     <div style={FADE} role="status" aria-label="Loading">
       <Heading />
-      <div style={{ marginTop: 18, background: "#fff", border: "1px solid #E7E4D6", borderRadius: 16, padding: "22px 24px" }}>
+      <div
+        style={{
+          marginTop: 18,
+          background: "#fff",
+          border: "1px solid #E7E4D6",
+          borderRadius: 16,
+          padding: "22px 24px",
+        }}
+      >
         <Block w={120} h={12} r={6} />
         <Block w={180} h={40} r={10} mt={12} />
         <Block w={260} h={13} r={7} mt={12} />
       </div>
-      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+      <div
+        className="lp-cols-2"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}
+      >
         {[0, 1].map((i) => (
           <Card key={i} accent={i === 1}>
             <Block w={100} h={12} r={6} />
@@ -113,7 +155,14 @@ export function CardsSkeleton({ cards = 4, tabs = false }: { cards?: number; tab
           ))}
         </div>
       ) : null}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14, marginTop: tabs ? 16 : 26 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+          gap: 14,
+          marginTop: tabs ? 16 : 26,
+        }}
+      >
         {Array.from({ length: cards }).map((_, i) => (
           <Card key={i}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -131,19 +180,112 @@ export function CardsSkeleton({ cards = 4, tabs = false }: { cards?: number; tab
   );
 }
 
+/**
+ * A console page: heading → a KPI strip → one wide table.
+ *
+ * Every one of the console's 25 pages used to fall through to `PageSkeleton`,
+ * which is dashboard-shaped — a learner hero and band cards. So opening
+ * /console/finance flashed a student dashboard and then jumped to a table. A
+ * skeleton that does not match the page it stands in for is worse than none:
+ * the swap reads as a glitch rather than as loading.
+ *
+ * The console's own surface is cream (`.cn-root`), so the card fill here is the
+ * console's panel white against that ground rather than the learner card.
+ */
+export function ConsoleSkeleton({ kpis = 4, rows = 7 }: { kpis?: number; rows?: number }) {
+  return (
+    <div style={FADE} role="status" aria-label="Loading">
+      <Heading titleW={210} subW={300} />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(auto-fit, minmax(150px, 1fr))`,
+          gap: 12,
+          marginTop: 22,
+        }}
+      >
+        {Array.from({ length: kpis }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              background: "#fff",
+              border: "1px solid #C5C4BE",
+              borderRadius: 12,
+              padding: "16px 18px",
+            }}
+          >
+            <Block w={70} h={11} r={6} />
+            <Block w={96} h={24} r={8} mt={12} />
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid #C5C4BE",
+          borderRadius: 12,
+          marginTop: 18,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid #D4D3CE" }}>
+          <Block w={150} h={14} r={7} />
+        </div>
+        {Array.from({ length: rows }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "13px 18px",
+              borderBottom: i === rows - 1 ? "none" : "1px solid #DEDEDA",
+            }}
+          >
+            <Block w={28} h={28} r={999} />
+            <Block w={`${34 - (i % 3) * 5}%`} h={12} r={6} />
+            <div style={{ marginLeft: "auto", display: "flex", gap: 12 }}>
+              <Block w={72} h={12} r={6} />
+              <Block w={54} h={18} r={999} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <span style={SRONLY}>Loading…</span>
+    </div>
+  );
+}
+
 /** A launcher/detail page: heading → one tall hero card → a supporting card. */
 export function LauncherSkeleton({ narrow = false }: { narrow?: boolean }) {
   return (
-    <div style={{ ...FADE, maxWidth: narrow ? 720 : undefined, margin: narrow ? "0 auto" : undefined }} role="status" aria-label="Loading">
+    <div
+      style={{ ...FADE, maxWidth: narrow ? 720 : undefined, margin: narrow ? "0 auto" : undefined }}
+      role="status"
+      aria-label="Loading"
+    >
       <Heading titleW={260} subW={narrow ? 520 : 360} />
-      <div style={{ marginTop: 20, background: "#fff", border: "1px solid #E7E4D6", borderRadius: 16, padding: "26px 26px" }}>
+      <div
+        style={{
+          marginTop: 20,
+          background: "#fff",
+          border: "1px solid #E7E4D6",
+          borderRadius: 16,
+          padding: "26px 26px",
+        }}
+      >
         <Block w={120} h={12} r={6} />
         <Block w="70%" h={22} r={9} mt={14} />
         <Block w="100%" h={13} r={7} mt={16} />
         <Block w="92%" h={13} r={7} mt={9} />
         <Block w={170} h={44} r={12} mt={22} />
       </div>
-      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}>
+      <div
+        className="lp-cols-2"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginTop: 14 }}
+      >
         {[0, 1].map((i) => (
           <Card key={i}>
             <Block w="50%" h={14} r={7} />

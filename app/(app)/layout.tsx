@@ -69,6 +69,46 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireOrgUser();
 
+  const isStudent = profile.role === "student";
+  const isSoloLearner = isStudent && !isHomeworkOnlyStudent(profile);
+  // Staff keep THIS shell — the same collapsible rail every role uses. Only the
+  // canvas and the menu change (variant="console"): the CRM design applies to
+  // the content area, not to the app's own chrome.
+  const isStaff = profile.role === "center_admin" || profile.role === "teacher";
+
+  /**
+   * EVERYTHING THE SHELL NEEDS, IN ONE ROUND TRIP RATHER THAN SIX.
+   *
+   * These used to run one `await` at a time, and every one of them is a separate
+   * hop to Supabase: plan, then nav counts, then the group-membership count,
+   * then assignments, then usage, then the inbox. Nothing downstream fed
+   * anything upstream — they were sequential only because they were written in
+   * the order somebody thought of them — so a student was paying five or six
+   * round trips of latency, serially, before the shell could render at all.
+   *
+   * Now they overlap and the layout costs roughly the slowest one.
+   *
+   * The trade is that a learner who has not finished onboarding does a little
+   * work that the takeover below then throws away. That is a once-per-account
+   * path; the waterfall was on every cold load, for everyone, forever.
+   */
+  const supabase = isStudent ? await createClient() : null;
+  const [plan, navCounts, groupCount, usage, inbox, cookieStore] = await Promise.all([
+    isSoloLearner ? loadStudyPlan(profile.id) : Promise.resolve(null),
+    isStaff ? loadNavCounts(profile) : Promise.resolve(undefined),
+    supabase
+      ? supabase.from("group_members").select("group_id", { count: "exact", head: true })
+      : Promise.resolve(null),
+    // Plan card and quota bar are billing surfaces. A center pays per seat, not
+    // per essay (organizations.billing_enforced is false for them), so showing a
+    // center student a usage meter would quote a limit nobody enforces.
+    isSoloLearner ? getUsageSummary(profile.organization_id) : Promise.resolve(null),
+    // Loaded here, not in the client bell, so the unread badge is correct on the
+    // first paint rather than after a fetch.
+    loadInbox(),
+    cookies(),
+  ]);
+
   // First-run gate: a student without a study plan sees ONLY the full-screen
   // onboarding takeover (no shell, no nav) until they complete it — whatever route
   // they're on. The page underneath renders nothing (see each page's plan guard).
@@ -76,51 +116,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // plan. A center student is taught to their class's plan, not their own, and
   // does not choose their own practice — so the takeover would ask them to set
   // up something that never gets used. Solo learners still get it.
-  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
-    const plan = await loadStudyPlan(profile.id);
-    if (!plan) return <OnboardingTakeover />;
-  }
+  if (isSoloLearner && !plan) return <OnboardingTakeover />;
 
-  // Staff keep THIS shell — the same collapsible rail every role uses. Only the
-  // canvas and the menu change (variant="console"): the CRM design applies to
-  // the content area, not to the app's own chrome.
-  const isStaff = profile.role === "center_admin" || profile.role === "teacher";
-  const navCounts = isStaff ? await loadNavCounts(profile) : undefined;
-
-  let sidebarFooter: React.ReactNode = null;
-  let quotaBar: React.ReactNode = null;
   // A student in a group gets the Assignments nav item; a solo B2C learner
   // never does — RLS returns nothing for them anyway. This is computed for
   // EVERY student, including center ones: homework is the whole menu for them,
-  // so gating it behind the billing branch below would hide the one item they
+  // so gating it behind the billing branch would hide the one item they
   // actually need.
-  let showAssignments = false;
-  let pendingAssignments = 0;
-  if (profile.role === "student") {
-    const supabase = await createClient();
-    const { count } = await supabase
-      .from("group_members")
-      .select("group_id", { count: "exact", head: true });
-    showAssignments = (count ?? 0) > 0;
-    if (showAssignments) {
-      const assignments = await loadStudentAssignments(profile.id);
-      pendingAssignments = assignments.filter((a) => !a.done).length;
-    }
-  }
+  //
+  // This one genuinely depends on the count above, so it stays a second hop —
+  // but only for a student who is actually in a group.
+  const showAssignments = (groupCount?.count ?? 0) > 0;
+  const pendingAssignments = showAssignments
+    ? (await loadStudentAssignments(profile.id)).filter((a) => !a.done).length
+    : 0;
 
-  // Plan card and quota bar are billing surfaces. A center pays per seat, not
-  // per essay (organizations.billing_enforced is false for them), so showing a
-  // center student a usage meter would quote a limit nobody enforces.
-  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
-    const usage = await getUsageSummary(profile.organization_id);
-    sidebarFooter = <PlanCard usage={usage} />;
-    quotaBar = <QuotaBar usage={usage} />;
-  }
-
-  // Loaded here, not in the client bell, so the unread badge is correct on the
-  // first paint rather than after a fetch.
-  const inbox = await loadInbox();
-  const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
+  const sidebarFooter = usage ? <PlanCard usage={usage} /> : null;
+  const quotaBar = usage ? <QuotaBar usage={usage} /> : null;
+  const collapsed = cookieStore.get("sb_collapsed")?.value === "1";
 
   return (
     <div
