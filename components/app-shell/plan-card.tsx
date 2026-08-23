@@ -16,17 +16,17 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
   return (
     <div
       className="lp-sb-target"
-        style={{
-          background: "rgba(255,255,255,.05)",
-          border: "1px solid rgba(255,255,255,.08)",
-          borderRadius: 14,
-          padding: 14,
-          color: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-        }}
-      >
+      style={{
+        background: "rgba(255,255,255,.05)",
+        border: "1px solid rgba(255,255,255,.08)",
+        borderRadius: 14,
+        padding: 14,
+        color: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span
           style={{

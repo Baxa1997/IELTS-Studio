@@ -240,6 +240,44 @@
     transform: rotate(360deg);
   }
 }
+/* ── the Assistant's mark ─────────────────────────────────────────────────────
+   ONE item in the rail gets this, and only because it is not a place.
+   Every other row takes you somewhere; the Assistant answers. It had been
+   sitting ninth in a list of identical rows wearing the same sparkle icon as
+   Practice AI, which is how the thing the console is built around came to read
+   as another menu entry.
+
+   A slow breath, not a pulse: ~4s, and the opacity floor is high (0.72) so the
+   icon never looks like it is loading or failing. The row itself is styled
+   inline in sidebar-nav.tsx from the same mint; this file only carries the
+   parts an inline style cannot express. */
+@keyframes lp-sb-ai-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.07);
+  }
+}
+.lp-sb-ai {
+  animation: lp-sb-ai-breathe 4s ease-in-out infinite;
+  transform-origin: center;
+}
+/* The row it sits in warms up on hover, rather than taking the neutral wash
+   every other row gets — the accent should feel like it belongs to this item. */
+.lp-sb-link:hover .lp-sb-ai {
+  animation-duration: 2.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-sb-ai {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ── shared primitive kit (components/ui/*) ───────────────────────────────────
    The handful of states an inline style cannot express. Everything else about
    these components — colour, spacing, type — comes from lib/theme/tokens.ts, so
@@ -865,7 +903,7 @@
    is also why the sanitiser's class allow-list is `lp-*` — those are the hooks
    below, and nothing the model writes can reach any other class in the app. */
 .lp-lesson {
-  color: #2A2D34;
+  color: #2a2d34;
   font-size: 16px;
   line-height: 1.7;
 }
@@ -874,8 +912,14 @@
    numbered heading. A lesson read as one undifferentiated wall is the single
    most common complaint about generated material — the reader cannot tell
    where they are or how much is left. */
-.lp-section { padding: 26px 0; border-top: 1px solid #EFEDE8; }
-.lp-section:first-child { padding-top: 4px; border-top: 0; }
+.lp-section {
+  padding: 26px 0;
+  border-top: 1px solid #efede8;
+}
+.lp-section:first-child {
+  padding-top: 4px;
+  border-top: 0;
+}
 .lp-section-h {
   display: flex;
   align-items: baseline;
@@ -883,16 +927,16 @@
   font-family: var(--font-serif4), Georgia, serif;
   font-size: 22px;
   font-weight: 700;
-  letter-spacing: -.015em;
-  color: #15171C;
+  letter-spacing: -0.015em;
+  color: #15171c;
   margin: 0 0 14px;
 }
 .lp-section-n {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   font-weight: 500;
-  color: #B9B5AC;
-  letter-spacing: .04em;
+  color: #b9b5ac;
+  letter-spacing: 0.04em;
 }
 
 /* The first-language note. Closed by default and quiet when closed: a learner
@@ -900,8 +944,8 @@
    just read. */
 .lp-l1 {
   margin: 14px 0 0;
-  border: 1px solid #E4E9EA;
-  background: #F5F8F8;
+  border: 1px solid #e4e9ea;
+  background: #f5f8f8;
   border-radius: 10px;
   padding: 0 14px;
 }
@@ -911,42 +955,64 @@
   padding: 10px 0;
   font-size: 13px;
   font-weight: 600;
-  color: #4A6A70;
+  color: #4a6a70;
   display: flex;
   align-items: center;
   gap: 7px;
 }
-.lp-l1 > summary::-webkit-details-marker { display: none; }
+.lp-l1 > summary::-webkit-details-marker {
+  display: none;
+}
 .lp-l1 > summary::before {
   content: "▸";
   font-size: 11px;
-  transition: transform .15s;
+  transition: transform 0.15s;
 }
-.lp-l1[open] > summary::before { transform: rotate(90deg); }
-.lp-l1[open] > summary { border-bottom: 1px solid #E4E9EA; }
-.lp-l1 > div { padding: 12px 0 14px; font-size: 15px; color: #33474B; }
-.lp-l1 > div p:last-child { margin-bottom: 0; }
-.lp-lesson p { margin: 0 0 12px; }
+.lp-l1[open] > summary::before {
+  transform: rotate(90deg);
+}
+.lp-l1[open] > summary {
+  border-bottom: 1px solid #e4e9ea;
+}
+.lp-l1 > div {
+  padding: 12px 0 14px;
+  font-size: 15px;
+  color: #33474b;
+}
+.lp-l1 > div p:last-child {
+  margin-bottom: 0;
+}
+.lp-lesson p {
+  margin: 0 0 12px;
+}
 .lp-lesson h3 {
   font-size: 16px;
   font-weight: 650;
-  color: #15171C;
+  color: #15171c;
   margin: 20px 0 8px;
 }
 .lp-lesson h4 {
   font-size: 14.5px;
   font-weight: 650;
-  color: #15171C;
+  color: #15171c;
   margin: 16px 0 6px;
 }
 .lp-lesson ul,
-.lp-lesson ol { margin: 0 0 12px; padding-left: 22px; }
-.lp-lesson li { margin-bottom: 5px; }
-.lp-lesson strong { font-weight: 650; color: #15171C; }
+.lp-lesson ol {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+.lp-lesson li {
+  margin-bottom: 5px;
+}
+.lp-lesson strong {
+  font-weight: 650;
+  color: #15171c;
+}
 .lp-lesson code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: .9em;
-  background: #F1EFEA;
+  font-size: 0.9em;
+  background: #f1efea;
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -961,20 +1027,20 @@
 }
 .lp-lesson th,
 .lp-lesson td {
-  border: 1px solid #E7E5DF;
+  border: 1px solid #e7e5df;
   padding: 8px 11px;
   text-align: left;
   vertical-align: top;
 }
 .lp-lesson th {
-  background: #FAFAF8;
+  background: #fafaf8;
   font-weight: 650;
-  color: #15171C;
+  color: #15171c;
 }
 .lp-lesson caption {
   caption-side: bottom;
   font-size: 12.5px;
-  color: #7C7A93;
+  color: #7c7a93;
   padding-top: 6px;
   text-align: left;
 }
@@ -1024,17 +1090,32 @@
   display: inline;
   border: 0;
   margin: 0;
-  padding: .08em .38em;
+  padding: 0.08em 0.38em;
   border-radius: 5px;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
 
-.lp-lesson .lp-tip { background: #EEF4F5; border-color: #CFE0E3; }
-.lp-lesson .lp-warn { background: #FBEEE0; border-color: #E9CDA6; }
-.lp-lesson .lp-example { background: #FAFAF8; border-color: #E7E5DF; }
-.lp-lesson .lp-key { background: #F3F1FB; border-color: #D8D4F0; }
-.lp-lesson mark { background: #FBEEE0; color: inherit; }
+.lp-lesson .lp-tip {
+  background: #eef4f5;
+  border-color: #cfe0e3;
+}
+.lp-lesson .lp-warn {
+  background: #fbeee0;
+  border-color: #e9cda6;
+}
+.lp-lesson .lp-example {
+  background: #fafaf8;
+  border-color: #e7e5df;
+}
+.lp-lesson .lp-key {
+  background: #f3f1fb;
+  border-color: #d8d4f0;
+}
+.lp-lesson mark {
+  background: #fbeee0;
+  color: inherit;
+}
 
 /* A wrong form, however the model spells the intent. Struck through rather
    than only tinted, so it reads as "not this" on a black-and-white printout
@@ -1043,8 +1124,8 @@
 .lp-lesson s,
 .lp-lesson .lp-wrong {
   text-decoration: line-through;
-  text-decoration-color: #C1502F;
-  color: #8A7F79;
+  text-decoration-color: #c1502f;
+  color: #8a7f79;
 }
 /* A timeline is a DIAGRAM, and this used to be styled as a code block: grey
    box, hard border, monospace. On a projector it read as source code, which is
@@ -1056,10 +1137,10 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12.5px;
   line-height: 1.75;
-  color: #3F4147;
-  background: #FBF6F2;
+  color: #3f4147;
+  background: #fbf6f2;
   border: 0;
-  border-left: 3px solid #E0BFA8;
+  border-left: 3px solid #e0bfa8;
   border-radius: 0 8px 8px 0;
   padding: 12px 16px;
   margin: 0 0 14px;
@@ -1075,12 +1156,12 @@
   display: block;
   margin: 0 0 16px;
   padding: 2px 0 2px 16px;
-  border-left: 3px solid #C1502F;
+  border-left: 3px solid #c1502f;
   font-family: var(--font-serif4), Georgia, serif;
   font-size: 19px;
   line-height: 1.4;
   font-weight: 500;
-  color: #15171C;
+  color: #15171c;
   text-wrap: pretty;
 }
 
@@ -1094,24 +1175,26 @@
    joined by a second marker on the other side. The two disclosures on this page
    mean different things and have to keep looking different. */
 .lp-lesson details:not(.lp-l1) {
-  border: 1px solid #E7E5DF;
+  border: 1px solid #e7e5df;
   border-radius: 10px;
   padding: 0;
   margin: 0 0 8px;
-  background: #FAFAF8;
+  background: #fafaf8;
   overflow: hidden;
 }
 .lp-lesson details:not(.lp-l1) > summary {
   cursor: pointer;
   padding: 11px 40px 11px 14px;
   font-weight: 550;
-  color: #15171C;
+  color: #15171c;
   list-style: none;
   position: relative;
 }
 /* The default triangle sits inconsistently across browsers and cannot be
    positioned; replaced with our own marker on the right. */
-.lp-lesson details:not(.lp-l1) > summary::-webkit-details-marker { display: none; }
+.lp-lesson details:not(.lp-l1) > summary::-webkit-details-marker {
+  display: none;
+}
 .lp-lesson details:not(.lp-l1) > summary::after {
   content: "＋";
   position: absolute;
@@ -1119,22 +1202,30 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 13px;
-  color: #7C7A93;
+  color: #7c7a93;
 }
-.lp-lesson details:not(.lp-l1)[open] > summary::after { content: "－"; }
-.lp-lesson details:not(.lp-l1)[open] > summary { border-bottom: 1px solid #E7E5DF; }
+.lp-lesson details:not(.lp-l1)[open] > summary::after {
+  content: "－";
+}
+.lp-lesson details:not(.lp-l1)[open] > summary {
+  border-bottom: 1px solid #e7e5df;
+}
 .lp-lesson details:not(.lp-l1) > *:not(summary) {
   margin: 0;
   padding: 11px 14px;
-  color: #3F4147;
+  color: #3f4147;
 }
-.lp-lesson details:not(.lp-l1) > summary:hover { background: #F3F2EE; }
+.lp-lesson details:not(.lp-l1) > summary:hover {
+  background: #f3f2ee;
+}
 .lp-lesson details:not(.lp-l1) > summary:focus-visible {
-  outline: 2px solid #C1502F;
+  outline: 2px solid #c1502f;
   outline-offset: -2px;
 }
 
-.lp-lesson .lp-form th { width: 22%; }
+.lp-lesson .lp-form th {
+  width: 22%;
+}
 
 /* ── Practice AI ────────────────────────────────────────────────────────────
    Everything here is a :hover, :focus-within, keyframe or media query — the
@@ -1143,20 +1234,46 @@
    should be able to cost this surface its animations, never its colours. */
 
 @keyframes pa-rise {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes pa-pop {
-  from { opacity: 0; transform: translateY(18px) scale(.97); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes pa-slide {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-@keyframes pa-spin { to { transform: rotate(360deg); } }
-@keyframes pa-shimmer { to { background-position: -200% 0; } }
+@keyframes pa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pa-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
 
 /* Skeleton blocks. A moving BACKGROUND rather than a transform or an opacity
    pulse: the placeholder must not reflow or flicker, because the eye reads
@@ -1167,77 +1284,151 @@
   animation: pa-shimmer 1.4s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .pa-shimmer { animation: none; background-image: none; background-color: #eeeeeb; }
+  .pa-shimmer {
+    animation: none;
+    background-image: none;
+    background-color: #eeeeeb;
+  }
 }
 
-.pa-rise { animation: pa-rise .45s cubic-bezier(.2,.7,.3,1) both; }
-.pa-pop { animation: pa-pop .35s cubic-bezier(.2,.7,.3,1) both; }
-.pa-slide { animation: pa-slide .28s ease both; }
+.pa-rise {
+  animation: pa-rise 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.pa-pop {
+  animation: pa-pop 0.35s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.pa-slide {
+  animation: pa-slide 0.28s ease both;
+}
 /* The one animation that must survive prefers-reduced-motion: it is not
    decoration, it is the only sign the app is still working. */
-.pa-spin { animation: pa-spin .8s linear infinite; }
+.pa-spin {
+  animation: pa-spin 0.8s linear infinite;
+}
 
 /* Someone who has asked for less motion gets the layout and none of the
    travel. `both` fill means these must resolve to a real end state, not to
    `none` — an animation removed outright would leave opacity at 0. */
 @media (prefers-reduced-motion: reduce) {
-  .pa-rise, .pa-pop, .pa-slide { animation-duration: .01ms; }
-  .pa-card:hover, .pa-chip:hover, .pa-lift:hover { transform: none; }
+  .pa-rise,
+  .pa-pop,
+  .pa-slide {
+    animation-duration: 0.01ms;
+  }
+  .pa-card:hover,
+  .pa-chip:hover,
+  .pa-lift:hover {
+    transform: none;
+  }
 }
 
 /* The composer's focus ring — a :focus-within state cannot be an inline style. */
 .pa-composer {
-  transition: box-shadow .18s;
+  transition: box-shadow 0.18s;
 }
 .pa-composer:focus-within {
   box-shadow:
-    0 1px 2px rgba(20,35,46,.05),
-    0 30px 60px -28px rgba(20,35,46,.28),
-    0 0 0 4px rgba(236,106,69,.14);
+    0 1px 2px rgba(20, 35, 46, 0.05),
+    0 30px 60px -28px rgba(20, 35, 46, 0.28),
+    0 0 0 4px rgba(236, 106, 69, 0.14);
 }
 
 /* Icon buttons along the composer's foot. */
 .pa-icon-btn {
-  transition: background .18s, color .18s;
+  transition:
+    background 0.18s,
+    color 0.18s;
   border: 0;
 }
-.pa-icon-btn:hover { background: #f1efe9; }
+.pa-icon-btn:hover {
+  background: #f1efe9;
+}
 
 /* Starter chips: lift on hover. */
 .pa-chip {
-  transition: background .18s, color .18s, transform .18s, box-shadow .18s;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
 }
 .pa-chip:hover {
   transform: translateY(-2px);
-  box-shadow: 0 1px 2px rgba(20,35,46,.05), 0 14px 26px -14px rgba(20,35,46,.35);
+  box-shadow:
+    0 1px 2px rgba(20, 35, 46, 0.05),
+    0 14px 26px -14px rgba(20, 35, 46, 0.35);
 }
-.pa-chip:active { transform: translateY(0); }
+.pa-chip:active {
+  transform: translateY(0);
+}
 
 /* Anything that rises a pixel under the pointer: pill buttons in the sticky
    bars, the rail's primary action, the modal's link button. */
-.pa-lift { transition: background .18s, transform .18s, box-shadow .18s; }
-.pa-lift:hover:not(:disabled) { transform: translateY(-1px); }
-.pa-lift:active:not(:disabled) { transform: translateY(0); }
+.pa-lift {
+  transition:
+    background 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+}
+.pa-lift:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.pa-lift:active:not(:disabled) {
+  transform: translateY(0);
+}
 
-.pa-ember { transition: background .18s, transform .18s; }
-.pa-ember:hover:not(:disabled) { background: #d95936; transform: translateY(-1px); }
-.pa-ember:active:not(:disabled) { transform: translateY(0); }
+.pa-ember {
+  transition:
+    background 0.18s,
+    transform 0.18s;
+}
+.pa-ember:hover:not(:disabled) {
+  background: #d95936;
+  transform: translateY(-1px);
+}
+.pa-ember:active:not(:disabled) {
+  transform: translateY(0);
+}
 
-.pa-dark { transition: background .18s, transform .18s; }
-.pa-dark:hover:not(:disabled) { background: #22384a; transform: translateY(-1px); }
+.pa-dark {
+  transition:
+    background 0.18s,
+    transform 0.18s;
+}
+.pa-dark:hover:not(:disabled) {
+  background: #22384a;
+  transform: translateY(-1px);
+}
 
-.pa-ghost { transition: background .18s, color .18s; }
-.pa-ghost:hover:not(:disabled) { background: #e7e4dc; }
+.pa-ghost {
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.pa-ghost:hover:not(:disabled) {
+  background: #e7e4dc;
+}
 
 /* A spec chip, a navigator cell, an answer option — small targets that need a
    visible pointer state without moving. */
-.pa-tap { transition: background .15s, box-shadow .15s, color .15s; }
-.pa-tap:hover:not(:disabled) { box-shadow: inset 0 0 0 2px rgba(20,35,46,.14); }
+.pa-tap {
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    color 0.15s;
+}
+.pa-tap:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 2px rgba(20, 35, 46, 0.14);
+}
 
 /* Typed answers. A ring inside the field rather than a border, so nothing
    reflows by a pixel when it lands. */
-.pa-field { transition: box-shadow .18s; }
-.pa-field:focus { box-shadow: inset 0 0 0 2px #ec6a45 !important; }
+.pa-field {
+  transition: box-shadow 0.18s;
+}
+.pa-field:focus {
+  box-shadow: inset 0 0 0 2px #ec6a45 !important;
+}
 
 /* ── Printing a lesson ──────────────────────────────────────────────────────
    "Download PDF" is the browser's own print-to-PDF, and that is a deliberate
@@ -1252,20 +1443,34 @@
    toggle on screen — one page, two documents. */
 /* The worksheet exists only on paper: it is the document a teacher hands out,
    and it has no business competing with the lesson on screen. */
-.pa-print-only { display: none; }
+.pa-print-only {
+  display: none;
+}
 
 @media print {
-  .pa-print-only { display: block !important; }
+  .pa-print-only {
+    display: block !important;
+  }
 
   /* A closed disclosure prints its summary and silently drops the answer, so a
      worksheet handed to a class would carry three questions nobody can check.
      Forced open on paper, where there is nothing to click anyway. */
-  .lp-lesson details > *:not(summary) { display: block !important; }
-  .lp-lesson .lp-l1 > summary::before { content: "" !important; }
-  .lp-lesson details::details-content { content-visibility: visible !important; }
-  .lp-lesson summary::after { content: "" !important; }
+  .lp-lesson details > *:not(summary) {
+    display: block !important;
+  }
+  .lp-lesson .lp-l1 > summary::before {
+    content: "" !important;
+  }
+  .lp-lesson details::details-content {
+    content-visibility: visible !important;
+  }
+  .lp-lesson summary::after {
+    content: "" !important;
+  }
   /* Each stage starts a fresh sheet, so a class gets clean handouts. */
-  .pa-print-only > div { break-before: auto; }
+  .pa-print-only > div {
+    break-before: auto;
+  }
 
   /* The app around the lesson. */
   .lp-shell-sidebar,
@@ -1296,12 +1501,19 @@
     background: #fff !important;
     border: 1px solid #999 !important;
   }
-  .lp-lesson th { background: #F2F2F2 !important; }
+  .lp-lesson th {
+    background: #f2f2f2 !important;
+  }
 
   /* A first-language note is closed on screen; on paper it should be there,
      because the point of the printout is that the learner has it all. */
-  .lp-l1 { border-color: #BBB !important; background: #fff !important; }
-  .lp-l1 > div { display: block !important; }
+  .lp-l1 {
+    border-color: #bbb !important;
+    background: #fff !important;
+  }
+  .lp-l1 > div {
+    display: block !important;
+  }
 
   /* Nothing should be orphaned across a page break mid-question. */
   .lp-section,
@@ -1315,7 +1527,9 @@
     page-break-after: avoid;
   }
 
-  a[href]::after { content: ""; }
+  a[href]::after {
+    content: "";
+  }
 
   @page {
     margin: 16mm 14mm;
@@ -1325,17 +1539,33 @@
 /* Lesson cards: lift on hover — the same gesture as the starter chips above
    them, so the whole page answers to the pointer the same way. */
 .pa-card {
-  transition: box-shadow .25s ease, transform .25s cubic-bezier(.2,.7,.3,1);
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 .pa-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 1px 2px rgba(20,35,46,.05), 0 26px 44px -24px rgba(20,35,46,.45);
+  box-shadow:
+    0 1px 2px rgba(20, 35, 46, 0.05),
+    0 26px 44px -24px rgba(20, 35, 46, 0.45);
 }
-.pa-card:active { transform: translateY(0); }
+.pa-card:active {
+  transform: translateY(0);
+}
 
-.pa-send { transition: background .18s, transform .18s, opacity .18s; }
-.pa-send:hover:not(:disabled) { background: #d95936; transform: translateY(-1px); }
-.pa-send:active:not(:disabled) { transform: translateY(0); }
+.pa-send {
+  transition:
+    background 0.18s,
+    transform 0.18s,
+    opacity 0.18s;
+}
+.pa-send:hover:not(:disabled) {
+  background: #d95936;
+  transform: translateY(-1px);
+}
+.pa-send:active:not(:disabled) {
+  transform: translateY(0);
+}
 
 /* ── the runner's two columns ───────────────────────────────────────────────
    The navigator is a rail beside the item on a laptop and a strip above it on
@@ -1360,7 +1590,7 @@
   display: flex;
   flex-direction: column;
   background: #fdfbf7;
-  border-left: 1px solid rgba(20,35,46,.07);
+  border-left: 1px solid rgba(20, 35, 46, 0.07);
 }
 /* Narrow: the rail stops being a column beside the item and becomes the next
    thing DOWN the page — item, then navigator, then submit — and the runner
@@ -1371,17 +1601,24 @@
    what actually gets squeezed out is the submit button: the one control that
    ends the lesson becomes unreachable on the device most likely to be used for
    homework. */
-.pa-runner-main { width: 100%; padding: 30px 26px 56px; }
-.pa-item { padding: 30px 28px 34px; }
+.pa-runner-main {
+  width: 100%;
+  padding: 30px 26px 56px;
+}
+.pa-item {
+  padding: 30px 28px 34px;
+}
 
 @media (max-width: 1000px) {
-  .pa-runner { grid-template-columns: 1fr; }
+  .pa-runner {
+    grid-template-columns: 1fr;
+  }
   .pa-runner-rail {
     position: static;
     max-height: none;
     overflow: visible;
     border-left: 0;
-    border-top: 1px solid rgba(20,35,46,.07);
+    border-top: 1px solid rgba(20, 35, 46, 0.07);
   }
 }
 
@@ -1389,8 +1626,12 @@
    "one thing at a time" that the whole runner is built on — it just stops
    spending 28px a side on air it hasn't got. */
 @media (max-width: 620px) {
-  .pa-runner-main { padding: 18px 14px 40px; }
-  .pa-item { padding: 22px 18px 24px; }
+  .pa-runner-main {
+    padding: 18px 14px 40px;
+  }
+  .pa-item {
+    padding: 22px 18px 24px;
+  }
 }
 
 /* The lesson page's reading column + sticky rail, on the same terms. */
@@ -1401,8 +1642,13 @@
   align-items: start;
 }
 @media (max-width: 1040px) {
-  .pa-lesson-grid { grid-template-columns: 1fr; gap: 22px; }
-  .pa-lesson-rail { position: static !important; }
+  .pa-lesson-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .pa-lesson-rail {
+    position: static !important;
+  }
 }
 
 /* Three cards, then two, then one. */
@@ -1411,20 +1657,38 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 22px;
 }
-@media (max-width: 1100px) { .pa-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 700px) { .pa-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) {
+  .pa-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .pa-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* Due date beside the note, until there is no room for both. */
 @media (max-width: 560px) {
-  .pa-modal-fields { grid-template-columns: 1fr !important; }
+  .pa-modal-fields {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* The library hero's headline. clamp() handles the sizing; this only stops the
    sticky bars and the hero from crowding on a narrow window. */
 @media (max-width: 760px) {
-  .pa-hero-pad { padding-left: 18px !important; padding-right: 18px !important; }
-  .pa-bar { padding-left: 16px !important; padding-right: 16px !important; }
-  .pa-bar-hide { display: none !important; }
+  .pa-hero-pad {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+  .pa-bar {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  .pa-bar-hide {
+    display: none !important;
+  }
 }
 
 /* Scrolls, but shows no bar.
@@ -1657,21 +1921,25 @@
 }
 
 .cn-root .cn-pipe {
-  transition: border-color .12s ease, background .12s ease;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
 .cn-root .cn-pipe:hover {
   border-color: #b9b4f0;
   background: #fbfbfd;
 }
 .cn-root .cn-pill {
-  transition: border-color .12s ease, color .12s ease;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
 }
 .cn-root .cn-pill:hover {
   border-color: #b9b4f0;
   color: #3730a3;
 }
 .cn-root .cn-boardrow {
-  transition: background .12s ease;
+  transition: background 0.12s ease;
 }
 .cn-root .cn-boardrow:hover {
   background: #faf9f5;

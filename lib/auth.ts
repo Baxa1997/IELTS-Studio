@@ -6,12 +6,7 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 /** super_admin is platform-level (in app_metadata, no org); the rest are org-scoped. */
-export type AppRole =
-  | "super_admin"
-  | "center_admin"
-  | "administrator"
-  | "teacher"
-  | "student";
+export type AppRole = "super_admin" | "center_admin" | "administrator" | "teacher" | "student";
 
 export type OrgKind = "personal" | "center";
 export type OrgStatus = "pending" | "active" | "rejected" | "suspended";
@@ -34,7 +29,13 @@ export interface Profile {
   contact_email: string | null;
   /** Approval state of the workspace. Personal orgs are always 'active';
    *  centers start 'pending' until a super_admin approves them in /admin. */
-  org: { kind: OrgKind; status: OrgStatus };
+  /**
+   * The workspace. `name` is what a CENTRE is called — it goes in the sidebar
+   * in place of our wordmark, because a teacher opening the console works for
+   * their school, not for us. A personal org's name is generated from the
+   * learner's own name and is never shown as a brand.
+   */
+  org: { kind: OrgKind; status: OrgStatus; name: string | null };
 }
 
 export interface Session {
@@ -141,7 +142,7 @@ export const getSession = cache(async function getSession(): Promise<Session | n
   const { data } = await supabase
     .from("profiles")
     .select(
-      "id, organization_id, role, full_name, username, contact_email, organizations!inner(kind, status)",
+      "id, organization_id, role, full_name, username, contact_email, organizations!inner(kind, status, name)",
     )
     .eq("id", user.id)
     .single();

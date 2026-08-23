@@ -85,7 +85,13 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
             aria-hidden
             tabIndex={-1}
             onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, background: "transparent", border: "none", zIndex: 70 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "transparent",
+              border: "none",
+              zIndex: 70,
+            }}
           />
           <div
             style={{
@@ -141,11 +147,15 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
                         {n.title}
                       </span>
                       {n.body ? (
-                        <span style={{ display: "block", fontSize: 12.5, color: MUTED, marginTop: 2 }}>
+                        <span
+                          style={{ display: "block", fontSize: 12.5, color: MUTED, marginTop: 2 }}
+                        >
                           {n.body}
                         </span>
                       ) : null}
-                      <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 3 }}>
+                      <span
+                        style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 3 }}
+                      >
                         {ago(n.createdAt)}
                       </span>
                     </>

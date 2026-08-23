@@ -10,7 +10,6 @@ import {
   BookA,
   BookOpen,
   Building2,
-  CalendarCheck,
   ClipboardList,
   CalendarRange,
   ChartNoAxesColumn,
@@ -21,6 +20,7 @@ import {
   History,
   LayoutDashboard,
   Mic,
+  NotebookPen,
   Receipt,
   ShieldAlert,
   Sparkles,
@@ -47,6 +47,9 @@ const RAIL_TEXT = "#CDD1DF"; // resting item text — near-white, calm
 const RAIL_MUTED = "#6F7599"; // section titles / disabled
 const RAIL_ACTIVE_BG = "rgba(255,255,255,.07)"; // active tile — a calm lighter panel
 const RAIL_ACTIVE_LINE = "rgba(255,255,255,.09)";
+/* The Assistant's mint — the same accent the role chip uses in shell.tsx, so the
+   rail has one highlight colour rather than two competing ones. */
+const RAIL_AI = "#5BDD9B";
 
 type Item = {
   label: string;
@@ -68,8 +71,54 @@ type Item = {
   /** Key into the `counts` prop — renders the tally quietly at the end of the row
    *  (the CRM design shows how many teachers/groups/students there are). */
   countKey?: string;
+  /**
+   * Other routes this item OWNS for the purpose of the active highlight.
+   *
+   * Timetable and Attendance are one rail item and two tabs, so standing on
+   * /console/attendance has to light up Timetable — otherwise the tab strip says
+   * "you are in Attendance" while the rail says you are nowhere, which is worse
+   * than the two separate items it replaced.
+   */
+  alsoMatches?: string[];
+  /**
+   * The one item in the rail that is not a place — it is a thing that answers.
+   *
+   * Exactly one item carries this, and that is the point: the Assistant sat in a
+   * list of nine identical rows wearing the same sparkle as Practice AI, so the
+   * feature the console is built around read as the ninth link down. It gets a
+   * mint tint, its own hairline, and a slow breath on the icon (`.lp-sb-ai`,
+   * globals.css) so the eye finds it without the row shouting.
+   *
+   * If a second item ever wants this, the answer is no — two accents is none.
+   */
+  accent?: boolean;
 };
 type Section = { title?: string; items: Item[] };
+
+/**
+ * Which rail item the current path belongs to.
+ *
+ * Exported and pure so it can be tested: it decides the single most visible
+ * piece of state in the product, and it has two rules that are easy to break by
+ * accident.
+ *
+ *  - LONGEST MATCH WINS, so /console/finance/payroll lights up Salary rather
+ *    than Finance, which it also sits under.
+ *  - An item's `alsoMatches` routes are measured at THEIR OWN length, not the
+ *    item's. Timetable's href is /console/calendar but it also owns
+ *    /console/attendance; scoring that by the item's href would let any longer
+ *    unrelated href outrank it.
+ */
+export function resolveActiveHref(
+  items: Pick<Item, "href" | "soon" | "alsoMatches">[],
+  pathname: string,
+): string | undefined {
+  return items
+    .filter((i) => !i.soon)
+    .flatMap((i) => [i.href, ...(i.alsoMatches ?? [])].map((route) => ({ owner: i.href, route })))
+    .filter(({ route }) => pathname === route || pathname.startsWith(route + "/"))
+    .sort((a, b) => b.route.length - a.route.length)[0]?.owner;
+}
 
 const STUDENT: Section[] = [
   {
@@ -100,20 +149,26 @@ const STUDENT: Section[] = [
    CLAUDE.md) and they made the menu read like an unfinished admin tool. Add the
    line back to restore either. */
 const ADMIN: Section[] = [
-  /* RUN, not "Center". The section answers "what has to happen today", and
-     The page still answers "what has to happen today"; it is the NAME that
-     stopped being useful. "Overview" promised a summary of everything, "Today"
-     promised a filter, and neither told somebody arriving where they were. */
+  /* The daily work, with NO heading over it.
+     It carried one — "Run" — and a heading on the FIRST group is the one place
+     it cannot earn its keep: every other section title says "you have left the
+     previous thing", but the top one sits under the logo naming a category
+     nobody chose to enter. The sections below still have titles, because there
+     the reader has actually crossed a boundary. */
   {
-    title: "Run",
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Sparkles },
+      { label: "Assistant", href: "/console/assistant", icon: Sparkles, accent: true },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
-      { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
-      { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+      {
+        label: "Timetable",
+        href: "/console/calendar",
+        icon: CalendarRange,
+        // Attendance is this item's other tab — see ScheduleTabs.
+        alsoMatches: ["/console/attendance"],
+      },
     ],
   },
   /* Money is the owner's alone — a teacher's rail has no Finance section, and
@@ -158,15 +213,19 @@ const ADMIN: Section[] = [
    its own shape, and one wrong condition leaks a balance. */
 const ADMINISTRATOR: Section[] = [
   {
-    title: "Run",
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Sparkles },
+      { label: "Assistant", href: "/console/assistant", icon: Sparkles, accent: true },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
-      { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
-      { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+      {
+        label: "Timetable",
+        href: "/console/calendar",
+        icon: CalendarRange,
+        // Attendance is this item's other tab — see ScheduleTabs.
+        alsoMatches: ["/console/attendance"],
+      },
     ],
   },
   {
@@ -188,14 +247,18 @@ const ADMINISTRATOR: Section[] = [
 
 const TEACHER: Section[] = [
   {
-    title: "Run",
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Sparkles },
+      { label: "Assistant", href: "/console/assistant", icon: Sparkles, accent: true },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
-      { label: "Timetable", href: "/console/calendar", icon: CalendarRange },
-      { label: "Attendance", href: "/console/attendance", icon: CalendarCheck },
+      {
+        label: "Timetable",
+        href: "/console/calendar",
+        icon: CalendarRange,
+        // Attendance is this item's other tab — see ScheduleTabs.
+        alsoMatches: ["/console/attendance"],
+      },
       // Their own payslip and its working — not the center's payroll.
       { label: "My pay", href: "/console/finance/payroll", icon: Banknote },
     ],
@@ -211,7 +274,7 @@ const TEACHER: Section[] = [
     items: [
       // First in the section: it is the only one a teacher MAKES rather than
       // sits, and it is the reason they open this rail on a planning day.
-      { label: "Practice AI", href: "/console/practice-ai", icon: Sparkles },
+      { label: "Practice AI", href: "/console/practice-ai", icon: NotebookPen },
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
       { label: "Listening", href: "/listen", icon: Headphones },
@@ -391,10 +454,7 @@ export function SidebarNav({
     counts?.newWork ?? 0,
   );
   const all = sections.flatMap((s) => s.items);
-  // Single active item = the longest href the path falls under.
-  const activeHref = all
-    .filter((i) => !i.soon && (pathname === i.href || pathname.startsWith(i.href + "/")))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const activeHref = resolveActiveHref(all, pathname);
 
   return (
     <nav style={{ display: "flex", flexDirection: "column", gap: 11 }}>
@@ -421,136 +481,152 @@ export function SidebarNav({
             </div>
           ) : null}
           <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {section.items.map(({ label, href, icon: Icon, soon, badge, badgeTone, countKey }) => {
-              if (soon) {
-                return (
-                  <span
-                    key={label}
-                    data-label={label}
-                    aria-label={label}
-                    aria-disabled="true"
-                    className="lp-sb-link"
-                    style={{
-                      ...itemBase,
-                      justifyContent: "space-between",
-                      color: RAIL_MUTED,
-                      fontWeight: 400,
-                      cursor: "default",
-                    }}
-                  >
-                    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                      <Icon size={18} strokeWidth={1.8} />
-                      <span className="lp-sb-label">{label}</span>
-                    </span>
+            {section.items.map(
+              ({ label, href, icon: Icon, soon, badge, badgeTone, countKey, accent }) => {
+                if (soon) {
+                  return (
                     <span
-                      className="lp-sb-soon-badge"
+                      key={label}
+                      data-label={label}
+                      aria-label={label}
+                      aria-disabled="true"
+                      className="lp-sb-link"
                       style={{
-                        fontFamily: SANS,
-                        fontWeight: 700,
-                        fontSize: 10,
-                        letterSpacing: ".05em",
-                        color: "#9096B0",
-                        background: "rgba(255,255,255,.07)",
-                        padding: "2px 7px",
-                        borderRadius: 6,
+                        ...itemBase,
+                        justifyContent: "space-between",
+                        color: RAIL_MUTED,
+                        fontWeight: 400,
+                        cursor: "default",
                       }}
                     >
-                      SOON
-                    </span>
-                  </span>
-                );
-              }
-              const active = href === activeHref;
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  /*
-                   * NO PREFETCH, and this is a measured decision rather than a
-                   * default worth keeping.
-                   *
-                   * Next prefetches every <Link> that is visible, and a rail is
-                   * six to fifteen links all on screen at once. Every one of
-                   * those destinations is `force-dynamic` and query-heavy — the
-                   * admin Centers page alone runs six database round trips —
-                   * so a single page view was firing ten route requests and
-                   * re-running all of their queries. The production Network tab
-                   * showed twenty requests for one visit to /admin/centers.
-                   *
-                   * The user clicks at most one of them. Prefetching the other
-                   * nine multiplies the database load of every page view by the
-                   * size of the menu, for a saving that a dynamic page cannot
-                   * bank anyway: the click still costs a server round trip
-                   * because the payload cannot be cached.
-                   */
-                  prefetch={false}
-                  data-label={label}
-                  aria-label={label}
-                  aria-current={active ? "page" : undefined}
-                  className={active ? "lp-sb-link" : "lp-sb-link lp-sb-item"}
-                  style={{
-                    ...itemBase,
-                    justifyContent: "space-between",
-                    fontWeight: active ? 500 : 400,
-                    color: active ? "#fff" : RAIL_TEXT,
-                    // No inline background when inactive — the .lp-sb-item:hover wash
-                    // (globals.css) can't beat an inline value, even "transparent".
-                    background: active ? RAIL_ACTIVE_BG : undefined,
-                    border: `1px solid ${active ? RAIL_ACTIVE_LINE : "transparent"}`,
-                  }}
-                >
-                  <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                    <Icon size={18} strokeWidth={1.8} />
-                    <span className="lp-sb-label">{label}</span>
-                  </span>
-                  <span
-                    className="lp-sb-trail"
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    {/* A count of zero is still worth showing — "Teachers 0" is
-                        the fact an empty center most needs to see. */}
-                    {countKey && counts?.[countKey] != null ? (
-                      <span
-                        style={{
-                          fontFamily: SANS,
-                          fontSize: 11,
-                          color: RAIL_MUTED,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {counts[countKey].toLocaleString()}
+                      <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                        <Icon size={18} strokeWidth={1.8} />
+                        <span className="lp-sb-label">{label}</span>
                       </span>
-                    ) : null}
-                    {badge ? (
                       <span
+                        className="lp-sb-soon-badge"
                         style={{
                           fontFamily: SANS,
                           fontWeight: 700,
                           fontSize: 10,
                           letterSpacing: ".05em",
-                          color: active
-                            ? "rgba(255,255,255,.85)"
-                            : badgeTone === "alert"
-                              ? "#FFC069"
-                              : "#7CE3AE",
-                          background: active
-                            ? "rgba(255,255,255,.16)"
-                            : badgeTone === "alert"
-                              ? "rgba(255,176,74,.15)"
-                              : "rgba(91,221,155,.13)",
+                          color: "#9096B0",
+                          background: "rgba(255,255,255,.07)",
                           padding: "2px 7px",
                           borderRadius: 6,
-                          flexShrink: 0,
                         }}
                       >
-                        {badge}
+                        SOON
                       </span>
-                    ) : null}
-                    <PendingDot />
-                  </span>
-                </Link>
-              );
-            })}
+                    </span>
+                  );
+                }
+                const active = href === activeHref;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    /*
+                     * NO PREFETCH, and this is a measured decision rather than a
+                     * default worth keeping.
+                     *
+                     * Next prefetches every <Link> that is visible, and a rail is
+                     * six to fifteen links all on screen at once. Every one of
+                     * those destinations is `force-dynamic` and query-heavy — the
+                     * admin Centers page alone runs six database round trips —
+                     * so a single page view was firing ten route requests and
+                     * re-running all of their queries. The production Network tab
+                     * showed twenty requests for one visit to /admin/centers.
+                     *
+                     * The user clicks at most one of them. Prefetching the other
+                     * nine multiplies the database load of every page view by the
+                     * size of the menu, for a saving that a dynamic page cannot
+                     * bank anyway: the click still costs a server round trip
+                     * because the payload cannot be cached.
+                     */
+                    prefetch={false}
+                    data-label={label}
+                    aria-label={label}
+                    aria-current={active ? "page" : undefined}
+                    className={active ? "lp-sb-link" : "lp-sb-link lp-sb-item"}
+                    style={{
+                      ...itemBase,
+                      justifyContent: "space-between",
+                      fontWeight: active ? 500 : 400,
+                      color: active ? "#fff" : RAIL_TEXT,
+                      // No inline background when inactive — the .lp-sb-item:hover wash
+                      // (globals.css) can't beat an inline value, even "transparent".
+                      background: active
+                        ? RAIL_ACTIVE_BG
+                        : accent
+                          ? "rgba(91,221,155,.07)"
+                          : undefined,
+                      border: `1px solid ${
+                        active ? RAIL_ACTIVE_LINE : accent ? "rgba(91,221,155,.22)" : "transparent"
+                      }`,
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                      <span
+                        className={accent ? "lp-sb-ai" : undefined}
+                        style={{
+                          display: "inline-flex",
+                          color: accent && !active ? RAIL_AI : undefined,
+                        }}
+                      >
+                        <Icon size={18} strokeWidth={1.8} />
+                      </span>
+                      <span className="lp-sb-label">{label}</span>
+                    </span>
+                    <span
+                      className="lp-sb-trail"
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      {/* A count of zero is still worth showing — "Teachers 0" is
+                        the fact an empty center most needs to see. */}
+                      {countKey && counts?.[countKey] != null ? (
+                        <span
+                          style={{
+                            fontFamily: SANS,
+                            fontSize: 11,
+                            color: RAIL_MUTED,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {counts[countKey].toLocaleString()}
+                        </span>
+                      ) : null}
+                      {badge ? (
+                        <span
+                          style={{
+                            fontFamily: SANS,
+                            fontWeight: 700,
+                            fontSize: 10,
+                            letterSpacing: ".05em",
+                            color: active
+                              ? "rgba(255,255,255,.85)"
+                              : badgeTone === "alert"
+                                ? "#FFC069"
+                                : "#7CE3AE",
+                            background: active
+                              ? "rgba(255,255,255,.16)"
+                              : badgeTone === "alert"
+                                ? "rgba(255,176,74,.15)"
+                                : "rgba(91,221,155,.13)",
+                            padding: "2px 7px",
+                            borderRadius: 6,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {badge}
+                        </span>
+                      ) : null}
+                      <PendingDot />
+                    </span>
+                  </Link>
+                );
+              },
+            )}
           </div>
         </div>
       ))}

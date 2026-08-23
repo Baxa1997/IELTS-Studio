@@ -21,6 +21,7 @@ import {
   SOFT,
 } from "@/components/console/crm-ui";
 import { Drawer } from "@/components/console/finance-ui";
+import { ScheduleTabs } from "@/components/console/schedule-tabs";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import {
@@ -197,6 +198,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
 
   return (
     <div>
+      <ScheduleTabs active="timetable" />
       <PageHead
         title="Timetable"
         subtitle={`${weekLabel(week)}${week === thisWeek ? " · this week" : ""} · ${branchSlots.length} lesson${branchSlots.length === 1 ? "" : "s"}${conflicts.length > 0 ? ` · ${conflicts.length} clash${conflicts.length === 1 ? "" : "es"}` : ""}${overFull > 0 ? ` · ${overFull} over capacity` : ""}.`}

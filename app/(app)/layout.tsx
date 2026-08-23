@@ -149,6 +149,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         home={roleHome(profile.role)}
         name={profile.full_name ?? contactLabel(profile) ?? "Account"}
         roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
+        /* A CENTRE wears its own name in the rail; a solo learner's personal org
+           has a generated name that is not a brand, so they keep ours. Gated on
+           `kind`, not on the name being present, so a centre that somehow has a
+           blank name falls back rather than rendering an empty wordmark. */
+        centreName={profile.org.kind === "center" ? profile.org.name?.trim() || null : null}
         // The real inbox or the login — never the synthetic auth address.
         email={contactLabel(profile) ?? undefined}
         sidebarFooter={sidebarFooter}

@@ -163,7 +163,7 @@ export async function staffForChat(chatId: number): Promise<Profile | null> {
   // otherwise Telegram becomes the way around a suspension.
   const { data: org } = await admin
     .from("organizations")
-    .select("kind, status")
+    .select("kind, status, name")
     .eq("id", p.organization_id as string)
     .maybeSingle();
   if (!org || org.status !== "active") return null;
@@ -178,6 +178,12 @@ export async function staffForChat(chatId: number): Promise<Profile | null> {
     full_name: (p.full_name as string | null) ?? null,
     username: (p.username as string | null) ?? null,
     contact_email: (p.contact_email as string | null) ?? null,
-    org: { kind: org.kind as Profile["org"]["kind"], status: org.status as Profile["org"]["status"] },
+    org: {
+      kind: org.kind as Profile["org"]["kind"],
+      status: org.status as Profile["org"]["status"],
+      // Not selected here: the Telegram path never renders the sidebar, and the
+      // centre's name is only ever used as a brand on screen.
+      name: (org.name as string | null) ?? null,
+    },
   };
 }

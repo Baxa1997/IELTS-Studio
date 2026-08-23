@@ -18,7 +18,12 @@ import {
 } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
-import { EngProgressLogo, EngProgressMark } from "@/components/brand/engprogress-logo";
+import {
+  CentreMark,
+  CentreWordmark,
+  EngProgressLogo,
+  EngProgressMark,
+} from "@/components/brand/engprogress-logo";
 
 import { SidebarNav } from "./sidebar-nav";
 
@@ -88,6 +93,7 @@ export function AppShell({
   home,
   name,
   roleLabel,
+  centreName,
   email,
   contentClassName,
   sidebarFooter,
@@ -112,6 +118,9 @@ export function AppShell({
   home: string;
   name: string;
   roleLabel: string;
+  /** An approved centre's own name — it replaces our wordmark in the rail.
+   *  Null for solo learners and for a centre still awaiting approval. */
+  centreName?: string | null;
   /** Shown under the name in the profile card (falls back to the role label). */
   email?: string;
   /** Override the default content wrapper. Pass "" for a full-bleed surface
@@ -213,7 +222,7 @@ export function AppShell({
           <Menu size={22} />
         </button>
         <Link href={home} style={{ textDecoration: "none" }}>
-          <Logo />
+          <Logo centre={centreName} />
         </Link>
         {bell ? <div style={{ marginLeft: "auto" }}>{bell}</div> : null}
       </header>
@@ -274,7 +283,7 @@ export function AppShell({
                 minWidth: 0,
               }}
             >
-              <Logo tone="dark" />
+              <Logo tone="dark" centre={centreName} />
               {/* Role chip beside the logo (reference design); lp-sb-trail makes it
                   collapse away with the rest of the rail text. */}
               <span
@@ -312,8 +321,16 @@ export function AppShell({
                 borderRadius: 8,
                 cursor: "pointer",
                 color: RAIL_FAINT,
+                // Half on the rail, half on the page — which is the whole
+                // reason it needs a z-index. It sat with none, so it took the
+                // rail's stacking position and lost to anything on the content
+                // side that had one: the console's sticky top bar is z-20, the
+                // page cards paint over it, and the button ended up buried under
+                // the page it is supposed to sit on top of. 40 puts it above the
+                // rail's own mobile scrim (30) and every content layer (≤21).
                 position: "absolute",
                 right: "-15px",
+                zIndex: 40,
               }}
             >
               {collapsed ? (
@@ -789,21 +806,31 @@ function Avatar({ name, size }: { name: string; size: number }) {
   );
 }
 
-function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
+function Logo({ tone = "light", centre }: { tone?: "light" | "dark"; centre?: string | null }) {
   // tone: "light" for the white mobile topbar, "dark" for the dark sidebar rail.
-  // Expanded shows the full wordmark; the collapsed rail swaps to the boxed-"P"
+  // Expanded shows the full wordmark; the collapsed rail swaps to the square
   // logomark (CSS in globals).
+  //
+  // `centre` is the ONE decision about whose brand this is, made here so it is
+  // made once: an approved centre wears its own name, and everyone else — solo
+  // learners, and the platform console — wears ours. A teacher opening this
+  // every morning works for their school, and the rail should say so.
+  //
   // The swap classes go on plain wrapper spans, not the brand components
-  // themselves — EngProgressLogo/EngProgressMark set their own inline `display`, which
+  // themselves — the brand components set their own inline `display`, which
   // (being inline style) always wins over the external .lp-sb-logo-full/-mark
   // rules trying to show/hide them, so both rendered at once either way.
   return (
-    <span style={{ display: "inline-flex", alignItems: "center" }}>
-      <span className="lp-sb-logo-full">
-        <EngProgressLogo tone={tone} fontSize={19} showTagline={false} />
+    <span style={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}>
+      <span className="lp-sb-logo-full" style={{ minWidth: 0 }}>
+        {centre ? (
+          <CentreWordmark name={centre} tone={tone} fontSize={19} />
+        ) : (
+          <EngProgressLogo tone={tone} fontSize={19} showTagline={false} />
+        )}
       </span>
       <span className="lp-sb-logo-mark">
-        <EngProgressMark size={36} />
+        {centre ? <CentreMark name={centre} size={36} /> : <EngProgressMark size={36} />}
       </span>
     </span>
   );

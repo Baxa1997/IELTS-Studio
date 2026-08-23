@@ -34,11 +34,11 @@ const CANVAS = "#F4F3EF";
  * Billing and Settings left the rail for the account menu.
  */
 const CRUMBS: [string, string][] = [
-  ["/console/teachers", "Run · Teachers"],
-  ["/console/groups", "Run · Groups"],
-  ["/console/students", "Run · Students"],
-  ["/console/attendance", "Run · Attendance"],
-  ["/console/calendar", "Run · Timetable"],
+  ["/console/teachers", "Teachers"],
+  ["/console/groups", "Groups"],
+  ["/console/students", "Students"],
+  ["/console/attendance", "Attendance"],
+  ["/console/calendar", "Timetable"],
   ["/console/practice-ai", "Practice · Practice AI"],
   ["/console/practices", "Practice · Practice"],
   ["/console/practice", "Learning · Practice"],
@@ -52,7 +52,7 @@ const CRUMBS: [string, string][] = [
   ["/console/announcements", "Account · Announcements"],
   ["/console/billing", "Account · Billing & plan"],
   ["/console/settings", "Account · Settings"],
-  ["/console", "Run · Dashboard"],
+  ["/console", "Dashboard"],
 ];
 
 function initials(name: string): string {

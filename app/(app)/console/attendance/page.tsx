@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FiBell, FiCheckCircle, FiChevronRight, FiClock, FiLock, FiSlash, FiUsers } from "react-icons/fi";
+import {
+  FiBell,
+  FiCheckCircle,
+  FiChevronRight,
+  FiClock,
+  FiLock,
+  FiSlash,
+  FiUsers,
+} from "react-icons/fi";
 
 import {
   AMBER,
@@ -17,6 +25,7 @@ import {
   SANS,
 } from "@/components/console/crm-ui";
 import { Drawer } from "@/components/console/finance-ui";
+import { ScheduleTabs } from "@/components/console/schedule-tabs";
 import { requireOrgUser } from "@/lib/auth";
 import { loadDay } from "@/lib/console/attendance";
 import { loadAlertSettings } from "@/lib/console/alerts";
@@ -74,6 +83,7 @@ export default async function AttendancePage({
 
   return (
     <div>
+      <ScheduleTabs active="attendance" />
       <PageHead
         title="Attendance"
         subtitle={
@@ -152,9 +162,7 @@ export default async function AttendancePage({
 
       {lessons.length === 0 ? (
         <Card>
-          <Empty
-            action={{ href: "/console/groups", label: "Create a group →" }}
-          >
+          <Empty action={{ href: "/console/groups", label: "Create a group →" }}>
             No groups yet — a register belongs to one.
           </Empty>
         </Card>
@@ -180,13 +188,7 @@ function LessonCard({ lesson, date }: { lesson: DayLesson; date: string }) {
   const cancelled = lesson.cancelledReason != null;
   // Scheduled-and-unmarked is the only state that needs chasing, so it is the
   // only one that gets a coloured edge. Everything else stays quiet.
-  const accent = cancelled
-    ? "#C5C4BE"
-    : done
-      ? GREEN
-      : lesson.scheduled
-        ? AMBER
-        : "#C5C4BE";
+  const accent = cancelled ? "#C5C4BE" : done ? GREEN : lesson.scheduled ? AMBER : "#C5C4BE";
 
   return (
     <Link

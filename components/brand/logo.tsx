@@ -32,6 +32,11 @@ export function BrandLogo({
   // BrandLogo's tone is the inverse of EngProgressLogo's (see the file header).
   const engTone = tone === "light" ? "dark" : "light";
   return (
-    <EngProgressLogo tone={engTone} fontSize={fontSize} showTagline={false} className={wordmarkClassName} />
+    <EngProgressLogo
+      tone={engTone}
+      fontSize={fontSize}
+      showTagline={false}
+      className={wordmarkClassName}
+    />
   );
 }

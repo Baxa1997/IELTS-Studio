@@ -137,3 +137,112 @@ export function EngProgressMark({ size = 32, className }: { size?: number; class
     </span>
   );
 }
+
+/* ── a centre's own name ────────────────────────────────────────────────────── */
+
+/**
+ * The wordmark a CENTRE wears in its own console.
+ *
+ * A teacher opening this product works for their school, not for us. Putting
+ * our wordmark at the top of their rail every day is the one place the
+ * white-label question actually bites — so an approved centre gets its own name
+ * there instead, in the same lockup, at the same weight.
+ *
+ * Two things it deliberately does NOT do. It does not carry the "English, AI"
+ * tagline: that is our claim, not theirs. And it does not fall back to our
+ * wordmark on a missing name — the caller decides that, because "which brand is
+ * this" should be one decision in one place (see `Logo` in app-shell/shell.tsx).
+ */
+export function CentreWordmark({
+  name,
+  fontSize = 19,
+  tone = "dark",
+  className,
+}: {
+  name: string;
+  /** Cap height in px; the rest scales from it. */
+  fontSize?: number;
+  tone?: "light" | "dark";
+  className?: string;
+}) {
+  const onDark = tone === "dark";
+  return (
+    <span
+      className={`${engprogress.variable} ${className ?? ""}`}
+      title={name}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        minWidth: 0,
+        fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
+        fontWeight: 700,
+        fontSize,
+        lineHeight: 1.15,
+        letterSpacing: "-.01em",
+        color: onDark ? CREAM : NAVY,
+        // A centre name is arbitrary length — "Cambridge Academy of Tashkent"
+        // is a real shape. The rail is 272px wide, so it truncates rather than
+        // wrapping the row to two lines and shoving the collapse toggle down.
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
+      {name}
+    </span>
+  );
+}
+
+/** Initials of a centre, for the collapsed rail. Two letters at most — the
+ *  square is 36px and three initials in it are a smudge. */
+export function centreInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+/** The collapsed-rail square, wearing a centre's initials instead of our "P". */
+export function CentreMark({
+  name,
+  size = 36,
+  className,
+}: {
+  name: string;
+  size?: number;
+  className?: string;
+}) {
+  const text = centreInitials(name);
+  return (
+    <span
+      className={`${engprogress.variable} ${className ?? ""}`}
+      role="img"
+      aria-label={name}
+      title={name}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        flex: "none",
+        background: TAN,
+        borderRadius: Math.round(size * 0.16),
+        fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
+      }}
+    >
+      <span
+        style={{
+          fontWeight: 700,
+          // Two letters need to be smaller than one to fit the same square.
+          fontSize: Math.round(size * (text.length > 1 ? 0.42 : 0.6)),
+          lineHeight: 1,
+          color: WHITE,
+          letterSpacing: text.length > 1 ? "-.02em" : undefined,
+        }}
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
