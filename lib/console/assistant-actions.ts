@@ -46,7 +46,16 @@ export async function recordAction(args: {
   }
 }
 
-/** What the assistant has done here lately. RLS scopes it to the centre. */
+/**
+ * What the assistant has done here lately. RLS scopes it to the centre.
+ *
+ * NO CALLER RIGHT NOW. The "What it has done" rail this fed was removed from
+ * the assistant page — it was a third column of yesterday's news beside a
+ * conversation that already says what it did. The WRITE side above is still
+ * live and still service-role, because the audit trail is the point: it has to
+ * survive whether or not anything is currently reading it. This stays as the
+ * reader for that table rather than leaving it write-only.
+ */
 export async function loadRecentActions(limit = 12): Promise<ActionRecord[]> {
   try {
     const supabase = await createClient();

@@ -59,3 +59,47 @@ export function attendanceRateFrom(statuses: Iterable<string>): number | null {
   }
   return denominator === 0 ? null : Math.round((attended / denominator) * 100);
 }
+
+/** One student's attendance, already summed — the shape `v_student_attendance`
+ *  returns, where excused marks have left the denominator in SQL. */
+export interface AttendanceTally {
+  sessions: number;
+  attended: number;
+}
+
+/**
+ * A rate for a whole class, and the members far enough below to be worth a
+ * phone call.
+ *
+ * SUMMED, NOT AVERAGED. A class rate is total attended over total sessions —
+ * averaging each student's own percentage gives a different number, and the
+ * gap widens exactly where it matters: the student who joined last week and
+ * has missed their only lesson would otherwise drag a healthy class to a
+ * figure nobody recognises.
+ *
+ * NULL IS NOT ZERO, for the same reason it is not in `attendanceRateFrom`: a
+ * class whose register has never been taken has no attendance rate, and
+ * printing 0% accuses a room of not turning up to lessons nobody marked.
+ *
+ * `minSessions` keeps the naming honest — one missed lesson out of two is 50%
+ * and means nothing about anybody.
+ */
+export function classAttendance(
+  tallies: Iterable<{ id: string; tally: AttendanceTally | undefined }>,
+  opts: { poorBelow?: number; minSessions?: number } = {},
+): { rate: number | null; poor: { id: string; rate: number }[] } {
+  const poorBelow = opts.poorBelow ?? 75;
+  const minSessions = opts.minSessions ?? 4;
+  let sessions = 0;
+  let attended = 0;
+  const poor: { id: string; rate: number }[] = [];
+  for (const { id, tally } of tallies) {
+    if (!tally || tally.sessions <= 0) continue;
+    sessions += tally.sessions;
+    attended += tally.attended;
+    const rate = Math.round((tally.attended / tally.sessions) * 100);
+    if (tally.sessions >= minSessions && rate < poorBelow) poor.push({ id, rate });
+  }
+  poor.sort((a, b) => a.rate - b.rate);
+  return { rate: sessions === 0 ? null : Math.round((attended / sessions) * 100), poor };
+}

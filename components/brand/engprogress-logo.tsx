@@ -169,11 +169,22 @@ export function CentreWordmark({
   return (
     <span
       className={`${engprogress.variable} ${className ?? ""}`}
+      // The full name on hover, because the visible one may be cut. Native
+      // `title` rather than a styled tooltip: it is the one that also reaches a
+      // screen reader and survives the rail being clipped.
       title={name}
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        minWidth: 0,
+        /* ⚠️ BLOCK, NOT INLINE-FLEX, AND THE ELLIPSIS DEPENDS ON IT.
+           `text-overflow: ellipsis` applies to a block container with inline
+           content — it does nothing on a flex container, where the text becomes
+           an anonymous flex item. Worse, that anonymous item takes its
+           automatic minimum size from `nowrap` text, which is the WHOLE name:
+           `min-width: 0` here cannot reach it, so the box refused to shrink and
+           a long centre name painted straight over the role chip beside it
+           instead of truncating. As a block it fills whatever width the rail
+           leaves and cuts cleanly. */
+        display: "block",
+        maxWidth: "100%",
         fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
         fontWeight: 700,
         fontSize,
@@ -181,8 +192,8 @@ export function CentreWordmark({
         letterSpacing: "-.01em",
         color: onDark ? CREAM : NAVY,
         // A centre name is arbitrary length — "Cambridge Academy of Tashkent"
-        // is a real shape. The rail is 272px wide, so it truncates rather than
-        // wrapping the row to two lines and shoving the collapse toggle down.
+        // is a real shape. It truncates rather than wrapping the row to two
+        // lines and shoving the collapse toggle down.
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",

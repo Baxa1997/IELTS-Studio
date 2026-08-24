@@ -71,6 +71,28 @@ function ownsTheSurface(pathname: string): boolean {
 }
 
 /**
+ * Pages that are exactly one screen tall, with their own scrolling region
+ * inside.
+ *
+ * ⚠️ WHY THE SHELL HAS TO KNOW. The assistant is a fixed frame — header,
+ * launcher, transcript, composer — where only the transcript scrolls. It asked
+ * for that with `height: calc(100dvh - 22px)`, arithmetic that reverse-engineers
+ * the surface's own insets from the viewport, and it was wrong the moment
+ * anything else shared the surface: the quota bar renders above it, so the page
+ * came out taller than the space it had and the WHOLE surface scrolled. The
+ * composer went under the fold and the header slid off the top.
+ *
+ * A height cannot be guessed at from the viewport; it has to come down the
+ * chain from a parent that knows its own size. `--fills` makes the surface a
+ * flex column so the content wrapper is handed exactly what is left over,
+ * whatever sits above it, and `height: 100%` then resolves the rest of the way
+ * down (globals.css).
+ */
+function fillsTheSurface(pathname: string): boolean {
+  return pathname.startsWith("/console/assistant");
+}
+
+/**
  * The authenticated app shell (Option A brand). The sidebar is the only chrome: it
  * owns the brand (top), navigation (middle), and the signed-in user as a profile
  * menu pinned to the bottom — clicking it reveals the account menu: Announcements,
@@ -277,19 +299,32 @@ export function AppShell({
               className="lp-sb-logo"
               style={{
                 textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 9,
+                display: "flex",
+                /* ⚠️ A CENTRE NAME AND A ROLE CHIP DO NOT FIT ON ONE LINE.
+                   The rail is 272px; take its padding, the collapse toggle and
+                   the chip out and about 99px is left for the name — nine
+                   characters, which truncates every real centre to nonsense
+                   ("Laqod Mar…"). Stacked, the name gets the row: "Laqod
+                   Market LLC" fits whole and only a genuinely long one is cut.
+                   Our own wordmark is a fixed width beside a short role, so it
+                   keeps the single line of the reference design. */
+                flexDirection: centreName ? "column" : "row",
+                alignItems: centreName ? "flex-start" : "center",
+                gap: centreName ? 5 : 9,
                 minWidth: 0,
               }}
             >
               <Logo tone="dark" centre={centreName} />
-              {/* Role chip beside the logo (reference design); lp-sb-trail makes it
-                  collapse away with the rest of the rail text. */}
+              {/* Role chip: beside our wordmark, beneath a centre's name.
+                  lp-sb-trail makes it collapse away with the rest of the rail
+                  text; lp-sb-rolechip additionally takes it out of flow when
+                  stacked, where a zeroed max-width still leaves a row of
+                  height under the logomark. */}
               <span
-                className="lp-sb-trail"
+                className="lp-sb-trail lp-sb-rolechip"
                 style={{
                   flex: "none",
+                  maxWidth: "100%",
                   fontFamily: SANS,
                   fontSize: 12,
                   fontWeight: 600,
@@ -393,7 +428,7 @@ export function AppShell({
           style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: 10 }}
         >
           <div
-            className="lp-shell-surface"
+            className={`lp-shell-surface${fillsTheSurface(pathname) ? "lp-shell-surface--fills" : ""}`}
             style={{
               height: "100%",
               overflow: "auto",
@@ -414,10 +449,10 @@ export function AppShell({
                 knows the route — the layout above it is a server component and
                 cannot read the pathname. */}
             <div
-              className={
+              className={`lp-shell-content ${
                 contentClassName ??
                 (isConsole || ownsTheSurface(pathname) ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")
-              }
+              }`}
             >
               {children}
             </div>

@@ -1,9 +1,19 @@
 import "server-only";
 
 import { canManagePeople, type Profile } from "@/lib/auth";
+import { classAttendance } from "@/lib/console/attendance-marks";
+import {
+  describeDays,
+  listDays,
+  parseClockTime,
+  parseWeekdays,
+  trimTime,
+} from "@/lib/console/timetable-days";
+import { TASK2_CATEGORIES, TOPIC_FAMILIES } from "@/lib/prompts/constants";
 import { loadGroups } from "@/lib/console/groups";
 import { loadMarkingQueue } from "@/lib/console/marking";
 import { loadDebtors, loadFinanceSettings } from "@/lib/finance/load";
+import { loadPayrollHistory } from "@/lib/finance/payroll";
 import { formatMoney } from "@/lib/finance/money";
 import { phoneKey } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
@@ -53,7 +63,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
   const supabase = await createClient();
   const isAdmin = canManagePeople(profile.role);
 
-  const [{ groups }, marking, orgRes] = await Promise.all([
+  const [{ groups, branches, rooms }, marking, orgRes] = await Promise.all([
     loadGroups(profile),
     loadMarkingQueue(profile),
     supabase.from("organizations").select("name").eq("id", profile.organization_id).maybeSingle(),
@@ -62,6 +72,51 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
   const shown = groups.slice(0, MAX_GROUPS);
   const groupIds = new Map(shown.map((g) => [g.name.toLowerCase(), g.id]));
 
+  /* WHEN EACH CLASS MEETS. Absent from the snapshot until now, so "when does 9A
+     meet?" got "I can't see that from here" about the single most-asked fact in
+     a centre — and, worse, the assistant could not tell that a class it had
+     just created had no timetable at all. Read straight off `lesson_slots`
+     rather than through `loadTimetable`, which pulls a whole week of grid data
+     this does not need. No embeds: `lesson_slots` reaches rooms through a
+     composite FK and PostgREST cannot resolve those (see lib/finance/names.ts). */
+  const scheduleByGroup = new Map<string, string[]>();
+  if (shown.length > 0) {
+    const { data: slots } = await supabase
+      .from("lesson_slots")
+      .select("group_id, series_id, room_id, weekday, starts_at, ends_at")
+      .in(
+        "group_id",
+        shown.map((g) => g.id),
+      );
+    const roomName = new Map(rooms.map((r) => [r.id, r.name]));
+    // One line per BOOKING, not per day: a class running Tue+Wed at 08:00 and
+    // again at 15:30 is two bookings, and flattening them into one day list
+    // would describe a class that does not exist.
+    const series = new Map<
+      string,
+      { group: string; days: number[]; from: string; to: string; room: string | null }
+    >();
+    for (const sl of (slots ?? []) as Record<string, unknown>[]) {
+      const key = (sl.series_id as string | null) ?? `${sl.group_id}:${sl.starts_at}`;
+      const row = series.get(key) ?? {
+        group: sl.group_id as string,
+        days: [],
+        from: trimTime(String(sl.starts_at ?? "")),
+        to: trimTime(String(sl.ends_at ?? "")),
+        room: roomName.get(sl.room_id as string) ?? null,
+      };
+      row.days.push(Number(sl.weekday));
+      series.set(key, row);
+    }
+    for (const row of series.values()) {
+      const list = scheduleByGroup.get(row.group) ?? [];
+      list.push(
+        `${describeDays(row.days)} ${row.from}–${row.to}${row.room ? ` in ${row.room}` : ""}`,
+      );
+      scheduleByGroup.set(row.group, list);
+    }
+  }
+
   // Phone coverage per class, because it is the single reason the Telegram
   // sign-in flow fails and the question a teacher asks it most ("why did
   // nobody get their login?").
@@ -69,6 +124,10 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
   const roster = new Map<string, string[]>();
   const studentNames = new Set<string>();
   const studentIds = new Map<string, string>();
+  /** group id → its members, so attendance and homework can be reported per
+   *  class rather than as one centre-wide number nobody can act on. */
+  const membersByGroup = new Map<string, string[]>();
+  const nameOfStudent = new Map<string, string>();
   if (shown.length > 0) {
     const { data: members } = await supabase
       .from("group_members")
@@ -96,6 +155,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
       row.total += 1;
       if (hasPhone.has(m.student_id)) row.withPhone += 1;
       memberPhones.set(m.group_id, row);
+      membersByGroup.set(m.group_id, [...(membersByGroup.get(m.group_id) ?? []), m.student_id]);
 
       // NAMES, because the assistant cannot be asked to move somebody it has
       // never heard of — and a name it has not seen is refused, which is what
@@ -105,6 +165,7 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
       if (!name) continue;
       studentNames.add(name.toLowerCase());
       studentIds.set(name.toLowerCase(), m.student_id);
+      nameOfStudent.set(m.student_id, name);
       const list = roster.get(byGroup.get(m.group_id) ?? "") ?? [];
       if (list.length < 40) {
         list.push(`${name}${hasPhone.has(m.student_id) ? "" : " (no phone)"}`);
@@ -113,12 +174,200 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
     }
   }
 
+  const { data: subjectRows } = await supabase
+    .from("subjects")
+    .select("name")
+    .eq("active", true)
+    .order("name")
+    .limit(30);
+  const subjects = ((subjectRows ?? []) as { name: string }[]).map((r) => r.name);
+
+  /* ── WHO IS TURNING UP ──────────────────────────────────────────────────
+     "How is 9A's attendance?" and "who keeps missing?" were unanswerable:
+     the snapshot knew who was enrolled and never whether any of them came.
+     Both are daily questions in a centre, and the second one is the whole
+     point of taking a register — an attendance record nobody can query is
+     data entry for its own sake.
+
+     `v_student_attendance` carries `sessions` and `attended` per student, so a
+     class rate is a true sum over its members rather than an average of
+     averages. It is security_invoker, so a teacher reads only their own. */
+  const attendanceOf = new Map<string, { sessions: number; attended: number }>();
+  const openRegisters: { group: string; on: string }[] = [];
+  if (shown.length > 0) {
+    const memberIds = [...new Set([...membersByGroup.values()].flat())];
+    const since = new Date(Date.now() - 45 * 86_400_000).toISOString().slice(0, 10);
+    const [rateRes, sessionRes] = await Promise.all([
+      memberIds.length > 0
+        ? supabase
+            .from("v_student_attendance")
+            .select("student_id, sessions, attended")
+            .in("student_id", memberIds)
+        : Promise.resolve({ data: [] }),
+      // An unmarked register is the reason an attendance rate is wrong, so it
+      // is reported as a fault rather than left to be inferred from a low
+      // number. Recent only: a register from last term is not a to-do.
+      supabase
+        .from("attendance_sessions")
+        .select("group_id, held_on, state")
+        .in(
+          "group_id",
+          shown.map((g) => g.id),
+        )
+        .neq("state", "marked")
+        .gte("held_on", since)
+        .order("held_on", { ascending: false })
+        .limit(20),
+    ]);
+    for (const r of (rateRes.data ?? []) as {
+      student_id: string;
+      sessions: number | null;
+      attended: number | null;
+    }[]) {
+      attendanceOf.set(r.student_id, {
+        sessions: Number(r.sessions ?? 0),
+        attended: Number(r.attended ?? 0),
+      });
+    }
+    const groupName = new Map(shown.map((g) => [g.id, g.name]));
+    for (const sess of (sessionRes.data ?? []) as { group_id: string; held_on: string }[]) {
+      const name = groupName.get(sess.group_id);
+      if (name) openRegisters.push({ group: name, on: sess.held_on });
+    }
+  }
+
+  /** A class's rate and its worst-attending members, worded for the prompt.
+   *  The arithmetic lives beside the definition of what a mark means, so this
+   *  and the pages cannot drift apart on it. */
+  function attendanceFor(groupId: string): { rate: number | null; poor: string[] } {
+    const { rate, poor } = classAttendance(
+      (membersByGroup.get(groupId) ?? []).map((id) => ({ id, tally: attendanceOf.get(id) })),
+    );
+    return {
+      rate,
+      poor: poor.slice(0, 6).map((p) => `${nameOfStudent.get(p.id) ?? "somebody"} ${p.rate}%`),
+    };
+  }
+
+  /* ── WHAT IS STILL OUTSTANDING ──────────────────────────────────────────
+     "Has 9A done the homework?" is the other question a teacher asks daily,
+     and the assistant could set an assignment and then never speak of it
+     again. Only LIVE work is counted — set in the last fortnight, or still to
+     come due whenever it was set — because a term's back-catalogue is not a
+     to-do list and would crowd out everything else in the prompt. Both halves
+     are needed: a fortnight-old cutoff on its own loses the long project set a
+     month ago and due tomorrow, which is the one most worth chasing. */
+  const homeworkByGroup = new Map<string, string[]>();
+  if (shown.length > 0) {
+    const cutoff = new Date(Date.now() - 14 * 86_400_000).toISOString();
+    const { data: work } = await supabase
+      .from("assignments")
+      .select(
+        "id, group_id, kind, title, due_at, created_at, prompt_id, reading_test_id, listening_library_id, lesson_id",
+      )
+      .in(
+        "group_id",
+        shown.map((g) => g.id),
+      )
+      .or(`created_at.gte.${cutoff},due_at.gte.${new Date().toISOString()}`)
+      .order("created_at", { ascending: false })
+      .limit(24);
+    const rows = (work ?? []) as Record<string, unknown>[];
+    if (rows.length > 0) {
+      const pick = (key: string) =>
+        rows.map((r) => r[key] as string | null).filter((v): v is string => !!v);
+      const promptIds = pick("prompt_id");
+      const testIds = pick("reading_test_id");
+      const listeningIds = pick("listening_library_id");
+      const lessonIds = pick("lesson_id");
+      const memberIds = [...new Set([...membersByGroup.values()].flat())];
+      const empty = Promise.resolve({ data: [] as Record<string, unknown>[] });
+      const [essays, reading, listening, lessons] = await Promise.all([
+        promptIds.length > 0 && memberIds.length > 0
+          ? supabase
+              .from("essays")
+              .select("prompt_id, student_id")
+              .in("prompt_id", promptIds)
+              .in("student_id", memberIds)
+          : empty,
+        testIds.length > 0 && memberIds.length > 0
+          ? supabase
+              .from("reading_attempts")
+              .select("test_id, student_id")
+              .in("test_id", testIds)
+              .in("student_id", memberIds)
+          : empty,
+        listeningIds.length > 0 && memberIds.length > 0
+          ? supabase
+              .from("listening_attempts")
+              .select("library_id, student_id")
+              .in("library_id", listeningIds)
+              .in("student_id", memberIds)
+          : empty,
+        lessonIds.length > 0 && memberIds.length > 0
+          ? supabase
+              .from("lesson_attempts")
+              .select("lesson_id, student_id")
+              .in("lesson_id", lessonIds)
+              .in("student_id", memberIds)
+          : empty,
+      ]);
+      // content id → the members who have touched it. Handed-in, not marked:
+      // "3 of 12 have done it" is the teacher's question, and whether the
+      // model has finished grading is a different one.
+      const handedIn = new Map<string, Set<string>>();
+      const note = (key: unknown, student: unknown) => {
+        if (typeof key !== "string" || typeof student !== "string") return;
+        const set = handedIn.get(key) ?? new Set<string>();
+        set.add(student);
+        handedIn.set(key, set);
+      };
+      for (const e of (essays.data ?? []) as Record<string, unknown>[])
+        note(e.prompt_id, e.student_id);
+      for (const r of (reading.data ?? []) as Record<string, unknown>[])
+        note(r.test_id, r.student_id);
+      for (const l of (listening.data ?? []) as Record<string, unknown>[])
+        note(l.library_id, l.student_id);
+      for (const l of (lessons.data ?? []) as Record<string, unknown>[])
+        note(l.lesson_id, l.student_id);
+
+      const today = new Date().toISOString().slice(0, 10);
+      for (const r of rows) {
+        const gid = r.group_id as string;
+        const contentId =
+          (r.prompt_id as string | null) ??
+          (r.reading_test_id as string | null) ??
+          (r.listening_library_id as string | null) ??
+          (r.lesson_id as string | null);
+        const total = (membersByGroup.get(gid) ?? []).length;
+        const done = contentId ? (handedIn.get(contentId)?.size ?? 0) : 0;
+        const due = (r.due_at as string | null)?.slice(0, 10);
+        // Overdue is said outright. A teacher scanning a list will not compare
+        // a date to today in their head, and this is the row they need to see.
+        const when = due
+          ? due < today
+            ? `was due ${due} — OVERDUE`
+            : `due ${due}`
+          : "no due date";
+        const list = homeworkByGroup.get(gid) ?? [];
+        if (list.length < 4) {
+          list.push(
+            `${r.kind as string} "${String(r.title ?? "untitled").slice(0, 60)}" — ${done} of ${total} handed in, ${when}`,
+          );
+        }
+        homeworkByGroup.set(gid, list);
+      }
+    }
+  }
+
   const lines: string[] = [];
   lines.push(`CENTRE: ${(orgRes.data?.name as string | null) ?? "this centre"}`);
   lines.push(`YOU ARE TALKING TO: a ${profile.role.replace("_", " ")}`);
   lines.push("");
 
-  lines.push(`CLASSES (${groups.length}${groups.length > MAX_GROUPS ? `, showing ${MAX_GROUPS}` : ""}):`);
+  lines.push(
+    `CLASSES (${groups.length}${groups.length > MAX_GROUPS ? `, showing ${MAX_GROUPS}` : ""}):`,
+  );
   if (shown.length === 0) {
     lines.push("  none yet");
   } else {
@@ -130,15 +379,67 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
             ? "all have a phone on file"
             : `${p.withPhone} of ${p.total} have a phone on file`
           : "nobody enrolled";
+      // "not on the timetable" is stated, never left as silence: it is a real
+      // fault (no register, no prorated billing) and the assistant can fix it
+      // in one action, but only if it can see it.
+      const when = scheduleByGroup.get(g.id);
       lines.push(
         `  • ${g.name} — ${g.memberCount} student${g.memberCount === 1 ? "" : "s"}` +
           `${g.teacherName ? `, taught by ${g.teacherName}` : ", no teacher assigned"}` +
+          `${g.branchName ? `, at ${g.branchName}` : ""}` +
           `${g.status !== "active" ? `, ${g.status}` : ""} — ${phoneNote}`,
+      );
+      lines.push(
+        when && when.length > 0
+          ? `      meets ${when.join("; ")}`
+          : "      NOT ON THE TIMETABLE — no lesson days set, so there is no register and nothing to prorate",
       );
       const names = roster.get(g.name);
       if (names && names.length > 0) lines.push(`      ${names.join(", ")}`);
+      const att = attendanceFor(g.id);
+      if (att.rate != null) {
+        lines.push(
+          `      attendance ${att.rate}%` +
+            (att.poor.length > 0 ? ` — struggling to turn up: ${att.poor.join(", ")}` : ""),
+        );
+      } else if (g.memberCount > 0) {
+        lines.push("      attendance: no register has been taken yet");
+      }
+      for (const hw of homeworkByGroup.get(g.id) ?? []) lines.push(`      homework: ${hw}`);
     }
   }
+  /* THE NAMES ITS OWN ARGUMENTS ARE CHECKED AGAINST. `create_group` takes a
+     branch and a room, and the snapshot listed neither — so in a centre with
+     two sites the model could not name one, and every Confirm came back
+     "Which branch? This centre has …". A capability whose argument is
+     unknowable is not a capability. */
+  if (openRegisters.length > 0) {
+    lines.push("");
+    lines.push(
+      `REGISTERS NOT TAKEN (${openRegisters.length}): ` +
+        openRegisters
+          .slice(0, 10)
+          .map((r) => `${r.group} on ${r.on}`)
+          .join(", ") +
+        ". Until these are marked the attendance figures above are incomplete, and a per-student-lesson salary is short.",
+    );
+  }
+
+  lines.push("");
+  lines.push(
+    `BRANCHES: ${branches.length > 0 ? branches.map((b) => b.name).join(", ") : "none set up yet — a class cannot be created without one"}`,
+  );
+  if (rooms.length > 0) {
+    const byBranch = new Map(branches.map((b) => [b.id, b.name]));
+    lines.push(
+      `ROOMS: ${rooms
+        .slice(0, 30)
+        .map((r) => `${r.name}${byBranch.has(r.branchId) ? ` (${byBranch.get(r.branchId)})` : ""}`)
+        .join(", ")}`,
+    );
+  }
+  if (subjects.length > 0) lines.push(`SUBJECTS: ${subjects.join(", ")}`);
+
   lines.push("");
   lines.push(
     marking.length > 0
@@ -192,6 +493,39 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
       // not using.
     }
 
+    /* ⚠️ WHY THIS LINE EXISTS. Asked about salaries, the assistant handed over
+       the payroll spreadsheet and it came out blank. It was not a bug in the
+       export: a payroll report is built from a RUN, and a run only exists once
+       the owner has pressed Run for that month. With no run there are no
+       sheets to write. The model had no way to know that — nothing about
+       payroll was in the snapshot at all — so it offered the file with
+       confidence every time. Now it can say which months are actually there.
+
+       Owner-gated with the rest of the money, and read through RLS like
+       everything else here. */
+    try {
+      const runs = await loadPayrollHistory();
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const done = runs.find((r) => r.periodMonth.slice(0, 7) === thisMonth);
+      lines.push("");
+      lines.push(
+        done
+          ? `PAYROLL: this month (${thisMonth}) is computed and ${done.status}.`
+          : `PAYROLL: this month (${thisMonth}) has NOT been computed yet, so its report would come out empty — it has to be run on the payroll page first.`,
+      );
+      const others = runs
+        .filter((r) => r.periodMonth.slice(0, 7) !== thisMonth)
+        .slice(0, 6)
+        .map((r) => `${r.periodMonth.slice(0, 7)} (${r.status})`);
+      if (others.length > 0) {
+        lines.push(`  Months with a computed run: ${others.join(", ")}.`);
+      } else if (!done) {
+        lines.push("  No month has ever been computed here.");
+      }
+    } catch {
+      /* same reasoning as the debtors block above */
+    }
+
     const { data: staff } = await supabase
       .from("profiles")
       .select("full_name, role")
@@ -224,7 +558,20 @@ export async function loadCentreSnapshot(profile: Profile): Promise<CentreSnapsh
    assistant that can undo nothing should not be the fastest route to the
    things that cannot be undone. */
 
-export type ArgKind = "group" | "student" | "text" | "choice" | "date" | "month";
+export type ArgKind =
+  | "group"
+  | "student"
+  | "text"
+  | "choice"
+  | "date"
+  | "month"
+  /** A list of weekdays in any of the three languages typed here, normalised
+   *  to "Monday, Wednesday, Friday" so the confirm card stays editable. */
+  | "days"
+  /** A clock time, normalised to 24-hour `HH:MM`. */
+  | "time"
+  /** A whole number, bounded per argument. */
+  | "number";
 
 export interface ArgSpec {
   name: string;
@@ -233,6 +580,24 @@ export interface ArgSpec {
   describe: string;
   required?: boolean;
   choices?: readonly string[];
+  /** Inclusive bounds for `number`. */
+  min?: number;
+  max?: number;
+  /**
+   * Which roles this ARGUMENT is for, when it is narrower than the action.
+   *
+   * A teacher may create their own class, but `createGroup` ignores the two
+   * price fields unless the caller owns the centre. Describing them to a
+   * teacher anyway would have the assistant accept a fee, show it on the
+   * confirm card, and drop it — which is the exact failure this whole pass is
+   * about. Omitted means "same as the action".
+   */
+  roles?: readonly string[];
+}
+
+/** The arguments of `spec` that this role may actually supply. */
+export function argsFor(spec: { args: readonly ArgSpec[] }, role: string): ArgSpec[] {
+  return spec.args.filter((a) => !a.roles || a.roles.includes(role));
 }
 
 export interface ActionSpec {
@@ -260,6 +625,10 @@ const MANAGE = ["center_admin", "administrator"] as const; //            canMana
 const OWNER = ["center_admin"] as const; //                              center_admin only
 const TEACHER_ONLY = ["teacher"] as const; //                            teacher only
 const ANNOUNCE = ["center_admin", "teacher"] as const; //                center_admin || teacher
+/* createGroup writes monthly_fee_minor/teacher_rate_minor only for a
+   center_admin and silently ignores them for anyone else — so nobody else is
+   offered the field. */
+const MANAGE_FEES = ["center_admin"] as const;
 
 export const ACTIONS: readonly ActionSpec[] = [
   {
@@ -280,6 +649,14 @@ export const ACTIONS: readonly ActionSpec[] = [
       { name: "group", kind: "group", describe: "the class they join", required: true },
       { name: "full_name", kind: "text", describe: "their full name", required: true },
       { name: "phone", kind: "text", describe: "their phone number, if it was given" },
+      {
+        name: "email",
+        kind: "text",
+        describe: "their email, if it was given — the credentials get sent there",
+      },
+      { name: "login", kind: "text", describe: "a login, only if they asked for a particular one" },
+      { name: "guardian_name", kind: "text", describe: "a parent or guardian's name, if given" },
+      { name: "guardian_phone", kind: "text", describe: "the guardian's phone, if given" },
     ],
   },
   {
@@ -298,6 +675,28 @@ export const ACTIONS: readonly ActionSpec[] = [
         required: true,
       },
       { name: "due", kind: "date", describe: "due date as YYYY-MM-DD, if one was asked for" },
+      // WRITING WILL NOT GENERATE WITHOUT THESE. `createAssignment` refuses a
+      // writing task with no question type and no topic, so an assistant that
+      // never sent them could not set a single essay — it proposed, the person
+      // pressed Confirm, and got "Choose a valid question type."
+      {
+        name: "category",
+        kind: "choice",
+        describe: "writing only: the Task 2 question shape",
+        choices: TASK2_CATEGORIES,
+      },
+      {
+        name: "topic_family",
+        kind: "choice",
+        describe: "writing only: what the essay is about",
+        choices: TOPIC_FAMILIES,
+      },
+      {
+        name: "band",
+        kind: "text",
+        describe: "reading only: the band the test should be pitched at, e.g. 6.5",
+      },
+      { name: "instructions", kind: "text", describe: "anything to tell the class about it" },
     ],
   },
   {
@@ -326,12 +725,22 @@ export const ACTIONS: readonly ActionSpec[] = [
     id: "send_announcement",
     verb: "Send it",
     describe:
-      "Send an announcement to a class, or to the whole centre when no class is named.",
+      "Send an announcement to a class, or to the whole centre when no class is named. It always reaches everyone's account; say yes to telegram to ALSO post it in the class channel, which is where the parents are.",
     roles: ANNOUNCE,
     args: [
       { name: "subject", kind: "text", describe: "a short subject line", required: true },
       { name: "body", kind: "text", describe: "the message itself", required: true },
       { name: "group", kind: "group", describe: "the class, if it is for one class only" },
+      {
+        // Found by the drift test, not by anybody noticing: `sendAnnouncement`
+        // has always taken this and the assistant never sent it, so an
+        // announcement asked for "in the Telegram group" went to the app only
+        // and the parents it was meant for never saw it.
+        name: "telegram",
+        kind: "choice",
+        describe: "post it in the class's Telegram channel too — only for one named class",
+        choices: ["yes", "no"],
+      },
     ],
   },
   {
@@ -357,6 +766,8 @@ export const ACTIONS: readonly ActionSpec[] = [
         choices: ["teacher", "administrator"],
         required: true,
       },
+      { name: "email", kind: "text", describe: "their email, if it was given" },
+      { name: "login", kind: "text", describe: "a login, only if they asked for a particular one" },
     ],
   },
   {
@@ -372,12 +783,69 @@ export const ACTIONS: readonly ActionSpec[] = [
   {
     id: "create_group",
     verb: "Create the class",
-    describe: "Start a new class. Name it, and name the teacher if one was given.",
+    /* ⚠️ EVERY ARGUMENT HERE IS ONE THE PERSON MAY HAVE SAID OUT LOUD. This
+       list used to be three items long while `createGroup` read eleven, so
+       "Mon, Wed, Fri, 15:30 to 17:00, room 2, 300 000 a month" created a class
+       called nothing but its name. The schedule was the expensive one to lose:
+       it is the timetable, it is what the register offers to mark, and it is
+       the denominator every prorated fee and salary divides by. */
+    describe:
+      "Start a new class. Fill in EVERYTHING they told you: the name, the teacher, which days it meets and between what times, the room, the branch, how many seats, and the prices. Days and times go together — a class with days and no times cannot be put on the timetable.",
     roles: STAFF,
     args: [
       { name: "name", kind: "text", describe: "the class name", required: true },
       { name: "teacher", kind: "text", describe: "the teacher's name, if one was given" },
       { name: "branch", kind: "text", describe: "the branch, if the centre has more than one" },
+      { name: "subject", kind: "text", describe: "what it teaches, if the centre uses subjects" },
+      {
+        name: "days",
+        kind: "days",
+        describe: "the days it meets, e.g. 'Monday, Wednesday, Friday' — any language",
+      },
+      { name: "starts_at", kind: "time", describe: "what time the lesson starts, e.g. 15:30" },
+      { name: "ends_at", kind: "time", describe: "what time it ends, e.g. 17:00" },
+      { name: "room", kind: "text", describe: "the room it is taught in, if one was named" },
+      { name: "capacity", kind: "number", describe: "how many seats", min: 1, max: 500 },
+      {
+        name: "monthly_fee",
+        kind: "text",
+        describe: "what a student pays a month, if they said",
+        roles: MANAGE_FEES,
+      },
+      {
+        name: "teacher_rate",
+        kind: "text",
+        describe: "what the teacher is paid for it, if they said",
+        roles: MANAGE_FEES,
+      },
+    ],
+  },
+  {
+    id: "set_schedule",
+    verb: "Save the timetable",
+    /* The other half of the same hole. Getting the days into `create_group`
+       does nothing for the classes already created without them, and "put 9A
+       on Monday and Thursday too" is the follow-on sentence. `setGroupSchedule`
+       has existed all along; nothing was wired to it. */
+    describe:
+      "Set or change which days and times a class meets. This replaces its current weekly booking, and the whole timetable, register and prorated billing follow from it.",
+    roles: STAFF,
+    args: [
+      { name: "group", kind: "group", describe: "the class", required: true },
+      {
+        name: "days",
+        kind: "days",
+        describe: "the days it meets, e.g. 'Monday, Wednesday, Friday' — any language",
+        required: true,
+      },
+      {
+        name: "starts_at",
+        kind: "time",
+        describe: "what time it starts, e.g. 15:30",
+        required: true,
+      },
+      { name: "ends_at", kind: "time", describe: "what time it ends, e.g. 17:00", required: true },
+      { name: "room", kind: "text", describe: "the room, if one was named" },
     ],
   },
   {
@@ -406,8 +874,11 @@ export function actionById(id: string): ActionSpec | null {
 export function describeActions(role: string): string {
   return ACTIONS.filter((a) => a.roles.includes(role))
     .map((a) => {
-      const args = a.args
-        .map((x) => `${x.name}${x.required ? "" : "?"}=<${x.describe}${x.choices ? `: ${x.choices.join("|")}` : ""}>`)
+      const args = argsFor(a, role)
+        .map(
+          (x) =>
+            `${x.name}${x.required ? "" : "?"}=<${x.describe}${x.choices ? `: ${x.choices.join("|")}` : ""}>`,
+        )
         .join(", ");
       return `  • ${a.id} — ${a.describe}\n    args: ${args}`;
     })
@@ -472,34 +943,80 @@ export function vetProposals(raw: RawProposal[], ctx: VetContext): VettedProposa
     const spec = actionById(p.action);
     if (!spec || !spec.roles.includes(ctx.role)) continue;
 
+    const allowed = argsFor(spec, ctx.role);
     const args: Record<string, string> = {};
     let ok = true;
-    for (const arg of spec.args) {
-      const value = String(p.args?.[arg.name] ?? "").trim();
-      if (!value) {
+    for (const arg of allowed) {
+      const raw = String(p.args?.[arg.name] ?? "").trim();
+      if (!raw) {
         if (arg.required) {
           ok = false;
           break;
         }
         continue;
       }
-      if (arg.kind === "group" && !ctx.groups.has(value.toLowerCase())) {
+      if (arg.kind === "group" && !ctx.groups.has(raw.toLowerCase())) {
         ok = false;
         break;
       }
-      if (arg.kind === "student" && !ctx.students.has(value.toLowerCase())) {
+      if (arg.kind === "student" && !ctx.students.has(raw.toLowerCase())) {
         ok = false;
         break;
       }
-      if (arg.kind === "choice" && !(arg.choices ?? []).includes(value)) {
+      if (arg.kind === "choice" && !(arg.choices ?? []).includes(raw)) {
         ok = false;
         break;
       }
       // A malformed date is dropped rather than fatal: "sometime next week" is
       // a fine thing to say and a bad thing to guess at, and the action treats
       // a missing due date as no deadline.
-      if (arg.kind === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(value)) continue;
-      args[arg.name] = value.slice(0, 500);
+      if (arg.kind === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(raw)) continue;
+
+      /* THE THREE NORMALISING KINDS. Each one is stored back in its canonical
+         written form rather than as a number, because the confirm card puts it
+         in a text box somebody may correct — and "Monday, Wednesday, Friday" is
+         a far better thing to hand back than "1,3,5". A required one that will
+         not parse fails the whole proposal; an optional one is simply dropped,
+         on the same reasoning as the date above. */
+      if (arg.kind === "days") {
+        const days = parseWeekdays(raw);
+        if (days.length === 0) {
+          if (arg.required) {
+            ok = false;
+            break;
+          }
+          continue;
+        }
+        args[arg.name] = listDays(days);
+        continue;
+      }
+      if (arg.kind === "time") {
+        const time = parseClockTime(raw);
+        if (!time) {
+          if (arg.required) {
+            ok = false;
+            break;
+          }
+          continue;
+        }
+        args[arg.name] = time;
+        continue;
+      }
+      if (arg.kind === "number") {
+        const n = Number(raw);
+        const withinBounds =
+          Number.isInteger(n) && n >= (arg.min ?? 0) && n <= (arg.max ?? Number.MAX_SAFE_INTEGER);
+        if (!withinBounds) {
+          if (arg.required) {
+            ok = false;
+            break;
+          }
+          continue;
+        }
+        args[arg.name] = String(n);
+        continue;
+      }
+      args[arg.name] = raw.slice(0, 500);
     }
     if (!ok) continue;
 
@@ -508,7 +1025,7 @@ export function vetProposals(raw: RawProposal[], ctx: VetContext): VettedProposa
       verb: spec.verb,
       why: String(p.why ?? "").slice(0, 300),
       args,
-      fields: spec.args.map((a) => ({
+      fields: allowed.map((a) => ({
         name: a.name,
         label: a.name.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
         kind: a.kind,
@@ -521,7 +1038,6 @@ export function vetProposals(raw: RawProposal[], ctx: VetContext): VettedProposa
   }
   return out;
 }
-
 
 /* ── files it can hand you ──────────────────────────────────────────────────
 
@@ -575,6 +1091,35 @@ export const DOCUMENTS: readonly DocSpec[] = [
       `/api/console/finance/export?report=${a.report}&format=${a.format}&month=${a.month}-01`,
   },
   {
+    /* ⚠️ THE ANSWER TO "WHAT DO I OWE MY TEACHERS?" — and the one payroll file
+       that is never blank. `finance_report` with report=payroll reads a saved
+       RUN, so a month nobody has pressed Run for exports as an empty sheet;
+       that is what made the assistant hand over a blank spreadsheet in the
+       first place. This grid COMPUTES a month that has no run and marks the
+       column provisional, so the honest answer to "salaries this month" on the
+       20th is a real number with a caveat rather than nothing at all.
+
+       It is also the only way to answer "who am I still behind with, and since
+       when", which is unanswerable one month at a time. */
+    id: "teacher_pay_grid",
+    verb: "Download",
+    describe:
+      "Teacher pay across several months side by side, as a spreadsheet — what each teacher earned per month and whether it was paid, part-paid or still owed. Unlike the payroll report this one still works for a month that has not been calculated yet: it computes it and marks it provisional. Only the centre owner can have it.",
+    roles: ["center_admin"],
+    args: [
+      { name: "from", kind: "month", describe: "the first month, as YYYY-MM", required: true },
+      {
+        name: "to",
+        kind: "month",
+        describe: "the last month as YYYY-MM; leave out for a single month",
+      },
+    ],
+    href: (a) => {
+      const months = monthSpan(a.from, a.to ?? a.from);
+      return months.length > 0 ? `/api/console/finance/export?months=${months.join(",")}` : null;
+    },
+  },
+  {
     id: "student_report",
     verb: "Download the PDF",
     describe:
@@ -587,6 +1132,38 @@ export const DOCUMENTS: readonly DocSpec[] = [
     },
   },
 ] as const;
+
+/**
+ * Every month from `from` to `to` inclusive, oldest first.
+ *
+ * Capped at 12 because the export caps at 12, and a request for five years
+ * should come back as five columns of the right end rather than as a silently
+ * truncated sheet of the wrong one. Backwards input is swapped rather than
+ * refused — "from July back to May" is a thing people say.
+ */
+export function monthSpan(from: string, to: string): string[] {
+  // BOTH ends are checked for a real month, not just the shape. `2026-13`
+  // satisfies the pattern, and the walk below would never reach it — it would
+  // run to the cap and return twelve months nobody asked for.
+  const real = (m: string) =>
+    /^\d{4}-\d{2}$/.test(m) && Number(m.slice(5, 7)) >= 1 && Number(m.slice(5, 7)) <= 12;
+  if (!real(from) || !real(to)) return [];
+  const [a, b] = from <= to ? [from, to] : [to, from];
+  const out: string[] = [];
+  let year = Number(a.slice(0, 4));
+  let month = Number(a.slice(5, 7));
+  while (out.length < 120) {
+    const stamp = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+    out.push(stamp);
+    if (stamp === b) break;
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+  }
+  return out.slice(-12);
+}
 
 export function documentById(id: string): DocSpec | null {
   return DOCUMENTS.find((d) => d.id === id) ?? null;

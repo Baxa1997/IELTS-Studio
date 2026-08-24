@@ -334,6 +334,27 @@ export function reportToSheets(data: ReportData): Sheet[] {
     });
   }
 
+  /* ⚠️ THE BLANK PAYROLL SPREADSHEET. A payroll report is built from a RUN, and
+     a run only exists once the owner has pressed Run for that month. With no
+     run, `loadPayrollRun` returns null, every block below is skipped, `sheets`
+     comes out EMPTY — and `buildWorkbook` falls back to a single sheet called
+     "Empty" holding one dash. Downloading that from the assistant looked like a
+     broken export rather than an unrun month, and there was nothing anywhere in
+     the file to say which it was. Now the file says so itself. */
+  if (data.kind === "payroll" && !data.payroll) {
+    sheets.push({
+      name: "Payroll",
+      notes: [
+        ...notes,
+        "",
+        "This month has not been calculated yet, so there is nothing to report.",
+        "Open Finance → Payroll, choose this month and press Run to calculate it, then export again.",
+      ],
+      columns: [{ header: "Status", width: 72 }],
+      rows: [[`No payroll run exists for ${monthLabel(monthStart(data.period.from))}.`]],
+    });
+  }
+
   if (data.payroll) {
     sheets.push({
       name: "Payroll",
@@ -421,6 +442,19 @@ export function reportToSheets(data: ReportData): Sheet[] {
     });
   }
 
+  /* No report may leave here with nothing in it. Every branch above is
+     conditional, so a quiet month on a narrow filter could still produce zero
+     sheets — and the workbook builder's fallback names that sheet "Empty",
+     which reads as a broken download rather than an empty period. */
+  if (sheets.length === 0) {
+    sheets.push({
+      name: REPORT_LABEL[data.kind],
+      notes: [...notes, "", "Nothing matched this period and these filters."],
+      columns: [{ header: "Status", width: 72 }],
+      rows: [["No entries for this period."]],
+    });
+  }
+
   return sheets;
 }
 
@@ -495,6 +529,15 @@ export function reportToPdf(data: ReportData): PdfDocument {
         money(c.amountMinor),
       ]),
       totals: ["Total expenses", "", "", money(data.totalOutMinor)],
+    });
+  }
+
+  if (data.kind === "payroll" && !data.payroll) {
+    tables.push({
+      title: `Payroll — ${monthLabel(monthStart(data.period.from))}`,
+      note: "This month has not been calculated yet. Open Finance → Payroll, choose the month and press Run, then export again.",
+      columns: [{ header: "Status", width: 12 }],
+      rows: [["No payroll run exists for this month, so there is nothing to report."]],
     });
   }
 
