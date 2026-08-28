@@ -3,7 +3,7 @@ import { Work_Sans } from "next/font/google";
 import { ConsoleChrome } from "@/components/console/console-chrome";
 import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
 import { ToastHost } from "@/components/console/toast";
-import { canManagePeople, isOrgOwner, requireOrgUser } from "@/lib/auth";
+import { canManagePeople, isOrgOwner, requireStaff } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadSubjects, loadTeacherSubjects } from "@/lib/console/subjects";
 import { loadFinanceSettings } from "@/lib/finance/load";
@@ -33,7 +33,7 @@ const work = Work_Sans({
  * every role.
  */
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile } = await requireOrgUser();
+  const { user, profile } = await requireStaff();
   // Two different questions, and they stopped having the same answer when the
   // administrator role arrived. `isOwner` gates money and hiring; `canStaff`
   // gates putting a teacher on a group, which is scheduling.
