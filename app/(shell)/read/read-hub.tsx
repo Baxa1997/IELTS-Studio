@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, Check, FileText, Layers, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, FileText, Layers, Loader2, Lock, Sparkles } from "lucide-react";
 
 import { AiGenerateSection } from "@/components/ai-generate-section";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
@@ -36,6 +36,8 @@ export interface TestCard {
 export interface LibraryTest {
   id: string;
   targetBand: number | null;
+  /** Beyond the free shelf: shown with a Pro badge, and the route refuses it. */
+  locked?: boolean;
 }
 
 /** A passage card — used for both library samples and the learner's own. */
@@ -48,6 +50,8 @@ export interface PassageCard {
   types: ReadingQuestionType[];
   /** True for the learner's own passages they've already practised (graded). */
   practised?: boolean;
+  /** Beyond the free shelf: shown with a Pro badge, and the route refuses it. */
+  locked?: boolean;
 }
 
 type Tab = "test" | "passage";
@@ -68,6 +72,8 @@ export function ReadingHub({
   ownPassages,
   isTeacher = false,
   groups = [],
+  freeUsed = 0,
+  freeLimit = null,
 }: {
   levelBand: number | null;
   levelMeasured: boolean;
@@ -78,6 +84,10 @@ export function ReadingHub({
   /** Teachers get an Attach control under every card. */
   isTeacher?: boolean;
   groups?: { id: string; name: string }[];
+  /** Ready-made practices opened, and the plan's allowance. null = the whole
+   *  shelf (any paid plan, and every centre — they run unmetered). */
+  freeUsed?: number;
+  freeLimit?: number | null;
 }) {
   const [tab, setTab] = useState<Tab>("test");
   const router = useRouter();
@@ -157,6 +167,29 @@ export function ReadingHub({
             the evidence behind every answer.
           </p> */}
         </div>
+        {/* The free shelf, stated before anything is clicked. Listening carries
+            the same counter in the same place — a learner should not have to
+            learn two different rules for the same allowance. Absent entirely on
+            a paid plan and in a centre, where the shelf has no bottom. */}
+        {freeLimit != null ? (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              background: "#F1F1F8",
+              border: "1px solid #E2E0EE",
+              color: "#5D5A72",
+              padding: "8px 14px",
+              borderRadius: 999,
+              fontSize: 14,
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <Lock size={13} /> Free practices: {Math.min(freeUsed, freeLimit)}/{freeLimit} used
+          </span>
+        ) : null}
         <span
           style={{
             display: "inline-flex",
@@ -250,6 +283,7 @@ export function ReadingHub({
                       onStart={() => void startLibrary("test", t.id, num)}
                       loading={loadingId === t.id}
                       attach={attachFor(t.id)}
+                      locked={t.locked}
                     />
                   );
                 })}
@@ -344,6 +378,7 @@ function TestTile({
   isNew,
   practised,
   attach,
+  locked,
 }: {
   title: string;
   footerLeft: string;
@@ -352,6 +387,9 @@ function TestTile({
   loading?: boolean;
   isNew?: boolean;
   practised?: boolean;
+  /** Past the free shelf. The card still opens the upgrade path — it is not
+   *  disabled, because a dead button teaches nothing about how to get past it. */
+  locked?: boolean;
   /** Teacher only. Its presence changes the card's anatomy — see below. */
   attach?: { onAttach: () => void; disabled: boolean };
 }) {
@@ -373,7 +411,7 @@ function TestTile({
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{footerLeft}</span>
-        <StartAction loading={loading} practised={practised} />
+        <StartAction loading={loading} practised={practised} locked={locked} />
       </div>
     </>
   );
@@ -430,7 +468,7 @@ function TestTile({
                 cursor: loading ? "wait" : "pointer",
               }}
             >
-              {loading ? "Opening…" : practised ? "Retake" : "Start"}
+              {loading ? "Opening…" : locked ? "Unlock" : practised ? "Retake" : "Start"}
             </button>
           )}
         </div>
@@ -448,7 +486,7 @@ function TestTile({
       onClick={onStart}
       disabled={loading}
       className="lp-hover"
-      style={cardAsButton(loading, practised)}
+      style={{ ...cardAsButton(loading, practised), opacity: locked ? 0.66 : 1 }}
     >
       {body}
     </button>
@@ -547,7 +585,7 @@ function PassageTile({
       <Divider />
       <div style={rowBetween}>
         <span style={metaText}>{p.questionCount} questions</span>
-        <StartAction loading={loading} practised={practised} />
+        <StartAction loading={loading} practised={practised} locked={p.locked} />
       </div>
     </>
   );
@@ -561,7 +599,7 @@ function PassageTile({
       onClick={onStart}
       disabled={loading}
       className="lp-hover"
-      style={cardAsButton(loading, practised)}
+      style={{ ...cardAsButton(loading, practised), opacity: p.locked ? 0.66 : 1 }}
     >
       {body}
     </button>
@@ -737,14 +775,22 @@ function DoneBadge() {
 
 /** Footer action: "Start" → arrow, or a spinner while the clone is in flight.
  *  Once practised it reads "Retake" — a small nudge that this one's been done. */
-function StartAction({ loading, practised }: { loading?: boolean; practised?: boolean }) {
+function StartAction({
+  loading,
+  practised,
+  locked,
+}: {
+  loading?: boolean;
+  practised?: boolean;
+  locked?: boolean;
+}) {
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        color: INDIGO,
+        color: locked ? "#8A899A" : INDIGO,
         fontSize: 14,
         fontWeight: 600,
       }}
@@ -752,6 +798,10 @@ function StartAction({ loading, practised }: { loading?: boolean; practised?: bo
       {loading ? (
         <>
           <Loader2 className="animate-spin" size={14} /> Opening…
+        </>
+      ) : locked ? (
+        <>
+          <Lock size={13} /> Pro
         </>
       ) : (
         <>
