@@ -1,6 +1,14 @@
 # CLAUDE.md
 
-Durable context for this repo. Full background: `IELTS_Writing_Reading_SaaS_Project_Plan.md` (on Desktop).
+Durable context for this repo — the **rulebook**: what the product is, and the
+principles that must hold.
+
+For the **map** — where the two repositories are, what runs where, how to reach
+the database, and what is currently broken — read **`PROJECT-CONTEXT.md`**
+first. When the two disagree, this file wins on policy and that one wins on
+facts on the ground.
+
+Full background: `IELTS_Writing_Reading_SaaS_Project_Plan.md` (on Desktop).
 
 ## Product
 
