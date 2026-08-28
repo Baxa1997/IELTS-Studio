@@ -1770,6 +1770,26 @@
   display: none;
 }
 
+/* THE RAIL SCROLLS WITHOUT SAYING SO.
+   The nav overflows for a student with every skill unlocked, and on Windows —
+   where a scrollbar is an opaque track that takes real width, not the overlay
+   bar macOS fades in — that put a permanent grey gutter down the middle of the
+   brand. It read as a seam in the chrome rather than as an affordance.
+
+   The scrolling itself is untouched: wheel, trackpad, touch, keyboard and
+   programmatic scrolling all still work and nothing is clipped. Only the bar is
+   suppressed, which is the same trade `.cn-noscrollbar` makes for drawers —
+   the rail is short enough that what is below the fold is one nudge away. */
+.lp-sb-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.lp-sb-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* Only the main column scrolls — give it a slim Option A scrollbar. */
 .lp-shell-main {
   scrollbar-width: thin;
