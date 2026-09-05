@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Manrope, Sora } from "next/font/google";
+import { JetBrains_Mono, Manrope, Sora } from "next/font/google";
 
 import { Band9Card } from "@/app/_landing/band9-card";
+import { DEMO_TABS } from "@/app/_landing/demo-content";
+import { ReportShowcase } from "@/app/_landing/demo-screens";
+import { DemoTabs } from "@/app/_landing/demo-tabs";
+import { HeroProcessDemo } from "@/app/_landing/hero-process-demo";
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
 import {
   BODY,
@@ -26,6 +30,7 @@ import {
   WELL,
   WHITE,
 } from "@/app/_landing/design";
+import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 import {
@@ -61,16 +66,28 @@ import {
  */
 
 // Marketing type, scoped to this page via CSS variables so the app keeps Geist.
+//
+// The weight lists cover the restored demo sections as well as the canvas: those
+// components ask SERIF for 500–800 and SANS for 400–800, and a weight that is not
+// loaded gets synthesised by the browser, which on Sora looks like a smeared
+// bold. JetBrains Mono is here for the same reason — the process demo and the
+// report mockups set their telemetry labels in it.
 const sora = Sora({
   subsets: ["latin"],
-  weight: ["600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-sora",
   display: "swap",
 });
 const manrope = Manrope({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-manrope",
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains",
   display: "swap",
 });
 
@@ -182,7 +199,7 @@ export default async function Home() {
 
   return (
     <div
-      className={`${sora.variable} ${manrope.variable}`}
+      className={`${sora.variable} ${manrope.variable} ${jetbrains.variable}`}
       style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>
@@ -190,13 +207,22 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      {/* Reveal sections as they scroll in; no-JS keeps them visible. */}
+      <noscript>
+        <style>{".reveal,.reveal-stagger>*{opacity:1;transform:none;filter:none}"}</style>
+      </noscript>
+      <ScrollReveal />
       <SiteHeader />
       <main>
         <Hero />
+        <HeroProcessDemo />
         {SHOW_STATS ? <Stats /> : null}
+        <DemoSection />
+        <ResultsSection />
         <Platform />
         <Pricing />
         <Faq />
+        <FinalCta />
       </main>
       <CentersBand />
       <SiteFooter />
@@ -688,6 +714,181 @@ function Faq() {
         Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment
         English.
       </p>
+    </section>
+  );
+}
+
+/* ── restored sections ─────────────────────────────────────────────────────── */
+/*
+ * These four came back after the canvas rebuild at the owner's request, redressed
+ * in the canvas's colours rather than reinstated as they were. The components
+ * they lean on — DemoTabs, ReportShowcase, HeroProcessDemo — were recoloured in
+ * place: indigo to burgundy, the old brand's cream/parchment neutrals to the
+ * canvas's cool greys, Newsreader/Hanken to Sora/Manrope. Their BEHAVIOUR is
+ * untouched; they are live renders of the real product screens, which is the
+ * whole reason the section claims "not mockups".
+ */
+
+/** Section head in the canvas's idiom: eyebrow, display heading, one lede line. */
+function Head({ eyebrow: label, title, sub }: { eyebrow: string; title: string; sub: string }) {
+  return (
+    <>
+      <div style={eyebrow(true)}>{label}</div>
+      <h2
+        style={{
+          fontFamily: DISPLAY,
+          fontWeight: 700,
+          fontSize: 42,
+          lineHeight: 1.08,
+          letterSpacing: "-0.03em",
+          margin: "16px 0 0",
+          maxWidth: 760,
+          textWrap: "pretty",
+        }}
+      >
+        {title}
+      </h2>
+      <p
+        style={{
+          fontSize: 19,
+          lineHeight: 1.6,
+          color: BODY,
+          maxWidth: 680,
+          margin: "18px 0 0",
+          textWrap: "pretty",
+        }}
+      >
+        {sub}
+      </p>
+    </>
+  );
+}
+
+function DemoSection() {
+  return (
+    <section id="demo" style={{ ...SHELL, padding: "56px 28px 20px" }}>
+      <Head
+        eyebrow="See it working"
+        title="The real product, not mockups"
+        sub="These are the actual EngProgress screens — the feedback, the tests, the coach — rendered live, not pictures of them. Click through them."
+      />
+      <div style={{ marginTop: 36 }}>
+        <DemoTabs tabs={DEMO_TABS} />
+      </div>
+      <div style={{ textAlign: "center", marginTop: 30 }}>
+        <Link
+          href="/demo"
+          className="lp-ghost"
+          style={{ ...ghostButton(), display: "inline-block", fontSize: 15, padding: "13px 24px" }}
+        >
+          Open the full demo →
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function ResultsSection() {
+  return (
+    <section
+      id="results"
+      style={{ borderTop: `1px solid ${RULE}`, background: WELL, marginTop: 56 }}
+    >
+      <div style={{ ...SHELL, padding: "64px 28px" }}>
+        <Head
+          eyebrow="Proof"
+          title="Real reports from the grader"
+          sub="The report layout the examiner engine actually produces. Conservative by design: between two bands it rounds down and names exactly what the higher band needs, so the band you practise with is one you can trust on exam day."
+        />
+        <div style={{ marginTop: 36 }}>
+          <ReportShowcase />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalCta() {
+  return (
+    <section style={{ ...SHELL, padding: "64px 28px 24px" }}>
+      <div
+        style={{
+          background: "#43001d",
+          backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
+          color: WHITE,
+          borderRadius: RADIUS.panel,
+          padding: "clamp(38px,6vw,60px)",
+          textAlign: "center",
+          boxShadow: "0 40px 80px -50px rgba(125,1,50,.8)",
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: DISPLAY,
+            fontWeight: 700,
+            fontSize: "clamp(28px,4vw,40px)",
+            lineHeight: 1.1,
+            letterSpacing: "-0.03em",
+            margin: 0,
+            textWrap: "balance",
+          }}
+        >
+          Find out your real band in 60 seconds
+        </h2>
+        <p
+          style={{
+            fontSize: 17,
+            lineHeight: 1.6,
+            color: "rgba(255,255,255,0.82)",
+            margin: "14px auto 0",
+            maxWidth: 520,
+          }}
+        >
+          Paste an essay, get a calibrated band and the one fix that moves you up — free to start.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: 14,
+            marginTop: 28,
+          }}
+        >
+          <Link
+            href="/grade"
+            style={{
+              background: WHITE,
+              color: BRAND,
+              border: "none",
+              borderRadius: RADIUS.pill,
+              padding: "16px 30px",
+              fontFamily: SANS,
+              fontWeight: 700,
+              fontSize: 16,
+              textDecoration: "none",
+            }}
+          >
+            Grade an essay free
+          </Link>
+          <Link
+            href="/sign-in"
+            style={{
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.4)",
+              color: WHITE,
+              borderRadius: RADIUS.pill,
+              padding: "16px 30px",
+              fontFamily: SANS,
+              fontWeight: 600,
+              fontSize: 16,
+              textDecoration: "none",
+            }}
+          >
+            Build your plan
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }

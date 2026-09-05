@@ -6,7 +6,6 @@ import {
   BRAND_TINT_LINE,
   DISPLAY,
   GREEN,
-  HAIR,
   INK,
   LINE,
   MUTED,
@@ -57,10 +56,7 @@ export function Band9Card() {
           whiteSpace: "nowrap",
         }}
       >
-        <span
-          aria-hidden
-          style={{ width: 7, height: 7, borderRadius: "50%", background: GREEN }}
-        />
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: GREEN }} />
         Band 9 achievable
       </div>
 
@@ -172,8 +168,10 @@ export function Band9Card() {
           ))}
         </div>
 
-        {/* the university strip */}
-        <div style={{ borderTop: `1px solid ${HAIR}`, marginTop: 26, paddingTop: 20 }}>
+        {/* The university strip, commented out by the owner. To bring it back,
+            restore `HAIR` to the token import above — it is the only binding in
+            here that nothing else uses. */}
+        {/* <div style={{ borderTop: `1px solid ${HAIR}`, marginTop: 26, paddingTop: 20 }}>
           <div
             style={{
               fontSize: 12,
@@ -196,17 +194,12 @@ export function Band9Card() {
               marginTop: 14,
             }}
           >
-            {/* Shipped at 2x (80px) for a 40px render. `width`/`height` are the
-                intrinsic dimensions so the strip does not reflow as each arrives,
-                and they are deliberately NOT lazy — inside the hero, lazy meant
-                the browser never fetched them and four gaps rendered instead. */}
             {[
               { src: "/logos/mit.webp", alt: "MIT", w: 122 },
               { src: "/logos/harvard.webp", alt: "Harvard", w: 161 },
               { src: "/logos/stanford.webp", alt: "Stanford", w: 164 },
               { src: "/logos/columbia.webp", alt: "Columbia", w: 194 },
             ].map((u) => (
-              // eslint-disable-next-line @next/next/no-img-element
               <img
                 key={u.alt}
                 src={u.src}
@@ -218,7 +211,7 @@ export function Band9Card() {
               />
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
@@ -238,18 +231,43 @@ function Mortarboard() {
         height="96"
         viewBox="0 0 128 104"
         fill="none"
-        style={{ display: "block", margin: "0 auto", filter: "drop-shadow(0 12px 18px rgba(60,6,26,.24))" }}
+        style={{
+          display: "block",
+          margin: "0 auto",
+          filter: "drop-shadow(0 12px 18px rgba(60,6,26,.24))",
+        }}
       >
         <defs>
-          <linearGradient id="cap-board" x1="20" y1="28" x2="112" y2="74" gradientUnits="userSpaceOnUse">
+          <linearGradient
+            id="cap-board"
+            x1="20"
+            y1="28"
+            x2="112"
+            y2="74"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop stopColor="#9C1442" />
             <stop offset="1" stopColor="#42011D" />
           </linearGradient>
-          <linearGradient id="cap-crown" x1="44" y1="48" x2="86" y2="80" gradientUnits="userSpaceOnUse">
+          <linearGradient
+            id="cap-crown"
+            x1="44"
+            y1="48"
+            x2="86"
+            y2="80"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop stopColor="#7D0132" />
             <stop offset="1" stopColor="#360117" />
           </linearGradient>
-          <linearGradient id="cap-tassel" x1="110" y1="50" x2="120" y2="90" gradientUnits="userSpaceOnUse">
+          <linearGradient
+            id="cap-tassel"
+            x1="110"
+            y1="50"
+            x2="120"
+            y2="90"
+            gradientUnits="userSpaceOnUse"
+          >
             <stop stopColor="#F2CB60" />
             <stop offset="1" stopColor="#C68F2A" />
           </linearGradient>

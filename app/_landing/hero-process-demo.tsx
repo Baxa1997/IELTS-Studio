@@ -17,10 +17,10 @@ import { useEffect, useState } from "react";
  * shows every end state immediately.
  */
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
+const SANS = "var(--font-manrope), system-ui, sans-serif";
 const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
-const INDIGO = "#3B43B5";
-const INK = "#1A1C33";
+const INDIGO = "#7d0132";
+const INK = "#121317";
 const GOLD = "#B5852A";
 const RED = "#C5503C";
 const EMERALD = "#1F8A5B";
@@ -45,7 +45,7 @@ function Mark({
   const colors = {
     grammar: { bg: "rgba(224,168,46,.16)", line: GOLD },
     spelling: { bg: "rgba(197,80,60,.14)", line: RED },
-    vocab: { bg: "rgba(59,67,181,.10)", line: INDIGO },
+    vocab: { bg: "rgba(125,1,50,.10)", line: INDIGO },
   }[tone];
   return (
     <span style={{ position: "relative", whiteSpace: "nowrap" }}>
@@ -81,7 +81,7 @@ function GradeScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#a8a596",
+            color: "#8b919d",
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -130,7 +130,7 @@ function GradeScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#a8a596",
+            color: "#8b919d",
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -153,7 +153,7 @@ function GradeScene() {
                 marginBottom: 4,
               }}
             >
-              <span style={{ fontWeight: 600, color: "#57564d" }}>{c.label}</span>
+              <span style={{ fontWeight: 600, color: "#4a505c" }}>{c.label}</span>
               <span
                 className="hpd-in"
                 style={{ animationDelay: `${c.d + 0.45}s`, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: c.color }}
@@ -184,7 +184,7 @@ function GradeScene() {
         >
           <span style={{ fontSize: 14 }}>
             <strong style={{ color: INK, fontWeight: 700 }}>Overall 6.0.</strong>{" "}
-            <span style={{ color: "#57564d" }}>Lexical range caps it — the fixes are named.</span>
+            <span style={{ color: "#4a505c" }}>Lexical range caps it — the fixes are named.</span>
           </span>
           <span
             style={{
@@ -216,7 +216,7 @@ function GenScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#a8a596",
+            color: "#8b919d",
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -250,8 +250,8 @@ function GenScene() {
                 fontSize: 12,
                 fontWeight: 600,
                 color: INDIGO,
-                background: "#ECEDFB",
-                border: "1px solid #DADCF4",
+                background: "#fdf4f7",
+                border: "1px solid #f0d3de",
                 borderRadius: 999,
                 padding: "5px 11px",
               }}
@@ -269,7 +269,7 @@ function GenScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#a8a596",
+            color: "#8b919d",
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -334,9 +334,9 @@ function GenScene() {
                 animationDelay: `${3.4 + i * 0.35}s`,
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#57564d",
+                color: "#4a505c",
                 background: "#fff",
-                border: "1px solid #E7E3D5",
+                border: "1px solid #e6e8ec",
                 borderRadius: 999,
                 padding: "5px 11px",
               }}
@@ -348,7 +348,7 @@ function GenScene() {
 
         <div className="hpd-in" style={{ animationDelay: "4.7s", marginTop: 14, fontSize: 14 }}>
           <strong style={{ color: INK, fontWeight: 700 }}>Fresh for every session.</strong>{" "}
-          <span style={{ color: "#57564d" }}>Never a recycled test, never an answer you remember.</span>
+          <span style={{ color: "#4a505c" }}>Never a recycled test, never an answer you remember.</span>
         </div>
       </div>
     </div>
@@ -386,7 +386,7 @@ export function HeroProcessDemo() {
         background: "#fff",
         border: "1px solid #EAE7DE",
         borderRadius: 22,
-        boxShadow: "0 30px 60px -30px rgba(26,28,51,.18)",
+        boxShadow: "0 30px 60px -30px rgba(18,19,23,.18)",
         padding: "20px clamp(18px,3vw,30px) 22px",
         fontFamily: SANS,
       }}
@@ -443,9 +443,9 @@ export function HeroProcessDemo() {
                 fontFamily: "inherit",
                 fontSize: 12.5,
                 fontWeight: 700,
-                color: scene === key ? "#fff" : "#57564d",
+                color: scene === key ? "#fff" : "#4a505c",
                 background: scene === key ? INDIGO : "#F3F1E5",
-                border: "1px solid " + (scene === key ? INDIGO : "#E7E3D5"),
+                border: "1px solid " + (scene === key ? INDIGO : "#e6e8ec"),
                 borderRadius: 999,
                 padding: "6px 14px",
                 cursor: "pointer",
@@ -471,14 +471,14 @@ const HPD_STYLES = `
 .hpd-scene{animation:hpd-fade .5s ease both}
 @keyframes hpd-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .hpd-scan{position:absolute;left:0;right:0;top:-30%;height:26%;pointer-events:none;
-  background:linear-gradient(180deg,transparent,rgba(59,67,181,.10) 45%,rgba(59,67,181,.16) 50%,rgba(59,67,181,.10) 55%,transparent);
+  background:linear-gradient(180deg,transparent,rgba(125,1,50,.10) 45%,rgba(125,1,50,.16) 50%,rgba(125,1,50,.10) 55%,transparent);
   animation:hpd-scan 3.4s cubic-bezier(.4,.2,.5,.9) .3s both}
 @keyframes hpd-scan{from{top:-30%}to{top:110%}}
 .hpd-mark{animation:hpd-mark .34s ease both}
 @keyframes hpd-mark{from{background:transparent;box-shadow:none}to{}}
 .hpd-tip{position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);
   font-size:10px;font-weight:700;letter-spacing:.01em;white-space:nowrap;background:#fff;
-  border:1px solid;border-radius:6px;padding:2px 7px;box-shadow:0 8px 16px -8px rgba(26,28,51,.3);
+  border:1px solid;border-radius:6px;padding:2px 7px;box-shadow:0 8px 16px -8px rgba(18,19,23,.3);
   animation:hpd-pop .3s cubic-bezier(.3,1.4,.5,1) both;z-index:2}
 @media (max-width:600px){.hpd-tip{display:none}}
 .hpd-in{animation:hpd-pop .45s cubic-bezier(.3,1.2,.4,1) both}

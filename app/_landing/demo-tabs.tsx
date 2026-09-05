@@ -11,10 +11,10 @@ import { DemoScreen } from "./demo-screens";
 // any page. Styling matches the landing tokens (inline styles, Hanken/Newsreader
 // vars provided by the page's `.lp-root` font wrapper).
 
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A1C33";
+const SANS = "var(--font-manrope), system-ui, sans-serif";
+const SERIF = "var(--font-sora), system-ui, sans-serif";
+const INDIGO = "#7d0132";
+const INK = "#121317";
 
 export function DemoTabs({
   tabs,
@@ -65,7 +65,7 @@ export function DemoTabs({
             borderRadius: 16,
             background: "#fff",
             border: "1px solid #E5E2D2",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 8px 24px -16px rgba(26,28,51,.3)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 8px 24px -16px rgba(18,19,23,.3)",
           }}
         >
           {tabs.map((t, i) => (
