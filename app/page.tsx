@@ -300,7 +300,9 @@ function Hero() {
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 34 }}>
-          <Link href="/start" className="lp-solid" style={{ ...solidButton(), display: "inline-block" }}>
+          {/* /grade, not /start: /start redirects straight to /sign-in, and the
+              free assessment this promises is the no-login grader. */}
+          <Link href="/grade" className="lp-solid" style={{ ...solidButton(), display: "inline-block" }}>
             Start free assessment
           </Link>
           <Link

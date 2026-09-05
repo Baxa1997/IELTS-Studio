@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DM_Sans, Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
+import { DM_Sans, Hanken_Grotesk, JetBrains_Mono, Manrope, Newsreader, Sora } from "next/font/google";
 
 import {
   BTN_GHOST,
@@ -10,9 +10,10 @@ import {
   SANS,
   SERIF,
   SHELL,
-  SiteFooter,
   SiteNav,
 } from "@/app/_landing/chrome";
+import { DESIGN_CSS } from "@/app/_landing/design-chrome";
+import { SiteFooter } from "@/app/_landing/site-footer";
 import { DEMO_TABS } from "@/app/_landing/demo-content";
 import { ReportShowcase } from "@/app/_landing/demo-screens";
 import { DemoTabs } from "@/app/_landing/demo-tabs";
@@ -47,6 +48,8 @@ const dmsans = DM_Sans({
   display: "swap",
   preload: false,
 });
+const sora = Sora({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-sora", display: "swap" });
+const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-manrope", display: "swap" });
 
 const TITLE = "EngProgress Demo — See the IELTS Practice Platform in Action";
 const DESCRIPTION =
@@ -75,7 +78,7 @@ export const metadata: Metadata = {
 export default function DemoPage() {
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} ${dmsans.variable} lp-root`}
+      className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} ${dmsans.variable} ${sora.variable} ${manrope.variable} lp-root`}
       style={{ background: "#fff", fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <SiteNav home={null} />
@@ -233,6 +236,7 @@ export default function DemoPage() {
         </div>
       </section>
 
+      <style>{DESIGN_CSS}</style>
       <SiteFooter />
     </div>
   );

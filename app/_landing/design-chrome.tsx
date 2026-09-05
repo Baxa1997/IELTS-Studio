@@ -9,7 +9,6 @@ import {
   FIELD,
   ghostButton,
   INK,
-  MUTED,
   RULE,
   SANS,
   SHELL,
@@ -19,6 +18,11 @@ import {
   WHITE,
 } from "./design";
 import { LangPicker } from "./lang-picker";
+
+// The dark footer lives in its own module and is re-exported here so every
+// existing importer of `SiteFooter` keeps working unchanged.
+export { SiteFooter } from "./site-footer";
+import { FOOTER_CSS } from "./site-footer";
 
 /**
  * Header, centres band and footer from the EngProgress design canvas.
@@ -222,41 +226,9 @@ export function CentersBand() {
   );
 }
 
-export function SiteFooter() {
-  return (
-    <footer style={{ borderTop: `1px solid ${RULE}`, padding: "34px 28px" }}>
-      <div
-        style={{
-          maxWidth: 1240,
-          margin: "0 auto",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 18,
-          alignItems: "center",
-          justifyContent: "space-between",
-          fontSize: 14,
-          color: MUTED,
-        }}
-      >
-        <span>© 2026 EngProgress — AI practice for IELTS &amp; CEFR</span>
-        <span style={{ display: "flex", gap: 22 }}>
-          <Link href="/privacy" style={{ color: MUTED }}>
-            Privacy
-          </Link>
-          <Link href="/terms" style={{ color: MUTED }}>
-            Terms
-          </Link>
-          <Link href="/contact" style={{ color: MUTED }}>
-            Contact
-          </Link>
-        </span>
-      </div>
-    </footer>
-  );
-}
-
 /** Hover states an inline style cannot express, plus the nav's mobile collapse. */
 export const DESIGN_CSS = `
+  ${FOOTER_CSS}
   .lp-navlink{text-decoration:none;transition:color .15s}
   .lp-navlink:hover{color:${INK}}
   .lp-solid{transition:background .15s}
