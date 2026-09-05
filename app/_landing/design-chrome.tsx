@@ -42,7 +42,7 @@ const NAV = [
   { label: "How to use", href: "/how-to-use" },
   // Opens the guide, not the marketing page: a centre clicking this wants to
   // know how to run the console, and /how-to-use is where that lives.
-  { label: "For centers", href: "/how-to-use" },
+  { label: "For centers", href: "/how-to-use/education-centers" },
 ];
 
 export function Wordmark({ onDark = false }: { onDark?: boolean }) {
@@ -216,7 +216,7 @@ export function CentersBand() {
             Contact us
           </Link>
           <Link
-            href="/how-to-use"
+            href="/how-to-use/education-centers"
             className="lp-ghost"
             style={{ ...ghostButton(), padding: "17px 32px", textAlign: "center", display: "block" }}
           >

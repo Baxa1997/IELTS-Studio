@@ -69,6 +69,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
     heading: "Platform",
     links: [
       { label: "How to use", href: "/how-to-use" },
+      { label: "Guide for centers", href: "/how-to-use/education-centers" },
       { label: "Free essay grader", href: "/grade" },
       { label: "Live demo", href: "/demo" },
       { label: "Pricing", href: "/#pricing" },
