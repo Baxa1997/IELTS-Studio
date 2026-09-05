@@ -13,6 +13,7 @@ import {
   MUTED,
   RADIUS,
   SANS,
+  STRONG,
   WELL,
   WHITE,
 } from "@/app/_landing/design";
@@ -104,6 +105,43 @@ export function InfoTabs({ tabs }: { tabs: InfoTab[] }) {
         <p style={{ fontSize: 17, lineHeight: 1.6, color: BODY, margin: "10px 0 0", maxWidth: 700 }}>
           {tab.lede}
         </p>
+
+        {tab.how ? (
+          <div
+            style={{
+              marginTop: 22,
+              background: BRAND_TINT,
+              border: `1px solid ${BRAND_TINT_LINE}`,
+              borderRadius: 16,
+              padding: "20px 22px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: SANS,
+                fontSize: 11.5,
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: BRAND,
+              }}
+            >
+              How a task is generated
+            </div>
+            <p
+              style={{
+                fontSize: 15.5,
+                lineHeight: 1.7,
+                color: STRONG,
+                margin: "10px 0 0",
+                maxWidth: 720,
+                textWrap: "pretty",
+              }}
+            >
+              {tab.how}
+            </p>
+          </div>
+        ) : null}
 
         <div
           style={{

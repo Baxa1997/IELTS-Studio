@@ -72,10 +72,12 @@ const SIDEBAR: DocGroup[] = [
   {
     group: "On this page",
     items: [
+      // Overview is the only clickable entry, matching the learner guide. The
+      // rest name the sections below so a reader knows what is on the page.
       { label: "Overview", href: "/how-to-use/education-centers" },
-      { label: "Who does what", href: "/how-to-use/education-centers#roles" },
-      { label: "What you can run", href: "/how-to-use/education-centers#what" },
-      { label: "Three steps", href: "/how-to-use/education-centers#steps" },
+      { label: "Who does what", href: null, plain: true },
+      { label: "What you can run", href: null, plain: true },
+      { label: "Getting started", href: null, plain: true },
     ],
   },
   {
@@ -343,7 +345,7 @@ export default function CentersGuide() {
           <InfoTabs tabs={TABS} />
 
           <div id="steps" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Three steps to your first class
+            Getting started
           </div>
           <Steps steps={STEPS} />
 

@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
-import { eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
+import { BODY, cardStyle, DISPLAY, eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
 import {
+  Callout,
   CrossLink,
   DocsHead,
+  FeatureList,
+  Prose,
   Sidebar,
   Steps,
   type DocGroup,
   type DocStep,
+  type Feature,
   type InfoTab,
 } from "./docs-ui";
 import { InfoTabs } from "./info-tabs";
@@ -19,10 +23,35 @@ import { InfoTabs } from "./info-tabs";
 /**
  * "How to use EngProgress" — FOR AN INDIVIDUAL LEARNER.
  *
- * Centres have their own guide at `/how-to-use/education-centers`, because the
- * two audiences want opposite things: a learner needs "how do I get a band and
- * act on it", a centre needs "how do I run teachers, groups, money and
- * Telegram". The band at the foot of this page is the route across.
+ * SHAPED AS *EXPLANATION*, NOT AS A TOUR. Diátaxis (diataxis.fr) splits
+ * documentation by the need it serves — tutorial, how-to, reference,
+ * explanation — and warns that a page trying to be more than one of them serves
+ * none of them. A reader arriving here has not bought anything and is asking
+ * "what is this and how does it work?", which is squarely the explanation
+ * quadrant. So the page runs: what it is (prose) → what it gives you (a
+ * scannable feature list) → the one idea the product rests on (the callout) →
+ * how each skill's content is actually made (tabs) → how to begin (steps).
+ * "Getting started" is the only how-to on it, and it is deliberately last.
+ *
+ * THE GENERATION COPY IS WRITTEN AGAINST THE GENERATORS, NOT THE PITCH. Each
+ * tab's `how` paragraph describes code that exists:
+ *   · writing  — `generateOnDemand` in lib/prompts/service.ts: a topic family
+ *     from TOPIC_FAMILIES, a shape from TASK2_CATEGORIES, checked against
+ *     `prompt_assignments` + the learner's essays so nothing repeats, and the
+ *     Academic Task 1 figure handed to the grader as well as the student.
+ *   · reading  — `_resolve_target_band` and `generate_reading_test_for_student`
+ *     in the engine's reading/service.py. Reading is THE SKILL THAT READS YOUR
+ *     MEASURED BAND (from `skill_estimates`); the other three take a level you
+ *     choose. Do not flatten that difference into "everything adapts to you" —
+ *     it would be untrue of three skills out of four.
+ *   · listening — the level→delivery mapping in the engine's listening/tts.py
+ *     (a lecture is ~115 wpm at L1–2 and ~140 at L4–5). Levels are L1–L5, NOT
+ *     bands.
+ *   · speaking  — the daily grounded-search theme refresh in speaking/topics.py,
+ *     and the deliberate split between exam-shaped themes and current ones.
+ *
+ * Centres have their own guide at `/how-to-use/education-centers`; the band at
+ * the foot of this page is the route across.
  *
  * Top-level rather than inside `(marketing)`: that group's layout still applies
  * the old indigo `chrome.tsx`, and this page wears the canvas chrome.
@@ -42,7 +71,7 @@ const manrope = Manrope({
 });
 
 const DESCRIPTION =
-  "How to use EngProgress as a learner: find your real band, practise Writing, Reading, Listening and Speaking with AI marking, and act on the report to reach your target.";
+  "What EngProgress is and how it works: original IELTS and CEFR practice generated on demand at your level, marked criterion by criterion against the official descriptors, across Writing, Reading, Listening and Speaking.";
 
 export const metadata: Metadata = {
   title: "How to use EngProgress — a guide for learners",
@@ -56,13 +85,20 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * OVERVIEW IS THE ONLY CLICKABLE ENTRY (owner's call). The rest name the
+ * sections below so a reader knows what is on the page, without offering four
+ * jumps that all land within one scroll of each other.
+ */
 const SIDEBAR: DocGroup[] = [
   {
     group: "On this page",
     items: [
       { label: "Overview", href: "/how-to-use" },
-      { label: "What it does", href: "/how-to-use#what" },
-      { label: "Three steps", href: "/how-to-use#steps" },
+      { label: "Key features", href: null, plain: true },
+      { label: "How practice is generated", href: null, plain: true },
+      { label: "Also on the platform", href: null, plain: true },
+      { label: "Getting started", href: null, plain: true },
     ],
   },
   {
@@ -71,46 +107,101 @@ const SIDEBAR: DocGroup[] = [
   },
 ];
 
+/* ── overview ──────────────────────────────────────────────────────────────── */
+
+const OVERVIEW: string[] = [
+  "EngProgress is an AI examiner for IELTS and for the Uzbek Multilevel (CEFR) exam. It writes practice for you, marks it against the official criteria, and tells you the one thing standing between the band you got and the next half band up. All four IELTS skills are live — Writing, Reading, Listening and Speaking — and the Multilevel exam has its own Reading and Writing papers in their own format rather than IELTS with the labels changed.",
+  "It is built for someone preparing on their own. Nothing waits on a teacher: you ask for a task, it is generated and served immediately, and the report comes back in the same sitting. Education centers run the same platform with teachers, groups and assigned homework on top of it — that has its own guide, linked at the foot of this page.",
+  "The part worth understanding before anything else is the marking. Every competitor can put a band on an essay; the number is only worth having if it survives exam day. So the grader is calibrated to sit slightly low: when your work falls between two bands it gives you the lower one and names precisely what the higher one was missing. A 6.5 here is meant to be a real 6.5 in the exam hall, and being told you are not there yet is far cheaper than finding out in July.",
+];
+
+const FEATURES: Feature[] = [
+  {
+    title: "All four skills, plus CEFR",
+    body: "Writing, Reading, Listening and Speaking are all live and all graded. The Multilevel Reading and Writing papers run alongside them in their own format.",
+  },
+  {
+    title: "Original content, generated on demand",
+    body: "No past papers, ever. Every passage, prompt, recording and question is written for you when you ask for it, so there is nothing to memorise in advance — and nothing that infringes anyone's copyright.",
+  },
+  {
+    title: "Pitched at your level",
+    body: "Reading reads your measured band off your own results and builds around it. Listening and Writing take the level you ask for, from a first attempt up to a band 9 target.",
+  },
+  {
+    title: "Marked criterion by criterion",
+    body: "Each criterion gets its own band, so you can see which one is holding the score down instead of guessing at a single number.",
+  },
+  {
+    title: "Evidence, not opinions",
+    body: "Every criterion quotes the sentence from your own work that it is judging. You can check the marking rather than take it on trust.",
+  },
+  {
+    title: "Deliberately conservative",
+    body: "Sitting between two bands, it rounds down and states what the higher one needs. A band you can repeat on exam day is worth more than a flattering one.",
+  },
+  {
+    title: "The revision loop",
+    body: "Rewrite the same essay and submit it again. It is re-marked against the same task, so you watch the band move — not a fresh prompt and a fresh guess.",
+  },
+  {
+    title: "Wrong answers explained",
+    body: "In Reading and Listening a miss is explained: what the text actually said, and why the distractor looked right. That is the part that changes your next attempt.",
+  },
+  {
+    title: "Progress that keeps itself",
+    body: "A band per skill, re-derived as you practise, with the weakest surfaced. Every graded attempt stays in your history with its full report exactly as written.",
+  },
+  {
+    title: "Try it without an account",
+    body: "The free grader takes a pasted essay and returns a band and the first fix, with no sign-up.",
+  },
+];
+
+/* ── the tabs: how each skill's content is made ────────────────────────────── */
+
 const TABS: InfoTab[] = [
   {
     icon: "✎",
     title: "Writing",
     lede: "Task 1 and Task 2, marked the way an examiner marks them — a band per criterion, with the words from your own essay that earned it.",
+    how: "Ask for a task and one is written on the spot. The generator draws a topic family from the fourteen it rotates through — environment, education, technology, health, work, society, government, globalisation, crime, media, culture, transport, tourism — and, for Task 2, one of the six question shapes the real exam uses: opinion, discussion, problem–solution, two-part, advantages versus disadvantages, and positive or negative development. Before serving it, it checks every prompt you have already been given and every essay you have already written, so the same question never comes round twice. Academic Task 1 goes a step further and draws the chart itself — and the grader is handed that same chart, so it marks the figure you actually saw rather than somebody's description of it.",
     points: [
       {
         title: "Four criteria, separately",
-        body: "Task Response, Coherence & Cohesion, Lexical Resource and Grammatical Range each get their own band, so you know which one is holding the score down.",
+        body: "Task Response, Coherence & Cohesion, Lexical Resource and Grammatical Range each get their own band, so you know which one is capping you.",
       },
       {
-        title: "Evidence, not opinions",
-        body: "Every criterion quotes the sentence it is judging. You can check the marking rather than take it on trust.",
+        title: "What caps it, and the fix",
+        body: "Each criterion says what is holding it at that band and the specific change that would lift it — not general advice about linking words.",
       },
       {
         title: "The revision loop",
-        body: "Rewrite the same essay and submit it again. It is re-graded against the same task, so you see the band move — not a fresh prompt and a fresh guess.",
+        body: "Resubmit the same essay against the same task. Nothing else about the marking changes, so any movement in the band came from your rewrite.",
       },
       {
-        title: "Deliberately conservative",
-        body: "Sitting between two bands, it rounds DOWN and names what the higher one needs. A band you can repeat on exam day is worth more than a flattering one.",
+        title: "A band 9 answer to compare",
+        body: "A model answer to the same prompt, so you can see what the criteria look like when they are all met at once.",
       },
     ],
   },
   {
     icon: "▤",
     title: "Reading",
-    lede: "Original passages in the exam format, every real question type, marked instantly.",
+    lede: "Original passages in the exam format, every real question type, marked the moment you submit.",
+    how: "This is the skill that reads your level off your own results. Before a word is written, the generator looks up your measured reading band — the one your previous attempts produced — and falls back to your target band, and then to a sensible default, if you are new. A full test is built around that number rather than flat at it: passage 1 lands a band below you, passage 2 at your level and passage 3 a band above, which is how the real paper ramps. One authentic Cambridge question layout is chosen for the whole test so the three passages cohere, the order of the question blocks inside each passage is then shuffled, and each passage is given a different subject and angle so you are not reading three variations on one theme. Every question is finally checked back against the passage it came from, and anything that cannot be confirmed there is thrown away rather than served to you.",
     points: [
       {
         title: "Every question type",
-        body: "True/False/Not Given, matching headings, matching features, sentence and note completion, multiple choice including pick-two — the full Cambridge set.",
+        body: "True/False/Not Given, matching headings, matching features, sentence and note completion, summary completion with a word bank, flow-charts, and multiple choice including pick-two.",
       },
       {
         title: "Why the trap worked",
-        body: "A wrong answer is explained: what the passage actually said, and why the distractor looked right. That is the part that changes your next attempt.",
+        body: "A wrong answer is explained against the passage: what it actually said, and what made the distractor look right.",
       },
       {
         title: "Question-type analytics",
-        body: "Your misses are grouped by type, so a weakness in True/False/Not Given shows up as a pattern instead of as bad luck.",
+        body: "Misses are grouped by type, so a weakness in True/False/Not Given shows up as a pattern instead of as bad luck.",
       },
       {
         title: "Timed full sections",
@@ -121,11 +212,12 @@ const TABS: InfoTab[] = [
   {
     icon: "◷",
     title: "Listening",
-    lede: "Full four-part tests with original multi-voice audio, generated for this platform.",
+    lede: "Full four-part tests with original multi-voice audio, recorded for this platform.",
+    how: "There are two ways in. The shared library holds practices that are already recorded, so they open and play at once. Or make your own: choose a level from L1 to L5 and the engine writes an original script and then performs it as multi-voice audio — a complete four-part, forty-question test in about two and a half minutes, or a single ten-question practice in about two. The level does far more than change the vocabulary; it drives the delivery. A lecture is voiced at roughly 115 words a minute at the easy end and about 140 at the hard end. A phone conversation moves from unhurried turn-taking to a fast native pace with barely a gap between speakers, and a student discussion goes from lively to genuinely overlapping. On a quick practice the question format is withheld until the announcer states it, so you cannot rehearse one type and hope it comes up.",
     points: [
       {
         title: "Real multi-voice audio",
-        body: "Scripts are written and voiced with distinct speakers, at exam pace — not a single robotic reader working through a transcript.",
+        body: "Scripts are written and then performed with distinct speakers and an exam announcer — not one flat reader working through a transcript.",
       },
       {
         title: "Cambridge-style groups",
@@ -136,8 +228,8 @@ const TABS: InfoTab[] = [
         body: "Each answer links to the exact line where it was said, so you can hear what you missed instead of wondering.",
       },
       {
-        title: "Quick practice or full test",
-        body: "One part when you have ten minutes, all four when you want the real thing.",
+        title: "Ten minutes or the full hour",
+        body: "One recording and ten questions when time is short; all four parts and forty questions when you want the real thing.",
       },
     ],
   },
@@ -145,71 +237,42 @@ const TABS: InfoTab[] = [
     icon: "✦",
     title: "Speaking",
     lede: "A live examiner you can talk to, and a tutor that teaches while you speak.",
+    how: "The examiner is not reading from a fixed list — and the list is not frozen at the model's training cutoff either. The pool of themes is refreshed once a day by a grounded search and shared across the platform, so it cannot quietly go stale, which is the worst way for content to age because nobody notices. From there the two modes pull in deliberately opposite directions. Exam practice keeps timeless, exam-shaped themes — your home town, food, routines, and the durable Part 3 questions about how society changes — because questions built from this week's headlines would be less exam-authentic, not more. Free conversation gets the current topics themselves, because discussing what is actually going on is the whole point of that practice. If a search ever fails, the built-in pool takes over: a lesson never waits on one and never fails because of one.",
     points: [
       {
         title: "The three-part mock",
-        body: "Introduction, cue card, discussion — conducted live by an AI examiner, then graded on fluency, lexis, grammar and pronunciation.",
+        body: "Introduction, cue card and discussion, conducted live by an AI examiner rather than a list of recorded questions.",
       },
       {
         title: "Part 2 on its own",
-        body: "Push to talk, one minute to prepare, two to speak. The cheapest way to fix the part most candidates lose marks on.",
+        body: "Push to talk, one minute to prepare, two to speak — the cheapest way to fix the part most candidates lose marks on.",
       },
       {
         title: "The speaking tutor",
-        body: "Talk to it and it reacts, corrects and teaches every turn — and switches to Uzbek when you do.",
+        body: "Talk to it and it reacts, corrects and teaches on every turn — and switches to Uzbek when you do.",
       },
       {
         title: "Delivery measured, not guessed",
-        body: "Speech rate, filler count and answer length are computed from your audio, against time actually spent speaking.",
+        body: "Speech rate, filler count and answer length are computed from your audio, against the time you actually spent speaking.",
       },
     ],
   },
+];
+
+/* ── the rest of the platform ──────────────────────────────────────────────── */
+
+const ALSO: { title: string; body: string }[] = [
   {
-    icon: "◇",
     title: "CEFR / Multilevel",
-    lede: "The Uzbekistan DTM exam, in its own format — not IELTS with the labels changed.",
-    points: [
-      {
-        title: "Reading, 5 parts",
-        body: "Thirty-five questions across the five parts the paper actually uses, generated fresh each time.",
-      },
-      {
-        title: "Writing, 3 tasks",
-        body: "All three tasks, marked against the CEFR descriptors rather than the IELTS band descriptors.",
-      },
-      {
-        title: "A CEFR level, not a band",
-        body: "Results come back as A1–C2, which is what the certificate reports.",
-      },
-      {
-        title: "Listening and Speaking",
-        body: "The CEFR papers for these two are not built yet.",
-        soon: true,
-      },
-    ],
+    body: "The Uzbekistan exam in its own format. Reading runs five parts and thirty-five questions; Writing runs all three tasks, marked against the CEFR descriptors rather than the IELTS ones, and results come back as a level — which is what the certificate reports. The CEFR Listening and Speaking papers are not built yet.",
   },
   {
-    icon: "◑",
     title: "Your progress",
-    lede: "The platform keeps track so you do not have to.",
-    points: [
-      {
-        title: "Current band to target band",
-        body: "An estimate per skill, re-derived conservatively as you practise — and the weakest one surfaced.",
-      },
-      {
-        title: "Everything is reopenable",
-        body: "Every graded attempt stays in your history with the full report exactly as it was written.",
-      },
-      {
-        title: "Original content only",
-        body: "No past papers, ever. Every task is generated, so nothing can be memorised in advance — and it stays on the right side of copyright.",
-      },
-      {
-        title: "Try it without an account",
-        body: "The free grader takes a pasted essay and returns a band and the first fix, with no sign-up.",
-      },
-    ],
+    body: "A current band and a target band per skill, re-estimated conservatively as you practise, with the weakest skill surfaced on the dashboard. Every graded attempt stays in your history and reopens to the report exactly as it was written.",
+  },
+  {
+    title: "The free grader",
+    body: "Paste an essay and get a band and the first thing to fix, without an account and without a card. It is the same grader the rest of the platform uses, on a single essay.",
   },
 ];
 
@@ -217,17 +280,17 @@ const STEPS: DocStep[] = [
   {
     n: "01",
     title: "Find your real band",
-    body: "Paste an essay into the free grader, or take a full task once you have an account. You get a band and the criterion that is holding it down.",
+    body: "Paste an essay into the free grader, or sit a full task once you have an account. You get a band and the criterion that is holding it down.",
   },
   {
     n: "02",
     title: "Practise on demand",
-    body: "Fresh tasks are generated at your level across all four skills and marked against the official criteria — never a past paper, so nothing can be memorised.",
+    body: "Ask for a task in any of the four skills. It is written for you at your level and marked against the official criteria — never a past paper, so nothing can be memorised.",
   },
   {
     n: "03",
     title: "Close the gap",
-    body: "Every report names what is missing for the next half band and the work that fixes it. Resubmit the same essay and watch the band move.",
+    body: "Every report names what is missing for the next half band and the work that fixes it. Rewrite the same essay, resubmit it, and find out whether the band actually moved.",
   },
 ];
 
@@ -276,16 +339,57 @@ export default function HowToUse() {
           <DocsHead
             kicker="Documentation · for learners"
             title="How to use EngProgress"
-            lede="Everything needed to find your real band and move it — from a first free essay to full mock tests across all four skills and CEFR."
+            lede="An AI examiner for IELTS and the Multilevel exam: original practice written for you on demand, marked against the official criteria, with the next half band spelled out."
           />
 
-          <div id="what" style={{ ...eyebrow(true), marginTop: 54 }}>
-            What the platform does
+          <div id="overview" style={{ ...eyebrow(true), marginTop: 54 }}>
+            Overview
+          </div>
+          <Prose paragraphs={OVERVIEW} />
+
+          <div id="features" style={{ ...eyebrow(true), marginTop: 54 }}>
+            Key features
+          </div>
+          <FeatureList features={FEATURES} />
+
+          <Callout kicker="The idea the rest of it rests on">
+            There is no question bank here and no set of tests to work through. Every task is written
+            the moment you ask for it, and the level it is written at comes from you — your measured
+            band for a reading paper, the level you pick for a listening test, a topic and question
+            shape you have not been given before for an essay. Two learners practising on the same
+            day sit different papers, and you never sit the same one twice.
+          </Callout>
+
+          <div id="generated" style={{ ...eyebrow(true), marginTop: 54 }}>
+            How practice is generated
           </div>
           <InfoTabs tabs={TABS} />
 
+          <div id="also" style={{ ...eyebrow(true), marginTop: 54 }}>
+            Also on the platform
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+              gap: 22,
+              marginTop: 20,
+            }}
+          >
+            {ALSO.map((a) => (
+              <div key={a.title} style={cardStyle(26)}>
+                <h2 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 19, margin: 0 }}>
+                  {a.title}
+                </h2>
+                <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
+                  {a.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
           <div id="steps" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Three steps to your first score
+            Getting started
           </div>
           <Steps steps={STEPS} />
 

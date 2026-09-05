@@ -4,6 +4,7 @@ import {
   BODY,
   BRAND,
   BRAND_TINT,
+  BRAND_TINT_LINE,
   cardStyle,
   DISPLAY,
   eyebrow,
@@ -37,6 +38,13 @@ export interface DocLink {
   href: string | null;
   /** Renders a SOON pill — the capability itself does not exist yet. */
   soon?: boolean;
+  /**
+   * A contents entry that is deliberately NOT clickable: it names a section of
+   * the page you are already on. Owner's call for the learner guide — Overview
+   * is the only thing in the sidebar you can click; everything else below it is
+   * a label telling you what is further down.
+   */
+  plain?: boolean;
 }
 
 export interface DocGroup {
@@ -79,18 +87,29 @@ export function Sidebar({ groups, current }: { groups: DocGroup[]; current: stri
                 textDecoration: "none",
               };
               if (it.label === current) {
+                // The current entry keeps its marker but STAYS CLICKABLE — it
+                // is the one thing in this sidebar you can click, and clicking
+                // it returns you to the top of the page.
+                const marked: React.CSSProperties = {
+                  ...base,
+                  fontWeight: 700,
+                  color: BRAND,
+                  borderLeft: `2px solid ${BRAND}`,
+                  marginLeft: -1,
+                };
+                return it.href ? (
+                  <Link key={it.label} href={it.href} aria-current="page" style={marked}>
+                    {it.label}
+                  </Link>
+                ) : (
+                  <span key={it.label} aria-current="page" style={marked}>
+                    {it.label}
+                  </span>
+                );
+              }
+              if (it.plain) {
                 return (
-                  <span
-                    key={it.label}
-                    aria-current="page"
-                    style={{
-                      ...base,
-                      fontWeight: 700,
-                      color: BRAND,
-                      borderLeft: `2px solid ${BRAND}`,
-                      marginLeft: -1,
-                    }}
-                  >
+                  <span key={it.label} style={{ ...base, color: MUTED }}>
                     {it.label}
                   </span>
                 );
@@ -350,6 +369,141 @@ export interface InfoTab {
   title: string;
   /** One line under the heading, describing the capability as a whole. */
   lede: string;
+  /**
+   * HOW A TASK IN THIS SKILL IS GENERATED — rendered as a tinted block at the
+   * top of the panel. Written against the generator itself, not the pitch: the
+   * reading paragraph describes `_resolve_target_band` in the engine, the
+   * listening one describes the level-to-speaking-rate mapping in
+   * `listening/tts.py`, and so on. If a generator changes, this is the copy
+   * that goes stale first.
+   */
+  how?: string;
   /** What the platform actually does. Statements, not links. */
   points: { title: string; body: string; soon?: boolean }[];
+}
+
+/* ── overview prose ────────────────────────────────────────────────────────── */
+
+/**
+ * The opening explanation. Diátaxis calls this quadrant *explanation* — writing
+ * that gives a reader understanding rather than a set of steps — so it is prose
+ * with room to breathe, not another grid of cards.
+ */
+export function Prose({ paragraphs }: { paragraphs: string[] }) {
+  return (
+    <div style={{ marginTop: 20, maxWidth: 720 }}>
+      {paragraphs.map((t, i) => (
+        <p
+          key={t.slice(0, 32)}
+          style={{
+            fontSize: 17,
+            lineHeight: 1.7,
+            color: BODY,
+            margin: i === 0 ? 0 : "16px 0 0",
+            textWrap: "pretty",
+          }}
+        >
+          {t}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/* ── key features ──────────────────────────────────────────────────────────── */
+
+export interface Feature {
+  title: string;
+  body: string;
+  /** The capability does not exist yet. Say so rather than imply it. */
+  soon?: boolean;
+}
+
+/** The scannable list a reader checks before reading a word of prose. */
+export function FeatureList({ features }: { features: Feature[] }) {
+  return (
+    <ul
+      style={{
+        listStyle: "none",
+        padding: 0,
+        margin: "20px 0 0",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit,minmax(310px,1fr))",
+        gap: "18px 34px",
+      }}
+    >
+      {features.map((f) => (
+        <li key={f.title} style={{ display: "flex", gap: 13 }}>
+          <span
+            aria-hidden
+            style={{
+              flex: "none",
+              width: 22,
+              height: 22,
+              marginTop: 2,
+              borderRadius: "50%",
+              background: BRAND_TINT,
+              color: BRAND,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            ✓
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontFamily: DISPLAY,
+                fontWeight: 600,
+                fontSize: 16.5,
+                color: INK,
+              }}
+            >
+              {f.title}
+              {f.soon ? <Pill>SOON</Pill> : null}
+            </div>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "5px 0 0" }}>{f.body}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ── the one idea the whole product rests on ───────────────────────────────── */
+
+/** A single emphasised statement, used for the "nothing here is a fixed
+ *  question bank" note that the rest of the page keeps referring back to. */
+export function Callout({ kicker, children }: { kicker: string; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        marginTop: 26,
+        background: BRAND_TINT,
+        border: `1px solid ${BRAND_TINT_LINE}`,
+        borderRadius: 18,
+        padding: "22px 26px",
+      }}
+    >
+      <div style={{ ...eyebrow(true), color: BRAND }}>{kicker}</div>
+      <p
+        style={{
+          fontSize: 16.5,
+          lineHeight: 1.65,
+          color: STRONG,
+          margin: "10px 0 0",
+          maxWidth: 700,
+          textWrap: "pretty",
+        }}
+      >
+        {children}
+      </p>
+    </div>
+  );
 }
