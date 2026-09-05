@@ -103,15 +103,15 @@ const jetbrains = JetBrains_Mono({
 const STATS: { label: string; value: string; note: string; delta?: string; brand?: boolean }[] = [
   {
     label: "New learners this month",
-    value: "7,480",
-    delta: "12.4%",
-    note: "vs. 6,655 last month",
+    value: "1100+",
+    // delta: "12.4%",
+    note: "vs. 650 last month",
   },
-  { label: "Education centers", value: "240", note: "Schools and IELTS centers onboard" },
-  { label: "Total users", value: "86,400", note: "Learners, teachers and admins" },
+  { label: "Education centers", value: "2", note: "Schools and IELTS centers onboard" },
+  { label: "Total users", value: "300+", note: "Learners, teachers and admins" },
   {
     label: "Tasks practised",
-    value: "1.24M",
+    value: "4500+",
     note: "Graded essays, readings and mocks",
     brand: true,
   },
@@ -317,15 +317,19 @@ function Hero() {
             textWrap: "pretty",
           }}
         >
-          Built for learners and education centers. AI generates exam-standard Writing, Reading,
-          Listening and Speaking tasks at your exact level, then scores them against official IELTS
-          bands and CEFR descriptors.
+          From a complete beginner to Band 9. AI generates exam-standard Writing, Reading,
+          Listening and Speaking tasks at your exact level, coaches you while you practise, then
+          scores you against the official IELTS bands and CEFR descriptors.
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 34 }}>
           {/* /grade, not /start: /start redirects straight to /sign-in, and the
               free assessment this promises is the no-login grader. */}
-          <Link href="/grade" className="lp-solid" style={{ ...solidButton(), display: "inline-block" }}>
+          <Link
+            href="/grade"
+            className="lp-solid"
+            style={{ ...solidButton(), display: "inline-block" }}
+          >
             Start free assessment
           </Link>
           <Link
@@ -354,7 +358,7 @@ function Hero() {
         </div>
 
         <div style={{ ...eyebrow(), marginTop: 26 }}>
-          No card required · CEFR A1–C2 · IELTS bands 4.0–9.0
+          No card required · Complete beginner to Band 9 · CEFR A1–C2
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 24 }}>
@@ -481,6 +485,26 @@ const SKILLS = [
   },
 ];
 
+/** The four coaching surfaces that actually exist. See `Coaching` below. */
+const COACHES = [
+  {
+    name: "Writing tutor",
+    body: "Ask it mid-essay: what to put in this paragraph, the exact phrasing, why a sentence is not landing. It shows the move on a different topic rather than writing yours.",
+  },
+  {
+    name: "Reading tutor",
+    body: "Mid-passage, it tells you where to look and which words to compare — but never whether Q7 is True. Full explanations unlock the moment you submit.",
+  },
+  {
+    name: "Speaking tutor",
+    body: "Talk and it reacts, corrects and teaches on every turn — and switches to Uzbek when you do.",
+  },
+  {
+    name: "Study coach",
+    body: "The plan, not the task: what to practise next, and how to spend the weeks you have left before the test.",
+  },
+];
+
 function Platform() {
   return (
     <section id="platform" style={{ ...SHELL, padding: "40px 28px 20px" }}>
@@ -500,8 +524,9 @@ function Platform() {
         All four skills, plus CEFR — generated fresh, marked against the real criteria
       </h2>
       <p style={{ fontSize: 19, lineHeight: 1.6, color: BODY, maxWidth: 660, margin: "18px 0 0" }}>
-        Nothing here is a past paper. Every task is original, produced to the exam spec at your
-        level, so there is no way to memorise the content in advance.
+        Nothing here is a past paper. Every task is original and produced to the exam spec at your
+        level — a first attempt at Band 4 or a final push for a 9 — so there is no way to memorise
+        the content in advance.
       </p>
       <div
         style={{
@@ -512,7 +537,12 @@ function Platform() {
         }}
       >
         {SKILLS.map((s) => (
-          <Link key={s.name} href={s.href} className="lp-card" style={{ ...cardStyle(), color: INK }}>
+          <Link
+            key={s.name}
+            href={s.href}
+            className="lp-card"
+            style={{ ...cardStyle(), color: INK }}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span
                 aria-hidden
@@ -534,7 +564,9 @@ function Platform() {
                 {s.name}
               </h3>
             </div>
-            <p style={{ fontSize: 16, lineHeight: 1.6, color: BODY, margin: "18px 0 0" }}>{s.body}</p>
+            <p style={{ fontSize: 16, lineHeight: 1.6, color: BODY, margin: "18px 0 0" }}>
+              {s.body}
+            </p>
           </Link>
         ))}
       </div>
@@ -554,16 +586,100 @@ function Platform() {
           <h3 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 21, margin: 0 }}>
             CEFR / Multilevel for the Uzbekistan DTM exam
           </h3>
-          <p style={{ fontSize: 16, lineHeight: 1.6, color: BODY, margin: "10px 0 0", maxWidth: 640 }}>
+          <p
+            style={{
+              fontSize: 16,
+              lineHeight: 1.6,
+              color: BODY,
+              margin: "10px 0 0",
+              maxWidth: 640,
+            }}
+          >
             Reading (5 parts, 35 questions) and Writing (3 tasks), generated on demand and marked
             against the CEFR descriptors.
           </p>
         </div>
-        <Link href="/cefr-multilevel-practice" className="lp-ghost" style={{ ...ghostButton(), display: "inline-block" }}>
+        <Link
+          href="/cefr-multilevel-practice"
+          className="lp-ghost"
+          style={{ ...ghostButton(), display: "inline-block" }}
+        >
           See CEFR practice
         </Link>
       </div>
+
+      <Coaching />
     </section>
+  );
+}
+
+/**
+ * COACHING WHILE YOU PRACTISE.
+ *
+ * Every claim here is a prompt that exists in lib/ai/prompts.ts, not a promise:
+ * `writing_tutor` and `reading_tutor` sit with the student DURING the task and
+ * are hard-blocked from writing the answer or naming which option is correct
+ * until they submit; the speaking tutor teaches on every turn; `study_coach` is
+ * the dashboard mentor, grounded in the learner's own bands and days-to-test.
+ * That "never hands over the answer" rule is the point of the panel — it is what
+ * separates coaching from a shortcut, and it is enforced in the prompt rather
+ * than hoped for.
+ */
+function Coaching() {
+  return (
+    <div style={{ ...cardStyle(30), marginTop: 22 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ maxWidth: 660 }}>
+          <div style={{ ...eyebrow(true), color: BRAND }}>Coaching, not just scoring</div>
+          <h3
+            style={{
+              fontFamily: DISPLAY,
+              fontWeight: 700,
+              fontSize: 27,
+              letterSpacing: "-0.02em",
+              margin: "12px 0 0",
+              textWrap: "pretty",
+            }}
+          >
+            A tutor sits with you while you practise
+          </h3>
+          <p style={{ fontSize: 16.5, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
+            Stuck mid-essay or mid-passage, you can just ask. It answers in the moment, in your own
+            language if you prefer — and it will not hand you the answer while the clock is running,
+            so the band you finish with is still yours.
+          </p>
+        </div>
+        <Link href="/how-to-use" className="lp-ghost" style={{ ...ghostButton(), display: "inline-block" }}>
+          See how coaching works
+        </Link>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+          gap: 18,
+          marginTop: 26,
+        }}
+      >
+        {COACHES.map((c) => (
+          <div
+            key={c.name}
+            style={{
+              background: WELL,
+              border: `1px solid ${LINE}`,
+              borderRadius: 16,
+              padding: "18px 20px",
+            }}
+          >
+            <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16.5, color: INK }}>
+              {c.name}
+            </div>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>{c.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

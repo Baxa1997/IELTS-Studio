@@ -89,7 +89,8 @@ export const metadata: Metadata = {
 
 const OVERVIEW: string[] = [
   "EngProgress is an AI examiner for IELTS and for the Uzbek Multilevel (CEFR) exam. It writes practice for you, marks it against the official criteria, and tells you the one thing standing between the band you got and the next half band up. All four IELTS skills are live — Writing, Reading, Listening and Speaking — and the Multilevel exam has its own Reading and Writing papers in their own format rather than IELTS with the labels changed.",
-  "It is built for someone preparing on their own. Nothing waits on a teacher: you ask for a task, it is generated and served immediately, and the report comes back in the same sitting. Education centers run the same platform with teachers, groups and assigned homework on top of it — that has its own guide, linked at the foot of this page.",
+  "It starts wherever you are. If you have never sat the exam and would score a 4, the first tasks are written at a 4 and the coaching assumes nothing; if you are pushing from 7.5 to a 9, they are written there instead. There is no entry level to clear before the platform is useful to you, and no ceiling once you are good.",
+  "It is built for someone preparing on their own. Nothing waits on a teacher: you ask for a task, it is generated and served immediately, and the report comes back in the same sitting. You are not left alone with it either — you can ask the tutor for help in the middle of a task, and it will answer without giving the answer away. Education centers run the same platform with teachers, groups and assigned homework on top of it — that has its own guide, linked at the foot of this page.",
   "The part worth understanding before anything else is the marking. Every competitor can put a band on an essay; the number is only worth having if it survives exam day. So the grader is calibrated to sit slightly low: when your work falls between two bands it gives you the lower one and names precisely what the higher one was missing. A 6.5 here is meant to be a real 6.5 in the exam hall, and being told you are not there yet is far cheaper than finding out in July.",
 ];
 
@@ -103,8 +104,12 @@ const FEATURES: Feature[] = [
     body: "No past papers, ever. Every passage, prompt, recording and question is written for you when you ask for it, so there is nothing to memorise in advance — and nothing that infringes anyone's copyright.",
   },
   {
-    title: "Pitched at your level",
-    body: "Reading reads your measured band off your own results and builds around it. Listening and Writing take the level you ask for, from a first attempt up to a band 9 target.",
+    title: "Beginner to Band 9",
+    body: "There is no level you have to reach before this is useful. Reading reads your measured band off your own results and builds around it; Listening and Writing take the level you ask for, from a first ever attempt up to a Band 9 push.",
+  },
+  {
+    title: "Coaching while you practise",
+    body: "A tutor you can ask mid-task — what to put in this paragraph, where to look in this passage — that teaches the move without handing over the answer while the clock is running.",
   },
   {
     title: "Marked criterion by criterion",
@@ -282,6 +287,30 @@ const TABS: InfoTab[] = [
     ],
   },
   {
+    icon: "◉",
+    title: "Coaching",
+    lede: "Scoring tells you where you are. Coaching is the part that moves you — and it is there while you work, not only afterwards.",
+    how: "There are four of them, and they are deliberately different things. The Writing tutor and the Reading tutor sit with you DURING the task: ask what belongs in this paragraph, or which two words in this sentence to compare against the passage, and you get a straight answer in the moment. Both are hard-blocked from doing the work for you until you submit — the Writing tutor will not write a sentence of your essay and the Reading tutor will not tell you whether Q7 is True, no matter how you ask. They teach the move on a different example instead, and the full explanations unlock the second you hand the work in, which is what keeps the band yours. The Speaking tutor works the other way round, because speech is live: it reacts, corrects and teaches on every turn while you are talking. The study coach is not attached to a task at all — it sees your bands, your weakest skill and how many days you have left, and tells you what to do with the time.",
+    points: [
+      {
+        title: "Concrete, or it does not count",
+        body: "\u201cAdd more detail\u201d and \u201cuse better vocabulary\u201d are banned outright. A reply has to name the exact word to swap, the exact sentence to add, or the paragraph to look in.",
+      },
+      {
+        title: "It will not do it for you",
+        body: "While the clock runs, no model answer, no sentence of your essay, and no confirmation of which option is right. That rule is written into the tutor itself, not left to its judgement.",
+      },
+      {
+        title: "In your own language",
+        body: "Write to it in Uzbek or Russian and it answers in the same language. The Speaking tutor switches mid-conversation when you do.",
+      },
+      {
+        title: "It knows where you are",
+        body: "Your target band and weakest area are passed in, so the advice is pitched at your level — but it will never quote you a band. Scoring belongs to the examiner.",
+      },
+    ],
+  },
+  {
     icon: "◇",
     title: "CEFR / Multilevel",
     lede: "The Uzbekistan exam in its own format — not IELTS with the labels changed.",
@@ -355,7 +384,7 @@ export default function HowToUse() {
             <DocsHead
               kicker="Documentation · for learners"
               title="How to use EngProgress"
-              lede="An AI examiner for IELTS and the Multilevel exam: original practice written for you on demand, marked against the official criteria, with the next half band spelled out."
+              lede="An AI examiner for IELTS and the Multilevel exam, from complete beginner to Band 9: original practice written for you on demand, a tutor beside you while you work, and the next half band spelled out."
             />
           }
           footer={

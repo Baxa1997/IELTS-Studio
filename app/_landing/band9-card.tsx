@@ -115,7 +115,8 @@ export function Band9Card() {
               textWrap: "pretty",
             }}
           >
-            The band a Cambridge-trained examiner would award — and the exact path to reach it.
+            The band a Cambridge-trained examiner would award — and the exact path there from
+            wherever you are starting.
           </div>
         </div>
 

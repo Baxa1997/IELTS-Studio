@@ -4,8 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * The hero's live Band-9 number. It climbs through the real IELTS half-bands
- * (6.0 → 6.5 → … → 9) and then "booms" — a success pop with a ring pulse and a
+ * (4.0 → 4.5 → … → 9) and then "booms" — a success pop with a ring pulse and a
  * burst of burgundy + gold particles — before resting on the 9 and replaying.
+ *
+ * IT STARTS AT 4.0, NOT 6.5. The owner's point: beginning the climb halfway up
+ * told a beginner this platform was not for them. The whole journey is the
+ * promise, so the number now starts where a real beginner starts.
  *
  * Recoloured from indigo to the marketing burgundy (#7d0132) when the landing
  * page moved onto the EngProgress design canvas. The BEHAVIOUR is untouched: the
@@ -18,8 +22,8 @@ import { useEffect, useRef, useState } from "react";
  * pins it to a static 9 with no animation.
  */
 
-// A real IELTS ascent: half-band steps from 6.0 up to a 9.
-const STEPS = [6, 6.5, 7, 7.5, 8, 8.5, 9];
+// A real IELTS ascent: half-band steps from a beginner's 4.0 all the way to a 9.
+const STEPS = [4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9];
 
 // 12 burst particles on a ring, alternating burgundy + gold. Positions are
 // computed deterministically (no Math.random) so server and client markup match.
@@ -55,7 +59,9 @@ export function BandCountUp() {
       );
     };
 
-    const STEP_MS = 200;
+    // 11 steps now rather than 7, so each is quicker and the whole climb still
+    // takes ~1.4s — the same rhythm the card had at 6.0 → 9.
+    const STEP_MS = 130;
     const top = STEP_MS * STEPS.length; // moment the climb reaches 9
 
     function cycle() {
