@@ -2760,3 +2760,10 @@
 .cn-table--grid .cn-thead > * {
   font-variant-numeric: tabular-nums;
 }
+
+/* The public site header is sticky and 74px tall, so a hash jump (/#platform,
+   /#pricing) would land with the section heading tucked underneath it. Scoped to
+   sections that actually carry an id — those are the anchor targets. */
+section[id] {
+  scroll-margin-top: 96px;
+}

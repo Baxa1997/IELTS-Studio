@@ -91,15 +91,6 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-/**
- * The four headline figures under the banner.
- *
- * ⚠️ THESE ARE THE DESIGN CANVAS'S NUMBERS, NOT MEASURED ONES. Production
- * currently holds 153 organisations and 160 profiles. They are published at the
- * owner's explicit instruction after that was raised, and they are marketing
- * claims the owner owns — which is exactly why they live in one obvious block
- * here rather than being scattered through the JSX. Edit them here.
- */
 const STATS: { label: string; value: string; note: string; delta?: string; brand?: boolean }[] = [
   {
     label: "New learners this month",
@@ -147,15 +138,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // A signed-in visitor goes to their role home; landing back here after an
-  // OAuth round-trip reads as "sign-in didn't go anywhere".
   const session = await getSession();
   if (session) redirect(roleHome(session.role));
 
-  // An @graph, not a lone WebApplication node. `featureList` is what an answer
-  // engine actually extracts — prose gets summarised to its first clause, which
-  // is how this product came to be described as Writing-only. Sourced from
-  // PLATFORM_FEATURES and PLAN_ORDER so neither can drift from what renders.
   const site = getSiteUrl();
   const structuredData = {
     "@context": "https://schema.org",
@@ -317,14 +302,12 @@ function Hero() {
             textWrap: "pretty",
           }}
         >
-          From a complete beginner to Band 9. AI generates exam-standard Writing, Reading,
-          Listening and Speaking tasks at your exact level, coaches you while you practise, then
-          scores you against the official IELTS bands and CEFR descriptors.
+          From a complete beginner to Band 9. AI generates exam-standard Writing, Reading, Listening
+          and Speaking tasks at your exact level, coaches you while you practise, then scores you
+          against the official IELTS bands and CEFR descriptors.
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 34 }}>
-          {/* /grade, not /start: /start redirects straight to /sign-in, and the
-              free assessment this promises is the no-login grader. */}
           <Link
             href="/grade"
             className="lp-solid"
@@ -386,9 +369,6 @@ function Hero() {
   );
 }
 
-/* ── stats ─────────────────────────────────────────────────────────────────── */
-
-/** The canvas's four-cell strip. Values come from STATS at the top of this file. */
 function Stats() {
   return (
     <section style={{ ...SHELL, padding: "24px 28px 40px" }}>
@@ -485,7 +465,6 @@ const SKILLS = [
   },
 ];
 
-/** The four coaching surfaces that actually exist. See `Coaching` below. */
 const COACHES = [
   {
     name: "Writing tutor",
@@ -613,22 +592,18 @@ function Platform() {
   );
 }
 
-/**
- * COACHING WHILE YOU PRACTISE.
- *
- * Every claim here is a prompt that exists in lib/ai/prompts.ts, not a promise:
- * `writing_tutor` and `reading_tutor` sit with the student DURING the task and
- * are hard-blocked from writing the answer or naming which option is correct
- * until they submit; the speaking tutor teaches on every turn; `study_coach` is
- * the dashboard mentor, grounded in the learner's own bands and days-to-test.
- * That "never hands over the answer" rule is the point of the panel — it is what
- * separates coaching from a shortcut, and it is enforced in the prompt rather
- * than hoped for.
- */
 function Coaching() {
   return (
     <div style={{ ...cardStyle(30), marginTop: 22 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "center", justifyContent: "space-between" }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 20,
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <div style={{ maxWidth: 660 }}>
           <div style={{ ...eyebrow(true), color: BRAND }}>Coaching, not just scoring</div>
           <h3
@@ -649,7 +624,11 @@ function Coaching() {
             so the band you finish with is still yours.
           </p>
         </div>
-        <Link href="/how-to-use" className="lp-ghost" style={{ ...ghostButton(), display: "inline-block" }}>
+        <Link
+          href="/how-to-use"
+          className="lp-ghost"
+          style={{ ...ghostButton(), display: "inline-block" }}
+        >
           See how coaching works
         </Link>
       </div>
@@ -675,7 +654,9 @@ function Coaching() {
             <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16.5, color: INK }}>
               {c.name}
             </div>
-            <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>{c.body}</p>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
+              {c.body}
+            </p>
           </div>
         ))}
       </div>
@@ -683,12 +664,6 @@ function Coaching() {
   );
 }
 
-/* ── pricing ───────────────────────────────────────────────────────────────── */
-
-/* Labels only — every plan sends the visitor to /sign-in, where account creation
- * lives. They used to point at /sign-up, which was the last screen still on the
- * old brand: pressing "Choose plan" handed you a green form in the middle of a
- * burgundy funnel. That page is gone. */
 const PLAN_CTA: Record<OrgPlan, string> = {
   trial: "Start free",
   starter: "Choose Standard",
@@ -874,17 +849,6 @@ function Faq() {
     </section>
   );
 }
-
-/* ── restored sections ─────────────────────────────────────────────────────── */
-/*
- * These four came back after the canvas rebuild at the owner's request, redressed
- * in the canvas's colours rather than reinstated as they were. The components
- * they lean on — DemoTabs, ReportShowcase, HeroProcessDemo — were recoloured in
- * place: indigo to burgundy, the old brand's cream/parchment neutrals to the
- * canvas's cool greys, Newsreader/Hanken to Sora/Manrope. Their BEHAVIOUR is
- * untouched; they are live renders of the real product screens, which is the
- * whole reason the section claims "not mockups".
- */
 
 /** Section head in the canvas's idiom: eyebrow, display heading, one lede line. */
 function Head({ eyebrow: label, title, sub }: { eyebrow: string; title: string; sub: string }) {
