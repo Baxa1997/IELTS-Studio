@@ -19,6 +19,10 @@ const PUBLIC_PATHS = [
   "/p",
   "/auth",
   "/grade",
+  // The documentation front page. A public route MUST be listed here or the
+  // middleware 307s every logged-out visitor and every crawler to /sign-in —
+  // which is exactly what still happens to /pricing.
+  "/how-to-use",
   "/demo",
   "/contact",
   "/privacy",

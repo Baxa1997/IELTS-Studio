@@ -5,7 +5,13 @@ import { useEffect, useRef, useState } from "react";
 /**
  * The hero's live Band-9 number. It climbs through the real IELTS half-bands
  * (6.0 → 6.5 → … → 9) and then "booms" — a success pop with a ring pulse and a
- * burst of brand-indigo + gold particles — before resting on the 9 and replaying.
+ * burst of burgundy + gold particles — before resting on the 9 and replaying.
+ *
+ * Recoloured from indigo to the marketing burgundy (#7d0132) when the landing
+ * page moved onto the EngProgress design canvas. The BEHAVIOUR is untouched: the
+ * owner asked to keep this element and change only its colour, so the ascent,
+ * the timing, the particle geometry and the reduced-motion behaviour are all
+ * exactly as they were.
  *
  * Client component: the count + burst need timers. It SSRs a static "9" so there
  * is no hydration mismatch and no-JS visitors still see the band. Reduced-motion
@@ -15,7 +21,7 @@ import { useEffect, useRef, useState } from "react";
 // A real IELTS ascent: half-band steps from 6.0 up to a 9.
 const STEPS = [6, 6.5, 7, 7.5, 8, 8.5, 9];
 
-// 12 burst particles on a ring, alternating indigo + gold. Positions are
+// 12 burst particles on a ring, alternating burgundy + gold. Positions are
 // computed deterministically (no Math.random) so server and client markup match.
 const PARTICLES = Array.from({ length: 12 }, (_, i) => {
   const angle = (i / 12) * Math.PI * 2;
@@ -105,7 +111,7 @@ export function BandCountUp() {
                 "--y": `${p.y}px`,
                 width: p.size,
                 height: p.size,
-                background: p.gold ? "#E6B84A" : "#5A61D8",
+                background: p.gold ? "#E6B84A" : "#A32B57",
               } as React.CSSProperties
             }
           />
@@ -122,22 +128,22 @@ const BCU_CSS = `
 .bcu-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:100%}
 .bcu-num{
   position:relative;z-index:2;
-  font-family:var(--font-newsreader),Georgia,serif;font-weight:600;
-  font-size:clamp(120px,14vw,160px);line-height:.9;letter-spacing:-.02em;
-  color:#1A1C33;font-variant-numeric:tabular-nums;
+  font-family:var(--font-sora),system-ui,sans-serif;font-weight:700;
+  font-size:clamp(112px,13vw,148px);line-height:.95;letter-spacing:-.05em;
+  color:#121317;font-variant-numeric:tabular-nums;
   animation:bcu-idle 3.6s ease-in-out infinite;
 }
 .bcu-boom .bcu-num{animation:bcu-pop .72s cubic-bezier(.2,.9,.2,1.2)}
-@keyframes bcu-idle{0%,100%{text-shadow:0 0 0 rgba(59,67,181,0)}50%{text-shadow:0 0 40px rgba(59,67,181,.22)}}
+@keyframes bcu-idle{0%,100%{text-shadow:0 0 0 rgba(125,1,50,0)}50%{text-shadow:0 0 40px rgba(125,1,50,.20)}}
 @keyframes bcu-pop{
-  0%{transform:scale(1);text-shadow:0 0 30px rgba(59,67,181,.3);color:#1A1C33}
-  34%{transform:scale(1.17);text-shadow:0 0 64px rgba(59,67,181,.55);color:#3B43B5}
-  100%{transform:scale(1);text-shadow:0 0 36px rgba(59,67,181,.24);color:#1A1C33}
+  0%{transform:scale(1);text-shadow:0 0 30px rgba(125,1,50,.28);color:#121317}
+  34%{transform:scale(1.17);text-shadow:0 0 64px rgba(125,1,50,.50);color:#7d0132}
+  100%{transform:scale(1);text-shadow:0 0 36px rgba(125,1,50,.22);color:#121317}
 }
 .bcu-burst{position:absolute;left:50%;top:50%;width:0;height:0;z-index:1;pointer-events:none}
 .bcu-ring{
   position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;
-  border-radius:50%;border:3px solid rgba(59,67,181,.5);opacity:0;transform:scale(.4)
+  border-radius:50%;border:3px solid rgba(125,1,50,.45);opacity:0;transform:scale(.4)
 }
 .bcu-boom .bcu-ring{animation:bcu-ring .78s ease-out}
 @keyframes bcu-ring{0%{opacity:.7;transform:scale(.4);border-width:3px}100%{opacity:0;transform:scale(2);border-width:.5px}}

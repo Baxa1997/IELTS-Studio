@@ -1,37 +1,59 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { Manrope, Sora } from "next/font/google";
 
-import { BrandLogo } from "@/components/brand/logo";
+import { DESIGN_CSS, Wordmark } from "@/app/_landing/design-chrome";
+import { BRAND, CANVAS, DISPLAY, INK, RADIUS, SANS, WHITE } from "@/app/_landing/design";
+import { LangPicker } from "@/app/_landing/lang-picker";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 
-import { SignInForm } from "./sign-in-form";
+import { DesignSignInForm } from "./design-form";
 
-const hanken = Hanken_Grotesk({
+/**
+ * Sign-in, rebuilt to the design canvas.
+ *
+ * The canvas drops the site header on this page (`chromeOn: p !== 'login'`) and
+ * replaces it with a two-panel layout: a burgundy gradient panel carrying the
+ * proposition, and the form beside it. Auth behaviour is untouched — see
+ * `design-form.tsx`.
+ */
+
+const sora = Sora({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-hanken",
+  weight: ["600", "700"],
+  variable: "--font-sora",
   display: "swap",
 });
-const newsreader = Newsreader({
+const manrope = Manrope({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-newsreader",
+  variable: "--font-manrope",
   display: "swap",
 });
-
-const SANS = "var(--font-hanken), system-ui, sans-serif";
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A1C33";
 
 export const metadata: Metadata = {
   title: "Sign in | EngProgress",
-  description: "Sign in to your EngProgress account — calibrated Writing & Reading practice.",
+  description:
+    "Sign in to EngProgress — AI-graded IELTS and CEFR practice for learners and education centers.",
 };
 
 export const dynamic = "force-dynamic";
+
+/** The three proof rows down the left panel. */
+const POINTS = [
+  {
+    title: "AI examiner for IELTS & CEFR",
+    body: "Band scores within ±0.5 of human examiners.",
+  },
+  {
+    title: "Practice generated at your level",
+    body: "Writing, Reading, Listening and Speaking, on demand.",
+  },
+  {
+    title: "Built for education centers",
+    body: "Student logins, groups and band reporting in one place.",
+  },
+];
 
 export default async function SignInPage({
   searchParams,
@@ -40,321 +62,99 @@ export default async function SignInPage({
 }) {
   const next = safeNextPath((await searchParams).next);
 
-  // Already signed in? Skip the form and go to `next` (e.g. a "Try it free" CTA)
-  // or the role's home.
+  // Already signed in? Skip the form and go to `next` or the role's home.
   const session = await getSession();
   if (session) redirect(next ?? roleHome(session.role));
 
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} lp-root lp-auth-grid`}
+      className={`${sora.variable} ${manrope.variable}`}
       style={{
         minHeight: "100dvh",
+        background: CANVAS,
+        padding: 22,
         display: "grid",
-        gridTemplateColumns: "0.92fr 1.08fr",
+        gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
+        gap: 22,
         fontFamily: SANS,
         color: INK,
       }}
     >
-      <BrandAside />
-      <FormSide next={next} />
-    </div>
-  );
-}
+      <style>{DESIGN_CSS}</style>
 
-// ---- left brand panel ------------------------------------------------------
-
-function LogoLight() {
-  return <BrandLogo tone="light" size={32} fontSize={24} />;
-}
-
-function BrandAside() {
-  const points = [
-    "±0.5 of human examiners — calibrated and tracked",
-    "Never rounds up — we name exactly what’s missing",
-    "Every score quoted from your own work",
-  ];
-  return (
-    <aside
-      className="lp-auth-aside"
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        background: "linear-gradient(160deg,#3B43B5 0%,#2D3286 55%,#23275F 100%)",
-        color: "#fff",
-        padding: "44px clamp(36px,4vw,64px)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-      }}
-    >
-      {/* decorative glows */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <div
+      {/* left — the burgundy proposition panel */}
+      <div
+        style={{
+          background: "#43001d",
+          backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
+          color: WHITE,
+          borderRadius: RADIUS.panel,
+          padding: "54px 52px",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Wordmark onDark />
+        <h2
           style={{
-            position: "absolute",
-            right: "-12%",
-            top: "-8%",
-            width: 420,
-            height: 420,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(255,255,255,.12), transparent 62%)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: "-14%",
-            bottom: "-10%",
-            width: 380,
-            height: 380,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(216,169,58,.22), transparent 64%)",
-          }}
-        />
-      </div>
-
-      <Link href="/" style={{ position: "relative", textDecoration: "none", width: "fit-content" }}>
-        <LogoLight />
-      </Link>
-
-      <div style={{ position: "relative" }}>
-        <h1
-          style={{
-            fontFamily: SERIF,
-            fontWeight: 600,
-            fontSize: "clamp(30px,3vw,40px)",
+            fontFamily: DISPLAY,
+            fontWeight: 700,
+            fontSize: "clamp(30px,4vw,42px)",
             lineHeight: 1.08,
-            letterSpacing: "-.02em",
-            margin: 0,
-            textWrap: "balance",
+            letterSpacing: "-0.03em",
+            margin: "52px 0 0",
+            maxWidth: 460,
+            textWrap: "pretty",
           }}
         >
-          Know your <span style={{ fontStyle: "italic", color: "#cfd2ff" }}>real</span> band. Then
-          close the gap.
-        </h1>
+          Know your real band — then close the gap.
+        </h2>
         <p
           style={{
-            fontFamily: SANS,
-            fontWeight: 400,
-            fontSize: 16,
+            fontSize: 17,
             lineHeight: 1.6,
-            color: "rgba(255,255,255,.78)",
-            margin: "18px 0 0",
-            maxWidth: 380,
+            color: "rgba(255,255,255,0.82)",
+            maxWidth: 440,
+            margin: "20px 0 0",
           }}
         >
-          Pick up where you left off — your graded essays, reading attempts and band progress are
-          all here.
+          Pick up where you left off: graded essays, reading attempts and your CEFR level are all
+          here.
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 13, marginTop: 28 }}>
-          {points.map((p) => (
-            <div key={p} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-              <span
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,.14)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flex: "none",
-                  marginTop: 1,
-                }}
-              >
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#fff"
-                  strokeWidth="2.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+
+        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
+          {POINTS.map((p, i) => (
+            <div key={p.title}>
+              {i > 0 ? <div style={{ height: 1, background: "rgba(255,255,255,0.16)" }} /> : null}
+              <div style={{ padding: i === POINTS.length - 1 ? "22px 0 0" : "22px 0" }}>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{p.title}</div>
+                <div
+                  style={{ fontSize: 15, color: "rgba(255,255,255,0.68)", marginTop: 5 }}
                 >
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              </span>
-              <span
-                style={{
-                  fontFamily: SANS,
-                  fontWeight: 500,
-                  fontSize: 15,
-                  lineHeight: 1.45,
-                  color: "rgba(255,255,255,.92)",
-                }}
-              >
-                {p}
-              </span>
+                  {p.body}
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* frosted testimonial */}
-      <figure
+      {/* right — the form */}
+      <div
         style={{
-          position: "relative",
-          margin: 0,
-          background: "rgba(255,255,255,.08)",
-          border: "1px solid rgba(255,255,255,.14)",
-          borderRadius: 16,
-          padding: 20,
-          backdropFilter: "blur(6px)",
+          padding: "44px 52px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        <blockquote
-          style={{
-            fontFamily: SERIF,
-            fontWeight: 400,
-            fontStyle: "italic",
-            fontSize: 16,
-            lineHeight: 1.6,
-            color: "rgba(255,255,255,.95)",
-            margin: 0,
-          }}
-        >
-          “The band I practised with is the band I got on exam day.”
-        </blockquote>
-        <figcaption style={{ display: "flex", alignItems: "center", gap: 11, marginTop: 16 }}>
-          <span
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,.16)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: SANS,
-              fontWeight: 700,
-              fontSize: 13,
-              color: "#fff",
-            }}
-          >
-            SK
-          </span>
-          <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,.82)" }}>
-            <b style={{ color: "#fff" }}>Sara K.</b> · reached Band 7.0
-          </span>
-        </figcaption>
-      </figure>
-    </aside>
-  );
-}
-
-// ---- right form panel ------------------------------------------------------
-
-function FormSide({ next }: { next: string | null }) {
-  return (
-    <main
-      style={{
-        background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "44px clamp(20px,5vw,56px)",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 408 }}>
-        {/* compact logo (mobile, where the brand aside is hidden) */}
-        <Link
-          href="/"
-          className="lp-auth-mobile-logo"
-          style={{ textDecoration: "none", alignItems: "center", marginBottom: 28 }}
-        >
-          <BrandLogo tone="dark" size={30} fontSize={24} />
-        </Link>
-
-        <div
-          style={{
-            fontFamily: SANS,
-            fontWeight: 600,
-            fontSize: 13,
-            letterSpacing: ".04em",
-            textTransform: "uppercase",
-            color: INDIGO,
-          }}
-        >
-          Welcome back
+        <div style={{ width: "100%", maxWidth: 440, display: "flex", justifyContent: "flex-end" }}>
+          <LangPicker compact />
         </div>
-        <h2
-          style={{
-            fontFamily: SERIF,
-            fontWeight: 600,
-            fontSize: "clamp(28px,3vw,34px)",
-            lineHeight: 1.1,
-            letterSpacing: "-.015em",
-            color: INK,
-            margin: "8px 0 0",
-          }}
-        >
-          Sign in to your account
-        </h2>
-        <p
-          style={{
-            fontFamily: SANS,
-            fontWeight: 400,
-            fontSize: 15,
-            lineHeight: 1.6,
-            color: "#6b6e84",
-            margin: "10px 0 28px",
-          }}
-        >
-          Continue your IELTS Writing &amp; Reading practice.
-        </p>
-
-        <SignInForm next={next} />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 24 }}>
-          <p
-            style={{
-              fontFamily: SANS,
-              fontWeight: 400,
-              fontSize: 14.5,
-              color: "#6b6e84",
-              margin: 0,
-            }}
-          >
-            New here?{" "}
-            <Link
-              href="/sign-up"
-              style={{ fontWeight: 600, color: INDIGO, textDecoration: "none" }}
-            >
-              Create an account
-            </Link>
-          </p>
-          <p
-            style={{
-              fontFamily: SANS,
-              fontWeight: 400,
-              fontSize: 14.5,
-              color: "#6b6e84",
-              margin: 0,
-            }}
-          >
-            Just looking?{" "}
-            <Link href="/grade" style={{ fontWeight: 600, color: INDIGO, textDecoration: "none" }}>
-              Grade an essay free — no account
-            </Link>
-          </p>
+        <div style={{ width: "100%", maxWidth: 440, margin: "auto 0" }}>
+          <DesignSignInForm next={next} />
         </div>
-
-        <p
-          style={{
-            fontFamily: SANS,
-            fontWeight: 400,
-            fontSize: 12,
-            lineHeight: 1.5,
-            color: "#9a998c",
-            margin: "32px 0 0",
-          }}
-        >
-          Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge
-          Assessment English.
-        </p>
       </div>
-    </main>
+    </div>
   );
 }
