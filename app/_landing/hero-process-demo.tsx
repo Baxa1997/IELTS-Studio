@@ -315,14 +315,14 @@ function GenScene() {
                   animationDelay: `${1.4 + (i % 6) * 0.13}s`,
                   width: 3,
                   borderRadius: 2,
-                  background: i % 5 === 0 ? INDIGO : "#B9BCE6",
+                  background: i % 5 === 0 ? INDIGO : "#e8b9cb",
                   height: [10, 18, 26, 14, 22, 8][i % 6],
                   flex: "none",
                 }}
               />
             ))}
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "#7d80ad", whiteSpace: "nowrap" }}>Part 2 · map</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: "#8b919d", whiteSpace: "nowrap" }}>Part 2 · map</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 14 }}>

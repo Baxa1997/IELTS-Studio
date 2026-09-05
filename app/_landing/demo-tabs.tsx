@@ -80,7 +80,7 @@ export function DemoTabs({
                 fontFamily: SANS,
                 fontWeight: 600,
                 fontSize: 14.5,
-                color: i === active ? INDIGO : "#5a5e78",
+                color: i === active ? INDIGO : "#4a505c",
                 background: i === active ? "#EEF0FF" : "transparent",
                 border: "none",
                 borderRadius: 11,
@@ -120,7 +120,7 @@ export function DemoTabs({
             fontWeight: 400,
             fontSize: 16,
             lineHeight: 1.6,
-            color: "#6b6e84",
+            color: "#4a505c",
             margin: "10px 0 0",
           }}
         >

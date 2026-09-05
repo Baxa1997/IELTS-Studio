@@ -3,7 +3,7 @@
 import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { bandColor } from "@/lib/ui/band";
+import { bandColor as productBandColor } from "@/lib/ui/band";
 
 /**
  * Live, coded replicas of the real product screens — rendered with the SAME
@@ -27,6 +27,27 @@ const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monosp
 const LSANS = "var(--font-manrope), system-ui, sans-serif";
 
 const INDIGO = "#7d0132";
+
+/**
+ * Band colours for the MARKETING mock screens only.
+ *
+ * `lib/ui/band.ts` is the product's single source of truth and the real result
+ * screens read from it — writing feedback, both reading runners, the speaking
+ * report. Its "Competent" tier (band 6–6.9) is indigo `#4338CA` on `#ECEBFB`,
+ * which is correct in the app and wrong on this page: it was the one purple the
+ * recolour could not reach, because reaching it would have repainted a chip
+ * inside the signed-in product to match a marketing page.
+ *
+ * So the tier is remapped here instead, for these mocks only. Every other tier
+ * (green Expert/Good, amber Modest, red Limited and below) is already
+ * brand-neutral and passes through untouched. Delete this the day the product
+ * itself moves onto the burgundy.
+ */
+function bandColor(band: number) {
+  const c = productBandColor(band);
+  if (c.label !== "Competent") return c;
+  return { ...c, fg: INDIGO, bg: "#fdf4f7" };
+}
 const INK = "#121317";
 const MUTED = "#4a505c";
 const FAINT = "#8b919d";
@@ -37,16 +58,17 @@ const AMBER = "#B5852A";
 // cream studio palette
 const CANVAS = "#f6f7f9";
 const LINE = "#e6e8ec";
-const SOFT = "#FBFAF4";
-const SOFTLINE = "#F0EDE1";
-const ACC_SOFT = "#ECEBFB";
-const ACC_LINE = "#E1DFF7";
+const SOFT = "#fbfbfc";
+const SOFTLINE = "#eceef2";
+const ACC_SOFT = "#fdf4f7";
+const ACC_LINE = "#f0d3de";
 
-// listening violet palette (from the real runner)
-const V = "#7c5cfc";
-const V_BG = "#f3f0ff";
-const V_SOFT = "#f5f2ff";
-const V_BORDER = "#e4defb";
+// listening accent palette — the real runner's violet, mapped onto the
+// burgundy scale so the mock screens match the page they sit on
+const V = "#9c1442";
+const V_BG = "#fdf4f7";
+const V_SOFT = "#fef7fa";
+const V_BORDER = "#f0d3de";
 
 const useIso = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -123,7 +145,7 @@ export function Frame({ children }: { children: React.ReactNode }) {
             textAlign: "center",
             fontFamily: MONO,
             fontSize: 11.5,
-            color: "#8a8da6",
+            color: "#8b919d",
             background: "#F1EFE4",
             borderRadius: 8,
             padding: "4px 12px",
@@ -183,7 +205,7 @@ function TaskPill({ children }: { children: React.ReactNode }) {
 
 const MARK = {
   spelling: { bg: "#FCEFC7", fg: "#9A6A12" },
-  vocab: { bg: "#E6ECFD", fg: "#3350B5" },
+  vocab: { bg: "#fdf4f7", fg: "#7d0132" },
   grammar: { bg: "#FBE0DC", fg: "#C5503C" },
 };
 function Mk({ kind, n, children }: { kind: keyof typeof MARK; n: number; children: React.ReactNode }) {
@@ -281,7 +303,7 @@ function WritingFeedbackScreen() {
             </div>
           </div>
           <div style={{ flex: 1, padding: "30px 40px", overflow: "hidden" }}>
-            <div style={{ maxWidth: 720, fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: "#262B3D" }}>
+            <div style={{ maxWidth: 720, fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: "#241017" }}>
               In recent decades, the number of people choosing to live alone has risen sharply. While some regard this as a sign of social breakdown, I believe it <Mk kind="vocab" n={1}>primarily reflects</Mk> greater <Mk kind="spelling" n={2}>independance</Mk> and should be seen as a positive development.
               {"\n\n"}
               Firstly, living alone allows individuals to develop essential life skills. When a person is solely responsible for cooking, budgeting and cleaning, they inevitably become more self-reliant. For example, a young graduate who rents their own flat must learn to manage money carefully, which <Mk kind="grammar" n={3}>builds a discipline that benefits them later in life</Mk>.
@@ -306,7 +328,7 @@ function WritingFeedbackScreen() {
                 <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
                 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: "#E9F5EE", border: "1px solid #CDE9D8", padding: "2px 8px", borderRadius: 999 }}>+0.5 band</span>
               </div>
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "#3A3F58" }}>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "#3b2932" }}>
                 <strong style={{ color: INK }}>Task Response</strong> — you state a clear position, but the counter-view is only mentioned, not developed. Give both sides equal, specific support to clear Band 7.
               </p>
             </div>
@@ -418,7 +440,7 @@ function WritingStudioScreen() {
             </div>
           </div>
           <div style={{ flex: 1, minHeight: 0, padding: "26px 30px", overflow: "hidden" }}>
-            <div style={{ maxWidth: 640, fontFamily: SERIF, fontSize: 16.5, lineHeight: 1.85, color: "#272C3E" }}>
+            <div style={{ maxWidth: 640, fontFamily: SERIF, fontSize: 16.5, lineHeight: 1.85, color: "#261218" }}>
               I strongly agree that a period of unpaid community service should be built into high-school education. Requiring young people to contribute to their communities develops empathy and practical skills that classroom study alone cannot provide.
               {"\n\n"}
               The most compelling argument is that community service exposes students to lives very different from their own. A teenager who spends a term helping at a care home, for instance, learns patience and responsibility while seeing first-hand the challenges older people face…
@@ -434,7 +456,7 @@ function WritingStudioScreen() {
         {/* coach */}
         <div style={{ width: 320, flex: "none", background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "13px 14px", borderBottom: `1px solid ${SOFTLINE}` }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#5B55D6,#7d0132)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Spark s={16} /></span>
+            <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#7d0132,#7d0132)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Spark s={16} /></span>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: INK }}>Writing coach</div>
               <div style={{ fontSize: 11.5, color: MUTED }}>Ideas · vocabulary · structure</div>
@@ -442,11 +464,11 @@ function WritingStudioScreen() {
           </div>
           <div style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ alignSelf: "flex-end", maxWidth: "85%", padding: "9px 12px", borderRadius: 12, background: INDIGO, color: "#fff", fontSize: 13.5, lineHeight: 1.5 }}>Any better linking words for my second paragraph?</div>
-            <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "9px 12px", borderRadius: 12, background: "#fdf4f7", border: "1px solid #E6E4F8", color: "#3a3d52", fontSize: 13.5, lineHeight: 1.55 }}>Try opening with <em>“The most compelling argument is…”</em>, then signpost the next idea with <em>“Beyond this,”</em> or <em>“A further benefit is that…”</em>. Vary them — repeating “also” caps Coherence.</div>
+            <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "9px 12px", borderRadius: 12, background: "#fdf4f7", border: "1px solid #fdf4f7", color: "#3a2830", fontSize: 13.5, lineHeight: 1.55 }}>Try opening with <em>“The most compelling argument is…”</em>, then signpost the next idea with <em>“Beyond this,”</em> or <em>“A further benefit is that…”</em>. Vary them — repeating “also” caps Coherence.</div>
           </div>
           <div style={{ padding: 10, borderTop: `1px solid ${SOFTLINE}` }}>
             <div style={{ display: "flex", gap: 8 }}>
-              <span style={{ flex: 1, padding: "9px 11px", border: "1px solid #DDDAEE", borderRadius: 10, fontSize: 13.5, color: "#8b919d" }}>Ask your coach…</span>
+              <span style={{ flex: 1, padding: "9px 11px", border: "1px solid #f0d3de", borderRadius: 10, fontSize: 13.5, color: "#8b919d" }}>Ask your coach…</span>
               <span style={{ width: 40, borderRadius: 10, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
               </span>
@@ -480,7 +502,7 @@ function ReadingScreen() {
             <span style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #f4e9ee", background: "#fff", color: "#4a505c", fontWeight: 700, fontSize: 12.5, display: "flex", alignItems: "center", justifyContent: "center" }}>A−</span>
             <span style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #f4e9ee", background: "#fff", color: "#4a505c", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>A+</span>
           </div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: "#fdf4f7", border: "1px solid #E4E2F4" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: "#fdf4f7", border: "1px solid #f0d3de" }}>
             <span style={{ fontSize: 13, color: INDIGO }}>◷</span>
             <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, color: INDIGO }}>18:24</span>
           </span>
@@ -506,7 +528,7 @@ function ReadingScreen() {
               You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions 1–{total}</strong>, which are based on the reading passage below.
             </p>
             <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>The Rise of the Urban Park</h1>
-            <div style={{ lineHeight: 1.75, color: "#3A3650", fontSize: 16 }}>
+            <div style={{ lineHeight: 1.75, color: "#33202a", fontSize: 16 }}>
               For most of human history, cities were dense, walled and almost entirely paved. The idea that a metropolis should set aside large tracts of land purely for recreation would have struck a medieval planner as absurd — space inside the walls was far too valuable to leave unbuilt.
               {"\n\n"}
               The change came in the nineteenth century, as industrial cities swelled and their air grew thick with smoke. Reformers began to argue that access to greenery was not a luxury but a public-health necessity, and that a walk among trees could restore workers exhausted by the factory floor…
@@ -527,7 +549,7 @@ function ReadingScreen() {
           ].map((q) => (
             <div key={q.n} style={{ padding: "12px 0", borderBottom: "1px solid #F1F0F7" }}>
               <div style={{ display: "flex", gap: 10 }}>
-                <span style={{ flex: "none", width: 24, height: 24, borderRadius: 999, border: `1.5px solid ${q.pick ? INDIGO : "#ece0e5"}`, background: q.pick ? INDIGO : "#fff", color: q.pick ? "#fff" : "#9B98AD", fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{q.n}</span>
+                <span style={{ flex: "none", width: 24, height: 24, borderRadius: 999, border: `1.5px solid ${q.pick ? INDIGO : "#ece0e5"}`, background: q.pick ? INDIGO : "#fff", color: q.pick ? "#fff" : "#8b919d", fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{q.n}</span>
                 <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "#121317" }}>{q.t}</span>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10, marginLeft: 34 }}>
@@ -551,7 +573,7 @@ function ReadingScreen() {
           const style: React.CSSProperties = { width: 30, height: 30, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, border: "1.5px solid", fontVariantNumeric: "tabular-nums" };
           if (isCur) return <span key={n} style={{ ...style, borderColor: INDIGO, background: "#fff", color: INDIGO, boxShadow: "0 0 0 3px rgba(79,70,229,.16)" }}>{n}</span>;
           if (isAnswered) return <span key={n} style={{ ...style, borderColor: INDIGO, background: INDIGO, color: "#fff" }}>{n}</span>;
-          return <span key={n} style={{ ...style, borderColor: "#ece0e5", background: "#fff", color: "#9B98AD" }}>{n}</span>;
+          return <span key={n} style={{ ...style, borderColor: "#ece0e5", background: "#fff", color: "#8b919d" }}>{n}</span>;
         })}
       </div>
     </div>
@@ -564,28 +586,28 @@ function ReadingScreen() {
 
 function ListeningScreen() {
   const gap = (val?: string) => (
-    <span style={{ display: "inline-flex", minWidth: 96, height: 30, padding: "0 10px", margin: "0 2px", alignItems: "center", borderRadius: 8, border: `1.5px solid ${val ? "#c4b6f5" : "#e6e6ed"}`, background: val ? V_SOFT : "#fff", color: val ? "#4a3fb0" : "transparent", fontSize: 14.5, fontWeight: 600, verticalAlign: "middle" }}>
+    <span style={{ display: "inline-flex", minWidth: 96, height: 30, padding: "0 10px", margin: "0 2px", alignItems: "center", borderRadius: 8, border: `1.5px solid ${val ? "#e8b9cb" : "#e6e6ed"}`, background: val ? V_SOFT : "#fff", color: val ? "#5c0125" : "transparent", fontSize: 14.5, fontWeight: 600, verticalAlign: "middle" }}>
       {val ?? " "}
     </span>
   );
   return (
     <div style={{ width: 1200, height: 750, background: "#f4f4f7", fontFamily: LSANS, color: "#121317", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* navy audio strip */}
-      <div style={{ flex: "none", height: 62, background: "#102347", borderBottom: "1px solid #1b3766", padding: "0 20px", display: "flex", alignItems: "center", gap: 16 }}>
-        <div style={{ width: 42, height: 42, borderRadius: 9999, background: "#6f82ff", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(0,0,0,0.24)" }}>
+      <div style={{ flex: "none", height: 62, background: "#2a0f19", borderBottom: "1px solid #3d1526", padding: "0 20px", display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 9999, background: "#c25b83", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(0,0,0,0.24)" }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.3" /><rect x="14" y="5" width="4" height="14" rx="1.3" /></svg>
         </div>
         <div style={{ width: 200, flex: "none", minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#f8fbff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Part 2 · Community radio</div>
-          <div style={{ fontSize: 12, fontWeight: 500, color: "#b8c8df", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Now playing — plays once</div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: "#dcc3ce", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Now playing — plays once</div>
         </div>
-        <span style={{ fontFamily: MONO, fontSize: 13, color: "#b8c8df", width: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>01:12</span>
-        <div style={{ flex: 1, height: 6, borderRadius: 999, background: "#2a4574", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, width: "36%", background: "#7ea7ff", borderRadius: 999 }} />
+        <span style={{ fontFamily: MONO, fontSize: 13, color: "#dcc3ce", width: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>01:12</span>
+        <div style={{ flex: 1, height: 6, borderRadius: 999, background: "#4d1c30", position: "relative" }}>
+          <div style={{ position: "absolute", inset: 0, width: "36%", background: "#d18ba6", borderRadius: 999 }} />
           <div style={{ position: "absolute", left: "36%", top: "50%", width: 13, height: 13, marginLeft: -6, marginTop: -6, borderRadius: 999, background: "#fff", boxShadow: "0 2px 6px rgba(0,0,0,.3)" }} />
         </div>
-        <span style={{ fontFamily: MONO, fontSize: 13, color: "#b8c8df", width: 42, fontVariantNumeric: "tabular-nums" }}>03:20</span>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#dbe6f7", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 8, padding: "5px 10px" }}>1.0×</span>
+        <span style={{ fontFamily: MONO, fontSize: 13, color: "#dcc3ce", width: 42, fontVariantNumeric: "tabular-nums" }}>03:20</span>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#f6e2e9", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 8, padding: "5px 10px" }}>1.0×</span>
       </div>
 
       {/* part tabs */}
@@ -594,7 +616,7 @@ function ListeningScreen() {
           const active = p === 2;
           const done = p === 1;
           return (
-            <span key={p} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, border: `1px solid ${active ? V_BORDER : "#ececf1"}`, background: active ? V_BG : "#fff", color: active ? "#5a4ec4" : "#6b6f7e" }}>
+            <span key={p} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, border: `1px solid ${active ? V_BORDER : "#ececf1"}`, background: active ? V_BG : "#fff", color: active ? "#6d0b2c" : "#6b6f7e" }}>
               {done ? <Check c="#1b9e54" s={13} /> : null}
               Part {p}
             </span>
@@ -669,7 +691,7 @@ function CoachScreen() {
       <div style={{ position: "absolute", right: 40, bottom: 34, width: 400, height: 560, display: "flex", flexDirection: "column", background: "#fff", border: "1px solid #E7E4F2", borderRadius: 18, boxShadow: "0 30px 70px -28px rgba(26,33,56,.55)", overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 14px", borderBottom: "1px solid #E7E4F2", background: "linear-gradient(135deg,#F5F4FE,#EFEEFC)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#5B55D6,#7d0132)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Spark s={16} /></span>
+            <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#7d0132,#7d0132)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}><Spark s={16} /></span>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: INK }}>Study coach</div>
               <div style={{ fontSize: 11.5, color: MUTED }}>Planning · strategy · what&rsquo;s next</div>
@@ -679,18 +701,18 @@ function CoachScreen() {
         </div>
         <div style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ alignSelf: "flex-end", maxWidth: "85%", padding: "9px 12px", borderRadius: 12, background: INDIGO, color: "#fff", fontSize: 13.5, lineHeight: 1.5 }}>What should I practise next?</div>
-          <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "10px 12px", borderRadius: 12, background: "#fdf4f7", border: "1px solid #E6E4F8", color: "#3a3d52", fontSize: 13.5, lineHeight: 1.6 }}>
+          <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "10px 12px", borderRadius: 12, background: "#fdf4f7", border: "1px solid #fdf4f7", color: "#3a2830", fontSize: 13.5, lineHeight: 1.6 }}>
             Your Reading sits at <strong>6.5</strong> and Writing at <strong>6.0</strong>, so Writing is the gap to your 7.0 target. This week I&rsquo;d do <strong>two Task 2 essays</strong> focused on Task Response — that&rsquo;s your weakest criterion across your last 3 submissions. Want me to pick the prompts?
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 2 }}>
             {["Plan my week", "How do I reach my target?"].map((s) => (
-              <span key={s} style={{ fontSize: 12.5, fontWeight: 600, color: INDIGO, background: "#ECEBFB", border: "1px solid #E1DFF7", borderRadius: 999, padding: "7px 12px" }}>{s}</span>
+              <span key={s} style={{ fontSize: 12.5, fontWeight: 600, color: INDIGO, background: "#ECEBFB", border: "1px solid #f0d3de", borderRadius: 999, padding: "7px 12px" }}>{s}</span>
             ))}
           </div>
         </div>
         <div style={{ padding: 10, borderTop: "1px solid #EFEDF8" }}>
           <div style={{ display: "flex", gap: 8 }}>
-            <span style={{ flex: 1, padding: "9px 11px", border: "1px solid #DDDAEE", borderRadius: 10, fontSize: 13.5, color: "#8b919d" }}>Ask your coach…</span>
+            <span style={{ flex: 1, padding: "9px 11px", border: "1px solid #f0d3de", borderRadius: 10, fontSize: 13.5, color: "#8b919d" }}>Ask your coach…</span>
             <span style={{ width: 40, borderRadius: 10, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
             </span>
@@ -716,7 +738,7 @@ function BandMini({ skill, cur, target, base, delta }: { skill: string; cur: num
           </span>
           <span style={{ fontWeight: 700, fontSize: 16, color: INK }}>{skill}</span>
         </div>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500, fontSize: 13, color: FAINT }}>target <span style={{ fontWeight: 700, fontSize: 14, color: INK, background: "#F4F4FB", border: "1px solid #E0E1F4", padding: "4px 10px", borderRadius: 8 }}>{target.toFixed(1)}</span></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500, fontSize: 13, color: FAINT }}>target <span style={{ fontWeight: 700, fontSize: 14, color: INK, background: "#F4F4FB", border: "1px solid #f0d3de", padding: "4px 10px", borderRadius: 8 }}>{target.toFixed(1)}</span></span>
       </div>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: 12 }}>
         <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 34, lineHeight: 1, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{cur.toFixed(1)}</span>
@@ -738,7 +760,7 @@ function ProgressScreen() {
       <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16, marginTop: 18, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {/* next task */}
-          <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#23264D 0%,#7d0132 62%,#5158C8 100%)", borderRadius: 18, padding: "24px 26px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+          <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#241017 0%,#7d0132 62%,#7d0132 100%)", borderRadius: 18, padding: "24px 26px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
             <div style={{ position: "absolute", top: -90, right: -40, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)" }} />
             <div style={{ position: "relative", flex: "1 1 380px" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontWeight: 700, fontSize: 11, letterSpacing: ".11em", textTransform: "uppercase", color: "rgba(255,255,255,.72)" }}><Spark s={13} /> Next task · picked for you</div>
@@ -865,8 +887,8 @@ function SpeakingScreen() {
           const active = p.n === 2;
           const done = p.n < 2;
           return (
-            <div key={p.n} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: active ? "#6C4BD8" : done ? "#2E9E6B" : "#B5ACA8" }}>
-              <span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: active ? "#6C4BD8" : done ? "#E4F5EC" : "#F1EEEC", color: active ? "#fff" : done ? "#2E9E6B" : "#9C938F", fontSize: 10.5 }}>{done ? "✓" : p.n}</span>
+            <div key={p.n} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: active ? "#9c1442" : done ? "#2E9E6B" : "#B5ACA8" }}>
+              <span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: active ? "#9c1442" : done ? "#E4F5EC" : "#F1EEEC", color: active ? "#fff" : done ? "#2E9E6B" : "#9C938F", fontSize: 10.5 }}>{done ? "✓" : p.n}</span>
               {p.label}
             </div>
           );
@@ -969,7 +991,7 @@ function ReportWriting() {
       </div>
       <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: RED }}>FIX THIS FIRST</span>
-        <span style={{ fontSize: 14, color: "#3A3F58" }}>Task Response — develop the opposing view, don&rsquo;t just mention it.</span>
+        <span style={{ fontSize: 14, color: "#3b2932" }}>Task Response — develop the opposing view, don&rsquo;t just mention it.</span>
       </div>
     </div>
   );
@@ -1027,7 +1049,7 @@ function ReportListening() {
         ))}
       </div>
       <div style={{ marginTop: 18, padding: "12px 14px", borderRadius: 10, background: V_SOFT, border: `1px solid ${V_BORDER}` }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "#5a4ec4", marginBottom: 4 }}>Q31 · you wrote “Tuesday”, answer was “Thursday”</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: "#6d0b2c", marginBottom: 4 }}>Q31 · you wrote “Tuesday”, answer was “Thursday”</div>
         <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>The speaker corrects herself — “…on Tuesday, sorry, I mean Thursday.” The transcript link jumps you to the exact line.</div>
       </div>
     </div>
@@ -1066,7 +1088,7 @@ export function ReportShowcase() {
           <Frame>
             <Stage w={640} h={480}>{REPORT_NODES[c.slug]}</Stage>
           </Frame>
-          <figcaption style={{ fontFamily: SANS, fontWeight: 400, fontSize: 14.5, lineHeight: 1.55, color: "#6b6e84", margin: "14px 4px 0" }}>{c.caption}</figcaption>
+          <figcaption style={{ fontFamily: SANS, fontWeight: 400, fontSize: 14.5, lineHeight: 1.55, color: "#4a505c", margin: "14px 4px 0" }}>{c.caption}</figcaption>
         </figure>
       ))}
     </div>

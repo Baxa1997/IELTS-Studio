@@ -295,7 +295,7 @@ export function SiteFooter() {
                   fontSize: 12,
                   letterSpacing: ".12em",
                   textTransform: "uppercase",
-                  color: "#7d80ad",
+                  color: "#8b919d",
                 }}
               >
                 {col.head}
@@ -334,7 +334,7 @@ export function SiteFooter() {
           }}
         >
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 14 }}>
-            <span style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#7d80ad" }}>
+            <span style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#8b919d" }}>
               © 2026 EngProgress. All rights reserved.
             </span>
             <Link href="/privacy" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
@@ -353,7 +353,7 @@ export function SiteFooter() {
               fontWeight: 400,
               fontSize: 12.5,
               lineHeight: 1.5,
-              color: "#7d80ad",
+              color: "#8b919d",
               maxWidth: 620,
               margin: 0,
               textAlign: "right",

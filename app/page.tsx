@@ -91,8 +91,31 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-/** See the note above: no real numbers, no strip. */
-const SHOW_STATS = false;
+/**
+ * The four headline figures under the banner.
+ *
+ * ⚠️ THESE ARE THE DESIGN CANVAS'S NUMBERS, NOT MEASURED ONES. Production
+ * currently holds 153 organisations and 160 profiles. They are published at the
+ * owner's explicit instruction after that was raised, and they are marketing
+ * claims the owner owns — which is exactly why they live in one obvious block
+ * here rather than being scattered through the JSX. Edit them here.
+ */
+const STATS: { label: string; value: string; note: string; delta?: string; brand?: boolean }[] = [
+  {
+    label: "New learners this month",
+    value: "7,480",
+    delta: "12.4%",
+    note: "vs. 6,655 last month",
+  },
+  { label: "Education centers", value: "240", note: "Schools and IELTS centers onboard" },
+  { label: "Total users", value: "86,400", note: "Learners, teachers and admins" },
+  {
+    label: "Tasks practised",
+    value: "1.24M",
+    note: "Graded essays, readings and mocks",
+    brand: true,
+  },
+];
 
 export const metadata: Metadata = {
   title: "IELTS Practice with AI Band Feedback — Writing, Reading, Listening, Speaking & CEFR",
@@ -216,7 +239,7 @@ export default async function Home() {
       <main>
         <Hero />
         <HeroProcessDemo />
-        {SHOW_STATS ? <Stats /> : null}
+        <Stats />
         <DemoSection />
         <ResultsSection />
         <Platform />
@@ -361,20 +384,10 @@ function Hero() {
 
 /* ── stats ─────────────────────────────────────────────────────────────────── */
 
-/**
- * The canvas's four-cell strip. Rendered only when `SHOW_STATS` is on — see the
- * note at the top of this file. The numbers below are the canvas's placeholders
- * and MUST be replaced with real figures before it is switched on.
- */
+/** The canvas's four-cell strip. Values come from STATS at the top of this file. */
 function Stats() {
-  const cells = [
-    { label: "New learners this month", value: "—", note: "", delta: "" },
-    { label: "Education centers", value: "—", note: "Schools and IELTS centers onboard" },
-    { label: "Total users", value: "—", note: "Learners, teachers and admins" },
-    { label: "Tasks practised", value: "—", note: "Graded essays, readings and mocks", brand: true },
-  ];
   return (
-    <section style={{ ...SHELL, padding: "24px 28px 96px" }}>
+    <section style={{ ...SHELL, padding: "24px 28px 40px" }}>
       <div
         style={{
           border: `1px solid ${LINE}`,
@@ -386,30 +399,52 @@ function Stats() {
           gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
         }}
       >
-        {cells.map((c, i) => (
+        {STATS.map((c, i) => (
           <div
             key={c.label}
             style={{
               padding: "34px 32px",
-              borderRight: i < cells.length - 1 ? `1px solid ${RULE}` : undefined,
+              borderRight: i < STATS.length - 1 ? `1px solid ${RULE}` : undefined,
             }}
           >
             <div style={eyebrow()}>{c.label}</div>
             <div
               style={{
-                fontFamily: DISPLAY,
-                fontWeight: 700,
-                fontSize: 44,
-                letterSpacing: "-0.03em",
-                color: c.brand ? BRAND : INK,
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 10,
                 marginTop: 12,
               }}
             >
-              {c.value}
+              <div
+                style={{
+                  fontFamily: DISPLAY,
+                  fontWeight: 700,
+                  fontSize: 44,
+                  letterSpacing: "-0.03em",
+                  color: c.brand ? BRAND : INK,
+                }}
+              >
+                {c.value}
+              </div>
+              {c.delta ? (
+                <span
+                  style={{
+                    background: "#eaf6f0",
+                    color: "#1c7a4f",
+                    borderRadius: RADIUS.pill,
+                    padding: "5px 11px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ▲ {c.delta}
+                </span>
+              ) : null}
             </div>
-            {c.note ? (
-              <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>{c.note}</div>
-            ) : null}
+            <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>{c.note}</div>
           </div>
         ))}
       </div>
