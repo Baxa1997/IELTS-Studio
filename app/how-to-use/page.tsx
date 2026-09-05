@@ -11,23 +11,21 @@ import {
   DocsHead,
   FeatureList,
   Prose,
-  Sidebar,
   Steps,
-  type DocGroup,
   type DocStep,
   type Feature,
   type InfoTab,
 } from "./docs-ui";
-import { InfoTabs } from "./info-tabs";
+import { DocsTabs } from "./docs-tabs";
 
 /**
  * "How to use EngProgress" — FOR AN INDIVIDUAL LEARNER.
  *
- * EVERYTHING LIVES IN THE TABS (owner's call). An earlier version stacked the
- * overview, the feature list, the skill tabs and the steps down one long page;
- * the owner wanted the whole body tabbed instead, Overview first. So the page
- * outside the tab strip is only the heading and the route across to the centre
- * guide — if you are adding a section, it is a tab or it goes inside one.
+ * THE LEFT SIDEBAR IS THE TAB LIST (owner's call, arrived at the hard way).
+ * Every entry in it is clickable and swaps the panel beside it; there is no
+ * second tab strip inside the page, and nothing is stacked down a long scroll.
+ * If you are adding a section it is a tab, or it goes inside one. `DocsTabs`
+ * owns both halves because they share the active-tab state.
  *
  * The ORDER is still Diátaxis-shaped (diataxis.fr): a reader who lands here has
  * bought nothing and is asking "what is this and how does it work", which is
@@ -86,26 +84,6 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
   },
 };
-
-/** The sidebar mirrors the tab strip. Overview is the only clickable entry
- *  (owner's call); the rest name the tabs so a reader knows what is there. */
-const SIDEBAR: DocGroup[] = [
-  {
-    group: "On this page",
-    items: [
-      { label: "Overview", href: "/how-to-use" },
-      { label: "Writing", href: null, plain: true },
-      { label: "Reading", href: null, plain: true },
-      { label: "Listening", href: null, plain: true },
-      { label: "Speaking", href: null, plain: true },
-      { label: "CEFR / Multilevel", href: null, plain: true },
-    ],
-  },
-  {
-    group: "Elsewhere",
-    items: [{ label: "For education centers", href: "/how-to-use/education-centers" }],
-  },
-];
 
 /* ── what goes inside the Overview tab ─────────────────────────────────────── */
 
@@ -369,26 +347,28 @@ export default function HowToUse() {
           gap: 56,
         }}
       >
-        <Sidebar groups={SIDEBAR} current="Overview" />
-
-        <div style={{ flex: "1 1 460px", minWidth: 0, padding: "52px 0 96px" }}>
-          <DocsHead
-            kicker="Documentation · for learners"
-            title="How to use EngProgress"
-            lede="An AI examiner for IELTS and the Multilevel exam: original practice written for you on demand, marked against the official criteria, with the next half band spelled out."
-          />
-
-          <InfoTabs tabs={TABS} label="How to use EngProgress" />
-
-          {/* the route across to the centre guide */}
-          <CrossLink
-            kicker="Running a school?"
-            title="There is a separate guide for education centers"
-            body="Teachers, groups, student logins, assigned homework, Telegram notifications, attendance, reports and finance — all of it is covered in its own guide."
-            cta="Open the center guide"
-            href="/how-to-use/education-centers"
-          />
-        </div>
+        <DocsTabs
+          tabs={TABS}
+          label="How to use EngProgress"
+          elsewhere={{ label: "For education centers", href: "/how-to-use/education-centers" }}
+          head={
+            <DocsHead
+              kicker="Documentation · for learners"
+              title="How to use EngProgress"
+              lede="An AI examiner for IELTS and the Multilevel exam: original practice written for you on demand, marked against the official criteria, with the next half band spelled out."
+            />
+          }
+          footer={
+            /* the route across to the centre guide */
+            <CrossLink
+              kicker="Running a school?"
+              title="There is a separate guide for education centers"
+              body="Teachers, groups, student logins, assigned homework, Telegram notifications, attendance, reports and finance — all of it is covered in its own guide."
+              cta="Open the center guide"
+              href="/how-to-use/education-centers"
+            />
+          }
+        />
       </main>
 
       <CentersBand />

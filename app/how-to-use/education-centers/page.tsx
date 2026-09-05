@@ -9,13 +9,11 @@ import {
   CrossLink,
   DocsHead,
   Prose,
-  Sidebar,
   Steps,
-  type DocGroup,
   type DocStep,
   type InfoTab,
 } from "../docs-ui";
-import { InfoTabs } from "../info-tabs";
+import { DocsTabs } from "../docs-tabs";
 import { RegisterCenterBand } from "@/app/_landing/register-center";
 
 /**
@@ -68,27 +66,6 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
   },
 };
-
-const SIDEBAR: DocGroup[] = [
-  {
-    group: "On this page",
-    items: [
-      // Mirrors the tab strip. Overview is the only clickable entry, matching
-      // the learner guide; the rest name the tabs.
-      { label: "Overview", href: "/how-to-use/education-centers" },
-      { label: "People & groups", href: null, plain: true },
-      { label: "Homework", href: null, plain: true },
-      { label: "Tracking & reports", href: null, plain: true },
-      { label: "Telegram", href: null, plain: true },
-      { label: "Center chat", href: null, plain: true },
-      { label: "Money", href: null, plain: true },
-    ],
-  },
-  {
-    group: "Elsewhere",
-    items: [{ label: "For learners", href: "/how-to-use" }],
-  },
-];
 
 /** The four roles, straight from `AppRole` in lib/auth.ts. */
 const ROLES = [
@@ -357,27 +334,30 @@ export default function CentersGuide() {
           gap: 56,
         }}
       >
-        <Sidebar groups={SIDEBAR} current="Overview" />
-
-        <div style={{ flex: "1 1 460px", minWidth: 0, padding: "52px 0 96px" }}>
-          <DocsHead
-            kicker="Documentation · for education centers"
-            title="Run your center on EngProgress"
-            lede="Teachers, groups and student logins; homework the AI marks; Telegram for the parents and the class; attendance, reports, invoices and payroll — and a chat that answers questions about all of it."
-          />
-
-          <InfoTabs tabs={TABS} label="How a center runs EngProgress" />
-
-          <RegisterCenterBand />
-
-          <CrossLink
-            kicker="Practising on your own?"
-            title="There is a separate guide for learners"
-            body="Finding your real band, all four skills, the revision loop and CEFR — written for someone studying without a center."
-            cta="Open the learner guide"
-            href="/how-to-use"
-          />
-        </div>
+        <DocsTabs
+          tabs={TABS}
+          label="How a center runs EngProgress"
+          elsewhere={{ label: "For learners", href: "/how-to-use" }}
+          head={
+            <DocsHead
+              kicker="Documentation · for education centers"
+              title="Run your center on EngProgress"
+              lede="Teachers, groups and student logins; homework the AI marks; Telegram for the parents and the class; attendance, reports, invoices and payroll — and a chat that answers questions about all of it."
+            />
+          }
+          footer={
+            <>
+              <RegisterCenterBand />
+              <CrossLink
+                kicker="Practising on your own?"
+                title="There is a separate guide for learners"
+                body="Finding your real band, all four skills, the revision loop and CEFR — written for someone studying without a center."
+                cta="Open the learner guide"
+                href="/how-to-use"
+              />
+            </>
+          }
+        />
       </main>
 
       <CentersBand />

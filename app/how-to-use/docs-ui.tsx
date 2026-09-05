@@ -11,7 +11,6 @@ import {
   FAINT,
   ghostButton,
   INK,
-  LINE,
   MUTED,
   RADIUS,
   SANS,
@@ -38,18 +37,6 @@ export interface DocLink {
   href: string | null;
   /** Renders a SOON pill — the capability itself does not exist yet. */
   soon?: boolean;
-  /**
-   * A contents entry that is deliberately NOT clickable: it names a section of
-   * the page you are already on. Owner's call for the learner guide — Overview
-   * is the only thing in the sidebar you can click; everything else below it is
-   * a label telling you what is further down.
-   */
-  plain?: boolean;
-}
-
-export interface DocGroup {
-  group: string;
-  items: DocLink[];
 }
 
 export interface DocSection {
@@ -62,80 +49,6 @@ export interface DocStep {
   n: string;
   title: string;
   body: string;
-}
-
-/* ── sidebar ───────────────────────────────────────────────────────────────── */
-
-export function Sidebar({ groups, current }: { groups: DocGroup[]; current: string }) {
-  return (
-    <aside style={{ flex: "0 1 250px", minWidth: 220, padding: "52px 0 80px" }}>
-      {groups.map((g, gi) => (
-        <div key={g.group} style={{ marginTop: gi === 0 ? 0 : 34 }}>
-          <div style={eyebrow()}>{g.group}</div>
-          <div
-            style={{
-              borderLeft: `1px solid ${LINE}`,
-              marginTop: 14,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {g.items.map((it) => {
-              const base: React.CSSProperties = {
-                padding: "9px 18px",
-                fontSize: 15,
-                textDecoration: "none",
-              };
-              if (it.label === current) {
-                // The current entry keeps its marker but STAYS CLICKABLE — it
-                // is the one thing in this sidebar you can click, and clicking
-                // it returns you to the top of the page.
-                const marked: React.CSSProperties = {
-                  ...base,
-                  fontWeight: 700,
-                  color: BRAND,
-                  borderLeft: `2px solid ${BRAND}`,
-                  marginLeft: -1,
-                };
-                return it.href ? (
-                  <Link key={it.label} href={it.href} aria-current="page" style={marked}>
-                    {it.label}
-                  </Link>
-                ) : (
-                  <span key={it.label} aria-current="page" style={marked}>
-                    {it.label}
-                  </span>
-                );
-              }
-              if (it.plain) {
-                return (
-                  <span key={it.label} style={{ ...base, color: MUTED }}>
-                    {it.label}
-                  </span>
-                );
-              }
-              if (!it.href) {
-                return (
-                  <span
-                    key={it.label}
-                    style={{ ...base, color: FAINT, display: "flex", alignItems: "center", gap: 10 }}
-                  >
-                    {it.label}
-                    <Pill>{it.soon ? "SOON" : "WRITING"}</Pill>
-                  </span>
-                );
-              }
-              return (
-                <Link key={it.label} href={it.href} className="lp-doclink" style={{ ...base, color: BODY }}>
-                  {it.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </aside>
-  );
 }
 
 function Pill({ children }: { children: React.ReactNode }) {

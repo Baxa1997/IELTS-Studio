@@ -4,6 +4,7 @@ import {
   BODY,
   BRAND,
   BRAND_DEEP,
+  BRAND_TINT,
   DISPLAY,
   eyebrow,
   FIELD,
@@ -241,6 +242,11 @@ export const DESIGN_CSS = `
   .lp-card:hover{border-color:${BRAND}}
   .lp-doclink{transition:color .15s}
   .lp-doclink:hover{color:${BRAND}}
+  /* the documentation sidebar IS the tab list — these are buttons, not links */
+  .lp-doctab{transition:color .15s,background .15s,border-color .15s}
+  .lp-doctab:hover{color:${BRAND}}
+  .lp-doctab[aria-selected="false"]:hover{background:${BRAND_TINT}}
+  .lp-doctab:focus-visible{outline:2px solid ${BRAND};outline-offset:-2px}
   .lp-field:focus-visible{outline:2px solid ${BRAND};outline-offset:2px;border-color:${BRAND}}
   .lp-field{border:1px solid ${FIELD};font-family:${SANS}}
   @media(max-width:860px){.lp-nav{display:none!important}}
