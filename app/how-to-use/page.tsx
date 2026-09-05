@@ -8,14 +8,13 @@ import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 import {
   CrossLink,
   DocsHead,
-  PENDING,
-  SectionCards,
   Sidebar,
   Steps,
   type DocGroup,
-  type DocSection,
   type DocStep,
+  type InfoTab,
 } from "./docs-ui";
+import { InfoTabs } from "./info-tabs";
 
 /**
  * "How to use EngProgress" — FOR AN INDIVIDUAL LEARNER.
@@ -59,22 +58,11 @@ export const metadata: Metadata = {
 
 const SIDEBAR: DocGroup[] = [
   {
-    group: "Getting started",
+    group: "On this page",
     items: [
       { label: "Overview", href: "/how-to-use" },
-      { label: "Create your account", href: "/sign-up" },
-      { label: "Grade an essay free", href: "/grade" },
-      { label: "Reading your report", href: PENDING },
-    ],
-  },
-  {
-    group: "Practice",
-    items: [
-      { label: "Writing tasks", href: "/ielts-writing-practice" },
-      { label: "Reading tests", href: "/ielts-reading-practice" },
-      { label: "Listening tests", href: "/ielts-listening-practice" },
-      { label: "Speaking sessions", href: "/ielts-speaking-practice" },
-      { label: "CEFR / Multilevel", href: "/cefr-multilevel-practice" },
+      { label: "What it does", href: "/how-to-use#what" },
+      { label: "Three steps", href: "/how-to-use#steps" },
     ],
   },
   {
@@ -83,45 +71,144 @@ const SIDEBAR: DocGroup[] = [
   },
 ];
 
-const SECTIONS: DocSection[] = [
-  {
-    icon: "◷",
-    title: "Getting started",
-    links: [
-      { label: "Create your account", href: "/sign-up" },
-      { label: "Grade an essay without signing up", href: "/grade" },
-      { label: "See the product working", href: "/demo" },
-      { label: "Read your band report", href: PENDING },
-    ],
-  },
+const TABS: InfoTab[] = [
   {
     icon: "✎",
     title: "Writing",
-    links: [
-      { label: "Task 1 and Task 2 prompts", href: "/ielts-writing-practice" },
-      { label: "Per-criterion bands: TR, CC, LR, GRA", href: "/ielts-writing-practice" },
-      { label: "The revision loop — resubmit and re-grade", href: PENDING },
-      { label: "Compare against a Band 9 answer", href: PENDING },
+    lede: "Task 1 and Task 2, marked the way an examiner marks them — a band per criterion, with the words from your own essay that earned it.",
+    points: [
+      {
+        title: "Four criteria, separately",
+        body: "Task Response, Coherence & Cohesion, Lexical Resource and Grammatical Range each get their own band, so you know which one is holding the score down.",
+      },
+      {
+        title: "Evidence, not opinions",
+        body: "Every criterion quotes the sentence it is judging. You can check the marking rather than take it on trust.",
+      },
+      {
+        title: "The revision loop",
+        body: "Rewrite the same essay and submit it again. It is re-graded against the same task, so you see the band move — not a fresh prompt and a fresh guess.",
+      },
+      {
+        title: "Deliberately conservative",
+        body: "Sitting between two bands, it rounds DOWN and names what the higher one needs. A band you can repeat on exam day is worth more than a flattering one.",
+      },
     ],
   },
   {
     icon: "▤",
-    title: "Reading & Listening",
-    links: [
-      { label: "Reading passages and question types", href: "/ielts-reading-practice" },
-      { label: "Why each trap worked", href: "/ielts-reading-practice" },
-      { label: "Full four-part listening tests", href: "/ielts-listening-practice" },
-      { label: "Transcripts and per-answer notes", href: "/ielts-listening-practice" },
+    title: "Reading",
+    lede: "Original passages in the exam format, every real question type, marked instantly.",
+    points: [
+      {
+        title: "Every question type",
+        body: "True/False/Not Given, matching headings, matching features, sentence and note completion, multiple choice including pick-two — the full Cambridge set.",
+      },
+      {
+        title: "Why the trap worked",
+        body: "A wrong answer is explained: what the passage actually said, and why the distractor looked right. That is the part that changes your next attempt.",
+      },
+      {
+        title: "Question-type analytics",
+        body: "Your misses are grouped by type, so a weakness in True/False/Not Given shows up as a pattern instead of as bad luck.",
+      },
+      {
+        title: "Timed full sections",
+        body: "Three passages, forty questions, one clock — converted once over the whole paper using the real raw-score table.",
+      },
+    ],
+  },
+  {
+    icon: "◷",
+    title: "Listening",
+    lede: "Full four-part tests with original multi-voice audio, generated for this platform.",
+    points: [
+      {
+        title: "Real multi-voice audio",
+        body: "Scripts are written and voiced with distinct speakers, at exam pace — not a single robotic reader working through a transcript.",
+      },
+      {
+        title: "Cambridge-style groups",
+        body: "Form completion, maps and plans, matching, multiple choice — laid out the way the paper lays them out.",
+      },
+      {
+        title: "Transcripts, linked",
+        body: "Each answer links to the exact line where it was said, so you can hear what you missed instead of wondering.",
+      },
+      {
+        title: "Quick practice or full test",
+        body: "One part when you have ten minutes, all four when you want the real thing.",
+      },
     ],
   },
   {
     icon: "✦",
-    title: "Speaking & CEFR",
-    links: [
-      { label: "The three-part live mock", href: "/ielts-speaking-practice" },
-      { label: "Part 2 cue-card practice", href: "/ielts-speaking-practice" },
-      { label: "The speaking tutor", href: "/ielts-speaking-practice" },
-      { label: "CEFR / Multilevel for the DTM exam", href: "/cefr-multilevel-practice" },
+    title: "Speaking",
+    lede: "A live examiner you can talk to, and a tutor that teaches while you speak.",
+    points: [
+      {
+        title: "The three-part mock",
+        body: "Introduction, cue card, discussion — conducted live by an AI examiner, then graded on fluency, lexis, grammar and pronunciation.",
+      },
+      {
+        title: "Part 2 on its own",
+        body: "Push to talk, one minute to prepare, two to speak. The cheapest way to fix the part most candidates lose marks on.",
+      },
+      {
+        title: "The speaking tutor",
+        body: "Talk to it and it reacts, corrects and teaches every turn — and switches to Uzbek when you do.",
+      },
+      {
+        title: "Delivery measured, not guessed",
+        body: "Speech rate, filler count and answer length are computed from your audio, against time actually spent speaking.",
+      },
+    ],
+  },
+  {
+    icon: "◇",
+    title: "CEFR / Multilevel",
+    lede: "The Uzbekistan DTM exam, in its own format — not IELTS with the labels changed.",
+    points: [
+      {
+        title: "Reading, 5 parts",
+        body: "Thirty-five questions across the five parts the paper actually uses, generated fresh each time.",
+      },
+      {
+        title: "Writing, 3 tasks",
+        body: "All three tasks, marked against the CEFR descriptors rather than the IELTS band descriptors.",
+      },
+      {
+        title: "A CEFR level, not a band",
+        body: "Results come back as A1–C2, which is what the certificate reports.",
+      },
+      {
+        title: "Listening and Speaking",
+        body: "The CEFR papers for these two are not built yet.",
+        soon: true,
+      },
+    ],
+  },
+  {
+    icon: "◑",
+    title: "Your progress",
+    lede: "The platform keeps track so you do not have to.",
+    points: [
+      {
+        title: "Current band to target band",
+        body: "An estimate per skill, re-derived conservatively as you practise — and the weakest one surfaced.",
+      },
+      {
+        title: "Everything is reopenable",
+        body: "Every graded attempt stays in your history with the full report exactly as it was written.",
+      },
+      {
+        title: "Original content only",
+        body: "No past papers, ever. Every task is generated, so nothing can be memorised in advance — and it stays on the right side of copyright.",
+      },
+      {
+        title: "Try it without an account",
+        body: "The free grader takes a pasted essay and returns a band and the first fix, with no sign-up.",
+      },
     ],
   },
 ];
@@ -192,10 +279,14 @@ export default function HowToUse() {
             lede="Everything needed to find your real band and move it — from a first free essay to full mock tests across all four skills and CEFR."
           />
 
-          <div style={{ ...eyebrow(true), marginTop: 54 }}>Sections</div>
-          <SectionCards sections={SECTIONS} />
+          <div id="what" style={{ ...eyebrow(true), marginTop: 54 }}>
+            What the platform does
+          </div>
+          <InfoTabs tabs={TABS} />
 
-          <div style={{ ...eyebrow(true), marginTop: 54 }}>Three steps to your first score</div>
+          <div id="steps" style={{ ...eyebrow(true), marginTop: 54 }}>
+            Three steps to your first score
+          </div>
           <Steps steps={STEPS} />
 
           {/* the route across to the centre guide */}

@@ -154,14 +154,22 @@ export default async function SignInPage({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          overflowY: "auto",
+          // NOT `overflowY: auto`. The owner asked for a login with no scroll
+          // anywhere, so the column clips rather than scrolls, and the content is
+          // sized to fit instead: every vertical measure in `design-form.tsx` is
+          // clamped against viewport height, and the centre card is the compact
+          // variant. On a viewport short enough to clip this (under ~560px of
+          // usable height), the sign-in button is still above the fold because
+          // the optional blocks sit below it.
+          overflow: "hidden",
           minHeight: 0,
+          justifyContent: "center",
         }}
       >
-        <div style={{ width: "100%", maxWidth: 440, display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ width: "100%", maxWidth: 440, display: "flex", justifyContent: "flex-end", marginBottom: "auto" }}>
           <LangPicker compact />
         </div>
-        <div style={{ width: "100%", maxWidth: 440, margin: "auto 0" }}>
+        <div style={{ width: "100%", maxWidth: 440 }}>
           <DesignSignInForm next={next} />
         </div>
       </div>

@@ -2,20 +2,20 @@ import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
-import { BODY, BRAND, cardStyle, DISPLAY, eyebrow, INK, SANS, STRONG, WHITE } from "@/app/_landing/design";
+import { BODY, cardStyle, DISPLAY, eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
 import {
   CrossLink,
   DocsHead,
-  PENDING,
-  SectionCards,
   Sidebar,
   Steps,
   type DocGroup,
-  type DocSection,
   type DocStep,
+  type InfoTab,
 } from "../docs-ui";
+import { InfoTabs } from "../info-tabs";
+import { RegisterCenterBand } from "@/app/_landing/register-center";
 
 /**
  * "How to use EngProgress" — FOR AN EDUCATION CENTRE.
@@ -24,10 +24,13 @@ import {
  * was checked in the console before being written down, and the two that do not
  * exist yet are marked SOON rather than quietly implied:
  *
- *   · assignments cover WRITING, READING (generated or cloned from the shared
- *     library) and Practice-AI lessons. `createAssignment` in
- *     app/(app)/console/groups/actions.ts accepts kind = writing | reading |
- *     library, and nothing else — LISTENING AND SPEAKING HOMEWORK IS NOT BUILT.
+ *   · homework covers WRITING, READING, LISTENING and Practice-AI lessons.
+ *     There are TWO assign paths and they differ: the group page's
+ *     `createAssignment` (console/groups/actions.ts) takes writing | reading |
+ *     library, while the practice board (console/practices/actions.ts:249)
+ *     takes writing | reading | listening. SPEAKING IS THE ONLY SKILL THAT
+ *     CANNOT BE ASSIGNED — an earlier draft of this page wrongly said listening
+ *     could not be either, because it had only read the first path.
  *   · the roles are center_admin, administrator, teacher, student
  *     (`AppRole` in lib/auth.ts). "Super admin" is the PLATFORM role and is not
  *     something a centre gets — the centre's owner role is center_admin.
@@ -67,29 +70,12 @@ export const metadata: Metadata = {
 
 const SIDEBAR: DocGroup[] = [
   {
-    group: "Setting up",
+    group: "On this page",
     items: [
       { label: "Overview", href: "/how-to-use/education-centers" },
-      { label: "Register your center", href: "/sign-up" },
-      { label: "Roles and permissions", href: PENDING },
-      { label: "Invite teachers", href: PENDING },
-    ],
-  },
-  {
-    group: "Running classes",
-    items: [
-      { label: "Groups and students", href: PENDING },
-      { label: "Assigning practice", href: PENDING },
-      { label: "Attendance", href: PENDING },
-      { label: "Reports and weaknesses", href: PENDING },
-    ],
-  },
-  {
-    group: "Center tools",
-    items: [
-      { label: "Telegram", href: PENDING },
-      { label: "Center chat", href: PENDING },
-      { label: "Finance and payroll", href: PENDING },
+      { label: "Who does what", href: "/how-to-use/education-centers#roles" },
+      { label: "What you can run", href: "/how-to-use/education-centers#what" },
+      { label: "Three steps", href: "/how-to-use/education-centers#steps" },
     ],
   },
   {
@@ -118,45 +104,148 @@ const ROLES = [
   },
 ];
 
-const SECTIONS: DocSection[] = [
+const TABS: InfoTab[] = [
   {
     icon: "⌂",
-    title: "People and groups",
-    links: [
-      { label: "Register your center", href: "/sign-up" },
-      { label: "Invite teachers and administrators", href: PENDING },
-      { label: "Create groups and add students", href: PENDING },
-      { label: "Issue logins without an email address", href: PENDING },
+    title: "People & groups",
+    lede: "A centre runs on four roles, and a teacher can set up their own classes without waiting for anyone.",
+    points: [
+      {
+        title: "Teachers create their own groups",
+        body: "No queue through an admin. A teacher makes the class, sets the schedule and owns it.",
+      },
+      {
+        title: "Students created outright",
+        body: "Name, login and password. An email address is optional — give one and the credentials are emailed, leave it blank and you hand them over in class.",
+      },
+      {
+        title: "No email needed to sign in",
+        body: "Centre students sign in with the login you issued. The sign-in field takes either a login or an email and resolves it server-side.",
+      },
+      {
+        title: "Photos, kept private",
+        body: "A student photo is optional and lives in a private bucket, signed server-side. It is never a public URL.",
+      },
     ],
   },
   {
     icon: "✎",
-    title: "Assigning practice",
-    links: [
-      { label: "Assign a Writing task", href: PENDING },
-      { label: "Assign a Reading test", href: PENDING },
-      { label: "Build a lesson with Practice AI", href: PENDING },
-      { label: "Listening and Speaking homework", href: PENDING, soon: true },
+    title: "Homework",
+    lede: "Pin practice to a group and everyone sits identical content.",
+    points: [
+      {
+        title: "Writing",
+        body: "Generate a Task 1 or Task 2 prompt and attach it. Every student in the group gets the same prompt, not a fresh one each.",
+      },
+      {
+        title: "Reading",
+        body: "Generate a test, or clone one from the shared library into your centre so the whole class sits the same paper.",
+      },
+      {
+        title: "Listening",
+        body: "Attach a listening practice from the library. It lands on the student's assignments list like any other task.",
+      },
+      {
+        title: "Practice AI lessons",
+        body: "Describe the lesson you want in a sentence; it builds an explanation plus auto-graded exercises, assignable or shareable by link.",
+      },
+      {
+        title: "Speaking homework",
+        body: "Speaking can be practised freely by any student, but it cannot yet be ASSIGNED to a group.",
+        soon: true,
+      },
     ],
   },
   {
     icon: "▤",
-    title: "Tracking and reports",
-    links: [
-      { label: "Attendance and alerts", href: PENDING },
-      { label: "Results for one assignment", href: PENDING },
-      { label: "A student's four-skill report", href: PENDING },
-      { label: "Recurring weaknesses", href: PENDING },
+    title: "Tracking & reports",
+    lede: "What each student did, what they got, and what keeps going wrong.",
+    points: [
+      {
+        title: "Results per assignment",
+        body: "Who finished, the bands they got, and the criterion or question type the class as a whole is losing marks on.",
+      },
+      {
+        title: "A four-skill student report",
+        body: "Bands across Writing, Reading, Listening and Speaking, recurring weaknesses, and a dated table of every practice — homework or self-directed.",
+      },
+      {
+        title: "The learner's own report",
+        body: "Open any row and you see exactly the feedback page the student sees. Staff and student read one view, not two versions of the truth.",
+      },
+      {
+        title: "Attendance",
+        body: "Mark sessions, track who is drifting, and set alerts on absence.",
+      },
     ],
   },
   {
     icon: "◷",
-    title: "Telegram and center chat",
-    links: [
-      { label: "Connect a group to Telegram", href: PENDING },
-      { label: "Send a student their login", href: PENDING },
-      { label: "Homework notifications", href: PENDING },
-      { label: "Ask the center chat", href: PENDING },
+    title: "Telegram",
+    lede: "The channel families and students actually read.",
+    points: [
+      {
+        title: "Credentials to the student",
+        body: "Send a student their login and password over Telegram instead of reading them out in class.",
+      },
+      {
+        title: "Homework notices",
+        body: "Setting practice tells the class, with a link straight to their assignments list.",
+      },
+      {
+        title: "Group links",
+        body: "Connect a class to its Telegram group so notices land where the students already are.",
+      },
+      {
+        title: "Staff assistant",
+        body: "The same brain as the console chat, reachable from Telegram for staff.",
+      },
+    ],
+  },
+  {
+    icon: "◈",
+    title: "Center chat",
+    lede: "Ask about your centre in plain language — and it cannot break anything.",
+    points: [
+      {
+        title: "It reads, it does not write",
+        body: "The model gets a snapshot of facts and returns prose plus, at most, one PROPOSAL. Running it is a separate Confirm step.",
+      },
+      {
+        title: "Confirmed, then re-checked",
+        body: "On confirm the server re-derives who you are, re-checks your role and re-resolves every name inside your own centre before anything happens.",
+      },
+      {
+        title: "Scoped to what you may see",
+        body: "The snapshot is built through the same row-level rules as the pages: a teacher sees their groups, a centre admin sees the centre.",
+      },
+      {
+        title: "Attendance, homework, payroll",
+        body: "Who turned up, what is outstanding, and what pay is owed — without opening four screens.",
+      },
+    ],
+  },
+  {
+    icon: "◐",
+    title: "Money",
+    lede: "Invoices in, payroll out, and the timetable they both hang off.",
+    points: [
+      {
+        title: "Student invoices",
+        body: "A class carries both prices — the student fee and the teacher rate. Proration is per lesson from the timetable, not per month.",
+      },
+      {
+        title: "Payroll with real rules",
+        body: "Dynamic salary rules per teacher, with the group rate as the default, and multi-month exports.",
+      },
+      {
+        title: "Cash desks and branches",
+        body: "Branches own their own rooms and cash desks, so a multi-site centre's money stays separated.",
+      },
+      {
+        title: "Unmetered on purpose",
+        body: "Centres are not charged per practice. Quota and seat checks are skipped for a centre account.",
+      },
     ],
   },
 ];
@@ -227,7 +316,7 @@ export default function CentersGuide() {
             lede="Teachers, groups and student logins; homework the AI marks; Telegram for the parents and the class; attendance, reports, invoices and payroll — and a chat that answers questions about all of it."
           />
 
-          <div style={{ ...eyebrow(true), marginTop: 54 }}>Who does what</div>
+          <div id="roles" style={{ ...eyebrow(true), marginTop: 54 }}>Who does what</div>
           <div
             style={{
               display: "grid",
@@ -248,23 +337,17 @@ export default function CentersGuide() {
             ))}
           </div>
 
-          <div style={{ ...eyebrow(true), marginTop: 54 }}>Sections</div>
-          <SectionCards sections={SECTIONS} />
+          <div id="what" style={{ ...eyebrow(true), marginTop: 54 }}>
+            What you can run
+          </div>
+          <InfoTabs tabs={TABS} />
 
-          <div style={{ ...eyebrow(true), marginTop: 54 }}>Three steps to your first class</div>
+          <div id="steps" style={{ ...eyebrow(true), marginTop: 54 }}>
+            Three steps to your first class
+          </div>
           <Steps steps={STEPS} />
 
-          {/* What is genuinely not built yet. Saying so here is cheaper than a
-              centre discovering it after they have moved their timetable over. */}
-          <div style={{ ...cardStyle(26), marginTop: 32 }}>
-            <div style={{ ...eyebrow(), color: BRAND }}>Not yet</div>
-            <p style={{ fontSize: 16, lineHeight: 1.6, color: STRONG, margin: "12px 0 0" }}>
-              Listening and Speaking can be <strong>practised</strong> by any student, but they
-              cannot yet be <strong>assigned</strong> as group homework — Writing, Reading and
-              Practice-AI lessons can. Emailed report digests are not built either; the reports live
-              in the console.
-            </p>
-          </div>
+          <RegisterCenterBand />
 
           <CrossLink
             kicker="Practising on your own?"

@@ -342,3 +342,14 @@ export function GhostLink({ label, href }: { label: string; href: string }) {
 }
 
 export const DOCS_SANS = SANS;
+
+/* ── informational tabs ────────────────────────────────────────────────────── */
+
+export interface InfoTab {
+  icon: string;
+  title: string;
+  /** One line under the heading, describing the capability as a whole. */
+  lede: string;
+  /** What the platform actually does. Statements, not links. */
+  points: { title: string; body: string; soon?: boolean }[];
+}

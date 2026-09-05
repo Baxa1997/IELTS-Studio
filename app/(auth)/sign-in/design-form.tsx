@@ -10,15 +10,14 @@ import {
   BRAND_DEEP,
   DISPLAY,
   FIELD,
-  GREY,
   INK,
   LINE,
   MUTED,
   RADIUS,
   SANS,
-  WELL,
   WHITE,
 } from "@/app/_landing/design";
+import { RegisterCenterCard } from "@/app/_landing/register-center";
 import { createClient } from "@/lib/supabase/client";
 
 const initial: AuthFormState = {};
@@ -248,46 +247,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
         </Link>
       </div>
 
-      <div
-        style={{
-          border: `1px solid ${LINE}`,
-          borderRadius: 16,
-          padding: "clamp(12px,2vh,18px) 20px",
-          marginTop: "clamp(14px,2.5vh,26px)",
-          display: "flex",
-          gap: 16,
-          alignItems: "center",
-          background: WELL,
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: INK }}>
-            Are you an education center?
-          </div>
-          <div style={{ fontSize: 14, color: GREY, lineHeight: 1.5, marginTop: 4 }}>
-            Register your center and we&apos;ll issue logins for your students and teachers.
-          </div>
-        </div>
-        <Link
-          href="/sign-up?tab=organization"
-          className="lp-ghost"
-          style={{
-            flex: "none",
-            background: WHITE,
-            border: `1px solid ${FIELD}`,
-            borderRadius: RADIUS.pill,
-            padding: "11px 20px",
-            fontFamily: SANS,
-            fontSize: 14,
-            fontWeight: 700,
-            color: BRAND,
-            whiteSpace: "nowrap",
-            textDecoration: "none",
-          }}
-        >
-          Contact us
-        </Link>
-      </div>
+      <RegisterCenterCard />
 
       <p style={{ fontSize: 13, color: "#9aa0ac", lineHeight: 1.55, marginTop: "clamp(12px,2vh,24px)" }}>
         Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment
