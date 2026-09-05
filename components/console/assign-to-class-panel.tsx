@@ -4,8 +4,8 @@ import { useActionState, useState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { INDIGO } from "@/lib/theme/tokens";
 
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const LINE = "#ECEAF2";

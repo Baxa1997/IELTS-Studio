@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { remindNonSubmitters, type ActionState } from "../center-actions";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * "Remind the ones who haven't" — §9's row action.
@@ -18,7 +19,6 @@ import { remindNonSubmitters, type ActionState } from "../center-actions";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
-const INDIGO = "#4340CB";
 
 export function RemindButton({
   groupId,

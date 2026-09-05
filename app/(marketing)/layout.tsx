@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Hanken_Grotesk, Newsreader } from "next/font/google";
 
 import { BrandLogo } from "@/components/brand/logo";
+import { INDIGO } from "@/lib/theme/tokens";
 
 // SEO / marketing pages (ielts-practice, cambridge-ielts-practice, /vs/*) wear
 // the same Option A brand as the legal pages, scoped via CSS variables so the
@@ -11,7 +12,6 @@ const newsreader = Newsreader({ subsets: ["latin"], weight: ["400", "500", "600"
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const LINE = "#E7E3D5";
-const INDIGO = "#3B43B5";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (

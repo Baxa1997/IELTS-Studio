@@ -15,6 +15,7 @@ import { LegalFooter } from "@/components/legal-footer";
 // only needs the prompt type and the save-draft action from them.
 import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
 import { saveDraft } from "@/app/(studio)/write/actions";
+import { INDIGO } from "@/lib/theme/tokens";
 
 export type { LibraryPrompt };
 
@@ -22,7 +23,6 @@ export type { LibraryPrompt };
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const EMERALD = "#1F8A53";

@@ -10,6 +10,7 @@ import { bandColor } from "@/lib/ui/band";
 
 import { ANN_STYLE, matchRanges, type Annotation } from "./annotations";
 import { FigureView } from "./figure";
+import { INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Full-page essay feedback (Option A brand) — the dedicated, chrome-free page a
@@ -24,7 +25,6 @@ import { FigureView } from "./figure";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const EMERALD = "#1F9D5E";

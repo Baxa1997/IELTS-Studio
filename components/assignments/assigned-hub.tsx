@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { LegalFooter } from "@/components/legal-footer";
 import type { StudentAssignment } from "@/lib/assignments/student";
+import { INDIGO } from "@/lib/theme/tokens";
 
 /**
  * What a CENTER student sees in place of a practice hub.
@@ -17,7 +18,6 @@ import type { StudentAssignment } from "@/lib/assignments/student";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";

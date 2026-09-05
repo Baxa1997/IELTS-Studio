@@ -6,13 +6,13 @@
  */
 
 import Link from "next/link";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INK = "#1A2138";
 const BODY = "#3A3F58";
 const MUTED = "#5A6076";
 const LINE = "#E7E3D5";
-const INDIGO = "#3B43B5";
 
 export function PageTitle({ title, lead }: { title: string; lead: string }) {
   return (

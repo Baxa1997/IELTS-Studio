@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import type { DemoTab } from "./demo-content";
 import { DemoScreen } from "./demo-screens";
+import { INDIGO } from "@/lib/theme/tokens";
 
 // Interactive product showcase: a pill tab bar over a browser-frame card that
 // renders a LIVE coded replica of the real product screen (see demo-screens.tsx)
@@ -13,7 +14,6 @@ import { DemoScreen } from "./demo-screens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 
 export function DemoTabs({

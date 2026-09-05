@@ -1,4 +1,5 @@
 import type React from "react";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The platform console's visual kit.
@@ -26,7 +27,7 @@ export const LINE = "#E7E5DF";
 /** The two lighter rules: card-internal divider, then row divider. */
 export const RULE = "#F0EEE9";
 export const ROW_RULE = "#F5F4F0";
-export const INDIGO = "#4340CB";
+export { INDIGO };
 export const NAVY = "#14133A";
 export const CREAM = "#F4F3EF";
 export const HEAD_BG = "#FAFAF8";

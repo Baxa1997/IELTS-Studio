@@ -6,8 +6,8 @@ import { FiSend } from "react-icons/fi";
 
 import { sendAnnouncement, type ActionState } from "../center-actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
-const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";

@@ -10,6 +10,7 @@ import { WORKLET_SRC } from "./audio";
 import { LucidaScope } from "./lucida";
 import { type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The Speaking hub — two ways to practise and one place to review.
@@ -30,7 +31,6 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INK = "#1C1B2E";
 const MUTED = "#56556A";
-const INDIGO = "#4338CA";
 const TINT = "#EFEEFC";
 const LINE = "#E8E6F0";
 const RED = "#b91c1c";

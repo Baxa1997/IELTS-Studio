@@ -12,13 +12,13 @@ import {
 } from "@/lib/public-grader/prompts";
 import type { PublicTeaser } from "@/lib/public-grader/teaser";
 import { bandColor } from "@/lib/ui/band";
+import { INDIGO } from "@/lib/theme/tokens";
 
 type Status = "idle" | "grading" | "done" | "error";
 
 // ---- Brand tokens (same palette as the internal essay-feedback page) ---------
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const RED = "#C5503C";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The hero's animated product demo (marketing only) — loops two scenes:
@@ -19,7 +20,6 @@ import { useEffect, useState } from "react";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
-const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 const GOLD = "#B5852A";
 const RED = "#C5503C";

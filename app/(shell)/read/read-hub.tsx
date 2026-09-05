@@ -13,10 +13,10 @@ import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#4338CA";
 const INK = "#1C1B2E";
 const MUTED = "#56556A";
 const EMERALD = "#1F8A53";

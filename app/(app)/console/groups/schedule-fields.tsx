@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { DAY_PRESETS, describeDays, orderedWeekdays } from "@/lib/console/timetable-days";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * When the group meets — the same control on the create form and on an
@@ -23,7 +24,6 @@ import { DAY_PRESETS, describeDays, orderedWeekdays } from "@/lib/console/timeta
 
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
-const INDIGO = "#4340CB";
 
 export interface RoomChoice {
   id: string;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The console's page chrome, from the "Center Admin CRM" design: a sticky
@@ -19,7 +20,6 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
  * nodes, so they stay server-rendered.
  */
 
-const INDIGO = "#4340CB";
 const INK = "#16162E";
 const CANVAS = "#F4F3EF";
 

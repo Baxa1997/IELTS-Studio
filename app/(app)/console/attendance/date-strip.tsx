@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The day being marked.
@@ -14,7 +15,6 @@ import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
 const HAIRLINE = "#C5C4BE";
 const INK = "#16162E";
-const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 
 const shift = (date: string, days: number) => {

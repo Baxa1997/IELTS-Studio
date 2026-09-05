@@ -1,3 +1,5 @@
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
+
 /**
  * Listening's two looks, in one place.
  *
@@ -13,7 +15,7 @@
 
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const INDIGO = "#4338CA";
+export { INDIGO };
 export const INK = "#1C1B2E";
 export const MUTED = "#56556A";
 export const TINT = "#EFEEFC";

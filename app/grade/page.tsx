@@ -6,11 +6,11 @@ import { getSession, roleHome } from "@/lib/auth";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 
 import { PublicGrader } from "./grader";
+import { INDIGO } from "@/lib/theme/tokens";
 
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const LINE = "#E7E3D5";

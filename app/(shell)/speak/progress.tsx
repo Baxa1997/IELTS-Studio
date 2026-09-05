@@ -8,11 +8,11 @@
  */
 
 import { bandColor } from "@/lib/ui/band";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const MUTED = "#56556A";
 const LINE = "#E8E6F0";
-const INDIGO = "#4338CA";
 const AMBER = "#B5852A";
 
 export interface SpeakProgressItem {

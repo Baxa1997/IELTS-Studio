@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
 import { useConsolePanels } from "@/components/console/console-chrome";
 import { useActionFeedback } from "@/components/console/toast";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The design's "Enrol a student" slide-over: one form that creates the account
@@ -16,7 +17,6 @@ import { useActionFeedback } from "@/components/console/toast";
  * that the caller manages it.
  */
 
-const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";

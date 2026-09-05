@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/brand/logo";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 
 import { SignInForm } from "./sign-in-form";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const hanken = Hanken_Grotesk({
   subsets: ["latin"],
@@ -23,7 +24,6 @@ const newsreader = Newsreader({
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 
 export const metadata: Metadata = {

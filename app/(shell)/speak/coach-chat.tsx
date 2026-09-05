@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Coach chat (C0) on a graded mock report. The browser calls the engine
@@ -17,7 +18,6 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INK = "#1C1B2E";
 const MUTED = "#56556A";
-const INDIGO = "#4338CA";
 const TINT = "#EFEEFC";
 const LINE = "#E8E6F0";
 const RED = "#b91c1c";

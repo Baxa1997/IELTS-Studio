@@ -12,6 +12,7 @@ import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
 import { AwaitingGrade } from "./awaiting-grade";
 import { UngradedMock } from "./ungraded";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,6 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const MUTED = "#56556A";
 const LINE = "#E8E6F0";
-const INDIGO = "#4338CA";
 
 interface Turn {
   role: "examiner" | "candidate";

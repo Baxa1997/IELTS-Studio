@@ -5,10 +5,10 @@ import { ArrowRight, Check, Loader2 } from "lucide-react";
 
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import type { UsageSummary } from "@/lib/quota";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#4338CA";
 const VIOLET = "#7C5CFC";
 
 /** Start checkout for any paid plan (Stripe via /api/billing/checkout). */

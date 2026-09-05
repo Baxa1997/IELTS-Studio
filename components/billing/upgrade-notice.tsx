@@ -4,9 +4,9 @@ import { useState } from "react";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 import { planTier } from "@/lib/billing/plans";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#4338CA";
 
 /** True when an API/engine error message is the monthly quota running out (the
  *  engine 429 says "quota is used up"; the grade route's client copy says

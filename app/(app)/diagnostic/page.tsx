@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { BandCard } from "@/app/(app)/dashboard/band-card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 const MUTED = "#565a72";
 const EMERALD = "#2f8f5b";

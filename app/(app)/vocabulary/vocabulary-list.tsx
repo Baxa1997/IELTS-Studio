@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { GraduationCap, Trash2, Volume2, X } from "lucide-react";
+import { INDIGO } from "@/lib/theme/tokens";
 
 export interface VocabItem {
   id: string;
@@ -17,7 +18,6 @@ export interface VocabItem {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";

@@ -11,6 +11,7 @@ import {
   setSubjectActive,
   type SubjectState,
 } from "./subject-actions";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The center's subject list.
@@ -24,7 +25,6 @@ const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#C5C4BE";
-const INDIGO = "#4340CB";
 
 /** A small fixed palette. Free-form hex in the column, chosen from here in the
  *  UI — so chips stay distinguishable instead of six shades of one blue. */

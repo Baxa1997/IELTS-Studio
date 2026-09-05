@@ -4,10 +4,10 @@ import { useState, useTransition } from "react";
 
 import { setTargetBand } from "@/app/(app)/dashboard/actions";
 import { MAX_TARGET_BAND, MIN_TARGET_BAND, SKILL_LABELS, type SkillEstimateView } from "@/lib/estimates/compute";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A1C33";
 const MUTED = "#8A8FA0";
 

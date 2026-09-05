@@ -1,3 +1,5 @@
+import { INDIGO } from "@/lib/theme/tokens";
+
 /**
  * Shared visual tokens for the auth screens (Option A brand).
  *
@@ -8,7 +10,7 @@
 
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const INDIGO = "#3B43B5";
+export { INDIGO };
 export const INK = "#1A1C33";
 export const MUTED = "#6b6e84";
 export const LINE = "#DAD8C9";

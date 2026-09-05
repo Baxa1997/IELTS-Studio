@@ -7,6 +7,7 @@ import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 
 import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../trap-explain";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,6 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const INK = "#1C1B2E";
 const MUTED = "#56556A";
-const INDIGO = "#4338CA";
 const TINT = "#EFEEFC";
 const GOOD = "#15803d";
 const GOOD_BG = "#e7f7ee";

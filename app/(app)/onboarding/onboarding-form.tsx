@@ -7,10 +7,10 @@ import { SELF_REPORT_BANDS, TARGET_BANDS } from "@/lib/plan/constants";
 import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { saveOnboarding } from "./actions";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 

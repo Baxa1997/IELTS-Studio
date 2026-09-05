@@ -1,11 +1,12 @@
 import type { CSSProperties } from "react";
+import { INDIGO_STUDIO as INDIGO, INDIGO_SHELL as INDIGO_DARK } from "@/lib/theme/tokens";
 
 /** Option A brand tokens + shared button styles for the reading experience.
  *  Imported by both the single-passage runner and the full-test runner. */
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const INDIGO = "#4F46E5";
-export const INDIGO_DARK = "#4338CA";
+export { INDIGO };
+export { INDIGO_DARK };
 export const INK = "#1E1B2E";
 export const MUTED = "#5A5670";
 export const EMERALD = "#2f8f5b";

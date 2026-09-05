@@ -10,12 +10,12 @@ import { daysUntil, levelCheckDue } from "@/lib/plan/types";
 
 import { startLevelCheck } from "./actions";
 import { PlanBandCard } from "./plan-band-card";
+import { INDIGO } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";

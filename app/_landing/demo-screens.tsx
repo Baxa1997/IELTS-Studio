@@ -4,6 +4,7 @@ import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { bandColor } from "@/lib/ui/band";
+import { INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Live, coded replicas of the real product screens — rendered with the SAME
@@ -26,7 +27,6 @@ const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monosp
 // isn't loaded on a given page.
 const LSANS = "var(--font-dmsans), var(--font-hanken), system-ui, sans-serif";
 
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";

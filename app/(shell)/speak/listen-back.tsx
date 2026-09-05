@@ -10,11 +10,11 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { INDIGO_SHELL as INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const MUTED = "#56556A";
 const LINE = "#E8E6F0";
-const INDIGO = "#4338CA";
 const INK = "#141221";
 const GOOD = "#1A7A48"; // the "stronger version" rail, matching the report
 

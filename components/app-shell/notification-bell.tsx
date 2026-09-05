@@ -5,13 +5,13 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 
 import type { Inbox } from "@/lib/notifications/load";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";
 const LINE = "#ECEAF2";
-const INDIGO = "#3B43B5";
 
 function ago(iso: string): string {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));

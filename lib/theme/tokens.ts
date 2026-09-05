@@ -82,6 +82,34 @@ export const INDIGO_DEEP = "#2F3699"; // pressed / hover
 export const INDIGO_SOFT = "#ECEBFB"; // tinted fill
 export const INDIGO_LINE = "#E1DFF7"; // tinted border
 
+/*
+ * The other three indigos, named rather than unified.
+ *
+ * The block above says #3B43B5 won, and it did — but the losing three were still
+ * live in 32 files when `scripts/codemod-tokens.ts` came to fold the private
+ * `const INDIGO = "…"` blocks into this module. Repainting those screens is a
+ * VISUAL change and wants a human eye; centralising where the colour comes from
+ * is not. Doing both in one pass would have meant nobody could review either.
+ *
+ * So the codemod preserved each file's colour exactly and pointed it here. That
+ * is the whole point of these three: they record the drift instead of hiding it,
+ * and they make finishing the job a four-line edit in ONE file rather than a
+ * 32-file hunt across three near-identical hexes.
+ *
+ * To finish it: set these three to `INDIGO`, run the app, look at the console,
+ * the skill hubs and the reading runner, then delete them and let the codemod's
+ * imports fall back to `INDIGO`. Until someone has actually looked, they stay.
+ */
+export const INDIGO_CONSOLE = "#4340CB"; // staff console + admin   (19 files)
+export const INDIGO_SHELL = "#4338CA"; // listen / speak / read hubs (12 files)
+export const INDIGO_STUDIO = "#4F46E5"; // reading studio + assistant  (3 files)
+/* A fifth, found by the lint rule rather than by the survey that preceded it —
+ * the grep looked for `INDIGO =` and this one is `INDIGO_INK =`. One file (the
+ * console assistant) uses it as a deep ink. It is NOT `INDIGO_DEEP` above
+ * (#2F3699); close, but not equal, and folding it in would move a rendered
+ * colour, which is the one thing the codemod promises not to do. */
+export const INDIGO_INK = "#3730A3"; // assistant chat ink          (1 file)
+
 /* ── status ────────────────────────────────────────────────────────────────── */
 
 export const GREEN = "#16794C"; // correct / paid / on track  4.9:1

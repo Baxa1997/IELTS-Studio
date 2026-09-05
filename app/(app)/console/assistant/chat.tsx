@@ -14,6 +14,7 @@ import { runProposal, type RunState } from "./actions";
 import { liveProposalTurn } from "./live-proposal";
 import { TelegramStaffPanel } from "./telegram-panel";
 import { newThread } from "./thread-actions";
+import { INDIGO_STUDIO as INDIGO, INDIGO_INK } from "@/lib/theme/tokens";
 
 const INK = "#16203a";
 const BODY = "#2a3350";
@@ -25,8 +26,6 @@ const RULE = "#eeeef4";
 const FIELD = "#e2e2ea";
 const WASH = "#f6f6fa";
 const TINT = "#fafaff";
-const INDIGO = "#4f46e5";
-const INDIGO_INK = "#3730a3";
 const SERIF = "var(--font-serif4), Georgia, serif";
 
 export interface ProposalField {

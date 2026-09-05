@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { MarkLeftBody, MoveBody, RemoveBody } from "./move-or-remove";
+import { INDIGO_STUDIO as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The group, as one table.
@@ -39,7 +40,6 @@ const RULE = "#edebe1";
 const GREEN = "#1f6b45";
 const AMBER = "#9a5b16";
 const RED = "#a13a2c";
-const INDIGO = "#4f46e5";
 
 const COLS =
   "minmax(200px, 2.2fr) minmax(0, 126px) minmax(0, 74px) minmax(0, 92px) minmax(0, 104px) minmax(0, 178px)";

@@ -33,6 +33,7 @@ import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { Timer } from "@/components/exam/timer";
 import { engineClient } from "@/lib/engine/client";
 import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
+import { INDIGO } from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `multilevel` namespace. */
 const callEngine = engineClient("multilevel");
@@ -48,7 +49,6 @@ const callEngine = engineClient("multilevel");
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";

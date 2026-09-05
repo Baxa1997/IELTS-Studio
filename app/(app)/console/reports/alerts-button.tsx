@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FiAlertTriangle, FiCheckCircle, FiChevronDown, FiInbox } from "react-icons/fi";
 
 import type { Finding } from "@/lib/console/report-findings";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The report's warnings, collected into one control at the top of the page.
@@ -32,7 +33,6 @@ const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#C5C4BE";
-const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const AMBER = "#B8791F";
 const RED = "#C2453A";
