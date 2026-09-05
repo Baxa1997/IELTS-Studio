@@ -70,12 +70,18 @@ export default async function SignInPage({
     <div
       className={`${sora.variable} ${manrope.variable}`}
       style={{
-        minHeight: "100dvh",
+        // `height` + `overflow: hidden`, not `minHeight`: the page itself must
+        // never scroll. Anything that cannot fit scrolls INSIDE its own column
+        // (see the two `overflow` rules below), so the burgundy panel stays put
+        // and the form is always reachable — on a laptop the card and the
+        // disclaimer used to fall off the bottom of the viewport.
+        height: "100dvh",
+        overflow: "hidden",
         background: CANVAS,
-        padding: 22,
+        padding: 18,
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
-        gap: 22,
+        gap: 18,
         fontFamily: SANS,
         color: INK,
       }}
@@ -89,9 +95,11 @@ export default async function SignInPage({
           backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
           color: WHITE,
           borderRadius: RADIUS.panel,
-          padding: "54px 52px",
+          padding: "clamp(32px,4vh,54px) clamp(32px,4vw,52px)",
           display: "flex",
           flexDirection: "column",
+          overflow: "hidden",
+          minHeight: 0,
         }}
       >
         <Wordmark onDark />
@@ -102,7 +110,7 @@ export default async function SignInPage({
             fontSize: "clamp(30px,4vw,42px)",
             lineHeight: 1.08,
             letterSpacing: "-0.03em",
-            margin: "52px 0 0",
+            margin: "clamp(28px,5vh,52px) 0 0",
             maxWidth: 460,
             textWrap: "pretty",
           }}
@@ -126,7 +134,7 @@ export default async function SignInPage({
           {POINTS.map((p, i) => (
             <div key={p.title}>
               {i > 0 ? <div style={{ height: 1, background: "rgba(255,255,255,0.16)" }} /> : null}
-              <div style={{ padding: i === POINTS.length - 1 ? "22px 0 0" : "22px 0" }}>
+              <div style={{ padding: i === POINTS.length - 1 ? "clamp(12px,2vh,22px) 0 0" : "clamp(12px,2vh,22px) 0" }}>
                 <div style={{ fontSize: 16, fontWeight: 700 }}>{p.title}</div>
                 <div
                   style={{ fontSize: 15, color: "rgba(255,255,255,0.68)", marginTop: 5 }}
@@ -142,10 +150,12 @@ export default async function SignInPage({
       {/* right — the form */}
       <div
         style={{
-          padding: "44px 52px",
+          padding: "clamp(20px,3vh,44px) clamp(24px,4vw,52px)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          overflowY: "auto",
+          minHeight: 0,
         }}
       >
         <div style={{ width: "100%", maxWidth: 440, display: "flex", justifyContent: "flex-end" }}>

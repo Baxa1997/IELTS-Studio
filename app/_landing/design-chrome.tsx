@@ -40,7 +40,9 @@ const NAV = [
   { label: "Platform", href: "/#platform" },
   { label: "Pricing", href: "/#pricing" },
   { label: "How to use", href: "/how-to-use" },
-  { label: "For centers", href: "/for-education-centers" },
+  // Opens the guide, not the marketing page: a centre clicking this wants to
+  // know how to run the console, and /how-to-use is where that lives.
+  { label: "For centers", href: "/how-to-use" },
 ];
 
 export function Wordmark({ onDark = false }: { onDark?: boolean }) {

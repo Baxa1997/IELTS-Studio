@@ -59,7 +59,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
   const label: React.CSSProperties = { display: "block", fontSize: 14, fontWeight: 700, color: INK };
   const field: React.CSSProperties = {
     width: "100%",
-    padding: "15px 16px",
+    padding: "clamp(12px,1.8vh,15px) 16px",
     border: `1px solid ${FIELD}`,
     borderRadius: RADIUS.field,
     fontFamily: SANS,
@@ -89,7 +89,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
       <form action={formAction}>
         {next ? <input type="hidden" name="next" value={next} /> : null}
 
-        <label htmlFor="email" style={{ ...label, margin: "30px 0 8px" }}>
+        <label htmlFor="email" style={{ ...label, margin: "clamp(18px,3vh,30px) 0 8px" }}>
           Email or center login
         </label>
         <input
@@ -108,7 +108,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
             display: "flex",
             alignItems: "baseline",
             justifyContent: "space-between",
-            margin: "18px 0 8px",
+            margin: "clamp(12px,2vh,18px) 0 8px",
           }}
         >
           <label htmlFor="password" style={label}>
@@ -180,12 +180,12 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
           disabled={pending}
           style={{
             width: "100%",
-            marginTop: 24,
+            marginTop: "clamp(16px,2.5vh,24px)",
             background: pending ? BRAND_DEEP : BRAND,
             color: WHITE,
             border: 0,
             borderRadius: RADIUS.field,
-            padding: 17,
+            padding: "clamp(13px,2vh,17px)",
             fontFamily: SANS,
             fontSize: 16,
             fontWeight: 700,
@@ -201,7 +201,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
           display: "flex",
           alignItems: "center",
           gap: 14,
-          margin: "24px 0",
+          margin: "clamp(14px,2.5vh,24px) 0",
           color: MUTED,
           fontSize: 12,
           fontWeight: 700,
@@ -223,7 +223,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
           background: WHITE,
           border: `1px solid ${FIELD}`,
           borderRadius: RADIUS.field,
-          padding: 16,
+          padding: "clamp(12px,2vh,16px)",
           fontFamily: SANS,
           fontSize: 16,
           fontWeight: 600,
@@ -241,7 +241,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
         {googlePending ? "Opening Google…" : "Sign in with Google"}
       </button>
 
-      <div style={{ textAlign: "center", fontSize: 15, color: BODY, marginTop: 26 }}>
+      <div style={{ textAlign: "center", fontSize: 15, color: BODY, marginTop: "clamp(14px,2.5vh,26px)" }}>
         Don&apos;t have an account?{" "}
         <Link href="/sign-up" style={{ fontWeight: 700, color: BRAND }}>
           Sign up
@@ -252,8 +252,8 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
         style={{
           border: `1px solid ${LINE}`,
           borderRadius: 16,
-          padding: "18px 20px",
-          marginTop: 26,
+          padding: "clamp(12px,2vh,18px) 20px",
+          marginTop: "clamp(14px,2.5vh,26px)",
           display: "flex",
           gap: 16,
           alignItems: "center",
@@ -289,7 +289,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
         </Link>
       </div>
 
-      <p style={{ fontSize: 13, color: "#9aa0ac", lineHeight: 1.55, marginTop: 24 }}>
+      <p style={{ fontSize: 13, color: "#9aa0ac", lineHeight: 1.55, marginTop: "clamp(12px,2vh,24px)" }}>
         Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment
         English.
       </p>

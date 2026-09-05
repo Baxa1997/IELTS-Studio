@@ -238,8 +238,8 @@ export default async function Home() {
       <SiteHeader />
       <main>
         <Hero />
-        <HeroProcessDemo />
         <Stats />
+        <HeroProcessDemo />
         <DemoSection />
         <ResultsSection />
         <Platform />
