@@ -8,6 +8,7 @@ import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 import {
   CrossLink,
   DocsHead,
+  Prose,
   Sidebar,
   Steps,
   type DocGroup,
@@ -72,12 +73,15 @@ const SIDEBAR: DocGroup[] = [
   {
     group: "On this page",
     items: [
-      // Overview is the only clickable entry, matching the learner guide. The
-      // rest name the sections below so a reader knows what is on the page.
+      // Mirrors the tab strip. Overview is the only clickable entry, matching
+      // the learner guide; the rest name the tabs.
       { label: "Overview", href: "/how-to-use/education-centers" },
-      { label: "Who does what", href: null, plain: true },
-      { label: "What you can run", href: null, plain: true },
-      { label: "Getting started", href: null, plain: true },
+      { label: "People & groups", href: null, plain: true },
+      { label: "Homework", href: null, plain: true },
+      { label: "Tracking & reports", href: null, plain: true },
+      { label: "Telegram", href: null, plain: true },
+      { label: "Center chat", href: null, plain: true },
+      { label: "Money", href: null, plain: true },
     ],
   },
   {
@@ -106,7 +110,68 @@ const ROLES = [
   },
 ];
 
+const STEPS: DocStep[] = [
+  {
+    n: "01",
+    title: "Register and get approved",
+    body: "Apply from the Organization tab on sign-up. We review it and confirm by email; your account waits on an approval screen until then.",
+  },
+  {
+    n: "02",
+    title: "Add teachers, then groups",
+    body: "Invite your teachers by link. Each one creates their own groups and adds students outright — name, login and password, email optional.",
+  },
+  {
+    n: "03",
+    title: "Assign, then read the reports",
+    body: "Pin a task to a group and every student sits the same content. The AI marks it, the student gets their mistakes, and you get the same report.",
+  },
+];
+const INTRO: string[] = [
+  "An education center runs the whole of EngProgress on top of the learner platform: your own teachers, your own groups, your own student logins, and homework the AI marks the moment it is handed in. Your students are ordinary learners — they can practise anything they like — and their teacher can see all of it.",
+  "You do not pay per practice. Quota and seat limits are switched off for a center account on purpose, so setting more homework never costs you more, and a teacher never has to ration what a class is given.",
+  "Approval is by hand. You apply, we read the application and confirm by email, and your account waits on a holding screen until then — which is also why nobody can sign your center up on your behalf.",
+];
+
+function OverviewPanel() {
+  return (
+    <>
+      <Prose paragraphs={INTRO} />
+
+      <div style={{ ...eyebrow(true), marginTop: 40 }}>Who does what</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
+          gap: 22,
+          marginTop: 20,
+        }}
+      >
+        {ROLES.map((r) => (
+          <div key={r.name} style={cardStyle(26)}>
+            <h3 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 19, margin: 0 }}>
+              {r.name}
+            </h3>
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
+              {r.body}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ ...eyebrow(true), marginTop: 40 }}>Getting started</div>
+      <Steps steps={STEPS} />
+    </>
+  );
+}
+
 const TABS: InfoTab[] = [
+  {
+    icon: "◆",
+    title: "Overview",
+    lede: "What a center gets, who does what inside it, and the three steps to your first class.",
+    content: <OverviewPanel />,
+  },
   {
     icon: "⌂",
     title: "People & groups",
@@ -252,23 +317,6 @@ const TABS: InfoTab[] = [
   },
 ];
 
-const STEPS: DocStep[] = [
-  {
-    n: "01",
-    title: "Register and get approved",
-    body: "Apply from the Organization tab on sign-up. We review it and confirm by email; your account waits on an approval screen until then.",
-  },
-  {
-    n: "02",
-    title: "Add teachers, then groups",
-    body: "Invite your teachers by link. Each one creates their own groups and adds students outright — name, login and password, email optional.",
-  },
-  {
-    n: "03",
-    title: "Assign, then read the reports",
-    body: "Pin a task to a group and every student sits the same content. The AI marks it, the student gets their mistakes, and you get the same report.",
-  },
-];
 
 export default function CentersGuide() {
   const site = getSiteUrl();
@@ -318,36 +366,7 @@ export default function CentersGuide() {
             lede="Teachers, groups and student logins; homework the AI marks; Telegram for the parents and the class; attendance, reports, invoices and payroll — and a chat that answers questions about all of it."
           />
 
-          <div id="roles" style={{ ...eyebrow(true), marginTop: 54 }}>Who does what</div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))",
-              gap: 22,
-              marginTop: 20,
-            }}
-          >
-            {ROLES.map((r) => (
-              <div key={r.name} style={cardStyle(26)}>
-                <h2 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 19, margin: 0 }}>
-                  {r.name}
-                </h2>
-                <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
-                  {r.body}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div id="what" style={{ ...eyebrow(true), marginTop: 54 }}>
-            What you can run
-          </div>
-          <InfoTabs tabs={TABS} />
-
-          <div id="steps" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Getting started
-          </div>
-          <Steps steps={STEPS} />
+          <InfoTabs tabs={TABS} label="How a center runs EngProgress" />
 
           <RegisterCenterBand />
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
-import { BODY, cardStyle, DISPLAY, eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
+import { eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
 import {
@@ -23,18 +23,20 @@ import { InfoTabs } from "./info-tabs";
 /**
  * "How to use EngProgress" — FOR AN INDIVIDUAL LEARNER.
  *
- * SHAPED AS *EXPLANATION*, NOT AS A TOUR. Diátaxis (diataxis.fr) splits
- * documentation by the need it serves — tutorial, how-to, reference,
- * explanation — and warns that a page trying to be more than one of them serves
- * none of them. A reader arriving here has not bought anything and is asking
- * "what is this and how does it work?", which is squarely the explanation
- * quadrant. So the page runs: what it is (prose) → what it gives you (a
- * scannable feature list) → the one idea the product rests on (the callout) →
- * how each skill's content is actually made (tabs) → how to begin (steps).
- * "Getting started" is the only how-to on it, and it is deliberately last.
+ * EVERYTHING LIVES IN THE TABS (owner's call). An earlier version stacked the
+ * overview, the feature list, the skill tabs and the steps down one long page;
+ * the owner wanted the whole body tabbed instead, Overview first. So the page
+ * outside the tab strip is only the heading and the route across to the centre
+ * guide — if you are adding a section, it is a tab or it goes inside one.
+ *
+ * The ORDER is still Diátaxis-shaped (diataxis.fr): a reader who lands here has
+ * bought nothing and is asking "what is this and how does it work", which is
+ * the explanation quadrant. Overview answers that; the skill tabs go a level
+ * deeper on demand; "Getting started" — the only how-to on the page — sits at
+ * the bottom of Overview rather than competing with it.
  *
  * THE GENERATION COPY IS WRITTEN AGAINST THE GENERATORS, NOT THE PITCH. Each
- * tab's `how` paragraph describes code that exists:
+ * skill tab's `how` paragraph describes code that exists:
  *   · writing  — `generateOnDemand` in lib/prompts/service.ts: a topic family
  *     from TOPIC_FAMILIES, a shape from TASK2_CATEGORIES, checked against
  *     `prompt_assignments` + the learner's essays so nothing repeats, and the
@@ -85,20 +87,18 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * OVERVIEW IS THE ONLY CLICKABLE ENTRY (owner's call). The rest name the
- * sections below so a reader knows what is on the page, without offering four
- * jumps that all land within one scroll of each other.
- */
+/** The sidebar mirrors the tab strip. Overview is the only clickable entry
+ *  (owner's call); the rest name the tabs so a reader knows what is there. */
 const SIDEBAR: DocGroup[] = [
   {
     group: "On this page",
     items: [
       { label: "Overview", href: "/how-to-use" },
-      { label: "Key features", href: null, plain: true },
-      { label: "How practice is generated", href: null, plain: true },
-      { label: "Also on the platform", href: null, plain: true },
-      { label: "Getting started", href: null, plain: true },
+      { label: "Writing", href: null, plain: true },
+      { label: "Reading", href: null, plain: true },
+      { label: "Listening", href: null, plain: true },
+      { label: "Speaking", href: null, plain: true },
+      { label: "CEFR / Multilevel", href: null, plain: true },
     ],
   },
   {
@@ -107,7 +107,7 @@ const SIDEBAR: DocGroup[] = [
   },
 ];
 
-/* ── overview ──────────────────────────────────────────────────────────────── */
+/* ── what goes inside the Overview tab ─────────────────────────────────────── */
 
 const OVERVIEW: string[] = [
   "EngProgress is an AI examiner for IELTS and for the Uzbek Multilevel (CEFR) exam. It writes practice for you, marks it against the official criteria, and tells you the one thing standing between the band you got and the next half band up. All four IELTS skills are live — Writing, Reading, Listening and Speaking — and the Multilevel exam has its own Reading and Writing papers in their own format rather than IELTS with the labels changed.",
@@ -158,9 +158,55 @@ const FEATURES: Feature[] = [
   },
 ];
 
-/* ── the tabs: how each skill's content is made ────────────────────────────── */
+const STEPS: DocStep[] = [
+  {
+    n: "01",
+    title: "Find your real band",
+    body: "Paste an essay into the free grader, or sit a full task once you have an account. You get a band and the criterion that is holding it down.",
+  },
+  {
+    n: "02",
+    title: "Practise on demand",
+    body: "Ask for a task in any of the four skills. It is written for you at your level and marked against the official criteria — never a past paper, so nothing can be memorised.",
+  },
+  {
+    n: "03",
+    title: "Close the gap",
+    body: "Every report names what is missing for the next half band and the work that fixes it. Rewrite the same essay, resubmit it, and find out whether the band actually moved.",
+  },
+];
+
+function OverviewPanel() {
+  return (
+    <>
+      <Prose paragraphs={OVERVIEW} />
+
+      <div style={{ ...eyebrow(true), marginTop: 40 }}>Key features</div>
+      <FeatureList features={FEATURES} />
+
+      <Callout kicker="The idea the rest of it rests on">
+        There is no question bank here and no set of tests to work through. Every task is written the
+        moment you ask for it, and the level it is written at comes from you — your measured band for
+        a reading paper, the level you pick for a listening test, a topic and question shape you have
+        not been given before for an essay. Two learners practising on the same day sit different
+        papers, and you never sit the same one twice.
+      </Callout>
+
+      <div style={{ ...eyebrow(true), marginTop: 40 }}>Getting started</div>
+      <Steps steps={STEPS} />
+    </>
+  );
+}
+
+/* ── the tabs ──────────────────────────────────────────────────────────────── */
 
 const TABS: InfoTab[] = [
+  {
+    icon: "◆",
+    title: "Overview",
+    lede: "What EngProgress is, what it gives you, and the three steps from a first essay to a band you can trust.",
+    content: <OverviewPanel />,
+  },
   {
     icon: "✎",
     title: "Writing",
@@ -257,40 +303,30 @@ const TABS: InfoTab[] = [
       },
     ],
   },
-];
-
-/* ── the rest of the platform ──────────────────────────────────────────────── */
-
-const ALSO: { title: string; body: string }[] = [
   {
+    icon: "◇",
     title: "CEFR / Multilevel",
-    body: "The Uzbekistan exam in its own format. Reading runs five parts and thirty-five questions; Writing runs all three tasks, marked against the CEFR descriptors rather than the IELTS ones, and results come back as a level — which is what the certificate reports. The CEFR Listening and Speaking papers are not built yet.",
-  },
-  {
-    title: "Your progress",
-    body: "A current band and a target band per skill, re-estimated conservatively as you practise, with the weakest skill surfaced on the dashboard. Every graded attempt stays in your history and reopens to the report exactly as it was written.",
-  },
-  {
-    title: "The free grader",
-    body: "Paste an essay and get a band and the first thing to fix, without an account and without a card. It is the same grader the rest of the platform uses, on a single essay.",
-  },
-];
-
-const STEPS: DocStep[] = [
-  {
-    n: "01",
-    title: "Find your real band",
-    body: "Paste an essay into the free grader, or sit a full task once you have an account. You get a band and the criterion that is holding it down.",
-  },
-  {
-    n: "02",
-    title: "Practise on demand",
-    body: "Ask for a task in any of the four skills. It is written for you at your level and marked against the official criteria — never a past paper, so nothing can be memorised.",
-  },
-  {
-    n: "03",
-    title: "Close the gap",
-    body: "Every report names what is missing for the next half band and the work that fixes it. Rewrite the same essay, resubmit it, and find out whether the band actually moved.",
+    lede: "The Uzbekistan exam in its own format — not IELTS with the labels changed.",
+    how: "The Multilevel papers are generated on demand like everything else, but against the CEFR descriptors rather than the IELTS band descriptors, because they are a different exam with a different mark scheme. Reading is built as five parts and thirty-five questions in the shapes the real paper uses; Writing is built as all three tasks. A result comes back as a CEFR level rather than a band, which is what the certificate actually reports.",
+    points: [
+      {
+        title: "Reading, five parts",
+        body: "Thirty-five questions across the five parts the paper actually uses, generated fresh each time.",
+      },
+      {
+        title: "Writing, three tasks",
+        body: "All three tasks, marked against the CEFR descriptors rather than the IELTS band descriptors.",
+      },
+      {
+        title: "A level, not a band",
+        body: "Results come back as A1–C2, which is what the Multilevel certificate reports.",
+      },
+      {
+        title: "Listening and Speaking",
+        body: "The CEFR papers for these two are not built yet. The IELTS versions of both are live.",
+        soon: true,
+      },
+    ],
   },
 ];
 
@@ -342,56 +378,7 @@ export default function HowToUse() {
             lede="An AI examiner for IELTS and the Multilevel exam: original practice written for you on demand, marked against the official criteria, with the next half band spelled out."
           />
 
-          <div id="overview" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Overview
-          </div>
-          <Prose paragraphs={OVERVIEW} />
-
-          <div id="features" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Key features
-          </div>
-          <FeatureList features={FEATURES} />
-
-          <Callout kicker="The idea the rest of it rests on">
-            There is no question bank here and no set of tests to work through. Every task is written
-            the moment you ask for it, and the level it is written at comes from you — your measured
-            band for a reading paper, the level you pick for a listening test, a topic and question
-            shape you have not been given before for an essay. Two learners practising on the same
-            day sit different papers, and you never sit the same one twice.
-          </Callout>
-
-          <div id="generated" style={{ ...eyebrow(true), marginTop: 54 }}>
-            How practice is generated
-          </div>
-          <InfoTabs tabs={TABS} />
-
-          <div id="also" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Also on the platform
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-              gap: 22,
-              marginTop: 20,
-            }}
-          >
-            {ALSO.map((a) => (
-              <div key={a.title} style={cardStyle(26)}>
-                <h2 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 19, margin: 0 }}>
-                  {a.title}
-                </h2>
-                <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
-                  {a.body}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <div id="steps" style={{ ...eyebrow(true), marginTop: 54 }}>
-            Getting started
-          </div>
-          <Steps steps={STEPS} />
+          <InfoTabs tabs={TABS} label="How to use EngProgress" />
 
           {/* the route across to the centre guide */}
           <CrossLink

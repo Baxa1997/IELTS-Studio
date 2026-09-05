@@ -379,7 +379,13 @@ export interface InfoTab {
    */
   how?: string;
   /** What the platform actually does. Statements, not links. */
-  points: { title: string; body: string; soon?: boolean }[];
+  points?: { title: string; body: string; soon?: boolean }[];
+  /**
+   * A fully custom panel body, used by the Overview tab (prose + the feature
+   * list + the callout + the steps). Server-rendered and passed down as a
+   * prop, so the tab strip stays the only client component on the page.
+   */
+  content?: React.ReactNode;
 }
 
 /* ── overview prose ────────────────────────────────────────────────────────── */

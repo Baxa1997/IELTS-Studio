@@ -21,37 +21,40 @@ import {
 import type { InfoTab } from "./docs-ui";
 
 /**
- * The documentation's tabs.
+ * The documentation's tabs — the WHOLE of each guide's body lives in here.
  *
- * They EXPLAIN rather than navigate. The first version of these pages made every
- * row a link to a marketing page or to /sign-up, so a reader asking "what can
- * this do?" was bounced somewhere else to find out — and the deepest questions
- * had no page to point at anyway. Now the answer is on the page: pick a tab,
- * read what the platform does.
+ * Two decisions worth keeping:
  *
- * Client-side because the tab is local UI state. It renders the first tab's
- * content on the server, so the page is complete without JavaScript and useful
- * to a crawler.
+ * 1. THEY EXPLAIN RATHER THAN NAVIGATE. The first version made every row a link
+ *    to a marketing page or to /sign-up, so a reader asking "what can this do?"
+ *    was bounced somewhere else to find out. Now the answer is on the page.
+ *
+ * 2. EVERY PANEL IS IN THE HTML; the inactive ones are `hidden`. Rendering only
+ *    the active panel would have put Writing in the markup and left Reading,
+ *    Listening and Speaking out of it — which is exactly the "ChatGPT only sees
+ *    Writing" problem the marketing pages were rebuilt to fix. `hidden` is also
+ *    the correct ARIA tab pattern, so this costs nothing.
+ *
+ * Client-side because the active tab is local UI state. The panels themselves
+ * are server-rendered and passed in, so nothing else on the page ships to the
+ * browser.
  */
-export function InfoTabs({ tabs }: { tabs: InfoTab[] }) {
+export function InfoTabs({ tabs, label = "What the platform does" }: { tabs: InfoTab[]; label?: string }) {
   const [active, setActive] = useState(0);
-  const tab = tabs[active];
 
   return (
     <div style={{ marginTop: 20 }}>
       {/* tab strip */}
-      <div
-        role="tablist"
-        aria-label="What the platform does"
-        style={{ display: "flex", flexWrap: "wrap", gap: 10 }}
-      >
+      <div role="tablist" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
         {tabs.map((t, i) => {
           const on = i === active;
           return (
             <button
               key={t.title}
+              id={`tab-${slug(t.title)}`}
               role="tab"
               aria-selected={on}
+              aria-controls={`panel-${slug(t.title)}`}
               type="button"
               onClick={() => setActive(i)}
               style={{
@@ -79,123 +82,139 @@ export function InfoTabs({ tabs }: { tabs: InfoTab[] }) {
         })}
       </div>
 
-      {/* panel */}
-      <div
-        role="tabpanel"
-        style={{
-          border: `1px solid ${LINE}`,
-          borderRadius: 20,
-          background: WHITE,
-          padding: "clamp(24px,3vw,32px)",
-          marginTop: 18,
-        }}
-      >
-        <h3
+      {/* every panel is rendered; the inactive ones are hidden */}
+      {tabs.map((tab, i) => (
+        <div
+          key={tab.title}
+          id={`panel-${slug(tab.title)}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${slug(tab.title)}`}
+          hidden={i !== active}
           style={{
-            fontFamily: DISPLAY,
-            fontWeight: 600,
-            fontSize: 22,
-            margin: 0,
-            color: INK,
-            letterSpacing: "-0.01em",
+            border: `1px solid ${LINE}`,
+            borderRadius: 20,
+            background: WHITE,
+            padding: "clamp(24px,3vw,32px)",
+            marginTop: 18,
           }}
         >
-          {tab.title}
-        </h3>
-        <p style={{ fontSize: 17, lineHeight: 1.6, color: BODY, margin: "10px 0 0", maxWidth: 700 }}>
-          {tab.lede}
-        </p>
-
-        {tab.how ? (
-          <div
+          <h2
             style={{
-              marginTop: 22,
-              background: BRAND_TINT,
-              border: `1px solid ${BRAND_TINT_LINE}`,
-              borderRadius: 16,
-              padding: "20px 22px",
+              fontFamily: DISPLAY,
+              fontWeight: 600,
+              fontSize: 22,
+              margin: 0,
+              color: INK,
+              letterSpacing: "-0.01em",
             }}
           >
-            <div
-              style={{
-                fontFamily: SANS,
-                fontSize: 11.5,
-                fontWeight: 700,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: BRAND,
-              }}
-            >
-              How a task is generated
-            </div>
-            <p
-              style={{
-                fontSize: 15.5,
-                lineHeight: 1.7,
-                color: STRONG,
-                margin: "10px 0 0",
-                maxWidth: 720,
-                textWrap: "pretty",
-              }}
-            >
-              {tab.how}
-            </p>
-          </div>
-        ) : null}
+            {tab.title}
+          </h2>
+          <p
+            style={{ fontSize: 17, lineHeight: 1.6, color: BODY, margin: "10px 0 0", maxWidth: 720 }}
+          >
+            {tab.lede}
+          </p>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-            gap: 18,
-            marginTop: 26,
-          }}
-        >
-          {tab.points.map((p) => (
+          {tab.how ? (
             <div
-              key={p.title}
               style={{
-                background: WELL,
-                border: `1px solid ${LINE}`,
-                borderRadius: 14,
-                padding: "18px 20px",
+                marginTop: 22,
+                background: BRAND_TINT,
+                border: `1px solid ${BRAND_TINT_LINE}`,
+                borderRadius: 16,
+                padding: "20px 22px",
               }}
             >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontFamily: DISPLAY,
-                  fontWeight: 600,
-                  fontSize: 16,
-                  color: INK,
+                  fontFamily: SANS,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: BRAND,
                 }}
               >
-                {p.title}
-                {p.soon ? (
-                  <span
-                    style={{
-                      background: "#f4f5f7",
-                      color: MUTED,
-                      borderRadius: RADIUS.pill,
-                      padding: "3px 9px",
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    SOON
-                  </span>
-                ) : null}
+                How a task is generated
               </div>
-              <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
-                {p.body}
+              <p
+                style={{
+                  fontSize: 15.5,
+                  lineHeight: 1.7,
+                  color: STRONG,
+                  margin: "10px 0 0",
+                  maxWidth: 720,
+                  textWrap: "pretty",
+                }}
+              >
+                {tab.how}
               </p>
             </div>
-          ))}
+          ) : null}
+
+          {tab.content ?? null}
+
+          {tab.points?.length ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+                gap: 18,
+                marginTop: 26,
+              }}
+            >
+              {tab.points.map((p) => (
+                <div
+                  key={p.title}
+                  style={{
+                    background: WELL,
+                    border: `1px solid ${LINE}`,
+                    borderRadius: 14,
+                    padding: "18px 20px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontFamily: DISPLAY,
+                      fontWeight: 600,
+                      fontSize: 16,
+                      color: INK,
+                    }}
+                  >
+                    {p.title}
+                    {p.soon ? (
+                      <span
+                        style={{
+                          background: "#f4f5f7",
+                          color: MUTED,
+                          borderRadius: RADIUS.pill,
+                          padding: "3px 9px",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        SOON
+                      </span>
+                    ) : null}
+                  </div>
+                  <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
+                    {p.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
-      </div>
+      ))}
     </div>
   );
+}
+
+function slug(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
