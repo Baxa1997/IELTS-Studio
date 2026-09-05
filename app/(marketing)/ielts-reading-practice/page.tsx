@@ -65,8 +65,8 @@ export default function IeltsReadingPracticePage() {
           Practice books run out. The second time you sit a test you are measuring your memory, not your
           English. Every passage here is <B>generated new</B> in the authentic exam format, so there is
           no recycled PDF and no answer key you have half-remembered. If you specifically want the
-          Cambridge-book experience, see our{" "}
-          <A href="/cambridge-ielts-practice">Cambridge-style IELTS practice tests</A>.
+          Cambridge-book experience, that format is what the generator was built against — see{" "}
+          <A href="/how-to-use#cambridge-style">how Cambridge-style practice works</A>.
         </P>
         <P>
           All content is original. We never host or reproduce official past papers or copyrighted

@@ -33,15 +33,28 @@ const PUBLIC_PATHS = [
   "/ielts-speaking-practice",
   "/cefr-multilevel-practice",
   "/for-education-centers",
-  "/cambridge-ielts-practice",
-  "/vs",
   "/robots.txt",
   "/sitemap.xml",
 ];
 
+/**
+ * Public pages that were DELETED and must now 404 rather than bounce a visitor
+ * to /sign-in.
+ *
+ * Any unknown path redirects a logged-out visitor to sign-in (see below), which
+ * is fine for a typo but wrong for a URL Google has indexed: a redirect to a
+ * login page reads as a soft-404 and the old URL lingers in the index. These
+ * three were live, indexed marketing pages until the owner removed them, so
+ * they are let through to render a real 404 and drop out cleanly.
+ *
+ * Safe to delete once they have disappeared from search results.
+ */
+const GONE_PATHS = ["/cambridge-ielts-practice", "/vs"];
+
 function isPublicPath(pathname: string): boolean {
   // APIs authenticate themselves; redirecting them to /sign-in would be wrong.
   if (pathname.startsWith("/api")) return true;
+  if (GONE_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 

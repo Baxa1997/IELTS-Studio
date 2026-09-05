@@ -60,6 +60,10 @@ export const WHITE = "#ffffff";
 export const WELL = "#fbfbfc";
 /** Sign-in page ground. */
 export const CANVAS = "#f6f7f9";
+/** The legal pages' ground — a cooler, bluer paper than CANVAS, with a hairline
+ *  frame ruled down each side. Follows the reference the owner supplied. */
+export const PAPER = "#eef0f4";
+export const PAPER_RULE = "#dee2ea";
 
 /* ── status ────────────────────────────────────────────────────────────────── */
 

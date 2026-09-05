@@ -77,8 +77,8 @@ export default function IeltsPracticePage() {
           Practice books run out, and the second time through a test you are testing your memory, not your
           English. Every EngProgress practice is <B>generated new</B> in the authentic exam format — you
           will never see a recycled PDF or an answer you already know. If you specifically want the
-          Cambridge-book experience, see our{" "}
-          <A href="/cambridge-ielts-practice">Cambridge-style IELTS practice tests</A>.
+          Cambridge-book experience, that format is what the generator was built against — see{" "}
+          <A href="/how-to-use#cambridge-style">how Cambridge-style practice works</A>.
         </P>
       </Sec>
 
@@ -104,8 +104,8 @@ export default function IeltsPracticePage() {
       <Sec title="Start free">
         <P>
           The free plan includes 5 AI-graded practices every month — no card required. Paid plans start at
-          $5.99/month; see <A href="/#pricing">pricing</A>. Comparing tools? Read how EngProgress stacks up
-          against <A href="/vs/engnovate">Engnovate</A> and <A href="/vs/ielts-gg">ielts.gg</A>.
+          $5.99/month; see <A href="/#pricing">pricing</A>. Want the tour first?{" "}
+          <A href="/how-to-use">See how EngProgress works</A>.
         </P>
       </Sec>
 

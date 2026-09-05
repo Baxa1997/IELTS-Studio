@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SiFacebook, SiInstagram, SiTelegram, SiX } from "react-icons/si";
+import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 
 import { BRAND, DISPLAY, SANS } from "./design";
 
@@ -10,18 +10,25 @@ import { BRAND, DISPLAY, SANS } from "./design";
  * block with a tagline and social discs on the left, link columns on the right,
  * a hairline, then a centred uppercase strip / copyright / fine print.
  *
- * EVERY PUBLIC PAGE IS LINKED HERE — the four skill pages, CEFR, the hub, the
- * grader, the demo, both comparisons, Cambridge, centres, contact, the docs,
- * sign-in, sign-up, privacy and terms. `PUBLIC_PATHS` in
- * `lib/supabase/middleware.ts` is the list this was built against; if a public
- * route is added there it belongs in a column below too, or it ships with no
- * route into it.
+ * The link columns were TRIMMED on the owner's instruction: the four per-skill
+ * marketing pages collapsed into one "IELTS practice" entry, CEFR now points at
+ * its tab in the guide, and the two competitor comparisons plus the Cambridge
+ * page were deleted outright (the Cambridge content moved into the guide as a
+ * tab). `PUBLIC_PATHS` in `lib/supabase/middleware.ts` is still the list to
+ * check against — a public route with no link here ships with no route into it.
  *
- * Two slots are deliberately EMPTY rather than filled with something invented —
- * see SOCIALS and LEGAL_ENTITY.
+ * ONE slot is still deliberately empty rather than invented — see LEGAL_ENTITY.
  */
 
-/* ── the two things only the owner can supply ──────────────────────────────── */
+/* ── contact, as supplied by the owner ─────────────────────────────────────── */
+
+/** The same address the privacy policy already publishes, so there is one
+ *  inbox rather than two. */
+const CONTACT_EMAIL = "bahridnurullav@gmail.com";
+/** One number for both calls and WhatsApp. */
+const PHONE = "+998 97 711 68 12";
+
+/* ── the one thing only the owner can supply ───────────────────────────────── */
 
 /**
  * Social accounts. `href: null` renders nothing at all.
@@ -35,9 +42,8 @@ import { BRAND, DISPLAY, SANS } from "./design";
  */
 const SOCIALS: { name: string; href: string | null; Icon: React.ComponentType<{ size?: number }> }[] =
   [
-    { name: "Instagram", href: null, Icon: SiInstagram },
-    { name: "Facebook", href: null, Icon: SiFacebook },
-    { name: "X", href: null, Icon: SiX },
+    { name: "Instagram", href: "https://instagram.com/engprogress", Icon: SiInstagram },
+    { name: "WhatsApp", href: `https://wa.me/${PHONE.replace(/[^0-9]/g, "")}`, Icon: SiWhatsapp },
     { name: "Telegram", href: "https://t.me/engprogress_bot", Icon: SiTelegram },
   ];
 
@@ -57,12 +63,12 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "Practice",
     links: [
-      { label: "IELTS Writing", href: "/ielts-writing-practice" },
-      { label: "IELTS Reading", href: "/ielts-reading-practice" },
-      { label: "IELTS Listening", href: "/ielts-listening-practice" },
-      { label: "IELTS Speaking", href: "/ielts-speaking-practice" },
-      { label: "CEFR / Multilevel", href: "/cefr-multilevel-practice" },
-      { label: "All IELTS practice", href: "/ielts-practice" },
+      // Trimmed to two on the owner's instruction: the four per-skill pages all
+      // sit behind /ielts-practice, and CEFR now points at its tab in the guide
+      // rather than at a second marketing page. The tab hash is read by
+      // `DocsTabs`, so this link opens CEFR directly instead of Overview.
+      { label: "IELTS practice", href: "/ielts-practice" },
+      { label: "CEFR practice", href: "/how-to-use#cefr-multilevel" },
     ],
   },
   {
@@ -70,6 +76,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
     links: [
       { label: "How to use", href: "/how-to-use" },
       { label: "Guide for centers", href: "/how-to-use/education-centers" },
+      { label: "Cambridge-style practice", href: "/how-to-use#cambridge-style" },
       { label: "Free essay grader", href: "/grade" },
       { label: "Live demo", href: "/demo" },
       { label: "Pricing", href: "/#pricing" },
@@ -78,10 +85,9 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
   {
     heading: "Company",
     links: [
+      // The two competitor comparisons and the Cambridge marketing page were
+      // deleted, not just unlinked — the Cambridge content moved into the guide.
       { label: "For education centers", href: "/for-education-centers" },
-      { label: "Cambridge-style practice", href: "/cambridge-ielts-practice" },
-      { label: "Compared with ielts.gg", href: "/vs/ielts-gg" },
-      { label: "Compared with Engnovate", href: "/vs/engnovate" },
       { label: "Contact", href: "/contact" },
     ],
   },
@@ -169,6 +175,39 @@ export function SiteFooter() {
             >
               AI-graded IELTS and CEFR practice for learners and education centers.
             </p>
+
+            {/* Contact, in the brand column rather than buried in a link list —
+                it is the thing a centre looks for before it applies. */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 9,
+                marginTop: 22,
+                fontFamily: SANS,
+                fontSize: 15,
+              }}
+            >
+              <a href={`mailto:${CONTACT_EMAIL}`} className="ft-link" style={{ color: LINK, textDecoration: "none" }}>
+                {CONTACT_EMAIL}
+              </a>
+              <a
+                href={`tel:${PHONE.replace(/[^+0-9]/g, "")}`}
+                className="ft-link"
+                style={{ color: LINK, textDecoration: "none" }}
+              >
+                {PHONE}
+              </a>
+              <a
+                href={`https://wa.me/${PHONE.replace(/[^0-9]/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ft-link"
+                style={{ color: QUIET, textDecoration: "none" }}
+              >
+                WhatsApp · {PHONE}
+              </a>
+            </div>
 
             {socials.length > 0 ? (
               <div style={{ display: "flex", gap: 12, marginTop: 26 }}>

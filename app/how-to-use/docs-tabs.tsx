@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   BODY,
@@ -60,6 +60,37 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
   const [active, setActive] = useState(0);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
+  /**
+   * A TAB IS ADDRESSABLE: /how-to-use#cefr-multilevel opens that tab.
+   *
+   * The footer links straight at a tab, so the hash has to select one — the
+   * alternative was landing every such link on Overview and asking the reader
+   * to go hunting. Read in an effect rather than during render, because the
+   * server has no hash and would disagree with the client about the markup.
+   * `hashchange` covers a same-page link (the browser does not remount).
+   */
+  useEffect(() => {
+    const slugs = tabs.map((t) => slug(t.title));
+    const apply = () => {
+      const want = decodeURIComponent(window.location.hash.replace(/^#/, "")).toLowerCase();
+      if (!want) return;
+      const i = slugs.indexOf(want);
+      if (i >= 0) setActive(i);
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, [tabs]);
+
+  /** Switching a tab rewrites the hash so the view can be linked or reloaded.
+   *  `replaceState` rather than assigning `location.hash`, which would jump. */
+  function select(i: number) {
+    setActive(i);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `#${slug(tabs[i].title)}`);
+    }
+  }
+
   /** Arrow keys move between tabs, as a vertical tablist is expected to. */
   function onKeyDown(e: React.KeyboardEvent) {
     const last = tabs.length - 1;
@@ -70,7 +101,7 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
     else if (e.key === "End") next = last;
     if (next === null) return;
     e.preventDefault();
-    setActive(next);
+    select(next);
     buttons.current[next]?.focus();
   }
 
@@ -113,7 +144,7 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
                 aria-selected={on}
                 aria-controls={`panel-${slug(t.title)}`}
                 tabIndex={on ? 0 : -1}
-                onClick={() => setActive(i)}
+                onClick={() => select(i)}
                 className="lp-doctab"
                 style={{
                   display: "flex",

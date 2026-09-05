@@ -177,9 +177,6 @@ const FOOTER_COLS: { head: string; links: { label: string; href: string }[] }[] 
     head: "Learn & compare",
     links: [
       { label: "IELTS practice online", href: "/ielts-practice" },
-      { label: "Cambridge-style tests", href: "/cambridge-ielts-practice" },
-      { label: "vs Engnovate", href: "/vs/engnovate" },
-      { label: "vs ielts.gg", href: "/vs/ielts-gg" },
     ],
   },
   {

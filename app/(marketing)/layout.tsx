@@ -5,7 +5,7 @@ import { DESIGN_CSS } from "@/app/_landing/design-chrome";
 import { SiteFooter } from "@/app/_landing/site-footer";
 import { BrandLogo } from "@/components/brand/logo";
 
-// SEO / marketing pages (ielts-practice, cambridge-ielts-practice, /vs/*) wear
+// SEO / marketing pages (ielts-practice and the four skill pages) wear
 // the same Option A brand as the legal pages, scoped via CSS variables so the
 // rest of the app keeps Geist.
 const hanken = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-hanken", display: "swap" });

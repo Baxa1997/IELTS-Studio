@@ -1,6 +1,6 @@
 /**
  * Shared typographic + structural primitives for the SEO / marketing pages
- * (ielts-practice, cambridge-ielts-practice, /vs/*) — same brand voice as the
+ * (ielts-practice and the four skill pages) — same brand voice as the
  * legal pages plus comparison tables, FAQ with FAQPage JSON-LD, and CTA bands.
  * Server-safe (no "use client").
  */
@@ -160,9 +160,6 @@ const RELATED = [
   { href: "/cefr-multilevel-practice", label: "CEFR / Multilevel (DTM)" },
   { href: "/for-education-centers", label: "For education centres" },
   { href: "/grade", label: "Free IELTS writing checker" },
-  { href: "/cambridge-ielts-practice", label: "Cambridge-style IELTS tests" },
-  { href: "/vs/engnovate", label: "EngProgress vs Engnovate" },
-  { href: "/vs/ielts-gg", label: "EngProgress vs ielts.gg" },
 ];
 
 /** Cross-links between the marketing pages (skips the page it renders on). */

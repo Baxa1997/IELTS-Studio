@@ -100,6 +100,10 @@ const FEATURES: Feature[] = [
     body: "Writing, Reading, Listening and Speaking are all live and all graded. The Multilevel Reading and Writing papers run alongside them in their own format.",
   },
   {
+    title: "The Cambridge format, unlimited",
+    body: "Every part, question type and layout of the official practice-book format — but generated, so you never run out and never re-sit one you can half remember.",
+  },
+  {
     title: "Original content, generated on demand",
     body: "No past papers, ever. Every passage, prompt, recording and question is written for you when you ask for it, so there is nothing to memorise in advance — and nothing that infringes anyone's copyright.",
   },
@@ -283,6 +287,30 @@ const TABS: InfoTab[] = [
       {
         title: "Delivery measured, not guessed",
         body: "Speech rate, filler count and answer length are computed from your audio, against the time you actually spent speaking.",
+      },
+    ],
+  },
+  {
+    icon: "◈",
+    title: "Cambridge-style",
+    lede: "The format of the official practice books, without ever running out of tests — and without copying one of them.",
+    how: "The generator was built against the structure of the official practice-book format: the parts, the question types, the layouts, the pacing. Listening comes out as four parts and forty questions — form, note, table and sentence completion in Parts 1 and 4; map and plan labelling, matching and multiple choice in Part 2; discussion multiple choice, choose-TWO and flow-charts in Part 3 — with multi-voice audio and the standard narrator framing. Reading comes out as three academic passages of rising difficulty carrying matching headings, matching features, True/False/Not Given, Yes/No/Not Given, note completion, sentence endings, pick-TWO and summary completion, with the group-level word-limit instructions printed the way the books print them. Writing covers Task 1 reports and every modern Task 2 category, including the newer \u201coutweigh\u201d and positive-or-negative-development phrasings. Listening and Reading are then converted on the standard forty-question raw-score table.",
+    points: [
+      {
+        title: "The books run out",
+        body: "A serious candidate finishes the recent ones in weeks. Generated tests do not run out, so every practice can be a first attempt.",
+      },
+      {
+        title: "A second pass tests memory",
+        body: "Re-sitting a book measures recall, not readiness. Content you have never seen is the only content that measures you honestly.",
+      },
+      {
+        title: "A book cannot explain itself",
+        body: "It tells you the answer was C. Here every wrong answer in Reading and Listening explains why the trap caught you, and your misses are grouped by question type.",
+      },
+      {
+        title: "Nothing is copied",
+        body: "No official Cambridge test is hosted, copied or paraphrased here. \u201cCambridge-style\u201d describes the format our original content follows — EngProgress is not affiliated with or endorsed by Cambridge Assessment English, IELTS, the British Council or IDP.",
       },
     ],
   },
