@@ -35,7 +35,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           <Link href="/for-education-centers" style={{ fontSize: 14, fontWeight: 600, color: "#41496A", textDecoration: "none" }}>For centres</Link>
           <Link href="/#pricing" style={{ fontSize: 14, fontWeight: 600, color: "#41496A", textDecoration: "none" }}>Pricing</Link>
           <Link
-            href="/sign-up"
+            href="/sign-in"
             style={{ fontSize: 14, fontWeight: 700, color: "#fff", background: INDIGO, borderRadius: 10, padding: "8px 14px", textDecoration: "none" }}
           >
             Start free

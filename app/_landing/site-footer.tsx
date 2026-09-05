@@ -89,9 +89,9 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
     heading: "Account & legal",
     links: [
       { label: "Sign in", href: "/sign-in" },
-      // NOT /start — that route redirects unconditionally to /sign-in
-      // (app/start/page.tsx line 16), so linking it costs a pointless hop.
-      { label: "Create an account", href: "/sign-up" },
+      // Account creation is a dialog on /sign-in now — there is no /sign-up
+      // page. (/start is dead too: it redirects unconditionally to /sign-in.)
+      { label: "Create an account", href: "/sign-in" },
       { label: "Privacy policy", href: "/privacy" },
       { label: "Terms of use", href: "/terms" },
     ],

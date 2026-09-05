@@ -18,6 +18,7 @@ import {
   WHITE,
 } from "@/app/_landing/design";
 import { RegisterCenterCard } from "@/app/_landing/register-center";
+import { SignUpButton } from "@/app/_landing/sign-up-dialog";
 import { createClient } from "@/lib/supabase/client";
 
 const initial: AuthFormState = {};
@@ -242,9 +243,20 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
 
       <div style={{ textAlign: "center", fontSize: 15, color: BODY, marginTop: "clamp(14px,2.5vh,26px)" }}>
         Don&apos;t have an account?{" "}
-        <Link href="/sign-up" style={{ fontWeight: 700, color: BRAND }}>
-          Sign up
-        </Link>
+        <SignUpButton
+          label="Sign up"
+          style={{
+            fontWeight: 700,
+            color: BRAND,
+            background: "transparent",
+            border: 0,
+            padding: 0,
+            fontFamily: SANS,
+            fontSize: 15,
+            textDecoration: "underline",
+            textUnderlineOffset: 3,
+          }}
+        />
       </div>
 
       <RegisterCenterCard />

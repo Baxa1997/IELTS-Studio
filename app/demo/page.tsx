@@ -121,7 +121,7 @@ export default function DemoPage() {
             marginTop: 26,
           }}
         >
-          <Link href="/sign-up" style={BTN_PRIMARY}>
+          <Link href="/sign-in" style={BTN_PRIMARY}>
             Start free
           </Link>
           <Link href="/grade" style={BTN_GHOST}>
@@ -216,7 +216,7 @@ export default function DemoPage() {
             }}
           >
             <Link
-              href="/sign-up"
+              href="/sign-in"
               style={{ ...BTN_GHOST, background: "#fff", border: "none", color: INDIGO }}
             >
               Create a free account

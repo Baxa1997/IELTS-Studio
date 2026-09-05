@@ -90,7 +90,7 @@ export default function ForEducationCentersPage() {
 
       <Sec title="How to get started">
         <P>
-          Apply from the <B>Organization</B> tab on the <A href="/sign-up">sign-up page</A> with your
+          Apply from the <B>Organization</B> tab on the <A href="/sign-in">sign-up page</A> with your
           centre&rsquo;s official name and email. Applications are reviewed by hand — we approve you, you
           get a confirmation email, and your admin account can start inviting teachers. If you would
           rather see it working first, <A href="/contact">get in touch</A> and we will walk you through

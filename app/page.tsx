@@ -569,11 +569,15 @@ function Platform() {
 
 /* ── pricing ───────────────────────────────────────────────────────────────── */
 
-const PLAN_CTA: Record<OrgPlan, { label: string; href: string }> = {
-  trial: { label: "Start free", href: "/sign-up" },
-  starter: { label: "Choose Standard", href: "/sign-up" },
-  pro: { label: "Choose Pro", href: "/sign-up" },
-  enterprise: { label: "Choose Enterprise", href: "/sign-up" },
+/* Labels only — every plan sends the visitor to /sign-in, where account creation
+ * lives. They used to point at /sign-up, which was the last screen still on the
+ * old brand: pressing "Choose plan" handed you a green form in the middle of a
+ * burgundy funnel. That page is gone. */
+const PLAN_CTA: Record<OrgPlan, string> = {
+  trial: "Start free",
+  starter: "Choose Standard",
+  pro: "Choose Pro",
+  enterprise: "Choose Enterprise",
 };
 
 function Pricing() {
@@ -672,7 +676,7 @@ function Pricing() {
                 ))}
               </ul>
               <Link
-                href={PLAN_CTA[id].href}
+                href="/sign-in"
                 className={popular ? "lp-solid" : "lp-ghost"}
                 style={{
                   ...(popular ? solidButton() : ghostButton()),
@@ -682,7 +686,7 @@ function Pricing() {
                   padding: "15px 24px",
                 }}
               >
-                {PLAN_CTA[id].label}
+                {PLAN_CTA[id]}
               </Link>
             </div>
           );

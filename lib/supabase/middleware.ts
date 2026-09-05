@@ -12,7 +12,6 @@ const PUBLIC_PATHS = [
   "/",
   "/start",
   "/sign-in",
-  "/sign-up",
   "/accept-invite",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
@@ -112,7 +111,7 @@ export async function updateSession(request: NextRequest) {
   // /dashboard (the student home) rather than the marketing root `/`, which does
   // NOT forward signed-in visitors and so reads as "sign-in went nowhere".
   // super_admins are bounced on to /admin by the dashboard guard.
-  if (signedIn && (pathname === "/sign-in" || pathname === "/sign-up")) {
+  if (signedIn && pathname === "/sign-in") {
     return redirectKeepingCookies(request, supabaseResponse, "/dashboard");
   }
 

@@ -14,28 +14,9 @@ import {
   WHITE,
 } from "./design";
 
-/**
- * The hero's Band-9 examiner card — OURS, kept, recoloured.
- *
- * The design canvas draws its own version of this card: same idea, simpler, with
- * a flat "9" and a four-cell criteria grid. The owner's instruction was explicit
- * — take the rest of the page from the canvas, but keep THIS element as we built
- * it and change only its colour. So what survives from the original is
- * everything that made it ours:
- *
- *   · the animated `BandCountUp` climbing the real half-bands to a 9,
- *   · the mortarboard, drawn rather than emoji'd,
- *   · the "Recognised for admission at" university strip.
- *
- * and what changes is the palette (indigo → burgundy) plus the card shell, which
- * now matches the canvas: 24px radius, #e6e8ec hairline, the canvas's shadow.
- * The cream/parchment tones the old card used (#EFEDE3, #9e9b90, #57564d) came
- * from the previous brand and have gone with it.
- */
 export function Band9Card() {
   return (
     <div style={{ position: "relative" }}>
-      {/* the floating accent, anchored to the card's top edge */}
       <div
         style={{
           position: "absolute",
@@ -110,7 +91,6 @@ export function Band9Card() {
           </span>
         </div>
 
-        {/* the band — the mortarboard, then the live number */}
         <div style={{ textAlign: "center", padding: "22px 0 6px" }}>
           <Mortarboard />
           <div
@@ -167,61 +147,11 @@ export function Band9Card() {
             </span>
           ))}
         </div>
-
-        {/* The university strip, commented out by the owner. To bring it back,
-            restore `HAIR` to the token import above — it is the only binding in
-            here that nothing else uses. */}
-        {/* <div style={{ borderTop: `1px solid ${HAIR}`, marginTop: 26, paddingTop: 20 }}>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.16em",
-              color: MUTED,
-              textAlign: "center",
-            }}
-          >
-            RECOGNISED FOR ADMISSION AT
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexWrap: "wrap",
-              columnGap: 18,
-              rowGap: 10,
-              marginTop: 14,
-            }}
-          >
-            {[
-              { src: "/logos/mit.webp", alt: "MIT", w: 122 },
-              { src: "/logos/harvard.webp", alt: "Harvard", w: 161 },
-              { src: "/logos/stanford.webp", alt: "Stanford", w: 164 },
-              { src: "/logos/columbia.webp", alt: "Columbia", w: 194 },
-            ].map((u) => (
-              <img
-                key={u.alt}
-                src={u.src}
-                alt={u.alt}
-                width={u.w}
-                height={80}
-                decoding="async"
-                style={{ height: 40, width: "auto", objectFit: "contain", display: "block" }}
-              />
-            ))}
-          </div>
-        </div> */}
       </div>
     </div>
   );
 }
 
-/**
- * The drawn mortarboard. Recoloured from the old navy/indigo board to the
- * burgundy; the gold tassel stays, because gold is what a tassel is and it reads
- * against burgundy as well as it did against navy.
- */
 function Mortarboard() {
   return (
     <div style={{ width: 98, margin: "0 auto" }} className="lp-cap">

@@ -27,14 +27,18 @@ import {
  *
  * Posts to `signUpOrganization`, the same server action the sign-in page's
  * original modal used, with the same field names (`org_name`, `email`, `login`,
- * `password`). On success that action redirects to /awaiting-approval or returns
- * a "check your email" notice, so there is no success state to hold here.
+ * `password`).
  *
- * WHY NOT REUSE `(auth)/sign-in/org-register-modal.tsx`: it draws from
- * `(auth)/brand-form.ts`, which is the OLD indigo palette and is still shared
- * with the sign-up page. Re-skinning it there would have repainted sign-up too.
- * This one is the canvas's burgundy and is used by both surfaces that now wear
- * it — the centre guide and sign-in.
+ * IT DOES NOT REDIRECT. The action returns `{ submitted: true, signInWith }` and
+ * leaves the browser where it is, so this dialog has to render the confirmation
+ * itself — an earlier version of this file assumed a redirect (copied from the
+ * old modal's comment, which was also wrong) and a centre that applied would
+ * have watched the form sit there saying nothing.
+ *
+ * It replaced `(auth)/sign-in/org-register-modal.tsx`, which drew from the old
+ * indigo `brand-form.ts`. With /sign-up gone, that modal, the old sign-in form,
+ * the application-submitted panel, the old Google button and `brand-form.ts`
+ * itself had nothing left importing them, and all five were deleted.
  */
 
 const initial: AuthFormState = {};
@@ -146,6 +150,57 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
           </button>
         </div>
 
+        {state.submitted ? (
+          <div style={{ marginTop: 22 }}>
+            <div
+              style={{
+                background: BRAND_TINT,
+                border: `1px solid ${LINE}`,
+                borderRadius: RADIUS.field,
+                padding: "18px 20px",
+              }}
+            >
+              <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 18, color: INK }}>
+                Application received
+              </div>
+              <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
+                We review every center by hand and email you as soon as yours is approved — usually
+                within a working day.
+              </p>
+              {state.signInWith ? (
+                <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
+                  Your login is{" "}
+                  <strong style={{ color: BRAND }}>{state.signInWith}</strong> — sign in with that
+                  and the password you just chose, not with your email.
+                </p>
+              ) : null}
+              {state.notice ? (
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
+                  {state.notice}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: "100%",
+                marginTop: 18,
+                background: BRAND,
+                color: WHITE,
+                border: 0,
+                borderRadius: RADIUS.field,
+                padding: 15,
+                fontFamily: SANS,
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Done
+            </button>
+          </div>
+        ) : (
         <form action={formAction} style={{ marginTop: 22 }}>
           <label htmlFor="org_name" style={label}>
             Official organization name
@@ -251,6 +306,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
             {pending ? "Submitting…" : "Submit application"}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

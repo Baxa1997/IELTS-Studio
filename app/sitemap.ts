@@ -22,7 +22,6 @@ const publicRoutes = [
   { path: "/vs/ielts-gg", priority: 0.7, changeFrequency: "monthly" },
   { path: "/start", priority: 0.65, changeFrequency: "monthly" },
   { path: "/sign-in", priority: 0.3, changeFrequency: "yearly" },
-  { path: "/sign-up", priority: 0.3, changeFrequency: "yearly" },
   { path: "/contact", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
   { path: "/terms", priority: 0.2, changeFrequency: "yearly" },

@@ -345,7 +345,7 @@ function SignupWall({ onClose }: { onClose: () => void }) {
           model answer, and the revision loop to rewrite and re-grade.
         </p>
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-          <Link href="/sign-up" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 12, background: INDIGO, color: "#fff", fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
+          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 12, background: INDIGO, color: "#fff", fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
             Create a free account
           </Link>
           <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, borderRadius: 12, background: "#fff", border: "1px solid #DAD8F2", color: INDIGO, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
@@ -498,7 +498,7 @@ function Result({
           </p>
         </div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-          <Link href="/sign-up" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: INDIGO, color: "#fff", fontSize: 14.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
+          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: INDIGO, color: "#fff", fontSize: 14.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
             Create a free account
           </Link>
           <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: "#fff", border: "1px solid #DAD8F2", color: INDIGO, fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>

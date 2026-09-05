@@ -140,7 +140,7 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
         <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.55, color: "#b7b9da" }}>{sub}</div>
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-        <Link href="/sign-up" style={{ background: INDIGO, color: "#fff", fontWeight: 700, fontSize: 15, borderRadius: 12, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
+        <Link href="/sign-in" style={{ background: INDIGO, color: "#fff", fontWeight: 700, fontSize: 15, borderRadius: 12, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
           Start free
         </Link>
         <Link href="/#pricing" style={{ color: "#c7c9e6", fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>

@@ -184,7 +184,7 @@ export default async function PublicGradePage() {
               <Link href="/sign-in" style={{ ...navBtn, color: "#41496A" }}>
                 Sign in
               </Link>
-              <Link href="/sign-up" style={{ ...navBtn, background: INDIGO, color: "#fff", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
+              <Link href="/sign-in" style={{ ...navBtn, background: INDIGO, color: "#fff", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
                 Create free account
               </Link>
             </>
@@ -236,7 +236,7 @@ export default async function PublicGradePage() {
             <Link href="/#pricing" style={footLink}>Pricing</Link>
             <Link href="/privacy" style={footLink}>Privacy</Link>
             <Link href="/terms" style={footLink}>Terms</Link>
-            <Link href="/sign-up" style={footLink}>Sign up</Link>
+            <Link href="/sign-in" style={footLink}>Sign up</Link>
           </nav>
         </footer>
       </main>
