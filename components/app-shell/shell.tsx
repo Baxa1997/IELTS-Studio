@@ -199,6 +199,21 @@ export function AppShell({
     });
 
   const isConsole = variant === "console";
+  /**
+   * WHICH SURFACE THIS PAGE STANDS ON — A QUESTION ABOUT THE ROUTE, NOT THE USER.
+   *
+   * This used to be `isConsole`, i.e. the `variant` prop, i.e.
+   * `canManagePeople(role)` — which is `center_admin || administrator` and
+   * pointedly NOT `teacher`. So a teacher on /console got the learner frame:
+   * the console's own cream top bar and full-bleed pages rendered inside a
+   * floating white card with a 10px gutter, a border and a shadow, reading as
+   * a page cut out and pasted onto the shell. The same confusion ran the other
+   * way for an owner on /write, who got console chrome around a learner page.
+   *
+   * A surface belongs to the page drawn on it. `/console/*` lays itself out
+   * edge to edge and paints its own ground; everything else wants the card.
+   */
+  const consoleSurface = pathname.startsWith("/console");
   const asideClass = [
     "lp-shell-sidebar",
     open ? "lp-shell-sidebar--open" : "",
@@ -428,7 +443,7 @@ export function AppShell({
             that scrolls internally, so it reads as a separated surface on the canvas. */}
         <main
           className="lp-shell-main"
-          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: isConsole ? 0 : 10 }}
+          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: consoleSurface ? 0 : 10 }}
         >
           <div
             /* The space before `lp-shell-surface--fills` is load-bearing: without it
@@ -444,10 +459,10 @@ export function AppShell({
               // The console's ground is the CRM design's cream, not the learner
               // app's white card. Set here rather than in CSS so it doesn't
               // depend on `:has()` reaching a descendant.
-              background: isConsole ? "#F4F3EF" : "#fff",
-              borderRadius: isConsole ? 0 : 18,
-              border: isConsole ? "none" : "1px solid #E6E8EC",
-              boxShadow: isConsole
+              background: consoleSurface ? "#F4F3EF" : "#fff",
+              borderRadius: consoleSurface ? 0 : 18,
+              border: consoleSurface ? "none" : "1px solid #E6E8EC",
+              boxShadow: consoleSurface
                 ? "none"
                 : "0 1px 2px rgba(30,10,18,.04), 0 18px 40px -28px rgba(30,10,18,.18)",
             }}
@@ -462,7 +477,7 @@ export function AppShell({
             <div
               className={`lp-shell-content ${
                 contentClassName ??
-                (isConsole || ownsTheSurface(pathname) ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")
+                (consoleSurface || ownsTheSurface(pathname) ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")
               }`}
             >
               {children}

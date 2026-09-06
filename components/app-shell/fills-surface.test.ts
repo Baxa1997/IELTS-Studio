@@ -132,3 +132,44 @@ describe("what the chain is for", () => {
     expect(chat.slice(at - 400, at + 400)).toMatch(/flex:\s*"none"/);
   });
 });
+
+/**
+ * WHICH SURFACE A PAGE STANDS ON IS A QUESTION ABOUT THE ROUTE.
+ *
+ * The chrome — gutter, radius, border, shadow, ground — used to be chosen by
+ * `variant`, which the layout computes from `canManagePeople(role)`: true for
+ * `center_admin` and `administrator`, false for `teacher`. So a TEACHER on
+ * /console got the learner frame around console pages: full-bleed layouts and
+ * the console's cream top bar boxed inside a floating white card with a 10px
+ * gutter, a border and a shadow. It read as a page cut out and pasted on. The
+ * same confusion ran the other way for an owner on /write.
+ *
+ * Role decides what you may DO. The route decides what the page is DRAWN on.
+ */
+describe("the surface follows the route, not the role", () => {
+  it("derives the console surface from the pathname", () => {
+    expect(shell).toMatch(/const consoleSurface = pathname\.startsWith\("\/console"\)/);
+  });
+
+  it("never dresses the surface from the role again", () => {
+    // Every chrome property must read `consoleSurface`. `isConsole` (the role)
+    // may still exist for other purposes, but not for any of these.
+    for (const prop of ["padding", "background", "borderRadius", "border", "boxShadow"]) {
+      const m = new RegExp(`${prop}: isConsole`).exec(shell);
+      expect(m, `${prop} is still dressed from the role`).toBeNull();
+    }
+  });
+
+  it("keeps the console flush and the learner page on a card", () => {
+    // The two halves of the decision, so a later edit cannot quietly drop one.
+    expect(shell).toMatch(/padding: consoleSurface \? 0 : 10/);
+    expect(shell).toMatch(/borderRadius: consoleSurface \? 0 : 18/);
+    expect(shell).toMatch(/border: consoleSurface \? "none"/);
+  });
+
+  it("still skips the content wrapper's padding on console routes", () => {
+    // The console owns its own gutters (`.cn-page`); adding the learner
+    // wrapper's padding on top double-pads every staff page.
+    expect(shell).toMatch(/consoleSurface \|\| ownsTheSurface\(pathname\)/);
+  });
+});

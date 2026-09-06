@@ -109,3 +109,42 @@ describe("collapsed rail: the box the glyph is centred in", () => {
     expect(declaration(rail, "padding-right")).toBe("12px !important");
   });
 });
+
+/**
+ * The way OUT of the collapsed rail.
+ *
+ * The toggle is pinned out of flow to the brand row's right edge, which is the
+ * right answer at 272px and an impossible one at 72px: a 30px button at
+ * `right: 10px` occupies x=32..62, and the 36px logomark centred in the 48px
+ * content box occupies x=12..60. They were drawn on top of each other, so the
+ * only control that reopens the rail was hidden under the brand — and a rail
+ * you cannot reopen is a rail you cannot use.
+ */
+describe("collapsed rail: the toggle is not buried under the logomark", () => {
+  const brandrow = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-brandrow");
+  const toggle = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-collapse");
+
+  it("stacks the brand row instead of laying it across a 72px rail", () => {
+    expect(declaration(brandrow, "flex-direction")).toBe("column");
+  });
+
+  it("puts the toggle back in flow, beneath the mark", () => {
+    // `position` and `right` are inline on the button — they have to be, for
+    // the overhang when expanded — so both need !important or this is a no-op
+    // and the button goes straight back on top of the logo.
+    expect(declaration(toggle, "position")).toBe("static !important");
+    expect(declaration(toggle, "right")).toBe("auto !important");
+  });
+
+  it("keeps a gap, so the two are not touching", () => {
+    expect(declaration(brandrow, "gap")).toBe("10px");
+  });
+
+  it("leaves the expanded rail pinning it as before", () => {
+    // The base rule is what gives the expanded rail its right-edge toggle.
+    // Collapsing must override it, not replace it.
+    const base = ruleBody(".lp-sb-collapse");
+    expect(declaration(base, "display")).toBe("none");
+    expect(css).toMatch(/\.lp-sb-collapse\s*\{[^}]*display:\s*flex/);
+  });
+});

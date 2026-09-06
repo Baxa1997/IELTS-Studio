@@ -1814,6 +1814,22 @@
     margin: 0 -12px;
     padding-left: 18px;
     padding-right: 18px;
+    /* AND THE ROW BECOMES A COLUMN, SO THE WAY OUT IS STILL VISIBLE.
+       Expanded, the toggle is out of flow and pinned to the row's right edge —
+       half on the rail, half on the page. Collapsed, there is no right edge
+       left to pin it to: the rail is 72px, the button is 30px at `right: 10px`
+       and the logomark is 36px centred, so the two occupied the same place and
+       the only control that reopens the rail sat underneath the brand. Stacking
+       them keeps both, and the toggle stays a full 30px target. */
+    flex-direction: column;
+    gap: 10px;
+  }
+  /* Back into flow, beneath the mark. `!important` because `position` and
+     `right` are inline on the button (they have to be, for the half-on-the-page
+     overhang when expanded) and an inline style beats an external rule. */
+  .lp-shell-sidebar--collapsed .lp-sb-collapse {
+    position: static !important;
+    right: auto !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-footer {
     margin-left: -12px;
