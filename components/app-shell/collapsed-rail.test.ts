@@ -113,38 +113,64 @@ describe("collapsed rail: the box the glyph is centred in", () => {
 /**
  * The way OUT of the collapsed rail.
  *
- * The toggle is pinned out of flow to the brand row's right edge, which is the
- * right answer at 272px and an impossible one at 72px: a 30px button at
- * `right: 10px` occupies x=32..62, and the 36px logomark centred in the 48px
- * content box occupies x=12..60. They were drawn on top of each other, so the
- * only control that reopens the rail was hidden under the brand — and a rail
- * you cannot reopen is a rail you cannot use.
+ * The toggle is anchored to the rail's right EDGE and hangs half over the page —
+ * that overhang is the design (a two-tone button straddling the boundary) and it
+ * is also what keeps the button clear of the brand as the rail narrows.
+ *
+ * It had drifted to `right: 10px`, INSIDE the rail. Expanded that merely lost the
+ * straddle; collapsed it was fatal. A 30px button at `right: 10px` on a 72px rail
+ * occupies x=32..62, and the 36px logomark centred in the 48px content box
+ * occupies x=18..54 — so the only control that reopens the rail was drawn
+ * underneath the brand, and a rail you cannot reopen is a rail you cannot use.
+ *
+ * Anchored to the edge instead, the button sits at x=57..87 and the two never
+ * meet — at any rail width, with no collapsed-only rule to keep in sync.
  */
-describe("collapsed rail: the toggle is not buried under the logomark", () => {
-  const brandrow = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-brandrow");
-  const toggle = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-collapse");
+describe("collapsed rail: the toggle straddles the edge, clear of the logomark", () => {
+  const shell = readFileSync(fileURLToPath(new URL("./shell.tsx", import.meta.url)), "utf8");
 
-  it("stacks the brand row instead of laying it across a 72px rail", () => {
-    expect(declaration(brandrow, "flex-direction")).toBe("column");
+  it("anchors the button to the rail's edge, not inside it", () => {
+    // Half of 30px. A positive value here is the regression.
+    expect(shell).toMatch(/right: "-15px"/);
+    expect(shell).not.toMatch(/right: "10px"/);
   });
 
-  it("puts the toggle back in flow, beneath the mark", () => {
-    // `position` and `right` are inline on the button — they have to be, for
-    // the overhang when expanded — so both need !important or this is a no-op
-    // and the button goes straight back on top of the logo.
-    expect(declaration(toggle, "position")).toBe("static !important");
-    expect(declaration(toggle, "right")).toBe("auto !important");
+  it("gives it a positioned rail to anchor to on desktop", () => {
+    // `position: absolute` resolves against the nearest positioned ancestor.
+    // Without this the button escapes to the viewport and lands anywhere.
+    const desktopRail = css.slice(css.indexOf("@media (min-width: 768px)"));
+    expect(desktopRail.slice(0, desktopRail.indexOf("}"))).toMatch(/position:\s*relative/);
   });
 
-  it("keeps a gap, so the two are not touching", () => {
-    expect(declaration(brandrow, "gap")).toBe("10px");
+  it("needs no collapsed-only rule, because the edge moves for it", () => {
+    // A collapsed override would be a second source of truth for the same
+    // position, and the two would drift. The arithmetic below is why none is
+    // needed; if someone adds one, this says to re-check the sum instead.
+    expect(css).not.toMatch(/\.lp-shell-sidebar--collapsed \.lp-sb-collapse\s*\{/);
   });
 
-  it("leaves the expanded rail pinning it as before", () => {
-    // The base rule is what gives the expanded rail its right-edge toggle.
-    // Collapsing must override it, not replace it.
-    const base = ruleBody(".lp-sb-collapse");
-    expect(declaration(base, "display")).toBe("none");
-    expect(css).toMatch(/\.lp-sb-collapse\s*\{[^}]*display:\s*flex/);
+  it("clears the logomark at 72px — the sum, kept honest", () => {
+    const rail = ruleBody(".lp-shell-sidebar--collapsed");
+    const width = Number(declaration(rail, "width")?.replace("px", ""));
+    const pad = Number(declaration(rail, "padding-left")?.replace(/\D/g, ""));
+    const button = 30;
+    const overhang = 15;
+    const mark = 36;
+
+    // Button: anchored `overhang` past the rail's right edge.
+    const buttonLeft = width - (button - overhang);
+    // Mark: centred in the content box.
+    const markRight = pad + (width - pad * 2 + mark) / 2;
+
+    expect(buttonLeft, "button starts after the mark ends").toBeGreaterThanOrEqual(markRight);
+  });
+
+  it("is dressed for BOTH grounds it sits on", () => {
+    // Half on a dark rail, half on a light page: it can borrow neither, so a
+    // translucent-white fill (what the rail's own items use) is wrong here.
+    const at = shell.indexOf("lp-sb-collapse lp-sb-item");
+    const block = shell.slice(at, at + 1400);
+    expect(block).toMatch(/background: WHITE/);
+    expect(block).not.toMatch(/background: "rgba\(255,255,255/);
   });
 });

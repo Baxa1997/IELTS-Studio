@@ -24,6 +24,9 @@ import {
   EngProgressLogo,
   EngProgressMark,
 } from "@/components/brand/engprogress-logo";
+/* The collapse toggle straddles the rail edge, so it is dressed in the PAGE's
+   palette rather than the rail's — hence the shared tokens here. */
+import { BRAND, LINE, WHITE } from "@/lib/theme/tokens";
 
 import { SidebarNav } from "./sidebar-nav";
 
@@ -37,7 +40,6 @@ const CANVAS = "#F6F7F9";
 /** One solid burgundy rail, matching the primary brand panel. */
 const RAIL_BG = "rgb(60 2 25)";
 const RAIL_LINE = "rgba(255,255,255,.07)"; // hairlines/borders on the rail
-const RAIL_TEXT = "#E4EFEE";
 const RAIL_FAINT = "#8EAAAB"; // secondary on-rail text (email, chevrons)
 /* The role chip uses the positive green accent so it stays legible against the
    burgundy rail without looking like another selected navigation item. */
@@ -369,11 +371,19 @@ export function AppShell({
                 width: 30,
                 height: 30,
                 flex: "none",
-                border: `1px solid rgba(255,255,255,.12)`,
-                background: "rgba(255,255,255,.10)",
-                borderRadius: 8,
+                /* IT STRADDLES THE RAIL'S EDGE, AND THAT IS WHY IT IS PALE.
+                   Half of this button sits on the dark rail and half on the
+                   light page, so it cannot borrow either ground: a translucent
+                   white read as a smudge on the page half, and a burgundy fill
+                   would vanish into the rail half. A solid light disc with a
+                   hairline is the one treatment that is legible on both — light
+                   against the rail, outlined against the page. */
+                border: `1px solid ${LINE}`,
+                background: WHITE,
+                borderRadius: 999,
                 cursor: "pointer",
-                color: RAIL_FAINT,
+                color: BRAND,
+                boxShadow: "0 2px 6px -1px rgba(20,0,9,.30)",
                 // Half on the rail, half on the page — which is the whole
                 // reason it needs a z-index. It sat with none, so it took the
                 // rail's stacking position and lost to anything on the content
@@ -382,14 +392,22 @@ export function AppShell({
                 // the page it is supposed to sit on top of. 40 puts it above the
                 // rail's own mobile scrim (30) and every content layer (≤21).
                 position: "absolute",
-                right: "10px",
+                /* Dead centre on the rail's edge: half the 30px button hangs
+                   over the page. `.lp-shell-sidebar` is `position: relative` on
+                   desktop precisely so this anchors to that edge (globals.css).
+
+                   It was `10px`, which tucked the whole button inside the rail —
+                   losing the two-tone straddle, and, once the rail collapses to
+                   72px, parking it on top of the 36px logomark so the only way
+                   to reopen the rail was hidden under the brand. */
+                right: "-15px",
                 zIndex: 40,
               }}
             >
               {collapsed ? (
-                <ChevronsRight size={16} color={RAIL_TEXT} />
+                <ChevronsRight size={16} color={BRAND} />
               ) : (
-                <ChevronsLeft size={16} color={RAIL_TEXT} />
+                <ChevronsLeft size={16} color={BRAND} />
               )}
             </button>
           </div>
