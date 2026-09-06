@@ -2059,6 +2059,8 @@
   .lp-shell-surface--fills > .lp-shell-content {
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   /* The console's own brand wrapper, and then its page box — both are plain
      containers in the middle of the chain, and a percentage height dies at the
@@ -2068,15 +2070,21 @@
     height: 100%;
   }
   .lp-shell-surface--fills .cn-root {
+    flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
   }
   .cn-assistant-page {
+    flex: 1;
+    height: 0 !important;
+    min-height: 0;
     overflow: hidden;
   }
   .lp-shell-surface--fills .cn-page {
+    flex: 1;
+    height: auto !important;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -2092,6 +2100,37 @@
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   gap: 12px;
+  min-height: 0;
+}
+.cn-assistant-conversation {
+  min-height: 0;
+  overflow: hidden;
+}
+.cn-assistant-thread-card {
+  min-height: 0;
+  overflow: hidden;
+}
+.cn-assistant-messages {
+  min-height: 0;
+  overflow-y: auto;
+}
+.cn-assistant-composer {
+  flex: 0 0 auto !important;
+}
+@media (min-width: 901px) {
+  .cn-assistant-grid {
+    flex: 1 1 0% !important;
+    height: 0;
+  }
+  .cn-assistant-conversation {
+    display: grid !important;
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: auto !important;
+    align-self: stretch;
+  }
+  .cn-assistant-thread-card {
+    min-height: 0;
+  }
 }
 @media (max-width: 1180px) {
   .cn-assistant-grid {

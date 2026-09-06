@@ -263,7 +263,16 @@ export function AssistantChat({
   return (
     <div className="cn-assistant-page">
       {/* ── who is talking, and to what ─────────────────────────────────── */}
-      <header style={{ ...card, flex: "none", display: "flex", alignItems: "center", gap: 12, padding: "12px 18px" }}>
+      <header
+        style={{
+          ...card,
+          flex: "none",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "12px 18px",
+        }}
+      >
         <span
           style={{
             width: 34,
@@ -279,7 +288,15 @@ export function AssistantChat({
           <Spark size={18} />
         </span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 19, lineHeight: 1.15, color: INK }}>
+          <div
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 700,
+              fontSize: 19,
+              lineHeight: 1.15,
+              color: INK,
+            }}
+          >
             Assistant
           </div>
           <div
@@ -429,7 +446,9 @@ export function AssistantChat({
               gridTemplateRows: "auto minmax(0, 1fr)",
             }}
           >
-            <div style={{ padding: "14px 14px 10px", display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{ padding: "14px 14px 10px", display: "flex", alignItems: "center", gap: 8 }}
+            >
               <span style={railHead}>History</span>
               <span style={{ marginLeft: "auto", fontSize: 11, color: "#b0b4c0" }}>
                 {threads.length === 0
@@ -506,8 +525,12 @@ export function AssistantChat({
         </aside>
 
         {/* ── the conversation ──────────────────────────────────────────── */}
-        <div style={{ minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div
+          className="cn-assistant-conversation"
+          style={{ minHeight: 0, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}
+        >
           <div
+            className="cn-assistant-thread-card"
             style={{
               ...card,
               flex: 1,
@@ -560,7 +583,10 @@ export function AssistantChat({
               </span>
             </div>
 
-            <div style={{ overflow: "auto", padding: "20px 20px 12px", background: "#fbfbfd" }}>
+            <div
+              className="cn-assistant-messages"
+              style={{ overflow: "auto", padding: "20px 20px 12px", background: "#fbfbfd" }}
+            >
               <div
                 style={{
                   maxWidth: 820,
@@ -607,7 +633,10 @@ export function AssistantChat({
           </div>
 
           {/* ── the composer ───────────────────────────────────────────── */}
-          <div style={{ ...card, flex: "none", padding: "12px 14px" }}>
+          <div
+            className="cn-assistant-composer"
+            style={{ ...card, flex: "none", padding: "12px 14px" }}
+          >
             {error ? (
               <p style={{ margin: "0 0 9px", fontSize: 13, color: "#a13a2c" }}>{error}</p>
             ) : null}

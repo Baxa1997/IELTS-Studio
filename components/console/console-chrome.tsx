@@ -219,68 +219,68 @@ export function ConsoleChrome({
   return (
     <PanelContext.Provider value={api}>
       {bare ? null : (
-      <header
-        className="cn-topbar"
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          background: "rgba(244,243,239,.88)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #C5C4BE",
-          padding: "12px 28px",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-        }}
-      >
-        <div style={{ fontSize: 12.5, color: "#6E6C87" }}>{crumb ?? "Center"}</div>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
-          {/* ON EVERY PAGE, because the moment you need it is the moment you do
+        <header
+          className="cn-topbar"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            background: "rgba(244,243,239,.88)",
+            backdropFilter: "blur(10px)",
+            borderBottom: "1px solid #C5C4BE",
+            padding: "12px 28px",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
+          <div style={{ fontSize: 12.5, color: "#6E6C87" }}>{crumb ?? "Center"}</div>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            {/* ON EVERY PAGE, because the moment you need it is the moment you do
               not know which page would have answered you. It navigates rather
               than opening a panel: one conversation, in one place, that you can
               come back to — not a popover whose contents depend on where you
               happened to be standing. */}
-          <Link
-            href="/console/assistant"
-            className="cn-askai"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 7,
-              background: "#fff",
-              border: "1px solid #C5C4BE",
-              borderRadius: 8,
-              padding: "7px 11px",
-              fontSize: 12.5,
-              fontWeight: 600,
-              color: INK,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <Sparkles size={14} aria-hidden />
-            Ask AI
-          </Link>
-          <span
-            className="cn-hide-sm"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              background: "#fff",
-              border: "1px solid #C5C4BE",
-              borderRadius: 8,
-              padding: "7px 11px",
-              fontSize: 12.5,
-              color: INK,
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#16794C" }} />
-            {windowLabel}
-          </span>
-          {/* No global actions live here any more.
+            <Link
+              href="/console/assistant"
+              className="cn-askai"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                background: "#fff",
+                border: "1px solid #C5C4BE",
+                borderRadius: 8,
+                padding: "7px 11px",
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: INK,
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <Sparkles size={14} aria-hidden />
+              Ask AI
+            </Link>
+            <span
+              className="cn-hide-sm"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                background: "#fff",
+                border: "1px solid #C5C4BE",
+                borderRadius: 8,
+                padding: "7px 11px",
+                fontSize: 12.5,
+                color: INK,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#16794C" }} />
+              {windowLabel}
+            </span>
+            {/* No global actions live here any more.
               "+ Enrol student" and "Invite people" used to sit in this bar on
               EVERY console page, which put "add a student" in front of someone
               reading the payroll. Both are page actions now: each one lives at
@@ -288,35 +288,35 @@ export function ConsoleChrome({
               group detail), where the thing it creates is already on screen.
               The panels themselves are unchanged — pages open them through
               <PanelButton>, which is why they are still handed to this chrome. */}
-          <div className="cn-hide-sm" style={{ width: 1, height: 24, background: "#C5C4BE" }} />
-          <div
-            className="cn-hide-sm"
-            title={userName}
-            style={{
-              width: 30,
-              height: 30,
-              flex: "none",
-              borderRadius: "50%",
-              background: "#14133A",
-              color: "#fff",
-              fontSize: 11.5,
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {initials(userName)}
+            <div className="cn-hide-sm" style={{ width: 1, height: 24, background: "#C5C4BE" }} />
+            <div
+              className="cn-hide-sm"
+              title={userName}
+              style={{
+                width: 30,
+                height: 30,
+                flex: "none",
+                borderRadius: "50%",
+                background: "#14133A",
+                color: "#fff",
+                fontSize: 11.5,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {initials(userName)}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
       )}
 
       <div
         className="cn-page"
         style={
           fills
-            ? { padding: 0, height: "100%" }
+            ? { padding: 0, flex: 1, minHeight: 0, overflow: "hidden" }
             : bare
               ? { padding: 0 }
               : { padding: "26px 28px 60px" }

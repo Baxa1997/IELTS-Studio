@@ -34,18 +34,14 @@ const BORDER = "#3333";
  *  (`CANVAS` in app/_landing/design.ts), so the shell stands on the same ground
  *  as the marketing site and sign-in. */
 const CANVAS = "#F6F7F9";
-/** The rail: the brand burgundy (#7D0132) taken down to a calm darkness — a
- *  whisper of a gradient so it doesn't read as a flat slab. It descends from the
- *  canvas's own dark panel (BRAND_PANEL → BRAND_DARKEST), which is what the
- *  marketing CTA block is painted with, rather than being a fifth dark colour. */
-const RAIL_BG = "linear-gradient(180deg, #2B0012 0%, #21000D 52%, #160008 100%)";
+/** One solid burgundy rail, matching the primary brand panel. */
+const RAIL_BG = "rgb(60 2 25)";
 const RAIL_LINE = "rgba(255,255,255,.07)"; // hairlines/borders on the rail
-const RAIL_TEXT = "#E7D5DC"; // on-rail text — warm, so it reads as lit by the rail
-const RAIL_FAINT = "#BC9AA6"; // secondary on-rail text (email, chevrons)
-/* The role chip. It was mint, which was fine beside navy and impossible beside
-   burgundy — mint on red is the one pairing that reads as an error state. A pale
-   rose is the rail's own colour lightened, so the chip recedes to a label. */
-const ACCENT = "#F2C3D3";
+const RAIL_TEXT = "#E4EFEE";
+const RAIL_FAINT = "#8EAAAB"; // secondary on-rail text (email, chevrons)
+/* The role chip uses the positive green accent so it stays legible against the
+   burgundy rail without looking like another selected navigation item. */
+const ACCENT = "#7CE2AC";
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -336,8 +332,8 @@ export function AppShell({
                   fontSize: 12,
                   fontWeight: 600,
                   color: ACCENT,
-                  background: "rgba(242,195,211,.10)",
-                  border: "1px solid rgba(242,195,211,.28)",
+                  background: "rgba(124,226,172,.10)",
+                  border: "1px solid rgba(124,226,172,.28)",
                   padding: "2.5px 10px",
                   borderRadius: 8,
                 }}
@@ -359,7 +355,7 @@ export function AppShell({
                 height: 30,
                 flex: "none",
                 border: `1px solid rgba(255,255,255,.12)`,
-                background: "#4E0824",
+                background: "rgba(255,255,255,.10)",
                 borderRadius: 8,
                 cursor: "pointer",
                 color: RAIL_FAINT,
@@ -371,7 +367,7 @@ export function AppShell({
                 // the page it is supposed to sit on top of. 40 puts it above the
                 // rail's own mobile scrim (30) and every content layer (≤21).
                 position: "absolute",
-                right: "-15px",
+                right: "10px",
                 zIndex: 40,
               }}
             >
@@ -435,7 +431,13 @@ export function AppShell({
           style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: isConsole ? 0 : 10 }}
         >
           <div
-            className={`lp-shell-surface${fillsTheSurface(pathname) ? "lp-shell-surface--fills" : ""}`}
+            /* The space before `lp-shell-surface--fills` is load-bearing: without it
+               the two class names concatenate into one token that matches nothing,
+               so BOTH the base class and the modifier silently stop applying. That
+               is what collapsed the assistant — `.cn-assistant-page` still picked up
+               its unscoped `height: 0 !important` while the flex parent it needs to
+               grow inside never materialised. */
+            className={`lp-shell-surface${fillsTheSurface(pathname) ? " lp-shell-surface--fills" : ""}`}
             style={{
               height: "100%",
               overflow: fillsTheSurface(pathname) ? "hidden" : "auto",
@@ -574,7 +576,7 @@ function ProfileMenu({
             right: "auto",
             minWidth: 210,
             zIndex: 21,
-            background: "#21000D",
+            background: "rgb(48 1 20)",
             border: `1px solid rgba(255,255,255,.10)`,
             borderRadius: 14,
             boxShadow: "0 22px 48px -18px rgba(20,0,9,.75)",
@@ -763,7 +765,7 @@ function ProfileMenu({
                 placeItems: "center",
                 // Rings the rail's own burgundy so the badge reads as sitting ON
                 // the avatar rather than floating behind it.
-                boxShadow: "0 0 0 2px #3B001A",
+                boxShadow: "0 0 0 2px rgb(60 2 25)",
               }}
             >
               {unread > 9 ? "9+" : unread}
@@ -835,7 +837,7 @@ function Avatar({ name, size }: { name: string; size: number }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: "linear-gradient(135deg,#B32A5B,#7D0132)",
+        background: "linear-gradient(135deg,#1A8A68,#0E5F50)",
         color: "#fff",
         fontSize: Math.round(size * 0.36),
         fontWeight: 700,

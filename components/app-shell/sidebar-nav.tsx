@@ -42,10 +42,10 @@ import {
  * rail to an icon-only strip purely in CSS (no prop drilling of a collapsed flag).
  */
 
-/* On-rail palette — the rail is the brand burgundy taken down to a calm dark
-   shade (see shell.tsx), so everything here is light-on-dark. */
-const RAIL_TEXT = "#E7D5DC"; // resting item text — near-white, calm
-const RAIL_MUTED = "#A17F8C"; // section titles / disabled
+/* On-rail palette — one solid deep-teal surface (see shell.tsx), so everything
+   here is light-on-dark and the content surface stays visually separate. */
+const RAIL_TEXT = "#E4EFEE"; // resting item text — near-white, calm
+const RAIL_MUTED = "#7F9B9D"; // section titles / disabled
 const RAIL_ACTIVE_BG = "rgba(255,255,255,.07)"; // active tile — a calm lighter panel
 const RAIL_ACTIVE_LINE = "rgba(255,255,255,.09)";
 /* The two accent rows. These two are the rail's only colour, and they are far
@@ -593,14 +593,10 @@ export function SidebarNav({
                       justifyContent: "space-between",
                       fontWeight: selected || accent ? 600 : 400,
                       color: selected ? "#fff" : (accentTone?.fg ?? RAIL_TEXT),
-                      // No inline background when inactive — the .lp-sb-item:hover wash
-                      // (globals.css) can't beat an inline value, even "transparent".
-                      background: selected ? RAIL_ACTIVE_BG : accentTone?.bg,
-                      border: `1px solid ${
-                        selected ? RAIL_ACTIVE_LINE : (accentTone?.line ?? "transparent")
-                      }`,
-                      boxShadow:
-                        active && accentTone ? `inset 3px 0 0 ${accentTone.fg}` : undefined,
+                      // Accent destinations are color-coded only. The single
+                      // selected tile belongs to the current ordinary page.
+                      background: selected ? RAIL_ACTIVE_BG : undefined,
+                      border: `1px solid ${selected ? RAIL_ACTIVE_LINE : "transparent"}`,
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
@@ -648,12 +644,12 @@ export function SidebarNav({
                               ? "rgba(255,255,255,.85)"
                               : badgeTone === "alert"
                                 ? "#FFC069"
-                                : "#F2C3D3",
+                                : "#7CE2AC",
                             background: selected
                               ? "rgba(255,255,255,.16)"
                               : badgeTone === "alert"
                                 ? "rgba(255,176,74,.15)"
-                                : "rgba(242,195,211,.14)",
+                                : "rgba(124,226,172,.14)",
                             padding: "2px 7px",
                             borderRadius: 6,
                             flexShrink: 0,
