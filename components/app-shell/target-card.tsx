@@ -36,7 +36,7 @@ export function TargetCard({ target }: { target: number }) {
           fontSize: 11,
           letterSpacing: ".1em",
           textTransform: "uppercase",
-          color: "#9096B0",
+          color: "#B08E9B",
         }}
       >
         Your target
@@ -45,7 +45,7 @@ export function TargetCard({ target }: { target: number }) {
         <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 30 }}>
           {target.toFixed(1)}
         </span>
-        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#5BDD9B" }}>
+        <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#F2C3D3" }}>
           overall
         </span>
       </div>

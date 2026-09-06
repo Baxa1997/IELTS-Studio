@@ -12,10 +12,10 @@
 import { useEffect, useRef, useState } from "react";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const MUTED = "#56556A";
-const LINE = "#E8E6F0";
-const INDIGO = "#4338CA";
-const INK = "#141221";
+const MUTED = "#4A505C";
+const LINE = "#E6E8EC";
+const BRAND = "#7D0132";
+const INK = "#121317";
 const GOOD = "#1A7A48"; // the "stronger version" rail, matching the report
 
 export interface LBTurn {
@@ -145,7 +145,7 @@ export function ListenBack({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
+        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: BRAND }}>
           {audioUrl ? "LISTEN BACK" : "WHAT YOU SAID"}
         </div>
         {partLine ? <div style={{ fontSize: 12.5, color: MUTED }}>{partLine}</div> : null}
@@ -176,7 +176,7 @@ export function ListenBack({
               height: 40,
               borderRadius: "50%",
               border: "none",
-              background: INDIGO,
+              background: BRAND,
               color: "#fff",
               fontSize: 15,
               cursor: "pointer",
@@ -198,7 +198,7 @@ export function ListenBack({
               if (a) a.currentTime = Number(e.target.value);
             }}
             aria-label="Seek"
-            style={{ flex: 1, accentColor: INDIGO }}
+            style={{ flex: 1, accentColor: BRAND }}
           />
           <div
             style={{
@@ -237,7 +237,7 @@ export function ListenBack({
                   fontSize: 10.5,
                   fontWeight: 800,
                   letterSpacing: ".1em",
-                  color: INDIGO,
+                  color: BRAND,
                 }}
               >
                 PART {t.part}
@@ -259,15 +259,15 @@ export function ListenBack({
                   border: "none",
                   cursor: audioUrl ? "pointer" : "default",
                   padding: "7px 12px",
-                  background: isActive ? "#EEF2FF" : "transparent",
-                  borderLeft: `3px solid ${isActive ? INDIGO : "transparent"}`,
+                  background: isActive ? "#FDF4F7" : "transparent",
+                  borderLeft: `3px solid ${isActive ? BRAND : "transparent"}`,
                 }}
               >
                 <span
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    color: t.role === "examiner" ? MUTED : INDIGO,
+                    color: t.role === "examiner" ? MUTED : BRAND,
                     flexShrink: 0,
                     width: 62,
                     paddingTop: 1.5,

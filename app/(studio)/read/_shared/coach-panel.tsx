@@ -5,7 +5,7 @@ import { MessageCircle, Send, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
 
-import { INDIGO, INK, MUTED, SANS } from "./tokens";
+import { BRAND, INK, MUTED, SANS } from "./tokens";
 
 interface ChatMessage {
   role: "student" | "assistant";
@@ -114,12 +114,12 @@ export function CoachPanel({
           borderRadius: 999,
           border: "none",
           cursor: "pointer",
-          background: INDIGO,
+          background: BRAND,
           color: "#fff",
           fontFamily: SANS,
           fontWeight: 700,
           fontSize: 14,
-          boxShadow: "0 14px 30px -12px rgba(59,67,181,.7)",
+          boxShadow: "0 14px 30px -12px rgba(125,1,50,.7)",
         }}
       >
         <MessageCircle size={17} /> Coach
@@ -143,7 +143,7 @@ export function CoachPanel({
         display: "flex",
         flexDirection: "column",
         background: "#fff",
-        border: "1px solid #E7E4D6",
+        border: "1px solid #E6E8EC",
         borderRadius: 16,
         boxShadow: "0 24px 60px -24px rgba(26,33,56,.5)",
         overflow: "hidden",
@@ -151,7 +151,7 @@ export function CoachPanel({
     >
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EEECDF" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#9B1044,#7D0132)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <MessageCircle size={15} />
           </span>
           <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK }}>Reading coach</span>
@@ -181,7 +181,7 @@ export function CoachPanel({
                 fontSize: 13.5,
                 lineHeight: 1.55,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? INDIGO : "#F4F2E8",
+                background: m.role === "student" ? BRAND : "#F4F2E8",
                 color: m.role === "student" ? "#fff" : INK,
               }}
             >
@@ -228,7 +228,7 @@ export function CoachPanel({
             className="lp-input"
             style={{ flex: 1, padding: "9px 11px", border: "1px solid #DAD8C9", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 13.5, color: INK }}
           />
-          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: INDIGO, color: "#fff", opacity: sending || !input.trim() ? 0.5 : 1 }}>
+          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: BRAND, color: "#fff", opacity: sending || !input.trim() ? 0.5 : 1 }}>
             <Send size={16} />
           </button>
         </div>

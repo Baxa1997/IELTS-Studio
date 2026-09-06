@@ -286,6 +286,9 @@
   transform-origin: center;
   will-change: transform, opacity;
 }
+.lp-sb-accent-active .lp-sb-ai {
+  animation-duration: 2.8s, 4.4s;
+}
 /* Hovering the row is a question being asked — it quickens, and the two layers
    stay on different periods so the effect never collapses into one flash. */
 .lp-sb-link:hover .lp-sb-ai {
@@ -320,7 +323,7 @@
 }
 .ui-modal-x:focus-visible,
 .ui-card-link:focus-visible {
-  outline: 2px solid #3b43b5;
+  outline: 2px solid #7d0132;
   outline-offset: 2px;
 }
 
@@ -344,13 +347,13 @@
   0%,
   100% {
     box-shadow:
-      0 10px 22px -12px rgba(59, 67, 181, 0.65),
-      0 0 0 0 rgba(59, 67, 181, 0);
+      0 10px 22px -12px rgba(125, 1, 50, 0.65),
+      0 0 0 0 rgba(125, 1, 50, 0);
   }
   50% {
     box-shadow:
-      0 13px 26px -12px rgba(59, 67, 181, 0.85),
-      0 0 0 5px rgba(59, 67, 181, 0.1);
+      0 13px 26px -12px rgba(125, 1, 50, 0.85),
+      0 0 0 5px rgba(125, 1, 50, 0.1);
   }
 }
 .lp-ai-pulse {
@@ -392,23 +395,23 @@
   }
 }
 .lp-ai-surface {
-  /* A clearly-visible LIGHT shade of the brand indigo (not near-white), with enough
-     contrast between stops that the slow sweep is actually noticeable. Dark text
-     still reads fine on it. */
-  background-image: linear-gradient(120deg, #d6d7f5, #bcbdec, #cfc6f1, #c0c2ef, #d6d7f5);
+  /* A clearly-visible LIGHT shade of the brand burgundy (not near-white), with
+     enough contrast between stops that the slow sweep is actually noticeable.
+     Dark text still reads fine on it. */
+  background-image: linear-gradient(120deg, #f5d9e3, #ebbccd, #f0cbd9, #e9c2d2, #f5d9e3);
   background-size: 300% 300%;
   animation: lp-ai-bg 12s ease infinite;
 }
 
 /* Accent-driven variant for the CEFR track — same animated sweep, but glows in the
    active level's colour. Set --ai-soft / --ai-strong inline (the level's soft tint
-   and a slightly stronger tint). Falls back to the indigo surface if unset. */
+   and a slightly stronger tint). Falls back to the burgundy surface if unset. */
 .lp-ai-surface-accent {
   background-image: linear-gradient(
     120deg,
-    var(--ai-soft, #d6d7f5),
-    var(--ai-strong, #bcbdec),
-    var(--ai-soft, #d6d7f5)
+    var(--ai-soft, #f5d9e3),
+    var(--ai-strong, #ebbccd),
+    var(--ai-soft, #f5d9e3)
   );
   background-size: 300% 300%;
   animation: lp-ai-bg 12s ease infinite;
@@ -585,13 +588,13 @@
     box-shadow: 0 0 0 5px rgba(185, 121, 26, 0);
   }
 }
-@keyframes plan-pulse-indigo {
+@keyframes plan-pulse-brand {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(59, 67, 181, 0.55);
+    box-shadow: 0 0 0 0 rgba(125, 1, 50, 0.55);
   }
   50% {
-    box-shadow: 0 0 0 5px rgba(59, 67, 181, 0);
+    box-shadow: 0 0 0 5px rgba(125, 1, 50, 0);
   }
 }
 @keyframes plan-shimmer {
@@ -634,8 +637,8 @@
   background: conic-gradient(
     from 90deg,
     transparent 0deg,
-    rgba(59, 67, 181, 0) 110deg,
-    var(--grade-accent, #3b43b5) 360deg
+    rgba(125, 1, 50, 0) 110deg,
+    var(--grade-accent, #7d0132) 360deg
   );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
@@ -653,9 +656,9 @@
 .lp-grade-bar {
   background-image: linear-gradient(
     90deg,
-    #e4e3f7 0%,
-    var(--grade-accent, #3b43b5) 50%,
-    #e4e3f7 100%
+    #f0d3de 0%,
+    var(--grade-accent, #7d0132) 50%,
+    #f0d3de 100%
   );
   background-size: 200% 100%;
   animation: lp-grade-bar 1.4s linear infinite;
@@ -1928,8 +1931,8 @@
   --pu-line: #e7e5df;
   --pu-tint: #eeedf8;
 }
-/* The layout's own gutter — the shell wrapper's padding is overridden here so
-   the console can run the design's 28px rhythm without a prop drill. */
+/* The console owns the whole content surface. Its pages keep their own internal
+   rhythm, but the shell must not add a second floating card/gutter around them. */
 .cn-page {
   padding: 26px 28px 60px;
 }
@@ -2027,6 +2030,7 @@
   gap: 12px;
   padding: 16px;
   min-width: 0;
+  box-sizing: border-box;
 }
 /* ⚠️ ONE SCREEN, AND THE HEIGHT IS INHERITED RATHER THAN GUESSED.
    This was `height: calc(100dvh - 22px)` — the viewport less the shell
@@ -2042,9 +2046,14 @@
    one — so the chain must NOT be pinned there, or a tall page would be cut
    off inside a wrapper that cannot grow. */
 @media (min-width: 901px) {
+  .cn-root,
+  .cn-page {
+    min-height: 0;
+  }
   .lp-shell-surface--fills {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
   /* Whatever is left after the quota bar and anything else above it. */
   .lp-shell-surface--fills > .lp-shell-content {
@@ -2057,6 +2066,21 @@
   .lp-shell-surface--fills .cn-root,
   .cn-assistant-page {
     height: 100%;
+  }
+  .lp-shell-surface--fills .cn-root {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .cn-assistant-page {
+    overflow: hidden;
+  }
+  .lp-shell-surface--fills .cn-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 
@@ -2198,8 +2222,8 @@
 }
 .lp-root .lp-input:focus {
   outline: none;
-  border-color: #3b43b5;
-  box-shadow: 0 0 0 3px rgba(59, 67, 181, 0.15);
+  border-color: #7d0132;
+  box-shadow: 0 0 0 3px rgba(125, 1, 50, 0.15);
 }
 .lp-root .lp-input::placeholder {
   color: #a8a79a;
@@ -2210,8 +2234,8 @@
     box-shadow 0.2s ease;
 }
 .lp-root .lp-field:focus-within {
-  border-color: #3b43b5;
-  box-shadow: 0 0 0 3px rgba(59, 67, 181, 0.13);
+  border-color: #7d0132;
+  box-shadow: 0 0 0 3px rgba(125, 1, 50, 0.13);
 }
 .lp-root .lp-ghost-btn {
   transition:
@@ -2325,18 +2349,18 @@
 @keyframes lp-fab-ring {
   0% {
     box-shadow:
-      0 14px 30px -12px rgba(59, 67, 181, 0.55),
-      0 0 0 0 rgba(59, 67, 181, 0.5);
+      0 14px 30px -12px rgba(125, 1, 50, 0.55),
+      0 0 0 0 rgba(125, 1, 50, 0.5);
   }
   70% {
     box-shadow:
-      0 14px 30px -12px rgba(59, 67, 181, 0.55),
-      0 0 0 16px rgba(59, 67, 181, 0);
+      0 14px 30px -12px rgba(125, 1, 50, 0.55),
+      0 0 0 16px rgba(125, 1, 50, 0);
   }
   100% {
     box-shadow:
-      0 14px 30px -12px rgba(59, 67, 181, 0.55),
-      0 0 0 0 rgba(59, 67, 181, 0);
+      0 14px 30px -12px rgba(125, 1, 50, 0.55),
+      0 0 0 0 rgba(125, 1, 50, 0);
   }
 }
 .lp-fab {

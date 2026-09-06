@@ -35,18 +35,18 @@ export interface StudioTheme {
 
 /** The IELTS studio look, captured as tokens. */
 export const IELTS_STUDIO_THEME: StudioTheme = {
-  accent: "#3B43B5",
-  accentSoft: "#ECEBFB",
-  accentLine: "#E1DFF7",
-  accentShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
-  ink: "#1A1C33",
-  body: "#272C3E",
-  muted: "#767C90",
-  canvas: "#F4F1E7",
+  accent: "#7D0132",
+  accentSoft: "#FDF4F7",
+  accentLine: "#F0D3DE",
+  accentShadow: "0 6px 16px -6px rgba(125,1,50,.55)",
+  ink: "#121317",
+  body: "#3B4150",
+  muted: "#8B919D",
+  canvas: "#F6F7F9",
   panel: "#fff",
-  line: "#E7E3D5",
-  soft: "#FBFAF4",
-  softLine: "#F0EDE1",
+  line: "#E6E8EC",
+  soft: "#FBFBFC",
+  softLine: "#ECEEF2",
 };
 
 /** A slightly stronger tint of an accent colour, for the generate-surface gradient. */

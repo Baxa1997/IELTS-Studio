@@ -42,22 +42,23 @@ import {
  * rail to an icon-only strip purely in CSS (no prop drilling of a collapsed flag).
  */
 
-/* On-rail palette — the rail is the brand indigo taken down to a calm dark shade
-   (see shell.tsx), so everything here is light-on-dark. */
-const RAIL_TEXT = "#CDD1DF"; // resting item text — near-white, calm
-const RAIL_MUTED = "#6F7599"; // section titles / disabled
+/* On-rail palette — the rail is the brand burgundy taken down to a calm dark
+   shade (see shell.tsx), so everything here is light-on-dark. */
+const RAIL_TEXT = "#E7D5DC"; // resting item text — near-white, calm
+const RAIL_MUTED = "#A17F8C"; // section titles / disabled
 const RAIL_ACTIVE_BG = "rgba(255,255,255,.07)"; // active tile — a calm lighter panel
 const RAIL_ACTIVE_LINE = "rgba(255,255,255,.09)";
-/* The two accent rows. Both were mint at first, which was the wrong instinct:
-   mint is already the role chip beside the logo, so an accented row read as
-   "another chip" rather than as its own thing. These two are the rail's only
-   colour, and they are far enough apart to be told apart at 18px. */
+/* The two accent rows. These two are the rail's only colour, and they are far
+   enough apart to be told apart at 18px.
+
+   `assistant` was violet, justified at the time as "the colour the product
+   reaches for when something is thinking (the listening runner)". That runner is
+   burgundy now, so the justification is gone — and violet against a burgundy rail
+   goes muddy, being a near neighbour of it. Cool blue is the one hue on the rail
+   that cannot be mistaken for the brand. Gold is unchanged: it was picked up from
+   the logomark, it still reads on burgundy, and it stays the "make something" row. */
 const ACCENTS = {
-  // Violet — unused anywhere else on the rail, and the colour the product
-  // already reaches for when something is thinking (the listening runner).
-  assistant: { fg: "#A78BFA", bg: "rgba(167,139,250,.10)", line: "rgba(167,139,250,.26)" },
-  // Gold — picked up from the brand's tan logomark, so the "make something"
-  // row echoes the mark rather than inventing a fourth hue.
+  assistant: { fg: "#93B4E8", bg: "rgba(147,180,232,.10)", line: "rgba(147,180,232,.26)" },
   generate: { fg: "#E5A85C", bg: "rgba(229,168,92,.09)", line: "rgba(229,168,92,.24)" },
 } as const;
 
@@ -562,7 +563,7 @@ export function SidebarNav({
                           fontWeight: 700,
                           fontSize: 10,
                           letterSpacing: ".05em",
-                          color: "#9096B0",
+                          color: "#B08E9B",
                           background: "rgba(255,255,255,.07)",
                           padding: "2px 7px",
                           borderRadius: 6,
@@ -574,6 +575,10 @@ export function SidebarNav({
                   );
                 }
                 const active = href === activeHref;
+                // Assistant and Practice AI are product actions with their own
+                // accent. They must not look like a second dashboard default.
+                const selected = active && !accent;
+                const accentTone = accent ? ACCENTS[accent] : null;
                 return (
                   <Link
                     key={href}
@@ -581,19 +586,21 @@ export function SidebarNav({
                     prefetch={shouldPrefetch(href) ? undefined : false}
                     data-label={label}
                     aria-label={label}
-                    aria-current={active ? "page" : undefined}
-                    className={active ? "lp-sb-link" : "lp-sb-link lp-sb-item"}
+                    aria-current={selected ? "page" : undefined}
+                    className={`lp-sb-link lp-sb-item${accent === "assistant" ? "lp-sb-assistant" : ""}${active && accent ? "lp-sb-accent-active" : ""}`}
                     style={{
                       ...itemBase,
                       justifyContent: "space-between",
-                      fontWeight: active ? 500 : 400,
-                      color: active ? "#fff" : RAIL_TEXT,
+                      fontWeight: selected || accent ? 600 : 400,
+                      color: selected ? "#fff" : (accentTone?.fg ?? RAIL_TEXT),
                       // No inline background when inactive — the .lp-sb-item:hover wash
                       // (globals.css) can't beat an inline value, even "transparent".
-                      background: active ? RAIL_ACTIVE_BG : accent ? ACCENTS[accent].bg : undefined,
+                      background: selected ? RAIL_ACTIVE_BG : accentTone?.bg,
                       border: `1px solid ${
-                        active ? RAIL_ACTIVE_LINE : accent ? ACCENTS[accent].line : "transparent"
+                        selected ? RAIL_ACTIVE_LINE : (accentTone?.line ?? "transparent")
                       }`,
+                      boxShadow:
+                        active && accentTone ? `inset 3px 0 0 ${accentTone.fg}` : undefined,
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
@@ -602,10 +609,10 @@ export function SidebarNav({
                            not on it: once you are ON the page, an icon nudging
                            for attention is asking you to go somewhere you
                            already are. */
-                        className={accent === "assistant" && !active ? "lp-sb-ai" : undefined}
+                        className={accent === "assistant" ? "lp-sb-ai" : undefined}
                         style={{
                           display: "inline-flex",
-                          color: accent && !active ? ACCENTS[accent].fg : undefined,
+                          color: accentTone?.fg,
                         }}
                       >
                         <Icon size={18} strokeWidth={1.8} />
@@ -637,16 +644,16 @@ export function SidebarNav({
                             fontWeight: 700,
                             fontSize: 10,
                             letterSpacing: ".05em",
-                            color: active
+                            color: selected
                               ? "rgba(255,255,255,.85)"
                               : badgeTone === "alert"
                                 ? "#FFC069"
-                                : "#7CE3AE",
-                            background: active
+                                : "#F2C3D3",
+                            background: selected
                               ? "rgba(255,255,255,.16)"
                               : badgeTone === "alert"
                                 ? "rgba(255,176,74,.15)"
-                                : "rgba(91,221,155,.13)",
+                                : "rgba(242,195,211,.14)",
                             padding: "2px 7px",
                             borderRadius: 6,
                             flexShrink: 0,

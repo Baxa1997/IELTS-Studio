@@ -48,12 +48,12 @@ const callEngine = engineClient("multilevel");
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const TINT = "#F4F4FE";
-const TINT_BORDER = "#D8DAF3";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const TINT = "#FDF4F7";
+const TINT_BORDER = "#E3A7BD";
 const GOOD = "#15803d";
 const BAD = "#b91c1c";
 
@@ -61,12 +61,12 @@ const BAD = "#b91c1c";
 const JAKARTA = "'Plus Jakarta Sans', var(--font-hanken), system-ui, sans-serif";
 const PLEX = "'IBM Plex Serif', var(--font-newsreader), Georgia, serif";
 const D_DARK = "#0f172a"; // header
-const D_VIOLET = "#7c3aed"; // accent
-const D_VTEXT = "#5b21b6"; // input text
-const D_VTINT = "#f3e8ff"; // chips / badges
-const D_VTINT2 = "#faf5ff"; // gap + instruction fill
-const D_VBORDER = "#c4b5fd"; // gap underline
-const D_VBORDER2 = "#ede9ff"; // instruction border
+const D_ACCENT = "#7D0132"; // accent
+const D_ATEXT = "#5C0125"; // input text
+const D_ATINT = "#F8E8EE"; // chips / badges
+const D_ATINT2 = "#FDF4F7"; // gap + instruction fill
+const D_ABORDER = "#CC5C82"; // gap underline
+const D_ABORDER2 = "#F0D3DE"; // instruction border
 const D_PAGE = "#f8fafc"; // canvas
 const D_LINE = "#e2e8f0"; // hairlines
 const D_SLATE = "#64748b";
@@ -437,7 +437,7 @@ function Hub({
             gap: 9,
             background: TINT,
             border: `1px solid ${TINT_BORDER}`,
-            color: INDIGO,
+            color: BRAND,
             padding: "8px 14px",
             borderRadius: 999,
             fontSize: 14,
@@ -454,8 +454,8 @@ function Hub({
         style={{
           display: "flex",
           gap: 6,
-          background: "#F1F1F8",
-          border: "1px solid #ECEAF2",
+          background: "#F6F7F9",
+          border: "1px solid #E6E8EC",
           borderRadius: 14,
           padding: 5,
           marginTop: 22,
@@ -599,7 +599,7 @@ function Hub({
 
       {error ? <UpgradeNotice message={error} /> : null}
 
-      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
+      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#8B919D" }}>
         Original content in the Uzbekistan Multilevel (DTM) format. Not affiliated with or endorsed
         by the State Testing Centre.
       </p>
@@ -636,12 +636,12 @@ function TabButton({
         cursor: "pointer",
         textAlign: "left",
         background: active ? "#fff" : "transparent",
-        color: active ? INDIGO : MUTED,
+        color: active ? BRAND : MUTED,
         boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none",
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? BRAND : "#8B919D" }}>
         {icon}
       </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
@@ -652,7 +652,7 @@ function TabButton({
           style={{
             fontFamily: SANS,
             fontSize: 12,
-            color: active ? "#7C78C9" : "#9A99A8",
+            color: active ? "#B32A5B" : "#8B919D",
             marginTop: 2,
           }}
         >
@@ -747,8 +747,8 @@ function PracticeCard({
               width: 34,
               height: 34,
               borderRadius: 9,
-              background: "#EFEEFC",
-              color: INDIGO,
+              background: "#FDF4F7",
+              color: BRAND,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -777,14 +777,14 @@ function PracticeCard({
             fontSize: 12,
             fontWeight: 700,
             background: TINT,
-            color: INDIGO,
+            color: BRAND,
             flex: "none",
           }}
         >
           {level}
         </span>
       </div>
-      <span style={{ fontSize: 13, color: "#7A7989", lineHeight: 1.45 }}>{desc}</span>
+      <span style={{ fontSize: 13, color: "#8B919D", lineHeight: 1.45 }}>{desc}</span>
       <div
         style={{
           marginTop: "auto",
@@ -796,7 +796,7 @@ function PracticeCard({
           paddingTop: 10,
         }}
       >
-        <span style={{ fontSize: 12.5, color: "#8A899A" }}>
+        <span style={{ fontSize: 12.5, color: "#8B919D" }}>
           {eyebrow} · {meta}
         </span>
         <span
@@ -804,7 +804,7 @@ function PracticeCard({
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
-            color: INDIGO,
+            color: BRAND,
             fontSize: 14,
             fontWeight: 600,
           }}
@@ -866,8 +866,8 @@ function RecentRow({
           width: 34,
           height: 34,
           borderRadius: 9,
-          background: "#EFEEFC",
-          color: INDIGO,
+          background: "#FDF4F7",
+          color: BRAND,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -890,7 +890,7 @@ function RecentRow({
         >
           {full ? "Full reading paper" : `Part ${part ?? ""} practice`}
         </span>
-        <span style={{ display: "block", fontSize: 12.5, color: "#8A899A", marginTop: 1 }}>
+        <span style={{ display: "block", fontSize: 12.5, color: "#8B919D", marginTop: 1 }}>
           {full ? "35 questions" : "single part"} · {fmtWhen(it.created_at)}
         </span>
       </span>
@@ -899,7 +899,7 @@ function RecentRow({
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          color: INDIGO,
+          color: BRAND,
           fontSize: 13.5,
           fontWeight: 600,
           flex: "none",
@@ -1115,8 +1115,8 @@ function ModalOption({
           width: 42,
           height: 42,
           borderRadius: 11,
-          background: "#EFEEFC",
-          color: INDIGO,
+          background: "#FDF4F7",
+          color: BRAND,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1136,7 +1136,7 @@ function ModalOption({
             display: "block",
             fontFamily: SANS,
             fontSize: 13,
-            color: "#7A7989",
+            color: "#8B919D",
             marginTop: 2,
             lineHeight: 1.45,
           }}
@@ -1146,7 +1146,7 @@ function ModalOption({
       </span>
       <span style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 12, color: FAINT, whiteSpace: "nowrap" }}>{meta}</span>
-        <ArrowRight size={15} strokeWidth={2.2} color={INDIGO} />
+        <ArrowRight size={15} strokeWidth={2.2} color={BRAND} />
       </span>
     </button>
   );
@@ -1171,7 +1171,7 @@ const modalBackBtn: React.CSSProperties = {
   gap: 6,
   border: "none",
   background: "transparent",
-  color: INDIGO,
+  color: BRAND,
   fontFamily: SANS,
   fontWeight: 600,
   fontSize: 13,
@@ -1368,9 +1368,9 @@ function MarkerToolbar({
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          background: tool === "eraser" ? D_VTINT2 : "#fff",
-          border: `1px solid ${tool === "eraser" ? D_VIOLET : D_LINE}`,
-          color: tool === "eraser" ? D_VIOLET : D_SLATE2,
+          background: tool === "eraser" ? D_ATINT2 : "#fff",
+          border: `1px solid ${tool === "eraser" ? D_ACCENT : D_LINE}`,
+          color: tool === "eraser" ? D_ACCENT : D_SLATE2,
           flexShrink: 0,
         }}
       >
@@ -1617,19 +1617,19 @@ function ReadingRunner({
                       gap: 8,
                       padding: "9px 22px",
                       borderRadius: 100,
-                      background: warn ? "rgba(185,28,28,.3)" : "rgba(124,58,237,.28)",
-                      border: `1px solid ${warn ? "rgba(248,113,113,.5)" : "rgba(124,58,237,.45)"}`,
+                      background: warn ? "rgba(185,28,28,.3)" : "rgba(125,1,50,.28)",
+                      border: `1px solid ${warn ? "rgba(248,113,113,.5)" : "rgba(125,1,50,.45)"}`,
                     }}
                     aria-label="time remaining"
                   >
-                    <Clock size={14} style={{ color: warn ? "#fecaca" : "#c4b5fd" }} />
+                    <Clock size={14} style={{ color: warn ? "#fecaca" : "#CC5C82" }} />
                     <span
                       style={{
                         fontFamily: JAKARTA,
                         fontWeight: 700,
                         fontSize: 17,
                         letterSpacing: ".02em",
-                        color: warn ? "#fecaca" : "#e9d5ff",
+                        color: warn ? "#fecaca" : "#F0D3DE",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
@@ -1647,8 +1647,8 @@ function ReadingRunner({
                 gap: 9,
                 padding: "9px 20px",
                 borderRadius: 100,
-                background: "rgba(124,58,237,.28)",
-                border: "1px solid rgba(124,58,237,.45)",
+                background: "rgba(125,1,50,.28)",
+                border: "1px solid rgba(125,1,50,.45)",
               }}
             >
               <span
@@ -1656,14 +1656,14 @@ function ReadingRunner({
                   fontFamily: JAKARTA,
                   fontWeight: 700,
                   fontSize: 17,
-                  color: "#e9d5ff",
+                  color: "#F0D3DE",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
                 {grade.score} / {grade.max_score}
               </span>
               <span
-                style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: "#c4b5fd" }}
+                style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: "#CC5C82" }}
               >
                 {grade.max_score ? Math.round((grade.score / grade.max_score) * 100) : 0}%
               </span>
@@ -1734,7 +1734,7 @@ function ReadingRunner({
               style={{
                 width: `${pct}%`,
                 height: "100%",
-                background: D_VIOLET,
+                background: D_ACCENT,
                 borderRadius: 2,
                 transition: "width .3s ease",
               }}
@@ -1745,7 +1745,7 @@ function ReadingRunner({
               fontFamily: JAKARTA,
               fontWeight: 600,
               fontSize: 13,
-              color: D_VIOLET,
+              color: D_ACCENT,
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -1762,8 +1762,8 @@ function ReadingRunner({
               padding: "6px 12px",
               borderRadius: 8,
               border: `1px solid ${D_LINE}`,
-              background: coachOpen ? "#fff" : D_VTINT2,
-              color: D_VIOLET,
+              background: coachOpen ? "#fff" : D_ATINT2,
+              color: D_ACCENT,
               fontFamily: JAKARTA,
               fontWeight: 600,
               fontSize: 12.5,
@@ -1851,7 +1851,7 @@ function ReadingRunner({
                 fontFamily: JAKARTA,
                 fontSize: 18,
                 fontWeight: 700,
-                color: D_VIOLET,
+                color: D_ACCENT,
                 margin: 0,
               }}
             >
@@ -1950,7 +1950,7 @@ function ReadingRunner({
                     style={{
                       fontWeight: on ? 700 : 600,
                       fontSize: 13.5,
-                      color: on ? D_VIOLET : D_SLATE3,
+                      color: on ? D_ACCENT : D_SLATE3,
                     }}
                   >
                     Part {p.part}
@@ -2025,7 +2025,7 @@ function cefrPartPill(active: boolean): React.CSSProperties {
     flex: "none",
     background: "#fff",
     fontFamily: JAKARTA,
-    border: `1.5px solid ${active ? D_VIOLET : D_LINE}`,
+    border: `1.5px solid ${active ? D_ACCENT : D_LINE}`,
   };
 }
 
@@ -2047,12 +2047,12 @@ function cefrNavCircle(answered: boolean, current: boolean): React.CSSProperties
   if (current)
     return {
       ...base,
-      borderColor: D_VIOLET,
+      borderColor: D_ACCENT,
       background: "#fff",
-      color: D_VIOLET,
-      boxShadow: `0 0 0 3px ${D_VTINT}`,
+      color: D_ACCENT,
+      boxShadow: `0 0 0 3px ${D_ATINT}`,
     };
-  if (answered) return { ...base, borderColor: D_VIOLET, background: D_VIOLET, color: "#fff" };
+  if (answered) return { ...base, borderColor: D_ACCENT, background: D_ACCENT, color: "#fff" };
   return { ...base, borderColor: D_LINE, background: "#fff", color: D_SLATE2 };
 }
 
@@ -2167,7 +2167,7 @@ function CefrCoach({
               width: 32,
               height: 32,
               borderRadius: 8,
-              background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
+              background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
               color: "#fff",
               display: "flex",
               alignItems: "center",
@@ -2240,7 +2240,7 @@ function CefrCoach({
                 fontSize: 13.5,
                 lineHeight: 1.6,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? D_VIOLET : D_PAGE,
+                background: m.role === "student" ? D_ACCENT : D_PAGE,
                 color: m.role === "student" ? "#fff" : D_INK,
                 border: m.role === "student" ? "none" : `1px solid ${D_LINE}`,
               }}
@@ -2339,7 +2339,7 @@ function CefrCoach({
               borderRadius: 8,
               border: "none",
               cursor: sending || !input.trim() ? "default" : "pointer",
-              background: D_VIOLET,
+              background: D_ACCENT,
               color: "#fff",
               display: "flex",
               alignItems: "center",
@@ -2358,7 +2358,7 @@ function CefrCoach({
 function dsSubmitBtn(busy: boolean): React.CSSProperties {
   return {
     padding: "11px 22px",
-    background: D_VIOLET,
+    background: D_ACCENT,
     color: "#fff",
     border: "none",
     borderRadius: 8,
@@ -2597,7 +2597,7 @@ function Part1Questions({
         {nums.map((n) => {
           const filled = !!(answers[String(n)] ?? "").trim();
           const r = graded ? results.get(n) : undefined;
-          const border = r ? (r.is_correct ? GOOD : BAD) : filled ? D_VIOLET : D_LINE;
+          const border = r ? (r.is_correct ? GOOD : BAD) : filled ? D_ACCENT : D_LINE;
           return (
             <button
               key={n}
@@ -2613,18 +2613,18 @@ function Part1Questions({
                 padding: "9px 12px",
                 borderRadius: 9,
                 border: `1px solid ${border}`,
-                background: r ? (r.is_correct ? "#f0fdf4" : "#fef2f2") : filled ? D_VTINT2 : "#fff",
+                background: r ? (r.is_correct ? "#f0fdf4" : "#fef2f2") : filled ? D_ATINT2 : "#fff",
                 cursor: "pointer",
                 fontFamily: JAKARTA,
               }}
             >
-              <span style={{ fontWeight: 700, fontSize: 13, color: D_VIOLET }}>Gap {n}</span>
+              <span style={{ fontWeight: 700, fontSize: 13, color: D_ACCENT }}>Gap {n}</span>
               {r ? (
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: r.is_correct ? GOOD : BAD }}>
                   {r.is_correct ? "Correct" : `${r.user_answer || "—"} → ${r.correct_answer}`}
                 </span>
               ) : (
-                <span style={{ fontSize: 12.5, color: filled ? D_VIOLET : D_SLATE2 }}>
+                <span style={{ fontSize: 12.5, color: filled ? D_ACCENT : D_SLATE2 }}>
                   {filled ? "Filled" : "Empty"}
                 </span>
               )}
@@ -2666,7 +2666,7 @@ function Part2Passage({ p }: { p: P2 }) {
             }}
           >
             <div style={{ fontFamily: JAKARTA, fontWeight: 700, fontSize: 13.5, color: D_DARK }}>
-              <span style={{ color: D_VIOLET }}>{t.letter}.</span> {t.title}
+              <span style={{ color: D_ACCENT }}>{t.letter}.</span> {t.title}
             </div>
             <div
               style={{
@@ -2751,7 +2751,7 @@ function Part3Passage({ p }: { p: P3 }) {
             key={l}
             style={{ fontFamily: JAKARTA, fontSize: 13.5, color: D_INK, lineHeight: 1.75 }}
           >
-            <b style={{ color: D_VIOLET }}>{l}.</b> {p.headings[l]}
+            <b style={{ color: D_ACCENT }}>{l}.</b> {p.headings[l]}
           </div>
         ))}
       </div>
@@ -2955,9 +2955,9 @@ function Part5Questions({
 // layout + coach), tinted with the CEFR violet so it sits beside the "Reading B"
 // runner as one product. It talks to the engine (callEngine) instead of the
 // IELTS essays API, and handles a multi-task paper with an in-header switcher.
-const W_ACCENT = D_VIOLET; // 7c3aed
-const W_SOFT = "#f5f3ff"; // violet-50 surface
-const W_SOFT2 = D_VTINT2; // faf5ff
+const W_ACCENT = D_ACCENT; // 7c3aed
+const W_SOFT = "#FDF4F7"; // violet-50 surface
+const W_SOFT2 = D_ATINT2; // faf5ff
 const W_LINE = D_LINE; // e2e8f0
 const W_SOFTLINE = "#eef1f5"; // faint inner divider
 const W_CANVAS = D_PAGE; // f8fafc
@@ -2996,7 +2996,7 @@ function wPrimaryBtn(disabled: boolean): React.CSSProperties {
     fontWeight: 700,
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.55 : 1,
-    boxShadow: disabled ? "none" : "0 10px 22px -12px rgba(124,58,237,.7)",
+    boxShadow: disabled ? "none" : "0 10px 22px -12px rgba(125,1,50,.7)",
   };
 }
 const wGhostBtn: React.CSSProperties = {
@@ -3344,7 +3344,7 @@ function TaskStudio({
                         fontFamily: JAKARTA,
                         fontWeight: 600,
                         fontSize: 13.5,
-                        color: urgent ? "#c2410c" : "#4b4e63",
+                        color: urgent ? "#c2410c" : "#3B4150",
                       }}
                     >
                       <Clock size={14} style={{ color: urgent ? "#c2410c" : W_FAINT }} />
@@ -3559,7 +3559,7 @@ function TaskStudio({
                   fontFamily: PLEX,
                   fontSize: 16.5,
                   lineHeight: 1.85,
-                  color: "#272C3E",
+                  color: "#3B4150",
                 }}
               />
             </div>
@@ -3645,7 +3645,7 @@ function TaskStudio({
               fontFamily: JAKARTA,
               fontWeight: 700,
               fontSize: 14.5,
-              boxShadow: "0 14px 30px -12px rgba(124,58,237,.6)",
+              boxShadow: "0 14px 30px -12px rgba(125,1,50,.6)",
             }}
           >
             <span
@@ -3879,7 +3879,7 @@ function WritingPromptPanel({
                 gap: 11,
                 padding: "11px 12px",
                 background: W_SOFT2,
-                border: `1px solid ${D_VBORDER2}`,
+                border: `1px solid ${D_ABORDER2}`,
                 borderRadius: 10,
               }}
             >
@@ -3890,7 +3890,7 @@ function WritingPromptPanel({
                   height: 22,
                   borderRadius: 6,
                   background: lengthMet ? "#E5F3EA" : "#fff",
-                  border: lengthMet ? "none" : `2px solid ${D_VBORDER2}`,
+                  border: lengthMet ? "none" : `2px solid ${D_ABORDER2}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -4068,7 +4068,7 @@ function WritingCoach({
             width: 38,
             height: 38,
             borderRadius: 10,
-            background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
+            background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -4120,14 +4120,14 @@ function WritingCoach({
           <div
             style={{
               background: W_SOFT2,
-              border: `1px solid ${D_VBORDER2}`,
+              border: `1px solid ${D_ABORDER2}`,
               borderRadius: 13,
               borderTopLeftRadius: 4,
               padding: "13px 14px",
               fontFamily: JAKARTA,
               fontSize: 13.5,
               lineHeight: 1.55,
-              color: "#3A3F58",
+              color: "#3B4150",
             }}
           >
             {empty}
@@ -4208,7 +4208,7 @@ function WritingCoach({
               fontWeight: 600,
               color: W_ACCENT,
               background: W_SOFT,
-              border: `1px solid ${D_VBORDER2}`,
+              border: `1px solid ${D_ABORDER2}`,
               borderRadius: 999,
               padding: "6px 12px",
               cursor: sending ? "default" : "pointer",
@@ -4326,7 +4326,7 @@ function CefrGradingOverlay() {
             flexDirection: "column",
             alignItems: "center",
             textAlign: "center",
-            borderBottom: `1px solid ${D_VBORDER2}`,
+            borderBottom: `1px solid ${D_ABORDER2}`,
             background: W_SOFT2,
           }}
         >
@@ -4338,7 +4338,7 @@ function CefrGradingOverlay() {
               alignItems: "center",
               justifyContent: "center",
               borderRadius: "50%",
-              background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
+              background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
               color: "#fff",
             }}
           >
@@ -4435,7 +4435,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
           gap: 16,
           padding: "18px 22px",
           borderRadius: 14,
-          background: `linear-gradient(135deg,${D_VIOLET} 0%,#4f46e5 100%)`,
+          background: `linear-gradient(135deg,${D_ACCENT} 0%,#5C0125 100%)`,
           color: "#fff",
           marginBottom: 18,
         }}
@@ -4503,7 +4503,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
             margin: "0 0 16px",
             padding: "12px 14px",
             background: W_SOFT2,
-            border: `1px solid ${D_VBORDER2}`,
+            border: `1px solid ${D_ABORDER2}`,
             borderRadius: 10,
           }}
         >
@@ -4552,7 +4552,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
               fontFamily: PLEX,
               fontSize: 15,
               lineHeight: 1.8,
-              color: "#2b3147",
+              color: "#3B4150",
               margin: "10px 0 0",
               whiteSpace: "pre-wrap",
             }}
@@ -4616,7 +4616,7 @@ function ScoreBanner({ score, max, level }: { score: number; max: number; level?
   return (
     <div
       style={{
-        background: `linear-gradient(135deg,${D_VIOLET} 0%,#4f46e5 100%)`,
+        background: `linear-gradient(135deg,${D_ACCENT} 0%,#5C0125 100%)`,
         color: "#fff",
         borderRadius: 12,
         padding: "18px 24px",
@@ -4712,8 +4712,8 @@ function PartHeading({ n, cefr, count }: { n: number; cefr: string; count: strin
           style={{
             padding: "4px 11px",
             borderRadius: 100,
-            background: D_VTINT,
-            color: D_VIOLET,
+            background: D_ATINT,
+            color: D_ACCENT,
             fontFamily: JAKARTA,
             fontWeight: 600,
             fontSize: 11,
@@ -4784,10 +4784,10 @@ function Instruction({ children }: { children: React.ReactNode }) {
     <div
       style={{
         padding: "12px 16px",
-        background: D_VTINT2,
+        background: D_ATINT2,
         borderRadius: 8,
         margin: "0 0 24px",
-        border: `1px solid ${D_VBORDER2}`,
+        border: `1px solid ${D_ABORDER2}`,
       }}
     >
       <p
@@ -4797,7 +4797,7 @@ function Instruction({ children }: { children: React.ReactNode }) {
           fontWeight: 400,
           fontSize: 14,
           lineHeight: 1.6,
-          color: "#6d28d9",
+          color: "#5C0125",
           margin: 0,
         }}
       >
@@ -4837,7 +4837,7 @@ function Row({
           fontFamily: JAKARTA,
           fontWeight: 700,
           fontSize: 13,
-          color: D_VIOLET,
+          color: D_ACCENT,
           minWidth: 22,
         }}
       >
@@ -4890,7 +4890,7 @@ function McqRow({
           const isChosen = chosen === letter;
           const isAnswer = r?.correct_answer === letter;
           const border =
-            graded && isAnswer ? GOOD : graded && isChosen ? BAD : isChosen ? D_VIOLET : D_LINE;
+            graded && isAnswer ? GOOD : graded && isChosen ? BAD : isChosen ? D_ACCENT : D_LINE;
           return (
             <label
               key={letter}
@@ -4904,7 +4904,7 @@ function McqRow({
                 padding: "8px 12px",
                 borderRadius: 9,
                 border: `1px solid ${border}`,
-                background: graded && isAnswer ? "#f0fdf4" : isChosen ? D_VTINT2 : "#fff",
+                background: graded && isAnswer ? "#f0fdf4" : isChosen ? D_ATINT2 : "#fff",
                 cursor: graded ? "default" : "pointer",
               }}
             >
@@ -4915,9 +4915,9 @@ function McqRow({
                 checked={isChosen}
                 disabled={graded}
                 onChange={() => set(number, letter)}
-                style={{ accentColor: D_VIOLET }}
+                style={{ accentColor: D_ACCENT }}
               />
-              <b style={{ color: D_VIOLET }}>{letter})</b> {label}
+              <b style={{ color: D_ACCENT }}>{letter})</b> {label}
             </label>
           );
         })}
@@ -4943,7 +4943,7 @@ function GapInput({
   width: number;
 }) {
   const r = graded ? results.get(n) : undefined;
-  const underline = r ? (r.is_correct ? GOOD : BAD) : D_VBORDER;
+  const underline = r ? (r.is_correct ? GOOD : BAD) : D_ABORDER;
   return (
     <span
       id={`cefr-q-${n}`}
@@ -4966,13 +4966,13 @@ function GapInput({
             width,
             border: 0,
             borderBottom: `2px solid ${underline}`,
-            background: D_VTINT2,
+            background: D_ATINT2,
             fontFamily: PLEX,
             fontWeight: 400,
             fontSize: 17,
             padding: "0 8px 2px",
             borderRadius: "3px 3px 0 0",
-            color: D_VTEXT,
+            color: D_ATEXT,
             outline: "none",
           }}
         />
@@ -4997,9 +4997,9 @@ function GapInput({
           fontWeight: 700,
           fontSize: 9,
           lineHeight: 1.4,
-          color: D_VIOLET,
+          color: D_ACCENT,
           padding: "2px 5px",
-          background: D_VTINT,
+          background: D_ATINT,
           borderRadius: 100,
           flexShrink: 0,
           whiteSpace: "nowrap",
@@ -5034,9 +5034,9 @@ function LetterSelect({
         fontFamily: JAKARTA,
         fontWeight: 700,
         fontSize: 14,
-        color: D_VIOLET,
-        background: D_VTINT2,
-        border: `1px solid ${D_VBORDER}`,
+        color: D_ACCENT,
+        background: D_ATINT2,
+        border: `1px solid ${D_ABORDER}`,
         padding: "6px 10px",
         borderRadius: 8,
         cursor: disabled ? "default" : "pointer",

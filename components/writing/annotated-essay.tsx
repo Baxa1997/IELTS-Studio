@@ -18,10 +18,10 @@ import { ANN_ORDER, ANN_STYLE, matchRanges, type AnnRange, type Annotation } fro
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#1A1C33";
-const MUTED = "#565a72";
+const INK = "#121317";
+const MUTED = "#3B4150";
 
-const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #E7E4D6", borderRadius: 16 };
+const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #E6E8EC", borderRadius: 16 };
 
 export function AnnotatedEssay({
   essayText,
@@ -45,7 +45,7 @@ export function AnnotatedEssay({
       </div>
 
       {present.length ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, padding: "12px 22px", borderBottom: "1px solid #F0EEE3", background: "#FBFAF4" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, padding: "12px 22px", borderBottom: "1px solid #F0EEE3", background: "#FBFBFC" }}>
           {present.map((t) => (
             <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 600, fontSize: 12, color: MUTED }}>
               <span style={{ width: 14, height: 7, borderRadius: 3, background: ANN_STYLE[t].bg, boxShadow: `inset 0 0 0 1px ${ANN_STYLE[t].fg}55` }} />
@@ -55,7 +55,7 @@ export function AnnotatedEssay({
         </div>
       ) : null}
 
-      <div style={{ padding: 22, fontFamily: SANS, fontSize: 16.5, lineHeight: 2.05, color: "#23263b", whiteSpace: "pre-wrap" }}>
+      <div style={{ padding: 22, fontFamily: SANS, fontSize: 16.5, lineHeight: 2.05, color: "#3B4150", whiteSpace: "pre-wrap" }}>
         {ranges.length ? renderMarked(essayText, ranges, active, setActive) : essayText}
       </div>
 

@@ -10,13 +10,13 @@ import { bandColor } from "@/lib/ui/band";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const INDIGO = "#4338CA";
-const TINT = "#EFEEFC";
-const LINE = "#E8E6F0";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const BRAND = "#7D0132";
+const TINT = "#FDF4F7";
+const LINE = "#E6E8EC";
 const GOOD = "#15803d";
-const GOOD_BG = "#e7f7ee";
+const GOOD_BG = "#EAF6F0";
 const AMBER = "#B5852A";
 
 export interface SpeakCriterion {
@@ -251,7 +251,7 @@ export function SpeakingReport({
                 fontSize: 12.5,
                 fontWeight: 700,
                 letterSpacing: ".04em",
-                color: "#8A8FA0",
+                color: "#8B919D",
                 textTransform: "uppercase",
                 lineHeight: 1.1,
               }}
@@ -322,7 +322,7 @@ export function SpeakingReport({
             const c = result.criteria[k];
             const isBlocker = result.score_blocker?.criterion === k;
             const isBeta = k === "P" && pBeta;
-            const color = isBlocker ? "#C2410C" : c.band >= 6 ? "#2C3247" : AMBER;
+            const color = isBlocker ? "#C2410C" : c.band >= 6 ? "#3B4150" : AMBER;
             const tag = isBeta
               ? "Beta — not counted"
               : isBlocker
@@ -337,13 +337,13 @@ export function SpeakingReport({
               : isBlocker
                 ? "#C2410C"
                 : c.band >= 6
-                  ? "#9A9EAE"
+                  ? "#8B919D"
                   : AMBER;
             return (
               <div
                 key={k}
                 style={{
-                  background: isBlocker ? "#FCEEEA" : "#F7F7FB",
+                  background: isBlocker ? "#FCEEEA" : "#ECEEF2",
                   border: `1px solid ${isBlocker ? "#F3CFC6" : LINE}`,
                   borderRadius: 12,
                   padding: "10px 12px",
@@ -387,7 +387,7 @@ export function SpeakingReport({
                     marginTop: 8,
                     height: 5,
                     borderRadius: 3,
-                    background: isBlocker ? "#F3DAD3" : "#EBEAF3",
+                    background: isBlocker ? "#F3DAD3" : "#E6E8EC",
                     overflow: "hidden",
                   }}
                 >
@@ -396,7 +396,7 @@ export function SpeakingReport({
                       width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`,
                       height: "100%",
                       borderRadius: 3,
-                      background: isBlocker ? "#C2410C" : INDIGO,
+                      background: isBlocker ? "#C2410C" : BRAND,
                       opacity: isBeta ? 0.45 : 1,
                     }}
                   />
@@ -420,7 +420,7 @@ export function SpeakingReport({
             holds it down: {result.score_blocker.why}
           </div>
         ) : null}
-        <div style={{ fontSize: 12, color: "#9A9EAE" }}>
+        <div style={{ fontSize: 12, color: "#8B919D" }}>
           {pBeta
             ? "Average of Fluency, Vocabulary and Grammar, rounded down to the half band — deliberately conservative. Pronunciation is shown but not counted until it hears enough audio."
             : "Official structure: all four criteria weigh 25% each, rounded down to the half band — deliberately conservative. Pronunciation was assessed from your Part 2 recording."}
@@ -429,7 +429,7 @@ export function SpeakingReport({
 
       {/* cue card + audio */}
       {cue ? (
-        <div style={{ ...CARD, background: TINT, borderColor: "#DDDAF6" }}>
+        <div style={{ ...CARD, background: TINT, borderColor: "#F0D3DE" }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{cue.title}</div>
           <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6 }}>
             You should say: {cue.bullets?.join(" · ")} — {cue.closing}
@@ -519,11 +519,11 @@ export function SpeakingReport({
                     </span>
                   ) : null}
                 </span>
-                <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, color: INDIGO }}>
+                <span style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, color: BRAND }}>
                   {fmtBand(c.band)}
                 </span>
               </div>
-              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "#3A3F58" }}>
+              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "#3B4150" }}>
                 {c.evidence}
               </p>
               {c.what_caps_it ? (
@@ -555,7 +555,7 @@ export function SpeakingReport({
             }}
           >
             {result.highlights.map((h) => (
-              <li key={h} style={{ fontSize: 13.5, lineHeight: 1.55, color: "#3A3F58" }}>
+              <li key={h} style={{ fontSize: 13.5, lineHeight: 1.55, color: "#3B4150" }}>
                 {h}
               </li>
             ))}
@@ -569,7 +569,7 @@ export function SpeakingReport({
             {result.upgrades.map((u, i) => (
               <div key={i} style={{ fontSize: 13.5, lineHeight: 1.6 }}>
                 <span style={{ color: MUTED, textDecoration: "line-through" }}>{u.you_said}</span>{" "}
-                <span aria-hidden>→</span> <strong style={{ color: INDIGO }}>{u.stronger}</strong>
+                <span aria-hidden>→</span> <strong style={{ color: BRAND }}>{u.stronger}</strong>
                 {u.note ? <span style={{ color: MUTED }}> — {u.note}</span> : null}
               </div>
             ))}
@@ -586,7 +586,7 @@ export function SpeakingReport({
               margin: "10px 0 0",
               fontSize: 13.5,
               lineHeight: 1.7,
-              color: "#3A3F58",
+              color: "#3B4150",
               whiteSpace: "pre-wrap",
             }}
           >
@@ -595,7 +595,7 @@ export function SpeakingReport({
         </details>
       ) : null}
 
-      <p style={{ margin: 0, fontSize: 11.5, color: "#9A9EAE" }}>
+      <p style={{ margin: 0, fontSize: 11.5, color: "#8B919D" }}>
         AI-estimated bands, deliberately conservative — not affiliated with or endorsed by IELTS®.
       </p>
     </div>

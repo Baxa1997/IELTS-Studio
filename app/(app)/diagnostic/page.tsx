@@ -7,10 +7,10 @@ import { loadStudentEstimates } from "@/lib/estimates/load";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A1C33";
-const MUTED = "#565a72";
-const EMERALD = "#2f8f5b";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#3B4150";
+const EMERALD = "#1C7A4F";
 
 export const dynamic = "force-dynamic";
 
@@ -41,8 +41,8 @@ export default async function DiagnosticPage() {
     <div style={{ fontFamily: SANS, color: INK, maxWidth: 720, margin: "0 auto" }}>
       {/* header */}
       <div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".1em", textTransform: "uppercase", color: INDIGO }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: INDIGO }} />
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".1em", textTransform: "uppercase", color: BRAND }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }} />
           Getting started
         </div>
         <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(25px,2.6vw,32px)", lineHeight: 1.08, letterSpacing: "-.015em", margin: "10px 0 0", color: INK }}>
@@ -56,7 +56,7 @@ export default async function DiagnosticPage() {
         {!diagnosticComplete ? (
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
             <div style={{ flex: "1 1 auto", height: 7, background: "#EFEEE2", borderRadius: 999, overflow: "hidden", maxWidth: 320 }} aria-hidden>
-              <div style={{ width: `${(doneCount / 2) * 100}%`, height: "100%", background: INDIGO, borderRadius: 999, transition: "width .3s ease" }} />
+              <div style={{ width: `${(doneCount / 2) * 100}%`, height: "100%", background: BRAND, borderRadius: 999, transition: "width .3s ease" }} />
             </div>
             <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 13, color: MUTED, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
               {doneCount} of 2 complete
@@ -90,7 +90,7 @@ export default async function DiagnosticPage() {
 
           <Link
             href="/dashboard"
-            style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(59,67,181,.7)" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
           >
             Go to dashboard {ARROW}
           </Link>
@@ -158,7 +158,7 @@ function DiagnosticStep({
         alignItems: "center",
         gap: 18,
         background: "#fff",
-        border: "1px solid #E7E4D6",
+        border: "1px solid #E6E8EC",
         borderRadius: 16,
         padding: 20,
       }}
@@ -173,8 +173,8 @@ function DiagnosticStep({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: done ? "#E5F2EB" : "#EBECFA",
-          color: done ? EMERALD : INDIGO,
+          background: done ? "#EAF6F0" : "#FDF4F7",
+          color: done ? EMERALD : BRAND,
         }}
         aria-hidden
       >
@@ -196,7 +196,7 @@ function DiagnosticStep({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 11 }}>
           {chips.map((c, i) => (
             <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: MUTED, background: "#F7F6EE", border: "1px solid #ECEADC", borderRadius: 8, padding: "5px 10px" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 {i === 0 ? (
                   <>
                     <circle cx="12" cy="12" r="9" />
@@ -215,7 +215,7 @@ function DiagnosticStep({
       <div style={{ flex: "none", marginLeft: "auto" }}>
         {done ? (
           <div style={{ textAlign: "center", minWidth: 78 }}>
-            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 30, lineHeight: 1, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>
+            <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 30, lineHeight: 1, color: BRAND, fontVariantNumeric: "tabular-nums" }}>
               {band != null ? band.toFixed(1) : "—"}
             </div>
             <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "#9a998c", marginTop: 4 }}>band</div>
@@ -223,7 +223,7 @@ function DiagnosticStep({
         ) : (
           <Link
             href={href}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 18px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -14px rgba(59,67,181,.7)", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 18px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -14px rgba(125,1,50,.7)", whiteSpace: "nowrap" }}
           >
             {cta} {ARROW}
           </Link>

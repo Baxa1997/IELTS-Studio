@@ -16,7 +16,7 @@ import { SANS } from "@/lib/theme/tokens";
  * animation; `.aib-*` keyframes + reduced-motion live in globals.css.
  */
 export const AI_AURORA_GRADIENT =
-  "linear-gradient(130deg,#1e1b4b 0%,#3730a3 18%,#5b21b6 42%,#7c3aed 62%,#4338ca 82%,#1e1b4b 100%)";
+  "linear-gradient(130deg,#2C0013 0%,#5C0125 18%,#5C0125 42%,#9B1044 62%,#7D0132 82%,#2C0013 100%)";
 
 function Spark({ size, fill, style }: { size: number; fill: string; style: CSSProperties }) {
   return (
@@ -136,7 +136,7 @@ export function AiGenerateButton({
   busy = false,
   generating = false,
   onClick,
-  color = "#3730a3",
+  color = "#5C0125",
   minWidth,
 }: {
   label: string;

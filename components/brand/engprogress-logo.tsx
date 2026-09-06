@@ -23,7 +23,7 @@ const engprogress = Poppins({
   display: "swap",
 });
 
-const NAVY = "#182B49"; // wordmark + tagline ink
+const NAVY = "#121317"; // wordmark + tagline ink
 const TAN = "#D89A5C"; // the "P" block
 const WHITE = "#FFFFFF"; // the reversed-out "P"
 const CREAM = "#F4EEE1"; // on-dark ink variant

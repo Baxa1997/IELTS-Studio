@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
 
 const dateFmt = (s: string) =>
   new Date(`${s}T00:00:00Z`).toLocaleDateString("en-GB", {
@@ -144,7 +144,7 @@ export default async function StudentCertificatesPage() {
                   borderTop: `1px solid ${LINE}`,
                   fontFamily: "ui-monospace, monospace",
                   fontSize: 12,
-                  color: INDIGO,
+                  color: BRAND,
                 }}
               >
                 {c.code}

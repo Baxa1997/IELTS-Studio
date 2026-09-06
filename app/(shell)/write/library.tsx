@@ -18,14 +18,14 @@ import { saveDraft } from "@/app/(studio)/write/actions";
 
 export type { LibraryPrompt };
 
-// ---- Brand tokens (Option A; indigo kept at #3B43B5 for app-wide consistency) ----
+// ---- Brand tokens (Option A; indigo kept at #7D0132 for app-wide consistency) ----
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const EMERALD = "#1F8A53";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const EMERALD = "#1C7A4F";
 
 const cardStyle: React.CSSProperties = {
   position: "relative",
@@ -397,7 +397,7 @@ export function WritingLibrary({
             fontFamily: SANS,
             fontSize: 14,
             fontWeight: 600,
-            color: "#41496A",
+            color: "#3B4150",
             textDecoration: "none",
           }}
         >
@@ -406,7 +406,7 @@ export function WritingLibrary({
             height="15"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#41496A"
+            stroke="#3B4150"
             strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -445,8 +445,8 @@ export function WritingLibrary({
                 marginBottom: -1,
                 border: "none",
                 background: "transparent",
-                borderBottom: active ? `2.5px solid ${INDIGO}` : "2.5px solid transparent",
-                color: active ? INDIGO : t.soon ? "#A7ABBA" : "#6E7388",
+                borderBottom: active ? `2.5px solid ${BRAND}` : "2.5px solid transparent",
+                color: active ? BRAND : t.soon ? "#C9CDD4" : "#4A505C",
                 fontFamily: SANS,
                 fontSize: 15,
                 fontWeight: active ? 700 : 600,
@@ -585,9 +585,9 @@ export function WritingLibrary({
                         fontFamily: SANS,
                         fontSize: 12,
                         fontWeight: 700,
-                        color: INDIGO,
-                        background: "#ECEBFB",
-                        border: "1px solid #E1DFF7",
+                        color: BRAND,
+                        background: "#FDF4F7",
+                        border: "1px solid #F0D3DE",
                         borderRadius: 999,
                         padding: "3px 10px",
                       }}
@@ -605,7 +605,7 @@ export function WritingLibrary({
                   fontFamily: SANS,
                   fontSize: 13,
                   fontWeight: 700,
-                  color: checkWords >= 20 ? EMERALD : "#9097A8",
+                  color: checkWords >= 20 ? EMERALD : "#8B919D",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -652,7 +652,7 @@ export function WritingLibrary({
                 style={{
                   fontFamily: SANS,
                   fontSize: 13,
-                  color: "#9097A8",
+                  color: "#8B919D",
                   flex: "1 1 180px",
                   minWidth: 0,
                 }}
@@ -696,9 +696,9 @@ export function WritingLibrary({
                   padding: "7px 12px",
                   borderRadius: 999,
                   cursor: "pointer",
-                  border: customTask === o.k ? `1px solid ${INDIGO}` : "1px solid #E2DED0",
-                  background: customTask === o.k ? "#ECEBFB" : "#fff",
-                  color: customTask === o.k ? INDIGO : INK,
+                  border: customTask === o.k ? `1px solid ${BRAND}` : "1px solid #E2DED0",
+                  background: customTask === o.k ? "#FDF4F7" : "#fff",
+                  color: customTask === o.k ? BRAND : INK,
                 }}
               >
                 {o.l}
@@ -769,7 +769,7 @@ export function WritingLibrary({
             <h2 style={{ margin: 0, fontFamily: SANS, fontSize: 18, fontWeight: 700, color: INK }}>
               Or choose a ready topic
             </h2>
-            <span style={{ fontFamily: SANS, fontSize: 14, color: "#9097A8" }}>
+            <span style={{ fontFamily: SANS, fontSize: 14, color: "#8B919D" }}>
               Showing <strong style={{ color: INK }}>{visible.length}</strong> of {cards.length}
             </span>
           </div>
@@ -806,7 +806,7 @@ export function WritingLibrary({
                   height="17"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#9097A8"
+                  stroke="#8B919D"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -852,9 +852,9 @@ export function WritingLibrary({
                         fontSize: 14,
                         fontWeight: on ? 700 : 600,
                         cursor: "pointer",
-                        color: on ? INDIGO : "#5A6076",
-                        background: on ? "#ECEBFB" : "#fff",
-                        border: on ? "1px solid #D6D3EF" : "1px solid #E2DED0",
+                        color: on ? BRAND : "#4A505C",
+                        background: on ? "#FDF4F7" : "#fff",
+                        border: on ? "1px solid #E3A7BD" : "1px solid #E2DED0",
                       }}
                     >
                       {label}
@@ -873,9 +873,9 @@ export function WritingLibrary({
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
-                    color: bandFilter != null ? INDIGO : "#5A6076",
-                    background: bandFilter != null ? "#ECEBFB" : "#fff",
-                    border: bandFilter != null ? "1px solid #D6D3EF" : "1px solid #E2DED0",
+                    color: bandFilter != null ? BRAND : "#4A505C",
+                    background: bandFilter != null ? "#FDF4F7" : "#fff",
+                    border: bandFilter != null ? "1px solid #E3A7BD" : "1px solid #E2DED0",
                   }}
                 >
                   <option value="">Any band</option>
@@ -956,7 +956,7 @@ export function WritingLibrary({
                   </option>
                 ))}
               </select>
-              <p style={{ fontSize: 12, color: "#8A8FA0", margin: "6px 0 0", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: "#8B919D", margin: "6px 0 0", lineHeight: 1.5 }}>
                 How demanding the wording and ideas are. A student practising alone gets this
                 pitched from their own measured band — a class has no single band, so you say.
               </p>
@@ -965,7 +965,7 @@ export function WritingLibrary({
             {tab === "task2" ? (
               <div>
                 <label htmlFor="wl-cat" style={genLabel}>
-                  Question type <span style={{ color: "#8A8FA0" }}>(optional)</span>
+                  Question type <span style={{ color: "#8B919D" }}>(optional)</span>
                 </label>
                 <select
                   id="wl-cat"
@@ -985,7 +985,7 @@ export function WritingLibrary({
 
             <div>
               <label htmlFor="wl-pref" style={genLabel}>
-                Topic preference <span style={{ color: "#8A8FA0" }}>(optional)</span>
+                Topic preference <span style={{ color: "#8B919D" }}>(optional)</span>
               </label>
               <input
                 id="wl-pref"
@@ -1008,7 +1008,7 @@ export function WritingLibrary({
                 disabled={busy}
                 style={{
                   flex: 1,
-                  background: INDIGO,
+                  background: BRAND,
                   color: "#fff",
                   border: 0,
                   borderRadius: 10,
@@ -1027,7 +1027,7 @@ export function WritingLibrary({
                 onClick={() => setSetupOpen(false)}
                 style={{
                   background: "#fff",
-                  border: "1px solid #ECEAF2",
+                  border: "1px solid #E6E8EC",
                   borderRadius: 10,
                   padding: "11px 16px",
                   fontFamily: SANS,
@@ -1063,9 +1063,9 @@ const iconChip: React.CSSProperties = {
   width: 38,
   height: 38,
   borderRadius: 11,
-  background: "#ECEBFB",
-  color: INDIGO,
-  border: "1px solid #E1DFF7",
+  background: "#FDF4F7",
+  color: BRAND,
+  border: "1px solid #F0D3DE",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1076,7 +1076,7 @@ const fieldLabel: React.CSSProperties = {
   fontFamily: SANS,
   fontWeight: 700,
   fontSize: 13.5,
-  color: "#41496A",
+  color: "#3B4150",
   marginBottom: 8,
 };
 
@@ -1101,9 +1101,9 @@ function ownPill(on: boolean): React.CSSProperties {
     padding: "7px 13px",
     borderRadius: 999,
     cursor: "pointer",
-    border: on ? `1px solid ${INDIGO}` : "1px solid #E2DED0",
-    background: on ? "#ECEBFB" : "#fff",
-    color: on ? INDIGO : INK,
+    border: on ? `1px solid ${BRAND}` : "1px solid #E2DED0",
+    background: on ? "#FDF4F7" : "#fff",
+    color: on ? BRAND : INK,
   };
 }
 
@@ -1143,10 +1143,10 @@ function GradingModal() {
             width: 60,
             height: 60,
             borderRadius: 17,
-            background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+            background: "linear-gradient(135deg,#9B1044,#7D0132)",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 12px 28px -12px rgba(59,67,181,.7)",
+            boxShadow: "0 12px 28px -12px rgba(125,1,50,.7)",
           }}
         >
           <Loader2 size={28} color="#fff" className="animate-spin" />
@@ -1182,7 +1182,7 @@ function GradingModal() {
                 width: 7,
                 height: 7,
                 borderRadius: 999,
-                background: INDIGO,
+                background: BRAND,
                 animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out`,
               }}
             />
@@ -1202,14 +1202,14 @@ function genButton(disabled: boolean, big = false): React.CSSProperties {
     padding: big ? "0 24px" : "0 18px",
     border: "none",
     borderRadius: 12,
-    background: INDIGO,
+    background: BRAND,
     color: "#fff",
     fontFamily: SANS,
     fontSize: big ? 15.5 : 15,
     fontWeight: 700,
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.6 : 1,
-    boxShadow: "0 10px 24px -10px rgba(59,67,181,.8)",
+    boxShadow: "0 10px 24px -10px rgba(125,1,50,.8)",
     flex: "none",
   };
 }
@@ -1228,12 +1228,12 @@ function AiCorner() {
         width: 26,
         height: 26,
         borderRadius: 8,
-        background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+        background: "linear-gradient(135deg,#9B1044,#7D0132)",
         color: "#fff",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
+        boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)",
       }}
     >
       <Sparkles size={14} strokeWidth={2.4} />
@@ -1253,9 +1253,9 @@ function DoneBadge() {
         borderRadius: 8,
         fontSize: 12.5,
         fontWeight: 700,
-        background: "#E9F5EE",
+        background: "#EAF6F0",
         color: EMERALD,
-        border: "1px solid #CDE9D8",
+        border: "1px solid #CFE7DB",
         whiteSpace: "nowrap",
       }}
     >
@@ -1272,9 +1272,9 @@ function NotPractisedBadge() {
         borderRadius: 8,
         fontSize: 12.5,
         fontWeight: 700,
-        background: "#F4F4FB",
-        color: "#5A596B",
-        border: "1px solid #ECEAF2",
+        background: "#FDF4F7",
+        color: "#4A505C",
+        border: "1px solid #E6E8EC",
         whiteSpace: "nowrap",
       }}
     >
@@ -1291,9 +1291,9 @@ function BandChip({ band }: { band: number }) {
         borderRadius: 8,
         fontSize: 12.5,
         fontWeight: 700,
-        background: "#ECEBFB",
-        color: INDIGO,
-        border: "1px solid #D6D3EF",
+        background: "#FDF4F7",
+        color: BRAND,
+        border: "1px solid #E3A7BD",
         whiteSpace: "nowrap",
       }}
     >
@@ -1309,7 +1309,7 @@ function StartAction({ practised }: { practised: boolean }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        color: INDIGO,
+        color: BRAND,
         fontSize: 14,
         fontWeight: 600,
         whiteSpace: "nowrap",
@@ -1342,21 +1342,21 @@ const cardTitle: React.CSSProperties = {
 
 const cardSub: React.CSSProperties = {
   fontSize: 13.5,
-  color: "#7A7989",
+  color: "#8B919D",
   fontWeight: 500,
 };
 
 const metaText: React.CSSProperties = {
   fontSize: 13,
-  color: "#8A899A",
+  color: "#8B919D",
 };
 
 const iconTile: React.CSSProperties = {
   width: 40,
   height: 40,
   borderRadius: 11,
-  background: "#EFEEFC",
-  color: INDIGO,
+  background: "#FDF4F7",
+  color: BRAND,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1364,9 +1364,9 @@ const iconTile: React.CSSProperties = {
 };
 
 const typeTag: React.CSSProperties = {
-  background: "#F4F4FB",
-  border: "1px solid #ECEAF2",
-  color: "#5A596B",
+  background: "#FDF4F7",
+  border: "1px solid #E6E8EC",
+  color: "#4A505C",
   fontSize: 12,
   fontWeight: 600,
   padding: "3px 9px",
@@ -1458,7 +1458,7 @@ function PromptCard({
               title={attach.disabled ? "Create a class first" : undefined}
               style={{
                 ...cardAction,
-                background: INDIGO,
+                background: BRAND,
                 border: 0,
                 color: "#fff",
                 cursor: attach.disabled ? "not-allowed" : "pointer",
@@ -1471,7 +1471,7 @@ function PromptCard({
               type="button"
               onClick={onOpen}
               disabled={busy}
-              style={{ ...cardAction, background: "#1F8A53", border: 0, color: "#fff" }}
+              style={{ ...cardAction, background: "#1C7A4F", border: 0, color: "#fff" }}
             >
               {done ? "Retake" : "Start"}
             </button>
@@ -1498,12 +1498,12 @@ const genLabel: React.CSSProperties = {
   display: "block",
   fontFamily: SANS,
   fontSize: 12.5,
-  color: "#56556A",
+  color: "#4A505C",
   marginBottom: 5,
 };
 const genField: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #CFCABC",
+  border: "1px solid #DFE2E8",
   borderRadius: 9,
   padding: "10px 11px",
   fontFamily: SANS,

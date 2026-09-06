@@ -13,11 +13,11 @@ import {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
-const TRACK = "#E7E7F2";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
+const TRACK = "#E6E8EC";
 
 const TARGET_OPTIONS: number[] = [];
 for (let b = MIN_TARGET_BAND; b <= MAX_TARGET_BAND; b += 0.5) TARGET_OPTIONS.push(b);
@@ -36,7 +36,7 @@ interface Accent {
 }
 
 const ACCENTS: Record<string, Accent> = {
-  reading: { color: "#3B43B5", soft: "#EBECFA", softBorder: "#E0E1F4", track: "#C7CBF0", href: "/read" },
+  reading: { color: "#7D0132", soft: "#FDF4F7", softBorder: "#F0D3DE", track: "#F0D3DE", href: "/read" },
   writing: { color: "#B9791A", soft: "#FFF3E0", softBorder: "#F6E0B8", track: "#EBCF9E", href: "/write" },
 };
 
@@ -88,7 +88,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
             disabled={pending}
             onChange={(e) => onTargetChange(Number(e.target.value))}
             aria-label={`${SKILL_LABELS[skill]} target band`}
-            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: "#F4F4FB", border: "1px solid #E0E1F4", padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
+            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: "#FDF4F7", border: "1px solid #F0D3DE", padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
           >
             {TARGET_OPTIONS.map((b) => (
               <option key={b} value={b}>
@@ -117,7 +117,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
               </div>
               <div style={{ fontFamily: SANS, fontSize: 13, color: MUTED }}>
                 From {base?.toFixed(1)} baseline
-                {delta > 0 ? <span style={{ color: "#2f8f5b" }}> · +{delta.toFixed(1)}</span> : null}
+                {delta > 0 ? <span style={{ color: "#1C7A4F" }}> · +{delta.toFixed(1)}</span> : null}
                 {` · ${sampleCount} ${sampleCount === 1 ? "submission" : "submissions"}`}
               </div>
             </>
@@ -177,7 +177,7 @@ function EmptyRing({ accent }: { accent: Accent }) {
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
-          <path d="M11 5v7M11 15v2" stroke="#C7C9D4" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M11 5v7M11 15v2" stroke="#C9CDD4" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
         <span style={{ fontFamily: SANS, fontSize: 9, color: FAINT, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.8px" }}>No data</span>
       </div>

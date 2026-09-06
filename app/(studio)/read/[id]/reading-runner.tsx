@@ -13,7 +13,7 @@ import { HIGHLIGHT_CSS, MarkerToolbar, useFullscreen, useHighlighter } from "../
 import { QuestionGroups } from "../_shared/question-groups";
 import { Timer, type DeliveredQuestion } from "../_shared/question-inputs";
 import { ReviewItem, WeakTypes, type TypeBreakdown } from "../_shared/review";
-import { btnBase, AMBER, INDIGO, INK, MUTED, primaryBtn, RED, SANS, SERIF } from "../_shared/tokens";
+import { btnBase, AMBER, BRAND, INK, MUTED, primaryBtn, RED, SANS, SERIF } from "../_shared/tokens";
 import { WordLookup } from "../_shared/word-lookup";
 
 // ---- Types -----------------------------------------------------------------
@@ -54,7 +54,7 @@ const MAX_FONT = 1.4;
  * gives it the Cambridge instruction headers + inline gap-fills too.
  */
 export function ReadingRunner({ passage, questions, learnerContext = "", practiceNo = null }: { passage: RunnerPassage; questions: DeliveredQuestion[]; learnerContext?: string; practiceNo?: number | null }) {
-  const accent = INDIGO;
+  const accent = BRAND;
   const exitHref = "/read";
   const [phase, setPhase] = useState<Phase>("reading");
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -180,38 +180,38 @@ export function ReadingRunner({ passage, questions, learnerContext = "", practic
       <style>{HIGHLIGHT_CSS}</style>
       <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
         {/* One flat header row: exit · title | text size · pens · fullscreen · timer · progress · submit */}
-        <div className="rd-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 18px", flexWrap: "wrap", padding: "10px 20px", flex: "none", borderBottom: "1px solid #EEEDF4" }}>
+        <div className="rd-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 18px", flexWrap: "wrap", padding: "10px 20px", flex: "none", borderBottom: "1px solid #E6E8EC" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <Link href={exitHref} aria-label="Exit practice" className="rd-exit" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", margin: "-7px 0 -7px -10px", borderRadius: 9, color: "#5A5670", fontSize: 14.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+            <Link href={exitHref} aria-label="Exit practice" className="rd-exit" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", margin: "-7px 0 -7px -10px", borderRadius: 9, color: "#4A505C", fontSize: 14.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
               <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>‹</span> Exit
             </Link>
-            <span aria-hidden style={{ width: 1, height: 22, background: "#ECEBF2", flex: "none" }} />
+            <span aria-hidden style={{ width: 1, height: 22, background: "#E6E8EC", flex: "none" }} />
             <span style={{ fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {practiceNo != null ? `Practice test ${practiceNo} · ${kindLabel} Reading` : `${kindLabel} Reading · Passage practice`}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12.5, color: "#8C88A0", fontWeight: 500 }}>Text size</span>
+              <span style={{ fontSize: 12.5, color: "#8B919D", fontWeight: 500 }}>Text size</span>
               <button type="button" onClick={() => stepFont(-0.1)} disabled={fontScale <= MIN_FONT} aria-label="Decrease text size" style={fontBtn(fontScale <= MIN_FONT)}>A−</button>
               <button type="button" onClick={() => stepFont(0.1)} disabled={fontScale >= MAX_FONT} aria-label="Increase text size" style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 14 }}>A+</button>
             </div>
             <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
-            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
+            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #E6E8EC", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
               {fs.isFull ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             <Timer seconds={allowance} onExpire={onExpire}>
               {(text, left) => {
                 const warn = left <= 120;
                 return (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: warn ? "#FDECEC" : "#F4F3FC", border: `1px solid ${warn ? "#F3B4B4" : "#E4E2F4"}` }} aria-label="time remaining">
-                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : INDIGO }}>◷</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, letterSpacing: ".02em", color: warn ? "#B91C1C" : INDIGO }}>{text}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: warn ? "#FDECEC" : "#FDF4F7", border: `1px solid ${warn ? "#F3B4B4" : "#F0D3DE"}` }} aria-label="time remaining">
+                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : BRAND }}>◷</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, letterSpacing: ".02em", color: warn ? "#B91C1C" : BRAND }}>{text}</span>
                   </span>
                 );
               }}
             </Timer>
-            <span title={`${answeredCount} of ${total} answered`} style={{ padding: "6px 12px", borderRadius: 10, border: "1.5px solid #EAE8F2", fontSize: 13.5, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+            <span title={`${answeredCount} of ${total} answered`} style={{ padding: "6px 12px", borderRadius: 10, border: "1.5px solid #E6E8EC", fontSize: 13.5, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
               {answeredCount} / {total}
             </span>
             <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontWeight: 600, fontSize: 14, cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.7 : 1, fontFamily: SANS, boxShadow: `0 4px 14px ${accent}47` }}>
@@ -227,13 +227,13 @@ export function ReadingRunner({ passage, questions, learnerContext = "", practic
 
         {/* Split: passage | questions */}
         <div className="rd-split" style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
+          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #ECEEF2", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
             <div style={{ maxWidth: 680 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ background: "#EEF0FC", color: INDIGO, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage</span>
-                {passage.topic ? <span style={{ fontSize: 12.5, fontWeight: 500, color: "#9a96a8" }}>{passage.topic}</span> : null}
+                <span style={{ background: "#FDF4F7", color: BRAND, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage</span>
+                {passage.topic ? <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8B919D" }}>{passage.topic}</span> : null}
               </div>
-              <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#8C88A0", margin: "12px 0 0" }}>
+              <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#8B919D", margin: "12px 0 0" }}>
                 <HighlighterIcon size={13} aria-hidden style={{ flex: "none" }} />
                 Select a word to see its meaning — or pick a pen above to highlight.
               </p>
@@ -241,7 +241,7 @@ export function ReadingRunner({ passage, questions, learnerContext = "", practic
                 You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions 1–{total}</strong>, which are based on the reading passage below.
               </p>
               <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>{passage.title}</h1>
-              <div style={{ lineHeight: 1.75, color: "#3A3650", fontSize: fontPx, whiteSpace: "pre-wrap" }}>{passage.body}</div>
+              <div style={{ lineHeight: 1.75, color: "#3B4150", fontSize: fontPx, whiteSpace: "pre-wrap" }}>{passage.body}</div>
             </div>
           </article>
 
@@ -258,7 +258,7 @@ export function ReadingRunner({ passage, questions, learnerContext = "", practic
         </div>
 
         {/* Bottom nav: question circles */}
-        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #F0EFF5", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, flexWrap: "wrap" }}>
+        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #ECEEF2", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, flexWrap: "wrap" }}>
           {questions.map((q) => {
             const n = numberById.get(q.id) ?? q.order_index;
             const answered = !!answers[q.id]?.trim();
@@ -300,9 +300,9 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     width: 28,
     height: 28,
     borderRadius: 8,
-    border: "1.5px solid #EAE8F2",
+    border: "1.5px solid #E6E8EC",
     background: "#fff",
-    color: disabled ? "#C7C4D4" : "#5A5670",
+    color: disabled ? "#C9CDD4" : "#4A505C",
     fontWeight: 700,
     fontSize: 12.5,
     cursor: disabled ? "default" : "pointer",
@@ -327,9 +327,9 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
     fontVariantNumeric: "tabular-nums",
     transition: "all .12s ease",
   };
-  if (current) return { ...base, borderColor: INDIGO, background: "#fff", color: INDIGO, boxShadow: "0 0 0 3px rgba(79,70,229,.16)" };
-  if (answered) return { ...base, borderColor: INDIGO, background: INDIGO, color: "#fff" };
-  return { ...base, borderColor: "#E5E3EF", background: "#fff", color: "#9B98AD" };
+  if (current) return { ...base, borderColor: BRAND, background: "#fff", color: BRAND, boxShadow: "0 0 0 3px rgba(125,1,50,.16)" };
+  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: "#fff" };
+  return { ...base, borderColor: "#E6E8EC", background: "#fff", color: "#8B919D" };
 }
 
 // ---- Confirm finish (in-app modal) -----------------------------------------
@@ -364,8 +364,8 @@ function ConfirmFinishModal({ unanswered, onCancel, onConfirm }: { unanswered: n
           You have <strong style={{ color: INK, fontWeight: 700 }}>{unanswered}</strong> unanswered question{unanswered === 1 ? "" : "s"}. {unanswered === 1 ? "It" : "They"}&apos;ll be marked wrong, and you can&apos;t change your answers after submitting.
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
-          <button type="button" onClick={onCancel} style={{ padding: "10px 18px", borderRadius: 11, border: "1.5px solid #EAE8F2", background: "#fff", color: "#46435C", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>Keep working</button>
-          <button type="button" onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: 11, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer", boxShadow: "0 8px 20px -10px rgba(79,70,229,.7)" }}>Submit anyway</button>
+          <button type="button" onClick={onCancel} style={{ padding: "10px 18px", borderRadius: 11, border: "1.5px solid #E6E8EC", background: "#fff", color: "#3B4150", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>Keep working</button>
+          <button type="button" onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer", boxShadow: "0 8px 20px -10px rgba(125,1,50,.7)" }}>Submit anyway</button>
         </div>
       </div>
     </div>

@@ -15,14 +15,14 @@ export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
-const EMERALD = "#2f8f5b";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
+const EMERALD = "#1C7A4F";
 const AMBER = "#B9791A";
-const TRACK = "#E7E7F2";
+const TRACK = "#E6E8EC";
 
 const CRITERION_TIP: Record<string, string> = {
   TR: "answer every part of the prompt and state a clear position — that lifts Task Response fastest.",
@@ -100,7 +100,7 @@ function CountdownCard({ examDate, days, target, elapsedPct }: { examDate: strin
         overflow: "hidden",
         borderRadius: 16,
         marginBottom: 16,
-        background: "linear-gradient(120deg,#3B43B5 0%,#2E3490 100%)",
+        background: "linear-gradient(120deg,#7D0132 0%,#5C0125 100%)",
       }}
     >
       {/* soft glow + concentric rings */}
@@ -111,7 +111,7 @@ function CountdownCard({ examDate, days, target, elapsedPct }: { examDate: strin
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "clamp(18px,2.2vw,26px) clamp(20px,2.8vw,30px)" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", flexShrink: 0, animation: "plan-pulse-indigo 2.4s ease infinite" }} />
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", flexShrink: 0, animation: "plan-pulse-brand 2.4s ease infinite" }} />
             <Eyebrow tone="rgba(255,255,255,0.72)">{hasFuture ? "Exam countdown" : "Exam date"}</Eyebrow>
           </div>
 
@@ -202,7 +202,7 @@ function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | 
   if (daysToCheck != null && daysToCheck > 0) {
     return (
       <p style={{ fontFamily: SANS, fontSize: 14, color: MUTED, margin: "0 0 16px", padding: "0 2px", lineHeight: 1.65 }}>
-        Next level check in <strong style={{ color: INDIGO, fontWeight: 700 }}>{daysToCheck} {daysToCheck === 1 ? "day" : "days"}</strong> — your bands keep updating with every graded task in the meantime.
+        Next level check in <strong style={{ color: BRAND, fontWeight: 700 }}>{daysToCheck} {daysToCheck === 1 ? "day" : "days"}</strong> — your bands keep updating with every graded task in the meantime.
       </p>
     );
   }
@@ -243,13 +243,13 @@ function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: bool
           gap: 9,
           padding: 14,
           borderRadius: 12,
-          background: INDIGO,
+          background: BRAND,
           color: "#fff",
           fontFamily: SANS,
           fontSize: 15,
           fontWeight: 700,
           textDecoration: "none",
-          boxShadow: "0 12px 24px -12px rgba(59,67,181,.7)",
+          boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)",
         }}
       >
         Practice next task

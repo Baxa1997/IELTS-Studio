@@ -17,11 +17,11 @@ import type { StudentAssignment } from "@/lib/assignments/student";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
 
 const SKILL_COPY: Record<string, { title: string; blurb: string; empty: string }> = {
   writing: {
@@ -95,9 +95,9 @@ export function AssignedHub({
               display: "inline-flex",
               alignItems: "center",
               gap: 9,
-              background: "#EAEAFB",
-              border: "1px solid rgba(59,67,181,.16)",
-              color: INDIGO,
+              background: "#FDF4F7",
+              border: "1px solid rgba(125,1,50,.16)",
+              color: BRAND,
               padding: "8px 14px",
               borderRadius: 999,
               fontSize: 14,
@@ -105,7 +105,7 @@ export function AssignedHub({
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: INDIGO }} />
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }} />
             {todo.length} to do
           </span>
         ) : null}
@@ -162,7 +162,7 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
         display: "flex",
         flexDirection: "column",
         gap: 11,
-        background: a.done ? "#FBFBFE" : "#fff",
+        background: a.done ? "#FDF4F7" : "#fff",
         // UNFINISHED IS THE URGENT STATE, not just overdue. Most homework is set
         // without a due date, so keying the red edge to `overdue` meant a
         // student's outstanding work looked identical to work they had already
@@ -179,7 +179,7 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
         <span style={{ fontSize: 12, color: FAINT }}>{a.groupName}</span>
         {a.done ? (
-          <Chip bg="#E7F7EE" fg="#15803d">
+          <Chip bg="#EAF6F0" fg="#15803d">
             Done
           </Chip>
         ) : a.overdue ? (
@@ -220,7 +220,7 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
       </div>
 
       <div style={{ height: 1, background: LINE }} />
-      <span style={{ fontSize: 14, fontWeight: 600, color: a.done ? INDIGO : "#B3261E" }}>
+      <span style={{ fontSize: 14, fontWeight: 600, color: a.done ? BRAND : "#B3261E" }}>
         {a.done ? "Open again →" : "Start now →"}
       </span>
     </Link>

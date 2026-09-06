@@ -33,7 +33,13 @@ export default async function NotificationsPage() {
   const inbox = await loadInbox(60);
 
   return (
-    <div>
+    /* These two learner pages borrow the console's page-ui kit. That kit reads its
+       colours from `--pu-*` custom properties whose FALLBACKS are the staff indigo,
+       and globals.css only overrides them inside the console — so without this the
+       student's homework and inbox would be the last two indigo screens in the
+       learner app. Setting the properties here repaints every page-ui component on
+       the page at once, which a per-import swap could not do. */
+    <div style={{ "--pu-indigo": "#7D0132", "--pu-tint": "#FDF4F7" } as React.CSSProperties}>
       <PageHead
         eyebrow="Notifications"
         title="What's happened"
@@ -111,7 +117,7 @@ export default async function NotificationsPage() {
                       style={{
                         fontSize: 13.5,
                         fontWeight: 600,
-                        color: "#3B43B5",
+                        color: "#7D0132",
                         textDecoration: "none",
                       }}
                     >

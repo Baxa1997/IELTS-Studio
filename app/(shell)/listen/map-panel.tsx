@@ -43,7 +43,7 @@ const MAP = {
   cardEdge: "#111111",
   site: "#ffffff",
   siteEdge: "#111111",
-  accent: "#7c5cfc",
+  accent: "#7D0132",
   frame: "#111111",
 };
 
@@ -738,7 +738,7 @@ export function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
                   borderRadius: 9,
                   border: `1.5px solid ${border}`,
                   background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
-                  boxShadow: isActive && !r ? `0 0 0 3px rgba(124,92,252,0.10)` : undefined,
+                  boxShadow: isActive && !r ? `0 0 0 3px rgba(125,1,50,0.10)` : undefined,
                   fontFamily: RUN.sans,
                   fontSize: 14,
                   fontWeight: 700,

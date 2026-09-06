@@ -6,7 +6,7 @@ import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { planTier } from "@/lib/billing/plans";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#4338CA";
+const BRAND = "#7D0132";
 
 /** True when an API/engine error message is the monthly quota running out (the
  *  engine 429 says "quota is used up"; the grade route's client copy says
@@ -67,7 +67,7 @@ export function UpgradeProButton({ onDark = false }: { onDark?: boolean }) {
           padding: "8px 14px",
           borderRadius: 10,
           border: onDark ? "1px solid rgba(255,255,255,.35)" : "none",
-          background: onDark ? "rgba(255,255,255,.14)" : INDIGO,
+          background: onDark ? "rgba(255,255,255,.14)" : BRAND,
           color: "#fff",
           fontFamily: SANS,
           fontSize: 13,
@@ -130,8 +130,8 @@ export function UpgradeNotice({ message }: { message: string }) {
       style={{
         fontFamily: SANS,
         margin: "16px 0 0",
-        background: "linear-gradient(120deg,#F6F5FF,#EFF1FE)",
-        border: "1px solid #DDDCF4",
+        background: "linear-gradient(120deg,#FDF4F7,#FDF4F7)",
+        border: "1px solid #F0D3DE",
         borderRadius: 14,
         padding: "16px 18px",
         display: "flex",
@@ -149,12 +149,12 @@ export function UpgradeNotice({ message }: { message: string }) {
             gap: 8,
             fontSize: 14.5,
             fontWeight: 700,
-            color: "#1C1B2E",
+            color: "#121317",
           }}
         >
-          <Sparkles size={16} style={{ color: INDIGO }} /> Free practice used up
+          <Sparkles size={16} style={{ color: BRAND }} /> Free practice used up
         </div>
-        <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: "#56556A" }}>
+        <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: "#4A505C" }}>
           {message} Pro gives you unlimited gradings and practice sets every month.
         </p>
         {checkoutError ? (
@@ -172,13 +172,13 @@ export function UpgradeNotice({ message }: { message: string }) {
           padding: "11px 18px",
           borderRadius: 11,
           border: "none",
-          background: INDIGO,
+          background: BRAND,
           color: "#fff",
           fontFamily: SANS,
           fontSize: 14,
           fontWeight: 700,
           cursor: busy ? "default" : "pointer",
-          boxShadow: "0 10px 22px -10px rgba(67,56,202,.6)",
+          boxShadow: "0 10px 22px -10px rgba(125,1,50,.6)",
         }}
       >
         {busy ? (

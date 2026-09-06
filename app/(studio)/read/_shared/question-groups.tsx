@@ -9,11 +9,11 @@ import {
 } from "@/lib/reading/constants";
 
 import { GapSelectSentence, GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
-import { INDIGO, INK, MUTED, SANS } from "./tokens";
+import { BRAND, INK, MUTED, SANS } from "./tokens";
 
 /** Indigo-tinted border for the boxes that stay boxed (flow-chart gap stages);
  *  ordinary questions render as flat rows with an indigo number, no card. */
-const QUESTION_BORDER = "#C5C9F1";
+const QUESTION_BORDER = "#E3A7BD";
 
 const ENDING_LETTERS = "ABCDEFGHIJ".split("");
 
@@ -80,7 +80,7 @@ export function QuestionGroups({
         return (
           <section key={gi} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* Cambridge instruction header — a quiet grey box, like the exam paper */}
-            <div style={{ background: "#F6F7FA", border: "1px solid #EEEFF4", borderRadius: 12, padding: "13px 16px" }}>
+            <div style={{ background: "#F6F7F9", border: "1px solid #E6E8EC", borderRadius: 12, padding: "13px 16px" }}>
               <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 14.5, color: INK, margin: 0, fontVariantNumeric: "tabular-nums" }}>{range}</p>
               <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "4px 0 0" }}>
                 {instruction}
@@ -88,14 +88,14 @@ export function QuestionGroups({
             </div>
 
             {letteredBank ? (
-              <div style={{ border: "1px solid #E5E3EF", borderRadius: 12, background: "#FAFAFD", padding: "14px 18px" }}>
+              <div style={{ border: "1px solid #E6E8EC", borderRadius: 12, background: "#FDF4F7", padding: "14px 18px" }}>
                 {bankTitle ? (
                   <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 13.5, color: INK, margin: "0 0 9px" }}>{bankTitle}</p>
                 ) : null}
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 7 }}>
                   {letteredBank.map((opt, i) => (
                     <li key={i} style={{ display: "flex", gap: 9, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.5, color: INK }}>
-                      <span style={{ flex: "none", fontWeight: 700, color: INDIGO }}>{ENDING_LETTERS[i] ?? i + 1}</span>
+                      <span style={{ flex: "none", fontWeight: 700, color: BRAND }}>{ENDING_LETTERS[i] ?? i + 1}</span>
                       <span>{opt}</span>
                     </li>
                   ))}
@@ -153,7 +153,7 @@ export function QuestionGroups({
                   {/* Flat exam row — indigo number, no card border */}
                   <div id={`q-${q.id}`} role="group" style={{ scrollMarginTop: 16 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%" }}>
-                      <span style={{ flex: "none", minWidth: 22, fontWeight: 700, color: INDIGO, fontSize: 15.5, lineHeight: 1.55, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
+                      <span style={{ flex: "none", minWidth: 22, fontWeight: 700, color: BRAND, fontSize: 15.5, lineHeight: 1.55, fontVariantNumeric: "tabular-nums" }}>{n}.</span>
                       <span style={{ flex: 1, minWidth: 0 }}>
                         {gap ? (
                           wordBank ? (
@@ -315,12 +315,12 @@ function PickTwoPanel({
               type="button"
               onClick={() => toggle(letter)}
               aria-pressed={on}
-              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? INDIGO : "#EAE8F2"}`, background: on ? "#F6F5FE" : "#fff", fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`, background: on ? "#FDF4F7" : "#fff", fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
             >
-              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? INDIGO : "#C9C7D6"}`, background: on ? INDIGO : "#fff", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
+              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? BRAND : "#C9CDD4"}`, background: on ? BRAND : "#fff", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
                 {on ? "✓" : ""}
               </span>
-              <strong style={{ width: 16, flex: "none", color: INDIGO }}>{letter}</strong>
+              <strong style={{ width: 16, flex: "none", color: BRAND }}>{letter}</strong>
               <span style={{ flex: 1 }}>{opt}</span>
             </button>
           );
@@ -344,8 +344,8 @@ function flagStyle(on: boolean): React.CSSProperties {
     fontFamily: SANS,
     transition: "all .14s ease",
     background: on ? "#FEF6E7" : "#fff",
-    border: `1.5px solid ${on ? "#F6D58A" : "#EAE8F2"}`,
-    color: on ? "#C77C09" : "#B6B2C8",
+    border: `1.5px solid ${on ? "#F6D58A" : "#E6E8EC"}`,
+    color: on ? "#C77C09" : "#C9CDD4",
   };
 }
 
@@ -378,7 +378,7 @@ function NoteBlock({
   const title = group.find((q) => q.note_meta?.title?.trim())?.note_meta?.title?.trim() || null;
 
   return (
-    <div style={{ border: "1px solid #E5E3EF", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
+    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
       {title ? (
         <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 12px" }}>{title}</h3>
       ) : null}
@@ -471,7 +471,7 @@ function NoteGapRow({
 /** The small boxed question number that sits inline just before a note's blank. */
 function NumberBadge({ n }: { n: number }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 22, height: 22, padding: "0 5px", margin: "0 5px", borderRadius: 6, border: `1.5px solid ${INDIGO}`, background: "#F4F3FC", color: INDIGO, fontWeight: 700, fontSize: 12.5, lineHeight: 1, fontVariantNumeric: "tabular-nums", verticalAlign: "middle" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 22, height: 22, padding: "0 5px", margin: "0 5px", borderRadius: 6, border: `1.5px solid ${BRAND}`, background: "#FDF4F7", color: BRAND, fontWeight: 700, fontSize: 12.5, lineHeight: 1, fontVariantNumeric: "tabular-nums", verticalAlign: "middle" }}>
       {n}
     </span>
   );
@@ -530,7 +530,7 @@ function FlowChartBlock({
   }
 
   return (
-    <div style={{ border: "1px solid #E5E3EF", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
+    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
       {title ? (
         <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 14px", textAlign: "center" }}>{title}</h3>
       ) : null}
@@ -551,7 +551,7 @@ function FlowChartBlock({
 /** A gap-less flow-chart stage (a lead-in or fixed step). */
 function FlowStage({ text }: { text: string }) {
   return (
-    <div style={{ width: "100%", maxWidth: FLOW_BOX_MAX, border: "1.5px solid #E5E3EF", borderRadius: 12, background: "#FAFAFD", padding: "12px 16px", textAlign: "center", fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: INK }}>
+    <div style={{ width: "100%", maxWidth: FLOW_BOX_MAX, border: "1.5px solid #E6E8EC", borderRadius: 12, background: "#FDF4F7", padding: "12px 16px", textAlign: "center", fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: INK }}>
       {text}
     </div>
   );

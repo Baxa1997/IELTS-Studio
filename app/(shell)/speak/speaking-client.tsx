@@ -28,11 +28,11 @@ import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const INDIGO = "#4338CA";
-const TINT = "#EFEEFC";
-const LINE = "#E8E6F0";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const BRAND = "#7D0132";
+const TINT = "#FDF4F7";
+const LINE = "#E6E8EC";
 const RED = "#b91c1c";
 
 type Tab = "mock" | "tutor" | "progress";
@@ -210,7 +210,7 @@ const primaryBtn: React.CSSProperties = {
   padding: "0 20px",
   border: "none",
   borderRadius: 12,
-  background: INDIGO,
+  background: BRAND,
   color: "#fff",
   fontFamily: "inherit",
   fontSize: 14.5,
@@ -272,7 +272,7 @@ const HUB_PURPOSES = [
     mark: "G",
     room: "Open conversation",
     length: "10–20 min",
-    accent: "#8456EF",
+    accent: "#9B1044",
   },
   {
     id: "everyday",
@@ -288,7 +288,7 @@ const HUB_PURPOSES = [
     mark: "P",
     room: "Stage",
     length: "15–20 min",
-    accent: "#7144D8",
+    accent: "#9B1044",
   },
   {
     id: "presGeneral",
@@ -296,7 +296,7 @@ const HUB_PURPOSES = [
     mark: "S",
     room: "Stage",
     length: "15 min",
-    accent: "#5E34BF",
+    accent: "#5C0125",
   },
   {
     id: "interview",
@@ -971,7 +971,7 @@ export function SpeakingClient({
                           fontFamily: "inherit",
                           fontSize: 12,
                           fontWeight: 600,
-                          color: "#8456EF",
+                          color: "#9B1044",
                         }}
                       >
                         All results
@@ -1294,7 +1294,7 @@ export function SpeakingClient({
                               borderRadius: "8px 8px 0 0",
                               height: `${Math.max(8, (g.band / 9) * 100)}%`,
                               background:
-                                g.band >= 6.5 ? "#8456EF" : g.band >= 5.5 ? "#C8AAFF" : "#DDD2F9",
+                                g.band >= 6.5 ? "#9B1044" : g.band >= 5.5 ? "#CC5C82" : "#E3A7BD",
                             }}
                           />
                           <span style={{ fontSize: 11, color: "#A89AA4", whiteSpace: "nowrap" }}>
@@ -1453,7 +1453,7 @@ export function SpeakingClient({
           {quotaHit ? (
             <>
               {" "}
-              <Link href="/pricing" style={{ color: INDIGO, fontWeight: 700 }}>
+              <Link href="/pricing" style={{ color: BRAND, fontWeight: 700 }}>
                 See plans →
               </Link>
             </>
@@ -1476,8 +1476,8 @@ export function SpeakingClient({
                 borderRadius: "50%",
                 border: "none",
                 cursor: "pointer",
-                background: `radial-gradient(circle at 35% 30%, #5A50E0, ${INDIGO})`,
-                boxShadow: "0 18px 40px -14px rgba(67,56,202,.55)",
+                background: `radial-gradient(circle at 35% 30%, #7D0132, ${BRAND})`,
+                boxShadow: "0 18px 40px -14px rgba(125,1,50,.55)",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1522,7 +1522,7 @@ export function SpeakingClient({
                     padding: "0 13px",
                     fontSize: 12.5,
                     borderRadius: 999,
-                    background: difficulty === d ? INDIGO : "#fff",
+                    background: difficulty === d ? BRAND : "#fff",
                     color: difficulty === d ? "#fff" : INK,
                   }}
                 >
@@ -1556,7 +1556,7 @@ export function SpeakingClient({
                     >
                       {r.result?.cue_card?.title ?? "Speaking practice"}
                     </span>
-                    <span style={{ color: INDIGO, fontWeight: 700, whiteSpace: "nowrap" }}>
+                    <span style={{ color: BRAND, fontWeight: 700, whiteSpace: "nowrap" }}>
                       {r.result?.overall_band != null ? `Band ${r.result.overall_band}` : "…"}
                     </span>
                   </Link>
@@ -1565,7 +1565,7 @@ export function SpeakingClient({
             </div>
           ) : null}
 
-          <p style={{ margin: "14px 0 0", fontSize: 12, color: "#9A9EAE" }}>
+          <p style={{ margin: "14px 0 0", fontSize: 12, color: "#8B919D" }}>
             Want the full 3-part exam with a live examiner? Switch to <strong>Full mock</strong>{" "}
             above. AI-estimated bands — not affiliated with or endorsed by IELTS®.
           </p>
@@ -1575,7 +1575,7 @@ export function SpeakingClient({
       {/* prep + recording share the cue card */}
       {(phase === "prep" || phase === "recording") && session ? (
         <>
-          <div style={{ ...card, marginTop: 18, background: TINT, borderColor: "#DDDAF6" }}>
+          <div style={{ ...card, marginTop: 18, background: TINT, borderColor: "#F0D3DE" }}>
             <div
               style={{
                 fontSize: 11.5,
@@ -1673,7 +1673,7 @@ export function SpeakingClient({
                   style={{
                     height: "100%",
                     width: `${Math.min(100, level * 700)}%`,
-                    background: INDIGO,
+                    background: BRAND,
                     borderRadius: 999,
                     transition: "width .12s linear",
                   }}
@@ -1705,7 +1705,7 @@ export function SpeakingClient({
               height: 34,
               margin: "0 auto",
               border: `3px solid ${TINT}`,
-              borderTopColor: INDIGO,
+              borderTopColor: BRAND,
               borderRadius: "50%",
             }}
           />

@@ -129,7 +129,7 @@ const PURPOSES: Purpose[] = [
     room: "Open conversation",
     length: "10–20 min",
     theme: "flow",
-    accent: "#8456EF",
+    accent: "#9B1044",
     defaultMode: "chat",
     focus: "Range and accuracy in ordinary conversation — fewer basic words, cleaner tenses.",
     tags: ["Vocabulary range", "Tense accuracy", "Natural replies"],
@@ -153,7 +153,7 @@ const PURPOSES: Purpose[] = [
     room: "Stage",
     length: "15–20 min",
     theme: "stage",
-    accent: "#7144D8",
+    accent: "#9B1044",
     defaultMode: "chat",
     focus: "Structure an audience can follow, steady pace, and language that sounds senior.",
     tags: ["Signposting", "Pacing", "Executive tone"],
@@ -165,7 +165,7 @@ const PURPOSES: Purpose[] = [
     room: "Stage",
     length: "15 min",
     theme: "stage",
-    accent: "#5E34BF",
+    accent: "#5C0125",
     defaultMode: "chat",
     focus:
       "Speaking from three points instead of a script, and recovering when you lose your place.",
@@ -228,7 +228,7 @@ function roomTheme(p: Purpose) {
   const dark = p.theme === "stage";
   return {
     dark,
-    accent: dark ? "#C8AAFF" : p.accent,
+    accent: dark ? "#CC5C82" : p.accent,
     bg: dark
       ? "radial-gradient(900px 600px at 50% -10%, #2C2535 0%, #19151E 55%, #110E14 100%)"
       : p.theme === "interview"
@@ -243,7 +243,7 @@ function roomTheme(p: Purpose) {
     track: dark ? "rgba(245,240,238,0.14)" : "#EAE1DC",
     shadow: dark ? "rgba(0,0,0,0.55)" : "rgba(26,21,32,0.18)",
     glow: `${p.accent}55`,
-    blobA: `${dark ? "#5E34BF" : p.accent}4D`,
+    blobA: `${dark ? "#5C0125" : p.accent}4D`,
     blobB: "#DA775633",
   };
 }

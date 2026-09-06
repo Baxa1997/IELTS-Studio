@@ -16,10 +16,10 @@ import { GeneratePassageButton, StartTestButton } from "./generate-button";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#4338CA";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const EMERALD = "#1F8A53";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const EMERALD = "#1C7A4F";
 
 /** The learner's own freshly-generated test (opens directly). */
 export interface TestCard {
@@ -162,9 +162,9 @@ export function ReadingHub({
             display: "inline-flex",
             alignItems: "center",
             gap: 9,
-            background: "#EAEAFB",
-            border: "1px solid rgba(67,56,202,.16)",
-            color: INDIGO,
+            background: "#FDF4F7",
+            border: "1px solid rgba(125,1,50,.16)",
+            color: BRAND,
             padding: "8px 14px",
             borderRadius: 999,
             fontSize: 14,
@@ -172,7 +172,7 @@ export function ReadingHub({
             whiteSpace: "nowrap",
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: INDIGO }} />
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }} />
           {levelBand != null
             ? `${levelMeasured ? "Your band" : "Target"} · ${levelBand.toFixed(1)}`
             : "Level not set"}
@@ -184,8 +184,8 @@ export function ReadingHub({
         style={{
           display: "flex",
           gap: 6,
-          background: "#F1F1F8",
-          border: "1px solid #ECEAF2",
+          background: "#F6F7F9",
+          border: "1px solid #E6E8EC",
           borderRadius: 14,
           padding: 5,
           marginTop: 18,
@@ -406,7 +406,7 @@ function TestTile({
             title={attach.disabled ? "Create a class first" : undefined}
             style={{
               ...cardActionBase,
-              background: INDIGO,
+              background: BRAND,
               border: 0,
               color: "#fff",
               cursor: attach.disabled ? "not-allowed" : "pointer",
@@ -599,12 +599,12 @@ function TabButton({
         cursor: "pointer",
         textAlign: "left",
         background: active ? "#fff" : "transparent",
-        color: active ? INDIGO : MUTED,
+        color: active ? BRAND : MUTED,
         boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none",
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? BRAND : "#8B919D" }}>
         {icon}
       </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
@@ -615,7 +615,7 @@ function TabButton({
           style={{
             fontFamily: SANS,
             fontSize: 12,
-            color: active ? "#7C78C9" : "#9A99A8",
+            color: active ? "#B32A5B" : "#8B919D",
             marginTop: 2,
           }}
         >
@@ -674,7 +674,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ marginTop: 18, fontSize: 13.5, color: "#8A899A", fontFamily: SANS }}>{children}</p>
+    <p style={{ marginTop: 18, fontSize: 13.5, color: "#8B919D", fontFamily: SANS }}>{children}</p>
   );
 }
 
@@ -697,12 +697,12 @@ function AiCorner() {
         width: 26,
         height: 26,
         borderRadius: 8,
-        background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+        background: "linear-gradient(135deg,#9B1044,#7D0132)",
         color: "#fff",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
+        boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)",
       }}
     >
       <Sparkles size={14} strokeWidth={2.4} />
@@ -724,9 +724,9 @@ function DoneBadge() {
         borderRadius: 8,
         fontSize: 12.5,
         fontWeight: 700,
-        background: "#E9F5EE",
+        background: "#EAF6F0",
         color: EMERALD,
-        border: "1px solid #CDE9D8",
+        border: "1px solid #CFE7DB",
         whiteSpace: "nowrap",
       }}
     >
@@ -744,7 +744,7 @@ function StartAction({ loading, practised }: { loading?: boolean; practised?: bo
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        color: INDIGO,
+        color: BRAND,
         fontSize: 14,
         fontWeight: 600,
       }}
@@ -764,7 +764,7 @@ function StartAction({ loading, practised }: { loading?: boolean; practised?: bo
 
 function bandTier(d: number | null): { label: string; bg: string; fg: string } | null {
   if (d == null) return null;
-  if (d <= 5) return { label: `Band ${d}`, bg: "#DCF3E4", fg: "#147A4F" };
+  if (d <= 5) return { label: `Band ${d}`, bg: "#DCF3E4", fg: "#1C7A4F" };
   if (d === 6) return { label: "Band 6", bg: "#E2EEF8", fg: "#1F6FB0" };
   if (d === 7) return { label: "Band 7", bg: "#F6EAD2", fg: "#9A5B12" };
   return { label: `Band ${d}`, bg: "#F7E1E6", fg: "#A23B53" };
@@ -827,23 +827,23 @@ const cardTitle: React.CSSProperties = {
   lineHeight: 1.3,
   margin: "0 0 3px",
 };
-const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#7A7989", fontWeight: 500 };
-const metaText: React.CSSProperties = { fontSize: 13, color: "#8A899A" };
+const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#8B919D", fontWeight: 500 };
+const metaText: React.CSSProperties = { fontSize: 13, color: "#8B919D" };
 const iconTile: React.CSSProperties = {
   width: 40,
   height: 40,
   borderRadius: 11,
-  background: "#EFEEFC",
-  color: INDIGO,
+  background: "#FDF4F7",
+  color: BRAND,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   flex: "none",
 };
 const typeTag: React.CSSProperties = {
-  background: "#F4F4FB",
-  border: "1px solid #ECEAF2",
-  color: "#5A596B",
+  background: "#FDF4F7",
+  border: "1px solid #E6E8EC",
+  color: "#4A505C",
   fontSize: 12,
   fontWeight: 600,
   padding: "3px 9px",

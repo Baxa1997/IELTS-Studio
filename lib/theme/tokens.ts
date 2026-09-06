@@ -73,10 +73,37 @@ export const WHITE = "#FFFFFF";
 
 /* ── brand ─────────────────────────────────────────────────────────────────── */
 /*
- * Four indigos were in circulation: #3B43B5 (27 files), #4340CB (19), #4338CA
- * (12) and #4f46e5 (2). #3B43B5 wins on use and is the darker, calmer one — it
- * holds up as a button fill where #4f46e5 starts to buzz.
+ * THE LEARNER APP IS BURGUNDY, THE STAFF CONSOLE IS STILL INDIGO.
+ *
+ * The marketing site was rebuilt on the `EngProgress Platform` design canvas and
+ * came out burgundy (`app/_landing/design.ts`). A learner who signed up from that
+ * page then walked into an indigo product, so the learner surfaces — dashboard,
+ * the four skill hubs, the exam studios — were repainted to the canvas's colour.
+ * The values below are COPIED from `app/_landing/design.ts`, not eyeballed, so
+ * the two halves of the funnel are the same burgundy rather than two burgundies.
+ *
+ * The ramp is wider than marketing needs because a product has states marketing
+ * doesn't: a pressed button, a progress track, a disabled fill, a gradient stop.
+ * MID/LIGHT/PALE were interpolated along the canvas's own hue (~337°) so an
+ * accent that has to sit lighter than BRAND still reads as the same colour.
+ *
+ * The indigos below did NOT move. The staff console and /admin still wear them,
+ * and `TINT.indigo` is a `Tone` used by ~30 console and admin call sites. Two
+ * brands is the deliberate state, not drift: staff are a different audience on a
+ * different surface, and repainting them was explicitly out of scope.
  */
+export const BRAND = "#7D0132"; // primary action           10.9:1
+export const BRAND_DEEP = "#5C0125"; // pressed / hover
+export const BRAND_DARK = "#43001D"; // panel ground
+export const BRAND_DARKEST = "#2C0013"; // darkest gradient stop
+export const BRAND_MID = "#9B1044"; // lighter gradient stop
+export const BRAND_LIGHT = "#B32A5B"; // lighter still — meters, chart fills
+export const BRAND_PALE = "#E3A7BD"; // disabled / empty-track fill
+export const BRAND_SOFT = "#FDF4F7"; // tinted fill
+export const BRAND_LINE = "#F0D3DE"; // tinted border
+export const BRAND_WASH = "#F8E8EE"; // between SOFT and LINE — hover on a tint
+
+/** Staff only. See the note above before reaching for these on a learner screen. */
 export const INDIGO = "#3B43B5"; // primary action            7.9:1
 export const INDIGO_DEEP = "#2F3699"; // pressed / hover
 export const INDIGO_SOFT = "#ECEBFB"; // tinted fill
@@ -92,6 +119,7 @@ export const RED_DEEP = "#A63A30"; // the same red as body text  5.9:1
 /** Tinted backgrounds paired with the ink that reads on them. Never pair a tint
  *  with anything but its own `fg` — the pairs are what carry the contrast. */
 export const TINT = {
+  brand: { bg: BRAND_SOFT, fg: BRAND },
   indigo: { bg: INDIGO_SOFT, fg: INDIGO },
   green: { bg: "#EAF4EE", fg: GREEN },
   amber: { bg: "#FBEEE0", fg: "#A9721F" },
@@ -131,16 +159,25 @@ export interface Surface {
   body: string;
 }
 
-/** The learner app: practice hubs, dashboard, activities. */
+/**
+ * The learner app: practice hubs, dashboard, activities.
+ *
+ * The ground moved with the accent. It used to be the cream `#F4F1E7`, which was
+ * chosen to sit under indigo; under burgundy it read as a sepia photograph, and
+ * it was also the loudest reason a learner arriving from the marketing site felt
+ * they had changed product. `canvas`/`well` are now the canvas's own papers
+ * (`CANVAS` and `WELL` in `app/_landing/design.ts`) — cool, near-white, the same
+ * ground the front door and sign-in already stand on.
+ */
 export const LEARNER: Surface = {
-  canvas: "#F4F1E7",
+  canvas: "#F6F7F9",
   panel: WHITE,
-  well: "#FBFAF4",
-  wellLine: "#F0EDE1",
-  accent: INDIGO,
-  accentSoft: INDIGO_SOFT,
-  accentLine: INDIGO_LINE,
-  accentShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
+  well: "#FBFBFC",
+  wellLine: "#ECEEF2",
+  accent: BRAND,
+  accentSoft: BRAND_SOFT,
+  accentLine: BRAND_LINE,
+  accentShadow: "0 6px 16px -6px rgba(125,1,50,.55)",
   heading: SANS,
   body: SANS,
 };
@@ -203,8 +240,9 @@ export const btnBase: CSSProperties = {
   cursor: "pointer",
 };
 
-/** A primary button fill in `accent` (defaults to the brand indigo). */
-export function primaryBtn(disabled = false, accent: string = INDIGO): CSSProperties {
+/** A primary button fill in `accent` (defaults to the learner burgundy — pass
+ *  `INDIGO` explicitly on a staff screen). */
+export function primaryBtn(disabled = false, accent: string = BRAND): CSSProperties {
   return {
     ...btnBase,
     background: accent,

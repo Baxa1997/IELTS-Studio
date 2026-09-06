@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const INDIGO = "#4338CA";
-const TINT = "#EFEEFC";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const BRAND = "#7D0132";
+const TINT = "#FDF4F7";
 const GOOD = "#15803d";
 const BAD = "#b91c1c";
 
@@ -88,7 +88,7 @@ export default async function ListeningResultsPage() {
           <div
             style={{
               background: "#fff",
-              border: "1px solid #E8E6F0",
+              border: "1px solid #E6E8EC",
               borderRadius: 16,
               padding: "36px 28px",
               textAlign: "center",
@@ -97,7 +97,7 @@ export default async function ListeningResultsPage() {
             }}
           >
             No graded listening practice yet.{" "}
-            <Link href="/listen" style={{ color: INDIGO, fontWeight: 700 }}>
+            <Link href="/listen" style={{ color: BRAND, fontWeight: 700 }}>
               Start one →
             </Link>
           </div>
@@ -114,7 +114,7 @@ export default async function ListeningResultsPage() {
                     alignItems: "center",
                     gap: 16,
                     background: "#fff",
-                    border: "1px solid #E8E6F0",
+                    border: "1px solid #E6E8EC",
                     borderRadius: 14,
                     padding: "16px 20px",
                     textDecoration: "none",
@@ -156,8 +156,8 @@ export default async function ListeningResultsPage() {
                       style={{
                         flex: "none",
                         background: TINT,
-                        border: "1px solid rgba(67,56,202,.16)",
-                        color: INDIGO,
+                        border: "1px solid rgba(125,1,50,.16)",
+                        color: BRAND,
                         padding: "5px 12px",
                         borderRadius: 999,
                         fontSize: 13.5,

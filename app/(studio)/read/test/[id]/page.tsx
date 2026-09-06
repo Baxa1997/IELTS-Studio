@@ -90,7 +90,7 @@ export default async function ReadingTestPage({ params, searchParams }: PageProp
 
   // Full-screen, no sidebar — the focused exam experience.
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
+    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
       <ReadingTestRunner testId={id} passages={testPassages} learnerContext={learnerContext} practiceNo={practiceNo} />
       <AssignToClass kind="reading" contentId={id} />
     </div>

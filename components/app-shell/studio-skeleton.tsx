@@ -8,7 +8,7 @@
 import { Block } from "./page-skeleton";
 import { SANS } from "@/lib/theme/tokens";
 
-const BORDER = "#E7E3D5";
+const BORDER = "#E6E8EC";
 const FADE: React.CSSProperties = { animation: "lp-fadeup .25s ease both" };
 const SRONLY: React.CSSProperties = {
   position: "absolute",
@@ -56,7 +56,7 @@ export function StudioShellSkeleton() {
           height: 66,
           flex: "none",
           display: "flex",
-          background: "#FBFAF3",
+          background: "#FBFBFC",
           borderBottom: `1px solid ${BORDER}`,
         }}
       >
@@ -97,7 +97,7 @@ export function StudioShellSkeleton() {
           style={{
             width: 272,
             flex: "none",
-            background: "#FBFAF3",
+            background: "#FBFBFC",
             borderRight: `1px solid ${BORDER}`,
             display: "flex",
             flexDirection: "column",
@@ -228,7 +228,7 @@ export function StudioEditorSkeleton() {
             style={{
               height: 60,
               flex: "none",
-              borderBottom: `1px solid #F0EDE1`,
+              borderBottom: `1px solid #ECEEF2`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",

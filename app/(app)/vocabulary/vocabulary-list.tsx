@@ -17,14 +17,14 @@ export interface VocabItem {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
-const TINT = "#F4F4FE";
-const TINT_BORDER = "#E0E1F4";
-const EMERALD = "#2f8f5b";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
+const TINT = "#FDF4F7";
+const TINT_BORDER = "#F0D3DE";
+const EMERALD = "#1C7A4F";
 
 const card: React.CSSProperties = { background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16 };
 
@@ -183,7 +183,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
           <div style={{ ...card, marginTop: 20, padding: "20px 22px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "18px 26px" }}>
             <div style={{ flex: "1 1 420px", minWidth: 260 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: TINT, color: BRAND, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <GraduationCap size={18} strokeWidth={2} />
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 16.5 }}>Spaced repetition</span>
@@ -201,7 +201,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
                       type="button"
                       onClick={() => setMode(m)}
                       aria-pressed={on}
-                      style={{ padding: "7px 14px", borderRadius: 9, fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? TINT_BORDER : LINE}`, background: on ? TINT : "#fff", color: on ? INDIGO : MUTED }}
+                      style={{ padding: "7px 14px", borderRadius: 9, fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? TINT_BORDER : LINE}`, background: on ? TINT : "#fff", color: on ? BRAND : MUTED }}
                     >
                       {MODE_META[m].label}
                     </button>
@@ -214,7 +214,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
               <button
                 type="button"
                 onClick={() => setReviewing(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(59,67,181,.7)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
               >
                 Start review
                 <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 999, padding: "2px 9px", fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
@@ -271,7 +271,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
 
                 <div style={{ display: "flex", alignItems: "center", gap: 8, paddingRight: 26, minWidth: 0 }}>
                   <h3 style={{ fontWeight: 700, fontSize: 16.5, margin: 0, overflowWrap: "break-word", minWidth: 0 }}>{item.word}</h3>
-                  <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: FAINT, background: "#F6F6FA", borderRadius: 999, padding: "2.5px 8px" }}>
+                  <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: FAINT, background: "#F6F7F9", borderRadius: 999, padding: "2.5px 8px" }}>
                     {item.language}
                   </span>
                 </div>
@@ -281,7 +281,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
                   <SpeakBtn accent="US" word={item.word} />
                 </div>
 
-                <p style={{ fontSize: 15, fontWeight: 600, color: INDIGO, margin: "9px 0 0", overflowWrap: "break-word" }}>{item.translation || "—"}</p>
+                <p style={{ fontSize: 15, fontWeight: 600, color: BRAND, margin: "9px 0 0", overflowWrap: "break-word" }}>{item.translation || "—"}</p>
                 {item.definition ? <p className="vb-def" style={{ fontSize: 13, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}>{item.definition}</p> : null}
                 <p style={{ fontSize: 11, color: FAINT, margin: "10px 0 0" }}>
                   {sourceLabel(item.source)} · {fmtDate(item.created_at)}
@@ -308,7 +308,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
     <button
       type="button"
       onClick={onClick}
-      style={{ padding: "6px 13px", borderRadius: 999, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? TINT_BORDER : LINE}`, background: active ? TINT : "#fff", color: active ? INDIGO : MUTED }}
+      style={{ padding: "6px 13px", borderRadius: 999, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? TINT_BORDER : LINE}`, background: active ? TINT : "#fff", color: active ? BRAND : MUTED }}
     >
       {children}
     </button>
@@ -413,13 +413,13 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
               <strong style={{ color: EMERALD }}>{good}</strong> remembered ·{" "}
               <strong style={{ color: "#c0392b" }}>{again}</strong> to see again soon
             </p>
-            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
+            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
               Done
             </button>
           </div>
         ) : cur ? (
           <>
-            <div style={{ marginTop: 16, border: `1px solid ${LINE}`, borderRadius: 14, background: "#FBFBFD", padding: "30px 22px", textAlign: "center", minHeight: 168, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <div style={{ marginTop: 16, border: `1px solid ${LINE}`, borderRadius: 14, background: "#FDF4F7", padding: "30px 22px", textAlign: "center", minHeight: 168, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
               {showWord ? (
                 <>
                   <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 32, lineHeight: 1.1, overflowWrap: "anywhere" }}>{cur.item.word}</div>
@@ -429,7 +429,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
                   </div>
                   {revealed ? (
                     <div style={{ marginTop: 4 }}>
-                      <div style={{ fontSize: 17, fontWeight: 600, color: INDIGO }}>{cur.item.translation || "—"}</div>
+                      <div style={{ fontSize: 17, fontWeight: 600, color: BRAND }}>{cur.item.translation || "—"}</div>
                       {cur.item.definition ? <p style={{ fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "7px 0 0" }}>{cur.item.definition}</p> : null}
                       {cur.item.example ? <p style={{ fontSize: 12.5, fontStyle: "italic", color: FAINT, margin: "7px 0 0" }}>“{cur.item.example}”</p> : null}
                     </div>
@@ -437,7 +437,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: 17, fontWeight: 600, color: INDIGO, overflowWrap: "anywhere" }}>{cur.item.translation || cur.item.definition || "—"}</div>
+                  <div style={{ fontSize: 17, fontWeight: 600, color: BRAND, overflowWrap: "anywhere" }}>{cur.item.translation || cur.item.definition || "—"}</div>
                   {cur.item.definition && cur.item.translation ? <p style={{ fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: 0 }}>{cur.item.definition}</p> : null}
                   {revealed ? (
                     <div style={{ marginTop: 4 }}>
@@ -457,12 +457,12 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
                 <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "1.5px solid #F0C8C0", background: "#FDF3F1", color: "#c0392b", fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Again
                 </button>
-                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Got it
                 </button>
               </div>
             ) : (
-              <button type="button" onClick={() => setRevealed(true)} style={{ width: "100%", marginTop: 16, padding: "12px 10px", borderRadius: 11, border: `1.5px solid ${TINT_BORDER}`, background: TINT, color: INDIGO, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              <button type="button" onClick={() => setRevealed(true)} style={{ width: "100%", marginTop: 16, padding: "12px 10px", borderRadius: 11, border: `1.5px solid ${TINT_BORDER}`, background: TINT, color: BRAND, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                 Show answer
               </button>
             )}

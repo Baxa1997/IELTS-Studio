@@ -30,8 +30,8 @@ export function Card({ children, accent }: { children: React.ReactNode; accent?:
     <div
       style={{
         background: "#fff",
-        border: "1px solid #E7E4D6",
-        borderLeft: accent ? "3px solid #DCE0F5" : "1px solid #E7E4D6",
+        border: "1px solid #E6E8EC",
+        borderLeft: accent ? "3px solid #F0D3DE" : "1px solid #E6E8EC",
         borderRadius: 16,
         padding: 20,
       }}
@@ -95,7 +95,7 @@ export function PageSkeleton() {
         style={{
           marginTop: 18,
           background: "#fff",
-          border: "1px solid #E7E4D6",
+          border: "1px solid #E6E8EC",
           borderRadius: 16,
           padding: "22px 24px",
         }}
@@ -271,7 +271,7 @@ export function LauncherSkeleton({ narrow = false }: { narrow?: boolean }) {
         style={{
           marginTop: 20,
           background: "#fff",
-          border: "1px solid #E7E4D6",
+          border: "1px solid #E6E8EC",
           borderRadius: 16,
           padding: "26px 26px",
         }}

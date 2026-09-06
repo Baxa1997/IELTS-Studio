@@ -524,16 +524,17 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
     e.preventDefault();
   };
   const pct = (pos.progress * 100).toFixed(2);
-  const blue = {
-    bg: "#102347",
-    border: "#1b3766",
-    text: "#f8fbff",
-    muted: "#b8c8df",
-    rail: "#2a4574",
-    fill: "#7ea7ff",
+  /* The player's own dark skin. It was navy; it follows the runner's accent now. */
+  const skin = {
+    bg: "#2C0013",
+    border: "#4A0620",
+    text: "#fff7fa",
+    muted: "#d9bec8",
+    rail: "#5C0125",
+    fill: "#E3A7BD",
     control: "rgba(255,255,255,0.09)",
     controlBorder: "rgba(255,255,255,0.18)",
-    play: "#6f82ff",
+    play: "#F2C3D3",
   };
   const iconBtn: React.CSSProperties = {
     display: "flex",
@@ -541,9 +542,9 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
     justifyContent: "center",
     height: 34,
     borderRadius: 8,
-    border: `1px solid ${blue.controlBorder}`,
-    background: blue.control,
-    color: blue.text,
+    border: `1px solid ${skin.controlBorder}`,
+    background: skin.control,
+    color: skin.text,
     cursor: "pointer",
     flexShrink: 0,
   };
@@ -559,8 +560,8 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
       style={{
         flexShrink: 0,
         minHeight: 62,
-        background: blue.bg,
-        borderBottom: `1px solid ${blue.border}`,
+        background: skin.bg,
+        borderBottom: `1px solid ${skin.border}`,
         padding: "0 20px",
         display: "flex",
         alignItems: "center",
@@ -589,7 +590,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             width: 42,
             height: 42,
             borderRadius: 9999,
-            background: blue.play,
+            background: skin.play,
             border: "none",
             color: "#fff",
             cursor: "pointer",
@@ -624,7 +625,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: blue.text,
+            color: skin.text,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -636,7 +637,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
           style={{
             fontSize: 12,
             fontWeight: 500,
-            color: blue.muted,
+            color: skin.muted,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -646,7 +647,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
         </div>
       </div>
 
-      <span style={{ ...time, color: blue.muted, width: 42, textAlign: "right" }}>
+      <span style={{ ...time, color: skin.muted, width: 42, textAlign: "right" }}>
         {formatClock(pos.elapsed)}
       </span>
 
@@ -680,7 +681,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             right: 0,
             height: 5,
             borderRadius: 9999,
-            background: blue.rail,
+            background: skin.rail,
           }}
         />
         <div
@@ -689,7 +690,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             left: 0,
             height: 5,
             borderRadius: 9999,
-            background: blue.fill,
+            background: skin.fill,
             width: `${pct}%`,
           }}
         />
@@ -703,13 +704,13 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             height: 14,
             borderRadius: 9999,
             background: "#fff",
-            border: `3px solid ${blue.fill}`,
+            border: `3px solid ${skin.fill}`,
             boxShadow: "0 1px 6px rgba(0,0,0,0.35)",
           }}
         />
       </div>
 
-      <span style={{ ...time, color: blue.muted, width: 42 }}>{formatClock(player.duration)}</span>
+      <span style={{ ...time, color: skin.muted, width: 42 }}>{formatClock(player.duration)}</span>
 
       {/* Speed */}
       <button
@@ -722,7 +723,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
           fontFamily: RUN.mono,
           fontSize: 13,
           fontWeight: 600,
-          color: blue.text,
+          color: skin.text,
         }}
       >
         {player.speed}×
@@ -735,7 +736,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
           style={{
             ...iconBtn,
             padding: "0 12px",
-            background: blue.play,
+            background: skin.play,
             border: "none",
             color: "#fff",
             fontSize: 12.5,

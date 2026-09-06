@@ -27,17 +27,17 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
         justifyContent: "space-between",
         gap: 12,
         padding: "8px 18px",
-        background: empty ? "#FEF5F5" : "#F8F7FE",
-        borderBottom: `1px solid ${empty ? "#F5D9D9" : "#EAE8F6"}`,
+        background: empty ? "#FEF5F5" : "#FDF4F7",
+        borderBottom: `1px solid ${empty ? "#F5D9D9" : "#F0D3DE"}`,
         fontFamily: SANS,
         fontSize: 13,
-        color: "#56556A",
+        color: "#4A505C",
       }}
     >
       <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <Zap size={14} style={{ color: empty ? "#DC2626" : "#7C5CFC", flex: "none" }} />
+        <Zap size={14} style={{ color: empty ? "#DC2626" : "#7D0132", flex: "none" }} />
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          <strong style={{ color: "#1C1B2E" }}>{usage.planName}</strong>
+          <strong style={{ color: "#121317" }}>{usage.planName}</strong>
           {empty ? " — you're out of " : " — running low: "}
           {empty ? (
             <strong style={{ color: "#DC2626" }}>
@@ -47,11 +47,11 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
           {empty ? " for this month" : null}
           {!empty ? (
             <>
-              <strong style={{ color: "#1C1B2E" }}>
+              <strong style={{ color: "#121317" }}>
                 {Number.isFinite(practices) ? practices : "unlimited"}
               </strong>{" "}
               practice sets ·{" "}
-              <strong style={{ color: "#1C1B2E" }}>
+              <strong style={{ color: "#121317" }}>
                 {Number.isFinite(gradings) ? gradings : "unlimited"}
               </strong>{" "}
               gradings left this month
@@ -66,7 +66,7 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
           fontWeight: 700,
           fontSize: 12.5,
           color: "#fff",
-          background: "#7C5CFC",
+          background: "#7D0132",
           borderRadius: 999,
           padding: "4px 13px",
           textDecoration: "none",

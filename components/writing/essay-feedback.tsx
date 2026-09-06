@@ -19,14 +19,14 @@ import { FigureView } from "./figure";
  * read-only and passed in from the server page (no model call here).
  *
  * Implements the imported "Essay Feedback.dc.html" design, with brand indigo kept
- * at #3B43B5 for app-wide consistency.
+ * at #7D0132 for app-wide consistency.
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
 const EMERALD = "#1F9D5E";
 const RED = "#C5503C";
 const AMBER = "#B5852A";
@@ -97,7 +97,7 @@ interface ModelSample {
 
 const DEFAULT_DISCLAIMER = "AI-estimated bands — not affiliated with or endorsed by IELTS®.";
 
-const reviseStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: INDIGO, color: "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 700, textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" };
+const reviseStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: BRAND, color: "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 700, textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" };
 
 export function EssayFeedback({
   taskType,
@@ -179,24 +179,24 @@ export function EssayFeedback({
       {/* header */}
       <header
         className="lp-fb-noprint"
-        style={{ height: 60, flex: "none", background: "#fff", borderBottom: "1px solid #E7E3D5", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}
+        style={{ height: 60, flex: "none", background: "#fff", borderBottom: "1px solid #E6E8EC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <Link
             href={backHref}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: "1px solid #E2DED0", background: "#FBFAF4", borderRadius: 9, fontSize: 14, fontWeight: 600, color: "#41496A", textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: "1px solid #E2DED0", background: "#FBFBFC", borderRadius: 9, fontSize: 14, fontWeight: 600, color: "#3B4150", textDecoration: "none" }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             {backLabel}
           </Link>
-          <div style={{ width: 1, height: 24, background: "#E7E3D5" }} />
+          <div style={{ width: 1, height: 24, background: "#E6E8EC" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: "#1A2138", color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flex: "none" }}>{TASK_PILL[taskType] ?? "WRITING"}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: "#121317", color: "#fff", fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flex: "none" }}>{TASK_PILL[taskType] ?? "WRITING"}</span>
             <span style={{ fontSize: 15, fontWeight: 700, color: INK, flex: "none" }}>Essay feedback</span>
             {topicFamily ? (
               <>
                 <span style={{ color: "#C7C3B4" }}>·</span>
-                <span style={{ fontSize: 14, color: "#767C90", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topicFamily}</span>
+                <span style={{ fontSize: 14, color: "#4A505C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topicFamily}</span>
               </>
             ) : null}
           </div>
@@ -205,9 +205,9 @@ export function EssayFeedback({
           <button
             type="button"
             onClick={() => window.print()}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: "1px solid #E2DED0", background: "#FBFAF4", borderRadius: 10, fontFamily: "inherit", fontSize: 13.5, fontWeight: 600, color: "#41496A", cursor: "pointer" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: "1px solid #E2DED0", background: "#FBFBFC", borderRadius: 10, fontFamily: "inherit", fontSize: 13.5, fontWeight: 600, color: "#3B4150", cursor: "pointer" }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#41496A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
             Export PDF
           </button>
           {onRevise ? (
@@ -225,17 +225,17 @@ export function EssayFeedback({
       </header>
 
       {/* score summary strip */}
-      <div style={{ flex: "none", background: "#fff", borderBottom: "1px solid #E7E3D5", padding: "16px 22px", display: "flex", alignItems: "center", gap: 26 }} className="lp-fb-strip">
+      <div style={{ flex: "none", background: "#fff", borderBottom: "1px solid #E6E8EC", padding: "16px 22px", display: "flex", alignItems: "center", gap: 26 }} className="lp-fb-strip">
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 16, paddingRight: 26, borderRight: "1px solid #EEE9DA" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 62, fontWeight: 800, lineHeight: 0.82, color: bandColor(overallBand).fg, fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em" }}>{overallBand.toFixed(1)}</span>
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8A8FA0", textTransform: "uppercase", lineHeight: 1.1 }}>Overall<br />band</span>
+              <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: "#8B919D", textTransform: "uppercase", lineHeight: 1.1 }}>Overall<br />band</span>
               <span style={{ alignSelf: "flex-start", fontSize: 11.5, fontWeight: 700, color: bandColor(overallBand).fg, background: bandColor(overallBand).bg, padding: "2px 9px", borderRadius: 999 }}>{bandColor(overallBand).label}</span>
             </div>
           </div>
           {showLift ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: "#E9F5EE", border: "1px solid #CDE9D8", borderRadius: 11 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: "#EAF6F0", border: "1px solid #CFE7DB", borderRadius: 11 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
               <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
                 Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{bandWithFixes!.toFixed(1)}</strong> with the fixes
@@ -248,11 +248,11 @@ export function EssayFeedback({
             const c = criteria[key];
             if (!c) return null;
             const isBlocker = blocker?.criterion === key;
-            const color = isBlocker ? RED : c.band >= 7 ? "#2C3247" : c.band >= 6 ? "#2C3247" : AMBER;
+            const color = isBlocker ? RED : c.band >= 7 ? "#3B4150" : c.band >= 6 ? "#3B4150" : AMBER;
             const tag = isBlocker ? "Fix this first" : c.band >= 7 ? "Strong" : c.band >= 6 ? "Solid" : "Needs work";
             const tagColor = isBlocker ? RED : c.band >= 6 ? "#9A8F77" : AMBER;
             return (
-              <div key={key} style={{ flex: 1, minWidth: 0, background: isBlocker ? "#FCEEEA" : "#FBFAF4", border: `1px solid ${isBlocker ? "#F3CFC6" : "#EFECE0"}`, borderRadius: 12, padding: "11px 14px" }}>
+              <div key={key} style={{ flex: 1, minWidth: 0, background: isBlocker ? "#FCEEEA" : "#FBFBFC", border: `1px solid ${isBlocker ? "#F3CFC6" : "#EFECE0"}`, borderRadius: 12, padding: "11px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 600, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{critShort(key, taskType)}</span>
                   <span style={{ fontSize: 21, fontWeight: 800, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{c.band.toFixed(1)}</span>
@@ -270,11 +270,11 @@ export function EssayFeedback({
       {/* workspace */}
       <div className="lp-fb-workspace" style={{ flex: 1, minHeight: 0, display: "flex", gap: 16, padding: 16 }}>
         {/* LEFT: marked-up essay */}
-        <main className="lp-fb-main" style={{ flex: 1, minWidth: 0, background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ flex: "none", padding: "15px 24px", borderBottom: "1px solid #F0EDE1", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <main className="lp-fb-main" style={{ flex: 1, minWidth: 0, background: "#fff", border: "1px solid #E6E8EC", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ flex: "none", padding: "15px 24px", borderBottom: "1px solid #ECEEF2", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: INK }}>Your essay, marked up</h2>
-              {ranges.length ? <span style={{ fontSize: 13, color: "#9A9EAE" }}>tap a highlight for the fix</span> : null}
+              {ranges.length ? <span style={{ fontSize: 13, color: "#8B919D" }}>tap a highlight for the fix</span> : null}
             </div>
             {legend.length ? (
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -289,21 +289,21 @@ export function EssayFeedback({
           </div>
           <div className="lp-fb-col" style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "30px 40px 40px" }}>
             {figure ? (
-              <div style={{ maxWidth: 760, margin: "0 auto 24px", padding: "18px 20px", background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 12 }}>
+              <div style={{ maxWidth: 760, margin: "0 auto 24px", padding: "18px 20px", background: "#FBFBFC", border: "1px solid #EFECE0", borderRadius: 12 }}>
                 <FigureView figure={figure} />
               </div>
             ) : null}
-            <div style={{ maxWidth: 760, margin: "0 auto", fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: "#262B3D", whiteSpace: "pre-wrap" }}>
+            <div style={{ maxWidth: 760, margin: "0 auto", fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: "#3B4150", whiteSpace: "pre-wrap" }}>
               {ranges.length ? renderEssay(essayText, ranges, selected, pick) : essayText}
             </div>
             {children}
-            <p style={{ maxWidth: 760, margin: "26px auto 0", fontFamily: SANS, fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>{disclaimer ?? DEFAULT_DISCLAIMER}</p>
+            <p style={{ maxWidth: 760, margin: "26px auto 0", fontFamily: SANS, fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>{disclaimer ?? DEFAULT_DISCLAIMER}</p>
           </div>
         </main>
 
         {/* RIGHT: detail panel */}
-        <aside className="lp-fb-aside" style={{ width: 480, flex: "none", background: "#fff", border: "1px solid #E7E3D5", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div className="lp-fb-noprint" style={{ flex: "none", padding: "14px 16px", borderBottom: "1px solid #F0EDE1" }}>
+        <aside className="lp-fb-aside" style={{ width: 480, flex: "none", background: "#fff", border: "1px solid #E6E8EC", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div className="lp-fb-noprint" style={{ flex: "none", padding: "14px 16px", borderBottom: "1px solid #ECEEF2" }}>
             <div style={{ display: "flex", gap: 4, background: "#F1EFE4", borderRadius: 11, padding: 4 }}>
               <button type="button" onClick={() => setTab("bands")} style={tabStyle(tab === "bands")}>Bands</button>
               <button type="button" onClick={() => setTab("issues")} style={tabStyle(tab === "issues")}>Fixes · {ranges.length}</button>
@@ -352,7 +352,7 @@ function SamplesView({
       return (
         <div style={{ padding: "8px 2px" }}>
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answer just now.</p>
-          <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: INDIGO, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+          <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: BRAND, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
             Try again
           </button>
         </div>
@@ -360,7 +360,7 @@ function SamplesView({
     }
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "44px 16px", textAlign: "center" }}>
-        <span className="animate-spin" style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid #E4E1F4`, borderTopColor: INDIGO, display: "inline-block" }} aria-hidden />
+        <span className="animate-spin" style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid #F0D3DE`, borderTopColor: BRAND, display: "inline-block" }} aria-hidden />
         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: MUTED, maxWidth: 280 }}>Writing a model answer for this exact task… about 30 seconds.</p>
       </div>
     );
@@ -371,7 +371,7 @@ function SamplesView({
     return (
       <div style={{ padding: "8px 2px" }}>
         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answer just now.</p>
-        <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: INDIGO, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+        <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: BRAND, color: "#fff", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
           Try again
         </button>
       </div>
@@ -385,27 +385,27 @@ function SamplesView({
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: MUTED }}>
         A model answer for this exact task — read it for the <strong style={{ color: INK }}>moves</strong> (how it&rsquo;s structured, how ideas are linked, the phrasing), then write your own. Don&rsquo;t copy it.
       </p>
-      <div style={{ border: "1px solid #E7E3D5", borderRadius: 13, overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: "#F2F1FC", borderBottom: "1px solid #E1DFF7" }}>
+      <div style={{ border: "1px solid #E6E8EC", borderRadius: 13, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: "#FDF4F7", borderBottom: "1px solid #F0D3DE" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
             <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>{sample.title || "Model answer"}</span>
           </span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: INDIGO, background: "#fff", border: "1px solid #DAD8F2", padding: "3px 9px", borderRadius: 999, fontVariantNumeric: "tabular-nums" }}>{wordCount} words</span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: BRAND, background: "#fff", border: "1px solid #F0D3DE", padding: "3px 9px", borderRadius: 999, fontVariantNumeric: "tabular-nums" }}>{wordCount} words</span>
         </div>
         {sample.highlights && sample.highlights.length ? (
-          <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: "1px solid #F0EDE1" }}>
+          <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: "1px solid #ECEEF2" }}>
             {sample.highlights.map((h, j) => (
-              <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "#41496A" }}>
+              <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: "#3B4150" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>
                 <span>{h}</span>
               </div>
             ))}
           </div>
         ) : null}
-        <div style={{ padding: "14px 16px", fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.75, color: "#262B3D", whiteSpace: "pre-wrap" }}>{sample.essay}</div>
+        <div style={{ padding: "14px 16px", fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.75, color: "#3B4150", whiteSpace: "pre-wrap" }}>{sample.essay}</div>
       </div>
-      <p style={{ margin: "4px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>
+      <p style={{ margin: "4px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>
         An original AI-written model answer for study — not an official IELTS® answer. Learn the structure and phrasing; submit only your own writing.
       </p>
     </div>
@@ -423,7 +423,7 @@ function tabStyle(active: boolean): React.CSSProperties {
     fontWeight: 700,
     cursor: "pointer",
     background: active ? "#fff" : "transparent",
-    color: active ? INK : "#767C90",
+    color: active ? INK : "#4A505C",
     boxShadow: active ? "0 1px 3px rgba(26,33,56,.14)" : "none",
   };
 }
@@ -450,10 +450,10 @@ function BandsView({
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
             {lift ? (
-              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: "#E9F5EE", border: "1px solid #CDE9D8", padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: "#EAF6F0", border: "1px solid #CFE7DB", padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
             ) : null}
           </div>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "#3A3F58" }}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "#3B4150" }}>
             <strong style={{ color: INK }}>{critName(blocker.criterion as CritKey, taskType)}</strong> — {blocker.why}
           </p>
         </div>
@@ -466,9 +466,9 @@ function BandsView({
         const badge = isBlocker
           ? { label: "Capping", text: RED, bg: "#FCEEEA" }
           : c.band >= 7
-            ? { label: "Strong", text: "#2C7A52", bg: "#E9F5EE" }
+            ? { label: "Strong", text: "#2C7A52", bg: "#EAF6F0" }
             : c.band >= 6
-              ? { label: "Solid", text: "#2C7A52", bg: "#E9F5EE" }
+              ? { label: "Solid", text: "#2C7A52", bg: "#EAF6F0" }
               : { label: "Developing", text: AMBER, bg: "#F6EAD0" };
         return (
           <div key={key} style={{ background: "#fff", border: `1px solid ${isBlocker ? "#F3CFC6" : "#EAE6D8"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
@@ -476,22 +476,22 @@ function BandsView({
               <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{critName(key, taskType)}</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none" }}>
                 <span style={{ fontSize: 11.5, fontWeight: 700, color: badge.text, background: badge.bg, padding: "2px 8px", borderRadius: 999 }}>{badge.label}</span>
-                <span style={{ fontSize: 19, fontWeight: 800, color: isBlocker ? RED : "#2C3247", fontVariantNumeric: "tabular-nums" }}>{c.band.toFixed(1)}</span>
+                <span style={{ fontSize: 19, fontWeight: 800, color: isBlocker ? RED : "#3B4150", fontVariantNumeric: "tabular-nums" }}>{c.band.toFixed(1)}</span>
               </span>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: "#9A9EAE", textTransform: "uppercase" }}>In your essay</span>
-              <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "#41496A" }}>{c.evidence}</p>
+              <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: "#8B919D", textTransform: "uppercase" }}>In your essay</span>
+              <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "#3B4150" }}>{c.evidence}</p>
             </div>
             {c.what_caps_it ? (
               <div style={{ marginBottom: 10 }}>
-                <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: "#9A9EAE", textTransform: "uppercase" }}>What&rsquo;s capping it</span>
-                <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "#41496A" }}>{c.what_caps_it}</p>
+                <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".04em", color: "#8B919D", textTransform: "uppercase" }}>What&rsquo;s capping it</span>
+                <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: "#3B4150" }}>{c.what_caps_it}</p>
               </div>
             ) : null}
-            <div style={{ display: "flex", gap: 10, padding: "11px 12px", background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 10 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
-              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: "#2C3247" }}><strong style={{ color: INDIGO }}>Fix:</strong> {c.fix}</p>
+            <div style={{ display: "flex", gap: 10, padding: "11px 12px", background: "#FBFBFC", border: "1px solid #EFECE0", borderRadius: 10 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
+              <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: "#3B4150" }}><strong style={{ color: BRAND }}>Fix:</strong> {c.fix}</p>
             </div>
           </div>
         );
@@ -502,29 +502,29 @@ function BandsView({
 
 function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRanges>; selected: number | null }) {
   if (!ranges.length) {
-    return <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: "#8A8FA0" }}>No sentence-level mark-up on this essay. The per-criterion bands and fixes are on the &ldquo;Bands &amp; feedback&rdquo; tab.</p>;
+    return <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: "#8B919D" }}>No sentence-level mark-up on this essay. The per-criterion bands and fixes are on the &ldquo;Bands &amp; feedback&rdquo; tab.</p>;
   }
   return (
     <div>
-      <p style={{ margin: "0 0 12px", fontSize: 13, color: "#8A8FA0" }}>{ranges.length} sentence-level {ranges.length === 1 ? "fix" : "fixes"}, mapped to the highlights in your essay.</p>
+      <p style={{ margin: "0 0 12px", fontSize: 13, color: "#8B919D" }}>{ranges.length} sentence-level {ranges.length === 1 ? "fix" : "fixes"}, mapped to the highlights in your essay.</p>
       {ranges.map((r, i) => {
         const n = i + 1;
         const st = ANN_STYLE[r.ann.type];
         const on = selected === n;
         return (
-          <div key={n} data-fix={n} style={{ display: "flex", gap: 12, padding: "13px 13px", borderRadius: 12, background: on ? "#FBFAF4" : "transparent", boxShadow: on ? `0 0 0 2px ${st.fg}66` : "none", marginBottom: 6, transition: "background .15s ease, box-shadow .15s ease" }}>
+          <div key={n} data-fix={n} style={{ display: "flex", gap: 12, padding: "13px 13px", borderRadius: 12, background: on ? "#FBFBFC" : "transparent", boxShadow: on ? `0 0 0 2px ${st.fg}66` : "none", marginBottom: 6, transition: "background .15s ease, box-shadow .15s ease" }}>
             <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: st.bg, border: `1px solid ${st.fg}40`, color: st.fg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{n}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: st.fg, background: st.bg, border: `1px solid ${st.fg}40`, padding: "1px 8px", borderRadius: 6 }}>&ldquo;{r.ann.text.trim()}&rdquo;</span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", color: "#9A9EAE", textTransform: "uppercase" }}>{st.label}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", color: "#8B919D", textTransform: "uppercase" }}>{st.label}</span>
               </div>
-              {r.ann.note ? <p style={{ margin: "7px 0 8px", fontSize: 13.5, lineHeight: 1.5, color: "#41496A" }}>{r.ann.note}</p> : <div style={{ height: 8 }} />}
+              {r.ann.note ? <p style={{ margin: "7px 0 8px", fontSize: 13.5, lineHeight: 1.5, color: "#3B4150" }}>{r.ann.note}</p> : <div style={{ height: 8 }} />}
               {r.ann.fix ? (
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, flexWrap: "wrap" }}>
-                  <span style={{ color: "#9A9EAE", textDecoration: "line-through" }}>{r.ann.text.trim()}</span>
+                  <span style={{ color: "#8B919D", textDecoration: "line-through" }}>{r.ann.text.trim()}</span>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                  <span style={{ fontWeight: 700, color: "#1A7A48", background: "#E9F5EE", border: "1px solid #CDE9D8", padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
+                  <span style={{ fontWeight: 700, color: "#1A7A48", background: "#EAF6F0", border: "1px solid #CFE7DB", padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
                 </div>
               ) : null}
             </div>
@@ -571,14 +571,14 @@ function InsightsView({ insights, taskType }: { insights: WritingInsights; taskT
       <div style={{ background: "#fff", border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>Linking words</span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: linkOk ? "#2C7A52" : AMBER, background: linkOk ? "#E9F5EE" : "#F6EAD0", padding: "2px 9px", borderRadius: 999 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: linkOk ? "#2C7A52" : AMBER, background: linkOk ? "#EAF6F0" : "#F6EAD0", padding: "2px 9px", borderRadius: 999 }}>
             {insights.linkingUnique} distinct · {insights.linkingTotal} total
           </span>
         </div>
         {insights.linkingUsed.length ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {insights.linkingUsed.slice(0, 12).map((w) => (
-              <span key={w} style={chip("#EEF0F6", "#41496A")}>{w}</span>
+              <span key={w} style={chip("#ECEEF2", "#3B4150")}>{w}</span>
             ))}
           </div>
         ) : (
@@ -607,12 +607,12 @@ function InsightsView({ insights, taskType }: { insights: WritingInsights; taskT
       </div>
 
       {runOn ? (
-        <div style={{ background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 13, padding: "13px 16px" }}>
+        <div style={{ background: "#FBFBFC", border: "1px solid #EFECE0", borderRadius: 13, padding: "13px 16px" }}>
           <p style={{ margin: 0, fontSize: 13, color: "#9A7B2A" }}>Longest sentence is <strong>{insights.longestSentence} words</strong> — check it isn&rsquo;t a run-on; splitting it can lift Grammar.</p>
         </div>
       ) : null}
 
-      <p style={{ margin: "2px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#A7ABBA" }}>
+      <p style={{ margin: "2px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>
         These are objective surface stats, not a band — your band and the reasons behind it are on the Bands tab.
       </p>
     </div>
@@ -621,9 +621,9 @@ function InsightsView({ insights, taskType }: { insights: WritingInsights; taskT
 
 function Stat({ label, value, suffix = "" }: { label: string; value: number; suffix?: string }) {
   return (
-    <div style={{ background: "#FBFAF4", border: "1px solid #EFECE0", borderRadius: 11, padding: "11px 12px", textAlign: "center" }}>
-      <div style={{ fontSize: 21, fontWeight: 800, color: "#2C3247", fontVariantNumeric: "tabular-nums" }}>{value}{suffix}</div>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: "#9A9EAE", marginTop: 2 }}>{label}</div>
+    <div style={{ background: "#FBFBFC", border: "1px solid #EFECE0", borderRadius: 11, padding: "11px 12px", textAlign: "center" }}>
+      <div style={{ fontSize: 21, fontWeight: 800, color: "#3B4150", fontVariantNumeric: "tabular-nums" }}>{value}{suffix}</div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8B919D", marginTop: 2 }}>{label}</div>
     </div>
   );
 }

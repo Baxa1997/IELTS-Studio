@@ -6,9 +6,9 @@ import { Send, Sparkles, X } from "lucide-react";
 import { Typewriter } from "@/components/typewriter";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
 
 interface ChatMessage {
   role: "student" | "assistant";
@@ -88,12 +88,12 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
           borderRadius: 999,
           border: "none",
           cursor: "pointer",
-          background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+          background: "linear-gradient(135deg,#9B1044,#7D0132)",
           color: "#fff",
           fontFamily: SANS,
           fontWeight: 700,
           fontSize: 14.5,
-          boxShadow: "0 16px 34px -12px rgba(59,67,181,.75)",
+          boxShadow: "0 16px 34px -12px rgba(125,1,50,.75)",
         }}
       >
         <Sparkles size={17} className="lp-ai-spark" /> Study coach
@@ -115,7 +115,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
         display: "flex",
         flexDirection: "column",
         background: "#fff",
-        border: "1px solid #E7E4F2",
+        border: "1px solid #E6E8EC",
         borderRadius: 18,
         boxShadow: "0 30px 70px -28px rgba(26,33,56,.55)",
         overflow: "hidden",
@@ -129,7 +129,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
           justifyContent: "space-between",
           gap: 8,
           padding: "13px 14px",
-          borderBottom: "1px solid #E7E4F2",
+          borderBottom: "1px solid #E6E8EC",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -138,7 +138,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
               width: 30,
               height: 30,
               borderRadius: 9,
-              background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+              background: "linear-gradient(135deg,#9B1044,#7D0132)",
               color: "#fff",
               display: "flex",
               alignItems: "center",
@@ -182,9 +182,9 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
                     fontFamily: SANS,
                     fontSize: 12.5,
                     fontWeight: 600,
-                    color: INDIGO,
-                    background: "#ECEBFB",
-                    border: "1px solid #E1DFF7",
+                    color: BRAND,
+                    background: "#FDF4F7",
+                    border: "1px solid #F0D3DE",
                     borderRadius: 999,
                     padding: "7px 12px",
                     cursor: "pointer",
@@ -208,9 +208,9 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
                 fontSize: 13.5,
                 lineHeight: 1.55,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? INDIGO : "#F4F3FC",
-                color: m.role === "student" ? "#fff" : "#3a3d52",
-                border: m.role === "student" ? "none" : "1px solid #E6E4F8",
+                background: m.role === "student" ? BRAND : "#FDF4F7",
+                color: m.role === "student" ? "#fff" : "#3B4150",
+                border: m.role === "student" ? "none" : "1px solid #F0D3DE",
               }}
             >
               {m.role === "assistant" ? (
@@ -239,7 +239,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
         ) : null}
       </div>
 
-      <div style={{ borderTop: "1px solid #EFEDF8", padding: 10 }}>
+      <div style={{ borderTop: "1px solid #ECEEF2", padding: 10 }}>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={input}
@@ -252,7 +252,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
             }}
             placeholder="Ask your coach…"
             className="lp-input"
-            style={{ flex: 1, padding: "9px 11px", border: "1px solid #DDDAEE", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 13.5, color: INK }}
+            style={{ flex: 1, padding: "9px 11px", border: "1px solid #DFE2E8", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 13.5, color: INK }}
           />
           <button
             type="button"
@@ -267,7 +267,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
               borderRadius: 10,
               border: "none",
               cursor: sending || !input.trim() ? "default" : "pointer",
-              background: INDIGO,
+              background: BRAND,
               color: "#fff",
               opacity: sending || !input.trim() ? 0.5 : 1,
             }}

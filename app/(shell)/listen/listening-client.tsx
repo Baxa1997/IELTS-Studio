@@ -40,7 +40,7 @@ import {
   splitAudioByPart,
   useSegmentPlayer,
 } from "./player";
-import { BAD, GOOD, INDIGO, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
+import { BAD, GOOD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
 import type {
   Catalogue,
   ClusterView,
@@ -125,7 +125,7 @@ type HubTab = "tests" | "parts";
 const LEVEL_STYLE: Record<number, { bg: string; fg: string; ring: string }> = {
   1: { bg: "#16a34a", fg: "#ffffff", ring: "rgba(22,163,74,.30)" },
   2: { bg: "#0891b2", fg: "#ffffff", ring: "rgba(8,145,178,.30)" },
-  3: { bg: "#4f46e5", fg: "#ffffff", ring: "rgba(79,70,229,.30)" },
+  3: { bg: "#7D0132", fg: "#ffffff", ring: "rgba(125,1,50,.30)" },
   4: { bg: "#d97706", fg: "#ffffff", ring: "rgba(217,119,6,.30)" },
   5: { bg: "#dc2626", fg: "#ffffff", ring: "rgba(220,38,38,.30)" },
 };
@@ -405,7 +405,7 @@ function FreshPractice({
       <div
         style={{
           background: "#fff",
-          border: "1px solid #ECEAF2",
+          border: "1px solid #E6E8EC",
           borderRadius: 16,
           padding: 18,
           display: "flex",
@@ -421,7 +421,7 @@ function FreshPractice({
               letterSpacing: ".08em",
               fontWeight: 700,
               textTransform: "uppercase",
-              color: INDIGO,
+              color: BRAND,
             }}
           >
             Just generated
@@ -429,7 +429,7 @@ function FreshPractice({
           <div style={{ fontSize: 16, fontWeight: 600, color: INK, margin: "4px 0 3px" }}>
             {view.topic || "Listening practice"}
           </div>
-          <div style={{ fontSize: 13, color: "#5A6076" }}>
+          <div style={{ fontSize: 13, color: "#4A505C" }}>
             {parts}
             {view.difficulty ? ` · Level ${view.difficulty}` : ""}
           </div>
@@ -440,7 +440,7 @@ function FreshPractice({
             onClick={onStart}
             style={{
               background: "#fff",
-              border: "1px solid #ECEAF2",
+              border: "1px solid #E6E8EC",
               borderRadius: 10,
               padding: "10px 16px",
               fontFamily: SANS,
@@ -458,7 +458,7 @@ function FreshPractice({
             disabled={!canAttach || attaching}
             title={canAttach ? undefined : "Create a class first"}
             style={{
-              background: INDIGO,
+              background: BRAND,
               color: "#fff",
               border: 0,
               borderRadius: 10,
@@ -479,7 +479,7 @@ function FreshPractice({
             style={{
               background: "none",
               border: 0,
-              color: "#8A8FA0",
+              color: "#8B919D",
               cursor: "pointer",
               fontSize: 18,
               padding: "0 4px",
@@ -612,8 +612,8 @@ function Hub({
                 alignItems: "center",
                 gap: 9,
                 background: TINT,
-                border: "1px solid rgba(67,56,202,.16)",
-                color: INDIGO,
+                border: "1px solid rgba(125,1,50,.16)",
+                color: BRAND,
                 padding: "8px 14px",
                 borderRadius: 999,
                 fontSize: 14,
@@ -635,8 +635,8 @@ function Hub({
         style={{
           display: "flex",
           gap: 6,
-          background: "#F1F1F8",
-          border: "1px solid #ECEAF2",
+          background: "#F6F7F9",
+          border: "1px solid #E6E8EC",
           borderRadius: 14,
           padding: 5,
           marginTop: 22,
@@ -772,7 +772,7 @@ function Hub({
         </>
       )}
 
-      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#9A99A8" }}>
+      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#8B919D" }}>
         Original audio and questions in the IELTS Listening format — not affiliated with or endorsed
         by IELTS®.
       </p>
@@ -809,7 +809,7 @@ function GenerateCta({
                 borderRadius: 8,
                 border: on ? "1px solid rgba(255,255,255,.9)" : "1px solid rgba(255,255,255,.28)",
                 background: on ? "#fff" : "rgba(255,255,255,.12)",
-                color: on ? INDIGO : "rgba(255,255,255,.85)",
+                color: on ? BRAND : "rgba(255,255,255,.85)",
                 fontFamily: SANS,
                 fontSize: 12,
                 fontWeight: 700,
@@ -866,7 +866,7 @@ function BestChip({ score, max }: { score: number; max: number }) {
         borderRadius: 8,
         fontSize: 12.5,
         fontWeight: 700,
-        background: good ? "#E9F5EE" : "#FFF7E8",
+        background: good ? "#EAF6F0" : "#FFF7E8",
         color: good ? GOOD : "#B45309",
         whiteSpace: "nowrap",
       }}
@@ -891,7 +891,7 @@ function StartAction({
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        color: locked ? "#8A899A" : INDIGO,
+        color: locked ? "#8B919D" : BRAND,
         fontSize: 14,
         fontWeight: 600,
       }}
@@ -926,9 +926,9 @@ function TypeTags({ part, variant, layout }: { part: number; variant?: string; l
         <span
           key={t}
           style={{
-            background: "#F4F4FB",
-            border: "1px solid #ECEAF2",
-            color: "#5A596B",
+            background: "#FDF4F7",
+            border: "1px solid #E6E8EC",
+            color: "#4A505C",
             fontSize: 12,
             fontWeight: 600,
             padding: "3px 9px",
@@ -1024,7 +1024,7 @@ function CardFoot({
           title={attach.disabled ? "Create a class first" : undefined}
           style={{
             ...act,
-            background: INDIGO,
+            background: BRAND,
             border: 0,
             color: "#fff",
             cursor: attach.disabled ? "not-allowed" : "pointer",
@@ -1037,7 +1037,7 @@ function CardFoot({
           type="button"
           onClick={onOpen}
           disabled={loading}
-          style={{ ...act, background: "#1F8A53", border: 0, color: "#fff" }}
+          style={{ ...act, background: "#1C7A4F", border: 0, color: "#fff" }}
         >
           {loading ? "Opening…" : done ? "Retake" : "Start"}
         </button>
@@ -1255,12 +1255,12 @@ function TabButton({
         cursor: "pointer",
         textAlign: "left",
         background: active ? "#fff" : "transparent",
-        color: active ? INDIGO : MUTED,
+        color: active ? BRAND : MUTED,
         boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none",
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? INDIGO : "#8A899A" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? BRAND : "#8B919D" }}>
         {icon}
       </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
@@ -1271,7 +1271,7 @@ function TabButton({
           style={{
             fontFamily: SANS,
             fontSize: 12,
-            color: active ? "#7C78C9" : "#9A99A8",
+            color: active ? "#B32A5B" : "#8B919D",
             marginTop: 2,
           }}
         >
@@ -1309,7 +1309,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ marginTop: 18, fontSize: 13.5, color: "#8A899A", fontFamily: SANS }}>{children}</p>
+    <p style={{ marginTop: 18, fontSize: 13.5, color: "#8B919D", fontFamily: SANS }}>{children}</p>
   );
 }
 
@@ -1331,12 +1331,12 @@ function AiCorner() {
         width: 26,
         height: 26,
         borderRadius: 8,
-        background: "linear-gradient(135deg,#5B55D6,#3B43B5)",
+        background: "linear-gradient(135deg,#9B1044,#7D0132)",
         color: "#fff",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)",
+        boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)",
       }}
     >
       <Sparkles size={14} strokeWidth={2.4} />
@@ -1370,14 +1370,14 @@ const cardTitle: React.CSSProperties = {
   margin: "0 0 3px",
   color: INK,
 };
-const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#7A7989", fontWeight: 500 };
-const metaText: React.CSSProperties = { fontSize: 13, color: "#8A899A" };
+const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#8B919D", fontWeight: 500 };
+const metaText: React.CSSProperties = { fontSize: 13, color: "#8B919D" };
 const iconTile: React.CSSProperties = {
   width: 40,
   height: 40,
   borderRadius: 11,
-  background: "#EFEEFC",
-  color: INDIGO,
+  background: "#FDF4F7",
+  color: BRAND,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1602,9 +1602,9 @@ function Runner({
       <style>{`
         @keyframes lp-pulse-ring { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
         .lp-qscroll::-webkit-scrollbar { width: 12px; }
-        .lp-qscroll::-webkit-scrollbar-thumb { background:#DAD5E2; border-radius:9999px; border:4px solid transparent; background-clip:content-box; }
+        .lp-qscroll::-webkit-scrollbar-thumb { background:#C9CDD4; border-radius:9999px; border:4px solid transparent; background-clip:content-box; }
         .lp-run-input::placeholder { color:${RUN.t4}; }
-        .lp-run-input:focus { border-color:${RUN.focusBorder} !important; box-shadow:0 0 0 3px rgba(124,92,252,0.10); }
+        .lp-run-input:focus { border-color:${RUN.focusBorder} !important; box-shadow:0 0 0 3px rgba(125,1,50,0.10); }
         .lp-form2 { display:grid; grid-template-columns:1fr 1fr; grid-auto-flow:column; column-gap:56px; }
         @media (max-width: 760px) { .lp-form2 { display:block; } }
         .lp-map-panel { grid-template-columns:minmax(360px,600px) minmax(260px,1fr); }
@@ -2016,7 +2016,7 @@ function RunnerFooter({
     padding: "0 18px",
     borderRadius: 10,
     cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(124,92,252,0.3)",
+    boxShadow: "0 4px 12px rgba(125,1,50,0.3)",
   };
   const ghost: React.CSSProperties = {
     display: "flex",
@@ -2095,7 +2095,7 @@ function RunnerFooter({
               width: 32,
               height: 32,
               borderRadius: 9999,
-              background: "#2b2b33",
+              background: "#121317",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2367,7 +2367,7 @@ function CardHeader({
             alignItems: "center",
             gap: 8,
             background: RUN.vSoft,
-            color: "#5a4ec4",
+            color: "#7D0132",
             fontSize: 13,
             fontWeight: 600,
             padding: "10px 16px",
@@ -2708,7 +2708,7 @@ function TablePanel({ table, ctx, bare }: { table: TableView; ctx: QCtx; bare?: 
                   style={{
                     ...cell,
                     background: RUN.vSoft,
-                    color: "#5a4ec4",
+                    color: "#7D0132",
                     fontWeight: 700,
                     fontSize: 13.5,
                     whiteSpace: "nowrap",
@@ -3124,7 +3124,7 @@ function ChooseTwoPanel({ cluster, ctx }: { cluster: ClusterView; ctx: QCtx }) {
                     width: 22,
                     height: 22,
                     borderRadius: 6,
-                    border: `1.5px solid ${on || (graded && isCorrect) ? border : "#C9C3D2"}`,
+                    border: `1.5px solid ${on || (graded && isCorrect) ? border : "#C9CDD4"}`,
                     background: on && !graded ? RUN.v : "transparent",
                     color: "#fff",
                     display: "flex",
@@ -3282,7 +3282,7 @@ function McqPanel({
                             width: 20,
                             height: 20,
                             borderRadius: "50%",
-                            border: `1.5px solid ${on || isCorrect ? border : "#C9C3D2"}`,
+                            border: `1.5px solid ${on || isCorrect ? border : "#C9CDD4"}`,
                             background: on && !graded ? RUN.v : "transparent",
                             display: "flex",
                             alignItems: "center",

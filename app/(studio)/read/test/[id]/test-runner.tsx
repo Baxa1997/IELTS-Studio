@@ -17,7 +17,7 @@ import { HIGHLIGHT_CSS, MarkerToolbar, useFullscreen, useHighlighter } from "../
 import { QuestionGroups } from "../../_shared/question-groups";
 import { Timer, type DeliveredQuestion } from "../../_shared/question-inputs";
 import { perfColor, ReviewItem, statusOf, WeakTypes, type TypeBreakdown } from "../../_shared/review";
-import { AMBER, INDIGO, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens";
+import { AMBER, BRAND, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens";
 import { WordLookup } from "../../_shared/word-lookup";
 
 // ---- Types -----------------------------------------------------------------
@@ -217,41 +217,41 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
           itself never does (the results phase below is a normal scrolling view). */}
       <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
         {/* One flat header row: exit · title | text size · pens · fullscreen · timer · progress · finish */}
-        <div className="rd-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 18px", flexWrap: "wrap", padding: "10px 20px", flex: "none", borderBottom: "1px solid #EEEDF4" }}>
+        <div className="rd-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 18px", flexWrap: "wrap", padding: "10px 20px", flex: "none", borderBottom: "1px solid #E6E8EC" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <Link href="/read" aria-label="Exit test" className="rd-exit" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", margin: "-7px 0 -7px -10px", borderRadius: 9, color: "#5A5670", fontSize: 14.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+            <Link href="/read" aria-label="Exit test" className="rd-exit" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", margin: "-7px 0 -7px -10px", borderRadius: 9, color: "#4A505C", fontSize: 14.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
               <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>‹</span> Exit
             </Link>
-            <span aria-hidden style={{ width: 1, height: 22, background: "#ECEBF2", flex: "none" }} />
+            <span aria-hidden style={{ width: 1, height: 22, background: "#E6E8EC", flex: "none" }} />
             <span style={{ fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {practiceNo != null ? `Practice test ${practiceNo} · Academic Reading` : "Academic Reading · Full Test"}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12.5, color: "#8C88A0", fontWeight: 500 }}>Text size</span>
+              <span style={{ fontSize: 12.5, color: "#8B919D", fontWeight: 500 }}>Text size</span>
               <button type="button" onClick={() => stepFont(-0.1)} disabled={fontScale <= MIN_FONT} aria-label="Decrease text size" style={fontBtn(fontScale <= MIN_FONT)}>A−</button>
               <button type="button" onClick={() => stepFont(0.1)} disabled={fontScale >= MAX_FONT} aria-label="Increase text size" style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 14 }}>A+</button>
             </div>
             <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
-            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #EAE8F2", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
+            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #E6E8EC", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
               {fs.isFull ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             <Timer seconds={READING_TEST_DURATION_SECONDS} onExpire={onExpire}>
               {(text, left) => {
                 const warn = left <= 300;
                 return (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: warn ? "#FDECEC" : "#F4F3FC", border: `1px solid ${warn ? "#F3B4B4" : "#E4E2F4"}` }} aria-label="time remaining">
-                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : INDIGO }}>◷</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, letterSpacing: ".02em", color: warn ? "#B91C1C" : INDIGO }}>{text}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: warn ? "#FDECEC" : "#FDF4F7", border: `1px solid ${warn ? "#F3B4B4" : "#F0D3DE"}` }} aria-label="time remaining">
+                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : BRAND }}>◷</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, letterSpacing: ".02em", color: warn ? "#B91C1C" : BRAND }}>{text}</span>
                   </span>
                 );
               }}
             </Timer>
-            <span title={`${answeredCount} of ${total} answered`} style={{ padding: "6px 12px", borderRadius: 10, border: "1.5px solid #EAE8F2", fontSize: 13.5, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+            <span title={`${answeredCount} of ${total} answered`} style={{ padding: "6px 12px", borderRadius: 10, border: "1.5px solid #E6E8EC", fontSize: 13.5, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
               {answeredCount} / {total}
             </span>
-            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: submitting ? "#9a96d6" : INDIGO, color: "#fff", fontWeight: 600, fontSize: 14, cursor: submitting ? "default" : "pointer", fontFamily: SANS, boxShadow: "0 4px 14px rgba(79,70,229,.28)" }}>
+            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: submitting ? "#CC5C82" : BRAND, color: "#fff", fontWeight: 600, fontSize: 14, cursor: submitting ? "default" : "pointer", fontFamily: SANS, boxShadow: "0 4px 14px rgba(125,1,50,.28)" }}>
               {submitting ? "Marking…" : "Finish Test"}
             </button>
           </div>
@@ -264,13 +264,13 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
 
         {/* Split: passage | questions */}
         <div className="rd-split" style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #F0EFF5", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
+          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #ECEEF2", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
             <div style={{ maxWidth: 680 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ background: "#EEF0FC", color: INDIGO, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage {active + 1}</span>
-                {passage.topic ? <span style={{ fontSize: 12.5, fontWeight: 500, color: "#9a96a8" }}>{passage.topic}</span> : null}
+                <span style={{ background: "#FDF4F7", color: BRAND, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage {active + 1}</span>
+                {passage.topic ? <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8B919D" }}>{passage.topic}</span> : null}
               </div>
-              <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#8C88A0", margin: "12px 0 0" }}>
+              <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#8B919D", margin: "12px 0 0" }}>
                 <HighlighterIcon size={13} aria-hidden style={{ flex: "none" }} />
                 Select a word to see its meaning — or pick a pen above to highlight.
               </p>
@@ -278,7 +278,7 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
                 You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions {startN}–{endN}</strong>, which are based on Reading Passage {active + 1} below.
               </p>
               <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>{passage.title}</h1>
-              <div style={{ lineHeight: 1.75, color: "#3A3650", fontSize: fontPx, whiteSpace: "pre-wrap" }}>{passage.body}</div>
+              <div style={{ lineHeight: 1.75, color: "#3B4150", fontSize: fontPx, whiteSpace: "pre-wrap" }}>{passage.body}</div>
             </div>
           </article>
 
@@ -295,7 +295,7 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
         </div>
 
         {/* Bottom nav: parts + per-part question circles */}
-        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #F0EFF5", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #ECEEF2", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
           {passages.map((p, pi) => {
             const ans = p.questions.reduce((a, q) => a + (answers[q.id]?.trim() ? 1 : 0), 0);
             const on = pi === active;
@@ -315,11 +315,11 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
                     flex: "none",
                     background: "#fff",
                     fontFamily: SANS,
-                    border: `1.5px solid ${on ? INDIGO : "#EAE8F2"}`,
+                    border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`,
                   }}
                 >
-                  <span style={{ fontWeight: on ? 700 : 600, fontSize: 14.5, color: on ? INDIGO : "#4A4660" }}>Part {pi + 1}</span>
-                  {!on ? <span style={{ fontSize: 13, color: "#A6A2B8", fontVariantNumeric: "tabular-nums" }}>{ans} of {p.questions.length}</span> : null}
+                  <span style={{ fontWeight: on ? 700 : 600, fontSize: 14.5, color: on ? BRAND : "#3B4150" }}>Part {pi + 1}</span>
+                  {!on ? <span style={{ fontSize: 13, color: "#8B919D", fontVariantNumeric: "tabular-nums" }}>{ans} of {p.questions.length}</span> : null}
                 </button>
                 {on ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
@@ -368,9 +368,9 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     width: 28,
     height: 28,
     borderRadius: 8,
-    border: "1.5px solid #EAE8F2",
+    border: "1.5px solid #E6E8EC",
     background: "#fff",
-    color: disabled ? "#C7C4D4" : "#5A5670",
+    color: disabled ? "#C9CDD4" : "#4A505C",
     fontWeight: 700,
     fontSize: 12.5,
     cursor: disabled ? "default" : "pointer",
@@ -395,9 +395,9 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
     fontVariantNumeric: "tabular-nums",
     transition: "all .12s ease",
   };
-  if (current) return { ...base, borderColor: INDIGO, background: "#fff", color: INDIGO, boxShadow: "0 0 0 3px rgba(79,70,229,.16)" };
-  if (answered) return { ...base, borderColor: INDIGO, background: INDIGO, color: "#fff" };
-  return { ...base, borderColor: "#E5E3EF", background: "#fff", color: "#9B98AD" };
+  if (current) return { ...base, borderColor: BRAND, background: "#fff", color: BRAND, boxShadow: "0 0 0 3px rgba(125,1,50,.16)" };
+  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: "#fff" };
+  return { ...base, borderColor: "#E6E8EC", background: "#fff", color: "#8B919D" };
 }
 
 // ---- Confirm finish (in-app modal, replaces window.confirm) ----------------
@@ -432,8 +432,8 @@ function ConfirmFinishModal({ unanswered, onCancel, onConfirm }: { unanswered: n
           You have <strong style={{ color: INK, fontWeight: 700 }}>{unanswered}</strong> unanswered question{unanswered === 1 ? "" : "s"}. {unanswered === 1 ? "It" : "They"}&apos;ll be marked wrong, and you can&apos;t change your answers after finishing.
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
-          <button type="button" onClick={onCancel} style={{ padding: "10px 18px", borderRadius: 11, border: "1.5px solid #EAE8F2", background: "#fff", color: "#46435C", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>Keep working</button>
-          <button type="button" onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: 11, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer", boxShadow: "0 8px 20px -10px rgba(79,70,229,.7)" }}>Finish anyway</button>
+          <button type="button" onClick={onCancel} style={{ padding: "10px 18px", borderRadius: 11, border: "1.5px solid #E6E8EC", background: "#fff", color: "#3B4150", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>Keep working</button>
+          <button type="button" onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer", boxShadow: "0 8px 20px -10px rgba(125,1,50,.7)" }}>Finish anyway</button>
         </div>
       </div>
     </div>
@@ -497,17 +497,17 @@ function TestResultsView({
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#FBFBFD", fontFamily: SANS, color: INK }}>
+    <div style={{ minHeight: "100dvh", background: "#FDF4F7", fontFamily: SANS, color: INK }}>
       {/* Top bar */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(251,251,253,.88)", backdropFilter: "blur(10px)", borderBottom: "1px solid #EFEEF5" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(251,251,253,.88)", backdropFilter: "blur(10px)", borderBottom: "1px solid #ECEEF2" }}>
         <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 28px" }}>
-          <Link href="/read" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: SANS, fontSize: 15, fontWeight: 600, color: "#5A5670", textDecoration: "none", padding: "6px 10px", borderRadius: 9, marginLeft: -10 }}>
+          <Link href="/read" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: SANS, fontSize: 15, fontWeight: 600, color: "#4A505C", textDecoration: "none", padding: "6px 10px", borderRadius: 9, marginLeft: -10 }}>
             <span style={{ fontSize: 17 }}>←</span> Exit
           </Link>
-          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: ".02em", color: "#8C88A0" }}>Test review · Academic Reading</div>
+          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: ".02em", color: "#8B919D" }}>Test review · Academic Reading</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button type="button" onClick={() => window.print()} style={{ padding: "9px 18px", borderRadius: 10, border: "1.5px solid #EAE8F2", background: "#fff", color: "#46435C", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: SANS }}>Export PDF</button>
-            <button type="button" onClick={() => window.location.assign(`/read/test/${testId}`)} style={{ padding: "9px 20px", borderRadius: 10, border: "none", background: INDIGO, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: SANS, boxShadow: "0 3px 10px rgba(79,70,229,.26)" }}>Retake test</button>
+            <button type="button" onClick={() => window.print()} style={{ padding: "9px 18px", borderRadius: 10, border: "1.5px solid #E6E8EC", background: "#fff", color: "#3B4150", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: SANS }}>Export PDF</button>
+            <button type="button" onClick={() => window.location.assign(`/read/test/${testId}`)} style={{ padding: "9px 20px", borderRadius: 10, border: "none", background: BRAND, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: SANS, boxShadow: "0 3px 10px rgba(125,1,50,.26)" }}>Retake test</button>
           </div>
         </div>
       </div>
@@ -518,11 +518,11 @@ function TestResultsView({
           <div style={{ flex: "none" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
               <span style={{ fontSize: 84, fontWeight: 800, lineHeight: 0.86, color: bandColor(result.band).fg, letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums" }}>{result.band.toFixed(1)}</span>
-              <span style={{ fontSize: 16, fontWeight: 500, color: "#8C88A0" }}>indicative<br />band</span>
+              <span style={{ fontSize: 16, fontWeight: 500, color: "#8B919D" }}>indicative<br />band</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: bandColor(result.band).fg, background: bandColor(result.band).bg, padding: "4px 12px", borderRadius: 999 }}>{bandColor(result.band).label}</span>
-              <span style={{ fontSize: 15, color: "#46435C", fontWeight: 500 }}>
+              <span style={{ fontSize: 15, color: "#3B4150", fontWeight: 500 }}>
                 <span style={{ color: INK, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{result.correctCount} / {result.total}</span> correct · {result.percent.toFixed(0)}%
               </span>
             </div>
@@ -530,8 +530,8 @@ function TestResultsView({
 
           <div style={{ flex: 1, minWidth: 340, display: "flex", flexDirection: "column", gap: 14, paddingTop: 6 }}>
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, color: "#8C88A0", marginBottom: 7 }}><span>Accuracy</span><span style={{ color: INDIGO }}>{result.percent.toFixed(0)}%</span></div>
-              <div style={{ height: 10, borderRadius: 999, background: "#EEEDF6", overflow: "hidden" }}><div style={{ height: "100%", width: `${result.percent}%`, background: "linear-gradient(90deg,#6D63F0,#4F46E5)", borderRadius: 999 }} /></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, color: "#8B919D", marginBottom: 7 }}><span>Accuracy</span><span style={{ color: BRAND }}>{result.percent.toFixed(0)}%</span></div>
+              <div style={{ height: 10, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}><div style={{ height: "100%", width: `${result.percent}%`, background: "linear-gradient(90deg,#9B1044,#7D0132)", borderRadius: 999 }} /></div>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <StatCard label="Time used" value={fmtClock(usedSeconds)} />
@@ -548,11 +548,11 @@ function TestResultsView({
             const c = perfColor(pct);
             const title = titleByOrder.get(p.order) ?? p.title;
             return (
-              <div key={p.order} style={{ border: "1px solid #EFEEF5", borderRadius: 16, padding: "18px 20px", background: "#fff" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#A6A2B8" }}>Passage {p.order}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0 12px" }}><span style={{ fontSize: 28, fontWeight: 700 }}>{p.correctCount}</span><span style={{ fontSize: 16, color: "#A6A2B8", fontWeight: 600 }}>/{p.total}</span></div>
-                <div style={{ height: 7, borderRadius: 999, background: "#EEEDF6", overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 999 }} /></div>
-                {title ? <div style={{ fontSize: 12.5, color: "#8C88A0", marginTop: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div> : null}
+              <div key={p.order} style={{ border: "1px solid #ECEEF2", borderRadius: 16, padding: "18px 20px", background: "#fff" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#8B919D" }}>Passage {p.order}</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0 12px" }}><span style={{ fontSize: 28, fontWeight: 700 }}>{p.correctCount}</span><span style={{ fontSize: 16, color: "#8B919D", fontWeight: 600 }}>/{p.total}</span></div>
+                <div style={{ height: 7, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 999 }} /></div>
+                {title ? <div style={{ fontSize: 12.5, color: "#8B919D", marginTop: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div> : null}
               </div>
             );
           })}
@@ -569,13 +569,13 @@ function TestResultsView({
             {filterDefs.map((f) => {
               const on = filter === f.key;
               return (
-                <button key={f.key} type="button" onClick={() => setFilter(f.key)} style={{ padding: "8px 16px", borderRadius: 999, fontFamily: SANS, fontSize: 14, fontWeight: 600, cursor: "pointer", border: `1.5px solid ${on ? INDIGO : "#EAE8F2"}`, background: on ? INDIGO : "#fff", color: on ? "#fff" : "#46435C" }}>
+                <button key={f.key} type="button" onClick={() => setFilter(f.key)} style={{ padding: "8px 16px", borderRadius: 999, fontFamily: SANS, fontSize: 14, fontWeight: 600, cursor: "pointer", border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`, background: on ? BRAND : "#fff", color: on ? "#fff" : "#3B4150" }}>
                   {f.label} <span style={{ opacity: 0.6, fontWeight: 600 }}>{counts[f.key]}</span>
                 </button>
               );
             })}
           </div>
-          <div style={{ fontSize: 13.5, color: "#8C88A0", fontWeight: 500 }}>{showingLabel[filter]}</div>
+          <div style={{ fontSize: 13.5, color: "#8B919D", fontWeight: 500 }}>{showingLabel[filter]}</div>
         </div>
 
         {/* Grouped review */}
@@ -595,10 +595,10 @@ function TestResultsView({
         })}
 
         {visible.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "50px 20px", color: "#9B98AD", fontSize: 15 }}>No questions match this filter.</div>
+          <div style={{ textAlign: "center", padding: "50px 20px", color: "#8B919D", fontSize: 15 }}>No questions match this filter.</div>
         ) : null}
 
-        {disclaimer ? <p style={{ fontSize: 12, color: "#9B98AD", margin: "28px 0 0" }}>{disclaimer}</p> : null}
+        {disclaimer ? <p style={{ fontSize: 12, color: "#8B919D", margin: "28px 0 0" }}>{disclaimer}</p> : null}
       </div>
     </div>
   );
@@ -606,8 +606,8 @@ function TestResultsView({
 
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ flex: 1, minWidth: 120, border: "1px solid #EFEEF5", borderRadius: 13, padding: "13px 16px", background: "#fff" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#A6A2B8" }}>{label}</div>
+    <div style={{ flex: 1, minWidth: 120, border: "1px solid #ECEEF2", borderRadius: 13, padding: "13px 16px", background: "#fff" }}>
+      <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#8B919D" }}>{label}</div>
       <div style={{ fontSize: 21, fontWeight: 700, marginTop: 3, color: color ?? INK, fontVariantNumeric: "tabular-nums" }}>{value}</div>
     </div>
   );

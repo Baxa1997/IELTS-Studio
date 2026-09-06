@@ -17,14 +17,14 @@ import { DashboardCoach } from "./dashboard-coach-lazy";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
-const SURF = "#F6F6FA";
-const TINT = "#F4F4FE";
-const EMERALD = "#2f8f5b";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
+const SURF = "#F6F7F9";
+const TINT = "#FDF4F7";
+const EMERALD = "#1C7A4F";
 const AMBER = "#B9791A";
 
 const card: React.CSSProperties = { background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: 18 };
@@ -66,7 +66,7 @@ export default async function DashboardPage({
       <style>{DASH_CSS}</style>
 
       {billing === "success" ? (
-        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: "#147A4F", background: "#E9F5EE", border: "1px solid #CDE9D8", borderRadius: 10, padding: "10px 14px" }}>
+        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: "#1C7A4F", background: "#EAF6F0", border: "1px solid #CFE7DB", borderRadius: 10, padding: "10px 14px" }}>
           Payment received — your Pro plan is activating now. Enjoy the extra practice!
         </p>
       ) : billing === "cancel" ? (
@@ -114,7 +114,7 @@ function Header({ name, plan, days }: { name: string | null; plan: StudyPlan; da
         {hasDate ? (
           `${days} ${days === 1 ? "day" : "days"} to your test`
         ) : (
-          <Link href="/plan" style={{ color: INDIGO, fontWeight: 600, textDecoration: "none" }}>set your exam date</Link>
+          <Link href="/plan" style={{ color: BRAND, fontWeight: 600, textDecoration: "none" }}>set your exam date</Link>
         )}
       </p>
     </div>
@@ -126,7 +126,7 @@ function Header({ name, plan, days }: { name: string | null; plan: StudyPlan; da
 function NextTask({ rec }: { rec: Recommendation }) {
   const [chipA, chipB] = chipsFor(rec.href);
   return (
-    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#23264D 0%,#3B43B5 62%,#5158C8 100%)", borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#2C0013 0%,#7D0132 62%,#9B1044 100%)", borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
       <div aria-hidden style={{ position: "absolute", top: -90, right: -40, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)" }} />
       <div style={{ position: "relative", minWidth: 0, flex: "1 1 380px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".11em", textTransform: "uppercase", color: "rgba(255,255,255,.72)" }}>
@@ -168,10 +168,10 @@ function WeekCard({ streakDays, done, goal }: { streakDays: number; done: number
       <div style={{ display: "flex", justifyContent: "space-between", gap: 6, marginTop: 13 }}>
         {dots.map((d) => (
           <div key={d.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
-            <span style={{ width: "100%", maxWidth: 30, height: 30, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: d.filled ? INDIGO : SURF, border: `1.5px solid ${d.today ? INDIGO : d.filled ? INDIGO : LINE}` }}>
-              <Flame size={14} color={d.filled ? "#fff" : "#C7C9D4"} strokeWidth={2.2} />
+            <span style={{ width: "100%", maxWidth: 30, height: 30, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: d.filled ? BRAND : SURF, border: `1.5px solid ${d.today ? BRAND : d.filled ? BRAND : LINE}` }}>
+              <Flame size={14} color={d.filled ? "#fff" : "#C9CDD4"} strokeWidth={2.2} />
             </span>
-            <span style={{ fontFamily: SANS, fontSize: 10.5, fontWeight: 700, letterSpacing: ".02em", color: d.today ? INDIGO : FAINT }}>{d.label}</span>
+            <span style={{ fontFamily: SANS, fontSize: 10.5, fontWeight: 700, letterSpacing: ".02em", color: d.today ? BRAND : FAINT }}>{d.label}</span>
           </div>
         ))}
       </div>
@@ -179,8 +179,8 @@ function WeekCard({ streakDays, done, goal }: { streakDays: number; done: number
         <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: MUTED }}>Weekly goal</span>
         <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: met ? EMERALD : INK, fontVariantNumeric: "tabular-nums" }}>{done} / {goal} tasks</span>
       </div>
-      <div style={{ height: 7, background: "#E7E7F2", borderRadius: 999, overflow: "hidden", marginTop: 8 }} aria-hidden>
-        <div style={{ width: `${pct}%`, height: "100%", background: met ? EMERALD : INDIGO, borderRadius: 999 }} />
+      <div style={{ height: 7, background: "#E6E8EC", borderRadius: 999, overflow: "hidden", marginTop: 8 }} aria-hidden>
+        <div style={{ width: `${pct}%`, height: "100%", background: met ? EMERALD : BRAND, borderRadius: 999 }} />
       </div>
       <p style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, margin: "10px 0 0" }}>
         {met ? "Goal reached — nice work." : streakDays > 0 ? `${goal - done} more to go — keep the streak alive.` : `${goal - done} more to go — practice today to start a streak.`}
@@ -210,7 +210,7 @@ function FocusRow({ Icon, skill, value, sub, href }: { Icon: typeof PenLine; ski
   return (
     <Link href={href} className="dash-focus" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", borderRadius: 10, margin: "0 -6px", padding: "4px 6px" }}>
       <span style={{ flex: "none", width: 34, height: 34, borderRadius: 9, background: TINT, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={16} color={INDIGO} strokeWidth={2} />
+        <Icon size={16} color={BRAND} strokeWidth={2} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontFamily: SANS, fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: FAINT }}>{skill}</span>
@@ -239,7 +239,7 @@ function RecentResults({ history }: { history: HistoryEvent[] }) {
             <div key={`${h.skill}-${h.date}-${i}`} style={{ display: "grid", gridTemplateColumns: "84px 1fr auto", alignItems: "center", gap: 14, padding: "13px 18px", borderTop: i === 0 ? "none" : `1px solid ${LINE}` }}>
               <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13.5, color: FAINT }}>{fmtDate(h.date)}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK }}>
-                <span style={{ width: 30, height: 30, borderRadius: 8, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                <span style={{ width: 30, height: 30, borderRadius: 8, background: TINT, color: BRAND, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
                   <SkillGlyph skill={h.skill} />
                 </span>
                 {SKILL_LABELS[h.skill]}
@@ -267,7 +267,7 @@ function SkillGlyph({ skill }: { skill: Skill }) {
 function DeltaBadge({ value }: { value: number | null }) {
   const badge: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, fontFamily: SANS, fontWeight: 600, fontSize: 12, padding: "3px 9px", borderRadius: 999 };
   if (value == null) return <span style={{ ...badge, color: FAINT, background: SURF }}>baseline</span>;
-  if (value > 0) return <span style={{ ...badge, color: EMERALD, background: "#E5F2EB" }}><TrendingUp size={12} /> {value.toFixed(1)}</span>;
+  if (value > 0) return <span style={{ ...badge, color: EMERALD, background: "#EAF6F0" }}><TrendingUp size={12} /> {value.toFixed(1)}</span>;
   if (value < 0) return <span style={{ ...badge, color: "#c0392b", background: "#FBEAE7" }}><TrendingDown size={12} /> {Math.abs(value).toFixed(1)}</span>;
   return null;
 }
@@ -278,7 +278,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>{children}</div>;
 }
 
-const miniLink: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 5, fontFamily: SANS, fontWeight: 600, fontSize: 13.5, color: INDIGO, textDecoration: "none" };
+const miniLink: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 5, fontFamily: SANS, fontWeight: 600, fontSize: 13.5, color: BRAND, textDecoration: "none" };
 
 function greeting(name: string | null): string {
   return name ? `Welcome back, ${name.split(" ")[0]}` : "Welcome back";
@@ -308,7 +308,7 @@ function weekDots(streakDays: number): { label: string; today: boolean; filled: 
 const DASH_CSS = `
 .dash-grid { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); gap: 16px; align-items: start; }
 .dash-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.dash-focus:hover { background: #F6F6FA; }
+.dash-focus:hover { background: #F6F7F9; }
 @media (max-width: 1040px) { .dash-grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) {
   .dash-2 { grid-template-columns: 1fr; }

@@ -28,7 +28,13 @@ export default async function AssignmentsPage() {
   const done = assignments.filter((a) => a.done);
 
   return (
-    <div>
+    /* These two learner pages borrow the console's page-ui kit. That kit reads its
+       colours from `--pu-*` custom properties whose FALLBACKS are the staff indigo,
+       and globals.css only overrides them inside the console — so without this the
+       student's homework and inbox would be the last two indigo screens in the
+       learner app. Setting the properties here repaints every page-ui component on
+       the page at once, which a per-import swap could not do. */
+    <div style={{ "--pu-indigo": "#7D0132", "--pu-tint": "#FDF4F7" } as React.CSSProperties}>
       <PageHead
         eyebrow="Homework"
         title="Assignments"

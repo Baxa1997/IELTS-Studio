@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
-import { EMERALD, INDIGO, INK, MUTED, SANS } from "./tokens";
+import { EMERALD, BRAND, INK, MUTED, SANS } from "./tokens";
 
 /**
  * In-practice word lookup. The learner selects a word/short phrase inside the
@@ -250,7 +250,7 @@ export function WordLookup({
         width: W,
         zIndex: 50,
         background: "#fff",
-        border: "1px solid #E7E4D6",
+        border: "1px solid #E6E8EC",
         borderRadius: 14,
         boxShadow: "0 24px 60px -22px rgba(26,33,56,.55)",
         fontFamily: SANS,
@@ -290,7 +290,7 @@ export function WordLookup({
           type="button"
           onClick={() => void translate(sel.word, sel.sentence, language)}
           disabled={loading || !language.trim()}
-          style={{ flex: "none", padding: "7px 12px", borderRadius: 9, border: "none", background: INDIGO, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: loading || !language.trim() ? "default" : "pointer", opacity: loading || !language.trim() ? 0.55 : 1 }}
+          style={{ flex: "none", padding: "7px 12px", borderRadius: 9, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: loading || !language.trim() ? "default" : "pointer", opacity: loading || !language.trim() ? 0.55 : 1 }}
         >
           {loading ? <Loader2 size={14} style={{ animation: "lp-spin .7s linear infinite" }} /> : "Translate"}
         </button>
@@ -304,8 +304,8 @@ export function WordLookup({
           <p style={{ fontSize: 12.5, color: MUTED, margin: 0 }}>Translating…</p>
         ) : result ? (
           <div style={{ borderTop: "1px solid #F0EEE3", paddingTop: 10 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: INDIGO, lineHeight: 1.25, wordBreak: "break-word" }}>{result.translation}</div>
-            {result.definition ? <p style={{ fontSize: 13, color: "#3A3650", margin: "6px 0 0", lineHeight: 1.5 }}>{result.definition}</p> : null}
+            <div style={{ fontSize: 18, fontWeight: 700, color: BRAND, lineHeight: 1.25, wordBreak: "break-word" }}>{result.translation}</div>
+            {result.definition ? <p style={{ fontSize: 13, color: "#3B4150", margin: "6px 0 0", lineHeight: 1.5 }}>{result.definition}</p> : null}
             {result.example ? <p style={{ fontSize: 12.5, color: MUTED, fontStyle: "italic", margin: "6px 0 0", lineHeight: 1.5 }}>“{result.example}”</p> : null}
 
             <button
@@ -321,9 +321,9 @@ export function WordLookup({
                 gap: 7,
                 padding: "9px 12px",
                 borderRadius: 10,
-                border: `1.5px solid ${save === "saved" ? EMERALD : "#E1DFF7"}`,
-                background: save === "saved" ? "#EBF7F0" : "#F4F3FC",
-                color: save === "saved" ? EMERALD : INDIGO,
+                border: `1.5px solid ${save === "saved" ? EMERALD : "#F0D3DE"}`,
+                background: save === "saved" ? "#EBF7F0" : "#FDF4F7",
+                color: save === "saved" ? EMERALD : BRAND,
                 fontFamily: SANS,
                 fontWeight: 600,
                 fontSize: 13.5,

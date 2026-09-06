@@ -10,9 +10,9 @@
 import { bandColor } from "@/lib/ui/band";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const MUTED = "#56556A";
-const LINE = "#E8E6F0";
-const INDIGO = "#4338CA";
+const MUTED = "#4A505C";
+const LINE = "#E6E8EC";
+const BRAND = "#7D0132";
 const AMBER = "#B5852A";
 
 export interface SpeakProgressItem {
@@ -76,7 +76,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: INDIGO }}>
+        <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: BRAND }}>
           YOUR PROGRESS
         </span>
         <span
@@ -100,8 +100,8 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
           <span style={{ fontSize: 12.5, fontWeight: 600, color: MUTED }}>level with previous</span>
         )}
         <span style={{ marginLeft: "auto", fontSize: 11.5, color: MUTED }}>
-          <span style={{ color: INDIGO }}>●</span> full mock&nbsp;&nbsp;
-          <span style={{ color: INDIGO }}>○</span> quick practice
+          <span style={{ color: BRAND }}>●</span> full mock&nbsp;&nbsp;
+          <span style={{ color: BRAND }}>○</span> quick practice
         </span>
       </div>
 
@@ -118,10 +118,10 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
               x2={W - PAD}
               y1={yOf(g)}
               y2={yOf(g)}
-              stroke="#EFEDF6"
+              stroke="#E6E8EC"
               strokeDasharray="3 4"
             />
-            <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" fill="#B9B6CC" textAnchor="start">
+            <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" fill="#C9CDD4" textAnchor="start">
               {g}
             </text>
           </g>
@@ -129,7 +129,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
         <polyline
           points={pts}
           fill="none"
-          stroke={INDIGO}
+          stroke={BRAND}
           strokeWidth="2"
           strokeLinejoin="round"
           opacity="0.85"
@@ -140,8 +140,8 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
             cx={xOf(i)}
             cy={yOf(it.band)}
             r={it.kind === "mock" ? 4.4 : 3.4}
-            fill={it.kind === "mock" ? INDIGO : "#fff"}
-            stroke={INDIGO}
+            fill={it.kind === "mock" ? BRAND : "#fff"}
+            stroke={BRAND}
             strokeWidth="2"
           />
         ))}
@@ -177,7 +177,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
                     marginTop: 5,
                     height: 5,
                     borderRadius: 3,
-                    background: "#EFEDF6",
+                    background: "#E6E8EC",
                     overflow: "hidden",
                   }}
                 >
@@ -186,7 +186,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
                       width: `${Math.round((Math.min(9, avg) / 9) * 100)}%`,
                       height: "100%",
                       borderRadius: 3,
-                      background: isWeak ? "#D9A23C" : INDIGO,
+                      background: isWeak ? "#D9A23C" : BRAND,
                     }}
                   />
                 </div>

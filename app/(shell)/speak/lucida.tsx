@@ -29,17 +29,23 @@ const LUCIDA_CSS = `
   --color-neutral-900: #221D29;
   --color-neutral-1000: #17131C;
 
-  /* --- primary: warm violet --- */
-  --color-primary-50:  #F4EEFF;
-  --color-primary-100: #E4D5FF;
-  --color-primary-200: #C8AAFF;
-  --color-primary-300: #AA80F8;
-  --color-primary-400: #9468F5;
-  --color-primary-500: #8456EF;
-  --color-primary-600: #7144D8;
-  --color-primary-700: #5E34BF;
-  --color-primary-800: #3F2090;
-  --color-primary-900: #21104F;
+  /* --- primary: the product burgundy ---
+     The mock authored this scale as a warm violet. Only the SCALE was recoloured
+     — every other Lucida token (the warm neutrals, the terracotta, the type, the
+     shadows) is still the mock's. It is re-centred as well as re-hued: 500 is the
+     step the buttons and the accent token actually use, so 500 holds the brand
+     itself and 600/700 are its hover and active, rather than the ramp shifting a
+     step and the primary button coming out pink. */
+  --color-primary-50:  #FDF4F7;
+  --color-primary-100: #F8E8EE;
+  --color-primary-200: #F0D3DE;
+  --color-primary-300: #E3A7BD;
+  --color-primary-400: #B32A5B;
+  --color-primary-500: #7D0132;
+  --color-primary-600: #5C0125;
+  --color-primary-700: #43001D;
+  --color-primary-800: #350016;
+  --color-primary-900: #2C0013;
 
   /* --- secondary: Claude terracotta --- */
   --color-amber-400: #F09070;
@@ -80,7 +86,7 @@ const LUCIDA_CSS = `
   --shadow-1: 0 1px 3px rgba(34,29,41,0.06), 0 1px 2px rgba(34,29,41,0.04);
   --shadow-2: 0 6px 24px rgba(34,29,41,0.08), 0 1px 4px rgba(34,29,41,0.05);
   --shadow-3: 0 24px 64px rgba(34,29,41,0.16);
-  --shadow-glow: 0 0 24px rgba(132,86,239,0.28);
+  --shadow-glow: 0 0 24px rgba(125,1,50,0.28);
   --shadow-glow-sm: 0 8px 22px -10px rgba(132,86,239,0.55);
 
   /* --- component tokens --- */
@@ -224,9 +230,9 @@ export const PERSONAS: Persona[] = [
     initial: "E",
     name: "Emily",
     accent: "var(--color-primary-500)",
-    hex: "#8456EF",
-    glow: "rgba(132,86,239,0.35)",
-    tint: "rgba(132,86,239,0.08)",
+    hex: "#7D0132",
+    glow: "rgba(125,1,50,0.35)",
+    tint: "rgba(125,1,50,0.08)",
     mockTrait: "Warm & encouraging",
     mockDesc: "Puts nervous candidates at ease. Clear, friendly pace.",
     tutorTrait: "Warm and patient",

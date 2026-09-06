@@ -28,17 +28,24 @@ import {
 import { SidebarNav } from "./sidebar-nav";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#1A2138";
+const INK = "#121317";
 const BORDER = "#3333";
-/** Light app canvas behind the floating content card. */
-const CANVAS = "#F1F1F6";
-/** The rail: the brand indigo (#3B43B5) taken down to the same calm darkness as
- *  the green reference — a whisper of a gradient so it doesn't read as a flat slab. */
-const RAIL_BG = "linear-gradient(180deg, #1E2242 0%, #181B36 52%, #12142A 100%)";
+/** Light app canvas behind the floating content card. The canvas's own paper
+ *  (`CANVAS` in app/_landing/design.ts), so the shell stands on the same ground
+ *  as the marketing site and sign-in. */
+const CANVAS = "#F6F7F9";
+/** The rail: the brand burgundy (#7D0132) taken down to a calm darkness — a
+ *  whisper of a gradient so it doesn't read as a flat slab. It descends from the
+ *  canvas's own dark panel (BRAND_PANEL → BRAND_DARKEST), which is what the
+ *  marketing CTA block is painted with, rather than being a fifth dark colour. */
+const RAIL_BG = "linear-gradient(180deg, #2B0012 0%, #21000D 52%, #160008 100%)";
 const RAIL_LINE = "rgba(255,255,255,.07)"; // hairlines/borders on the rail
-const RAIL_TEXT = "#CDD1DF"; // on-rail text
-const RAIL_FAINT = "#9096B0"; // secondary on-rail text (email, chevrons)
-const ACCENT = "#5BDD9B"; // soft mint accent (role chip, highlights)
+const RAIL_TEXT = "#E7D5DC"; // on-rail text — warm, so it reads as lit by the rail
+const RAIL_FAINT = "#BC9AA6"; // secondary on-rail text (email, chevrons)
+/* The role chip. It was mint, which was fine beside navy and impossible beside
+   burgundy — mint on red is the one pairing that reads as an error state. A pale
+   rose is the rail's own colour lightened, so the chip recedes to a label. */
+const ACCENT = "#F2C3D3";
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -236,7 +243,7 @@ export function AppShell({
           style={{
             background: "none",
             border: "none",
-            color: "#6E7388",
+            color: "#8B919D",
             cursor: "pointer",
             display: "flex",
           }}
@@ -329,8 +336,8 @@ export function AppShell({
                   fontSize: 12,
                   fontWeight: 600,
                   color: ACCENT,
-                  background: "rgba(91,221,155,.08)",
-                  border: "1px solid rgba(91,221,155,.30)",
+                  background: "rgba(242,195,211,.10)",
+                  border: "1px solid rgba(242,195,211,.28)",
                   padding: "2.5px 10px",
                   borderRadius: 8,
                 }}
@@ -352,7 +359,7 @@ export function AppShell({
                 height: 30,
                 flex: "none",
                 border: `1px solid rgba(255,255,255,.12)`,
-                background: "#23274A",
+                background: "#4E0824",
                 borderRadius: 8,
                 cursor: "pointer",
                 color: RAIL_FAINT,
@@ -425,20 +432,22 @@ export function AppShell({
             that scrolls internally, so it reads as a separated surface on the canvas. */}
         <main
           className="lp-shell-main"
-          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: 10 }}
+          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: isConsole ? 0 : 10 }}
         >
           <div
             className={`lp-shell-surface${fillsTheSurface(pathname) ? "lp-shell-surface--fills" : ""}`}
             style={{
               height: "100%",
-              overflow: "auto",
+              overflow: fillsTheSurface(pathname) ? "hidden" : "auto",
               // The console's ground is the CRM design's cream, not the learner
               // app's white card. Set here rather than in CSS so it doesn't
               // depend on `:has()` reaching a descendant.
               background: isConsole ? "#F4F3EF" : "#fff",
-              borderRadius: 18,
-              border: `1px solid ${isConsole ? "#C5C4BE" : "#E9E7F2"}`,
-              boxShadow: "0 1px 2px rgba(20,20,48,.04), 0 18px 40px -28px rgba(20,20,48,.18)",
+              borderRadius: isConsole ? 0 : 18,
+              border: isConsole ? "none" : "1px solid #E6E8EC",
+              boxShadow: isConsole
+                ? "none"
+                : "0 1px 2px rgba(30,10,18,.04), 0 18px 40px -28px rgba(30,10,18,.18)",
             }}
           >
             {quotaBar}
@@ -565,10 +574,10 @@ function ProfileMenu({
             right: "auto",
             minWidth: 210,
             zIndex: 21,
-            background: "#212545",
+            background: "#21000D",
             border: `1px solid rgba(255,255,255,.10)`,
             borderRadius: 14,
-            boxShadow: "0 22px 48px -18px rgba(6,8,22,.75)",
+            boxShadow: "0 22px 48px -18px rgba(20,0,9,.75)",
             padding: 7,
           }}
         >
@@ -579,7 +588,7 @@ function ProfileMenu({
                 style={{
                   fontSize: 13.5,
                   fontWeight: 700,
-                  color: "#F2F3FA",
+                  color: "#FBF3F6",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -617,7 +626,7 @@ function ProfileMenu({
               fontFamily: SANS,
               fontSize: 14,
               fontWeight: 600,
-              color: "#E7E9F5",
+              color: "#F3E4EA",
               textDecoration: "none",
             }}
           >
@@ -663,7 +672,7 @@ function ProfileMenu({
                     fontFamily: SANS,
                     fontSize: 14,
                     fontWeight: 600,
-                    color: "#E7E9F5",
+                    color: "#F3E4EA",
                     textDecoration: "none",
                   }}
                 >
@@ -752,9 +761,9 @@ function ProfileMenu({
                 fontWeight: 800,
                 display: "grid",
                 placeItems: "center",
-                // Rings the rail's own navy so the badge reads as sitting ON
+                // Rings the rail's own burgundy so the badge reads as sitting ON
                 // the avatar rather than floating behind it.
-                boxShadow: "0 0 0 2px #1A1E3C",
+                boxShadow: "0 0 0 2px #3B001A",
               }}
             >
               {unread > 9 ? "9+" : unread}
@@ -767,7 +776,7 @@ function ProfileMenu({
               style={{
                 fontSize: 13.5,
                 fontWeight: 700,
-                color: "#F2F3FA",
+                color: "#FBF3F6",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -781,7 +790,7 @@ function ProfileMenu({
                 fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: ".04em",
-                color: "#C3C8E9",
+                color: "#D9BEC8",
                 background: "rgba(255,255,255,.09)",
                 border: `1px solid ${RAIL_LINE}`,
                 padding: "1.5px 7px",
@@ -826,7 +835,7 @@ function Avatar({ name, size }: { name: string; size: number }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: "linear-gradient(135deg,#4ECF95,#2E9D6C)",
+        background: "linear-gradient(135deg,#B32A5B,#7D0132)",
         color: "#fff",
         fontSize: Math.round(size * 0.36),
         fontWeight: 700,

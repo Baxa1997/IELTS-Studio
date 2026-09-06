@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
+const INK = "#121317";
+const MUTED = "#4A505C";
 
 /**
  * Onboarding — the self-report step. New learners land here (the dashboard/library

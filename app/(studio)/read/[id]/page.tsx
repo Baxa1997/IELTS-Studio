@@ -75,7 +75,7 @@ export default async function ReadingRunnerPage({ params, searchParams }: PagePr
 
   // Full-screen, no sidebar — a focused single detail page for the actual reading.
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
+    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
       <ReadingRunner passage={runnerPassage} questions={delivered} learnerContext={learnerContext} practiceNo={practiceNo} />
     </div>
   );

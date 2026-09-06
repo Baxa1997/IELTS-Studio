@@ -18,13 +18,13 @@ import { savePlanForCurrentUser, stashOnboarding } from "./actions";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
-const TINT = "#F4F4FE";
-const TINT_BORDER = "#D8DAF3";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
+const TINT = "#FDF4F7";
+const TINT_BORDER = "#E3A7BD";
 
 const STEPS = ["Get started", "Your goal", "Your level", "Create account"] as const;
 
@@ -181,13 +181,13 @@ function Stepper({ step }: { step: number }) {
         return (
           <Fragment key={label}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, flex: "none" }}>
-              <span style={{ width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 700, fontSize: 12.5, background: active || done ? INDIGO : "#fff", color: active || done ? "#fff" : "#A6A9B8", border: `1.5px solid ${active || done ? INDIGO : "#E1E0E8"}` }}>
+              <span style={{ width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 700, fontSize: 12.5, background: active || done ? BRAND : "#fff", color: active || done ? "#fff" : "#A6A9B8", border: `1.5px solid ${active || done ? BRAND : "#E1E0E8"}` }}>
                 {done ? <Check size={14} strokeWidth={3} /> : i + 1}
               </span>
-              <span className="onb-steplabel" style={{ fontFamily: SANS, fontWeight: active ? 700 : 500, fontSize: 13.5, color: active ? INDIGO : done ? INK : "#A6A9B8", whiteSpace: "nowrap" }}>{label}</span>
+              <span className="onb-steplabel" style={{ fontFamily: SANS, fontWeight: active ? 700 : 500, fontSize: 13.5, color: active ? BRAND : done ? INK : "#A6A9B8", whiteSpace: "nowrap" }}>{label}</span>
             </div>
             {i < STEPS.length - 1 ? (
-              <span style={{ flex: 1, height: 2, margin: "0 12px", borderRadius: 2, background: i < step ? INDIGO : "#E8E7EE" }} />
+              <span style={{ flex: 1, height: 2, margin: "0 12px", borderRadius: 2, background: i < step ? BRAND : "#E8E7EE" }} />
             ) : null}
           </Fragment>
         );
@@ -218,7 +218,7 @@ function StepWelcome({ mode, onContinue }: { mode: "signup" | "authed"; onContin
         {skills.map((s) => (
           <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px", opacity: s.on ? 1 : 0.78 }}>
             <span style={{ flex: "none", width: 40, height: 40, borderRadius: 11, background: s.on ? TINT : "#F4F4F6", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <s.Icon size={19} color={s.on ? INDIGO : "#9A9DAC"} strokeWidth={2} />
+              <s.Icon size={19} color={s.on ? BRAND : "#9A9DAC"} strokeWidth={2} />
             </span>
             <span style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: 15, color: s.on ? INK : FAINT }}>{s.label}</span>
             <Badge live={s.on} />
@@ -253,7 +253,7 @@ function StepGoal({ target, setTarget, onContinue }: { target: number; setTarget
             </p>
           </div>
         </div>
-        <input type="range" min={4} max={9} step={0.5} value={target} onChange={(e) => setTarget(Number(e.target.value))} aria-label="Target band" style={{ width: "100%", marginTop: 22, accentColor: INDIGO, height: 6, cursor: "pointer" }} />
+        <input type="range" min={4} max={9} step={0.5} value={target} onChange={(e) => setTarget(Number(e.target.value))} aria-label="Target band" style={{ width: "100%", marginTop: 22, accentColor: BRAND, height: 6, cursor: "pointer" }} />
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: SANS, fontSize: 12.5, color: FAINT, marginTop: 6 }}><span>4.0</span><span>9.0</span></div>
         <div style={{ marginTop: 14 }}>
           <RouteItem n={1} title="Core skills" desc="Stop easy loss" />
@@ -291,7 +291,7 @@ function StepLevel({ self, setSelf, examDate, setExamDate, minDate, onContinue }
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12, alignItems: "stretch" }}>
           <label style={{ position: "relative", flex: "1 1 220px", minWidth: 0 }}>
             <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", display: "flex", pointerEvents: "none" }}>
-              <CalendarDays size={18} color={noDate ? "#9A9DAC" : INDIGO} strokeWidth={2} />
+              <CalendarDays size={18} color={noDate ? "#9A9DAC" : BRAND} strokeWidth={2} />
             </span>
             <input
               type="date"
@@ -299,15 +299,15 @@ function StepLevel({ self, setSelf, examDate, setExamDate, minDate, onContinue }
               min={minDate || undefined}
               onChange={(e) => setExamDate(e.target.value)}
               aria-label="Exam date"
-              style={{ width: "100%", height: 54, padding: "0 14px 0 42px", borderRadius: 14, cursor: "pointer", background: noDate ? "#fff" : TINT, border: `1.5px solid ${isPast ? "#E0A07A" : noDate ? LINE : INDIGO}`, fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, boxShadow: noDate || isPast ? "none" : "0 10px 22px -16px rgba(59,67,181,.7)" }}
+              style={{ width: "100%", height: 54, padding: "0 14px 0 42px", borderRadius: 14, cursor: "pointer", background: noDate ? "#fff" : TINT, border: `1.5px solid ${isPast ? "#E0A07A" : noDate ? LINE : BRAND}`, fontFamily: SANS, fontWeight: 600, fontSize: 15, color: INK, boxShadow: noDate || isPast ? "none" : "0 10px 22px -16px rgba(125,1,50,.7)" }}
             />
           </label>
-          <button type="button" onClick={() => setExamDate("")} aria-pressed={noDate} className="onb-opt" style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 9, padding: "0 18px", height: 54, borderRadius: 14, cursor: "pointer", background: noDate ? TINT : "#fff", border: `1.5px solid ${noDate ? INDIGO : LINE}`, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: noDate ? INDIGO : MUTED }}>
+          <button type="button" onClick={() => setExamDate("")} aria-pressed={noDate} className="onb-opt" style={{ flex: "0 0 auto", display: "flex", alignItems: "center", gap: 9, padding: "0 18px", height: 54, borderRadius: 14, cursor: "pointer", background: noDate ? TINT : "#fff", border: `1.5px solid ${noDate ? BRAND : LINE}`, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: noDate ? BRAND : MUTED }}>
             <Radio selected={noDate} /> No date yet
           </button>
         </div>
         {days != null ? (
-          <p style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, margin: "10px 0 0", color: isPast ? "#c2410c" : INDIGO }}>
+          <p style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, margin: "10px 0 0", color: isPast ? "#c2410c" : BRAND }}>
             {isPast ? "That date is in the past — pick a future date or choose “No date yet.”" : `${days} ${days === 1 ? "day" : "days"} to go · ${fmtExam(examDate)}`}
           </p>
         ) : null}
@@ -407,18 +407,18 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
   const pct = Math.round(((step + 1) / STEPS.length) * 100);
 
   return (
-    <aside className="onb-coach" style={{ height: "100dvh", overflow: "hidden", borderLeft: `1px solid ${LINE}`, background: "linear-gradient(170deg,#F2F2FF 0%,#F9F9FF 55%,#FFFFFF 100%)", display: "flex", flexDirection: "column", padding: "30px clamp(22px,2vw,30px)" }}>
+    <aside className="onb-coach" style={{ height: "100dvh", overflow: "hidden", borderLeft: `1px solid ${LINE}`, background: "linear-gradient(170deg,#FDF4F7 0%,#FBFBFC 55%,#FFFFFF 100%)", display: "flex", flexDirection: "column", padding: "30px clamp(22px,2vw,30px)" }}>
       <style>{COACH_STYLES}</style>
 
       {/* identity */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span className={thinking ? "coach-av coach-av-on" : "coach-av"} style={{ flex: "none", width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#5B55D6,#3B43B5)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 22px -10px rgba(59,67,181,.7)" }}>
+        <span className={thinking ? "coach-av coach-av-on" : "coach-av"} style={{ flex: "none", width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#9B1044,#7D0132)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 22px -10px rgba(125,1,50,.7)" }}>
           <GraduationCap size={22} color="#fff" strokeWidth={2} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, color: INK }}>AI Examiner Coach</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: SANS, fontSize: 12.5, color: thinking ? INDIGO : "#1F8A5B" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: thinking ? INDIGO : "#1F8A5B", animation: "coach-pulse 1.4s infinite" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: SANS, fontSize: 12.5, color: thinking ? BRAND : "#1F8A5B" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: thinking ? BRAND : "#1F8A5B", animation: "coach-pulse 1.4s infinite" }} />
             {thinking ? "Evaluating your answer…" : "Listening · live"}
           </div>
         </div>
@@ -428,10 +428,10 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
       <div style={{ marginTop: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: SANS, fontSize: 11.5, fontWeight: 600, color: FAINT, marginBottom: 6 }}>
           <span style={{ letterSpacing: ".06em", textTransform: "uppercase" }}>Building your profile</span>
-          <span style={{ color: INDIGO }}>{pct}%</span>
+          <span style={{ color: BRAND }}>{pct}%</span>
         </div>
-        <div style={{ height: 6, borderRadius: 999, background: "#E7E7F2", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: "linear-gradient(90deg,#5B55D6,#3B43B5)", transition: "width .5s cubic-bezier(.4,.7,.2,1)" }} />
+        <div style={{ height: 6, borderRadius: 999, background: "#E6E8EC", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: "linear-gradient(90deg,#9B1044,#7D0132)", transition: "width .5s cubic-bezier(.4,.7,.2,1)" }} />
         </div>
       </div>
 
@@ -440,15 +440,15 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
         {notes.map((n) => (
           <div key={n.id} className="coach-note" style={{ display: "flex", gap: 10, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "12px 13px", boxShadow: "0 2px 10px -6px rgba(40,40,90,.16)" }}>
             <span style={{ flex: "none", width: 30, height: 30, borderRadius: 9, background: TINT, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <n.Icon size={15} color={INDIGO} strokeWidth={2.2} />
+              <n.Icon size={15} color={BRAND} strokeWidth={2.2} />
             </span>
-            <p style={{ margin: 0, fontFamily: SANS, fontSize: 13, lineHeight: 1.5, color: "#3A3D52" }}>{n.text}</p>
+            <p style={{ margin: 0, fontFamily: SANS, fontSize: 13, lineHeight: 1.5, color: "#3B4150" }}>{n.text}</p>
           </div>
         ))}
         {thinking ? (
           <div className="coach-note" style={{ display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "11px 14px" }}>
             {[0, 0.18, 0.36].map((d) => (
-              <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: INDIGO, animation: `coach-bounce 1s ${d}s infinite` }} />
+              <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND, animation: `coach-bounce 1s ${d}s infinite` }} />
             ))}
           </div>
         ) : null}
@@ -458,7 +458,7 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
       <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, fontFamily: SANS, fontSize: 11.5, color: FAINT }}>
         <span style={{ display: "inline-flex", gap: 3 }}>
           {[0, 1, 2, 3].map((i) => (
-            <span key={i} style={{ width: 3, height: 11, borderRadius: 2, background: INDIGO, opacity: 0.35, animation: `coach-eq 1.1s ${i * 0.12}s infinite` }} />
+            <span key={i} style={{ width: 3, height: 11, borderRadius: 2, background: BRAND, opacity: 0.35, animation: `coach-eq 1.1s ${i * 0.12}s infinite` }} />
           ))}
         </span>
         Calibrated &amp; conservative · your 7 is a real 7
@@ -478,7 +478,7 @@ function Heading({ title, sub }: { title: string; sub: string }) {
 }
 
 function Eyebrow({ children, tone }: { children: React.ReactNode; tone?: "indigo" }) {
-  return <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: tone === "indigo" ? INDIGO : FAINT }}>{children}</div>;
+  return <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: tone === "indigo" ? BRAND : FAINT }}>{children}</div>;
 }
 
 function Label({ children }: { children: React.ReactNode }) {
@@ -495,8 +495,8 @@ function Badge({ live }: { live: boolean }) {
 
 function Radio({ selected }: { selected: boolean }) {
   return (
-    <span style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${selected ? INDIGO : "#CFCFD8"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {selected ? <span style={{ width: 10, height: 10, borderRadius: "50%", background: INDIGO }} /> : null}
+    <span style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${selected ? BRAND : "#CFCFD8"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {selected ? <span style={{ width: 10, height: 10, borderRadius: "50%", background: BRAND }} /> : null}
     </span>
   );
 }
@@ -504,7 +504,7 @@ function Radio({ selected }: { selected: boolean }) {
 function RouteItem({ n, title, desc }: { n: number; title: string; desc: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 13, padding: "12px 0", borderTop: `1px solid ${LINE}` }}>
-      <span style={{ flex: "none", width: 27, height: 27, borderRadius: "50%", border: `1px solid ${TINT_BORDER}`, background: TINT, color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 700, fontSize: 12.5 }}>{n}</span>
+      <span style={{ flex: "none", width: 27, height: 27, borderRadius: "50%", border: `1px solid ${TINT_BORDER}`, background: TINT, color: BRAND, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 700, fontSize: 12.5 }}>{n}</span>
       <span style={{ flex: 1, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>{title}</span>
       <span style={{ fontFamily: SANS, fontSize: 13, color: MUTED }}>{desc}</span>
     </div>
@@ -515,7 +515,7 @@ function StatTile({ Icon, label, value }: { Icon: LucideIcon; label: string; val
   return (
     <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 13, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-        <Icon size={14} color={INDIGO} strokeWidth={2.2} />
+        <Icon size={14} color={BRAND} strokeWidth={2.2} />
         <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10.5, letterSpacing: ".07em", textTransform: "uppercase", color: FAINT }}>{label}</span>
       </div>
       <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 17, color: INK, marginTop: 5 }}>{value}</div>
@@ -525,7 +525,7 @@ function StatTile({ Icon, label, value }: { Icon: LucideIcon; label: string; val
 
 function Chip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={selected} style={{ fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "9px 15px", borderRadius: 11, cursor: "pointer", background: selected ? INDIGO : "#fff", color: selected ? "#fff" : INK, border: `1.5px solid ${selected ? INDIGO : LINE}`, boxShadow: selected ? "0 8px 18px -12px rgba(59,67,181,.8)" : "none", transition: "background .12s, border-color .12s" }}>
+    <button type="button" onClick={onClick} aria-pressed={selected} style={{ fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "9px 15px", borderRadius: 11, cursor: "pointer", background: selected ? BRAND : "#fff", color: selected ? "#fff" : INK, border: `1.5px solid ${selected ? BRAND : LINE}`, boxShadow: selected ? "0 8px 18px -12px rgba(125,1,50,.8)" : "none", transition: "background .12s, border-color .12s" }}>
       {children}
     </button>
   );
@@ -533,7 +533,7 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
 
 function PrimaryButton({ children, onClick, disabled, style }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; style?: React.CSSProperties }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} style={{ width: "100%", height: 54, border: "none", borderRadius: 13, background: INDIGO, color: "#fff", fontFamily: SANS, fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: "0 14px 28px -16px rgba(59,67,181,.9)", ...style }}>
+    <button type="button" onClick={onClick} disabled={disabled} style={{ width: "100%", height: 54, border: "none", borderRadius: 13, background: BRAND, color: "#fff", fontFamily: SANS, fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: "0 14px 28px -16px rgba(125,1,50,.9)", ...style }}>
       {children}
     </button>
   );
@@ -560,10 +560,10 @@ function googleBtn(busy: boolean): React.CSSProperties {
 }
 const backBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 14.5, fontWeight: 600, color: MUTED, padding: 0, marginBottom: 16 };
 const signInRow: React.CSSProperties = { fontFamily: SANS, fontSize: 14, color: MUTED, textAlign: "center", margin: "16px 0 0" };
-const signInLink: React.CSSProperties = { color: INDIGO, fontWeight: 600, textDecoration: "none" };
+const signInLink: React.CSSProperties = { color: BRAND, fontWeight: 600, textDecoration: "none" };
 
 const STYLES = `
-.onb-opt:hover { border-color: #C2BEEC !important; }
+.onb-opt:hover { border-color: #E3A7BD !important; }
 .onb-main::-webkit-scrollbar { width: 0; }
 @media (max-width: 980px) {
   .onb-shell { grid-template-columns: 1fr !important; }
@@ -579,7 +579,7 @@ const COACH_STYLES = `
 @keyframes coach-bounce { 0%,80%,100% { transform: translateY(0); opacity: .4 } 40% { transform: translateY(-4px); opacity: 1 } }
 @keyframes coach-eq { 0%,100% { opacity: .3; transform: scaleY(.6) } 50% { opacity: 1; transform: scaleY(1.2) } }
 @keyframes coach-in { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
-@keyframes coach-ring { 0%,100% { box-shadow: 0 10px 22px -10px rgba(59,67,181,.7), 0 0 0 0 rgba(59,67,181,.35) } 50% { box-shadow: 0 10px 22px -10px rgba(59,67,181,.7), 0 0 0 7px rgba(59,67,181,0) } }
+@keyframes coach-ring { 0%,100% { box-shadow: 0 10px 22px -10px rgba(125,1,50,.7), 0 0 0 0 rgba(125,1,50,.35) } 50% { box-shadow: 0 10px 22px -10px rgba(125,1,50,.7), 0 0 0 7px rgba(125,1,50,0) } }
 .coach-note { animation: coach-in .35s ease both; }
 .coach-av-on { animation: coach-ring 1.2s ease-in-out infinite; }
 .coach-notes::-webkit-scrollbar { width: 0; }

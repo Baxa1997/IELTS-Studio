@@ -16,17 +16,17 @@ interface PageProps {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const INDIGO = "#4338CA";
-const TINT = "#EFEEFC";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const BRAND = "#7D0132";
+const TINT = "#FDF4F7";
 const GOOD = "#15803d";
-const GOOD_BG = "#e7f7ee";
+const GOOD_BG = "#EAF6F0";
 const BAD = "#b91c1c";
 const BAD_BG = "#FDECEC";
 const CARD: React.CSSProperties = {
   background: "#fff",
-  border: "1px solid #E8E6F0",
+  border: "1px solid #E6E8EC",
   borderRadius: 16,
   padding: "20px 22px",
 };
@@ -53,7 +53,7 @@ function QuestionRow({ r }: { r: StoredQResult }) {
         gap: 14,
         alignItems: "flex-start",
         padding: "12px 0",
-        borderBottom: "1px solid #F1EFF6",
+        borderBottom: "1px solid #ECEEF2",
       }}
     >
       <span
@@ -196,8 +196,8 @@ export default async function ListeningResultPage({ params }: PageProps) {
                 padding: "8px 16px",
                 borderRadius: 12,
                 background: TINT,
-                border: "1px solid rgba(67,56,202,.16)",
-                color: INDIGO,
+                border: "1px solid rgba(125,1,50,.16)",
+                color: BRAND,
                 fontWeight: 800,
                 fontSize: 17,
                 whiteSpace: "nowrap",
@@ -212,8 +212,8 @@ export default async function ListeningResultPage({ params }: PageProps) {
               style={{
                 padding: "6px 12px",
                 borderRadius: 9,
-                background: "#F7F6FB",
-                border: "1px solid #E8E6F0",
+                background: "#ECEEF2",
+                border: "1px solid #E6E8EC",
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: p.max_score > 0 && p.score / p.max_score >= 0.7 ? GOOD : MUTED,
@@ -243,7 +243,7 @@ export default async function ListeningResultPage({ params }: PageProps) {
                     fontWeight: 800,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
-                    color: INDIGO,
+                    color: BRAND,
                   }}
                 >
                   Part {partOfQ(r.q)}
@@ -270,7 +270,7 @@ export default async function ListeningResultPage({ params }: PageProps) {
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
               {result.transcript.map((l, i) => (
                 <div key={i} style={{ fontSize: 14, lineHeight: 1.6 }}>
-                  <span style={{ fontWeight: 700, color: INDIGO }}>{l.speaker}: </span>
+                  <span style={{ fontWeight: 700, color: BRAND }}>{l.speaker}: </span>
                   {l.text}
                 </div>
               ))}

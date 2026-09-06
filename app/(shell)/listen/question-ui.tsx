@@ -55,7 +55,7 @@ export function FlagButton({ flagged, onClick }: { flagged: boolean; onClick: ()
         border: "none",
         cursor: "pointer",
         flexShrink: 0,
-        color: flagged ? RUN.flag : "#C9C3D2",
+        color: flagged ? RUN.flag : "#C9CDD4",
       }}
     >
       <svg

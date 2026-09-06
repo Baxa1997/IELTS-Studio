@@ -21,9 +21,9 @@ interface PageProps {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const MUTED = "#56556A";
-const LINE = "#E8E6F0";
-const INDIGO = "#4338CA";
+const MUTED = "#4A505C";
+const LINE = "#E6E8EC";
+const BRAND = "#7D0132";
 
 interface Turn {
   role: "examiner" | "candidate";
@@ -137,7 +137,7 @@ export default async function MockResultPage({ params }: PageProps) {
         </h1>
         <Link
           href={back.href}
-          style={{ fontSize: 13.5, fontWeight: 700, color: INDIGO, textDecoration: "none" }}
+          style={{ fontSize: 13.5, fontWeight: 700, color: BRAND, textDecoration: "none" }}
         >
           ← {back.label}
         </Link>
@@ -174,12 +174,12 @@ export default async function MockResultPage({ params }: PageProps) {
                 }}
               >
                 <div
-                  style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: INDIGO }}
+                  style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: BRAND }}
                 >
                   PART {p}
                 </div>
                 <p
-                  style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: "#3A3950" }}
+                  style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: "#3B4150" }}
                 >
                   {partNotes[p]}
                 </p>
@@ -227,7 +227,7 @@ export default async function MockResultPage({ params }: PageProps) {
               margin: "10px 0 0",
               fontSize: 13.5,
               lineHeight: 1.65,
-              color: "#3A3950",
+              color: "#3B4150",
               whiteSpace: "pre-wrap",
             }}
           >

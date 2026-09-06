@@ -3,7 +3,7 @@
 import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/constants";
 import type { NoteMeta } from "@/lib/reading/types";
 
-import { INDIGO, INK, SANS } from "./tokens";
+import { BRAND, INK, SANS } from "./tokens";
 
 /** Answer-free question as delivered to the browser (no key/proof/explanation). */
 export interface DeliveredQuestion {
@@ -143,9 +143,9 @@ export function InlineBlank({ value, onChange, label }: { value: string; onChang
         width: `${Math.max(7, Math.min(22, value.length + 3))}ch`,
         margin: "0 4px",
         padding: "3px 9px",
-        border: `1.5px solid ${value.trim() ? INDIGO : "#C9C7D6"}`,
+        border: `1.5px solid ${value.trim() ? BRAND : "#C9CDD4"}`,
         borderRadius: 8,
-        background: value.trim() ? "#F6F5FE" : "#fff",
+        background: value.trim() ? "#FDF4F7" : "#fff",
         fontFamily: SANS,
         fontWeight: 600,
         fontSize: "inherit",
@@ -217,9 +217,9 @@ export function InlineSelect({
         maxWidth: "min(58vw, 260px)",
         margin: "0 4px",
         padding: "3px 8px",
-        border: `1.5px solid ${value.trim() ? INDIGO : "#C9C7D6"}`,
+        border: `1.5px solid ${value.trim() ? BRAND : "#C9CDD4"}`,
         borderRadius: 8,
-        background: value.trim() ? "#F6F5FE" : "#fff",
+        background: value.trim() ? "#FDF4F7" : "#fff",
         fontFamily: SANS,
         fontWeight: 600,
         fontSize: "inherit",
@@ -292,13 +292,13 @@ function Pill({ name, value, label, checked, onChange }: { name: string; value: 
         cursor: "pointer",
         borderRadius: 9,
         padding: "8px 16px",
-        border: checked ? `1.5px solid ${INDIGO}` : undefined,
-        background: checked ? INDIGO : undefined,
+        border: checked ? `1.5px solid ${BRAND}` : undefined,
+        background: checked ? BRAND : undefined,
         transition: "background .14s ease, border-color .14s ease",
       }}
     >
       <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={SR_ONLY} />
-      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: checked ? "#fff" : "#494663", transition: "color .14s ease" }}>{label}</span>
+      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: checked ? "#fff" : "#3B4150", transition: "color .14s ease" }}>{label}</span>
     </label>
   );
 }
@@ -306,7 +306,7 @@ function Pill({ name, value, label, checked, onChange }: { name: string; value: 
 function Radio({ name, value, label, checked, onChange }: { name: string; value: string; label: string; checked: boolean; onChange: (v: string) => void }) {
   return (
     <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer", fontFamily: SANS, fontSize: 14, color: INK }}>
-      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={{ marginTop: 3, accentColor: INDIGO }} />
+      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={{ marginTop: 3, accentColor: BRAND }} />
       <span style={{ lineHeight: 1.5 }}>{label}</span>
     </label>
   );

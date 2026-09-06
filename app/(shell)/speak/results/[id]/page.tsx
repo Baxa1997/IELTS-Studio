@@ -84,7 +84,7 @@ export default async function SpeakResultPage({ params }: PageProps) {
       >
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
           Speaking report{" "}
-          <span style={{ fontSize: 14, color: "#56556A", fontFamily: SANS }}>· {when}</span>
+          <span style={{ fontSize: 14, color: "#4A505C", fontFamily: SANS }}>· {when}</span>
         </h1>
         <div style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
           {attempt.library_id ? (
@@ -94,7 +94,7 @@ export default async function SpeakResultPage({ params }: PageProps) {
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: "#fff",
-                background: "#4338CA",
+                background: "#7D0132",
                 borderRadius: 999,
                 padding: "8px 16px",
                 textDecoration: "none",
@@ -105,7 +105,7 @@ export default async function SpeakResultPage({ params }: PageProps) {
           ) : null}
           <Link
             href="/speak"
-            style={{ fontSize: 13.5, fontWeight: 700, color: "#4338CA", textDecoration: "none" }}
+            style={{ fontSize: 13.5, fontWeight: 700, color: "#7D0132", textDecoration: "none" }}
           >
             ← Speaking practice
           </Link>
@@ -161,9 +161,9 @@ function RevisionStrip({
         fontWeight: 700,
         borderRadius: 999,
         padding: "5px 11px",
-        background: delta > 0 ? "#E7F7EE" : delta < 0 ? "#FCEEEA" : "#F2F1F8",
-        color: delta > 0 ? "#15803D" : delta < 0 ? "#C2410C" : "#56556A",
-        border: `1px solid ${delta > 0 ? "#CFE7DA" : delta < 0 ? "#F3CFC6" : "#E4E2EF"}`,
+        background: delta > 0 ? "#EAF6F0" : delta < 0 ? "#FCEEEA" : "#ECEEF2",
+        color: delta > 0 ? "#15803D" : delta < 0 ? "#C2410C" : "#4A505C",
+        border: `1px solid ${delta > 0 ? "#CFE7DA" : delta < 0 ? "#F3CFC6" : "#E6E8EC"}`,
       }}
     >
       {label} {delta > 0 ? "+" : ""}
@@ -175,21 +175,21 @@ function RevisionStrip({
     <section
       style={{
         background: "#fff",
-        border: "1px solid #E8E6F0",
+        border: "1px solid #E6E8EC",
         borderRadius: 16,
         padding: "15px 18px",
         marginBottom: 14,
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "#4338CA" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "#7D0132" }}>
           SECOND DELIVERY · vs {when}
         </span>
         <span
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: up ? "#15803D" : same ? "#56556A" : "#C2410C",
+            color: up ? "#15803D" : same ? "#4A505C" : "#C2410C",
           }}
         >
           {prev.overall_band.toFixed(1)} → {now.overall_band.toFixed(1)}
@@ -208,7 +208,7 @@ function RevisionStrip({
             )
           : null}
       </div>
-      <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#56556A" }}>
+      <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#4A505C" }}>
         Same cue card, two deliveries — this is how examiners hear progress. Fewer fillers and a
         steadier pace matter as much as the band itself.
       </p>

@@ -35,7 +35,7 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
             fontSize: 11,
             letterSpacing: ".1em",
             textTransform: "uppercase",
-            color: "#9096B0",
+            color: "#B08E9B",
           }}
         >
           Your plan
@@ -45,8 +45,8 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
             fontFamily: SANS,
             fontWeight: 700,
             fontSize: 12,
-            color: usage.plan === "trial" ? "#CDD1DF" : "#7CE3AE",
-            background: usage.plan === "trial" ? "rgba(255,255,255,.09)" : "rgba(91,221,155,.13)",
+            color: usage.plan === "trial" ? "#E7D5DC" : "#F2C3D3",
+            background: usage.plan === "trial" ? "rgba(255,255,255,.09)" : "rgba(242,195,211,.14)",
             padding: "2px 9px",
             borderRadius: 999,
           }}
@@ -73,13 +73,16 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
             height: 34,
             marginTop: 2,
             borderRadius: 9,
-            background: "#7C5CFC",
-            color: "#fff",
+            // Light fill, dark ink. On a burgundy rail the upgrade CTA cannot be
+            // another burgundy button — it would vanish into the rail — so it
+            // inverts instead, the way the marketing CTA block's button does.
+            background: "#F2C3D3",
+            color: "#43001D",
             fontFamily: SANS,
             fontSize: 13,
             fontWeight: 700,
             textDecoration: "none",
-            boxShadow: "0 8px 18px -8px rgba(124,92,252,.65)",
+            boxShadow: "0 8px 18px -8px rgba(0,0,0,.55)",
           }}
         >
           Upgrade <ArrowUpRight size={14} />
@@ -101,7 +104,7 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
           alignItems: "baseline",
           fontFamily: SANS,
           fontSize: 12,
-          color: "#CDD1DF",
+          color: "#E7D5DC",
           marginBottom: 4,
         }}
       >
@@ -124,7 +127,7 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
               height: "100%",
               width: `${Math.round((1 - frac) * 100)}%`,
               borderRadius: 999,
-              background: left === 0 ? "#F87171" : "#7CE3AE",
+              background: left === 0 ? "#F87171" : "#F2C3D3",
             }}
           />
         </div>

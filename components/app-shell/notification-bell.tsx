@@ -7,11 +7,11 @@ import { Bell } from "lucide-react";
 import type { Inbox } from "@/lib/notifications/load";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
-const INDIGO = "#3B43B5";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const FAINT = "#8B919D";
+const LINE = "#E6E8EC";
+const BRAND = "#7D0132";
 
 function ago(iso: string): string {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -45,7 +45,7 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
           position: "relative",
           background: "none",
           border: "none",
-          color: "#C3C8E9",
+          color: "#E3A7BD",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
@@ -63,7 +63,7 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
               height: 16,
               borderRadius: 999,
               background: "#F0857A",
-              color: "#1A2138",
+              color: "#121317",
               fontFamily: SANS,
               fontSize: 10.5,
               fontWeight: 800,
@@ -121,7 +121,7 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
               <Link
                 href="/notifications"
                 onClick={() => setOpen(false)}
-                style={{ fontSize: 12.5, fontWeight: 600, color: INDIGO, textDecoration: "none" }}
+                style={{ fontSize: 12.5, fontWeight: 600, color: BRAND, textDecoration: "none" }}
               >
                 See all
               </Link>
@@ -164,7 +164,7 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
                     display: "block",
                     padding: "11px 14px",
                     borderTop: i === 0 ? "none" : `1px solid ${LINE}`,
-                    background: n.read ? "#fff" : "#F8F7FE",
+                    background: n.read ? "#fff" : "#FDF4F7",
                     textDecoration: "none",
                   };
                   return n.href ? (

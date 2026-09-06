@@ -1,10 +1,16 @@
 /**
  * Listening's two looks, in one place.
  *
- * The hub wears the learner app's brand (Hanken over Newsreader, indigo). The
+ * The hub wears the learner app's brand (Hanken over Newsreader, burgundy). The
  * in-test runner is a different surface on purpose — a flat, full-bleed light
- * exam screen with a violet accent and DM Sans throughout, mapping to the IELTS
- * Listening handoff so the runner recreates it closely.
+ * exam screen in DM Sans throughout, mapping to the IELTS Listening handoff so
+ * the runner recreates it closely.
+ *
+ * The handoff authored that runner with a violet accent. Only the ACCENT moved to
+ * the burgundy; the handoff's layout, type, spacing and neutral scale are
+ * untouched. A violet exam screen was the last surface in the learner app still
+ * wearing the old brand, and it read as a leftover rather than as a deliberate
+ * change of gear.
  *
  * Split out of `listening-client.tsx` so the hub, the runner, the player and the
  * question panels can each import what they draw with, instead of all living in
@@ -13,39 +19,40 @@
 
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const INDIGO = "#4338CA";
-export const INK = "#1C1B2E";
-export const MUTED = "#56556A";
-export const TINT = "#EFEEFC";
+export const BRAND = "#7D0132";
+export const INK = "#121317";
+export const MUTED = "#4A505C";
+export const TINT = "#FDF4F7";
 export const GOOD = "#15803d";
 export const BAD = "#b91c1c";
 
 /* ---- Runner design tokens (IELTS Listening handoff) -------------------------
- * The in-test screen is a flat, full-bleed light exam surface with a violet
- * accent (#7c5cfc / #6d4aef on #f4f4f7) and DM Sans throughout. Values map to
- * the IELTS Listening.dc.html handoff so the runner recreates it closely. */
+ * The in-test screen is a flat, full-bleed light exam surface in DM Sans
+ * throughout. Values map to the IELTS Listening.dc.html handoff so the runner
+ * recreates it closely — with the accent swapped from the handoff's violet to
+ * the product burgundy (see the note at the top of this file). */
 export const DM = "var(--font-dmsans), -apple-system, system-ui, sans-serif";
 export const RUN = {
   // fonts — one family across the whole surface
   display: DM,
   sans: DM,
   mono: DM,
-  // violet accent
-  v: "#7c5cfc",
-  vHover: "#6b4be0",
-  vDeep: "#6d4aef",
-  vBg: "#f3f0ff",
-  vSoft: "#f5f2ff",
-  vBorder: "#e4defb",
-  vTrack: "#e8e4fb",
+  // burgundy accent (the handoff's violet, recoloured)
+  v: "#7d0132",
+  vHover: "#5c0125",
+  vDeep: "#5c0125",
+  vBg: "#fdf4f7",
+  vSoft: "#fdf4f7",
+  vBorder: "#f0d3de",
+  vTrack: "#f0d3de",
   field: "#ffffff",
   fieldFocus: "#ffffff",
-  focusBorder: "#b3a5f7",
+  focusBorder: "#dfa3ba",
   // surfaces
   desk: "#f4f4f7",
   frame: "#ffffff",
-  strip: "#faf9ff",
-  rail: "#e8e4fb",
+  strip: "#fffafb",
+  rail: "#f0d3de",
   // borders
   bFrame: "#ececf1",
   bBar: "#ececf1",

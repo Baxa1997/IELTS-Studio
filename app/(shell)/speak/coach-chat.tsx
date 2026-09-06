@@ -15,11 +15,11 @@ import { createClient } from "@/lib/supabase/client";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1C1B2E";
-const MUTED = "#56556A";
-const INDIGO = "#4338CA";
-const TINT = "#EFEEFC";
-const LINE = "#E8E6F0";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const BRAND = "#7D0132";
+const TINT = "#FDF4F7";
+const LINE = "#E6E8EC";
 const RED = "#b91c1c";
 
 interface Msg {
@@ -102,7 +102,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
             fontSize: 10.5,
             fontWeight: 800,
             letterSpacing: ".08em",
-            color: INDIGO,
+            color: BRAND,
             background: TINT,
             borderRadius: 999,
             padding: "3px 8px",
@@ -132,7 +132,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
               style={{
                 justifySelf: m.role === "user" ? "end" : "start",
                 maxWidth: "88%",
-                background: m.role === "user" ? INDIGO : "#F7F6FB",
+                background: m.role === "user" ? BRAND : "#ECEEF2",
                 color: m.role === "user" ? "#fff" : INK,
                 border: m.role === "user" ? "none" : `1px solid ${LINE}`,
                 borderRadius: 12,
@@ -160,7 +160,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
               disabled={busy}
               style={{
                 background: TINT,
-                color: INDIGO,
+                color: BRAND,
                 border: "none",
                 borderRadius: 999,
                 padding: "8px 14px",
@@ -199,14 +199,14 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
             fontFamily: SANS,
             color: INK,
             outline: "none",
-            background: "#FDFDFF",
+            background: "#FDF4F7",
           }}
         />
         <button
           type="submit"
           disabled={busy || !input.trim()}
           style={{
-            background: busy || !input.trim() ? "#B9B6E8" : INDIGO,
+            background: busy || !input.trim() ? "#E3A7BD" : BRAND,
             color: "#fff",
             border: "none",
             borderRadius: 10,

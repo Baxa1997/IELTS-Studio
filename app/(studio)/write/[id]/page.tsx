@@ -56,7 +56,7 @@ export default async function WriteStudioPage({ params, searchParams }: PageProp
   // Full-screen, no sidebar — a focused single detail page for the actual writing.
   // Always a clean, timed attempt: no draft is resumed.
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)" }}>
+    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
       <WritingStudio prompt={prompt} essayId={null} initialContent="" resumed={false} learnerContext={learnerContext} practiceNo={practiceNo} />
       {/* Staff only, and collapsed until used — the runner itself is the same
           page the student gets. */}

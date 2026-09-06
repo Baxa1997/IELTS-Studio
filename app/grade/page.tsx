@@ -10,11 +10,11 @@ import { PublicGrader } from "./grader";
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const LINE = "#E7E3D5";
-const SOFT = "#FBFAF4";
+const BRAND = "#7D0132";
+const INK = "#121317";
+const MUTED = "#4A505C";
+const LINE = "#E6E8EC";
+const SOFT = "#FBFBFC";
 const SOFT_LINE = "#EFECE0";
 
 // ---- SEO -------------------------------------------------------------------
@@ -162,7 +162,7 @@ export default async function PublicGradePage() {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFAF3,#F3F1E5)", fontFamily: SANS, color: INK }}>
+    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)", fontFamily: SANS, color: INK }}>
       <script
         type="application/ld+json"
         // Structured data for rich results — WebApplication + FAQPage + breadcrumbs.
@@ -176,15 +176,15 @@ export default async function PublicGradePage() {
         </Link>
         <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {session ? (
-            <Link href={roleHome(session.role)} style={{ ...navBtn, border: "1px solid #E2DED0", background: SOFT, color: "#41496A" }}>
+            <Link href={roleHome(session.role)} style={{ ...navBtn, border: "1px solid #E2DED0", background: SOFT, color: "#3B4150" }}>
               Open your dashboard
             </Link>
           ) : (
             <>
-              <Link href="/sign-in" style={{ ...navBtn, color: "#41496A" }}>
+              <Link href="/sign-in" style={{ ...navBtn, color: "#3B4150" }}>
                 Sign in
               </Link>
-              <Link href="/sign-in" style={{ ...navBtn, background: INDIGO, color: "#fff", boxShadow: "0 6px 16px -6px rgba(59,67,181,.7)" }}>
+              <Link href="/sign-in" style={{ ...navBtn, background: BRAND, color: "#fff", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
                 Create free account
               </Link>
             </>
@@ -195,7 +195,7 @@ export default async function PublicGradePage() {
       <main style={{ maxWidth: 1040, margin: "0 auto", padding: "36px 24px 56px" }}>
         {/* ---- Hero — short ---- */}
         <section style={{ textAlign: "center", marginBottom: 26 }}>
-          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".12em", color: INDIGO, textTransform: "uppercase" }}>
+          <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".12em", color: BRAND, textTransform: "uppercase" }}>
             Free IELTS Writing checker
           </p>
           <h1 style={{ margin: "10px 0 0", fontFamily: SERIF, fontSize: "clamp(30px, 4.6vw, 42px)", lineHeight: 1.12, fontWeight: 600, letterSpacing: "-.015em", color: INK }}>
@@ -227,7 +227,7 @@ export default async function PublicGradePage() {
 
         {/* ---- Footer ---- */}
         <footer style={{ marginTop: 44, borderTop: `1px solid ${SOFT_LINE}`, paddingTop: 18, display: "flex", flexWrap: "wrap", gap: 14, alignItems: "baseline", justifyContent: "space-between" }}>
-          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: "#A7ABBA", maxWidth: 620 }}>
+          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: "#C9CDD4", maxWidth: 620 }}>
             Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge
             Assessment English. All questions are original and written for practice.
           </p>
@@ -247,6 +247,6 @@ export default async function PublicGradePage() {
 const footLink: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
-  color: "#767C90",
+  color: "#4A505C",
   textDecoration: "none",
 };

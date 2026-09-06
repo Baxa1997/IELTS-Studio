@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, Highlighter } from "lucide-react";
 
-import { INDIGO, MUTED, SANS } from "./tokens";
+import { BRAND, MUTED, SANS } from "./tokens";
 
 /**
  * Shared exam-surface reading tools — a real-test text highlighter (marker pens)
@@ -132,7 +132,7 @@ export function useHighlighter(containerRef: React.RefObject<HTMLElement | null>
 export function MarkerToolbar({ tool, setTool, onClear, marks }: {
   tool: MarkTool; setTool: (t: MarkTool) => void; onClear: () => void; marks: number;
 }) {
-  const LINE = "#EAE8F2";
+  const LINE = "#E6E8EC";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 7, paddingLeft: 14, borderLeft: `1px solid ${LINE}` }}>
       <Highlighter size={15} style={{ color: MUTED, flexShrink: 0 }} />
@@ -140,15 +140,15 @@ export function MarkerToolbar({ tool, setTool, onClear, marks }: {
         const on = tool === p.key;
         return (
           <button key={p.key} type="button" onClick={() => setTool(on ? null : p.key)} title={`${p.label} highlighter`} aria-pressed={on}
-            style={{ width: 20, height: 20, borderRadius: 6, cursor: "pointer", background: p.solid, border: "1px solid rgba(0,0,0,.14)", outline: on ? `2px solid ${INDIGO}` : "none", outlineOffset: 1, flexShrink: 0 }} />
+            style={{ width: 20, height: 20, borderRadius: 6, cursor: "pointer", background: p.solid, border: "1px solid rgba(0,0,0,.14)", outline: on ? `2px solid ${BRAND}` : "none", outlineOffset: 1, flexShrink: 0 }} />
         );
       })}
       <button type="button" onClick={() => setTool(tool === "eraser" ? null : "eraser")} title="Eraser" aria-pressed={tool === "eraser"}
-        style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: tool === "eraser" ? "#F4F3FC" : "#fff", border: `1px solid ${tool === "eraser" ? INDIGO : LINE}`, color: tool === "eraser" ? INDIGO : MUTED, flexShrink: 0 }}>
+        style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: tool === "eraser" ? "#FDF4F7" : "#fff", border: `1px solid ${tool === "eraser" ? BRAND : LINE}`, color: tool === "eraser" ? BRAND : MUTED, flexShrink: 0 }}>
         <Eraser size={13} />
       </button>
       <button type="button" onClick={onClear} disabled={!marks} title="Clear all highlights"
-        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: SANS, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: "#fff", border: `1px solid ${LINE}`, color: marks ? "#46435C" : "#A6A2B8", opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
+        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: SANS, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: "#fff", border: `1px solid ${LINE}`, color: marks ? "#3B4150" : "#8B919D", opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
     </div>
   );
 }

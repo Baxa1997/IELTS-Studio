@@ -8,8 +8,8 @@ import type { UsageSummary } from "@/lib/quota";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#4338CA";
-const VIOLET = "#7C5CFC";
+const BRAND = "#7D0132";
+const VIOLET = "#7D0132";
 
 /** Start checkout for any paid plan (Stripe via /api/billing/checkout). */
 function useCheckout() {
@@ -58,10 +58,10 @@ export function PricingTiers({
   return (
     <div style={{ fontFamily: SANS, maxWidth: 1120, margin: "0 auto" }}>
       <header style={{ margin: "10px 0 6px" }}>
-        <h1 style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, margin: 0, color: "#1C1B2E" }}>
+        <h1 style={{ fontFamily: SERIF, fontSize: 30, fontWeight: 600, margin: 0, color: "#121317" }}>
           Plans
         </h1>
-        <p style={{ margin: "6px 0 0", fontSize: 14.5, color: "#56556A" }}>
+        <p style={{ margin: "6px 0 0", fontSize: 14.5, color: "#4A505C" }}>
           You&rsquo;re on <strong>{PLAN_TIERS[currentPlan].name}</strong>
           {usage.generate.limit != null
             ? ` — ${usage.generate.remaining} practice sets and ${usage.grade.remaining} gradings left this month.`
@@ -97,11 +97,11 @@ export function PricingTiers({
                 flexDirection: "column",
                 gap: 14,
                 background: "#fff",
-                border: isCurrent ? `2px solid ${VIOLET}` : "1px solid #E9E7F2",
+                border: isCurrent ? `2px solid ${VIOLET}` : "1px solid #E6E8EC",
                 borderRadius: 16,
                 padding: "22px 20px",
                 boxShadow: highlight
-                  ? "0 18px 40px -24px rgba(67,56,202,.35)"
+                  ? "0 18px 40px -24px rgba(125,1,50,.35)"
                   : "0 1px 2px rgba(20,20,48,.04)",
               }}
             >
@@ -131,9 +131,9 @@ export function PricingTiers({
                     fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: ".06em",
-                    color: INDIGO,
-                    background: "#EEF0FE",
-                    border: "1px solid #DDDCF4",
+                    color: BRAND,
+                    background: "#FDF4F7",
+                    border: "1px solid #F0D3DE",
                     borderRadius: 999,
                     padding: "3px 10px",
                   }}
@@ -143,12 +143,12 @@ export function PricingTiers({
               ) : null}
 
               <div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#1C1B2E" }}>{tier.name}</div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#121317" }}>{tier.name}</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginTop: 6 }}>
-                  <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 600, color: "#1C1B2E" }}>
+                  <span style={{ fontFamily: SERIF, fontSize: 34, fontWeight: 600, color: "#121317" }}>
                     {tier.price === 0 ? "$0" : `$${tier.price}`}
                   </span>
-                  <span style={{ fontSize: 13, color: "#8A88A0" }}>
+                  <span style={{ fontSize: 13, color: "#8B919D" }}>
                     {tier.months === 1 ? "/ month" : `/ ${tier.months} months`}
                   </span>
                 </div>
@@ -156,7 +156,7 @@ export function PricingTiers({
 
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8, flex: 1 }}>
                 {tier.features.map((f) => (
-                  <li key={f} style={{ display: "flex", gap: 8, fontSize: 13.5, color: "#3E3D52" }}>
+                  <li key={f} style={{ display: "flex", gap: 8, fontSize: 13.5, color: "#3B4150" }}>
                     <Check size={15} style={{ color: "#16A34A", flex: "none", marginTop: 2 }} />
                     {f}
                   </li>
@@ -169,8 +169,8 @@ export function PricingTiers({
                     textAlign: "center",
                     padding: "11px 0",
                     borderRadius: 11,
-                    background: "#F4F3FB",
-                    color: "#6B6A80",
+                    background: "#FDF4F7",
+                    color: "#4A505C",
                     fontSize: 14,
                     fontWeight: 700,
                   }}
@@ -190,7 +190,7 @@ export function PricingTiers({
                     padding: "11px 0",
                     borderRadius: 11,
                     border: "none",
-                    background: highlight ? INDIGO : "#1C1B2E",
+                    background: highlight ? BRAND : "#121317",
                     color: "#fff",
                     fontFamily: SANS,
                     fontSize: 14,
@@ -214,8 +214,8 @@ export function PricingTiers({
                     textAlign: "center",
                     padding: "11px 0",
                     borderRadius: 11,
-                    border: "1px dashed #E0DEEE",
-                    color: "#8A88A0",
+                    border: "1px dashed #E6E8EC",
+                    color: "#8B919D",
                     fontSize: 13.5,
                     fontWeight: 600,
                   }}
@@ -228,7 +228,7 @@ export function PricingTiers({
         })}
       </div>
 
-      <p style={{ margin: "18px 0 0", fontSize: 12.5, color: "#8A88A0" }}>
+      <p style={{ margin: "18px 0 0", fontSize: 12.5, color: "#8B919D" }}>
         Plans renew automatically (Enterprise every 3 months) and can be cancelled anytime. Prices in USD; local payment
         options (Payme / Click) are available at checkout equivalents.
       </p>
