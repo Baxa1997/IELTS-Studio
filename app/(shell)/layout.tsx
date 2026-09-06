@@ -31,6 +31,7 @@ const newsreader = Newsreader({
 
 const ROLE_LABEL: Record<string, string> = {
   center_admin: "Center admin",
+  administrator: "Administrator",
   teacher: "Teacher",
   student: "Student",
 };
@@ -47,30 +48,29 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireOrgUser();
 
-  // First-run gate: a student without a study plan sees only the onboarding
-  // takeover (matches the (app)/(studio) layouts), whatever hub they aimed for.
-  // Onboarding asks a learner for their target band and builds them a study
-  // plan. A center student is taught to their class's plan, not their own, and
-  // does not choose their own practice — so the takeover would ask them to set
-  // up something that never gets used. Solo learners still get it.
-  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
-    const plan = await loadStudyPlan(profile.id);
-    if (!plan) return <OnboardingTakeover />;
-  }
-
   let sidebarFooter: React.ReactNode = null;
   let quotaBar: React.ReactNode = null;
+  const isSoloLearner = profile.role === "student" && !isHomeworkOnlyStudent(profile);
+  const [plan, usage, inbox, cookieStore] = await Promise.all([
+    isSoloLearner ? loadStudyPlan(profile.id) : Promise.resolve(null),
+    isSoloLearner ? getUsageSummary(profile.organization_id) : Promise.resolve(null),
+    // Loaded here, not in the client bell, so the unread badge is correct on the
+    // first paint rather than after a fetch.
+    loadInbox(),
+    cookies(),
+  ]);
+
+  // First-run gate: a student without a study plan sees only the onboarding
+  // takeover, whatever hub they aimed for.
+  if (isSoloLearner && !plan) return <OnboardingTakeover />;
+
   // No plan card or quota bar for a center student — see the (app) layout.
-  if (profile.role === "student" && !isHomeworkOnlyStudent(profile)) {
-    const usage = await getUsageSummary(profile.organization_id);
+  if (usage) {
     sidebarFooter = <PlanCard usage={usage} />;
     quotaBar = <QuotaBar usage={usage} />;
   }
 
-  // Loaded here, not in the client bell, so the unread badge is correct on the
-  // first paint rather than after a fetch.
-  const inbox = await loadInbox();
-  const collapsed = (await cookies()).get("sb_collapsed")?.value === "1";
+  const collapsed = cookieStore.get("sb_collapsed")?.value === "1";
 
   return (
     <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>

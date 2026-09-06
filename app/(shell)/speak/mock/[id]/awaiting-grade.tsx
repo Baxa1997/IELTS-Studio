@@ -38,6 +38,13 @@ export function AwaitingGrade({ sessionId }: { sessionId: string }) {
       // A `failed` session never gets a band — refresh anyway so the page can
       // say so, instead of polling into eternity.
       if (typeof band === "number" || data?.state === "failed") {
+        if (typeof band === "number") {
+          void fetch("/api/estimates/recompute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skill: "speaking" }),
+          }).catch(() => undefined);
+        }
         router.refresh();
         return;
       }

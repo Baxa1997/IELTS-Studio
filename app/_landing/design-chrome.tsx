@@ -232,6 +232,8 @@ export function CentersBand() {
 /** Hover states an inline style cannot express, plus the nav's mobile collapse. */
 export const DESIGN_CSS = `
   ${FOOTER_CSS}
+  @keyframes lp-demo-shimmer{to{background-position:-200% 0}}
+  .lp-below-fold{content-visibility:auto;contain-intrinsic-size:760px}
   .lp-navlink{text-decoration:none;transition:color .15s}
   .lp-navlink:hover{color:${INK}}
   .lp-solid{transition:background .15s}

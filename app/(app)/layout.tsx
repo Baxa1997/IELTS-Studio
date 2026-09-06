@@ -4,9 +4,8 @@ import { Hanken_Grotesk, Manrope, Newsreader, Source_Serif_4 } from "next/font/g
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
-import { loadStudentAssignments } from "@/lib/assignments/student";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
-import { contactLabel, isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
+import { canManagePeople, contactLabel, isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
 import { loadNavCounts } from "@/lib/console/nav";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -56,6 +55,7 @@ const manrope = Manrope({
 
 const ROLE_LABEL: Record<string, string> = {
   center_admin: "Center admin",
+  administrator: "Administrator",
   teacher: "Teacher",
   student: "Student",
 };
@@ -74,8 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Staff keep THIS shell — the same collapsible rail every role uses. Only the
   // canvas and the menu change (variant="console"): the CRM design applies to
   // the content area, not to the app's own chrome.
-  const isStaff = profile.role === "center_admin" || profile.role === "teacher";
-
+  const isStaff = canManagePeople(profile.role);
   /**
    * EVERYTHING THE SHELL NEEDS, IN ONE ROUND TRIP RATHER THAN SIX.
    *
@@ -124,12 +123,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // so gating it behind the billing branch would hide the one item they
   // actually need.
   //
-  // This one genuinely depends on the count above, so it stays a second hop —
-  // but only for a student who is actually in a group.
   const showAssignments = (groupCount?.count ?? 0) > 0;
-  const pendingAssignments = showAssignments
-    ? (await loadStudentAssignments(profile.id)).filter((a) => !a.done).length
-    : 0;
+  // The detailed assignment loader now runs after the shell appears. The client
+  // sidebar requests the small badge separately, so assignment history cannot
+  // delay initial navigation.
+  const pendingAssignments = 0;
 
   const sidebarFooter = usage ? <PlanCard usage={usage} /> : null;
   const quotaBar = usage ? <QuotaBar usage={usage} /> : null;

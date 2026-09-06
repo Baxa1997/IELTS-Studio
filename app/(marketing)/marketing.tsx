@@ -7,12 +7,10 @@
 
 import Link from "next/link";
 
-const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1A2138";
-const BODY = "#3A3F58";
-const MUTED = "#5A6076";
-const LINE = "#E7E3D5";
-const INDIGO = "#3B43B5";
+import { BODY, BRAND, DISPLAY, INK, LINE, MUTED, WHITE } from "@/app/_landing/design";
+
+const SERIF = DISPLAY;
+const ACCENT = BRAND;
 
 export function PageTitle({ title, lead }: { title: string; lead: string }) {
   return (
@@ -52,7 +50,7 @@ export function B({ children }: { children: React.ReactNode }) {
 
 export function A({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} style={{ color: INDIGO, fontWeight: 600, textDecoration: "none", borderBottom: `1px solid ${INDIGO}33` }}>
+    <Link href={href} style={{ color: ACCENT, fontWeight: 600, textDecoration: "none", borderBottom: `1px solid ${ACCENT}33` }}>
       {children}
     </Link>
   );
@@ -75,7 +73,7 @@ export function CompareTable({
         <thead>
           <tr>
             <th style={{ ...cell, borderTop: "none", width: "26%" }} />
-            <th style={{ ...cell, borderTop: "none", fontWeight: 800, color: INDIGO, textAlign: "left" }}>{left}</th>
+            <th style={{ ...cell, borderTop: "none", fontWeight: 800, color: ACCENT, textAlign: "left" }}>{left}</th>
             <th style={{ ...cell, borderTop: "none", fontWeight: 800, color: INK, textAlign: "left" }}>{right}</th>
           </tr>
         </thead>
@@ -140,10 +138,10 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
         <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.55, color: "#b7b9da" }}>{sub}</div>
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-        <Link href="/sign-in" style={{ background: INDIGO, color: "#fff", fontWeight: 700, fontSize: 15, borderRadius: 12, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
+        <Link href="/sign-in" style={{ background: ACCENT, color: WHITE, fontWeight: 700, fontSize: 15, borderRadius: 999, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
           Start free
         </Link>
-        <Link href="/#pricing" style={{ color: "#c7c9e6", fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
+        <Link href="/#pricing" style={{ color: "#f0d3de", fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
           See pricing →
         </Link>
       </div>
@@ -169,7 +167,7 @@ export function Related({ current }: { current: string }) {
     <nav style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${LINE}`, display: "flex", flexWrap: "wrap", gap: "10px 22px" }}>
       <span style={{ fontSize: 13.5, fontWeight: 700, color: MUTED }}>More:</span>
       {links.map((l) => (
-        <Link key={l.href} href={l.href} style={{ fontSize: 13.5, fontWeight: 600, color: INDIGO, textDecoration: "none" }}>
+        <Link key={l.href} href={l.href} style={{ fontSize: 13.5, fontWeight: 600, color: ACCENT, textDecoration: "none" }}>
           {l.label}
         </Link>
       ))}

@@ -151,35 +151,36 @@ export async function countTasksThisWeek(studentId: string): Promise<number> {
     writing = count ?? 0;
   }
 
-  const { count: reading } = await supabase
-    .from("reading_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("student_id", studentId)
-    .eq("status", "graded")
-    .gte("created_at", since);
-
   // Listening (auto-graded on submit) + Speaking (graded full mocks + Part-2
   // practice) all count as tasks — the weekly goal is about doing the work, not
-  // just Reading/Writing. RLS client = the student's own rows only.
-  const { count: listening } = await supabase
-    .from("listening_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("student_id", studentId)
-    .gte("created_at", since);
-
-  const { count: speakingMocks } = await supabase
-    .from("speaking_sessions")
-    .select("id", { count: "exact", head: true })
-    .eq("student_id", studentId)
-    .eq("state", "graded")
-    .gte("started_at", since);
-
-  const { count: speakingPractice } = await supabase
-    .from("speaking_attempts")
-    .select("id", { count: "exact", head: true })
-    .eq("student_id", studentId)
-    .not("result", "is", null)
-    .gte("created_at", since);
+  // just Reading/Writing. RLS client = the student's own rows only. These counts
+  // are independent once the writing essay ids are known, so keep them parallel.
+  const [{ count: reading }, { count: listening }, { count: speakingMocks }, { count: speakingPractice }] =
+    await Promise.all([
+      supabase
+        .from("reading_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .eq("status", "graded")
+        .gte("created_at", since),
+      supabase
+        .from("listening_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .gte("created_at", since),
+      supabase
+        .from("speaking_sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .eq("state", "graded")
+        .gte("started_at", since),
+      supabase
+        .from("speaking_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("student_id", studentId)
+        .not("result", "is", null)
+        .gte("created_at", since),
+    ]);
 
   return (
     writing +

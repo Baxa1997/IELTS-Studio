@@ -71,8 +71,18 @@ function isPublicPath(pathname: string): boolean {
  */
 export async function updateSession(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
 
   if (!isSupabaseConfigured()) {
+    return supabaseResponse;
+  }
+
+  // Public marketing and documentation pages do not need a session to render.
+  // Skipping the Supabase client entirely for them removes an auth/JWKS step from
+  // anonymous page loads and keeps the public homepage eligible for caching.
+  // `/sign-in` remains the one public page that needs to know whether a user is
+  // already signed in so it can redirect them into the app.
+  if (isPublicPath(pathname) && pathname !== "/sign-in") {
     return supabaseResponse;
   }
 
@@ -112,8 +122,6 @@ export async function updateSession(request: NextRequest) {
   // org are NOT read from the token — server components still resolve those from
   // `profiles`, and RLS remains the thing that actually guards data.
   const signedIn = Boolean(claimsData?.claims?.sub);
-
-  const { pathname } = request.nextUrl;
 
   // Unauthenticated trying to reach a protected page -> sign-in.
   if (!signedIn && !isPublicPath(pathname)) {

@@ -17,6 +17,78 @@ export interface StudentAssignment {
 }
 
 /**
+ * Lightweight sidebar badge query. It does not fetch titles, instructions,
+ * groups, due dates, or navigation URLs; those belong to the assignments page.
+ */
+export async function countPendingAssignments(studentId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("assignments")
+    .select("kind, prompt_id, reading_test_id, listening_library_id, lesson_id")
+    .order("created_at", { ascending: false });
+  if (!rows || rows.length === 0) return 0;
+
+  const promptIds = rows.filter((r) => r.prompt_id).map((r) => r.prompt_id as string);
+  const testIds = rows.filter((r) => r.reading_test_id).map((r) => r.reading_test_id as string);
+  const listeningIds = rows
+    .filter((r) => r.listening_library_id)
+    .map((r) => r.listening_library_id as string);
+  const lessonIds = rows.filter((r) => r.lesson_id).map((r) => r.lesson_id as string);
+
+  const [essaysRes, attemptsRes, listeningRes, lessonAttemptsRes] = await Promise.all([
+    promptIds.length > 0
+      ? supabase
+          .from("essays")
+          .select("prompt_id, status")
+          .eq("student_id", studentId)
+          .in("prompt_id", promptIds)
+      : Promise.resolve({ data: [] }),
+    testIds.length > 0
+      ? supabase
+          .from("reading_attempts")
+          .select("test_id, status")
+          .eq("student_id", studentId)
+          .in("test_id", testIds)
+      : Promise.resolve({ data: [] }),
+    listeningIds.length > 0
+      ? supabase
+          .from("listening_attempts")
+          .select("library_id, score")
+          .eq("student_id", studentId)
+          .in("library_id", listeningIds)
+      : Promise.resolve({ data: [] }),
+    lessonIds.length > 0
+      ? supabase
+          .from("lesson_attempts")
+          .select("lesson_id")
+          .eq("student_id", studentId)
+          .in("lesson_id", lessonIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const finished = new Set<string>();
+  for (const e of (essaysRes.data ?? []) as { prompt_id: string; status: string }[]) {
+    if (e.status === "graded") finished.add(e.prompt_id);
+  }
+  for (const a of (attemptsRes.data ?? []) as { test_id: string; status: string }[]) {
+    if (a.status === "graded") finished.add(a.test_id);
+  }
+  for (const l of (listeningRes.data ?? []) as { library_id: string; score: number | null }[]) {
+    if (l.score != null) finished.add(l.library_id);
+  }
+  for (const a of (lessonAttemptsRes.data ?? []) as { lesson_id: string }[]) {
+    finished.add(a.lesson_id);
+  }
+
+  return rows.filter((row) => {
+    const contentId = (row.prompt_id ?? row.reading_test_id ?? row.listening_library_id ?? row.lesson_id) as
+      | string
+      | null;
+    return contentId ? !finished.has(contentId) : true;
+  }).length;
+}
+
+/**
  * Assignments for the signed-in student, across every group they're in.
  * Everything reads under RLS: `assignments_member_select` returns only the rows
  * for groups they belong to.
@@ -41,8 +113,9 @@ export async function loadStudentAssignments(
   const listeningIds = rows
     .filter((r) => r.listening_library_id)
     .map((r) => r.listening_library_id as string);
+  const lessonIds = rows.filter((r) => r.lesson_id).map((r) => r.lesson_id as string);
 
-  const [groupsRes, essaysRes, attemptsRes, listeningRes] = await Promise.all([
+  const [groupsRes, essaysRes, attemptsRes, listeningRes, lessonAttemptsRes] = await Promise.all([
     supabase.from("groups").select("id, name").in("id", groupIds),
     promptIds.length > 0
       ? supabase
@@ -67,16 +140,14 @@ export async function loadStudentAssignments(
           .eq("student_id", studentId)
           .in("library_id", listeningIds)
       : Promise.resolve({ data: [] }),
+    lessonIds.length > 0
+      ? supabase
+          .from("lesson_attempts")
+          .select("lesson_id, grading_status")
+          .eq("student_id", studentId)
+          .in("lesson_id", lessonIds)
+      : Promise.resolve({ data: [] as { lesson_id: string; grading_status: string }[] }),
   ]);
-
-  const lessonIds = rows.filter((r) => r.lesson_id).map((r) => r.lesson_id as string);
-  const { data: lessonAttempts } = lessonIds.length > 0
-    ? await supabase
-        .from("lesson_attempts")
-        .select("lesson_id, grading_status")
-        .eq("student_id", studentId)
-        .in("lesson_id", lessonIds)
-    : { data: [] as { lesson_id: string; grading_status: string }[] };
 
   const groupName = new Map(
     (groupsRes.data ?? []).map((g) => [g.id as string, g.name as string]),
@@ -94,7 +165,7 @@ export async function loadStudentAssignments(
   // A lesson is finished the moment it is handed in. Written answers may still
   // be with the marker, but the student has done their part — leaving it on the
   // to-do list would ask them to sit it again.
-  for (const a of (lessonAttempts ?? []) as { lesson_id: string }[]) {
+  for (const a of (lessonAttemptsRes.data ?? []) as { lesson_id: string }[]) {
     finished.add(a.lesson_id);
   }
 

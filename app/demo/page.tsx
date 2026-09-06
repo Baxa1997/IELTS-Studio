@@ -1,55 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DM_Sans, Hanken_Grotesk, JetBrains_Mono, Manrope, Newsreader, Sora } from "next/font/google";
 
+import { DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/fonts";
+import { DEMO_TABS } from "@/app/_landing/demo-content";
+import { DeferredReportShowcase } from "@/app/_landing/deferred-report-showcase";
+import { DemoTabs } from "@/app/_landing/demo-tabs";
 import {
-  BTN_GHOST,
-  BTN_PRIMARY,
-  INDIGO,
+  BRAND,
+  DISPLAY,
+  ghostButton,
   INK,
   SANS,
-  SERIF,
   SHELL,
-  SiteNav,
-} from "@/app/_landing/chrome";
-import { DESIGN_CSS } from "@/app/_landing/design-chrome";
-import { SiteFooter } from "@/app/_landing/site-footer";
-import { DEMO_TABS } from "@/app/_landing/demo-content";
-import { ReportShowcase } from "@/app/_landing/demo-screens";
-import { DemoTabs } from "@/app/_landing/demo-tabs";
+  solidButton,
+} from "@/app/_landing/design";
 import { PREVIEW_IMAGE } from "@/lib/seo";
 
-// Same scoped marketing fonts as the landing page (the duplication is the
-// existing convention — each public page owns its font wrapper).
-const hanken = Hanken_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-hanken",
-  display: "swap",
-});
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-newsreader",
-  display: "swap",
-});
-const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-jetbrains",
-  display: "swap",
-  preload: false,
-});
-// The listening demo screen recreates the in-app runner, which uses DM Sans.
-const dmsans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-dmsans",
-  display: "swap",
-  preload: false,
-});
-const sora = Sora({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-sora", display: "swap" });
-const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-manrope", display: "swap" });
+const BTN_PRIMARY: React.CSSProperties = { ...solidButton(), textDecoration: "none", display: "inline-flex" };
+const BTN_GHOST: React.CSSProperties = { ...ghostButton(), textDecoration: "none", display: "inline-flex" };
 
 const TITLE = "EngProgress Demo — See the IELTS Practice Platform in Action";
 const DESCRIPTION =
@@ -78,16 +47,16 @@ export const metadata: Metadata = {
 export default function DemoPage() {
   return (
     <div
-      className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} ${dmsans.variable} ${sora.variable} ${manrope.variable} lp-root`}
+      className={`${landingSora.variable} ${landingManrope.variable} lp-root`}
       style={{ background: "#fff", fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
-      <SiteNav home={null} />
+      <SiteHeader />
 
       {/* intro */}
       <header style={{ ...SHELL, paddingTop: "clamp(40px,6vw,64px)", textAlign: "center" }}>
         <h1
           style={{
-            fontFamily: SERIF,
+            fontFamily: DISPLAY,
             fontWeight: 600,
             fontSize: "clamp(34px,5vw,52px)",
             lineHeight: 1.08,
@@ -139,7 +108,7 @@ export default function DemoPage() {
       <section style={{ ...SHELL, paddingTop: "clamp(56px,8vw,88px)", paddingBottom: 8 }}>
         <h2
           style={{
-            fontFamily: SERIF,
+            fontFamily: DISPLAY,
             fontWeight: 600,
             fontSize: "clamp(28px,4vw,38px)",
             lineHeight: 1.12,
@@ -165,14 +134,14 @@ export default function DemoPage() {
           The real report layout the examiner engine produces — conservative by design. Between two
           bands it rounds down and names exactly what the higher band needs.
         </p>
-        <ReportShowcase />
+        <DeferredReportShowcase />
       </section>
 
       {/* cta */}
       <section style={{ ...SHELL, paddingTop: "clamp(56px,8vw,80px)", paddingBottom: "clamp(56px,8vw,80px)" }}>
         <div
           style={{
-            background: INDIGO,
+            background: BRAND,
             color: "#fff",
             borderRadius: 20,
             padding: "clamp(32px,5vw,48px)",
@@ -182,7 +151,7 @@ export default function DemoPage() {
         >
           <h2
             style={{
-              fontFamily: SERIF,
+              fontFamily: DISPLAY,
               fontWeight: 600,
               fontSize: "clamp(26px,3.5vw,36px)",
               lineHeight: 1.1,
@@ -217,7 +186,7 @@ export default function DemoPage() {
           >
             <Link
               href="/sign-in"
-              style={{ ...BTN_GHOST, background: "#fff", border: "none", color: INDIGO }}
+              style={{ ...BTN_GHOST, background: "#fff", border: "none", color: BRAND }}
             >
               Create a free account
             </Link>

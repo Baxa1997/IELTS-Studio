@@ -56,6 +56,8 @@ async function loadOrg(organizationId: string) {
   return { admin, org: data };
 }
 
+type LoadedOrg = Awaited<ReturnType<typeof loadOrg>>;
+
 /**
  * The billing switch. Education centers run unmetered for now (see migration
  * 20260807150000): an org with `billing_enforced = false` gets an unlimited
@@ -74,7 +76,11 @@ function effectiveLimit(
 
 /** Monthly AI-grading quota (AI gradings only — teacher overrides don't count). */
 export async function getGradingQuota(organizationId: string): Promise<Quota> {
-  const { admin, org } = await loadOrg(organizationId);
+  return getGradingQuotaFromOrg(organizationId, await loadOrg(organizationId));
+}
+
+async function getGradingQuotaFromOrg(organizationId: string, loaded: LoadedOrg): Promise<Quota> {
+  const { admin, org } = loaded;
   const plan = (org?.plan ?? "trial") as OrgPlan;
   const limit = effectiveLimit(org, org?.grading_monthly_limit ?? planTier(plan).gradeLimit);
   const { start, resetAt } = monthWindow();
@@ -98,7 +104,11 @@ export async function getGradingQuota(organizationId: string): Promise<Quota> {
  *  part burns several `generate` rows (retries, validators, multiple
  *  passages), and users rightly expect "one practice = one count". */
 export async function getGenerationQuota(organizationId: string): Promise<Quota> {
-  const { admin, org } = await loadOrg(organizationId);
+  return getGenerationQuotaFromOrg(organizationId, await loadOrg(organizationId));
+}
+
+async function getGenerationQuotaFromOrg(organizationId: string, loaded: LoadedOrg): Promise<Quota> {
+  const { admin, org } = loaded;
   const plan = (org?.plan ?? "trial") as OrgPlan;
   const limit = effectiveLimit(org, org?.generation_monthly_limit ?? planTier(plan).generateLimit);
   const { start, resetAt } = monthWindow();
@@ -152,12 +162,13 @@ export interface UsageSummary {
 
 /** One call for the sidebar plan card: plan + every monthly quota. */
 export async function getUsageSummary(organizationId: string): Promise<UsageSummary> {
-  const { org } = await loadOrg(organizationId);
+  const loaded = await loadOrg(organizationId);
+  const { org } = loaded;
   const plan = (org?.plan ?? "trial") as OrgPlan;
   const [grade, generate, speaking] = await Promise.all([
-    getGradingQuota(organizationId),
-    getGenerationQuota(organizationId),
-    getSpeakingQuota(organizationId),
+    getGradingQuotaFromOrg(organizationId, loaded),
+    getGenerationQuotaFromOrg(organizationId, loaded),
+    getSpeakingQuotaFromOrg(organizationId, loaded),
   ]);
   return { plan, planName: planTier(plan).name, grade, generate, speaking };
 }
@@ -177,7 +188,11 @@ export async function getUsageSummary(organizationId: string): Promise<UsageSumm
  * them — harmless, and better than duplicating an allow-list across repos.
  */
 export async function getSpeakingQuota(organizationId: string): Promise<Quota> {
-  const { admin, org } = await loadOrg(organizationId);
+  return getSpeakingQuotaFromOrg(organizationId, await loadOrg(organizationId));
+}
+
+async function getSpeakingQuotaFromOrg(organizationId: string, loaded: LoadedOrg): Promise<Quota> {
+  const { admin, org } = loaded;
   const plan = (org?.plan ?? "trial") as OrgPlan;
   const limit = planTier(plan).fullMockLimit;
   const { start, resetAt } = monthWindow();

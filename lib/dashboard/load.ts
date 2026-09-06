@@ -1,8 +1,6 @@
 import "server-only";
 
-import { refreshDerivedEstimates } from "@/lib/estimates/service";
 import { loadStudentEstimates, type StudentEstimates } from "@/lib/estimates/load";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -37,26 +35,37 @@ export interface DashboardData {
  */
 export async function loadDashboard(
   studentId: string,
-  organizationId?: string,
 ): Promise<DashboardData> {
-  // Listening/Speaking are graded off the app's write path, so refresh their
-  // estimates from source before we read them (best-effort — never blocks the
-  // dashboard, and no-ops until the skill-enum migration is applied). Only the
-  // dashboard/plan pages pass an org and want the refresh; the in-task coaches
-  // call this to READ estimates and skip it.
-  if (organizationId) {
-    try {
-      await refreshDerivedEstimates(createAdminClient(), { studentId, organizationId });
-    } catch {
-      /* estimates just stay as they were */
-    }
-  }
-
-  const estimates = await loadStudentEstimates(studentId);
   const supabase = await createClient();
 
+  // These reads are independent. Keep the dashboard's critical path at the
+  // slowest source query instead of paying for estimates, essays, reading,
+  // listening, and speaking serially.
+  const [estimates, essaysRes, attemptsRes, listenRes, speakRes] = await Promise.all([
+    loadStudentEstimates(studentId),
+    supabase.from("essays").select("id").eq("student_id", studentId),
+    supabase
+      .from("reading_attempts")
+      .select("band, type_breakdown, submitted_at, created_at")
+      .eq("student_id", studentId)
+      .eq("status", "graded")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("listening_attempts")
+      .select("result, created_at")
+      .eq("student_id", studentId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("speaking_sessions")
+      .select("result, started_at")
+      .eq("student_id", studentId)
+      .eq("mode", "full")
+      .eq("state", "graded")
+      .order("started_at", { ascending: true }),
+  ]);
+
   // Writing: the student's essays → their latest grading each.
-  const { data: essays } = await supabase.from("essays").select("id").eq("student_id", studentId);
+  const essays = essaysRes.data;
   const essayIds = (essays ?? []).map((e) => e.id as string);
 
   let gradings: GradingRow[] = [];
@@ -72,29 +81,12 @@ export async function loadDashboard(
   }
 
   // Reading: each graded attempt.
-  const { data: attemptsData } = await supabase
-    .from("reading_attempts")
-    .select("band, type_breakdown, submitted_at, created_at")
-    .eq("student_id", studentId)
-    .eq("status", "graded")
-    .order("created_at", { ascending: true });
-  const attempts = (attemptsData ?? []) as unknown as AttemptRow[];
+  const attempts = (attemptsRes.data ?? []) as unknown as AttemptRow[];
 
   // Listening: each attempt (auto-graded on submit; band in result.band).
   // Speaking: each graded FULL mock (band in result.overall_band).
-  const [{ data: listenData }, { data: speakData }] = await Promise.all([
-    supabase
-      .from("listening_attempts")
-      .select("result, created_at")
-      .eq("student_id", studentId)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("speaking_sessions")
-      .select("result, started_at")
-      .eq("mode", "full")
-      .eq("state", "graded")
-      .order("started_at", { ascending: true }),
-  ]);
+  const listenData = listenRes.data;
+  const speakData = speakRes.data;
 
   // Merge into a single chronological history feed.
   const events: RawHistoryEvent[] = [];

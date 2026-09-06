@@ -1512,6 +1512,13 @@ function Runner({
           ? await callEngine<Grade>("library/grade", { library_id: view.id, answers: body })
           : await callEngine<Grade>("grade", { item_id: view.id, answers: body });
       setGrade(graded);
+      if (graded.attempt_id) {
+        void fetch("/api/estimates/recompute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skill: "listening" }),
+        }).catch(() => undefined);
+      }
       scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Grading failed — please try again.");

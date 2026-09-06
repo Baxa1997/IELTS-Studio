@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { JetBrains_Mono, Manrope, Sora } from "next/font/google";
 
 import { Band9Card } from "@/app/_landing/band9-card";
 import { DEMO_TABS } from "@/app/_landing/demo-content";
-import { ReportShowcase } from "@/app/_landing/demo-screens";
+import { DeferredReportShowcase } from "@/app/_landing/deferred-report-showcase";
 import { DemoTabs } from "@/app/_landing/demo-tabs";
 import { HeroProcessDemo } from "@/app/_landing/hero-process-demo";
+import { LiveStat, LiveStatsStyles } from "@/app/_landing/live-stat";
+import { landingManrope, landingSora } from "@/app/_landing/fonts";
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
 import {
   BODY,
@@ -30,8 +30,6 @@ import {
   WELL,
   WHITE,
 } from "@/app/_landing/design";
-import { ScrollReveal } from "@/components/landing/scroll-reveal";
-import { getSession, roleHome } from "@/lib/auth";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 import {
   getSiteUrl,
@@ -67,44 +65,35 @@ import {
 
 // Marketing type, scoped to this page via CSS variables so the app keeps Geist.
 //
-// The weight lists cover the restored demo sections as well as the canvas: those
-// components ask SERIF for 500–800 and SANS for 400–800, and a weight that is not
-// loaded gets synthesised by the browser, which on Sora looks like a smeared
-// bold. JetBrains Mono is here for the same reason — the process demo and the
-// report mockups set their telemetry labels in it.
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-sora",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-manrope",
-  display: "swap",
-});
-const jetbrains = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-jetbrains",
-  display: "swap",
-});
-
-const STATS: { label: string; value: string; note: string; delta?: string; brand?: boolean }[] = [
+// Only weights used by the above-the-fold marketing canvas are loaded here. The
+// deferred product demo falls back to a system monospace/display stack for its
+// telemetry labels instead of making those fonts part of the first render.
+const STATS: {
+  label: string;
+  value: number;
+  suffix?: string;
+  note: string;
+  delta?: string;
+  brand?: boolean;
+  icon: "users" | "centers" | "tasks" | "checks";
+}[] = [
   {
     label: "New learners this month",
-    value: "1100+",
+    value: 1100,
+    suffix: "+",
     // delta: "12.4%",
     note: "vs. 650 last month",
+    icon: "users",
   },
-  { label: "Education centers", value: "2", note: "Schools and IELTS centers onboard" },
-  { label: "Total users", value: "300+", note: "Learners, teachers and admins" },
+  { label: "Education centers", value: 2, note: "Schools and IELTS centers onboard", icon: "centers" },
+  { label: "Total users", value: 300, suffix: "+", note: "Learners, teachers and admins", icon: "checks" },
   {
     label: "Tasks practised",
-    value: "4500+",
+    value: 6500,
+    suffix: "+",
     note: "Graded essays, readings and mocks",
     brand: true,
+    icon: "tasks",
   },
 ];
 
@@ -135,12 +124,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const session = await getSession();
-  if (session) redirect(roleHome(session.role));
-
+export default function Home() {
   const site = getSiteUrl();
   const structuredData = {
     "@context": "https://schema.org",
@@ -207,7 +191,7 @@ export default async function Home() {
 
   return (
     <div
-      className={`${sora.variable} ${manrope.variable} ${jetbrains.variable}`}
+      className={`${landingSora.variable} ${landingManrope.variable}`}
       style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>
@@ -215,11 +199,6 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      {/* Reveal sections as they scroll in; no-JS keeps them visible. */}
-      <noscript>
-        <style>{".reveal,.reveal-stagger>*{opacity:1;transform:none;filter:none}"}</style>
-      </noscript>
-      <ScrollReveal />
       <SiteHeader />
       <main>
         <Hero />
@@ -280,8 +259,8 @@ function Hero() {
         <h1
           style={{
             fontFamily: DISPLAY,
-            fontWeight: 700,
-            fontSize: "clamp(36px,5.2vw,60px)",
+            fontWeight: 500,
+            fontSize: "clamp(36px,5.2vw,50px)",
             lineHeight: 1.04,
             letterSpacing: "-0.035em",
             margin: "26px 0 0",
@@ -294,7 +273,7 @@ function Hero() {
 
         <p
           style={{
-            fontSize: 19,
+            fontSize: 18,
             lineHeight: 1.6,
             color: BODY,
             maxWidth: 560,
@@ -372,6 +351,7 @@ function Hero() {
 function Stats() {
   return (
     <section style={{ ...SHELL, padding: "24px 28px 40px" }}>
+      <LiveStatsStyles />
       <div
         style={{
           border: `1px solid ${LINE}`,
@@ -384,52 +364,17 @@ function Stats() {
         }}
       >
         {STATS.map((c, i) => (
-          <div
+          <LiveStat
             key={c.label}
-            style={{
-              padding: "34px 32px",
-              borderRight: i < STATS.length - 1 ? `1px solid ${RULE}` : undefined,
-            }}
-          >
-            <div style={eyebrow()}>{c.label}</div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: 10,
-                marginTop: 12,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: DISPLAY,
-                  fontWeight: 700,
-                  fontSize: 44,
-                  letterSpacing: "-0.03em",
-                  color: c.brand ? BRAND : INK,
-                }}
-              >
-                {c.value}
-              </div>
-              {c.delta ? (
-                <span
-                  style={{
-                    background: "#eaf6f0",
-                    color: "#1c7a4f",
-                    borderRadius: RADIUS.pill,
-                    padding: "5px 11px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  ▲ {c.delta}
-                </span>
-              ) : null}
-            </div>
-            <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>{c.note}</div>
-          </div>
+            label={c.label}
+            value={c.value}
+            suffix={c.suffix}
+            note={c.note}
+            icon={c.icon}
+            brand={c.brand}
+            delta={c.delta}
+            isLast={i === STATS.length - 1}
+          />
         ))}
       </div>
     </section>
@@ -486,7 +431,7 @@ const COACHES = [
 
 function Platform() {
   return (
-    <section id="platform" style={{ ...SHELL, padding: "40px 28px 20px" }}>
+    <section id="platform" className="lp-below-fold" style={{ ...SHELL, padding: "40px 28px 20px" }}>
       <div style={eyebrow(true)}>The platform</div>
       <h2
         style={{
@@ -673,7 +618,7 @@ const PLAN_CTA: Record<OrgPlan, string> = {
 
 function Pricing() {
   return (
-    <section id="pricing" style={{ ...SHELL, padding: "56px 28px 20px" }}>
+    <section id="pricing" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <div style={eyebrow(true)}>Pricing</div>
       <h2
         style={{
@@ -814,7 +759,7 @@ const FAQ = [
 
 function Faq() {
   return (
-    <section style={{ ...SHELL, padding: "56px 28px 20px" }}>
+    <section className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <div style={eyebrow(true)}>Questions</div>
       <h2
         style={{
@@ -887,7 +832,7 @@ function Head({ eyebrow: label, title, sub }: { eyebrow: string; title: string; 
 
 function DemoSection() {
   return (
-    <section id="demo" style={{ ...SHELL, padding: "56px 28px 20px" }}>
+    <section id="demo" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <Head
         eyebrow="See it working"
         title="The real product, not mockups"
@@ -912,6 +857,7 @@ function DemoSection() {
 function ResultsSection() {
   return (
     <section
+      className="lp-below-fold"
       id="results"
       style={{ borderTop: `1px solid ${RULE}`, background: WELL, marginTop: 56 }}
     >
@@ -922,7 +868,7 @@ function ResultsSection() {
           sub="The report layout the examiner engine actually produces. Conservative by design: between two bands it rounds down and names exactly what the higher band needs, so the band you practise with is one you can trust on exam day."
         />
         <div style={{ marginTop: 36 }}>
-          <ReportShowcase />
+          <DeferredReportShowcase />
         </div>
       </div>
     </section>
@@ -931,7 +877,7 @@ function ResultsSection() {
 
 function FinalCta() {
   return (
-    <section style={{ ...SHELL, padding: "64px 28px 24px" }}>
+    <section className="lp-below-fold" style={{ ...SHELL, padding: "64px 28px 24px" }}>
       <div
         style={{
           background: "#43001d",

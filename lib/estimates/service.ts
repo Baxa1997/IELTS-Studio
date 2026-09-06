@@ -248,26 +248,3 @@ async function speakingBands(
     })
     .filter((b) => Number.isFinite(b) && b > 0);
 }
-
-/**
- * Best-effort refresh of the Listening + Speaking estimates from their source
- * tables. Reading/Writing recompute at grade time (they have an app-side write
- * hook); Listening/Speaking are graded off the app's write path (speaking in the
- * engine), so their estimate is refreshed lazily when the dashboard loads.
- *
- * Each skill is isolated in try/catch: before the `skill` enum migration adds
- * 'listening'/'speaking', the upsert throws and this simply no-ops (the skill
- * shows "not measured yet") — the dashboard never breaks over a pending migration.
- */
-export async function refreshDerivedEstimates(
-  admin: SupabaseClient,
-  args: { studentId: string; organizationId: string },
-): Promise<void> {
-  for (const skill of ["listening", "speaking"] as const) {
-    try {
-      await recomputeSkillEstimate(admin, { ...args, skill });
-    } catch {
-      // pending enum migration, or no data yet — leave the skill unmeasured.
-    }
-  }
-}

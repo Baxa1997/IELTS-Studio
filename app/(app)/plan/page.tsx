@@ -44,7 +44,7 @@ export default async function PlanPage() {
   if (!plan) return null;
 
   const [{ estimates, weakestCriterion }, tasksThisWeek] = await Promise.all([
-    loadDashboard(profile.id, profile.organization_id),
+    loadDashboard(profile.id),
     countTasksThisWeek(profile.id),
   ]);
 

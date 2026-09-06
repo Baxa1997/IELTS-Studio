@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Manrope, Sora } from "next/font/google";
-
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/fonts";
 import { eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
@@ -56,19 +55,6 @@ import { DocsTabs } from "./docs-tabs";
  * Top-level rather than inside `(marketing)`: that group's layout still applies
  * the old indigo `chrome.tsx`, and this page wears the canvas chrome.
  */
-
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-sora",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-manrope",
-  display: "swap",
-});
 
 const DESCRIPTION =
   "What EngProgress is and how it works: original IELTS and CEFR practice generated on demand at your level, marked criterion by criterion against the official descriptors, across Writing, Reading, Listening and Speaking.";
@@ -384,7 +370,7 @@ export default function HowToUse() {
 
   return (
     <div
-      className={`${sora.variable} ${manrope.variable}`}
+      className={`${landingSora.variable} ${landingManrope.variable}`}
       style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>

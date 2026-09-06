@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
 
 import type { DemoTab } from "./demo-content";
-import { DemoScreen } from "./demo-screens";
+
+const DeferredDemoScreen = dynamic(
+  () => import("./demo-screens").then((mod) => mod.DemoScreen),
+  {
+    ssr: false,
+    loading: () => <DemoScreenPlaceholder />,
+  },
+);
 
 // Interactive product showcase: a pill tab bar over a browser-frame card that
 // renders a LIVE coded replica of the real product screen (see demo-screens.tsx)
@@ -25,6 +33,27 @@ export function DemoTabs({
   hashSync?: boolean;
 }) {
   const [active, setActive] = useState(0);
+  const demoRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const node = demoRef.current;
+    if (!node || !("IntersectionObserver" in window)) {
+      setReady(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setReady(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "320px 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   // THE HASH READ DURING RENDER, not written in from an effect.
   //
@@ -97,8 +126,8 @@ export function DemoTabs({
       </div>
 
       {/* active screen — a live coded replica of the real UI */}
-      <div style={{ marginTop: 26 }}>
-        <DemoScreen slug={tab.slug} />
+      <div ref={demoRef} style={{ marginTop: 26 }}>
+        {ready ? <DeferredDemoScreen slug={tab.slug} /> : <DemoScreenPlaceholder />}
       </div>
       <div style={{ textAlign: "center", maxWidth: 640, margin: "24px auto 0" }}>
         <h3
@@ -128,5 +157,22 @@ export function DemoTabs({
         </p>
       </div>
     </div>
+  );
+}
+
+function DemoScreenPlaceholder() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading product demo"
+      style={{
+        minHeight: 420,
+        borderRadius: 18,
+        border: "1px solid #E5E2D2",
+        background: "linear-gradient(110deg,#faf9f4 8%,#fff 18%,#faf9f4 33%)",
+        backgroundSize: "200% 100%",
+        animation: "lp-demo-shimmer 1.6s linear infinite",
+      }}
+    />
   );
 }

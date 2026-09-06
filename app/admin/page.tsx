@@ -102,12 +102,6 @@ export default async function AdminPage() {
     ? Math.round((engagement.neverPractised / engagement.learners) * 100)
     : 0;
 
-  const today = new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
   return (
     <Surface>
       <PageTitle

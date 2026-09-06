@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Manrope, Sora } from "next/font/google";
-
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/fonts";
 import { BODY, cardStyle, DISPLAY, eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
@@ -38,19 +37,6 @@ import { RegisterCenterBand } from "@/app/_landing/register-center";
  * marketing copy about a product surface, so it needs re-reading whenever the
  * console gains or loses a feature.
  */
-
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-sora",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-manrope",
-  display: "swap",
-});
 
 const DESCRIPTION =
   "How an education center runs EngProgress: roles and teachers, groups and student logins, assigned homework with AI marking, Telegram notifications, attendance, per-student reports, finance and the center chat.";
@@ -314,7 +300,7 @@ export default function CentersGuide() {
 
   return (
     <div
-      className={`${sora.variable} ${manrope.variable}`}
+      className={`${landingSora.variable} ${landingManrope.variable}`}
       style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>

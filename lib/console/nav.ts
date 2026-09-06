@@ -20,13 +20,30 @@ export async function loadNavCounts(profile: Profile): Promise<Record<string, nu
   const isAdmin = canManagePeople(profile.role);
 
   let groupsQuery = supabase.from("groups").select("id");
+  groupsQuery = groupsQuery.eq("organization_id", profile.organization_id);
   if (!isAdmin) groupsQuery = groupsQuery.eq("teacher_id", profile.id);
 
   const [groupsRes, peopleRes, newWorkRes] = await Promise.all([
-    groupsQuery,
     isAdmin
-      ? supabase.from("profiles").select("id, role")
-      : Promise.resolve({ data: null as { id: string; role: string }[] | null }),
+      ? supabase
+          .from("groups")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", profile.organization_id)
+      : groupsQuery,
+    isAdmin
+      ? Promise.all([
+          supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", profile.organization_id)
+            .eq("role", "teacher"),
+          supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", profile.organization_id)
+            .eq("role", "student"),
+        ])
+      : Promise.resolve(null),
     // Work handed in that this person has not opened — the Reports badge.
     //
     // DISTINCT STUDENTS, NOT ROWS. The badge has to agree with what the page
@@ -51,7 +68,7 @@ export async function loadNavCounts(profile: Profile): Promise<Record<string, nu
 
   const groupIds = (groupsRes.data ?? []).map((g) => g.id as string);
   const counts: Record<string, number> = {
-    groups: groupIds.length,
+    groups: groupsRes.count ?? groupIds.length,
     marking: marking ?? 0,
     newWork: new Set(
       ((newWorkRes.data ?? []) as { studentId: string | null }[])
@@ -61,9 +78,8 @@ export async function loadNavCounts(profile: Profile): Promise<Record<string, nu
   };
 
   if (isAdmin) {
-    const people = peopleRes.data ?? [];
-    counts.teachers = people.filter((p) => p.role === "teacher").length;
-    counts.students = people.filter((p) => p.role === "student").length;
+    counts.teachers = peopleRes?.[0].count ?? 0;
+    counts.students = peopleRes?.[1].count ?? 0;
     return counts;
   }
 

@@ -64,6 +64,7 @@ export default async function SpeakPage({
     supabase
       .from("speaking_sessions")
       .select("id, started_at, metrics, result")
+      .eq("student_id", profile.id)
       .eq("mode", "full")
       .eq("state", "graded")
       .order("started_at", { ascending: false })
@@ -71,6 +72,7 @@ export default async function SpeakPage({
     supabase
       .from("speaking_attempts")
       .select("created_at, result")
+      .eq("student_id", profile.id)
       .not("result", "is", null)
       .order("created_at", { ascending: false })
       .limit(12),
@@ -79,6 +81,7 @@ export default async function SpeakPage({
     supabase
       .from("speaking_sessions")
       .select("id, started_at, metrics, result")
+      .eq("student_id", profile.id)
       .eq("mode", "tutor")
       .order("started_at", { ascending: false })
       .limit(6),

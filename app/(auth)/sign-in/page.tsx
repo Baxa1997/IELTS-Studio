@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Manrope, Sora } from "next/font/google";
-
 import { DESIGN_CSS, Wordmark } from "@/app/_landing/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/fonts";
 import { BRAND, CANVAS, DISPLAY, INK, RADIUS, SANS, WHITE } from "@/app/_landing/design";
 import { LangPicker } from "@/app/_landing/lang-picker";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
@@ -17,19 +16,6 @@ import { DesignSignInForm } from "./design-form";
  * proposition, and the form beside it. Auth behaviour is untouched — see
  * `design-form.tsx`.
  */
-
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-sora",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-manrope",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Sign in | EngProgress",
@@ -68,7 +54,7 @@ export default async function SignInPage({
 
   return (
     <div
-      className={`${sora.variable} ${manrope.variable}`}
+      className={`${landingSora.variable} ${landingManrope.variable}`}
       style={{
         // `height` + `overflow: hidden`, not `minHeight`: the page itself must
         // never scroll. Anything that cannot fit scrolls INSIDE its own column

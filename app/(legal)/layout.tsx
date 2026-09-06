@@ -1,6 +1,5 @@
-import { Manrope, Sora } from "next/font/google";
-
 import { DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/fonts";
 import { INK, PAPER, PAPER_RULE, SANS } from "@/app/_landing/design";
 
 /**
@@ -18,23 +17,10 @@ import { INK, PAPER, PAPER_RULE, SANS } from "@/app/_landing/design";
  * looked like a different company.
  */
 
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-sora",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-manrope",
-  display: "swap",
-});
-
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={`${sora.variable} ${manrope.variable}`}
+      className={`${landingSora.variable} ${landingManrope.variable}`}
       style={{ minHeight: "100dvh", background: PAPER, fontFamily: SANS, color: INK }}
     >
       <style>{DESIGN_CSS}</style>

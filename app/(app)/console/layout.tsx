@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { Suspense } from "react";
 import { Work_Sans } from "next/font/google";
 
 import { ConsoleChrome } from "@/components/console/console-chrome";
@@ -34,22 +36,6 @@ const work = Work_Sans({
  */
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = await requireOrgUser();
-  // Two different questions, and they stopped having the same answer when the
-  // administrator role arrived. `isOwner` gates money and hiring; `canStaff`
-  // gates putting a teacher on a group, which is scheduling.
-  const isAdmin = isOrgOwner(profile.role);
-  const canStaff = canManagePeople(profile.role);
-
-  // Groups feed both slide-overs: enrolling picks one, inviting targets one.
-  // The currency comes along because a new group is priced as it is created,
-  // and only the owner sees those fields.
-  const [{ groups, teachers, branches, rooms }, settings, subjects, teacherSubjects] =
-    await Promise.all([
-      loadGroups(profile),
-      isAdmin ? loadFinanceSettings() : Promise.resolve(null),
-      loadSubjects(),
-      loadTeacherSubjects(),
-    ]);
 
   return (
     <div className={`${work.variable} cn-root`}>
@@ -58,38 +44,88 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
           userName={profile.full_name ?? user.email ?? "Account"}
           windowLabel="Last 90 days"
           enrolPanel={
-            <EnrolStudentPanel
-              groups={groups.map((g) => ({
-                id: g.id,
-                name: g.name,
-                meta: g.teacherName ?? "No teacher assigned",
-                students: g.memberCount,
-              }))}
-            />
+            <Suspense fallback={null}>
+              <EnrolPanel profileId={profile.id} />
+            </Suspense>
           }
-          teacherPanel={isAdmin ? <AddTeacherPanel /> : undefined}
-          invitePanel={<InviteMemberPanel groups={groups} canInviteTeachers={isAdmin} />}
+          teacherPanel={
+            isOrgOwner(profile.role) ? (
+              <Suspense fallback={null}>
+                <TeacherPanel />
+              </Suspense>
+            ) : undefined
+          }
+          invitePanel={
+            <Suspense fallback={null}>
+              <InvitePanel profileId={profile.id} />
+            </Suspense>
+          }
           groupPanel={
-            <CreateGroupForm
-              teachers={teachers.map((t) => ({
-                ...t,
-                subjectIds: teacherSubjects.get(t.id) ?? [],
-              }))}
-              subjects={subjects.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name }))}
-              branches={branches}
-              rooms={rooms}
-              canAssignTeacher={canStaff}
-              pricing={
-                settings
-                  ? { currency: settings.currency, lessonsPerMonth: settings.lessonsPerMonth }
-                  : null
-              }
-            />
+            <Suspense fallback={null}>
+              <GroupPanel profileId={profile.id} />
+            </Suspense>
           }
         >
           {children}
         </ConsoleChrome>
       </ToastHost>
     </div>
+  );
+}
+
+/**
+ * Panel data is request-cached and streamed behind the chrome. The previous
+ * layout awaited all of this before the console page could render, even when
+ * the visitor never opened a panel.
+ */
+const loadPanelData = cache(async (profileId: string) => {
+  const { profile } = await requireOrgUser();
+  if (profile.id !== profileId) throw new Error("Panel identity changed during render");
+
+  const isOwner = isOrgOwner(profile.role);
+  const [groups, settings, subjects, teacherSubjects] = await Promise.all([
+    loadGroups(profile),
+    isOwner ? loadFinanceSettings() : Promise.resolve(null),
+    loadSubjects(),
+    loadTeacherSubjects(),
+  ]);
+  return { groups, settings, subjects, teacherSubjects, isOwner, canStaff: canManagePeople(profile.role) };
+});
+
+async function EnrolPanel({ profileId }: { profileId: string }) {
+  const { groups: groupData } = await loadPanelData(profileId);
+  return (
+    <EnrolStudentPanel
+      groups={groupData.groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        meta: g.teacherName ?? "No teacher assigned",
+        students: g.memberCount,
+      }))}
+    />
+  );
+}
+
+async function TeacherPanel() {
+  return <AddTeacherPanel />;
+}
+
+async function InvitePanel({ profileId }: { profileId: string }) {
+  const { groups: groupData, isOwner } = await loadPanelData(profileId);
+  return <InviteMemberPanel groups={groupData.groups} canInviteTeachers={isOwner} />;
+}
+
+async function GroupPanel({ profileId }: { profileId: string }) {
+  const { groups: groupData, settings, subjects, teacherSubjects, canStaff } = await loadPanelData(profileId);
+  const { teachers, branches, rooms } = groupData;
+  return (
+    <CreateGroupForm
+      teachers={teachers.map((t) => ({ ...t, subjectIds: teacherSubjects.get(t.id) ?? [] }))}
+      subjects={subjects.filter((s) => s.active).map((s) => ({ id: s.id, name: s.name }))}
+      branches={branches}
+      rooms={rooms}
+      canAssignTeacher={canStaff}
+      pricing={settings ? { currency: settings.currency, lessonsPerMonth: settings.lessonsPerMonth } : null}
+    />
   );
 }

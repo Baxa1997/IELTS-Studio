@@ -13,7 +13,7 @@ import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
 import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
 import { BandCard } from "./band-card";
-import { DashboardCoach } from "./dashboard-coach";
+import { DashboardCoach } from "./dashboard-coach-lazy";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -45,7 +45,7 @@ export default async function DashboardPage({
   if (!plan) return null;
 
   const [{ estimates, weakestCriterion, weakestReadingType, streakDays, history, recommendation }, tasksThisWeek] =
-    await Promise.all([loadDashboard(profile.id, profile.organization_id), countTasksThisWeek(profile.id)]);
+    await Promise.all([loadDashboard(profile.id), countTasksThisWeek(profile.id)]);
 
   const days = daysUntil(plan.examDate);
 
