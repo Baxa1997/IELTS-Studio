@@ -27,11 +27,18 @@ export type AuditAction =
   | "user.plan_change"
   | "user.limits_change"
   | "user.suspend"
-  | "user.restore";
+  | "user.restore"
+  | "referral.approve"
+  | "referral.reject"
+  /* Two stops, logged apart. The log is the only place that later says WHY a
+     code died, and "closed" and "revoked" carry very different implications for
+     the money already on the ledger. */
+  | "referral.close"
+  | "referral.revoke";
 
 export interface AuditEntry {
   action: AuditAction;
-  targetKind: "organization" | "user" | "plan" | "platform";
+  targetKind: "organization" | "user" | "plan" | "platform" | "referral";
   targetId?: string | null;
   targetLabel?: string | null;
   detail?: Record<string, unknown>;

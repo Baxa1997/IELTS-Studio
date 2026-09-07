@@ -8,6 +8,8 @@ import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { getUsageSummary } from "@/lib/quota";
+import { decideApplication } from "@/lib/referrals/service";
+import type { ReviewDecision } from "@/lib/referrals/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface ReviewState {
@@ -372,4 +374,54 @@ export async function loadAccountUsage(
     practiceUsed: usage.generate.used,
     practiceLimit: usage.generate.limit,
   };
+}
+
+/**
+ * Approve, reject or stop one referral application. super_admin only, on the
+ * service-role client — `status`, `code` and `percent` are outside the column
+ * grants, so this is the only path that can move them.
+ *
+ * The two stops are separate values rather than a boolean because they mean
+ * different things to the ledger: `close` leaves commission alone, `revoke`
+ * reverses what is still inside its hold. Collapsing them would make the
+ * expensive case unreachable from the UI.
+ */
+export async function reviewReferral(
+  _prev: ReviewState,
+  formData: FormData,
+): Promise<ReviewState> {
+  const { user } = await requireSuperAdmin();
+
+  const accountId = String(formData.get("account_id") ?? "");
+  const decision = String(formData.get("decision") ?? "");
+  const valid = ["approve", "reject", "close", "revoke"] as const;
+  if (!accountId || !valid.includes(decision as (typeof valid)[number])) {
+    return { error: "Invalid review request." };
+  }
+  const note = String(formData.get("note") ?? "").trim() || null;
+
+  const { error, notice } = await decideApplication({
+    accountId,
+    decision: decision as ReviewDecision,
+    note,
+    reviewerId: user.id,
+  });
+  if (error) return { error };
+
+  // Logged after the decision has landed, and never allowed to undo it —
+  // recordAdminAction swallows its own failures for exactly this reason.
+  await recordAdminAction({
+    action: `referral.${decision}` as
+      | "referral.approve"
+      | "referral.reject"
+      | "referral.close"
+      | "referral.revoke",
+    targetKind: "referral",
+    targetId: accountId,
+    detail: note ? { note } : {},
+    actor: { id: user.id, email: user.email },
+  });
+
+  revalidatePath("/admin/referrals");
+  return { notice: notice ?? "Done." };
 }

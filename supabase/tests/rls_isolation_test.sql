@@ -685,4 +685,119 @@ begin
   raise notice 'PASS 21d: the owning teacher schedules their own class';
 end $$;
 
+
+-- ============================================================================
+-- 22. REFERRALS (needs 20260907120000_referrals.sql)
+--     This table holds money, so the interesting question is not "can A read B"
+--     but "can anyone write the fields that decide what they get paid".
+-- ============================================================================
+set local role postgres;
+
+insert into public.referral_accounts (id, profile_id, organization_id, code, status, percent)
+values
+  ('efa00000-0000-0000-0000-0000000000aa', '22222222-2222-2222-2222-222222222222',
+   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'aaacode1', 'active', 20.00),
+  ('efb00000-0000-0000-0000-0000000000bb', '55555555-5555-5555-5555-555555555555',
+   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'bbbcode1', 'active', 20.00);
+
+-- Student A referred Center B's org; the commission is A's money.
+insert into public.referral_attributions (organization_id, referral_account_id, source)
+values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'efa00000-0000-0000-0000-0000000000aa', 'link');
+
+insert into public.billing_events (id, provider, event_type, external_event_id, organization_id)
+values ('be000000-0000-0000-0000-0000000000e1', 'stripe', 'checkout.session.completed',
+        'evt_rls_referral_1', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+
+insert into public.referral_commissions
+  (referral_account_id, organization_id, billing_event_id, amount_minor, currency,
+   percent_applied, payable_after)
+values ('efa00000-0000-0000-0000-0000000000aa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        'be000000-0000-0000-0000-0000000000e1', 300, 'usd', 20.00, now() + interval '14 days');
+
+set local role authenticated;
+
+-- 22a: a referrer sees their own account and nobody else's.
+set local request.jwt.claims = '{"sub":"22222222-2222-2222-2222-222222222222","role":"authenticated"}';
+do $$
+declare mine int; theirs int;
+begin
+  select count(*) into mine from public.referral_accounts
+    where profile_id = '22222222-2222-2222-2222-222222222222';
+  select count(*) into theirs from public.referral_accounts
+    where profile_id = '55555555-5555-5555-5555-555555555555';
+  assert mine = 1, format('A referrer must see their own account; saw %s', mine);
+  assert theirs = 0, format('BREACH: read %s of another referrer''s accounts', theirs);
+  raise notice 'PASS 22a: a referral account is visible only to its owner';
+end $$;
+
+-- 22b: nobody can approve themselves. `status` and `percent` are outside the
+-- column grant, so this is refused by the database rather than by the API
+-- remembering to strip them — which is the whole point of granting columns.
+do $$
+begin
+  begin
+    insert into public.referral_accounts (profile_id, organization_id, pitch, status)
+    values ('33333333-3333-3333-3333-333333333333',
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'let me in', 'active');
+    raise exception 'BREACH: an applicant set their own status';
+  exception when insufficient_privilege then
+    raise notice 'PASS 22b: an application cannot arrive pre-approved';
+  end;
+end $$;
+
+-- 22c: nor can they set their own rate.
+do $$
+begin
+  begin
+    insert into public.referral_accounts (profile_id, organization_id, pitch, percent)
+    values ('33333333-3333-3333-3333-333333333333',
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'ninety percent please', 90.00);
+    raise exception 'BREACH: an applicant set their own percentage';
+  exception when insufficient_privilege then
+    raise notice 'PASS 22c: an applicant cannot choose their own rate';
+  end;
+end $$;
+
+-- 22d: the referrer reads their money but NOT who paid it. `organization_id` is
+-- withheld by column grant, because a list of "people I recruited who are now
+-- paying" is other people's account data.
+do $$
+declare rows int;
+begin
+  select count(*) into rows from public.referral_commissions
+    where referral_account_id = 'efa00000-0000-0000-0000-0000000000aa';
+  assert rows = 1, format('A referrer must see their own commission; saw %s', rows);
+  raise notice 'PASS 22d: a referrer reads their own commission rows';
+
+  begin
+    perform organization_id from public.referral_commissions
+      where referral_account_id = 'efa00000-0000-0000-0000-0000000000aa';
+    raise exception 'BREACH: a referrer read who paid them';
+  exception when insufficient_privilege then
+    raise notice 'PASS 22d2: the paying org is not readable by the referrer';
+  end;
+end $$;
+
+-- 22e: the attribution map is unreadable by anyone. No policy exists on it at
+-- all, so RLS denies by default and only service-role can join referrer to
+-- referred org.
+do $$
+declare leaked int;
+begin
+  select count(*) into leaked from public.referral_attributions;
+  assert leaked = 0, format('BREACH: read %s attribution rows as a client', leaked);
+  raise notice 'PASS 22e: the referrer-to-referred mapping never leaves service-role';
+end $$;
+
+-- 22f: another referrer cannot read the first one's earnings.
+set local request.jwt.claims = '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}';
+do $$
+declare leaked int;
+begin
+  select count(*) into leaked from public.referral_commissions
+    where referral_account_id = 'efa00000-0000-0000-0000-0000000000aa';
+  assert leaked = 0, format('BREACH: read %s of another referrer''s commissions', leaked);
+  raise notice 'PASS 22f: earnings do not cross between referrers';
+end $$;
+
 rollback;  -- discards all seed data and resets role/claims

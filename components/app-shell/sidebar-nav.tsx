@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
   CreditCard,
   GraduationCap,
+  Gift,
   Headphones,
   History,
   LayoutDashboard,
@@ -143,6 +144,10 @@ const STUDENT: Section[] = [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Study plan", href: "/plan", icon: Target },
       { label: "Activities", href: "/activities", icon: History },
+      /* Not gated on having applied. A programme nobody can find is a programme
+         nobody uses, and the page itself is what explains what it is — hiding it
+         until you already know about it gets the order backwards. */
+      { label: "Referrals", href: "/referrals", icon: Gift },
     ],
   },
   {
@@ -336,6 +341,9 @@ const SUPER_ADMIN: Section[] = [
       { label: "Centers", href: "/admin/centers", icon: Building2 },
       { label: "Users", href: "/admin/users", icon: Users },
       { label: "Plans & revenue", href: "/admin/plans", icon: CreditCard },
+      /* Approval is the only gate on the referral programme, so the queue has to
+         be somewhere a super admin passes, not somewhere they remember. */
+      { label: "Referrals", href: "/admin/referrals", icon: Gift },
     ],
   },
   {
