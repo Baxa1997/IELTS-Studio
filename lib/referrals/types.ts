@@ -61,3 +61,32 @@ export const STATUS_LABEL: Record<ReferralStatus, string> = {
   closed: "Closed",
   revoked: "Revoked",
 };
+
+/** Money in one currency, split by how close it is to being withdrawable. */
+export interface CurrencyTotal {
+  /** Lowercase ISO-4217: "usd", "uzs". */
+  currency: string;
+  /** Earned, still inside the refund hold. */
+  pendingMinor: number;
+  /** Past the hold — withdrawable. */
+  payableMinor: number;
+  /** Already settled. */
+  paidMinor: number;
+}
+
+export interface Earnings {
+  /** People who signed up through the link. Most of them never pay. */
+  signups: number;
+  /** Distinct referrals who have actually paid at least once. */
+  converted: number;
+  totals: CurrencyTotal[];
+}
+
+/** Minor units to something a person reads. Never sums across currencies. */
+export function formatMoney(minor: number, currency: string): string {
+  if (currency === "uzs") {
+    // Som has no subunit in practice; tiyin exist but nothing is priced in them.
+    return `${Math.round(minor / 100).toLocaleString("en-US")} so'm`;
+  }
+  return `$${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}

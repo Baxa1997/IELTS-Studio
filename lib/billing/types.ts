@@ -41,4 +41,20 @@ export interface PlanChange {
   externalSubscriptionId?: string | null;
   /** ISO; when the paid period ends. */
   currentPeriodEnd?: string | null;
+
+  /**
+   * WHAT WAS ACTUALLY PAID, in minor units — cents for USD, tiyin for UZS.
+   *
+   * The contract carried the plan and the status but never the money, which was
+   * fine while nothing downstream needed it and became the one gap the referral
+   * ledger could not work around: commission is a percentage of a payment, and
+   * a plan name is not a payment.
+   *
+   * Optional because not every PlanChange IS one. A cancellation, a status
+   * change, a subscription update — those move the plan without money changing
+   * hands, and they must leave this unset rather than guess a number.
+   */
+  amountMinor?: number | null;
+  /** Lowercase ISO-4217. Never assume: Stripe settles usd, Payme/Click uzs. */
+  currency?: string | null;
 }

@@ -26,15 +26,17 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // Idempotent: a re-delivered event is a no-op.
-  const fresh = await recordBillingEvent({
+  const event = await recordBillingEvent({
     provider: "stripe",
     eventType: parsed.eventType,
     externalEventId: parsed.eventId,
     organizationId: parsed.change?.organizationId ?? null,
     payload: JSON.parse(raw),
   });
-  if (fresh && parsed.change) {
-    await applyPlanChange(parsed.change);
+  if (event.fresh && parsed.change) {
+    // The event id travels with the change so referral commission can key its
+    // own idempotency to the same row this log already de-duplicates on.
+    await applyPlanChange(parsed.change, event.id);
   }
 
   return NextResponse.json({ received: true });

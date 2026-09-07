@@ -3,7 +3,7 @@ import "server-only";
 import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { applyPlanChange, planForUzsAmount } from "./service";
+import { applyPlanChange, planForUzsAmount, recordBillingEvent } from "./service";
 
 /**
  * Payme Merchant API (JSON-RPC). Payme calls THIS endpoint to drive a payment's
@@ -118,15 +118,38 @@ async function performTransaction(params: Record<string, unknown>): Promise<Meth
 
   const performTime = Date.now();
   await saveTx(paycomId, tx.organization_id, { ...tx, state: 2, perform_time: performTime });
-  // Payment confirmed → activate the plan for a month.
-  await applyPlanChange({
-    organizationId: tx.organization_id,
-    plan: tx.plan,
-    status: "active",
+
+  /* LOG THE PAYMENT, THEN APPLY IT.
+     Payme and Click never wrote to `billing_events` — only Stripe did — so UZS
+     payments were invisible in the one table that answers "what did we take,
+     and when". That was a reporting gap already; it became a correctness one
+     when referral commission keyed its idempotency to that row. Recording it
+     here fixes both, and `state === 2` above already makes a redelivered
+     Perform a no-op before we reach this line. */
+  const event = await recordBillingEvent({
     provider: "payme",
-    externalSubscriptionId: paycomId,
-    currentPeriodEnd: monthFromNow(),
+    eventType: "PerformTransaction",
+    externalEventId: paycomId,
+    organizationId: tx.organization_id,
+    payload: { paycomId, amount: tx.amount, plan: tx.plan },
   });
+
+  // Payment confirmed → activate the plan for a month.
+  await applyPlanChange(
+    {
+      organizationId: tx.organization_id,
+      plan: tx.plan,
+      status: "active",
+      provider: "payme",
+      externalSubscriptionId: paycomId,
+      currentPeriodEnd: monthFromNow(),
+      // Payme quotes in tiyin, which is already the minor unit of UZS — the
+      // same units the ledger stores, so nothing is converted here.
+      amountMinor: tx.amount,
+      currency: "uzs",
+    },
+    event.id,
+  );
   return { transaction: paycomId, perform_time: performTime, state: 2 };
 }
 

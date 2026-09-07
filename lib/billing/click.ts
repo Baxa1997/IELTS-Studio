@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { applyPlanChange, planForUzsAmount } from "./service";
+import { applyPlanChange, planForUzsAmount, recordBillingEvent } from "./service";
 
 /**
  * Click (Merchant API) Prepare/Complete callbacks. Click POSTs form-encoded params
@@ -94,14 +94,33 @@ async function complete(
   }
 
   await saveTx(p.click_trans_id, organizationId, { ...tx, state: 1 });
-  await applyPlanChange({
-    organizationId,
-    plan,
-    status: "active",
+
+  /* Same reasoning as Payme: this payment belongs in `billing_events` both as a
+     record of money taken and as the row referral commission de-duplicates on.
+     The `state === 1` guard above already short-circuits a redelivered Complete. */
+  const event = await recordBillingEvent({
     provider: "click",
-    externalSubscriptionId: p.click_trans_id,
-    currentPeriodEnd: monthFromNow(),
+    eventType: "Complete",
+    externalEventId: p.click_trans_id,
+    organizationId,
+    payload: { clickTransId: p.click_trans_id, amount: tx.amount, plan },
   });
+
+  await applyPlanChange(
+    {
+      organizationId,
+      plan,
+      status: "active",
+      provider: "click",
+      externalSubscriptionId: p.click_trans_id,
+      currentPeriodEnd: monthFromNow(),
+      // `tx.amount` was stored as tiyin at prepare time (amount × 100), which is
+      // the minor unit the ledger expects.
+      amountMinor: tx.amount,
+      currency: "uzs",
+    },
+    event.id,
+  );
   return { ...base, merchant_confirm_id: tx.prepare_id, ...E.OK };
 }
 

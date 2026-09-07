@@ -3,7 +3,13 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { generateCode, normalizeCode } from "./code";
-import type { ReferralAccount, ReferralSettings, ReviewDecision } from "./types";
+import type {
+  CurrencyTotal,
+  Earnings,
+  ReferralAccount,
+  ReferralSettings,
+  ReviewDecision,
+} from "./types";
 
 /**
  * The referral programme's server side.
@@ -218,5 +224,66 @@ function toAccount(row: any): ReferralAccount {
     reviewNote: row.review_note ?? null,
     applicantName: person?.full_name ?? null,
     applicantEmail: person?.contact_email ?? null,
+  };
+}
+
+/**
+ * What a referrer has earned, and from how many people.
+ *
+ * TOTALS ARE PER CURRENCY, never one number. Stripe settles USD and the UZ
+ * gateways settle UZS; adding them would produce a figure that is wrong in both
+ * currencies, and there is no rate in this system to convert with.
+ *
+ * `signups` and `converted` are reported apart on purpose. Most referrals sign
+ * up and stay free — if the page showed one figure, somebody who brought in
+ * thirty people and earned nothing would conclude it was broken.
+ */
+export async function loadEarnings(accountId: string): Promise<Earnings> {
+  const admin = createAdminClient();
+
+  const [{ data: rows }, { count: signups }] = await Promise.all([
+    admin
+      .from("referral_commissions")
+      .select("amount_minor, currency, status, created_at")
+      .eq("referral_account_id", accountId)
+      .order("created_at", { ascending: false }),
+    admin
+      .from("referral_attributions")
+      .select("organization_id", { count: "exact", head: true })
+      .eq("referral_account_id", accountId),
+  ]);
+
+  const byCurrency = new Map<string, CurrencyTotal>();
+  const converted = new Set<string>();
+
+  for (const row of rows ?? []) {
+    const currency = String(row.currency);
+    const bucket = byCurrency.get(currency) ?? {
+      currency,
+      pendingMinor: 0,
+      payableMinor: 0,
+      paidMinor: 0,
+    };
+    const amount = Number(row.amount_minor) || 0;
+    // `reversed` is deliberately counted nowhere: it is money that came back.
+    if (row.status === "pending") bucket.pendingMinor += amount;
+    else if (row.status === "payable") bucket.payableMinor += amount;
+    else if (row.status === "paid") bucket.paidMinor += amount;
+    byCurrency.set(currency, bucket);
+  }
+
+  // One commission row per payment, so distinct paying orgs is the honest
+  // "how many of them actually upgraded" — a renewal must not count twice.
+  const { data: payers } = await admin
+    .from("referral_commissions")
+    .select("organization_id")
+    .eq("referral_account_id", accountId)
+    .neq("status", "reversed");
+  for (const p of payers ?? []) if (p.organization_id) converted.add(String(p.organization_id));
+
+  return {
+    signups: signups ?? 0,
+    converted: converted.size,
+    totals: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
   };
 }

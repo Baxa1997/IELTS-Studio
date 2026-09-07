@@ -1,5 +1,6 @@
 import "server-only";
 
+import { accrueCommission } from "@/lib/referrals/accrual";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { isValidPlan, planTier, type OrgPlan } from "./plans";
@@ -15,7 +16,13 @@ import type { BillingProviderId, PlanChange, SubscriptionStatus } from "./types"
 /** Apply a normalized plan change: upsert the subscription and reflect the plan on
  *  the organization (so quotas/seats follow immediately). A non-active status
  *  downgrades the org to trial so access tracks payment. */
-export async function applyPlanChange(change: PlanChange): Promise<void> {
+export async function applyPlanChange(
+  change: PlanChange,
+  /** The `billing_events` row this change came from. Referral commission is keyed
+   *  to it, so a provider redelivering the same event cannot pay twice. Omitted
+   *  for changes that are not a payment — nothing accrues without it. */
+  billingEventId?: string | null,
+): Promise<void> {
   const admin = createAdminClient();
 
   await admin.from("subscriptions").upsert(
@@ -37,12 +44,40 @@ export async function applyPlanChange(change: PlanChange): Promise<void> {
     .from("organizations")
     .update({ plan: active ? change.plan : "trial" })
     .eq("id", change.organizationId);
+
+  /**
+   * REFERRAL COMMISSION, ACCRUED HERE AND NOWHERE ELSE.
+   *
+   * This is the single point all three providers pass through, so hanging
+   * accrual off it means a Payme payment earns exactly what a Stripe one does,
+   * and a fourth provider gets it for free. It runs LAST and cannot throw (see
+   * accrueCommission): the subscription is what the customer bought, and a
+   * ledger row that fails to write is recoverable from `billing_events` while a
+   * payment that fails because of one is not.
+   *
+   * Guarded on all three of: money changed hands, we know how much, and we know
+   * which event it was. A cancellation or a status change satisfies none of
+   * them and accrues nothing.
+   */
+  if (billingEventId && change.amountMinor && change.amountMinor > 0 && change.currency) {
+    await accrueCommission({
+      organizationId: change.organizationId,
+      billingEventId,
+      amountMinor: change.amountMinor,
+      currency: change.currency,
+    });
+  }
 }
 
 /**
- * Idempotent webhook log. Inserts a billing_events row; returns false when this
- * (provider, externalEventId) was already recorded — the unique constraint makes
- * provider re-deliveries safe no-ops.
+ * Idempotent webhook log. Inserts a billing_events row; `fresh` is false when
+ * this (provider, externalEventId) was already recorded — the unique constraint
+ * makes provider re-deliveries safe no-ops.
+ *
+ * Returns the row `id` as well, because the referral ledger keys its idempotency
+ * to this exact row: one commission per billing event, enforced by a unique FK.
+ * Without the id, a redelivered webhook that slipped past the check above would
+ * have nothing to collide with.
  */
 export async function recordBillingEvent(args: {
   provider: BillingProviderId;
@@ -50,20 +85,24 @@ export async function recordBillingEvent(args: {
   externalEventId: string | null;
   organizationId: string | null;
   payload: unknown;
-}): Promise<boolean> {
+}): Promise<{ fresh: boolean; id: string | null }> {
   const admin = createAdminClient();
-  const { error } = await admin.from("billing_events").insert({
-    provider: args.provider,
-    event_type: args.eventType,
-    external_event_id: args.externalEventId,
-    organization_id: args.organizationId,
-    payload: args.payload as Record<string, unknown>,
-  });
+  const { data, error } = await admin
+    .from("billing_events")
+    .insert({
+      provider: args.provider,
+      event_type: args.eventType,
+      external_event_id: args.externalEventId,
+      organization_id: args.organizationId,
+      payload: args.payload as Record<string, unknown>,
+    })
+    .select("id")
+    .single();
   if (error) {
-    if (error.code === "23505") return false; // duplicate → already processed
+    if (error.code === "23505") return { fresh: false, id: null }; // duplicate → already processed
     throw error;
   }
-  return true;
+  return { fresh: true, id: (data?.id as string | null) ?? null };
 }
 
 export interface SubscriptionView {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 import { applyPendingPlan } from "@/lib/plan/apply-pending";
+import { claimReferral } from "@/lib/referrals/attribution";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -27,6 +28,10 @@ export async function GET(request: Request) {
     if (!error) {
       // Persist any onboarding answers stashed before sign-up (target/level/exam date).
       await applyPendingPlan();
+      // And credit whoever sent them, if a `?ref=` brought them here. After the
+      // trigger has provisioned the org, because that org is what gets
+      // attributed; never before a session exists.
+      await claimReferral();
       const session = await getSession();
       const dest = next ?? (session ? roleHome(session.role) : "/dashboard");
       return NextResponse.redirect(`${origin}${dest}`);

@@ -131,7 +131,17 @@ function mapEvent(event: StripeEvent): PlanChange | null {
         provider: "stripe",
         externalCustomerId: (obj.customer as string | null) ?? null,
         externalSubscriptionId: (obj.subscription as string | null) ?? null,
+        // The real amount charged, not the tier's list price — so a tax line or
+        // a future discount cannot make us pay commission on money we never got.
+        // `amount_total` is already in minor units.
+        amountMinor: (obj.amount_total as number | undefined) ?? null,
+        currency: (obj.currency as string | undefined) ?? null,
       };
+    /* NO AMOUNT ON THESE, DELIBERATELY. A subscription event describes state,
+       not a payment — its object has no `amount_total`, and inventing one from
+       the tier would accrue commission on every status change. Renewals earn
+       nothing until `invoice.payment_succeeded` is mapped (phase 6 of the
+       referrals plan); first payments are covered above. */
     case "customer.subscription.updated":
     case "customer.subscription.created":
       if (!plan) return null;

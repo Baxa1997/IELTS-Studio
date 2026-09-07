@@ -3,6 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { clientEnv, isSupabaseConfigured } from "@/lib/env";
 
+/** Kept in step with lib/referrals/attribution.ts — the middleware cannot import
+ *  from it, because that module is `server-only` and this runs on the edge. */
+const REFERRAL_COOKIE = "ep_ref";
+/** Mirrors `referral_settings.cookie_days`. A setting the proxy cannot read, so
+ *  changing the row does not change this — see the note in the referrals plan. */
+const REFERRAL_COOKIE_DAYS = 90;
+
 // Pages reachable without a session. Everything else requires authentication.
 // `/auth` covers the OAuth callback, which must run before a session exists.
 // `/grade` is the public, no-login essay grader (the marketing funnel); `/` lets
@@ -58,6 +65,35 @@ function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+
+/**
+ * Stash a `?ref=` code for the sign-up that may follow.
+ *
+ * FIRST TOUCH WINS HERE TOO. If a code is already stashed it is left alone, so
+ * somebody who clicks A's link and later B's still belongs to A — matching the
+ * database's unique `organization_id`, which would otherwise silently disagree
+ * with whatever the cookie last said.
+ */
+function captureReferral(request: NextRequest, response: NextResponse): void {
+  const raw = request.nextUrl.searchParams.get("ref");
+  if (!raw) return;
+  // Shape-checked here so junk never becomes a cookie. The real validation is
+  // in lib/referrals/code.ts; this is the same expression, kept deliberately
+  // inline because middleware runs on the edge and this file imports nothing
+  // from the app's server modules.
+  const code = raw.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9_-]{2,31}$/.test(code)) return;
+  if (request.cookies.get(REFERRAL_COOKIE)) return;
+
+  response.cookies.set(REFERRAL_COOKIE, code, {
+    path: "/",
+    maxAge: REFERRAL_COOKIE_DAYS * 24 * 60 * 60,
+    sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+  });
+}
+
 /**
  * Refreshes the Supabase auth session on every request, keeps auth cookies in
  * sync, and enforces authentication-level route protection:
@@ -72,6 +108,15 @@ function isPublicPath(pathname: string): boolean {
 export async function updateSession(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
+
+  // A referral link is `/?ref=CODE`, so this has to run BEFORE the public-path
+  // early return below — `/` takes that branch, which is the one path every
+  // referral link lands on. Stashing it costs one cookie write and no lookup:
+  // the code is only resolved once there is an account to attribute, in
+  // `claimReferral()`. Deliberately not httpOnly-sensitive data — it is a public
+  // code from a public URL — but lax + a finite life so it cannot follow
+  // somebody around forever or ride a cross-site POST.
+  captureReferral(request, supabaseResponse);
 
   if (!isSupabaseConfigured()) {
     return supabaseResponse;

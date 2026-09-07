@@ -7,6 +7,7 @@ import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 import { platformAdminEmail } from "@/lib/email/platform-admin";
 import { sendEmail } from "@/lib/email/send";
 import { applyPendingPlan } from "@/lib/plan/apply-pending";
+import { claimReferral } from "@/lib/referrals/attribution";
 import { placeUserInOrg } from "@/lib/provision";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -118,6 +119,11 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   // Session is live immediately: persist a plan stashed by the /start wizard and
   // send first-time learners into the diagnostic.
   const applied = await applyPendingPlan();
+  // Credit the referrer now that the org exists. Not on the confirmation branch
+  // above: there is no session there, so there is no org to attribute yet — that
+  // path claims when they come back through /auth/callback, and the cookie
+  // outlives the wait.
+  await claimReferral();
   redirect(applied ? "/diagnostic" : "/dashboard");
 }
 
