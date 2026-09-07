@@ -46,9 +46,9 @@ end $$;
 -- of these" in Postgres.
 create table if not exists public.referral_settings (
   id                  boolean primary key default true,
-  -- Percent of a qualifying payment, e.g. 20.00. Per-account overrides live on
-  -- referral_accounts.percent.
-  default_percent     numeric(5, 2) not null default 20.00,
+  -- Percent of the FIRST payment a referral makes. Per-account overrides live
+  -- on referral_accounts.percent.
+  default_percent     numeric(5, 2) not null default 15.00,
   -- Days a commission sits `pending` before it becomes `payable`. Covers the
   -- window in which a card payment can still be pulled back.
   hold_days           integer not null default 14,
@@ -159,6 +159,9 @@ create table if not exists public.referral_commissions (
   -- `billing_events` already makes the event itself a no-op on redelivery — this
   -- carries the same guarantee into the money. Without it a Stripe retry pays
   -- twice and nothing anywhere complains.
+  --
+  -- It is NOT the same guarantee as "once per referral" — see the unique index
+  -- on organization_id below, which is the one that actually bounds the payout.
   billing_event_id    uuid not null unique references public.billing_events (id) on delete cascade,
 
   -- Minor units, never a float. Stripe settles USD and Payme/Click settle UZS,
@@ -186,8 +189,32 @@ create index if not exists referral_commissions_account_idx
   on public.referral_commissions (referral_account_id, created_at desc);
 create index if not exists referral_commissions_status_idx
   on public.referral_commissions (status, payable_after);
-create index if not exists referral_commissions_org_idx
-  on public.referral_commissions (organization_id);
+/*
+ * ONE COMMISSION PER REFERRAL, EVER. THIS IS THE RULE, AND IT IS A CONSTRAINT.
+ *
+ * The referrer earns from the first payment a referred account makes and never
+ * again — not on renewals, not on an upgrade, not if they cancel and come back.
+ *
+ * `billing_event_id` above does NOT give this. It stops the same event paying
+ * twice, which is a different question: two DIFFERENT payments are two different
+ * events, and both would have accrued. That mattered most for Payme and Click,
+ * which have no subscription object — each month is a fresh transaction with a
+ * fresh id, so a UZS referral would have paid the referrer every single month
+ * while Stripe's (unmapped renewals) paid once. Two currencies, two different
+ * deals, and nothing would have reported it.
+ *
+ * A unique INDEX rather than a table constraint so this file stays re-runnable,
+ * and so it can be added to a table that already exists.
+ *
+ * NOTE ON REVERSALS: a reversed commission still occupies the slot. Somebody who
+ * pays, refunds, and pays again earns their referrer nothing the second time.
+ * That is deliberate — the alternative is a refund loop that mints commission —
+ * but it is a real edge, and the reversal reason is on the row if it ever needs
+ * arbitrating by hand.
+ */
+create unique index if not exists referral_commissions_one_per_org
+  on public.referral_commissions (organization_id)
+  where organization_id is not null;
 
 -- ── RLS ─────────────────────────────────────────────────────────────────────
 alter table public.referral_settings     enable row level security;

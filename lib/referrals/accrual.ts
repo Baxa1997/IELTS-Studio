@@ -29,8 +29,14 @@ export interface AccrualInput {
 /**
  * Record commission for a payment, if the paying org was referred.
  *
+ * ONCE PER REFERRAL, EVER — the first payment they make and no other. Not
+ * renewals, not an upgrade, not a cancel-and-return. The database enforces it
+ * (`referral_commissions_one_per_org`); the check below is so the ordinary case
+ * declines quietly instead of arriving as a caught constraint violation.
+ *
  * Returns the amount accrued in minor units, or 0 for every ordinary case where
- * nothing is owed: not referred, referrer stopped, self-referral, no money.
+ * nothing is owed: not referred, already paid out for, referrer stopped,
+ * self-referral, no money.
  */
 export async function accrueCommission(input: AccrualInput): Promise<number> {
   try {
@@ -46,6 +52,17 @@ export async function accrueCommission(input: AccrualInput): Promise<number> {
       .eq("organization_id", input.organizationId)
       .maybeSingle();
     if (!attribution) return 0;
+
+    /* ALREADY EARNED FROM? Then this is a renewal, an upgrade, or a return, and
+       none of them pay. Checked before anything else costs a lookup, because
+       after the first month this is the answer for every payment a referred
+       account ever makes — the common path, not the exception. A `reversed` row
+       counts as used: see the note on the index. */
+    const { count: already } = await admin
+      .from("referral_commissions")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", input.organizationId);
+    if ((already ?? 0) > 0) return 0;
 
     const { data: account } = await admin
       .from("referral_accounts")
@@ -78,7 +95,7 @@ export async function accrueCommission(input: AccrualInput): Promise<number> {
       .eq("id", true)
       .single();
 
-    const percent = Number(account.percent ?? settings?.default_percent ?? 20);
+    const percent = Number(account.percent ?? settings?.default_percent ?? 15);
     const holdDays = settings?.hold_days ?? 14;
     if (!(percent > 0)) return 0;
 
@@ -102,9 +119,11 @@ export async function accrueCommission(input: AccrualInput): Promise<number> {
       payable_after: payableAfter,
     });
 
-    // 23505 = this billing event already produced a commission. That is a
-    // provider redelivering a webhook, which is normal and must be a no-op —
-    // the unique constraint is doing exactly the job it was added for.
+    // 23505 = one of the two unique constraints refused it: the same billing
+    // event arriving twice (a provider redelivering), or this referral having
+    // already earned its one commission. Both are normal and both must be a
+    // silent no-op — the constraints are doing exactly the job they exist for,
+    // and this is the backstop for the race the check above cannot close.
     if (error && error.code !== "23505") {
       console.error("[referrals] accrual failed:", error.message);
       return 0;

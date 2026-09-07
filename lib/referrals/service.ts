@@ -34,7 +34,7 @@ export async function loadSettings(): Promise<ReferralSettings> {
   // applied. Falling back keeps the page up rather than 500ing on a value that
   // has a sensible default anyway.
   return {
-    defaultPercent: Number(data?.default_percent ?? 20),
+    defaultPercent: Number(data?.default_percent ?? 15),
     holdDays: data?.hold_days ?? 14,
     minPayoutMinor: data?.min_payout_minor ?? 2000,
     cookieDays: data?.cookie_days ?? 90,

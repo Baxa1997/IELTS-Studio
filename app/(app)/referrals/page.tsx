@@ -70,8 +70,8 @@ function Pitch({ percent, settings }: { percent: number; settings: ReferralSetti
   return (
     <>
       <p style={{ fontSize: 15.5, color: MUTED, margin: "8px 0 24px", lineHeight: 1.6, maxWidth: 560 }}>
-        Share a link. When someone you sent upgrades, you take <strong>{percent}%</strong> of what
-        they pay — every month they keep paying. Anyone can apply, on any plan.
+        Share a link. When someone you sent upgrades, you take <strong>{percent}%</strong> of their
+        first payment — once for each person you bring in. Anyone can apply, on any plan.
       </p>
       <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 26 }}>
         <Note title="A person reads every application">
@@ -174,7 +174,7 @@ function Active({
               marginBottom: 16,
             }}
           >
-            You earn {percent}% of what they pay
+            You earn {percent}% of each referral&apos;s first payment
           </div>
           <ShareCard url={url} code={account.code ?? ""} />
         </div>
@@ -185,7 +185,7 @@ function Active({
         <Stat value={String(earnings.signups)} label="Signed up through your link" />
         <Stat
           value={String(earnings.converted)}
-          label="Upgraded to a paid plan"
+          label="Upgraded — each earned you once"
           note={
             earnings.signups > 0 && earnings.converted === 0
               ? "Nobody has upgraded yet — commission only comes from an actual payment."
@@ -210,9 +210,10 @@ function Active({
       )}
 
       <p style={{ fontSize: 13, color: MUTED, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 620 }}>
-        Held for {settings.holdDays} days after each payment, in case it is refunded. Withdrawals
-        are arranged by hand once a balance passes {formatMoney(settings.minPayoutMinor, "usd")};
-        totals stay in the currency they were earned in.
+        You earn once per person — their first payment only, not their later months. Commission is
+        held for {settings.holdDays} days in case that payment is refunded. Withdrawals are arranged
+        by hand once a balance passes {formatMoney(settings.minPayoutMinor, "usd")}; totals stay in
+        the currency they were earned in.
       </p>
     </>
   );

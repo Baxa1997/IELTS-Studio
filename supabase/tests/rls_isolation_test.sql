@@ -800,4 +800,35 @@ begin
   raise notice 'PASS 22f: earnings do not cross between referrers';
 end $$;
 
+
+-- 22g: ONE COMMISSION PER REFERRAL, EVER. The referrer earns from the first
+-- payment and no other, so a SECOND payment by the same referred org must be
+-- refused by the database — not by application code remembering.
+--
+-- This is the case `billing_event_id unique` does NOT cover: two payments are
+-- two events, so both would insert happily. It mattered most for Payme and
+-- Click, which bill by a fresh transaction every month.
+set local role postgres;
+
+insert into public.billing_events (id, provider, event_type, external_event_id, organization_id)
+values ('be000000-0000-0000-0000-0000000000e2', 'payme', 'PerformTransaction',
+        'evt_rls_referral_2', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+
+do $$
+begin
+  begin
+    -- Same referred org, different billing event: month two.
+    insert into public.referral_commissions
+      (referral_account_id, organization_id, billing_event_id, amount_minor, currency,
+       percent_applied, payable_after)
+    values ('efa00000-0000-0000-0000-0000000000aa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+            'be000000-0000-0000-0000-0000000000e2', 300, 'usd', 15.00, now());
+    raise exception 'BREACH: a referral earned twice';
+  exception when unique_violation then
+    raise notice 'PASS 22g: a referral pays its referrer exactly once';
+  end;
+end $$;
+
+set local role authenticated;
+
 rollback;  -- discards all seed data and resets role/claims

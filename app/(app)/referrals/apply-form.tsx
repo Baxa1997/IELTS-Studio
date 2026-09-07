@@ -87,9 +87,9 @@ export function ApplyForm({ percent }: { percent: number }) {
           color: INK,
         }}
       >
-        You earn <strong>{percent}%</strong> of what the people you refer pay, for as long as they
-        keep paying. Someone who signs up and stays on the free plan earns nothing — the commission
-        comes from an actual payment.
+        You earn <strong>{percent}%</strong> of the <strong>first payment</strong> each person you
+        refer makes — once per person, not on their later months. Someone who signs up and stays on
+        the free plan earns nothing; the commission comes from an actual payment.
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
