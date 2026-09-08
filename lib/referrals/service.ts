@@ -35,7 +35,7 @@ export async function loadSettings(): Promise<ReferralSettings> {
   // has a sensible default anyway.
   return {
     defaultPercent: Number(data?.default_percent ?? 15),
-    holdDays: data?.hold_days ?? 14,
+    holdDays: data?.hold_days ?? 7,
     minPayoutMinor: data?.min_payout_minor ?? 2000,
     cookieDays: data?.cookie_days ?? 90,
   };
@@ -244,7 +244,7 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
   const [{ data: rows }, { count: signups }] = await Promise.all([
     admin
       .from("referral_commissions")
-      .select("amount_minor, currency, status, created_at")
+      .select("amount_minor, currency, status, payable_after, created_at")
       .eq("referral_account_id", accountId)
       .order("created_at", { ascending: false }),
     admin
@@ -256,6 +256,21 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
   const byCurrency = new Map<string, CurrencyTotal>();
   const converted = new Set<string>();
 
+  /**
+   * PAYABLE IS DERIVED, NOT STORED — and that is a fix, not a shortcut.
+   *
+   * Accrual writes `pending` with a `payable_after` date and nothing ever
+   * promoted it, so every balance would have sat under "on hold" forever and
+   * "ready to withdraw" would have been permanently zero. The obvious repair is
+   * a scheduled job flipping rows at midnight; the better one is not to store a
+   * state that a clock already decides. A row is ready when its hold has passed,
+   * and asking that question at read time cannot drift, cannot miss a night, and
+   * needs no infrastructure.
+   *
+   * `paid` and `reversed` stay stored, because those are decisions somebody
+   * made, not facts a date implies.
+   */
+  const now = Date.now();
   for (const row of rows ?? []) {
     const currency = String(row.currency);
     const bucket = byCurrency.get(currency) ?? {
@@ -266,9 +281,12 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
     };
     const amount = Number(row.amount_minor) || 0;
     // `reversed` is deliberately counted nowhere: it is money that came back.
-    if (row.status === "pending") bucket.pendingMinor += amount;
-    else if (row.status === "payable") bucket.payableMinor += amount;
-    else if (row.status === "paid") bucket.paidMinor += amount;
+    if (row.status === "paid") bucket.paidMinor += amount;
+    else if (row.status === "pending") {
+      const clear = row.payable_after ? Date.parse(String(row.payable_after)) : now;
+      if (Number.isFinite(clear) && clear <= now) bucket.payableMinor += amount;
+      else bucket.pendingMinor += amount;
+    } else if (row.status === "payable") bucket.payableMinor += amount;
     byCurrency.set(currency, bucket);
   }
 

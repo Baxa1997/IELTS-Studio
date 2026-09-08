@@ -49,9 +49,16 @@ create table if not exists public.referral_settings (
   -- Percent of the FIRST payment a referral makes. Per-account overrides live
   -- on referral_accounts.percent.
   default_percent     numeric(5, 2) not null default 15.00,
-  -- Days a commission sits `pending` before it becomes `payable`. Covers the
-  -- window in which a card payment can still be pulled back.
-  hold_days           integer not null default 14,
+  -- Days a commission sits `pending` before it can be withdrawn.
+  --
+  -- SEVEN, AND IT PAIRS WITH A MONTHLY PAYOUT. The hold is not trying to outlast
+  -- every possible refund — a card dispute can arrive months later, and no hold
+  -- short enough to be worth having would cover that. It only has to sit inside
+  -- the payout cycle, and paying monthly means a refund in the first week
+  -- reverses long before anybody is settled. Refunds after the hold are handled
+  -- by reversing a `payable` row, which is why reversal covers both states and
+  -- stops only at `paid`.
+  hold_days           integer not null default 7,
   -- Nothing is withdrawn below this, in minor units of the earning currency.
   -- A transfer costs more than a $1.20 balance is worth.
   min_payout_minor    bigint not null default 2000,

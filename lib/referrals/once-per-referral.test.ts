@@ -93,3 +93,42 @@ describe("what a referrer is promised", () => {
     expect(form).toMatch(/first payment/i);
   });
 });
+
+describe("the hold, the payout cycle, and money going back", () => {
+  const service = read("./service.ts");
+  const webhook = read("../../app/api/billing/stripe/webhook/route.ts");
+
+  it("holds for 7 days, not 14", () => {
+    expect(migration).toMatch(/hold_days\s+integer not null default 7/);
+    // Fallbacks matter: they are what runs if the settings row is missing, and
+    // a stale one here quietly reinstates the old policy.
+    expect(service).toMatch(/hold_days \?\? 7/);
+    expect(accrual).toMatch(/hold_days \?\? 7/);
+  });
+
+  it("derives payable from the hold rather than waiting for a job", () => {
+    // The bug this replaced: nothing promoted `pending`, so "ready" was
+    // permanently zero and every balance sat on hold forever.
+    expect(service).toMatch(/payable_after/);
+    expect(service).toMatch(/clear <= now/);
+  });
+
+  it("reverses a refund across pending AND payable, but never paid", () => {
+    // Monthly settlement means a commission can sit `payable` for weeks. A
+    // reversal that only covered `pending` would miss most of the window it
+    // exists for.
+    expect(accrual).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
+    expect(accrual).toMatch(/\.eq\("status", "paid"\)/); // counted, then left alone
+  });
+
+  it("treats a dispute like a refund", () => {
+    // The money is gone either way; waiting for the dispute to resolve would
+    // mean paying commission on a payment we are losing.
+    expect(webhook).toMatch(/charge\.refunded/);
+    expect(webhook).toMatch(/charge\.dispute\.created/);
+  });
+
+  it("finds the org through the customer, since a refund carries no metadata", () => {
+    expect(accrual).toMatch(/external_customer_id/);
+  });
+});

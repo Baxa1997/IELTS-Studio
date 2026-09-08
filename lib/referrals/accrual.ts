@@ -96,7 +96,7 @@ export async function accrueCommission(input: AccrualInput): Promise<number> {
       .single();
 
     const percent = Number(account.percent ?? settings?.default_percent ?? 15);
-    const holdDays = settings?.hold_days ?? 14;
+    const holdDays = settings?.hold_days ?? 7;
     if (!(percent > 0)) return 0;
 
     // Rounded down: a fraction of a cent is not money, and rounding up means
@@ -173,4 +173,79 @@ function normalizePhone(raw: string | null | undefined): string | null {
   // Too short to identify anybody — treating it as a match would refuse real
   // commission over a typo.
   return digits.length >= 7 ? digits : null;
+}
+
+/**
+ * Take back the commission on a payment that came back.
+ *
+ * WHAT "REMOVED FROM REFERRALS" MEANS HERE. The row is not deleted — it is
+ * marked `reversed`, which stops it counting toward any balance while leaving
+ * the fact that it happened on the record. A deleted row cannot be explained to
+ * a referrer who saw the money and then did not.
+ *
+ * REVERSES `pending` AND `payable`, STOPS AT `paid`. A refund inside the 7-day
+ * hold catches a `pending` row; a refund after it catches a `payable` one, which
+ * is the case the hold cannot cover and monthly settlement makes common — money
+ * sits payable for up to a month before anyone is paid. Once it IS paid the
+ * money has left, and clawing back a settled payout is a conversation, not a
+ * database write.
+ *
+ * The reversed commission still occupies the org's one slot, so a refund and a
+ * fresh purchase does not mint a second commission.
+ */
+export async function reverseCommission(
+  organizationId: string,
+  reason: string,
+): Promise<{ reversed: number; alreadyPaid: number }> {
+  try {
+    const admin = createAdminClient();
+
+    // Checked first so a reversal that arrives too late is reported rather than
+    // silently doing nothing — "we already paid this out" is the one outcome a
+    // human needs to know about.
+    const { count: alreadyPaid } = await admin
+      .from("referral_commissions")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organizationId)
+      .eq("status", "paid");
+
+    const { data, error } = await admin
+      .from("referral_commissions")
+      .update({ status: "reversed", reversed_reason: reason })
+      .eq("organization_id", organizationId)
+      .in("status", ["pending", "payable"])
+      .select("id");
+
+    if (error) {
+      console.error("[referrals] reversal failed:", error.message);
+      return { reversed: 0, alreadyPaid: alreadyPaid ?? 0 };
+    }
+    if ((alreadyPaid ?? 0) > 0) {
+      console.warn(
+        `[referrals] refund for org ${organizationId} arrived after payout — ${alreadyPaid} settled commission(s) left alone`,
+      );
+    }
+    return { reversed: data?.length ?? 0, alreadyPaid: alreadyPaid ?? 0 };
+  } catch (err) {
+    console.error("[referrals] reversal threw:", err);
+    return { reversed: 0, alreadyPaid: 0 };
+  }
+}
+
+/**
+ * Which org a Stripe refund belongs to.
+ *
+ * A refund event carries none of the metadata a checkout does — no
+ * `organizationId`, no `client_reference_id` — so it cannot be mapped the way
+ * `mapEvent` maps a payment. It does carry the customer, and `subscriptions`
+ * already stores that against the org, which is the link back.
+ */
+export async function orgForStripeCustomer(customerId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("subscriptions")
+    .select("organization_id")
+    .eq("external_customer_id", customerId)
+    .maybeSingle();
+  return (data?.organization_id as string | null) ?? null;
 }

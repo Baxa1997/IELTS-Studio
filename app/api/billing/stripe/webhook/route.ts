@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { applyPlanChange, recordBillingEvent } from "@/lib/billing/service";
+import { orgForStripeCustomer, reverseCommission } from "@/lib/referrals/accrual";
 import { stripeVerifyAndParse } from "@/lib/billing/stripe";
 
 export const runtime = "nodejs";
@@ -39,5 +40,33 @@ export async function POST(req: Request): Promise<Response> {
     await applyPlanChange(parsed.change, event.id);
   }
 
+  /**
+   * MONEY GOING BACK OUT.
+   *
+   * Handled here rather than in `mapEvent`, because a refund is not a plan
+   * change — it has no plan and no status to apply, and forcing it through that
+   * shape would mean inventing both. It also carries none of the metadata a
+   * checkout does, so the org is found through the customer that
+   * `subscriptions` already stores.
+   *
+   * A dispute counts the same as a refund: the money is gone either way, and
+   * waiting for the dispute to resolve would mean paying out commission on a
+   * payment we are in the middle of losing.
+   */
+  if (event.fresh && (parsed.eventType === "charge.refunded" || parsed.eventType === "charge.dispute.created")) {
+    const customer = stripeCustomerOf(JSON.parse(raw));
+    const organizationId = customer ? await orgForStripeCustomer(customer) : null;
+    if (organizationId) {
+      await reverseCommission(organizationId, `stripe ${parsed.eventType}`);
+    }
+  }
+
   return NextResponse.json({ received: true });
+}
+
+/** The customer on a charge/dispute payload, whichever shape Stripe sends. */
+function stripeCustomerOf(payload: unknown): string | null {
+  const obj = (payload as { data?: { object?: Record<string, unknown> } })?.data?.object;
+  const customer = obj?.customer;
+  return typeof customer === "string" ? customer : null;
 }

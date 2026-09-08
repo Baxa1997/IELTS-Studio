@@ -78,9 +78,9 @@ function Pitch({ percent, settings }: { percent: number; settings: ReferralSetti
           There is no automatic approval and no plan requirement. Tell us where you would share it
           and we will come back to you.
         </Note>
-        <Note title={`Paid after ${settings.holdDays} days`}>
-          Commission is held while a payment could still be refunded, then becomes yours to
-          withdraw.
+        <Note title="Paid out monthly">
+          Held for {settings.holdDays} days in case the payment is refunded, then included in the
+          next monthly payout.
         </Note>
       </div>
       <ApplyForm percent={percent} />
@@ -211,9 +211,10 @@ function Active({
 
       <p style={{ fontSize: 13, color: MUTED, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 620 }}>
         You earn once per person — their first payment only, not their later months. Commission is
-        held for {settings.holdDays} days in case that payment is refunded. Withdrawals are arranged
-        by hand once a balance passes {formatMoney(settings.minPayoutMinor, "usd")}; totals stay in
-        the currency they were earned in.
+        held for {settings.holdDays} days in case that payment is refunded, and is paid out{" "}
+        <strong>once a month</strong> on balances over {formatMoney(settings.minPayoutMinor, "usd")}.
+        If a referral&apos;s payment is refunded before you have been paid, that commission is taken
+        back. Totals stay in the currency they were earned in.
       </p>
     </>
   );
@@ -228,7 +229,7 @@ function Money({ total, settings }: { total: CurrencyTotal; settings: ReferralSe
         <span style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 700, letterSpacing: ".1em", color: MUTED }}>
           {total.currency.toUpperCase()}
         </span>
-        {ready ? <Badge>Ready to withdraw</Badge> : null}
+        {ready ? <Badge>In the next payout</Badge> : null}
       </div>
       <div className="lp-cols-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginTop: 14 }}>
         <Amount label="On hold" value={formatMoney(total.pendingMinor, total.currency)} muted />
