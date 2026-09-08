@@ -70,6 +70,30 @@ create table if not exists public.referral_settings (
 
 insert into public.referral_settings (id) values (true) on conflict (id) do nothing;
 
+/*
+ * AND MAKE RE-APPLYING ACTUALLY CONVERGE.
+ *
+ * This file is written to be re-runnable, and the two statements above are not:
+ * `create table if not exists` skips an existing table, so a changed column
+ * DEFAULT never lands, and `on conflict do nothing` never touches the row that
+ * is already there. So an early apply at 20%/14 days stayed at 20%/14 days
+ * while the file above said 15/7 — the schema looked applied and the policy was
+ * silently the old one. `scripts/check-referrals.mjs` is what caught it.
+ *
+ * The UPDATE is deliberately narrow: it only moves values still sitting on the
+ * SUPERSEDED defaults. A rate somebody set on purpose — 20 because they meant
+ * 20, not because an old migration left it there — is indistinguishable from a
+ * stale one by value alone, so this is a judgement call rather than a fact. It
+ * is made once, here, for the two values that changed after the first apply.
+ * Anything set through the admin later must not be reverted by re-running this,
+ * which is why there is no blanket UPDATE.
+ */
+alter table public.referral_settings alter column default_percent set default 15.00;
+alter table public.referral_settings alter column hold_days       set default 7;
+
+update public.referral_settings set default_percent = 15.00 where default_percent = 20.00;
+update public.referral_settings set hold_days = 7            where hold_days = 14;
+
 -- ── who may refer ───────────────────────────────────────────────────────────
 create table if not exists public.referral_accounts (
   id               uuid primary key default gen_random_uuid(),
