@@ -151,6 +151,14 @@ describe("the surface follows the route, not the role", () => {
     expect(shell).toMatch(/const consoleSurface = pathname\.startsWith\("\/console"\)/);
   });
 
+  it("counts /admin as a console surface too", () => {
+    // The platform console passes variant="console" for its cream ground and
+    // zero padding. When this moved from the prop to the route, /admin was left
+    // behind and came back as a rounded white card in a gutter, double-inset.
+    // Every route that relied on the prop has to be in this list.
+    expect(shell).toMatch(/pathname\.startsWith\("\/admin"\)/);
+  });
+
   it("never dresses the surface from the role again", () => {
     // Every chrome property must read `consoleSurface`. `isConsole` (the role)
     // may still exist for other purposes, but not for any of these.

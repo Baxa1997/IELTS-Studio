@@ -212,10 +212,20 @@ export function AppShell({
    * a page cut out and pasted onto the shell. The same confusion ran the other
    * way for an owner on /write, who got console chrome around a learner page.
    *
-   * A surface belongs to the page drawn on it. `/console/*` lays itself out
-   * edge to edge and paints its own ground; everything else wants the card.
+   * A surface belongs to the page drawn on it. `/console/*` and `/admin/*` both
+   * lay themselves out edge to edge and paint their own ground; everything else
+   * wants the card.
+   *
+   * `/admin` IS THE HALF THAT WAS MISSED. Moving this from the `variant` prop to
+   * the pathname fixed a teacher on /console and quietly broke the platform
+   * console, which passes `variant="console"` for exactly this — the cream
+   * ground the Super Admin design is drawn on, and no shell padding, because
+   * each admin page owns its own inset (see `Surface` in components/admin/ui).
+   * It came back as a rounded white card in a 10px gutter, double-inset. The
+   * lesson is in the prefix list, not the mechanism: when a decision moves from
+   * a prop to a route, every route that relied on the prop has to move with it.
    */
-  const consoleSurface = pathname.startsWith("/console");
+  const consoleSurface = pathname.startsWith("/console") || pathname.startsWith("/admin");
   const asideClass = [
     "lp-shell-sidebar",
     open ? "lp-shell-sidebar--open" : "",
