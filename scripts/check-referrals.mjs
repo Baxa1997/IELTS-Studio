@@ -110,6 +110,36 @@ if (ledgerRows === null) {
   console.log("     Or run supabase/tests/rls_isolation_test.sql, case 22g.");
 }
 
+/* ── the queue, so "did my application land?" has one answer ───────────────── */
+console.log("\nApplications\n");
+
+const { data: accounts, error: accountsError } = await db
+  .from("referral_accounts")
+  .select("code, status, percent, pitch, audience_url, applied_at, profiles(full_name, contact_email)")
+  .order("applied_at", { ascending: false })
+  .limit(20);
+
+if (accountsError) {
+  console.log(`  ✗  ${accountsError.message}`);
+} else if (accounts.length === 0) {
+  console.log("  ⓘ  none yet. Apply at /referrals, then run this again.");
+} else {
+  for (const a of accounts) {
+    const who = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles;
+    const name = who?.full_name ?? who?.contact_email ?? "unknown";
+    // A pending row MUST have no code and no rate — those are outside the
+    // client's column grant, so anything else here means the grants are wrong.
+    const suspect = a.status === "pending" && (a.code || a.percent !== null);
+    console.log(
+      `  ${suspect ? "✗" : "·"}  ${a.status.padEnd(9)} ${String(name).padEnd(26)} ` +
+        `${a.code ?? "(code minted on approval)"}${suspect ? "  ← pending row arrived pre-set: CHECK THE GRANTS" : ""}`,
+    );
+    if (suspect) missing += 1;
+  }
+  const waiting = accounts.filter((a) => a.status === "pending").length;
+  if (waiting > 0) console.log(`\n  ${waiting} waiting — approve at /admin/referrals`);
+}
+
 console.log(
   missing === 0
     ? "\nSchema is applied and the policy matches.\nStill unproven here: RLS and column grants — run rls_isolation_test.sql (22a-22g).\n"
