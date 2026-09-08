@@ -11,9 +11,10 @@ import { isCodeShape, normalizeCode } from "./code";
  * Turning a click on somebody's link into a row that can earn.
  *
  * TWO DOORS, ONE RECORD. A `?ref=CODE` link is caught by the proxy and dropped
- * in the cookie below; a code typed at sign-up arrives directly. Both end up in
- * the same `referral_attributions` row, so nothing downstream has to care which
- * way somebody came in.
+ * in the cookie below; a code typed into the sign-up form arrives directly. Both
+ * end up in the same `referral_attributions` row — differing only in `source`,
+ * which is kept so it is possible to tell later whether links or codes actually
+ * bring people in. Nothing downstream cares which way somebody came.
  *
  * WHY THIS IS NOT IN `handle_new_user`. The trigger is what provisions a
  * self-signup's org and profile, and it cannot read a cookie — it sees only the
@@ -36,22 +37,35 @@ export const REFERRAL_COOKIE = "ep_ref";
  * learner who cannot get into the product is a worse outcome than a referrer
  * who does not get credited, and this runs on the sign-up path.
  */
-export async function claimReferral(): Promise<boolean> {
+export async function claimReferral(typedCode?: string | null): Promise<boolean> {
   try {
     const store = await cookies();
-    const raw = store.get(REFERRAL_COOKIE)?.value;
-    if (!raw) return false;
-    store.delete(REFERRAL_COOKIE);
+    const cookieCode = store.get(REFERRAL_COOKIE)?.value ?? null;
+    const typed = typedCode?.trim() || null;
+    if (!cookieCode && !typed) return false;
+
+    // Consumed whichever way this goes, and before anything can fail: a stash
+    // that survives a failed claim will attribute a LATER account to somebody
+    // who never introduced it.
+    if (cookieCode) store.delete(REFERRAL_COOKIE);
 
     const session = await getSession();
     if (!session?.profile) return false;
-
-    return await attribute({
-      code: raw,
+    const target = {
       organizationId: session.profile.organization_id,
       profileId: session.profile.id,
-      source: "link",
-    });
+    };
+
+    /* TYPED BEATS STASHED, and it is the one place "first touch wins" bends.
+       A cookie can be ninety days old and from a link somebody clicked once by
+       accident; typing a code into the sign-up form is a person saying who sent
+       them, right now. When both are present the deliberate act should win.
+       Only ONE of them can land regardless — `organization_id` is unique on
+       `referral_attributions` — so this decides which is tried first, not how
+       many rows appear. */
+    if (typed && (await attribute({ ...target, code: typed, source: "code" }))) return true;
+    if (cookieCode) return await attribute({ ...target, code: cookieCode, source: "link" });
+    return false;
   } catch (err) {
     console.error("[referrals] claim failed:", err);
     return false;

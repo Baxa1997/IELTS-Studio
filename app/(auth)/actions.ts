@@ -123,7 +123,7 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
   // above: there is no session there, so there is no org to attribute yet — that
   // path claims when they come back through /auth/callback, and the cookie
   // outlives the wait.
-  await claimReferral();
+  await claimReferral(String(formData.get("referral_code") ?? ""));
   redirect(applied ? "/diagnostic" : "/dashboard");
 }
 

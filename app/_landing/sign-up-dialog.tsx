@@ -228,6 +228,26 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
             style={field}
           />
 
+          {/* THE OTHER DOOR INTO THE REFERRAL PROGRAMME.
+              A `?ref=` link is caught by the proxy and never needs typing, but a
+              link is not how most of this gets shared here — a code read aloud in
+              a class, sent in a voice note, or written on a whiteboard has no URL
+              to click. Without this field those referrers simply go uncredited,
+              and they are the ones the programme is for. Optional, and silent
+              when wrong: a bad code must not block somebody signing up. */}
+          <label htmlFor="su_ref" style={{ ...label, marginTop: 14 }}>
+            Referral code <span style={{ fontWeight: 500, color: MUTED }}>(optional)</span>
+          </label>
+          <input
+            id="su_ref"
+            name="referral_code"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="If someone invited you"
+            style={field}
+          />
+
           {state.error ? (
             <p
               role="alert"
