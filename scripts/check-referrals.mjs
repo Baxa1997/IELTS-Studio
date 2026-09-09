@@ -66,7 +66,15 @@ const { data: settings, error: settingsError } = await db
   .eq("id", true)
   .maybeSingle();
 
-if (settingsError || !settings) {
+if (settingsError) {
+  // NOT the same as an absent row, and saying so sent me looking in the wrong
+  // place: the row was there, the SELECT just asked for a column the database
+  // did not have yet. A diagnostic that misreports WHY is worse than one that
+  // only says something is wrong.
+  missing += 1;
+  console.log(`  ✗  could not read the settings row: ${settingsError.message}`);
+  console.log(`     └─ the row may be fine; re-apply the migration and run this again`);
+} else if (!settings) {
   missing += 1;
   console.log(`  ✗  settings row absent — every fallback in the code takes over instead`);
 } else {
