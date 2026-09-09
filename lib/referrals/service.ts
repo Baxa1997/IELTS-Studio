@@ -123,12 +123,12 @@ export async function loadDecidedAccounts(): Promise<ReferralAccount[]> {
  * programme on. Retries on collision — the space is large, but "large" is not
  * "never".
  *
- * The two stops are different actions on purpose. `closed` leaves the ledger
- * alone: referrals already made keep paying out their window, which is right for
- * someone who simply stopped. `revoked` is for abuse, and reverses everything
- * still `pending` — the money not yet past its hold. Nothing already `payable`
- * or `paid` is touched by either: a stop ends future earning, it does not claw
- * back what was earned.
+ * BOTH STOPS END FUTURE EARNING. The link stops resolving and accrual refuses
+ * any status but `active`, so a stopped referrer earns nothing more — not even
+ * from somebody they had already introduced who pays next week. They differ only
+ * in what happens to money already on the ledger: `closed` leaves it alone,
+ * `revoked` reverses everything still `pending` (the abuse case). Neither
+ * touches `paid` — that money has left.
  */
 export async function decideApplication(args: {
   accountId: string;
@@ -178,13 +178,17 @@ export async function decideApplication(args: {
   if (error) return { error: `Update failed: ${error.message}`, notice: null };
 
   if (args.decision === "revoke") {
-    // Only what is still inside its hold. `payable` and `paid` are money the
-    // person has been shown and, in the second case, already received.
+    /* Everything not yet settled. `paid` is left alone — that money has left.
+       Both unsettled states are listed even though only `pending` is ever
+       WRITTEN today: `payable` is derived from `payable_after` at read time, so
+       filtering on `pending` alone happens to catch everything. That is true by
+       coincidence, not by design, and the day somebody starts storing `payable`
+       this would silently stop reversing half the ledger. */
     const { error: reverseError, count } = await admin
       .from("referral_commissions")
       .update({ status: "reversed", reversed_reason: "referral account revoked" }, { count: "exact" })
       .eq("referral_account_id", args.accountId)
-      .eq("status", "pending")
+      .in("status", ["pending", "payable"])
       .select("id");
     if (reverseError) {
       return { error: `Stopped, but reversing pending commission failed: ${reverseError.message}`, notice: null };

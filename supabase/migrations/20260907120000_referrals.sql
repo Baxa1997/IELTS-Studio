@@ -18,11 +18,21 @@
 -- ── enums ───────────────────────────────────────────────────────────────────
 do $$
 begin
-  -- Two ways to stop, because they want opposite answers about money already
-  -- pending. `closed` = they left, or we wound it down: referrals already made
-  -- keep paying out their window. `revoked` = caught abusing it: pending
-  -- commission reverses and only the already-payable balance survives. One
-  -- status could not serve both, and the fraud case is the expensive one.
+  -- Two ways to stop. BOTH end future earning — the link dies and accrual
+  -- refuses anything but `active`, including from somebody already attributed
+  -- who pays next week. They differ in what happens to money ALREADY on the
+  -- ledger and not yet settled:
+  --
+  --   closed  = they left, or we wound it down. Commission already accrued
+  --             stands and is paid out as normal.
+  --   revoked = caught abusing it. Everything still `pending` or `payable`
+  --             reverses; only what has already been PAID survives, because
+  --             that money has left.
+  --
+  -- An earlier draft said `closed` kept "paying out their window". That was
+  -- written when commission was recurring and capped at twelve months. It is
+  -- one-time now, so there is no window — a referral pays once or not at all,
+  -- and the sentence described behaviour the code never had.
   if not exists (select 1 from pg_type where typname = 'referral_status') then
     create type public.referral_status as enum
       ('pending', 'active', 'rejected', 'closed', 'revoked');

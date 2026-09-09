@@ -132,3 +132,41 @@ describe("the hold, the payout cycle, and money going back", () => {
     expect(accrual).toMatch(/external_customer_id/);
   });
 });
+
+/**
+ * STOPPING SOMEBODY STOPS THEM EARNING — including from referrals they had
+ * already made. This was documented the other way round for a while: the
+ * migration said `closed` kept "paying out their window", which was written when
+ * commission was recurring and capped at twelve months. It is one-time now, so
+ * there is no window, and the sentence described behaviour the code never had.
+ * A doc that disagrees with the code is worse than no doc, because it is the one
+ * somebody reads before deciding whether to close an account.
+ */
+describe("a stopped referrer earns nothing more", () => {
+  const service = read("./service.ts");
+
+  it("accrues only for an active account", () => {
+    // The single gate. `closed`, `revoked`, `pending` and `rejected` all fail it,
+    // and it is checked at PAYMENT time so it applies to referrals made earlier.
+    expect(accrual).toMatch(/account\.status !== "active"/);
+  });
+
+  it("revokes across every unsettled state, not just the stored one", () => {
+    // `payable` is derived at read time, so filtering `pending` alone catches
+    // everything — by coincidence. If anything ever writes `payable`, a
+    // `pending`-only filter silently stops reversing half the ledger.
+    expect(service).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
+  });
+
+  it("never reverses money already paid", () => {
+    // Both stop paths and the refund path must stop at `paid`. Clawing back a
+    // settled payout is a conversation, not an UPDATE.
+    expect(service).not.toMatch(/"pending", "payable", "paid"/);
+    expect(accrual).not.toMatch(/"pending", "payable", "paid"/);
+  });
+
+  it("no longer promises a window that does not exist", () => {
+    expect(migration).not.toMatch(/keep paying out their window/);
+    expect(service).not.toMatch(/keep paying out their window/);
+  });
+});
