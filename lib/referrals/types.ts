@@ -19,8 +19,11 @@ export interface ReferralSettings {
   defaultPercent: number;
   /** Days a commission stays reversible before it can be withdrawn. */
   holdDays: number;
-  /** Minor units, in the earning currency. */
+  /** Minor units of USD — $20.00 by default. */
   minPayoutMinor: number;
+  /** Minor units of UZS. A separate number because 2000 is $20 and also 20 so'm;
+   *  one threshold cannot mean both, and there is no rate here to convert with. */
+  minPayoutUzsMinor: number;
   /** How long an unattributed click stays claimable. */
   cookieDays: number;
 }
@@ -89,4 +92,9 @@ export function formatMoney(minor: number, currency: string): string {
     return `${Math.round(minor / 100).toLocaleString("en-US")} so'm`;
   }
   return `$${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/** The floor a balance must clear before it is paid out, in its own currency. */
+export function payoutFloor(settings: ReferralSettings, currency: string): number {
+  return currency === "uzs" ? settings.minPayoutUzsMinor : settings.minPayoutMinor;
 }

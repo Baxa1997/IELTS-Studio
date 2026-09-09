@@ -69,9 +69,15 @@ create table if not exists public.referral_settings (
   -- by reversing a `payable` row, which is why reversal covers both states and
   -- stops only at `paid`.
   hold_days           integer not null default 7,
-  -- Nothing is withdrawn below this, in minor units of the earning currency.
-  -- A transfer costs more than a $1.20 balance is worth.
-  min_payout_minor    bigint not null default 2000,
+  -- Nothing is withdrawn below this. A transfer costs more than a small balance
+  -- is worth, so there has to be a floor — but ONE floor cannot serve both
+  -- currencies, and treating this as "minor units of whichever currency" was
+  -- wrong in a way that looked fine: 2000 is $20.00 and also 20 so'm, so the
+  -- UZS floor was effectively zero and every som balance qualified instantly.
+  -- Two columns, because there is no exchange rate anywhere in this system and
+  -- inventing one to convert a threshold would be worse than stating both.
+  min_payout_minor      bigint not null default 2000,      -- USD: $20.00
+  min_payout_uzs_minor  bigint not null default 25000000,  -- UZS: 250,000 so'm
   -- How long an unattributed click stays claimable.
   cookie_days         integer not null default 90,
   updated_at          timestamptz not null default now(),
@@ -100,6 +106,9 @@ insert into public.referral_settings (id) values (true) on conflict (id) do noth
  */
 alter table public.referral_settings alter column default_percent set default 15.00;
 alter table public.referral_settings alter column hold_days       set default 7;
+-- Added after the first apply, so `create table if not exists` above skipped it.
+alter table public.referral_settings
+  add column if not exists min_payout_uzs_minor bigint not null default 25000000;
 
 update public.referral_settings set default_percent = 15.00 where default_percent = 20.00;
 update public.referral_settings set hold_days = 7            where hold_days = 14;

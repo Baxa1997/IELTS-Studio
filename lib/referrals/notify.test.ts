@@ -125,3 +125,47 @@ describe("finding an address at all", () => {
     expect(fn.indexOf("getUserById")).toBeLessThan(fn.indexOf("students.engprogress.com"));
   });
 });
+
+/**
+ * Three findings from the end-to-end review, each of which looked correct and
+ * was not. All three are about money being described wrongly rather than
+ * calculated wrongly, which is the kind that survives testing.
+ */
+describe("what the review caught", () => {
+  const page = read("../../app/(app)/referrals/page.tsx");
+  const types = read("./types.ts");
+  const migration = read("../../supabase/migrations/20260907120000_referrals.sql");
+
+  it("quotes the account's own rate in the approval email", () => {
+    // A super admin can override `percent` per account. Quoting the platform
+    // default at somebody who was given 25% is a wrong statement about money in
+    // the first thing they ever read from us.
+    const approve = service.slice(service.indexOf('if (args.decision === "approve")'), service.indexOf("notifyApproved("));
+    expect(approve).toMatch(/\.select\("percent"\)/);
+    expect(service).toMatch(/current\?\.percent \?\? settings\?\.default_percent/);
+  });
+
+  it("keeps a separate payout floor per currency", () => {
+    // 2000 minor units is $20.00 and also 20 so'm. One threshold cannot mean
+    // both, and there is no exchange rate anywhere here to convert with — so
+    // the UZS floor was effectively zero and every som balance qualified.
+    expect(migration).toMatch(/min_payout_uzs_minor/);
+    expect(types).toMatch(/export function payoutFloor/);
+    expect(page).toMatch(/payoutFloor\(settings, total\.currency\)/);
+    expect(page).not.toMatch(/total\.payableMinor >= settings\.minPayoutMinor/);
+  });
+
+  it("shows a stopped referrer the money that is still theirs", () => {
+    // Stopping was defined as "the link dies, what you earned stays yours".
+    // Loading earnings only for `active` made the second half a sentence with
+    // nothing behind it — closed and revoked saw a notice and no balance.
+    expect(page).toMatch(/account\.status !== "pending" && account\.status !== "rejected"/);
+    expect(page).toMatch(/Still yours/);
+  });
+
+  it("adds the new column idempotently, since the table already exists", () => {
+    // `create table if not exists` skips a live table, so a column added after
+    // the first apply has to be ALTERed in separately or it never lands.
+    expect(migration).toMatch(/add column if not exists min_payout_uzs_minor/);
+  });
+});

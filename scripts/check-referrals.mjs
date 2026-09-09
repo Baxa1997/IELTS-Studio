@@ -36,7 +36,7 @@ const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 
 /** [what breaks without it, table, columns the app actually selects] */
 const probes = [
-  ["the rate, the hold, the payout floor", "referral_settings", "id, default_percent, hold_days, min_payout_minor, cookie_days"],
+  ["the rate, the hold, both payout floors", "referral_settings", "id, default_percent, hold_days, min_payout_minor, min_payout_uzs_minor, cookie_days"],
   ["applying, and the whole admin queue", "referral_accounts", "id, profile_id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, stopped_at"],
   ["crediting the right person", "referral_attributions", "organization_id, referral_account_id, source, attributed_at"],
   ["the ledger, and every balance on the page", "referral_commissions", "id, referral_account_id, organization_id, billing_event_id, amount_minor, currency, percent_applied, status, payable_after, payout_id, reversed_reason"],
@@ -62,7 +62,7 @@ console.log("\nSettled policy — does the database agree with the plan?\n");
 
 const { data: settings, error: settingsError } = await db
   .from("referral_settings")
-  .select("default_percent, hold_days, min_payout_minor, cookie_days")
+  .select("default_percent, hold_days, min_payout_minor, min_payout_uzs_minor, cookie_days")
   .eq("id", true)
   .maybeSingle();
 
@@ -73,7 +73,10 @@ if (settingsError || !settings) {
   const expect = [
     ["rate", Number(settings.default_percent), 15, "% of a first payment"],
     ["hold", settings.hold_days, 7, " days"],
-    ["floor", settings.min_payout_minor, 2000, " minor units"],
+    ["floor USD", settings.min_payout_minor, 2000, " minor units ($20.00)"],
+    // A separate number because 2000 is $20.00 and also 20 so'm — one threshold
+    // cannot mean both, and there is no rate here to convert with.
+    ["floor UZS", Number(settings.min_payout_uzs_minor), 25000000, " minor units (250,000 so'm)"],
     ["cookie", settings.cookie_days, 90, " days"],
   ];
   for (const [name, actual, wanted, unit] of expect) {

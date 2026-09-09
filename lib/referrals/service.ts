@@ -27,7 +27,7 @@ export async function loadSettings(): Promise<ReferralSettings> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("referral_settings")
-    .select("default_percent, hold_days, min_payout_minor, cookie_days")
+    .select("default_percent, hold_days, min_payout_minor, min_payout_uzs_minor, cookie_days")
     .eq("id", true)
     .single();
 
@@ -38,6 +38,7 @@ export async function loadSettings(): Promise<ReferralSettings> {
     defaultPercent: Number(data?.default_percent ?? 15),
     holdDays: data?.hold_days ?? 7,
     minPayoutMinor: data?.min_payout_minor ?? 2000,
+    minPayoutUzsMinor: data?.min_payout_uzs_minor ?? 25_000_000,
     cookieDays: data?.cookie_days ?? 90,
   };
 }
@@ -163,10 +164,21 @@ export async function decideApplication(args: {
     // rule `recordAdminAction` follows: the approval matters more than the
     // notification about it, and a half-applied decision is worse than an
     // unannounced one.
-    const rate = Number(
-      (await admin.from("referral_settings").select("default_percent").eq("id", true).single()).data
-        ?.default_percent ?? 15,
-    );
+    /* THEIR rate, not the platform's. An account can carry an override — that is
+       what `percent` is for — and quoting the default at somebody who was given
+       25% is a wrong statement about money in the first thing they ever read
+       from us. Falls back to the default only when there is no override. */
+    const { data: current } = await admin
+      .from("referral_accounts")
+      .select("percent")
+      .eq("id", args.accountId)
+      .single();
+    const { data: settings } = await admin
+      .from("referral_settings")
+      .select("default_percent")
+      .eq("id", true)
+      .single();
+    const rate = Number(current?.percent ?? settings?.default_percent ?? 15);
     await notifyApproved(args.accountId, code, rate);
     return { error: null, notice: `Approved — their code is ${code}. Email sent.` };
   }

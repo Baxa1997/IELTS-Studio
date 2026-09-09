@@ -3,6 +3,7 @@ import { serverEnv } from "@/lib/env";
 import { loadEarnings, loadOwnAccount, loadSettings } from "@/lib/referrals/service";
 import {
   formatMoney,
+  payoutFloor,
   STATUS_LABEL,
   type CurrencyTotal,
   type Earnings,
@@ -33,7 +34,15 @@ export const dynamic = "force-dynamic";
 export default async function ReferralsPage() {
   const { profile } = await requireOrgUser();
   const [account, settings] = await Promise.all([loadOwnAccount(profile.id), loadSettings()]);
-  const earnings = account?.status === "active" ? await loadEarnings(account.id) : null;
+  /* EARNINGS ARE LOADED FOR A STOPPED ACCOUNT TOO.
+     `pending` and `rejected` can never have earned anything, so they are the only
+     states that skip this. `closed` and `revoked` can — and telling somebody
+     their link is dead while showing them nothing about money they are still
+     owed is the exact opposite of what stopping was supposed to mean. */
+  const earnings =
+    account && account.status !== "pending" && account.status !== "rejected"
+      ? await loadEarnings(account.id)
+      : null;
   const percent = account?.percent ?? settings.defaultPercent;
 
   return (
@@ -58,7 +67,7 @@ export default async function ReferralsPage() {
       ) : account.status === "active" && earnings ? (
         <Active account={account} earnings={earnings} percent={percent} settings={settings} />
       ) : (
-        <Waiting account={account} />
+        <Waiting account={account} earnings={earnings} settings={settings} />
       )}
     </div>
   );
@@ -90,8 +99,20 @@ function Pitch({ percent, settings }: { percent: number; settings: ReferralSetti
 
 /* ── applied, but not earning ─────────────────────────────────────────────── */
 
-function Waiting({ account }: { account: ReferralAccount }) {
+function Waiting({
+  account,
+  earnings,
+  settings,
+}: {
+  account: ReferralAccount;
+  earnings: Earnings | null;
+  settings: ReferralSettings;
+}) {
+  const owed = (earnings?.totals ?? []).filter(
+    (t) => t.pendingMinor + t.payableMinor + t.paidMinor > 0,
+  );
   return (
+    <>
     <div style={{ ...card, marginTop: 20, maxWidth: 620 }}>
       <Badge>{STATUS_LABEL[account.status]}</Badge>
       <p style={{ fontSize: 14.5, color: MUTED, margin: "14px 0 0", lineHeight: 1.6 }}>
@@ -121,6 +142,23 @@ function Waiting({ account }: { account: ReferralAccount }) {
         </p>
       ) : null}
     </div>
+
+    {/* The money survives the stop, so it stays on the page. Without this the
+        promise made when an account is closed — "anything you had already
+        earned is still yours" — is a sentence with nothing behind it. */}
+    {owed.length > 0 ? (
+      <div style={{ maxWidth: 620 }}>
+        <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, color: INK, margin: "26px 0 12px" }}>
+          Still yours
+        </h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {owed.map((t) => (
+            <Money key={t.currency} total={t} settings={settings} />
+          ))}
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
 
@@ -212,7 +250,8 @@ function Active({
       <p style={{ fontSize: 13, color: MUTED, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 620 }}>
         You earn once per person — their first payment only, not their later months. Commission is
         held for {settings.holdDays} days in case that payment is refunded, and is paid out{" "}
-        <strong>once a month</strong> on balances over {formatMoney(settings.minPayoutMinor, "usd")}.
+        <strong>once a month</strong> on balances over {formatMoney(settings.minPayoutMinor, "usd")}{" "}
+        (or {formatMoney(settings.minPayoutUzsMinor, "uzs")}).
         If a referral&apos;s payment is refunded before you have been paid, that commission is taken
         back. Totals stay in the currency they were earned in.
       </p>
@@ -222,7 +261,7 @@ function Active({
 
 /** One currency. Never added to another — there is no rate here to add with. */
 function Money({ total, settings }: { total: CurrencyTotal; settings: ReferralSettings }) {
-  const ready = total.payableMinor >= settings.minPayoutMinor;
+  const ready = total.payableMinor >= payoutFloor(settings, total.currency);
   return (
     <div style={card}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
