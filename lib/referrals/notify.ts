@@ -22,20 +22,40 @@ import { formatMoney } from "./types";
  * which is also where they go when SMTP is simply not configured.
  */
 
-/** An account's owner, or null when there is no real address to write to. */
+/**
+ * An account's owner, or null when there is no real address to write to.
+ *
+ * TWO PLACES HOLD AN ADDRESS, AND THE OBVIOUS ONE IS USUALLY EMPTY.
+ * `profiles.contact_email` is written for a CENTRE — it is where the real inbox
+ * goes when the auth address is a synthetic one (see CLAUDE.md). A B2C learner
+ * who signs up with their own email has it on `auth.users` and nothing at all on
+ * the profile, which is the common case here and the one this originally missed:
+ * every approval email would have been skipped, silently, for exactly the people
+ * the programme is for.
+ *
+ * So: the profile's contact email when there is one, the auth address otherwise.
+ */
 async function recipient(referralAccountId: string): Promise<{ email: string; name: string } | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("referral_accounts")
-    .select("profiles(full_name, contact_email)")
+    .select("profile_id, profiles(full_name, contact_email)")
     .eq("id", referralAccountId)
     .maybeSingle();
+  if (!data) return null;
 
-  const person = Array.isArray(data?.profiles) ? data?.profiles[0] : data?.profiles;
-  const email = person?.contact_email?.trim();
+  const person = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+  let email = person?.contact_email?.trim() ?? "";
+
+  if (!email) {
+    const { data: user } = await admin.auth.admin.getUserById(String(data.profile_id));
+    email = user?.user?.email?.trim() ?? "";
+  }
+
   // A student created by a teacher gets an undeliverable address at
-  // students.engprogress.com (see CLAUDE.md). Writing to it bounces, so it is
-  // treated as no address at all rather than as a send that failed.
+  // students.engprogress.com (see CLAUDE.md). Checked against whichever address
+  // we settled on, because that synthetic one lives on `auth.users` — the
+  // fallback above is the branch most likely to surface it.
   if (!email || !email.includes("@") || email.endsWith("students.engprogress.com")) return null;
   return { email, name: person?.full_name?.split(" ")[0] ?? "there" };
 }

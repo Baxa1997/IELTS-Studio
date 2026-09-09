@@ -103,3 +103,25 @@ describe("sharing where it actually gets shared", () => {
     expect(shareCard).not.toMatch(/TELEGRAM_BOT_TOKEN|api\.telegram\.org/);
   });
 });
+
+describe("finding an address at all", () => {
+  it("falls back to the auth address when the profile has none", () => {
+    // THE BUG THIS EXISTS FOR. `profiles.contact_email` is written for a CENTRE,
+    // where the auth address is synthetic. A B2C learner signing up with their
+    // own Gmail has it on `auth.users` and NULL on the profile — the common case
+    // here. Reading only the profile column skipped every approval email,
+    // silently, for exactly the people the programme is for.
+    expect(notify).toMatch(/auth\.admin\.getUserById/);
+    const fn = notify.slice(notify.indexOf("async function recipient"), notify.indexOf("notifyApproved"));
+    const profileRead = fn.indexOf("contact_email");
+    const authRead = fn.indexOf("getUserById");
+    expect(profileRead).toBeLessThan(authRead); // profile first, auth as fallback
+  });
+
+  it("screens the synthetic address after resolving, not before", () => {
+    // students.engprogress.com lives on `auth.users`, so a check that ran only
+    // against the profile column would never see it.
+    const fn = notify.slice(notify.indexOf("async function recipient"), notify.indexOf("notifyApproved"));
+    expect(fn.indexOf("getUserById")).toBeLessThan(fn.indexOf("students.engprogress.com"));
+  });
+});
