@@ -2,6 +2,8 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { notifyEarned } from "./notify";
+
 /**
  * Turning a payment into commission.
  *
@@ -128,7 +130,15 @@ export async function accrueCommission(input: AccrualInput): Promise<number> {
       console.error("[referrals] accrual failed:", error.message);
       return 0;
     }
-    return error ? 0 : amount;
+    if (error) return 0; // 23505 — already earned, and already announced then
+
+    /* THE ONLY MOMENT THE PROGRAMME PROVES ITSELF. Sent after the row is
+       committed, never before, and it cannot fail the accrual — the money is the
+       thing, the email is about the thing. It deliberately does not say WHO
+       paid: that is somebody else's account, and the reason `organization_id` is
+       withheld from the referrer's column grant in the first place. */
+    await notifyEarned(account.id, amount, input.currency.toLowerCase(), holdDays);
+    return amount;
   } catch (err) {
     console.error("[referrals] accrual threw:", err);
     return 0;

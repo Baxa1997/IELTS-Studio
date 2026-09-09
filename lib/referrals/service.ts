@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { generateCode, normalizeCode } from "./code";
+import { notifyApproved, notifyRejected } from "./notify";
 import type {
   CurrencyTotal,
   Earnings,
@@ -157,7 +158,17 @@ export async function decideApplication(args: {
       .update({ ...base, status: "active", code, stopped_at: null })
       .eq("id", args.accountId);
     if (error) return { error: `Update failed: ${error.message}`, notice: null };
-    return { error: null, notice: `Approved — their code is ${code}.` };
+
+    // After the decision has landed, and never allowed to undo it. The same
+    // rule `recordAdminAction` follows: the approval matters more than the
+    // notification about it, and a half-applied decision is worse than an
+    // unannounced one.
+    const rate = Number(
+      (await admin.from("referral_settings").select("default_percent").eq("id", true).single()).data
+        ?.default_percent ?? 15,
+    );
+    await notifyApproved(args.accountId, code, rate);
+    return { error: null, notice: `Approved — their code is ${code}. Email sent.` };
   }
 
   if (args.decision === "reject") {
@@ -166,7 +177,8 @@ export async function decideApplication(args: {
       .update({ ...base, status: "rejected" })
       .eq("id", args.accountId);
     if (error) return { error: `Update failed: ${error.message}`, notice: null };
-    return { error: null, notice: "Rejected." };
+    await notifyRejected(args.accountId, args.note);
+    return { error: null, notice: "Rejected — email sent." };
   }
 
   // close | revoke — both kill the link immediately.

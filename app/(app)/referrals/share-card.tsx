@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Send } from "lucide-react";
 
 import { MONO, SANS } from "@/lib/theme/tokens";
 
@@ -15,10 +15,47 @@ import { MONO, SANS } from "@/lib/theme/tokens";
  * from a story — and the two resolve to the same attribution.
  */
 export function ShareCard({ url, code }: { url: string; code: string }) {
+  /* SHARE TO TELEGRAM, NOT JUST COPY.
+     A copy button assumes the link is going somewhere you paste it. Here it is
+     going into a Telegram group — that is how things spread in this market, and
+     the product already lives there (the bot handles class invites and staff
+     notifications). t.me/share is a plain URL, so this needs no bot, no token
+     and no API call: it opens Telegram with the message already written, which
+     is the difference between "I'll send it later" and sending it.
+
+     The text is prewritten because most people will not write their own, and an
+     unexplained link in a group chat gets ignored. */
+  const message = `I'm using EngProgress to prepare for IELTS — AI band feedback on writing, reading, listening and speaking. Sign up with my link:`;
+  const telegram = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(message)}`;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Copyable label="Your link" value={url} mono={false} />
       <Copyable label="Or just the code" value={code} mono />
+
+      <a
+        href={telegram}
+        target="_blank"
+        rel="noreferrer noopener"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 9,
+          alignSelf: "flex-start",
+          background: "#fff",
+          color: "#43001D",
+          borderRadius: 999,
+          padding: "12px 22px",
+          fontFamily: SANS,
+          fontSize: 14.5,
+          fontWeight: 700,
+          textDecoration: "none",
+        }}
+      >
+        <Send size={16} strokeWidth={2.2} />
+        Share on Telegram
+      </a>
     </div>
   );
 }
