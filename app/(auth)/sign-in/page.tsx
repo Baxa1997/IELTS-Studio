@@ -54,19 +54,26 @@ export default async function SignInPage({
 
   return (
     <div
-      className={`${landingSora.variable} ${landingManrope.variable}`}
+      className={`lp-auth ${landingSora.variable} ${landingManrope.variable}`}
       style={{
         // `height` + `overflow: hidden`, not `minHeight`: the page itself must
         // never scroll. Anything that cannot fit scrolls INSIDE its own column
         // (see the two `overflow` rules below), so the burgundy panel stays put
         // and the form is always reachable — on a laptop the card and the
         // disclaimer used to fall off the bottom of the viewport.
+        //
+        // THAT RULE HOLDS ONLY WHILE THE PANELS SIT SIDE BY SIDE. Once they
+        // stack, a clipping container with no scroll puts the form off the
+        // bottom of the screen with no way to reach it — the sign-in button did
+        // not exist on a phone. `.lp-auth` releases it below 900px
+        // (design-chrome.tsx), which is the width the two-panel layout stops
+        // fitting at anyway.
         height: "100dvh",
         overflow: "hidden",
         background: CANVAS,
         padding: 18,
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
+        gridTemplateColumns: "repeat(auto-fit,minmax(min(420px,100%),1fr))",
         gap: 18,
         fontFamily: SANS,
         color: INK,
@@ -76,6 +83,7 @@ export default async function SignInPage({
 
       {/* left — the burgundy proposition panel */}
       <div
+        className="lp-auth-panel"
         style={{
           background: "#43001d",
           backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
@@ -116,7 +124,10 @@ export default async function SignInPage({
           here.
         </p>
 
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
+        {/* Supporting copy, and the first thing to go when the panels stack —
+            a screen of proof between somebody and a password field is the
+            wrong order. */}
+        <div className="lp-auth-points" style={{ marginTop: "auto", display: "flex", flexDirection: "column" }}>
           {POINTS.map((p, i) => (
             <div key={p.title}>
               {i > 0 ? <div style={{ height: 1, background: "rgba(255,255,255,0.16)" }} /> : null}
@@ -135,6 +146,7 @@ export default async function SignInPage({
 
       {/* right — the form */}
       <div
+        className="lp-auth-form"
         style={{
           padding: "clamp(20px,3vh,44px) clamp(24px,4vw,52px)",
           display: "flex",

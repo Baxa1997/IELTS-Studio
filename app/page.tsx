@@ -226,7 +226,7 @@ function Hero() {
         ...SHELL,
         padding: "76px 28px 40px",
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))",
+        gridTemplateColumns: "repeat(auto-fit,minmax(min(420px,100%),1fr))",
         gap: 64,
         alignItems: "center",
       }}
@@ -360,7 +360,7 @@ function Stats() {
           boxShadow: "0 12px 40px rgba(18,19,23,0.04)",
           overflow: "hidden",
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))",
         }}
       >
         {STATS.map((c, i) => (
@@ -455,7 +455,7 @@ function Platform() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit,minmax(min(300px,100%),1fr))",
           gap: 22,
           marginTop: 28,
         }}
@@ -581,7 +581,7 @@ function Coaching() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit,minmax(min(230px,100%),1fr))",
           gap: 18,
           marginTop: 26,
         }}
@@ -636,7 +636,7 @@ function Pricing() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit,minmax(min(250px,100%),1fr))",
           gap: 22,
           marginTop: 28,
         }}
@@ -776,7 +776,7 @@ function Faq() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))",
+          gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))",
           gap: 22,
         }}
       >

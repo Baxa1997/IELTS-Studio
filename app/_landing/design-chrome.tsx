@@ -252,4 +252,32 @@ export const DESIGN_CSS = `
   .lp-field:focus-visible{outline:2px solid ${BRAND};outline-offset:2px;border-color:${BRAND}}
   .lp-field{border:1px solid ${FIELD};font-family:${SANS}}
   @media(max-width:860px){.lp-nav{display:none!important}}
+
+  /* ── sign-in, below the two-panel width ────────────────────────────────────
+     THE PAGE CLIPPED THE FORM AND OFFERED NO WAY TO REACH IT. The desktop
+     layout is deliberately height:100dvh with overflow:hidden — the owner asked
+     for a login that never scrolls, because on a laptop the card and the
+     disclaimer used to fall off the bottom. That works while the two panels sit
+     side by side. Once they stack, the burgundy panel takes a screen of its own
+     and the form lands below the fold of a container that clips and does not
+     scroll: on a phone the sign-in button simply did not exist.
+
+     So the no-scroll rule is kept where it was written for — the two-panel
+     layout — and released the moment the panels stack. The proposition panel
+     also sheds its proof rows here: they are supporting copy, and making
+     somebody scroll past a full screen of them to reach a password field is
+     the wrong order. The wordmark and the headline stay, so the page still
+     says whose login this is. */
+  @media(max-width:900px){
+    .lp-auth{height:auto!important;min-height:100dvh;overflow:visible!important}
+    /* The panel clips too, so releasing only the page would still cut the
+       headline off on a short screen. */
+    .lp-auth-panel{min-height:auto!important;padding:26px 24px!important;overflow:visible!important}
+    .lp-auth-points{display:none!important}
+    .lp-auth-form{overflow:visible!important;justify-content:flex-start!important;padding:0!important}
+    /* The language picker is pushed to the top by margin-bottom:auto while the
+       column is centred and full-height. Stacked, that auto resolves against a
+       content-height box and drags a gap behind it. */
+    .lp-auth-form > div:first-child{margin-bottom:14px!important}
+  }
 `;
