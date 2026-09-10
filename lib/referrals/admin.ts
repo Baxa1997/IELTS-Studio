@@ -3,7 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { generateCode } from "./code";
-import { fetchAll, toAccount, type CommissionQueryRow } from "./db";
+import { fetchAll, resolveEmails, toAccount, type CommissionQueryRow } from "./db";
 import { loadSettings } from "./service";
 import { notifyApproved, notifyPaid, notifyRejected } from "./notify";
 import { commissionState, formatMoney, payoutFloor } from "./types";
@@ -29,10 +29,10 @@ export async function loadPendingApplications(): Promise<ReferralAccount[]> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("referral_accounts")
-    .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profiles(full_name, contact_email)")
+    .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profile_id, profiles(full_name, contact_email)")
     .eq("status", "pending")
     .order("applied_at", { ascending: true });
-  return (data ?? []).map(toAccount);
+  return withEmails(admin, data ?? []);
 }
 
 /** Everyone already approved, plus the ones that were stopped. */
@@ -47,12 +47,34 @@ export async function loadDecidedAccounts(): Promise<ReferralAccount[]> {
   const rows = await fetchAll<Record<string, unknown>>((from, to) =>
     admin
       .from("referral_accounts")
-      .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profiles(full_name, contact_email)")
+      .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profile_id, profiles(full_name, contact_email)")
       .neq("status", "pending")
       .order("reviewed_at", { ascending: false })
       .range(from, to),
   );
-  return rows.map(toAccount);
+  return withEmails(admin, rows);
+}
+
+/**
+ * Map rows to accounts, filling the address in from `auth.users` where the
+ * profile has none — which, for a self-signup, is always.
+ */
+async function withEmails(
+  admin: ReturnType<typeof createAdminClient>,
+  rows: Record<string, unknown>[],
+): Promise<ReferralAccount[]> {
+  const accounts = rows.map(toAccount);
+  const needing = rows
+    .filter((r, i) => !accounts[i].applicantEmail)
+    .map((r) => String(r.profile_id ?? ""));
+  if (needing.length === 0) return accounts;
+
+  const emails = await resolveEmails(admin, needing);
+  return accounts.map((a, i) => {
+    if (a.applicantEmail) return a;
+    const email = emails.get(String(rows[i].profile_id ?? ""));
+    return email ? { ...a, applicantEmail: email } : a;
+  });
 }
 
 /**

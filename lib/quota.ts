@@ -1,6 +1,7 @@
 import "server-only";
 
 import { planTier, type OrgPlan } from "@/lib/billing/plans";
+import { hasLapsed } from "@/lib/billing/expiry";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -46,13 +47,45 @@ function monthWindow(now = new Date()): { start: string; resetAt: string } {
   };
 }
 
+/**
+ * The org, with a lapsed plan already treated as trial.
+ *
+ * WHY EXPIRY IS ENFORCED ON THE READ PATH AND NOT ONLY BY THE CRON. The nightly
+ * job (lib/billing/expiry.ts) does the durable work — it downgrades the row,
+ * closes the subscription and sends the email. But a job that runs daily is a
+ * job that can be up to a day late, and quota is read hundreds of times a day.
+ * Without this, every expiry handed out a free day of Pro; with a missed run, a
+ * free week.
+ *
+ * It DERIVES rather than writes: no update happens here, so a hot read path
+ * stays a read. The cron is still what makes the downgrade real and what tells
+ * the learner. This just refuses to sell them something they no longer have.
+ *
+ * `hasLapsed` is deliberately narrow — an org with no subscription row, or one
+ * with no end date, is NOT lapsed. Several paid orgs here are exactly that:
+ * comped accounts, the shared library orgs, and plans granted by hand from the
+ * admin console. Treating them as expired would have downgraded every one.
+ */
 async function loadOrg(organizationId: string) {
   const admin = createAdminClient();
   const { data } = await admin
     .from("organizations")
-    .select("plan, grading_monthly_limit, generation_monthly_limit, billing_enforced")
+    .select("plan, grading_monthly_limit, generation_monthly_limit, billing_enforced, subscriptions(status, current_period_end)")
     .eq("id", organizationId)
     .single();
+
+  if (!data) return { admin, org: data };
+
+  const sub = Array.isArray(data.subscriptions) ? data.subscriptions[0] : data.subscriptions;
+  if (hasLapsed(sub)) {
+    /* The per-org limit overrides go with the plan. They are what an admin
+       granted alongside a paid tier, so leaving them in place would keep the
+       allowance the payment bought after the payment stopped. */
+    return {
+      admin,
+      org: { ...data, plan: "trial", grading_monthly_limit: null, generation_monthly_limit: null },
+    };
+  }
   return { admin, org: data };
 }
 

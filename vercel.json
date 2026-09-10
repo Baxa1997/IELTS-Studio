@@ -3,6 +3,10 @@
     {
       "path": "/api/jobs/auto-messages",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/jobs/expire-subscriptions",
+      "schedule": "0 3 * * *"
     }
   ]
 }

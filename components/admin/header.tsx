@@ -63,7 +63,18 @@ export async function AdminHeader() {
       style={{
         position: "sticky",
         top: 0,
-        zIndex: 40,
+        /* 20, NOT 40 — AND THE 40 IS WHY THE RAIL'S COLLAPSE TOGGLE VANISHED HERE.
+           That toggle straddles the rail edge at z-index 40, on the stated
+           assumption (see components/app-shell/shell.tsx) that every content
+           layer sits at 21 or below; the centre console's own sticky bar is 20.
+           This header claimed 40 as well, and an equal z-index is decided by DOM
+           order — the header is inside <main>, which comes after the rail — so
+           it won the tie and its near-opaque cream painted straight over the
+           half of the button that hangs onto the page. Only the rail-side half
+           stayed visible, which reads as a button that is broken rather than one
+           that is covered. `backdrop-filter` made it certain by creating a
+           stacking context of its own. */
+        zIndex: 20,
         background: "rgba(244,243,239,.9)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",

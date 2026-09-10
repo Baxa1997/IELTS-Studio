@@ -73,3 +73,48 @@ export async function fetchAll<T>(
   }
   return out;
 }
+
+/**
+ * The real address for a set of profiles.
+ *
+ * TWO PLACES HOLD AN ADDRESS AND THE OBVIOUS ONE IS USUALLY EMPTY.
+ * `profiles.contact_email` is written for a CENTRE, where the auth address is a
+ * synthetic one at students.engprogress.com (CLAUDE.md). A B2C learner who
+ * signed up with their own Gmail has it on `auth.users` and NULL on the profile
+ * — the common case for this programme, and the one every referral query got
+ * wrong. `notify.ts` was fixed for it; the admin queue was not, so a reviewer
+ * saw "no contact email" against every applicant who had one, and the detail
+ * page's checks reported that approval mail had nowhere to go while it was
+ * being delivered.
+ *
+ * `auth.users` is not exposed through PostgREST, so there is no join to make
+ * here — the Admin API is the only route, and it answers one id at a time.
+ * Batched in parallel and only for profiles that actually need it.
+ */
+export async function resolveEmails(
+  admin: { auth: { admin: { getUserById: (id: string) => PromiseLike<{ data: { user: { email?: string | null } | null } | null }> } } },
+  profileIds: string[],
+): Promise<Map<string, string>> {
+  const found = new Map<string, string>();
+  const ids = [...new Set(profileIds.filter(Boolean))];
+  if (ids.length === 0) return found;
+
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const { data } = await admin.auth.admin.getUserById(id);
+        return [id, data?.user?.email?.trim() ?? ""] as const;
+      } catch {
+        return [id, ""] as const;
+      }
+    }),
+  );
+  for (const [id, email] of results) {
+    // The synthetic address a teacher-created student gets is not a way to
+    // reach anybody, so it is treated as absent rather than shown as contact.
+    if (email && email.includes("@") && !email.endsWith("students.engprogress.com")) {
+      found.set(id, email);
+    }
+  }
+  return found;
+}

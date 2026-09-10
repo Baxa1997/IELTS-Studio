@@ -60,6 +60,78 @@ async function recipient(referralAccountId: string): Promise<{ email: string; na
   return { email, name: person?.full_name?.split(" ")[0] ?? "there" };
 }
 
+/**
+ * Somebody has applied, and a person now has to read it.
+ *
+ * THE HALF OF THE LOOP THAT WAS MISSING. Approval is the only gate on this
+ * programme, so an application nobody knows about is the one state here that
+ * costs something — the applicant waits, hears nothing, and concludes the
+ * feature is broken. Nothing told the reviewer anything: the queue only filled
+ * up for whoever happened to open /admin/referrals.
+ *
+ * The address is resolved from `auth.users` rather than an env var, because
+ * `app_metadata.role` is already the source of truth for super_admin (CLAUDE.md)
+ * and a setting the owner must remember to fill in is one more way for this to
+ * silently not work. It scans one page of users, which is ample now and stated
+ * here as the thing to revisit if the platform grows past it.
+ */
+export async function notifyApplied(referralAccountId: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("referral_accounts")
+      .select("pitch, audience_url, profile_id, profiles(full_name, contact_email)")
+      .eq("id", referralAccountId)
+      .maybeSingle();
+    if (!data) return;
+
+    const person = Array.isArray(data.profiles) ? data.profiles[0] : data.profiles;
+    let from = person?.contact_email?.trim() ?? "";
+    if (!from) {
+      const { data: user } = await admin.auth.admin.getUserById(String(data.profile_id));
+      from = user?.user?.email?.trim() ?? "";
+    }
+
+    const reviewers = await superAdminEmails(admin);
+    if (reviewers.length === 0) {
+      console.warn("[referrals] nobody to notify about a new application");
+      return;
+    }
+
+    const name = person?.full_name ?? "Someone";
+    const pitch = data.pitch ?? "(nothing written)";
+    const link = data.audience_url ?? "(no audience link)";
+
+    await sendEmail({
+      to: reviewers.join(", "),
+      subject: `Referral application from ${name}`,
+      text:
+        `${name} has applied to the referral programme.\n\n` +
+        `Their account: ${from || "no email on file"}\n` +
+        `Audience link: ${link}\n\n` +
+        `What they wrote:\n${pitch}\n\n` +
+        `Review it: ${serverEnv.siteUrl}/admin/referrals\n`,
+      html:
+        `<p><strong>${escapeHtml(name)}</strong> has applied to the referral programme.</p>` +
+        `<p>Their account: <strong>${escapeHtml(from || "no email on file")}</strong></p>` +
+        `<p>Audience link: ${escapeHtml(link)}</p>` +
+        `<p>What they wrote:</p><blockquote>${escapeHtml(pitch)}</blockquote>` +
+        `<p><a href="${serverEnv.siteUrl}/admin/referrals">Review it</a></p>`,
+    });
+  } catch (err) {
+    console.error("[referrals] application alert failed:", err);
+  }
+}
+
+/** Every platform admin's address. Empty is possible and is logged, not thrown. */
+async function superAdminEmails(admin: ReturnType<typeof createAdminClient>): Promise<string[]> {
+  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  return (data?.users ?? [])
+    .filter((u) => (u.app_metadata as { role?: string } | null)?.role === "super_admin")
+    .map((u) => u.email?.trim() ?? "")
+    .filter((e) => e.includes("@"));
+}
+
 /** Their application was approved. Carries the code, because that is the point. */
 export async function notifyApproved(referralAccountId: string, code: string, percent: number): Promise<void> {
   try {

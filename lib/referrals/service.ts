@@ -3,6 +3,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { fetchAll, toAccount, type CommissionQueryRow } from "./db";
+import { notifyApplied } from "./notify";
 import { commissionState } from "./types";
 import type {
   CommissionRow,
@@ -92,6 +93,17 @@ export async function applyToRefer(args: {
   // duplicate-key error rather than a second row.
   if (error?.code === "23505") return { error: "You've already applied. We'll be in touch." };
   if (error) return { error: `Couldn't send that: ${error.message}` };
+
+  /* Tell a reviewer, after the row is committed and never allowed to undo it.
+     Approval is the only gate on this programme, so an application nobody
+     knows about is the one state that costs something. */
+  const { data: created } = await admin
+    .from("referral_accounts")
+    .select("id")
+    .eq("profile_id", args.profileId)
+    .maybeSingle();
+  if (created) await notifyApplied(String(created.id));
+
   return { error: null };
 }
 

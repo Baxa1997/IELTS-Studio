@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { serverEnv } from "@/lib/env";
 
-import { planTier } from "./plans";
+import { planTier, type OrgPlan } from "./plans";
 import { coercePlan } from "./service";
 import type { CheckoutRequest, CheckoutResult, PlanChange, SubscriptionStatus } from "./types";
 
@@ -136,6 +136,19 @@ function mapEvent(event: StripeEvent): PlanChange | null {
         // `amount_total` is already in minor units.
         amountMinor: (obj.amount_total as number | undefined) ?? null,
         currency: (obj.currency as string | undefined) ?? null,
+        /* AN END DATE, BECAUSE NOTHING ELSE SUPPLIED ONE.
+           A checkout session has no `current_period_end` — only the
+           subscription object does, and the subscription events below bail
+           whenever their metadata carries no plan, which is the ordinary case
+           for a checkout-created subscription. So `current_period_end` was NULL
+           on every Stripe row in production, and a plan with no end date is a
+           plan that never ends: one payment bought Pro permanently.
+
+           Derived from the tier's own billing period, the same way Payme and
+           Click already do it (`monthFromNow`). Stripe's real date overrides
+           this the moment a subscription event arrives carrying plan metadata,
+           so this is a floor rather than a guess that sticks. */
+        currentPeriodEnd: periodEndFor(plan),
       };
     /* NO AMOUNT ON THESE, DELIBERATELY. A subscription event describes state,
        not a payment — its object has no `amount_total`, and inventing one from
@@ -165,6 +178,14 @@ function mapEvent(event: StripeEvent): PlanChange | null {
     default:
       return null; // ignore everything else
   }
+}
+
+/** The end of the period a tier's single payment buys. */
+function periodEndFor(plan: OrgPlan): string {
+  const months = planTier(plan)?.months ?? 1;
+  const end = new Date();
+  end.setUTCMonth(end.getUTCMonth() + months);
+  return end.toISOString();
 }
 
 function mapStatus(stripeStatus: string): SubscriptionStatus {
