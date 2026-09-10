@@ -34,7 +34,14 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
      hand in the database. Revoked is deliberately included: revoking reverses
      held commission and that stays reversed, but the person is not banned. */
   const stopped = account.status === "closed" || account.status === "revoked";
-  const canAct = undecided || live || stopped;
+  /* AND A REJECTED APPLICANT HAD NO ROUTE BACK EITHER. `profile_id` is unique
+     on `referral_accounts`, so they cannot re-apply — the row they already have
+     IS the application, and `applyToRefer` refuses a second one. That made a
+     rejection permanent through the UI even when the reviewer simply wanted
+     more information first. Approving reopens the same row, which is what the
+     detail page's own copy said had to happen and offered no way to do. */
+  const rejected = account.status === "rejected";
+  const canAct = undecided || live || stopped || rejected;
 
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 9, alignItems: "flex-end" }}>
@@ -107,6 +114,9 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
         {stopped ? (
           <Decide value="approve" tone="green" label="Reinstate" pending={pending} primary />
         ) : null}
+        {rejected ? (
+          <Decide value="approve" tone="green" label="Reconsider" pending={pending} primary />
+        ) : null}
       </div>
 
       {undecided ? (
@@ -117,6 +127,11 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
       {stopped ? (
         <span style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>
           Reinstating brings back their original code. Reversed commission stays reversed.
+        </span>
+      ) : null}
+      {rejected ? (
+        <span style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>
+          Reopens this application and mints their code — they cannot apply a second time.
         </span>
       ) : null}
 

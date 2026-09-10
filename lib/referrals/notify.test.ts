@@ -30,7 +30,13 @@ describe("the earnings email says what happened, not who", () => {
     // notifyEarned takes an amount and a currency. If it ever grows an
     // organizationId, or reads one, the referrer is one template edit away from
     // being handed the identity the column grant exists to withhold.
-    const fn = notify.slice(notify.indexOf("export async function notifyEarned"), notify.length);
+    /* Bounded at the next export, not at end-of-file. It used to run to the
+       end, which was harmless until `notifyPaid` was added after it — at which
+       point the assertion silently covered a different function than its name
+       claimed. A slice that outgrows its subject stops testing it. */
+    const start = notify.indexOf("export async function notifyEarned");
+    const next = notify.indexOf("\nexport ", start + 1);
+    const fn = next < 0 ? notify.slice(start) : notify.slice(start, next);
     expect(fn).not.toMatch(/organization/i);
     expect(fn).not.toMatch(/paid_by|payer|customer/i);
   });

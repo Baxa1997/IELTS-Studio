@@ -30,7 +30,23 @@ const payRow = code("../../app/admin/referrals/payouts/pay-row.tsx");
 const notify = code("./notify.ts");
 const migration = read("../../supabase/migrations/20260907120000_referrals.sql");
 
-const recordPayout = adminSide.slice(adminSide.indexOf("export async function recordPayout"));
+/**
+ * One function's body, bounded at the next top-level export.
+ *
+ * A SLICE THAT RUNS TO END-OF-FILE IS NOT A TEST OF THAT FUNCTION. Written the
+ * naive way, the "loadDuePayouts filters on both states" assertion below kept
+ * passing after loadDuePayouts was narrowed back to `pending` — because the
+ * slice ran on past it into recordPayout, which still had the wider filter.
+ * The sabotage that proved it was caught only because it was run.
+ */
+function fn(src: string, name: string): string {
+  const start = src.indexOf(`export async function ${name}`);
+  if (start < 0) return "";
+  const next = src.indexOf("\nexport ", start + 1);
+  return next < 0 ? src.slice(start) : src.slice(start, next);
+}
+
+const recordPayout = fn(adminSide, "recordPayout");
 
 describe("the amount is derived, never accepted", () => {
   it("takes no amount from the caller", () => {
@@ -57,8 +73,7 @@ describe("the amount is derived, never accepted", () => {
   });
 
   it("passes no amount through the action", () => {
-    const fn = actions.slice(actions.indexOf("export async function markReferralPaid"));
-    expect(fn.slice(0, fn.indexOf("\n}"))).not.toMatch(/amountMinor/);
+    expect(fn(actions, "markReferralPaid")).not.toMatch(/amountMinor/);
   });
 });
 
@@ -80,13 +95,49 @@ describe("no transaction, so the order is the safety", () => {
   });
 
   it("re-checks status at write time so a concurrent settlement collides", () => {
+    // Excludes `paid` and `reversed`, which is the whole job of the guard.
     const settle = recordPayout.slice(recordPayout.indexOf('.in("id", ids)'));
-    expect(settle).toMatch(/\.eq\("status", "pending"\)/);
+    expect(settle).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
   });
 
   it("rolls the payout row back when the settle does not cover every id", () => {
     expect(recordPayout).toMatch(/\(settled\?\.length \?\? 0\) !== ids\.length/);
     expect(recordPayout).toMatch(/\.from\("referral_payouts"\)\s*\.delete\(\)/);
+  });
+
+  it("un-settles the rows that DID update before deleting the payout", () => {
+    /* THE BUG THIS CAUGHT, in code written two commits earlier.
+     *
+     * The settle is a single UPDATE, so Postgres commits every row that
+     * matched — a short count means somebody else settled the rest first, not
+     * that nothing happened. Deleting the payout row at that point leaves those
+     * commissions `paid` with `payout_id` nulled by the FK's ON DELETE SET
+     * NULL: money marked paid with no record of the payment, while the error
+     * message says "nothing was recorded". That is the single state in this
+     * feature that cannot be reconstructed afterwards. */
+    const branch = recordPayout.slice(recordPayout.indexOf("if (settleError ||"));
+    const undo = branch.indexOf('status: "pending", payout_id: null');
+    const del = branch.indexOf('.from("referral_payouts")');
+    expect(undo, "the partial settle is never undone").toBeGreaterThan(-1);
+    expect(undo).toBeLessThan(del);
+    expect(branch).toMatch(/\.eq\("payout_id", payout\.id\)/);
+  });
+
+  it("keeps the payout row when the undo itself fails", () => {
+    // A payout row with its commissions still attached reconciles: the amounts
+    // agree and a person can see what happened. An orphaned `paid` row with a
+    // null payout does not, so deleting on a failed undo makes it worse.
+    const branch = recordPayout.slice(recordPayout.indexOf("if (undoError)"));
+    expect(branch.slice(0, branch.indexOf("}"))).not.toMatch(/\.delete\(\)/);
+    expect(branch).toMatch(/left in place/);
+  });
+
+  it("treats both unsettled states as payable, not just the stored one", () => {
+    // `payable` is derived at read time, so filtering `pending` alone catches
+    // everything by coincidence. If anything ever writes `payable`, a
+    // pending-only filter silently stops paying half the ledger.
+    expect(fn(adminSide, "loadDuePayouts")).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
+    expect(recordPayout).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
   });
 
   it("tells the reviewer nothing was recorded, rather than half of it", () => {
@@ -107,21 +158,22 @@ describe("what the referrer is told", () => {
   });
 
   it("still does not name anybody who paid", () => {
-    const fn = notify.slice(notify.indexOf("export async function notifyPaid"));
-    expect(fn).not.toMatch(/organization|payer|customer/i);
+    const start = notify.indexOf("export async function notifyPaid");
+    const next = notify.indexOf("\nexport ", start + 1);
+    expect(next < 0 ? notify.slice(start) : notify.slice(start, next)).not.toMatch(
+      /organization|payer|customer/i,
+    );
   });
 });
 
 describe("the screen and the schema line up", () => {
   it("groups by referrer and currency, which is what one payout row is", () => {
-    const due = adminSide.slice(adminSide.indexOf("export async function loadDuePayouts"));
-    expect(due).toMatch(/\$\{accountId\}:\$\{currency\}/);
+    expect(fn(adminSide, "loadDuePayouts")).toMatch(/\$\{accountId\}:\$\{currency\}/);
   });
 
   it("shows below-floor balances rather than hiding them", () => {
     // Hiding them leaves a reviewer wondering where somebody's money went.
-    const due = adminSide.slice(adminSide.indexOf("export async function loadDuePayouts"));
-    expect(due).toMatch(/ready: b\.amountMinor >= payoutFloor/);
+    expect(fn(adminSide, "loadDuePayouts")).toMatch(/ready: b\.amountMinor >= payoutFloor/);
   });
 
   it("writes every column referral_payouts actually has", () => {
@@ -133,17 +185,17 @@ describe("the screen and the schema line up", () => {
   });
 
   it("is logged, and the reference survives in the audit row", () => {
-    const fn = actions.slice(actions.indexOf("export async function markReferralPaid"));
-    expect(fn).toMatch(/action: "referral\.payout"/);
-    expect(fn).toMatch(/detail: \{ currency, reference/);
+    const paid = fn(actions, "markReferralPaid");
+    expect(paid).toMatch(/action: "referral\.payout"/);
+    expect(paid).toMatch(/detail: \{ currency, reference/);
   });
 
   it("is reachable only behind requireSuperAdmin", () => {
     const page = code("../../app/admin/referrals/payouts/page.tsx");
     expect(page).toMatch(/await requireSuperAdmin\(\)/);
     expect(page.indexOf("requireSuperAdmin()")).toBeLessThan(page.indexOf("loadDuePayouts("));
-    const fn = actions.slice(actions.indexOf("export async function markReferralPaid"));
-    expect(fn.indexOf("requireSuperAdmin()")).toBeLessThan(fn.indexOf("recordPayout("));
+    const paid = fn(actions, "markReferralPaid");
+    expect(paid.indexOf("requireSuperAdmin()")).toBeLessThan(paid.indexOf("recordPayout("));
   });
 });
 

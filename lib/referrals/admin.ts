@@ -38,13 +38,21 @@ export async function loadPendingApplications(): Promise<ReferralAccount[]> {
 /** Everyone already approved, plus the ones that were stopped. */
 export async function loadDecidedAccounts(): Promise<ReferralAccount[]> {
   const admin = createAdminClient();
-  const { data } = await admin
-    .from("referral_accounts")
-    .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profiles(full_name, contact_email)")
-    .neq("status", "pending")
-    .order("reviewed_at", { ascending: false })
-    .limit(200);
-  return (data ?? []).map(toAccount);
+  /* PAGED, NOT CAPPED. This was `.limit(200)`, which looked like a sensible
+     display cap and was quietly something else: the queue filters in memory,
+     so the limit was also a SEARCH ceiling. Looking up a referrer who was
+     decided long enough ago simply returned "nothing matches" — the same
+     answer as a code that does not exist. A wrong answer that reads like a
+     right one is worse than a slow page. */
+  const rows = await fetchAll<Record<string, unknown>>((from, to) =>
+    admin
+      .from("referral_accounts")
+      .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profiles(full_name, contact_email)")
+      .neq("status", "pending")
+      .order("reviewed_at", { ascending: false })
+      .range(from, to),
+  );
+  return rows.map(toAccount);
 }
 
 /**
@@ -532,7 +540,12 @@ export async function loadDuePayouts(): Promise<DuePayout[]> {
     admin
       .from("referral_commissions")
       .select("id, referral_account_id, amount_minor, currency, status, payable_after")
-      .eq("status", "pending")
+      // Both unsettled states, though only `pending` is ever written today —
+      // `payable` is derived at read time. Filtering on `pending` alone happens
+      // to catch everything, by coincidence rather than design, and the day
+      // anything starts storing `payable` this would quietly stop paying half
+      // the ledger. Same reasoning as the revoke path above.
+      .in("status", ["pending", "payable"])
       .range(from, to),
   );
 
@@ -618,7 +631,7 @@ export async function recordPayout(args: {
       .select("id, amount_minor, currency, status, payable_after")
       .eq("referral_account_id", args.referralAccountId)
       .eq("currency", args.currency)
-      .eq("status", "pending")
+      .in("status", ["pending", "payable"])
       .range(from, to),
   );
 
@@ -661,12 +674,40 @@ export async function recordPayout(args: {
     .update({ status: "paid", payout_id: payout.id })
     .in("id", ids)
     // Re-checked at write time: this is what makes a concurrent settlement
-    // collide here instead of paying the same commission twice.
-    .eq("status", "pending")
+    // collide here instead of paying the same commission twice. It excludes
+    // `paid` and `reversed`, which is the whole job.
+    .in("status", ["pending", "payable"])
     .select("id");
 
   if (settleError || (settled?.length ?? 0) !== ids.length) {
-    // Roll the payout back by hand, since there is no transaction to do it.
+    /* UNDO THE PARTIAL SETTLE BEFORE REMOVING THE PAYOUT ROW.
+     *
+     * The update above is a single statement, so Postgres has already committed
+     * every row that DID match — a short count means another settlement got
+     * there first, not that nothing happened. Deleting the payout row at this
+     * point would leave those commissions `paid` with `payout_id` nulled out by
+     * the FK's `on delete set null`: money marked paid with no record of the
+     * payment. That is the exact state this whole ordering exists to prevent,
+     * and the only failure here that cannot be reconstructed afterwards.
+     *
+     * So the rows go back first, and only then does the payout row go. */
+    const { error: undoError } = await admin
+      .from("referral_commissions")
+      .update({ status: "pending", payout_id: null })
+      .eq("payout_id", payout.id);
+
+    if (undoError) {
+      /* Leave the payout row alone. A payout row with its commissions still
+       * attached reconciles — the amounts agree and a human can see what
+       * happened. An orphaned `paid` row with a null payout does not. */
+      return {
+        error:
+          `Partly settled and could not be undone: ${undoError.message}. ` +
+          `Payout ${payout.id} is left in place — check it by hand before retrying.`,
+        notice: null,
+      };
+    }
+
     await admin.from("referral_payouts").delete().eq("id", payout.id);
     return {
       error: settleError

@@ -104,8 +104,8 @@ export default async function ReferralDetailPage({ params }: { params: Promise<{
 
         {account.status === "rejected" ? (
           <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "16px 0 0", lineHeight: 1.55 }}>
-            Turned down. One row per person is enforced by the database, so there is no second
-            application to review — letting them back in means reopening this one.
+            Turned down. One row per person is enforced by the database, so they cannot apply
+            again — <strong>Reconsider</strong> reopens this same application and mints their code.
           </p>
         ) : account.status === "closed" || account.status === "revoked" ? (
           <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "16px 0 0", lineHeight: 1.55 }}>
