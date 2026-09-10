@@ -25,6 +25,18 @@ import type {
  * fails at the database, not at a check somebody remembered to add.
  */
 
+/** A commission as the three aggregate readers below select it. */
+interface CommissionQueryRow {
+  id?: string;
+  amount_minor: number | string;
+  currency: string;
+  status: CommissionStatus;
+  percent_applied?: number | string;
+  payable_after: string | null;
+  created_at?: string;
+  organization_id?: string | null;
+}
+
 /** The platform defaults. One row, seeded by the migration. */
 export async function loadSettings(): Promise<ReferralSettings> {
   const admin = createAdminClient();
@@ -250,10 +262,14 @@ export async function decideApplication(args: {
 async function mintCode(admin: ReturnType<typeof createAdminClient>): Promise<string | null> {
   for (let i = 0; i < 8; i++) {
     const candidate = generateCode();
+    // `.eq`, not `.ilike` — same reasoning as the lookup in attribution.ts.
+    // A generated candidate never contains `_`, so this one was not exploitable,
+    // but a collision check that matches by pattern is a collision check that
+    // can reject a free code for no reason.
     const { data } = await admin
       .from("referral_accounts")
       .select("id")
-      .ilike("code", candidate)
+      .eq("code", candidate)
       .maybeSingle();
     if (!data) return candidate;
   }
@@ -292,12 +308,15 @@ function toAccount(row: any): ReferralAccount {
 export async function loadEarnings(accountId: string): Promise<Earnings> {
   const admin = createAdminClient();
 
-  const [{ data: rows }, { count: signups }] = await Promise.all([
-    admin
-      .from("referral_commissions")
-      .select("id, amount_minor, currency, status, percent_applied, payable_after, created_at")
-      .eq("referral_account_id", accountId)
-      .order("created_at", { ascending: false }),
+  const [rows, { count: signups }] = await Promise.all([
+    fetchAll<CommissionQueryRow>((from, to) =>
+      admin
+        .from("referral_commissions")
+        .select("id, amount_minor, currency, status, percent_applied, payable_after, created_at")
+        .eq("referral_account_id", accountId)
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    ),
     admin
       .from("referral_attributions")
       .select("organization_id", { count: "exact", head: true })
@@ -324,7 +343,7 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
   const now = Date.now();
   const ledger: CommissionRow[] = [];
 
-  for (const row of rows ?? []) {
+  for (const row of rows) {
     const currency = String(row.currency);
     const amount = Number(row.amount_minor) || 0;
     const state = commissionState(row.status, row.payable_after ?? null, now);
@@ -360,12 +379,15 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
 
   // One commission row per payment, so distinct paying orgs is the honest
   // "how many of them actually upgraded" — a renewal must not count twice.
-  const { data: payers } = await admin
-    .from("referral_commissions")
-    .select("organization_id")
-    .eq("referral_account_id", accountId)
-    .neq("status", "reversed");
-  for (const p of payers ?? []) if (p.organization_id) converted.add(String(p.organization_id));
+  const payers = await fetchAll<{ organization_id: string | null }>((from, to) =>
+    admin
+      .from("referral_commissions")
+      .select("organization_id")
+      .eq("referral_account_id", accountId)
+      .neq("status", "reversed")
+      .range(from, to),
+  );
+  for (const p of payers) if (p.organization_id) converted.add(String(p.organization_id));
 
   return {
     signups: signups ?? 0,
@@ -373,6 +395,38 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
     totals: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
     rows: ledger,
   };
+}
+
+
+/**
+ * Every row, not the first thousand.
+ *
+ * THE BUG THIS EXISTS FOR: PostgREST caps a select that carries no range, and
+ * this project's cap is 1000 (verified against `ai_usage` — 2335 rows, an
+ * unbounded select returns 1000). Every balance on every referral screen was
+ * computed by fetching the rows and adding them up, so past a thousand
+ * commissions the arithmetic silently stopped at the cap. Nothing errors and
+ * nothing looks wrong: the referrer is simply shown less money than they are
+ * owed, and the platform is shown a smaller liability than it has.
+ *
+ * It is the shape of bug that only appears once the programme succeeds, and by
+ * then the wrong number has been on the page for months.
+ *
+ * Pages explicitly rather than trusting the default. A SQL aggregate would be
+ * better still, but that is a migration, and this is correct today.
+ */
+async function fetchAll<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  const SIZE = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += SIZE) {
+    const { data, error } = await page(from, from + SIZE - 1);
+    if (error || !data) break;
+    out.push(...data);
+    if (data.length < SIZE) break;
+  }
+  return out;
 }
 
 /* ── the programme, seen from above ──────────────────────────────────────── */
@@ -401,18 +455,23 @@ export interface ProgrammeTotals {
 export async function loadProgrammeTotals(): Promise<ProgrammeTotals> {
   const admin = createAdminClient();
 
-  const [{ data: statuses }, { data: commissions }, { count: referredSignups }] = await Promise.all([
-    admin.from("referral_accounts").select("status, applied_at"),
-    admin
-      .from("referral_commissions")
-      .select("amount_minor, currency, status, payable_after")
-      .neq("status", "reversed"),
+  const [statuses, commissions, { count: referredSignups }] = await Promise.all([
+    fetchAll<{ status: string; applied_at: string }>((from, to) =>
+      admin.from("referral_accounts").select("status, applied_at").range(from, to),
+    ),
+    fetchAll<CommissionQueryRow>((from, to) =>
+      admin
+        .from("referral_commissions")
+        .select("amount_minor, currency, status, payable_after")
+        .neq("status", "reversed")
+        .range(from, to),
+    ),
     admin
       .from("referral_attributions")
       .select("organization_id", { count: "exact", head: true }),
   ]);
 
-  const pendingRows = (statuses ?? []).filter((a) => a.status === "pending");
+  const pendingRows = statuses.filter((a) => a.status === "pending");
   const oldest = pendingRows
     .map((a) => String(a.applied_at))
     .sort()
@@ -420,7 +479,7 @@ export async function loadProgrammeTotals(): Promise<ProgrammeTotals> {
 
   const byCurrency = new Map<string, CurrencyTotal>();
   const now = Date.now();
-  for (const row of commissions ?? []) {
+  for (const row of commissions) {
     const currency = String(row.currency);
     const bucket = byCurrency.get(currency) ?? {
       currency,
@@ -442,8 +501,8 @@ export async function loadProgrammeTotals(): Promise<ProgrammeTotals> {
     owed: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
     waiting: pendingRows.length,
     oldestWaiting: oldest,
-    active: (statuses ?? []).filter((a) => a.status === "active").length,
-    closed: (statuses ?? []).filter((a) => a.status === "closed" || a.status === "revoked").length,
+    active: statuses.filter((a) => a.status === "active").length,
+    closed: statuses.filter((a) => a.status === "closed" || a.status === "revoked").length,
     referredSignups: referredSignups ?? 0,
   };
 }
@@ -509,25 +568,30 @@ export async function loadAccountDetail(accountId: string): Promise<AccountDetai
   const account = toAccount(row);
   const person = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
 
-  const [{ data: org }, { data: attributions }, { data: commissions }, { data: authUser }] =
-    await Promise.all([
-      admin.from("organizations").select("plan, created_at").eq("id", row.organization_id).maybeSingle(),
+  const [{ data: org }, attributions, commissions, { data: authUser }] = await Promise.all([
+    admin.from("organizations").select("plan, created_at").eq("id", row.organization_id).maybeSingle(),
+    fetchAll<{ organization_id: string; attributed_at: string; source: string }>((from, to) =>
       admin
         .from("referral_attributions")
         .select("organization_id, attributed_at, source")
         .eq("referral_account_id", accountId)
-        .order("attributed_at", { ascending: false }),
+        .order("attributed_at", { ascending: false })
+        .range(from, to),
+    ),
+    fetchAll<CommissionQueryRow>((from, to) =>
       admin
         .from("referral_commissions")
         .select("organization_id, amount_minor, currency, status, payable_after, created_at")
-        .eq("referral_account_id", accountId),
-      admin.auth.admin.getUserById(String(row.profile_id)),
-    ]);
+        .eq("referral_account_id", accountId)
+        .range(from, to),
+    ),
+    admin.auth.admin.getUserById(String(row.profile_id)),
+  ]);
 
   // Names for the referred orgs. A personal org has exactly one profile, which
   // is the case the programme is built for; a centre would return several, so
   // the first is taken rather than assumed to be alone.
-  const orgIds = (attributions ?? []).map((a) => String(a.organization_id));
+  const orgIds = attributions.map((a) => String(a.organization_id));
   const names = new Map<string, string>();
   if (orgIds.length > 0) {
     const { data: members } = await admin
@@ -541,26 +605,19 @@ export async function loadAccountDetail(accountId: string): Promise<AccountDetai
   }
 
   const now = Date.now();
-  interface CommissionLike {
-    amount_minor: number | string;
-    currency: string;
-    status: CommissionStatus;
-    payable_after: string | null;
-    created_at: string;
-  }
-  const byOrg = new Map<string, CommissionLike>();
-  for (const c of commissions ?? []) {
-    if (c.organization_id) byOrg.set(String(c.organization_id), c as CommissionLike);
+  const byOrg = new Map<string, CommissionQueryRow>();
+  for (const c of commissions) {
+    if (c.organization_id) byOrg.set(String(c.organization_id), c);
   }
 
-  const ledger: AdminLedgerRow[] = (attributions ?? []).map((a) => {
+  const ledger: AdminLedgerRow[] = attributions.map((a) => {
     const id = String(a.organization_id);
     const c = byOrg.get(id);
     return {
       organizationId: id,
       who: names.get(id) ?? "—",
       joinedAt: String(a.attributed_at),
-      upgradedAt: c ? String(c.created_at) : null,
+      upgradedAt: c?.created_at ? String(c.created_at) : null,
       amountMinor: c ? Number(c.amount_minor) || 0 : null,
       currency: c ? String(c.currency) : null,
       state: c ? commissionState(c.status, c.payable_after ?? null, now) : "free",
@@ -569,7 +626,7 @@ export async function loadAccountDetail(accountId: string): Promise<AccountDetai
 
   const owedByCurrency = new Map<string, CurrencyTotal>();
   let refunded = 0;
-  for (const c of commissions ?? []) {
+  for (const c of commissions) {
     const state = commissionState(c.status, c.payable_after ?? null, now);
     if (state === "reversed") {
       refunded += 1;
@@ -599,7 +656,7 @@ export async function loadAccountDetail(accountId: string): Promise<AccountDetai
      new: thirty accounts arriving on one afternoon looks nothing like thirty
      arriving over six weeks, and the attribution timestamps already say which
      happened. It reports the spread and leaves the judgement to a person. */
-  const days = new Set((attributions ?? []).map((a) => String(a.attributed_at).slice(0, 10)));
+  const days = new Set(attributions.map((a) => String(a.attributed_at).slice(0, 10)));
 
   const checks: Check[] = [];
   checks.push(

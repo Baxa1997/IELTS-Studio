@@ -27,6 +27,14 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
   const [state, action, pending] = useActionState(reviewReferral, initial);
   const live = account.status === "active";
   const undecided = account.status === "pending";
+  /* REINSTATEMENT WAS UNREACHABLE. `decideApplication` has always handled
+     approving a stopped account — it keeps the existing code, clears
+     `stopped_at` and sets `active` again — but nothing rendered a button for it,
+     so closing somebody was permanent through the UI and recoverable only by
+     hand in the database. Revoked is deliberately included: revoking reverses
+     held commission and that stays reversed, but the person is not banned. */
+  const stopped = account.status === "closed" || account.status === "revoked";
+  const canAct = undecided || live || stopped;
 
   return (
     <form action={action} style={{ display: "flex", flexDirection: "column", gap: 9, alignItems: "flex-end" }}>
@@ -62,6 +70,10 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
           </label>
         ) : null}
 
+        {/* Only where a button exists to carry it. A rejected account offers no
+            decision, and a lone text field with nothing to submit it reads as a
+            control that is broken rather than one that is absent. */}
+        {canAct ? (
         <input
           name="note"
           placeholder={undecided ? "Note to them (optional)" : "Reason (optional)"}
@@ -77,6 +89,7 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
             background: "#fff",
           }}
         />
+        ) : null}
 
         {undecided ? (
           <>
@@ -91,11 +104,19 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
             <Decide value="revoke" tone="red" label="Revoke" pending={pending} />
           </>
         ) : null}
+        {stopped ? (
+          <Decide value="approve" tone="green" label="Reinstate" pending={pending} primary />
+        ) : null}
       </div>
 
       {undecided ? (
         <span style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>
           Approving mints their code and emails it to them.
+        </span>
+      ) : null}
+      {stopped ? (
+        <span style={{ fontFamily: SANS, fontSize: 12, color: MUTED }}>
+          Reinstating brings back their original code. Reversed commission stays reversed.
         </span>
       ) : null}
 

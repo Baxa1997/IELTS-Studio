@@ -90,10 +90,24 @@ export async function attribute(args: {
 
   const admin = createAdminClient();
 
+  /* EXACT MATCH, NOT `ilike`. This read `.ilike("code", code)` and that is a
+     PATTERN match: `_` is ILIKE's single-character wildcard, and `isCodeShape`
+     permits `_` because it mirrors the column's CHECK constraint. So
+     `?ref=q_______` matched the real code `qg8dtnd9` — one known character was
+     enough. Two things fell out of that: anybody could attribute a signup to a
+     referrer whose code they had guessed one letter of, and, worse, the success
+     or failure of each probe leaked the next character, which turns the whole
+     code space into something you can walk. `maybeSingle` hid the scale of it by
+     erroring whenever a pattern matched two rows — so it only ever "worked"
+     when it had narrowed to exactly one.
+
+     `.eq` has no pattern semantics, so `_` is just a character again. Codes are
+     stored lower-case (the CHECK forbids anything else) and `normalizeCode`
+     lower-cases the input, so this is also still case-insensitive in practice. */
   const { data: account } = await admin
     .from("referral_accounts")
     .select("id, profile_id, organization_id, status")
-    .ilike("code", code)
+    .eq("code", code)
     .maybeSingle();
 
   // A stopped account's link is dead. That is the whole meaning of stopping one:
