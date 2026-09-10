@@ -34,7 +34,12 @@ export type AuditAction =
      code died, and "closed" and "revoked" carry very different implications for
      the money already on the ledger. */
   | "referral.close"
-  | "referral.revoke";
+  | "referral.revoke"
+  /* Settling a month. The only entry here that records money LEAVING, so it is
+     also the only one whose detail carries a `reference` — the bank or Payme id
+     is what a payout can be reconciled against a year later, and the audit row
+     is the one place it is guaranteed to survive. */
+  | "referral.payout";
 
 export interface AuditEntry {
   action: AuditAction;

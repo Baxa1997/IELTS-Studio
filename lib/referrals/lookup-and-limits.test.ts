@@ -34,6 +34,8 @@ const code = (p: string) =>
 
 const attribution = code("./attribution.ts");
 const service = code("./service.ts");
+const adminSide = code("./admin.ts");
+const db = code("./db.ts");
 const shape = read("./code.ts");
 
 describe("a referral code is matched, not pattern-matched", () => {
@@ -45,8 +47,8 @@ describe("a referral code is matched, not pattern-matched", () => {
   it("checks a fresh code for collision with eq too", () => {
     // Not exploitable — a generated candidate has no `_` — but a collision
     // check that matches by pattern can refuse a code that was free.
-    expect(service).not.toMatch(/\.ilike\(/);
-    expect(service).toMatch(/\.eq\("code", candidate\)/);
+    expect(adminSide).not.toMatch(/\.ilike\(/);
+    expect(adminSide).toMatch(/\.eq\("code", candidate\)/);
   });
 
   it("still admits the underscore that made this reachable", () => {
@@ -84,21 +86,21 @@ describe("no balance is summed from a capped select", () => {
   it("pages the programme-wide totals", () => {
     // "Commission owed" is a liability. Understating it is the direction that
     // costs money rather than the direction that is merely embarrassing.
-    const fn = service.slice(service.indexOf("export async function loadProgrammeTotals"));
+    const fn = adminSide.slice(adminSide.indexOf("export async function loadProgrammeTotals"));
     const body = fn.slice(0, fn.indexOf("\n}"));
     expect(body).toMatch(/fetchAll<\{ status: string; applied_at: string \}>/);
     expect(body).toMatch(/fetchAll<CommissionQueryRow>/);
   });
 
   it("pages one account's attributions and commissions", () => {
-    const fn = service.slice(service.indexOf("export async function loadAccountDetail"));
+    const fn = adminSide.slice(adminSide.indexOf("export async function loadAccountDetail"));
     const body = fn.slice(0, fn.indexOf("\n}"));
     expect(body).toMatch(/fetchAll</);
     expect((body.match(/\.range\(from, to\)/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it("stops paging on a short page rather than looping forever", () => {
-    const fn = service.slice(service.indexOf("async function fetchAll"));
+    const fn = db.slice(db.indexOf("export async function fetchAll"));
     expect(fn).toMatch(/if \(data\.length < SIZE\) break;/);
     expect(fn).toMatch(/if \(error \|\| !data\) break;/); // and on failure
   });
@@ -107,8 +109,12 @@ describe("no balance is summed from a capped select", () => {
     // The three readers that ADD UP rows must all page. `.limit()` is fine
     // elsewhere (the admin queue caps the decided list on purpose) — this is
     // about arithmetic, not listing.
-    for (const name of ["loadEarnings", "loadProgrammeTotals", "loadAccountDetail"]) {
-      const fn = service.slice(service.indexOf(`export async function ${name}`));
+    for (const [name, where] of [
+      ["loadEarnings", service],
+      ["loadProgrammeTotals", adminSide],
+      ["loadAccountDetail", adminSide],
+    ] as const) {
+      const fn = where.slice(where.indexOf(`export async function ${name}`));
       const body = fn.slice(0, fn.indexOf("\n}"));
       const selects = (body.match(/\.from\("referral_(commissions|attributions|accounts)"\)/g) ?? []).length;
       const bounded =

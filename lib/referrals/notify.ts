@@ -151,6 +151,49 @@ export async function notifyEarned(
   }
 }
 
+/**
+ * Their payout has gone out.
+ *
+ * THE LAST MESSAGE IN THE LOOP. The programme told them they earned it, then
+ * held it, and until this existed the money simply arrived in a bank account
+ * with nothing connecting it to the referrals it came from. That silence is
+ * where "did they actually pay me?" comes from, and answering it after the fact
+ * costs far more than sending this.
+ *
+ * Deliberately does not itemise which referrals it covers: the referrer is not
+ * told who paid (see `notifyEarned`), so a breakdown would either be useless or
+ * would leak the thing every other part of this system withholds.
+ */
+export async function notifyPaid(
+  referralAccountId: string,
+  amountMinor: number,
+  currency: string,
+): Promise<void> {
+  try {
+    const who = await recipient(referralAccountId);
+    if (!who) return;
+    const amount = formatMoney(amountMinor, currency);
+
+    await sendEmail({
+      to: who.email,
+      subject: `Your EngProgress referral payout: ${amount}`,
+      text:
+        `Hi ${who.name},\n\n` +
+        `We've sent your referral payout of ${amount}.\n\n` +
+        `Anything earned since then keeps building for the next one.\n\n` +
+        `See your referrals: ${serverEnv.siteUrl}/referrals\n\n— The EngProgress team`,
+      html:
+        `<p>Hi ${escapeHtml(who.name)},</p>` +
+        `<p>We've sent your referral payout of <strong>${escapeHtml(amount)}</strong>.</p>` +
+        `<p>Anything earned since then keeps building for the next one.</p>` +
+        `<p><a href="${serverEnv.siteUrl}/referrals">See your referrals</a></p>` +
+        `<p>— The EngProgress team</p>`,
+    });
+  } catch (err) {
+    console.error("[referrals] payout email failed:", err);
+  }
+}
+
 /** Minimal escaping for the values that reach the HTML bodies above. */
 function escapeHtml(raw: string): string {
   return raw

@@ -1,4 +1,6 @@
-import { Card, FAINT, INK, LINE, MUTED, SERIF } from "@/components/admin/ui";
+import Link from "next/link";
+
+import { Card, FAINT, INK, LINE, MUTED, SANS, SERIF } from "@/components/admin/ui";
 import { formatMoney, type CurrencyTotal } from "@/lib/referrals/types";
 import { BRAND, BRAND_DARKEST, BRAND_PALE } from "@/lib/theme/tokens";
 
@@ -79,8 +81,28 @@ export function ProgrammeSummary({
             ? /* A second balance, not a conversion of the first — there is no
                  rate in this system to convert with. */
               `and ${rest.map((t) => formatMoney(t.pendingMinor + t.payableMinor, t.currency)).join(" + ")}`
-            : "not yet paid out to anyone"}
+            : "held and cleared, not yet paid out"}
         </div>
+        {/* The figure is a liability, so it links to the only screen that can
+            discharge one. Reading a number you cannot act on is how it gets
+            ignored until it is large. */}
+        <Link
+          href="/admin/referrals/payouts"
+          style={{
+            display: "inline-block",
+            marginTop: 14,
+            padding: "7px 16px",
+            borderRadius: 999,
+            background: "rgba(255,255,255,.18)",
+            color: "#fff",
+            fontFamily: SANS,
+            fontSize: 12.5,
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          Settle payouts →
+        </Link>
       </div>
 
       <Figure

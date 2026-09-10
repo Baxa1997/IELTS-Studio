@@ -97,6 +97,7 @@ describe("what a referrer is promised", () => {
 
 describe("the hold, the payout cycle, and money going back", () => {
   const service = read("./service.ts");
+  const adminSide = read("./admin.ts");
   const webhook = read("../../app/api/billing/stripe/webhook/route.ts");
 
   it("holds for 7 days, not 14", () => {
@@ -122,11 +123,13 @@ describe("the hold, the payout cycle, and money going back", () => {
 
   it("routes every balance through that one helper", () => {
     // If a caller re-implements the comparison inline, this stops biting and
-    // the two sides can drift apart by a day without anybody noticing.
-    const callers = service.match(/commissionState\(/g) ?? [];
+    // the two sides can drift apart by a day without anybody noticing. Counted
+    // across BOTH services: the referrer's page and the reviewer's pages are
+    // exactly the two that must never disagree, and they now live apart.
+    const callers = (service + adminSide).match(/commissionState\(/g) ?? [];
     expect(callers.length).toBeGreaterThanOrEqual(3);
     // And nothing recomputes it by hand alongside the helper.
-    expect(service).not.toMatch(/Date\.parse\(String\(row\.payable_after\)\)/);
+    expect(service + adminSide).not.toMatch(/Date\.parse\(String\(row\.payable_after\)\)/);
   });
 
   it("counts a reversed commission toward no total, but still shows the row", () => {
@@ -171,6 +174,7 @@ describe("the hold, the payout cycle, and money going back", () => {
  */
 describe("a stopped referrer earns nothing more", () => {
   const service = read("./service.ts");
+  const adminSide = read("./admin.ts");
 
   it("accrues only for an active account", () => {
     // The single gate. `closed`, `revoked`, `pending` and `rejected` all fail it,
@@ -182,7 +186,7 @@ describe("a stopped referrer earns nothing more", () => {
     // `payable` is derived at read time, so filtering `pending` alone catches
     // everything — by coincidence. If anything ever writes `payable`, a
     // `pending`-only filter silently stops reversing half the ledger.
-    expect(service).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
+    expect(adminSide).toMatch(/\.in\("status", \["pending", "payable"\]\)/);
   });
 
   it("never reverses money already paid", () => {

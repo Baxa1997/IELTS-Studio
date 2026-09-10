@@ -17,9 +17,9 @@ import {
   clip,
 } from "@/components/admin/ui";
 import { requireSuperAdmin } from "@/lib/auth";
-import { loadAccountDetail, loadSettings, type Check } from "@/lib/referrals/service";
+import { loadAccountDetail, type AdminLedgerRow, type Check } from "@/lib/referrals/admin";
+import { loadSettings } from "@/lib/referrals/service";
 import { formatMoney, STATUS_LABEL } from "@/lib/referrals/types";
-import type { AdminLedgerRow } from "@/lib/referrals/service";
 import { BRAND, BRAND_LINE, BRAND_SOFT } from "@/lib/theme/tokens";
 
 import { DecisionBar } from "../decision-bar";

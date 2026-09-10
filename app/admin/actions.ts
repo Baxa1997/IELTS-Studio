@@ -8,7 +8,7 @@ import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { getUsageSummary } from "@/lib/quota";
-import { decideApplication } from "@/lib/referrals/service";
+import { decideApplication, recordPayout } from "@/lib/referrals/admin";
 import type { ReviewDecision } from "@/lib/referrals/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -434,4 +434,51 @@ export async function reviewReferral(
   revalidatePath("/admin/referrals");
   revalidatePath(`/admin/referrals/${accountId}`);
   return { notice: notice ?? "Done." };
+}
+
+
+/**
+ * Mark one referrer's cleared balance as paid.
+ *
+ * RECORDS A TRANSFER, DOES NOT MAKE ONE. The money moves in a bank app or a
+ * Payme dashboard; this writes down that it did and settles the commissions it
+ * covered. That asymmetry is why `reference` matters more than it looks — it is
+ * the only durable link between this row and the real transfer, and the only
+ * thing anybody can reconcile against months later.
+ *
+ * Deliberately takes no amount. The sum is derived from the commissions that
+ * have actually cleared, so a typo cannot settle more than is owed, and a
+ * reviewer cannot quietly pay a different number than the ledger says.
+ */
+export async function markReferralPaid(
+  _prev: ReviewState,
+  formData: FormData,
+): Promise<ReviewState> {
+  const { user } = await requireSuperAdmin();
+
+  const referralAccountId = String(formData.get("account_id") ?? "");
+  const currency = String(formData.get("currency") ?? "").toLowerCase();
+  if (!referralAccountId || !currency) return { error: "Invalid payout request." };
+
+  const { error, notice } = await recordPayout({
+    referralAccountId,
+    currency,
+    reference: String(formData.get("reference") ?? "").trim() || null,
+    note: String(formData.get("note") ?? "").trim() || null,
+    markedBy: user.id,
+  });
+  if (error) return { error };
+
+  await recordAdminAction({
+    action: "referral.payout",
+    targetKind: "referral",
+    targetId: referralAccountId,
+    detail: { currency, reference: String(formData.get("reference") ?? "").trim() || null },
+    actor: { id: user.id, email: user.email },
+  });
+
+  revalidatePath("/admin/referrals/payouts");
+  revalidatePath("/admin/referrals");
+  revalidatePath(`/admin/referrals/${referralAccountId}`);
+  return { notice: notice ?? "Recorded." };
 }

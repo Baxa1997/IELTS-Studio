@@ -241,13 +241,13 @@ function Active({
         <Ledger rows={earnings.rows} holdDays={settings.holdDays} />
       )}
 
-      {/* <p style={{ fontSize: 13, color: MUTED, margin: "16px 0 0", lineHeight: 1.6, maxWidth: "74ch" }}>
+      <p style={{ fontSize: 13, color: MUTED, margin: "16px 0 0", lineHeight: 1.6, maxWidth: "74ch" }}>
         You earn once per person — their first payment only, not their later months. Commission is
         held for {settings.holdDays} days in case that payment is refunded, then paid out{" "}
         <strong>once a month</strong> on balances over {formatMoney(settings.minPayoutMinor, "usd")}{" "}
         ({formatMoney(settings.minPayoutUzsMinor, "uzs")}). Totals stay in the currency they were
         earned in — there is no conversion between them. Your rate is {percent}%.
-      </p> */}
+      </p>
     </>
   );
 }

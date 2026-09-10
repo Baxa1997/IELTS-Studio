@@ -48,6 +48,7 @@ const ledger = code("../../app/(app)/referrals/ledger.tsx");
 const page = code("../../app/(app)/referrals/page.tsx");
 const types = code("./types.ts");
 const service = code("./service.ts");
+const adminSide = code("./admin.ts");
 const migration = read("../../supabase/migrations/20260907120000_referrals.sql");
 
 describe("what the referrer's row is allowed to carry", () => {
@@ -108,8 +109,14 @@ describe("what the REVIEWER sees, which is a different question", () => {
     // The asymmetry is the point: a super admin deciding whether an application
     // is genuine needs to see who signed up and whether they look real. A
     // referrer does not need it to be paid correctly.
-    expect(service).toMatch(/export interface AdminLedgerRow/);
-    const row = service.slice(service.indexOf("export interface AdminLedgerRow"), service.indexOf("}", service.indexOf("export interface AdminLedgerRow")));
+    // And it lives in admin.ts, not beside the referrer's loader — the split
+    // is what stops the wrong one being imported by accident.
+    expect(service).not.toMatch(/AdminLedgerRow/);
+    expect(adminSide).toMatch(/export interface AdminLedgerRow/);
+    const row = adminSide.slice(
+      adminSide.indexOf("export interface AdminLedgerRow"),
+      adminSide.indexOf("}", adminSide.indexOf("export interface AdminLedgerRow")),
+    );
     expect(row).toMatch(/who: string/);
   });
 
