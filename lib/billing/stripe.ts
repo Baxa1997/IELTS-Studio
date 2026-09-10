@@ -136,18 +136,21 @@ function mapEvent(event: StripeEvent): PlanChange | null {
         // `amount_total` is already in minor units.
         amountMinor: (obj.amount_total as number | undefined) ?? null,
         currency: (obj.currency as string | undefined) ?? null,
-        /* AN END DATE, BECAUSE NOTHING ELSE SUPPLIED ONE.
-           A checkout session has no `current_period_end` — only the
-           subscription object does, and the subscription events below bail
-           whenever their metadata carries no plan, which is the ordinary case
-           for a checkout-created subscription. So `current_period_end` was NULL
-           on every Stripe row in production, and a plan with no end date is a
-           plan that never ends: one payment bought Pro permanently.
+        /* AN END DATE, BECAUSE A CHECKOUT SESSION HAS NONE.
+           Only the subscription carries a period, and until the subscription
+           events were fixed they supplied nothing either: this account runs
+           Stripe API 2026-01-28.clover, which moved `current_period_end` off the
+           subscription and onto its items. Every event read a field that no
+           longer exists — so the column was NULL on every Stripe row, and a plan
+           with no end date is a plan that never ends.
 
-           Derived from the tier's own billing period, the same way Payme and
-           Click already do it (`monthFromNow`). Stripe's real date overrides
-           this the moment a subscription event arrives carrying plan metadata,
-           so this is a floor rather than a guess that sticks. */
+           (An earlier note here blamed missing plan metadata. That was wrong:
+           checkout sets `subscription_data[metadata]`, so subscription events
+           resolve their org and plan fine. They just could not read the date.)
+
+           Derived from the tier's own billing period, the way Payme and Click
+           do it. The first subscription event replaces it with Stripe's own
+           date, read from `periodEndOf`. */
         currentPeriodEnd: periodEndFor(plan),
       };
     /* NO AMOUNT ON THESE, DELIBERATELY. A subscription event describes state,
@@ -158,15 +161,7 @@ function mapEvent(event: StripeEvent): PlanChange | null {
     case "customer.subscription.updated":
     case "customer.subscription.created":
       if (!plan) return null;
-      return {
-        organizationId,
-        plan,
-        status: mapStatus(obj.status as string),
-        provider: "stripe",
-        externalCustomerId: (obj.customer as string | null) ?? null,
-        externalSubscriptionId: (obj.id as string | null) ?? null,
-        currentPeriodEnd: unixToIso(obj.current_period_end as number | undefined),
-      };
+      return changeFromSubscription(obj, { organizationId, plan });
     case "customer.subscription.deleted":
       return {
         organizationId,
@@ -177,6 +172,95 @@ function mapEvent(event: StripeEvent): PlanChange | null {
       };
     default:
       return null; // ignore everything else
+  }
+}
+
+/**
+ * When the paid period of a Stripe subscription ends.
+ *
+ * READ FROM THE ITEMS FIRST. Stripe API 2026-01-28.clover — the version this
+ * account and its webhook endpoint run — no longer puts `current_period_end` on
+ * the subscription; it lives on each subscription item. Reading the old
+ * top-level field returned undefined on every event, which is why every Stripe
+ * row in production had no end date. The top-level field is still consulted as
+ * a fallback, for an event rendered under an older API version.
+ */
+export function periodEndOf(obj: Record<string, unknown>): string | null {
+  const items = (obj.items as { data?: { current_period_end?: unknown }[] } | undefined)?.data ?? [];
+  const ends = items
+    .map((item) => item.current_period_end)
+    .filter((n): n is number => typeof n === "number" && n > 0);
+  if (ends.length > 0) return unixToIso(Math.max(...ends));
+  return unixToIso(obj.current_period_end as number | undefined);
+}
+
+/**
+ * A Stripe subscription object, as a PlanChange.
+ *
+ * Shared by the webhook and by the nightly reconciliation, so a subscription
+ * means the same thing whether it arrived as an event or was fetched because an
+ * event never came. The org is always the caller's — for the webhook, the one in
+ * the metadata; for reconciliation, the row being checked.
+ */
+export function changeFromSubscription(
+  obj: Record<string, unknown>,
+  owner: { organizationId: string; plan: OrgPlan },
+): PlanChange {
+  const metadata = (obj.metadata ?? {}) as Record<string, string>;
+  return {
+    organizationId: owner.organizationId,
+    plan: coercePlan(metadata.plan) ?? owner.plan,
+    status: mapStatus(String(obj.status ?? "")),
+    provider: "stripe",
+    externalCustomerId: (obj.customer as string | null) ?? null,
+    externalSubscriptionId: (obj.id as string | null) ?? null,
+    currentPeriodEnd: periodEndOf(obj),
+  };
+}
+
+/**
+ * Ask Stripe what a subscription is doing right now.
+ *
+ * For reconciliation: our stored date is only ever a copy of Stripe's, so when
+ * it looks lapsed the honest move is to ask rather than to act. Looks up the
+ * subscription id when we have a real one, and otherwise the customer's
+ * subscriptions — the pending marker used to overwrite the `sub_…` id with a
+ * checkout session id, so the customer is sometimes the only reference left.
+ *
+ * `ok: false` means we could not find out. Callers must treat that as "do
+ * nothing": taking a plan away on a network error is the worst available answer.
+ */
+export async function fetchLiveStripeSubscription(ref: {
+  subscriptionId?: string | null;
+  customerId?: string | null;
+}): Promise<{ ok: true; subscription: Record<string, unknown> | null } | { ok: false; error: string }> {
+  const cfg = serverEnv.stripe;
+  if (!cfg) return { ok: false, error: "stripe is not configured" };
+  const headers = { Authorization: `Bearer ${cfg.secretKey}` };
+
+  try {
+    if (ref.subscriptionId?.startsWith("sub_")) {
+      const res = await fetch(`${API}/subscriptions/${encodeURIComponent(ref.subscriptionId)}`, { headers });
+      if (res.status === 404) return { ok: true, subscription: null };
+      if (!res.ok) return { ok: false, error: `stripe responded ${res.status}` };
+      return { ok: true, subscription: (await res.json()) as Record<string, unknown> };
+    }
+    if (ref.customerId?.startsWith("cus_")) {
+      const res = await fetch(
+        `${API}/subscriptions?customer=${encodeURIComponent(ref.customerId)}&status=all&limit=10`,
+        { headers },
+      );
+      if (!res.ok) return { ok: false, error: `stripe responded ${res.status}` };
+      const body = (await res.json()) as { data?: Record<string, unknown>[] };
+      const subs = body.data ?? [];
+      // A live one wins over a newer dead one: an abandoned second checkout
+      // must not stand in for the subscription that is still being paid.
+      const live = subs.find((sub) => sub.status === "active" || sub.status === "trialing" || sub.status === "past_due");
+      return { ok: true, subscription: live ?? subs[0] ?? null };
+    }
+    return { ok: true, subscription: null };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 

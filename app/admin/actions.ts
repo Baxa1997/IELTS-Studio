@@ -8,6 +8,7 @@ import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { getUsageSummary } from "@/lib/quota";
+import { isLiveSubscription } from "@/lib/billing/lifecycle";
 import { decideApplication, recordPayout } from "@/lib/referrals/admin";
 import type { ReviewDecision } from "@/lib/referrals/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -205,6 +206,31 @@ export async function setAccountPlan(
     .eq("id", profile.organization_id)
     .select("id"); // RLS-filtered writes report success without this
   if (error) return { error: error.message };
+
+  /* A PLAN SET BY HAND OUTRANKS A SUBSCRIPTION NOBODY IS PAYING FOR.
+     This action only ever wrote `organizations`. So comping somebody who once
+     paid through Payme or Click left their old subscription row behind, still
+     open, with a date in the past — and the nightly job and the quota reader
+     both read that row as "lapsed" and put them straight back on trial. The
+     grant would have lasted until the next morning.
+
+     A LIVE subscription is left alone: somebody is paying for it, the provider
+     still governs it, and its next renewal would restore the paid state anyway. */
+  if (before?.plan !== plan) {
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("status, current_period_end, provider, external_subscription_id")
+      .eq("organization_id", profile.organization_id)
+      .maybeSingle();
+    if (sub && sub.status !== "canceled" && !isLiveSubscription(sub)) {
+      await admin
+        .from("subscriptions")
+        .update({ status: "canceled", updated_at: new Date().toISOString() })
+        .eq("organization_id", profile.organization_id)
+        .neq("status", "canceled")
+        .select("organization_id");
+    }
+  }
 
   await recordAdminAction({
     action: before?.plan !== plan ? "user.plan_change" : "user.limits_change",

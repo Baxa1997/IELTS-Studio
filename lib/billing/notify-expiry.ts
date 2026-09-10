@@ -4,6 +4,7 @@ import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import type { DowngradeReason } from "./lifecycle";
 import { PLAN_TIERS, type OrgPlan } from "./plans";
 
 /**
@@ -17,7 +18,14 @@ import { PLAN_TIERS, type OrgPlan } from "./plans";
  * back because SMTP was down would leave a paid plan running for free, which is
  * a worse outcome than a silent one. Same rule as the referral notifications.
  */
-export async function notifyPlanExpired(organizationId: string, plan: string): Promise<void> {
+export async function notifyPlanExpired(
+  organizationId: string,
+  plan: string,
+  /** `payment_failed` is a card declining on renewal while Stripe retries — the
+   *  plan comes back by itself if a retry succeeds, so "your plan has ended"
+   *  would be untrue. Everything else is a plan that has actually ended. */
+  reason: DowngradeReason = "ended",
+): Promise<void> {
   try {
     const admin = createAdminClient();
 
@@ -46,29 +54,37 @@ export async function notifyPlanExpired(organizationId: string, plan: string): P
     if (!email || !email.includes("@") || email.endsWith("students.engprogress.com")) return;
 
     const name = person.full_name?.split(" ")[0] ?? "there";
-    // `plan` arrives as a string off the subscription row, so it is checked
-    // against the catalogue rather than cast into it.
+    // `plan` arrives as a string off the org row, so it is checked against the
+    // catalogue rather than cast into it.
     const planName = (plan in PLAN_TIERS ? PLAN_TIERS[plan as OrgPlan].name : null) ?? "your paid plan";
+    const allowance =
+      `free accounts get ${PLAN_TIERS.trial.gradeLimit} gradings and ` +
+      `${PLAN_TIERS.trial.generateLimit} practice sets a month`;
+    const untouched =
+      "Nothing you have written, read or recorded has been touched — your history, bands and " +
+      "feedback are all still there.";
+
+    const failed = reason === "payment_failed";
+    const subject = failed
+      ? `We couldn't renew your EngProgress ${planName} plan`
+      : `Your EngProgress ${planName} plan has ended`;
+    const lead = failed
+      ? `Your latest payment for ${planName} didn't go through, so your account is on the free plan for now. ` +
+        `As soon as the payment succeeds, your plan comes back by itself.`
+      : `Your ${planName} plan has reached the end of what was paid for, so your account is back on the free plan.`;
+    const cta = failed ? "Update your payment" : "Pick the plan back up";
 
     await sendEmail({
       to: email,
-      subject: `Your EngProgress ${planName} plan has ended`,
+      subject,
       text:
-        `Hi ${name},\n\n` +
-        `Your ${planName} plan has reached the end of its billing period, so your account is ` +
-        `back on the free plan.\n\n` +
-        `Nothing you have written, read or recorded has been touched — your history, bands and ` +
-        `feedback are all still there. What changes is the monthly allowance: free accounts get ` +
-        `${PLAN_TIERS.trial.gradeLimit} gradings and ${PLAN_TIERS.trial.generateLimit} practice sets a month.\n\n` +
-        `Pick the plan back up whenever you want: ${serverEnv.siteUrl}/plan\n\n— The EngProgress team`,
+        `Hi ${name},\n\n${lead}\n\n${untouched} What changes is the monthly allowance: ${allowance}.\n\n` +
+        `${cta}: ${serverEnv.siteUrl}/plan\n\n— The EngProgress team`,
       html:
         `<p>Hi ${escapeHtml(name)},</p>` +
-        `<p>Your <strong>${escapeHtml(planName)}</strong> plan has reached the end of its billing ` +
-        `period, so your account is back on the free plan.</p>` +
-        `<p>Nothing you have written, read or recorded has been touched — your history, bands and ` +
-        `feedback are all still there. What changes is the monthly allowance: free accounts get ` +
-        `${PLAN_TIERS.trial.gradeLimit} gradings and ${PLAN_TIERS.trial.generateLimit} practice sets a month.</p>` +
-        `<p><a href="${serverEnv.siteUrl}/plan">Pick the plan back up</a></p>` +
+        `<p>${escapeHtml(lead)}</p>` +
+        `<p>${escapeHtml(untouched)} What changes is the monthly allowance: ${escapeHtml(allowance)}.</p>` +
+        `<p><a href="${serverEnv.siteUrl}/plan">${escapeHtml(cta)}</a></p>` +
         `<p>— The EngProgress team</p>`,
     });
   } catch (err) {

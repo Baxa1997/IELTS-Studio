@@ -1,7 +1,7 @@
 import "server-only";
 
 import { planTier, type OrgPlan } from "@/lib/billing/plans";
-import { hasLapsed } from "@/lib/billing/expiry";
+import { hasLapsed } from "@/lib/billing/lifecycle";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -65,12 +65,21 @@ function monthWindow(now = new Date()): { start: string; resetAt: string } {
  * with no end date, is NOT lapsed. Several paid orgs here are exactly that:
  * comped accounts, the shared library orgs, and plans granted by hand from the
  * admin console. Treating them as expired would have downgraded every one.
+ *
+ * For Stripe it allows a few days past the period end, because Stripe renews by
+ * itself and a renewal webhook that lands late must not throttle somebody who
+ * has just been charged. The nightly job asks Stripe directly inside that window.
+ *
+ * Per-org limit overrides are NOT cleared here. They are an admin's explicit
+ * decision, and the durable downgrade (lib/billing/downgrade.ts) leaves them in
+ * place too — if this cleared them, the allowance would change shape the moment
+ * the nightly job ran.
  */
 async function loadOrg(organizationId: string) {
   const admin = createAdminClient();
   const { data } = await admin
     .from("organizations")
-    .select("plan, grading_monthly_limit, generation_monthly_limit, billing_enforced, subscriptions(status, current_period_end)")
+    .select("plan, grading_monthly_limit, generation_monthly_limit, billing_enforced, subscriptions(status, current_period_end, provider)")
     .eq("id", organizationId)
     .single();
 
@@ -78,13 +87,7 @@ async function loadOrg(organizationId: string) {
 
   const sub = Array.isArray(data.subscriptions) ? data.subscriptions[0] : data.subscriptions;
   if (hasLapsed(sub)) {
-    /* The per-org limit overrides go with the plan. They are what an admin
-       granted alongside a paid tier, so leaving them in place would keep the
-       allowance the payment bought after the payment stopped. */
-    return {
-      admin,
-      org: { ...data, plan: "trial", grading_monthly_limit: null, generation_monthly_limit: null },
-    };
+    return { admin, org: { ...data, plan: "trial" } };
   }
   return { admin, org: data };
 }

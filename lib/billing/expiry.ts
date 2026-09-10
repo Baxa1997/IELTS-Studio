@@ -2,117 +2,115 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { notifyPlanExpired } from "./notify-expiry";
-import type { SubscriptionStatus } from "./types";
+import { downgradeToFree } from "./downgrade";
+import { hasLapsed } from "./lifecycle";
+import { applyPlanChange, coercePlan } from "./service";
+import { changeFromSubscription, fetchLiveStripeSubscription } from "./stripe";
 
 /**
- * Paid plans ending when they are supposed to.
+ * The nightly pass: end what has run out, and re-check what may have.
  *
- * THE BUG THIS EXISTS FOR: nothing ever expired. A subscription recorded a
- * `current_period_end` and no code anywhere read it, so an org that paid once
- * stayed on Pro permanently — a single $14.99 bought unlimited grading for good.
- * There was no downgrade, and the learner was never told anything either way.
+ * WHAT IT FIXES. Nothing ever expired — `current_period_end` was written and
+ * never read, so one payment bought a paid plan for good, and the learner was
+ * told nothing either way.
  *
- * TWO HALVES, ON PURPOSE. The cron below does the durable work: it downgrades
- * the org, closes the subscription and sends the email. `hasLapsed` is also
- * consulted on the READ path (lib/quota.ts) so that the window between a period
- * ending and the next cron run does not hand out a free month — a job that runs
- * daily is a job that is up to a day late, and quota is checked far more often
- * than once a day.
- */
-
-/** What the expiry pass needs to know about one subscription. */
-export interface LapsableSubscription {
-  status: SubscriptionStatus | string | null;
-  current_period_end: string | null;
-}
-
-/**
- * Has this subscription run out?
+ * WHAT IT MUST NOT DO, which the first version of this file got wrong. It
+ * treated every provider's stored date as the truth. That is right for Payme
+ * and Click, which never renew. It is wrong for Stripe, which renews by itself:
+ * our date is only a copy of Stripe's, advanced by a webhook, and a single
+ * missed webhook would have had this downgrade a customer the day after Stripe
+ * charged them — then email them that their plan had ended. So:
  *
- * NULL IS NOT LAPSED, AND THAT IS THE LOAD-BEARING PART. Several paid orgs on
- * this platform have no subscription row at all, or one with no period end —
- * comped accounts, the shared library orgs, and plans granted by hand from the
- * admin console. Treating "no end date" as "ended" would downgrade every one of
- * them the first time this ran, silently, including the owner's own account.
+ * - Payme / Click: a passed date ends the plan.
+ * - Stripe: a missing or passed date is a reason to ASK Stripe. Whatever Stripe
+ *   says is applied through `applyPlanChange`, exactly as if the webhook had
+ *   arrived — renewed advances the date, failed or ended downgrades. If Stripe
+ *   cannot be asked, nothing happens; a network error never takes a plan away.
  *
- * So the rule is narrow by design: a subscription lapses only when it HAS an end
- * date, that date has passed, and it has not already been closed. Everything
- * else is somebody's deliberate decision and is left alone.
+ * IDEMPOTENT. Every downgrade goes through `downgradeToFree`, whose conditional
+ * write is the de-duplication, so a retried or overlapping run sends one email.
  *
- * Pure, so the cron and the quota reader cannot disagree about who has expired.
- */
-export function hasLapsed(sub: LapsableSubscription | null | undefined, now = Date.now()): boolean {
-  if (!sub) return false;
-  if (!sub.current_period_end) return false;
-  // Already terminal — expiring it again would re-send the email every night.
-  if (sub.status === "canceled") return false;
-  const end = Date.parse(sub.current_period_end);
-  return Number.isFinite(end) && end <= now;
-}
-
-/**
- * Downgrade everything that has run out, and tell the people it happened to.
- *
- * IDEMPOTENT BY CONSTRUCTION. It only ever picks up subscriptions that are still
- * open with a past end date, and closing one removes it from its own query — so
- * a retried cron, an overlapping invocation, or somebody curling it twice all
- * settle to one downgrade and one email.
- *
- * Order matters: the subscription is closed FIRST, then the org is downgraded,
- * then the email goes. Closing first is what makes a crash safe — a closed
- * subscription beside a still-Pro org is visible and fixable on the next run,
- * whereas a downgraded org with an open subscription would be re-downgraded
- * every night and mail the learner every night with it.
+ * ORDER, AND WHY THE FIRST VERSION'S ORDER WAS A TRAP. It closed the
+ * subscription first and downgraded second, claiming a failure in between would
+ * be "fixable on the next run". It would not: the next run skips closed rows, so
+ * the org stayed on its paid plan permanently. Now the downgrade goes first and
+ * the row is closed only after it landed — a failure in between leaves an open
+ * row, which the next run picks up and finishes without mailing twice.
  */
 export async function expireLapsedSubscriptions(): Promise<{
   expired: number;
+  reconciled: number;
   errors: string[];
 }> {
   const admin = createAdminClient();
   const errors: string[] = [];
-  const nowIso = new Date().toISOString();
+  const now = Date.now();
 
-  const { data: lapsed, error } = await admin
+  const { data: rows, error } = await admin
     .from("subscriptions")
-    .select("organization_id, plan, status, current_period_end, provider")
-    .not("current_period_end", "is", null)
-    .lt("current_period_end", nowIso)
+    .select("organization_id, plan, status, provider, current_period_end, external_customer_id, external_subscription_id")
     .neq("status", "canceled");
-
-  if (error) return { expired: 0, errors: [error.message] };
+  if (error) return { expired: 0, reconciled: 0, errors: [error.message] };
 
   let expired = 0;
-  for (const sub of lapsed ?? []) {
-    const organizationId = String(sub.organization_id);
+  let reconciled = 0;
+
+  for (const row of rows ?? []) {
+    const organizationId = String(row.organization_id);
     try {
-      const { error: subError } = await admin
+      if (row.provider === "stripe") {
+        // Only rows that claim to be paid are worth asking about — an
+        // `incomplete` row is an abandoned checkout with nothing to take away.
+        const claimsPaid = row.status === "active" || row.status === "trialing" || row.status === "past_due";
+        if (!claimsPaid) continue;
+        if (row.current_period_end && !hasLapsed(row, now)) continue;
+
+        const live = await fetchLiveStripeSubscription({
+          subscriptionId: row.external_subscription_id,
+          customerId: row.external_customer_id,
+        });
+        if (!live.ok) {
+          errors.push(`${organizationId}: could not reach Stripe (${live.error}) — left as it was`);
+          continue;
+        }
+        if (!live.subscription) {
+          // Absence of evidence is not evidence of non-payment. A row that
+          // says paid with nothing behind it in Stripe is for a person to look
+          // at, not for a job to downgrade.
+          errors.push(`${organizationId}: row says ${row.status} but Stripe has no subscription for it — left as it was`);
+          continue;
+        }
+
+        await applyPlanChange(
+          changeFromSubscription(live.subscription, {
+            organizationId,
+            plan: coercePlan(row.plan) ?? "pro",
+          }),
+        );
+        reconciled += 1;
+        continue;
+      }
+
+      // Payme and Click: the stored date is the whole truth.
+      if (!hasLapsed(row, now)) continue;
+
+      const result = await downgradeToFree(organizationId, "ended");
+      if (result === "failed") {
+        errors.push(`${organizationId}: downgrade failed — row left open for the next run`);
+        continue;
+      }
+      const { error: closeError } = await admin
         .from("subscriptions")
-        .update({ status: "canceled", updated_at: nowIso })
+        .update({ status: "canceled", updated_at: new Date(now).toISOString() })
         .eq("organization_id", organizationId)
-        // Re-checked at write time so two overlapping runs cannot both claim it.
-        .neq("status", "canceled");
-      if (subError) {
-        errors.push(`${organizationId}: ${subError.message}`);
-        continue;
-      }
-
-      const { error: orgError } = await admin
-        .from("organizations")
-        .update({ plan: "trial" })
-        .eq("id", organizationId);
-      if (orgError) {
-        errors.push(`${organizationId}: ${orgError.message}`);
-        continue;
-      }
-
-      expired += 1;
-      // After the downgrade has landed, and never allowed to undo it.
-      await notifyPlanExpired(organizationId, String(sub.plan ?? "pro"));
+        .neq("status", "canceled")
+        .select("organization_id");
+      if (closeError) errors.push(`${organizationId}: downgraded, but closing the row failed: ${closeError.message}`);
+      if (result === "downgraded") expired += 1;
     } catch (err) {
       errors.push(`${organizationId}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  return { expired, errors };
+  return { expired, reconciled, errors };
 }

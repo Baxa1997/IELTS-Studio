@@ -3,6 +3,13 @@ import "server-only";
 import { accrueCommission } from "@/lib/referrals/accrual";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+import { downgradeToFree } from "./downgrade";
+import {
+  isAboutAnotherSubscription,
+  orgEffect,
+  shouldMarkPending,
+  subscriptionUpsert,
+} from "./lifecycle";
 import { isValidPlan, planTier, type OrgPlan } from "./plans";
 import type { BillingProviderId, PlanChange, SubscriptionStatus } from "./types";
 
@@ -13,9 +20,15 @@ import type { BillingProviderId, PlanChange, SubscriptionStatus } from "./types"
  * state is never client-forgeable.
  */
 
-/** Apply a normalized plan change: upsert the subscription and reflect the plan on
- *  the organization (so quotas/seats follow immediately). A non-active status
- *  downgrades the org to trial so access tracks payment. */
+/**
+ * Apply a normalized plan change: upsert the subscription and reflect the plan on
+ * the organization, so quotas and seats follow immediately.
+ *
+ * What a status does to the org is decided by `orgEffect` (lib/billing/lifecycle.ts):
+ * paying grants the plan, a failed renewal or an ending downgrades it — through
+ * `downgradeToFree`, which is the only thing that sends the email — and an
+ * `incomplete` first payment changes nothing, because nothing was paid.
+ */
 export async function applyPlanChange(
   change: PlanChange,
   /** The `billing_events` row this change came from. Referral commission is keyed
@@ -24,26 +37,36 @@ export async function applyPlanChange(
   billingEventId?: string | null,
 ): Promise<void> {
   const admin = createAdminClient();
+  const now = Date.now();
 
-  await admin.from("subscriptions").upsert(
-    {
-      organization_id: change.organizationId,
-      provider: change.provider,
-      plan: change.plan,
-      status: change.status,
-      external_customer_id: change.externalCustomerId ?? null,
-      external_subscription_id: change.externalSubscriptionId ?? null,
-      current_period_end: change.currentPeriodEnd ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "organization_id" },
-  );
+  const { data: existing } = await admin
+    .from("subscriptions")
+    .select("status, current_period_end, provider, external_subscription_id")
+    .eq("organization_id", change.organizationId)
+    .maybeSingle();
 
-  const active = change.status === "active" || change.status === "trialing";
+  /* A DEAD SECOND SUBSCRIPTION MUST NOT END A LIVE FIRST ONE. Every checkout
+     creates a fresh Stripe subscription, so an abandoned or failed second one
+     sends its events for the same org — and they used to overwrite the paid
+     row and downgrade its owner. Such an event is ignored outright: it neither
+     touches the row nor the plan. */
+  if (isAboutAnotherSubscription(existing, change, now)) {
+    console.warn(
+      `[billing] ignored ${change.status} for ${change.externalSubscriptionId}: org ${change.organizationId} has a different live subscription`,
+    );
+    return;
+  }
+
   await admin
-    .from("organizations")
-    .update({ plan: active ? change.plan : "trial" })
-    .eq("id", change.organizationId);
+    .from("subscriptions")
+    .upsert(subscriptionUpsert(change, new Date(now).toISOString()), { onConflict: "organization_id" });
+
+  const effect = orgEffect(change.status);
+  if (effect === "grant") {
+    await admin.from("organizations").update({ plan: change.plan }).eq("id", change.organizationId);
+  } else if (effect !== "none") {
+    await downgradeToFree(change.organizationId, effect);
+  }
 
   /**
    * REFERRAL COMMISSION, ACCRUED HERE AND NOWHERE ELSE.
@@ -129,7 +152,15 @@ export async function getSubscription(organizationId: string): Promise<Subscript
   };
 }
 
-/** Mark a subscription pending while the admin completes checkout. */
+/**
+ * Mark a subscription pending while somebody completes checkout.
+ *
+ * Skipped when the org already has a subscription being paid for. This runs the
+ * moment Upgrade is clicked, before any money moves, and it used to overwrite a
+ * live row with `incomplete` and the checkout SESSION id — so a paying customer
+ * who opened a checkout and closed the tab lost their real `sub_…` id and read
+ * as unpaid. The completed payment's own webhook writes the new state anyway.
+ */
 export async function markCheckoutPending(args: {
   organizationId: string;
   plan: OrgPlan;
@@ -137,6 +168,13 @@ export async function markCheckoutPending(args: {
   reference: string;
 }): Promise<void> {
   const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("subscriptions")
+    .select("status, current_period_end, provider, external_subscription_id")
+    .eq("organization_id", args.organizationId)
+    .maybeSingle();
+  if (!shouldMarkPending(existing)) return;
+
   await admin.from("subscriptions").upsert(
     {
       organization_id: args.organizationId,
