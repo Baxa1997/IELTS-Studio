@@ -4,7 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { generateCode, normalizeCode } from "./code";
 import { notifyApproved, notifyRejected } from "./notify";
+import { commissionState } from "./types";
 import type {
+  CommissionRow,
+  CommissionStatus,
   CurrencyTotal,
   Earnings,
   ReferralAccount,
@@ -137,6 +140,10 @@ export async function decideApplication(args: {
   decision: ReviewDecision;
   note: string | null;
   reviewerId: string | null;
+  /** An override for this account, or null to leave whatever it has. Only ever
+   *  applied on `approve` — changing somebody's rate while closing them would
+   *  be a silent rewrite of what they were owed. */
+  percent?: number | null;
 }): Promise<{ error: string | null; notice: string | null }> {
   const admin = createAdminClient();
 
@@ -154,9 +161,25 @@ export async function decideApplication(args: {
     if (account.status === "active") return { error: null, notice: "Already approved." };
     const code = account.code ?? (await mintCode(admin));
     if (!code) return { error: "Couldn't allocate a code. Try again.", notice: null };
+    /* THE RATE IS SET AT APPROVAL, and only here. `percent_applied` is copied
+       onto every commission at accrual, so changing this later moves nobody's
+       existing money — which is the behaviour we want, and the reason a rate
+       change is not offered anywhere a ledger already exists. */
+    const rateOverride =
+      typeof args.percent === "number" && Number.isFinite(args.percent) ? args.percent : null;
+    if (rateOverride !== null && (rateOverride <= 0 || rateOverride > 100)) {
+      return { error: "A rate has to be between 1 and 100.", notice: null };
+    }
+
     const { error } = await admin
       .from("referral_accounts")
-      .update({ ...base, status: "active", code, stopped_at: null })
+      .update({
+        ...base,
+        status: "active",
+        code,
+        stopped_at: null,
+        ...(rateOverride !== null ? { percent: rateOverride } : null),
+      })
       .eq("id", args.accountId);
     if (error) return { error: `Update failed: ${error.message}`, notice: null };
 
@@ -272,7 +295,7 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
   const [{ data: rows }, { count: signups }] = await Promise.all([
     admin
       .from("referral_commissions")
-      .select("amount_minor, currency, status, payable_after, created_at")
+      .select("id, amount_minor, currency, status, percent_applied, payable_after, created_at")
       .eq("referral_account_id", accountId)
       .order("created_at", { ascending: false }),
     admin
@@ -299,22 +322,39 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
    * made, not facts a date implies.
    */
   const now = Date.now();
+  const ledger: CommissionRow[] = [];
+
   for (const row of rows ?? []) {
     const currency = String(row.currency);
+    const amount = Number(row.amount_minor) || 0;
+    const state = commissionState(row.status, row.payable_after ?? null, now);
+
+    ledger.push({
+      id: String(row.id),
+      earnedAt: String(row.created_at),
+      amountMinor: amount,
+      currency,
+      percentApplied: Number(row.percent_applied) || 0,
+      state,
+      clearsAt: state === "held" ? String(row.payable_after) : null,
+    });
+
+    // `reversed` is deliberately counted in no total: it is money that came
+    // back. It stays in `ledger` above, because a row that silently vanished
+    // from a statement is how a person concludes the numbers are made up.
+    if (state === "reversed") continue;
+
     const bucket = byCurrency.get(currency) ?? {
       currency,
       pendingMinor: 0,
       payableMinor: 0,
       paidMinor: 0,
+      count: 0,
     };
-    const amount = Number(row.amount_minor) || 0;
-    // `reversed` is deliberately counted nowhere: it is money that came back.
-    if (row.status === "paid") bucket.paidMinor += amount;
-    else if (row.status === "pending") {
-      const clear = row.payable_after ? Date.parse(String(row.payable_after)) : now;
-      if (Number.isFinite(clear) && clear <= now) bucket.payableMinor += amount;
-      else bucket.pendingMinor += amount;
-    } else if (row.status === "payable") bucket.payableMinor += amount;
+    if (state === "paid") bucket.paidMinor += amount;
+    else if (state === "released") bucket.payableMinor += amount;
+    else bucket.pendingMinor += amount;
+    bucket.count += 1;
     byCurrency.set(currency, bucket);
   }
 
@@ -331,5 +371,294 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
     signups: signups ?? 0,
     converted: converted.size,
     totals: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
+    rows: ledger,
+  };
+}
+
+/* ── the programme, seen from above ──────────────────────────────────────── */
+
+/** What the whole programme currently costs and carries. Admin only. */
+export interface ProgrammeTotals {
+  /** Owed but not yet settled, per currency. Never summed across them. */
+  owed: CurrencyTotal[];
+  waiting: number;
+  /** ISO date of the longest-waiting application, or null when none wait. */
+  oldestWaiting: string | null;
+  active: number;
+  closed: number;
+  /** Signups attributed to accounts that are still active. */
+  referredSignups: number;
+}
+
+/**
+ * The three figures the queue leads with.
+ *
+ * "Owed" is the one that matters: it is a liability the platform has already
+ * incurred and has no screen to discharge. It counts everything not yet `paid`
+ * and not `reversed` — money on hold is still money promised, and showing only
+ * the withdrawable part would understate what the programme has cost.
+ */
+export async function loadProgrammeTotals(): Promise<ProgrammeTotals> {
+  const admin = createAdminClient();
+
+  const [{ data: statuses }, { data: commissions }, { count: referredSignups }] = await Promise.all([
+    admin.from("referral_accounts").select("status, applied_at"),
+    admin
+      .from("referral_commissions")
+      .select("amount_minor, currency, status, payable_after")
+      .neq("status", "reversed"),
+    admin
+      .from("referral_attributions")
+      .select("organization_id", { count: "exact", head: true }),
+  ]);
+
+  const pendingRows = (statuses ?? []).filter((a) => a.status === "pending");
+  const oldest = pendingRows
+    .map((a) => String(a.applied_at))
+    .sort()
+    .at(0) ?? null;
+
+  const byCurrency = new Map<string, CurrencyTotal>();
+  const now = Date.now();
+  for (const row of commissions ?? []) {
+    const currency = String(row.currency);
+    const bucket = byCurrency.get(currency) ?? {
+      currency,
+      pendingMinor: 0,
+      payableMinor: 0,
+      paidMinor: 0,
+      count: 0,
+    };
+    const amount = Number(row.amount_minor) || 0;
+    const state = commissionState(row.status, row.payable_after ?? null, now);
+    if (state === "paid") bucket.paidMinor += amount;
+    else if (state === "released") bucket.payableMinor += amount;
+    else bucket.pendingMinor += amount;
+    bucket.count += 1;
+    byCurrency.set(currency, bucket);
+  }
+
+  return {
+    owed: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
+    waiting: pendingRows.length,
+    oldestWaiting: oldest,
+    active: (statuses ?? []).filter((a) => a.status === "active").length,
+    closed: (statuses ?? []).filter((a) => a.status === "closed" || a.status === "revoked").length,
+    referredSignups: referredSignups ?? 0,
+  };
+}
+
+/* ── one application, in full ─────────────────────────────────────────────── */
+
+/** One referred person, as the REVIEWER sees them — names included. */
+export interface AdminLedgerRow {
+  organizationId: string;
+  who: string;
+  /** When they signed up through the link. */
+  joinedAt: string;
+  /** When they paid, or null — most never do. */
+  upgradedAt: string | null;
+  amountMinor: number | null;
+  currency: string | null;
+  state: CommissionRow["state"] | "free";
+}
+
+/** One reviewable observation. Not a score — a reviewer still decides. */
+export interface Check {
+  level: "ok" | "look";
+  label: string;
+}
+
+export interface AccountDetail {
+  account: ReferralAccount;
+  /** Facts about the applicant, as label/value pairs for a definition list. */
+  profile: { k: string; v: string }[];
+  checks: Check[];
+  ledger: AdminLedgerRow[];
+  signups: number;
+  upgraded: number;
+  refunded: number;
+  owed: CurrencyTotal[];
+}
+
+/**
+ * Everything a reviewer needs about one application, on one screen.
+ *
+ * THE CHECKS ARE THE POINT, and they are deliberately fewer than the design
+ * asked for. It mocked up "31 signups across 27 devices — no shared device or
+ * IP", which would be the strongest signal here and is the one thing this
+ * cannot say: no IP, device or fingerprint is recorded anywhere in the schema.
+ * Rendering that line from nothing would be worse than omitting it — a reviewer
+ * would read a fraud check that never ran as a fraud check that passed.
+ *
+ * So every check below is computed from data that actually exists, and each one
+ * says what it observed rather than passing judgement.
+ */
+export async function loadAccountDetail(accountId: string): Promise<AccountDetail | null> {
+  const admin = createAdminClient();
+
+  const { data: row } = await admin
+    .from("referral_accounts")
+    .select(
+      "id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, organization_id, profile_id, profiles(full_name, contact_email, created_at, username)",
+    )
+    .eq("id", accountId)
+    .maybeSingle();
+  if (!row) return null;
+
+  const account = toAccount(row);
+  const person = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+
+  const [{ data: org }, { data: attributions }, { data: commissions }, { data: authUser }] =
+    await Promise.all([
+      admin.from("organizations").select("plan, created_at").eq("id", row.organization_id).maybeSingle(),
+      admin
+        .from("referral_attributions")
+        .select("organization_id, attributed_at, source")
+        .eq("referral_account_id", accountId)
+        .order("attributed_at", { ascending: false }),
+      admin
+        .from("referral_commissions")
+        .select("organization_id, amount_minor, currency, status, payable_after, created_at")
+        .eq("referral_account_id", accountId),
+      admin.auth.admin.getUserById(String(row.profile_id)),
+    ]);
+
+  // Names for the referred orgs. A personal org has exactly one profile, which
+  // is the case the programme is built for; a centre would return several, so
+  // the first is taken rather than assumed to be alone.
+  const orgIds = (attributions ?? []).map((a) => String(a.organization_id));
+  const names = new Map<string, string>();
+  if (orgIds.length > 0) {
+    const { data: members } = await admin
+      .from("profiles")
+      .select("organization_id, full_name")
+      .in("organization_id", orgIds);
+    for (const m of members ?? []) {
+      const id = String(m.organization_id);
+      if (!names.has(id) && m.full_name) names.set(id, String(m.full_name));
+    }
+  }
+
+  const now = Date.now();
+  interface CommissionLike {
+    amount_minor: number | string;
+    currency: string;
+    status: CommissionStatus;
+    payable_after: string | null;
+    created_at: string;
+  }
+  const byOrg = new Map<string, CommissionLike>();
+  for (const c of commissions ?? []) {
+    if (c.organization_id) byOrg.set(String(c.organization_id), c as CommissionLike);
+  }
+
+  const ledger: AdminLedgerRow[] = (attributions ?? []).map((a) => {
+    const id = String(a.organization_id);
+    const c = byOrg.get(id);
+    return {
+      organizationId: id,
+      who: names.get(id) ?? "—",
+      joinedAt: String(a.attributed_at),
+      upgradedAt: c ? String(c.created_at) : null,
+      amountMinor: c ? Number(c.amount_minor) || 0 : null,
+      currency: c ? String(c.currency) : null,
+      state: c ? commissionState(c.status, c.payable_after ?? null, now) : "free",
+    };
+  });
+
+  const owedByCurrency = new Map<string, CurrencyTotal>();
+  let refunded = 0;
+  for (const c of commissions ?? []) {
+    const state = commissionState(c.status, c.payable_after ?? null, now);
+    if (state === "reversed") {
+      refunded += 1;
+      continue;
+    }
+    const currency = String(c.currency);
+    const bucket = owedByCurrency.get(currency) ?? {
+      currency,
+      pendingMinor: 0,
+      payableMinor: 0,
+      paidMinor: 0,
+      count: 0,
+    };
+    const amount = Number(c.amount_minor) || 0;
+    if (state === "paid") bucket.paidMinor += amount;
+    else if (state === "released") bucket.payableMinor += amount;
+    else bucket.pendingMinor += amount;
+    bucket.count += 1;
+    owedByCurrency.set(currency, bucket);
+  }
+
+  const contact = person?.contact_email?.trim() || authUser?.user?.email?.trim() || "";
+  const deliverable = contact && !contact.endsWith("students.engprogress.com");
+  const upgraded = ledger.filter((r) => r.state !== "free").length;
+
+  /* SIGNUP BURST. The one abuse signal available without recording anything
+     new: thirty accounts arriving on one afternoon looks nothing like thirty
+     arriving over six weeks, and the attribution timestamps already say which
+     happened. It reports the spread and leaves the judgement to a person. */
+  const days = new Set((attributions ?? []).map((a) => String(a.attributed_at).slice(0, 10)));
+
+  const checks: Check[] = [];
+  checks.push(
+    deliverable
+      ? { level: "ok", label: `Reachable at ${contact}` }
+      : {
+          level: "look",
+          label: contact
+            ? "Only a placeholder address — approval and payout emails will bounce"
+            : "No contact email — approval and payout notices have nowhere to go",
+        },
+  );
+  checks.push(
+    account.audienceUrl
+      ? { level: "ok", label: `Audience link given — open it and check it matches the pitch` }
+      : { level: "look", label: "No audience link, so the pitch cannot be verified from here" },
+  );
+  if (ledger.length === 0) {
+    checks.push({ level: "ok", label: "No referrals yet — nothing to weigh either way" });
+  } else {
+    checks.push(
+      days.size >= Math.min(4, ledger.length)
+        ? { level: "ok", label: `${ledger.length} signups spread over ${days.size} days` }
+        : {
+            level: "look",
+            label: `${ledger.length} signups on only ${days.size} day${days.size === 1 ? "" : "s"} — check they are real people`,
+          },
+    );
+  }
+  if (refunded > 0) {
+    checks.push({
+      level: "look",
+      label: `${upgraded + refunded} referred payments, ${refunded} refunded and reversed`,
+    });
+  } else if (upgraded > 0) {
+    checks.push({ level: "ok", label: `${upgraded} referred payments, none refunded` });
+  }
+
+  /* NO DEVICE OR IP CHECK. It would be the most useful line here and there is
+     nothing behind it — see the note on this function. */
+
+  return {
+    account,
+    profile: [
+      { k: "Account", v: person?.username ? `${person.username}` : "—" },
+      {
+        k: "Joined",
+        v: person?.created_at
+          ? new Date(String(person.created_at)).toLocaleDateString("en", { month: "long", year: "numeric" })
+          : "—",
+      },
+      { k: "Plan", v: org?.plan ? String(org.plan) : "—" },
+      { k: "Contact", v: contact || "none on file" },
+    ],
+    checks,
+    ledger,
+    signups: ledger.length,
+    upgraded,
+    refunded,
+    owed: [...owedByCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
   };
 }

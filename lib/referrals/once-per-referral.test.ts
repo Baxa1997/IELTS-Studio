@@ -25,6 +25,7 @@ import { describe, expect, it } from "vitest";
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const migration = read("../../supabase/migrations/20260907120000_referrals.sql");
 const accrual = read("./accrual.ts");
+const types = read("./types.ts");
 
 describe("the database bounds the payout", () => {
   it("allows at most one commission row per referred organization", () => {
@@ -110,7 +111,33 @@ describe("the hold, the payout cycle, and money going back", () => {
     // The bug this replaced: nothing promoted `pending`, so "ready" was
     // permanently zero and every balance sat on hold forever.
     expect(service).toMatch(/payable_after/);
-    expect(service).toMatch(/clear <= now/);
+    // The comparison itself moved into one shared helper once three screens
+    // needed it — the learner ledger, the programme total and the per-account
+    // detail. Three copies of a date comparison is three chances for the
+    // referrer's page and the reviewer's page to disagree about whether the
+    // same commission has cleared.
+    expect(types).toMatch(/export function commissionState/);
+    expect(types).toMatch(/clear <= now/);
+  });
+
+  it("routes every balance through that one helper", () => {
+    // If a caller re-implements the comparison inline, this stops biting and
+    // the two sides can drift apart by a day without anybody noticing.
+    const callers = service.match(/commissionState\(/g) ?? [];
+    expect(callers.length).toBeGreaterThanOrEqual(3);
+    // And nothing recomputes it by hand alongside the helper.
+    expect(service).not.toMatch(/Date\.parse\(String\(row\.payable_after\)\)/);
+  });
+
+  it("counts a reversed commission toward no total, but still shows the row", () => {
+    // Money that came back is not earnings. A row that VANISHED from the
+    // statement, though, is how somebody decides the numbers are invented —
+    // so it is excluded from the arithmetic and kept in the ledger.
+    expect(service).toMatch(/if \(state === "reversed"\) continue;/);
+    expect(service).toMatch(/ledger\.push\(/);
+    const push = service.indexOf("ledger.push(");
+    const skip = service.indexOf('if (state === "reversed") continue;');
+    expect(push).toBeLessThan(skip); // pushed first, then excluded from totals
   });
 
   it("reverses a refund across pending AND payable, but never paid", () => {

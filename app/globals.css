@@ -674,6 +674,12 @@
   .lp-cols-4 {
     grid-template-columns: 1fr !important;
   }
+  /* The referrals hero: a display-size balance beside its breakdown. The
+     breakdown carries a min-width, so below this the two fight for the same
+     row and the number wraps mid-figure. */
+  .lp-hero-split {
+    grid-template-columns: 1fr !important;
+  }
   .lp-nav-links {
     display: none !important;
   }

@@ -4,32 +4,43 @@ import { loadEarnings, loadOwnAccount, loadSettings } from "@/lib/referrals/serv
 import {
   formatMoney,
   payoutFloor,
-  STATUS_LABEL,
   type CurrencyTotal,
   type Earnings,
   type ReferralAccount,
   type ReferralSettings,
 } from "@/lib/referrals/types";
-import { BRAND, BRAND_LINE, BRAND_SOFT, INK, LINE, MONO, MUTED, SANS, SERIF } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_SOFT,
+  HAIR,
+  INK,
+  LINE,
+  MUTED,
+  SANS,
+  SERIF,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 import { ApplyForm } from "./apply-form";
-import { ShareCard } from "./share-card";
+import { EarningsHero } from "./earnings-hero";
+import { Ledger } from "./ledger";
+import { PitchPanel } from "./pitch-panel";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Referrals, from the referrer's side.
  *
- * FOUR STATES, AND EACH ONE IS A DIFFERENT PAGE. Never applied is a pitch with a
- * form; waiting is a holding note; active is a dashboard; stopped is a receipt.
- * Rendering one layout with everything disabled would make the first and last of
- * those read as broken rather than as what they are.
+ * THREE LAYOUTS, NOT ONE WITH THINGS DISABLED. Applying is a pitch beside a
+ * form; earning is a dashboard; stopped is a receipt. Rendering a single layout
+ * with the dead parts greyed out would make the first and last read as broken
+ * rather than as what they are.
  *
- * The active view leads with the LINK, because that is the only thing on this
- * page a person came here to do something with — the numbers underneath report
- * on it. Signups and upgrades are two separate figures on purpose: most
- * referrals never pay, and a single number would read as a bug to somebody who
- * had brought in thirty people and earned nothing.
+ * The apply layout carries the waiting and rejected states too — the panel on
+ * the left is the offer either way, and only the card beside it changes. That
+ * keeps somebody who was turned down looking at the terms they might come back
+ * for, rather than at an empty page.
  */
 export default async function ReferralsPage() {
   const { profile } = await requireOrgUser();
@@ -44,6 +55,7 @@ export default async function ReferralsPage() {
       ? await loadEarnings(account.id)
       : null;
   const percent = account?.percent ?? settings.defaultPercent;
+  const earning = account?.status === "active" && earnings;
 
   return (
     <div style={{ fontFamily: SANS, color: INK }}>
@@ -59,110 +71,103 @@ export default async function ReferralsPage() {
           color: INK,
         }}
       >
-        {account?.status === "active" ? "Your referrals" : "Earn from people you bring in"}
+        {earning ? "Your referrals" : "Earn from people you bring in"}
       </h1>
 
-      {!account ? (
-        <Pitch percent={percent} settings={settings} />
-      ) : account.status === "active" && earnings ? (
+      {earning ? (
         <Active account={account} earnings={earnings} percent={percent} settings={settings} />
+      ) : account && (account.status === "closed" || account.status === "revoked") ? (
+        <Stopped account={account} earnings={earnings} settings={settings} />
       ) : (
-        <Waiting account={account} earnings={earnings} settings={settings} />
+        <ApplySplit account={account} percent={percent} settings={settings} />
       )}
     </div>
   );
 }
 
-/* ── never applied ────────────────────────────────────────────────────────── */
+/* ── applying: the offer, and whatever stage the application is at ────────── */
 
-function Pitch({ percent, settings }: { percent: number; settings: ReferralSettings }) {
-  return (
-    <>
-      <p style={{ fontSize: 15.5, color: MUTED, margin: "8px 0 24px", lineHeight: 1.6, maxWidth: 560 }}>
-        Share a link. When someone you sent upgrades, you take <strong>{percent}%</strong> of their
-        first payment — once for each person you bring in. Anyone can apply, on any plan.
-      </p>
-      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 26 }}>
-        <Note title="A person reads every application">
-          There is no automatic approval and no plan requirement. Tell us where you would share it
-          and we will come back to you.
-        </Note>
-        <Note title="Paid out monthly">
-          Held for {settings.holdDays} days in case the payment is refunded, then included in the
-          next monthly payout.
-        </Note>
-      </div>
-      <ApplyForm percent={percent} />
-    </>
-  );
-}
-
-/* ── applied, but not earning ─────────────────────────────────────────────── */
-
-function Waiting({
+function ApplySplit({
   account,
-  earnings,
+  percent,
   settings,
 }: {
-  account: ReferralAccount;
-  earnings: Earnings | null;
+  account: ReferralAccount | null;
+  percent: number;
   settings: ReferralSettings;
 }) {
-  const owed = (earnings?.totals ?? []).filter(
-    (t) => t.pendingMinor + t.payableMinor + t.paidMinor > 0,
-  );
   return (
-    <>
-    <div style={{ ...card, marginTop: 20, maxWidth: 620 }}>
-      <Badge>{STATUS_LABEL[account.status]}</Badge>
-      <p style={{ fontSize: 14.5, color: MUTED, margin: "14px 0 0", lineHeight: 1.6 }}>
-        {account.status === "pending"
-          ? "A person reads every application, so this takes a day or two rather than a moment."
-          : account.status === "rejected"
-            ? "We didn't approve this one. You're welcome to ask again if things change."
-            : /* Both stops say the same thing to the referrer, because from their
-                 side the consequence is identical: the link is dead and the money
-                 that already cleared is still theirs. */
-              "Your link and code have stopped working. Anything you had already earned and cleared is still yours."}
-      </p>
-      {account.reviewNote ? (
-        <p
-          style={{
-            fontSize: 14,
-            color: INK,
-            margin: "14px 0 0",
-            padding: "12px 14px",
-            background: BRAND_SOFT,
-            border: `1px solid ${BRAND_LINE}`,
-            borderRadius: 11,
-            lineHeight: 1.6,
-          }}
-        >
-          {account.reviewNote}
-        </p>
-      ) : null}
-    </div>
+    <div
+      className="lp-cols-2"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)",
+        gap: 20,
+        alignItems: "stretch",
+        marginTop: 18,
+      }}
+    >
+      <PitchPanel percent={percent} settings={settings} />
 
-    {/* The money survives the stop, so it stays on the page. Without this the
-        promise made when an account is closed — "anything you had already
-        earned is still yours" — is a sentence with nothing behind it. */}
-    {owed.length > 0 ? (
-      <div style={{ maxWidth: 620 }}>
-        <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, color: INK, margin: "26px 0 12px" }}>
-          Still yours
-        </h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {owed.map((t) => (
-            <Money key={t.currency} total={t} settings={settings} />
-          ))}
-        </div>
+      <div style={{ ...card, padding: 28, display: "flex", flexDirection: "column" }}>
+        {!account ? (
+          <>
+            <h2 style={{ ...h2, marginBottom: 4 }}>Apply</h2>
+            <p style={{ fontSize: 14.5, color: MUTED, margin: "0 0 20px", lineHeight: 1.55 }}>
+              A person reads every application — usually within two working days. There is no plan
+              requirement and no automatic approval.
+            </p>
+            <ApplyForm />
+          </>
+        ) : account.status === "pending" ? (
+          <>
+            <Badge>Waiting for review</Badge>
+            <h2 style={{ ...h2, margin: "14px 0 8px" }}>Your application is with a reviewer</h2>
+            <p style={{ fontSize: 14.5, color: MUTED, margin: "0 0 18px", lineHeight: 1.6 }}>
+              Sent {formatDate(account.appliedAt)}. We&apos;ll write to you either way — you can
+              have one application open at a time, so there is nothing else to send.
+            </p>
+            <Well>Approved applications get a link and code the same day.</Well>
+          </>
+        ) : (
+          <>
+            <Badge tone="neutral">Not approved</Badge>
+            <h2 style={{ ...h2, margin: "14px 0 8px" }}>
+              {account.reviewedAt ? `Reviewed on ${formatDate(account.reviewedAt)}` : "Reviewed"}
+            </h2>
+            {account.reviewNote ? (
+              <p
+                style={{
+                  fontSize: 15.5,
+                  lineHeight: 1.6,
+                  color: INK,
+                  borderLeft: `3px solid ${BRAND_LINE}`,
+                  paddingLeft: 14,
+                  margin: "0 0 18px",
+                }}
+              >
+                {account.reviewNote}
+              </p>
+            ) : (
+              <p style={{ fontSize: 14.5, color: MUTED, margin: "0 0 18px", lineHeight: 1.6 }}>
+                We didn&apos;t approve this one.
+              </p>
+            )}
+            {/* No "apply again" button. `profile_id` is unique on
+                `referral_accounts` — one row per person, for good — so a second
+                application is refused by the database. Offering a button that
+                cannot work would be worse than saying so. */}
+            <Well>
+              Get in touch if your audience changes and you&apos;d like this looked at again.
+            </Well>
+          </>
+        )}
       </div>
-    ) : null}
-    </>
+    </div>
   );
 }
 
-/* ── active ───────────────────────────────────────────────────────────────── */
+/* ── earning ──────────────────────────────────────────────────────────────── */
 
 function Active({
   account,
@@ -176,85 +181,136 @@ function Active({
   settings: ReferralSettings;
 }) {
   const url = `${serverEnv.siteUrl}/?ref=${account.code}`;
+  // Averaged inside one currency only — the busiest one. There is no rate in
+  // this system to average across two with.
+  const busiest = [...earnings.totals].sort((a, b) => b.count - a.count)[0] ?? null;
+  const average = busiest
+    ? formatMoney(
+        Math.round(
+          (busiest.pendingMinor + busiest.payableMinor + busiest.paidMinor) / busiest.count,
+        ),
+        busiest.currency,
+      )
+    : "—";
+
   return (
     <>
-      {/* The hero: the one thing here that is an action, not a report. */}
+      <EarningsHero
+        totals={earnings.totals}
+        settings={settings}
+        url={url}
+        code={account.code ?? ""}
+      />
+
+      {/* Three figures, and signups is kept apart from upgrades on purpose:
+          most referrals never pay, and one merged number would read as a bug to
+          somebody who had brought in thirty people and earned nothing. */}
       <div
+        className="lp-cols-3"
         style={{
-          position: "relative",
-          overflow: "hidden",
-          background: "linear-gradient(120deg,#2C0013 0%,#7D0132 62%,#9B1044 100%)",
-          borderRadius: 18,
-          padding: "24px 26px",
-          marginTop: 18,
+          display: "grid",
+          gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+          gap: 14,
+          margin: "14px 0 34px",
         }}
       >
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: -90,
-            right: -40,
-            width: 320,
-            height: 320,
-            borderRadius: "50%",
-            background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)",
-          }}
-        />
-        <div style={{ position: "relative", maxWidth: 620 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: ".11em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,.72)",
-              marginBottom: 16,
-            }}
-          >
-            You earn {percent}% of each referral&apos;s first payment
-          </div>
-          <ShareCard url={url} code={account.code ?? ""} />
-        </div>
-      </div>
-
-      {/* Two figures, never one. */}
-      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
         <Stat value={String(earnings.signups)} label="Signed up through your link" />
-        <Stat
-          value={String(earnings.converted)}
-          label="Upgraded — each earned you once"
-          note={
-            earnings.signups > 0 && earnings.converted === 0
-              ? "Nobody has upgraded yet — commission only comes from an actual payment."
-              : undefined
-          }
-        />
+        <Stat value={String(earnings.converted)} label="Upgraded — each earned you once" />
+        <Stat value={average} label="Average per upgrade" />
       </div>
 
-      <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, color: INK, margin: "26px 0 12px" }}>
-        Earnings
-      </h2>
-      {earnings.totals.length === 0 ? (
-        <div style={{ ...card, fontSize: 14.5, color: MUTED }}>
-          Nothing yet. When a referral pays, your share shows up here.
-        </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 12,
+        }}
+      >
+        <h2 style={h2}>Earnings</h2>
+        <span style={{ fontSize: 13.5, color: MUTED }}>
+          {payoutLine(earnings.totals, settings)}
+        </span>
+      </div>
+
+      {earnings.rows.length === 0 ? (
+        <Nothing />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {earnings.totals.map((t) => (
-            <Money key={t.currency} total={t} settings={settings} />
-          ))}
-        </div>
+        <Ledger rows={earnings.rows} holdDays={settings.holdDays} />
       )}
 
-      <p style={{ fontSize: 13, color: MUTED, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 620 }}>
+      {/* <p style={{ fontSize: 13, color: MUTED, margin: "16px 0 0", lineHeight: 1.6, maxWidth: "74ch" }}>
         You earn once per person — their first payment only, not their later months. Commission is
-        held for {settings.holdDays} days in case that payment is refunded, and is paid out{" "}
+        held for {settings.holdDays} days in case that payment is refunded, then paid out{" "}
         <strong>once a month</strong> on balances over {formatMoney(settings.minPayoutMinor, "usd")}{" "}
-        (or {formatMoney(settings.minPayoutUzsMinor, "uzs")}).
-        If a referral&apos;s payment is refunded before you have been paid, that commission is taken
-        back. Totals stay in the currency they were earned in.
-      </p>
+        ({formatMoney(settings.minPayoutUzsMinor, "uzs")}). Totals stay in the currency they were
+        earned in — there is no conversion between them. Your rate is {percent}%.
+      </p> */}
+    </>
+  );
+}
+
+/* ── stopped: the link is dead, the money is not ──────────────────────────── */
+
+function Stopped({
+  account,
+  earnings,
+  settings,
+}: {
+  account: ReferralAccount;
+  earnings: Earnings | null;
+  settings: ReferralSettings;
+}) {
+  const owed = (earnings?.totals ?? []).filter(
+    (t) => t.pendingMinor + t.payableMinor + t.paidMinor > 0,
+  );
+
+  return (
+    <>
+      <div style={{ ...card, padding: 26, marginTop: 18, maxWidth: 640 }}>
+        <Badge tone="neutral">{account.status === "revoked" ? "Revoked" : "Closed"}</Badge>
+        <p style={{ fontSize: 15, color: INK, margin: "14px 0 0", lineHeight: 1.6 }}>
+          {/* Both stops say the same thing to the referrer, because from their
+              side the consequence is identical: the link is dead and the money
+              that already cleared is still theirs. */}
+          Your link and code have stopped working. Anything you had already earned and cleared is
+          still yours, and still goes out in the next monthly payout.
+        </p>
+        {account.reviewNote ? (
+          <p
+            style={{
+              fontSize: 14,
+              color: INK,
+              margin: "14px 0 0",
+              padding: "12px 14px",
+              background: BRAND_SOFT,
+              border: `1px solid ${BRAND_LINE}`,
+              borderRadius: 11,
+              lineHeight: 1.6,
+            }}
+          >
+            {account.reviewNote}
+          </p>
+        ) : null}
+      </div>
+
+      {owed.length > 0 ? (
+        <div style={{ maxWidth: 640 }}>
+          <h2 style={{ ...h2, fontSize: 20, margin: "28px 0 12px" }}>Still yours</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {owed.map((t) => (
+              <Money key={t.currency} total={t} settings={settings} />
+            ))}
+          </div>
+          {earnings && earnings.rows.length > 0 ? (
+            <div style={{ marginTop: 14 }}>
+              <Ledger rows={earnings.rows} holdDays={settings.holdDays} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -263,14 +319,25 @@ function Active({
 function Money({ total, settings }: { total: CurrencyTotal; settings: ReferralSettings }) {
   const ready = total.payableMinor >= payoutFloor(settings, total.currency);
   return (
-    <div style={card}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <span style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 700, letterSpacing: ".1em", color: MUTED }}>
+    <div style={{ ...card, padding: 18 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".1em", color: MUTED }}>
           {total.currency.toUpperCase()}
         </span>
         {ready ? <Badge>In the next payout</Badge> : null}
       </div>
-      <div className="lp-cols-3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginTop: 14 }}>
+      <div
+        className="lp-cols-3"
+        style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginTop: 14 }}
+      >
         <Amount label="On hold" value={formatMoney(total.pendingMinor, total.currency)} muted />
         <Amount label="Ready" value={formatMoney(total.payableMinor, total.currency)} />
         <Amount label="Paid out" value={formatMoney(total.paidMinor, total.currency)} muted />
@@ -279,14 +346,81 @@ function Money({ total, settings }: { total: CurrencyTotal; settings: ReferralSe
   );
 }
 
+/** The line beside the Earnings heading: what is going out, and what is not. */
+function payoutLine(totals: CurrencyTotal[], settings: ReferralSettings): string {
+  const ready = totals.filter((t) => t.payableMinor >= payoutFloor(settings, t.currency));
+  const held = totals.filter((t) => t.pendingMinor > 0);
+  if (ready.length === 0 && held.length === 0) return "Nothing due yet";
+
+  const parts: string[] = [];
+  if (ready.length > 0) {
+    parts.push(
+      `${ready.map((t) => formatMoney(t.payableMinor, t.currency)).join(" + ")} in the next payout`,
+    );
+  }
+  if (held.length > 0) {
+    parts.push(
+      `${held.map((t) => formatMoney(t.pendingMinor, t.currency)).join(" + ")} still on hold`,
+    );
+  }
+  return parts.join(" · ");
+}
+
 /* ── small pieces ─────────────────────────────────────────────────────────── */
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: WHITE,
   border: `1px solid ${LINE}`,
   borderRadius: 16,
-  padding: 18,
 };
+
+const h2: React.CSSProperties = {
+  fontFamily: SERIF,
+  fontWeight: 600,
+  fontSize: 26,
+  lineHeight: 1.15,
+  letterSpacing: "-.015em",
+  color: INK,
+  margin: 0,
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en", { day: "numeric", month: "long" });
+}
+
+function Nothing() {
+  return (
+    <div style={{ ...card, padding: "44px 24px", textAlign: "center" }}>
+      <div
+        style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 22, color: INK, marginBottom: 4 }}
+      >
+        Nothing yet
+      </div>
+      <p style={{ fontSize: 14.5, color: MUTED, margin: 0 }}>
+        When a referral pays, your share shows up here.
+      </p>
+    </div>
+  );
+}
+
+function Well({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        marginTop: "auto",
+        background: "#FBFBFC",
+        border: `1px solid ${HAIR}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        fontSize: 13.5,
+        color: MUTED,
+        lineHeight: 1.55,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -304,19 +438,21 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
+function Badge({ children, tone }: { children: React.ReactNode; tone?: "neutral" }) {
+  const neutral = tone === "neutral";
   return (
     <span
       style={{
+        alignSelf: "flex-start",
+        display: "inline-block",
         fontSize: 11.5,
         fontWeight: 700,
-        letterSpacing: ".06em",
-        textTransform: "uppercase",
-        padding: "4px 10px",
+        letterSpacing: ".05em",
+        padding: "4px 12px",
         borderRadius: 999,
-        background: BRAND_SOFT,
-        border: `1px solid ${BRAND_LINE}`,
-        color: BRAND,
+        background: neutral ? "#F2F2F4" : BRAND_SOFT,
+        border: `1px solid ${neutral ? HAIR : BRAND_LINE}`,
+        color: neutral ? MUTED : BRAND,
       }}
     >
       {children}
@@ -324,23 +460,22 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Stat({ value, label, note }: { value: string; label: string; note?: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div style={card}>
+    <div style={{ ...card, padding: "20px 22px" }}>
       <div
         style={{
           fontFamily: SERIF,
           fontWeight: 600,
           fontSize: 34,
-          lineHeight: 1,
+          lineHeight: 1.1,
           color: INK,
           fontVariantNumeric: "tabular-nums",
         }}
       >
         {value}
       </div>
-      <div style={{ fontSize: 13.5, color: MUTED, marginTop: 8 }}>{label}</div>
-      {note ? <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6, lineHeight: 1.5 }}>{note}</div> : null}
+      <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>{label}</div>
     </div>
   );
 }
@@ -361,15 +496,6 @@ function Amount({ label, value, muted }: { label: string; value: string; muted?:
       >
         {value}
       </div>
-    </div>
-  );
-}
-
-function Note({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={card}>
-      <div style={{ fontSize: 14.5, fontWeight: 700, color: INK }}>{title}</div>
-      <p style={{ fontSize: 13.5, color: MUTED, margin: "6px 0 0", lineHeight: 1.6 }}>{children}</p>
     </div>
   );
 }

@@ -400,11 +400,20 @@ export async function reviewReferral(
   }
   const note = String(formData.get("note") ?? "").trim() || null;
 
+  // Blank means "leave it alone", which is not the same as zero — an empty
+  // field must not silently set somebody's rate to nothing.
+  const rawPercent = String(formData.get("percent") ?? "").trim();
+  const percent = rawPercent === "" ? null : Number(rawPercent);
+  if (percent !== null && !Number.isFinite(percent)) {
+    return { error: "That rate isn't a number." };
+  }
+
   const { error, notice } = await decideApplication({
     accountId,
     decision: decision as ReviewDecision,
     note,
     reviewerId: user.id,
+    percent,
   });
   if (error) return { error };
 
@@ -418,10 +427,11 @@ export async function reviewReferral(
       | "referral.revoke",
     targetKind: "referral",
     targetId: accountId,
-    detail: note ? { note } : {},
+    detail: { ...(note ? { note } : {}), ...(percent !== null ? { percent } : {}) },
     actor: { id: user.id, email: user.email },
   });
 
   revalidatePath("/admin/referrals");
+  revalidatePath(`/admin/referrals/${accountId}`);
   return { notice: notice ?? "Done." };
 }

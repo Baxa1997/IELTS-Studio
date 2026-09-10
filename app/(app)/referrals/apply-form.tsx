@@ -2,7 +2,10 @@
 
 import { useActionState } from "react";
 
-import { BRAND, BRAND_LINE, BRAND_SOFT, FIELD_LINE, INK, LINE, MUTED, SANS, WHITE } from "@/lib/theme/tokens";
+import { BRAND, FIELD_LINE, INK, MUTED, SANS, WHITE } from "@/lib/theme/tokens";
+
+/** The design's field well — a shade off white, so an input reads as an input. */
+const WELL = "#FBFBFC";
 
 import { submitApplication, type ApplyState } from "./actions";
 
@@ -19,12 +22,16 @@ const initial: ApplyState = {};
  * The link is optional because plenty of real referrers share in a group chat
  * that has no public URL — requiring one would reject exactly the people the
  * programme is for.
+ *
+ * It states no terms of its own: the panel beside it carries the rate, the hold
+ * and the payout floor, and saying them twice on one screen made the screen read
+ * as though the two halves had been written by different people.
  */
-export function ApplyForm({ percent }: { percent: number }) {
+export function ApplyForm() {
   const [state, action, pending] = useActionState(submitApplication, initial);
 
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 560 }}>
+    <form action={action} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <label style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 700, color: INK }}>
           Where would you share your link?
@@ -42,13 +49,13 @@ export function ApplyForm({ percent }: { percent: number }) {
           style={{
             width: "100%",
             border: `1px solid ${FIELD_LINE}`,
-            borderRadius: 11,
-            padding: "11px 13px",
+            borderRadius: 13,
+            padding: "12px 14px",
             fontFamily: SANS,
             fontSize: 14.5,
             lineHeight: 1.6,
             color: INK,
-            background: WHITE,
+            background: WELL,
             resize: "vertical",
           }}
         />
@@ -65,33 +72,15 @@ export function ApplyForm({ percent }: { percent: number }) {
           style={{
             width: "100%",
             border: `1px solid ${FIELD_LINE}`,
-            borderRadius: 11,
-            padding: "11px 13px",
+            borderRadius: 13,
+            padding: "12px 14px",
             fontFamily: SANS,
             fontSize: 14.5,
             color: INK,
-            background: WHITE,
+            background: WELL,
           }}
         />
       </label>
-
-      <div
-        style={{
-          background: BRAND_SOFT,
-          border: `1px solid ${BRAND_LINE}`,
-          borderRadius: 12,
-          padding: "13px 15px",
-          fontFamily: SANS,
-          fontSize: 13.5,
-          lineHeight: 1.6,
-          color: INK,
-        }}
-      >
-        You earn <strong>{percent}%</strong> of the <strong>first payment</strong> each person you
-        refer makes — once per person, not on their later months. Paid out monthly. Someone who
-        signs up and stays on the free plan earns nothing, and a payment that gets refunded takes
-        its commission with it.
-      </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
         <button
@@ -113,7 +102,7 @@ export function ApplyForm({ percent }: { percent: number }) {
           {pending ? "Sending…" : "Apply"}
         </button>
         <span style={{ fontFamily: SANS, fontSize: 13, color: MUTED }}>
-          Reviewed by a person, not automatically.
+          First payment only, once per person.
         </span>
       </div>
 
@@ -127,7 +116,6 @@ export function ApplyForm({ percent }: { percent: number }) {
           {state.notice}
         </p>
       ) : null}
-      <div style={{ height: 1, background: LINE }} aria-hidden />
     </form>
   );
 }
