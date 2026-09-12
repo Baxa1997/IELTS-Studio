@@ -147,3 +147,83 @@ describe("a shut group still says what is waiting behind it", () => {
     expect(nav.slice(at, at + 700)).toContain('badged.some((i) => i.badgeTone === "alert")');
   });
 });
+
+/**
+ * THE FORMATTER BUG, GUARDED AT THE SOURCE.
+ *
+ * A class list written as `` `a${cond ? " b" : ""}` `` depends on a SPACE INSIDE
+ * A STRING LITERAL to separate two class names, and `prettier --write` removes
+ * it. The result compiles, type-checks, renders and passes every other test — it
+ * just concatenates into one token that matches no rule, so both the base class
+ * and the modifier silently stop applying.
+ *
+ * It has happened three times in this folder: it put a 21px indent and a guide
+ * line under Assistant and Dashboard, and switched off the collapsed rail's
+ * active tile and the Assistant's animation. The fix is to build the list from
+ * arguments, where the separator is code rather than string content.
+ */
+/**
+ * THE FORMATTER BUG, GUARDED AT THE SOURCE.
+ *
+ * A class list written as `` `a${cond ? " b" : ""}` `` depends on a SPACE INSIDE
+ * A STRING LITERAL to separate two class names, and `prettier --write` removes
+ * it. The result compiles, type-checks, renders and passes every other test — it
+ * just concatenates into one token that matches no rule, so both the base class
+ * and the modifier silently stop applying.
+ *
+ * It has happened three times in this folder: it put a 21px indent and a guide
+ * line under Assistant and Dashboard, and switched off the collapsed rail's
+ * active tile and the Assistant's animation. The fix is to build the list from
+ * arguments, where the separator is code rather than string content.
+ */
+describe("class lists survive the formatter", () => {
+  /** Every `className={`…`}` template literal in the file. */
+  function classNameTemplates(source: string): string[] {
+    const out: string[] = [];
+    const marker = "className={`";
+    for (let at = source.indexOf(marker); at !== -1; at = source.indexOf(marker, at + 1)) {
+      const open = at + marker.length;
+      const close = source.indexOf("`", open);
+      if (close !== -1) out.push(source.slice(open, close));
+    }
+    return out;
+  }
+
+  it("emits no interpolated class that could have lost its separator", () => {
+    /* ⚠️ THE CHECK HAS TO LOOK IN BOTH BRANCHES OF THE TERNARY, which is what the
+       first version of this test got wrong: it only matched `cond ? " lp-…"` and
+       the real code put the class in the FALSE branch (`cond ? "" : "lp-…"`), so
+       it passed against the exact bug it was written for.
+
+       Looking for the class name in one branch or the other is a game of
+       whack-a-mole anyway. The invariant is simpler: once a template literal has
+       opened an interpolation, ANY class name it contributes must begin with a
+       space, so a bare `"lp-` after the first `${` is the defect — whichever
+       branch it sits in. */
+    for (const body of classNameTemplates(nav)) {
+      const firstInterpolation = body.indexOf("${");
+      if (firstInterpolation === -1) continue;
+      const interpolated = body.slice(firstInterpolation);
+      expect(
+        interpolated.includes('"lp-') || interpolated.includes("'lp-"),
+        `class list has lost its separating space: \`${body}\``,
+      ).toBe(false);
+    }
+  });
+
+  it("builds the rail's conditional classes with cx()", () => {
+    expect(nav).toContain("function cx(");
+    for (const cls of ["lp-sb-sub--flat", "lp-sb-link--active", "lp-sb-ai"]) {
+      // Passed as an argument, so the separator is code and not string content.
+      expect(nav, `${cls} should be a cx() argument`).toMatch(
+        new RegExp(`&&\\s*"${cls.replace(/-/g, "\\-")}"`),
+      );
+    }
+  });
+
+  it("still separates the classes it joins", () => {
+    // cx() is only a fix if it joins with a space.
+    const at = nav.indexOf("function cx(");
+    expect(nav.slice(at, at + 240)).toContain('.join(" ")');
+  });
+});

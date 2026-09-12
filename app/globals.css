@@ -873,10 +873,27 @@
     transition: none;
   }
 }
-/* The EngProgress lockup: full wordmark when expanded, boxed-"P" logomark when the rail
-   collapses. The mark is hidden until the desktop media query swaps them. */
+/* The EngProgress lockup. The mark is hidden by default — the MOBILE TOP BAR is
+   what that default is for: it is a different surface, it has the width, and a
+   bare square with no name beside it says nothing on a bar with no rail. */
 .lp-sb-logo-mark {
   display: none;
+}
+/* ⚠️ IN THE RAIL IT IS THE OTHER WAY ROUND, AND THE NAME WAS PRINTING TWICE.
+   The brand row draws the centre's name itself (over the role line) — see
+   `.lp-sb-brandtext` — so the wordmark beside it is the same words a second
+   time. At 250px the two copies overflowed the row: both truncated to
+   "Laqod Mar…", the role line was pushed out, and the collapse toggle was
+   shoved off the rail's edge. The design is a 32px square beside plain text,
+   which is also what `Logo`'s own doc comment in shell.tsx says it renders.
+
+   Scoped to `.lp-sb-brandrow` rather than fixed in the base rules, because the
+   base rules are the top bar's and it still wants the wordmark. */
+.lp-sb-brandrow .lp-sb-logo-full {
+  display: none;
+}
+.lp-sb-brandrow .lp-sb-logo-mark {
+  display: inline-flex;
 }
 /* The glyph must never shrink. In the slim collapsed rail the flex gaps overflow the
    narrow link box, and with the label collapsed the icon is the only item left to
@@ -1023,7 +1040,10 @@
     opacity: 0 !important;
     margin-left: 0 !important;
   }
-  /* Swap the full wordmark for the compact boxed-"a" mark in the slim rail. */
+  /* The brand row hides the wordmark at EVERY rail width now (see
+     `.lp-sb-brandrow .lp-sb-logo-full` above) — the row draws the name itself.
+     This stays as the collapsed rail's own guarantee: if the rail ever takes
+     the wordmark back when expanded, it must still not be here at 72px. */
   .lp-shell-sidebar--collapsed .lp-sb-logo-full {
     display: none;
   }

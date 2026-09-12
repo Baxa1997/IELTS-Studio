@@ -560,6 +560,29 @@ function shouldPrefetch(href: string): boolean {
   );
 }
 
+/**
+ * Join class names.
+ *
+ * ⚠️ THIS EXISTS BECAUSE OF PRETTIER, and the bug it prevents is invisible.
+ *
+ * These class lists used to be template literals — `` `lp-sb-sub${flat ? " lp-sb-sub--flat" : ""}` ``
+ * — where the SPACE INSIDE THE STRING LITERAL is the only thing separating two
+ * class names. `prettier --write` removes it. The result compiles, type-checks,
+ * renders, and passes every test: it just concatenates into one token
+ * (`lp-sb-sublp-sb-sub--flat`) that matches no rule, so BOTH the base class and
+ * the modifier silently stop applying.
+ *
+ * It has now happened three times in this folder — it is what put a 21px indent
+ * and a guide line under Assistant and Dashboard, and what quietly switched off
+ * the collapsed rail's active tile and the Assistant's animation. Building the
+ * list from arguments puts the separator in code rather than in a string, where
+ * no formatter can reach it. `fills-surface.test.ts` guards the one remaining
+ * literal of this shape in shell.tsx.
+ */
+function cx(...parts: (string | false | undefined)[]): string {
+  return parts.filter(Boolean).join(" ");
+}
+
 /* ── where "which groups are open" is remembered ──────────────────────────────
    Per browser, like the rail's own collapse: it is a preference about this
    screen, not about the account, and it must not cost a round trip to read.
@@ -801,7 +824,7 @@ export function SidebarNav({
                 accordions feel slow. */}
             <div
               id={panelId}
-              className={`lp-sb-sub${section.title ? "" : "lp-sb-sub--flat"}`}
+              className={cx("lp-sb-sub", !section.title && "lp-sb-sub--flat")}
               data-open={open ? "1" : "0"}
               aria-hidden={section.title && !open ? true : undefined}
             >
@@ -863,7 +886,13 @@ export function SidebarNav({
                            to is a keyboard trap. `aria-hidden` on the wrapper
                            handles screen readers; this handles the focus ring. */
                         tabIndex={section.title && !open ? -1 : undefined}
-                        className={`lp-sb-link lp-sb-item${selected ? "lp-sb-link--active" : ""}${accent === "assistant" ? "lp-sb-assistant" : ""}${selected && accent ? "lp-sb-accent-active" : ""}`}
+                        className={cx(
+                          "lp-sb-link",
+                          "lp-sb-item",
+                          selected && "lp-sb-link--active",
+                          accent === "assistant" && "lp-sb-assistant",
+                          selected && accent && "lp-sb-accent-active",
+                        )}
                         style={{
                           ...itemBase,
                           justifyContent: "space-between",
@@ -878,7 +907,7 @@ export function SidebarNav({
                                not on it: once you are ON the page, an icon nudging
                                for attention is asking you to go somewhere you
                                already are. */
-                            className={`lp-sb-chip${accent === "assistant" ? "lp-sb-ai" : ""}`}
+                            className={cx("lp-sb-chip", accent === "assistant" && "lp-sb-ai")}
                             style={chipStyle}
                           >
                             <Icon size={17} strokeWidth={selected ? 2 : 1.75} />
