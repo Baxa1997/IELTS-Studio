@@ -237,7 +237,14 @@ export function ConsoleChrome({
             position: "sticky",
             top: 0,
             zIndex: 20,
-            background: "#fff",
+            /* THE PAGE'S OWN GROUND, not white. A sticky bar needs an opaque
+               fill so the rows scrolling under it do not show through — but it
+               spans the full width of the surface, so painting it a different
+               colour from that surface draws a band across the top of every
+               console page. It was #fff, which was invisible while the surface
+               was white too and became a seam the moment the surface went
+               cream. One token, defined in globals.css. */
+            background: "var(--lp-surface)",
             borderBottom: "1px solid #f0eee8",
             padding: "14px 22px",
             display: "flex",

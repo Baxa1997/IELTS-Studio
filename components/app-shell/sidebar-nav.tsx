@@ -64,7 +64,7 @@ import {
 
 /* ── the rail palette (Base44) ────────────────────────────────────────────────
    Warm greys, near-black ink, no hue anywhere in the list. Every value here is
-   for a LIGHT near-white surface (#fdfcfa, set in shell.tsx) — nothing here may be
+   for a WHITE surface (RAIL_BG in shell.tsx) — nothing here may be
    reused on a dark one. The rail no longer HAS a dark surface: the profile card
    at its foot went light with everything else. */
 const RAIL_TEXT = "#3f3d39"; // resting item text

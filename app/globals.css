@@ -60,6 +60,15 @@
      These are close to the weight that was once rejected as invisible; what
      makes it hold is that cards now carry a drop shadow (`cardStyle`). A rule
      drawn with these and nothing else is a rule nobody will see. */
+  /* ── THE CONTENT SURFACE ───────────────────────────────────────────────
+     The cream ground the learner app and the console are drawn on, beside the
+     white rail. It is a TOKEN rather than a literal because two things have to
+     agree on it and they live in different files: the shell paints the surface
+     (SURFACE in components/app-shell/shell.tsx) and the console's sticky top bar
+     has to paint the same value to disappear into it. That bar was hard-coded
+     #fff, which was invisible while the surface was also white and became a
+     white band across the top of every console page the moment it went cream. */
+  --lp-surface: #faf8f2;
   --cn-line: #e2e8f0; /* card edge / table outline */
   --cn-rule: #e9edf2; /* header divider */
   --cn-hair: #eff2f6; /* row + column divider */
@@ -1010,8 +1019,8 @@
     align-items: center;
     justify-content: center;
     /* Rings the RAIL'S OWN ground so the dot reads as sitting on the tile rather
-       than punched out of it. Warm paper now, not white. */
-    border: 1.5px solid #fdfcfa;
+       than punched out of it — white again, with the rail. */
+    border: 1.5px solid #fff;
   }
   /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
      shared text-collapse rule already gives it `max-width: 0`, and that is NOT

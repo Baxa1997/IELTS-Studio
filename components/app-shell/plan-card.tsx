@@ -10,12 +10,12 @@ import type { UsageSummary } from "@/lib/quota";
  * left (gradings + practice sets), and an Upgrade button when a higher tier
  * exists.
  *
- * ⚠️ REPAINTED TWICE. It was light-on-dark (the rail was a burgundy panel),
- * then a grey tray on a white rail. The rail is warm paper now, so a grey tray
- * has nothing to sit against: this is the Base44 reference's "Upgrade your
- * plan" card — WHITE on the warm ground, hairline border, the crown on the
- * right — which is the one place in the rail where a raised surface still says
- * something, because everything around it is flat.
+ * ⚠️ REPAINTED THREE TIMES, and the rule behind all three is the same: this
+ * card must never be the same value as the rail it sits on. It was light-on-dark
+ * (burgundy rail), then a grey tray (white rail), then white (warm-paper rail),
+ * and now cream — because the rail went white again. It is the one place in the
+ * rail where a raised surface still says something, since everything around it
+ * is flat, and that only works while the two values differ.
  *
  * The quota rows stay. The reference's card is a pure CTA, but this is the only
  * thing that tells a learner how much practice is left before they hit a wall,
@@ -33,7 +33,11 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
     <div
       className="lp-sb-target"
       style={{
-        background: "#fff",
+        // CREAM, not white. It was white while the rail was warm paper; the rail
+        // is white now, and a white card on a white rail is a border with
+        // nothing inside it. It takes the content surface's cream so the one
+        // raised thing in the rail still reads as raised.
+        background: "#faf8f2",
         border: "1px solid #e7e4dc",
         borderRadius: 12,
         padding: 12,

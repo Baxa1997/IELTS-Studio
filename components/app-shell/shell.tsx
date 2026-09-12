@@ -39,6 +39,20 @@ const BORDER = "#e6e4dc";
  *  own paper, and the thing that makes two white cards read as cards rather
  *  than as one continuous surface with a line drawn down it. */
 const CANVAS = "#f1efe9";
+/* The content card. CREAM, not white — the rail took the white (see RAIL_BG),
+   and two white surfaces separated by a 10px gutter read as one surface with a
+   line drawn down it.
+
+   ⚠️ IT IS A GROUND, NOT A CARD FACE. Console and learner pages draw their own
+   white cards on top of this; the value has to stay light enough that a white
+   card still lifts off it and dark enough that the cream is visible at all.
+   Between #fff and CANVAS is the whole available range, and this sits nearer
+   the white end on purpose — page copy is read against it.
+
+   The value lives in globals.css as `--lp-surface`, because the console's sticky
+   top bar has to paint the same colour to vanish into the page and it cannot
+   import from here. */
+const SURFACE = "var(--lp-surface)";
 /* ── the rail is WARM PAPER, and it is light all the way down ─────────────────
    Two rebuilds ago this was a solid burgundy panel; one rebuild ago it was a
    white card with a dark profile block at its foot. It is now the Base44
@@ -53,13 +67,18 @@ const CANVAS = "#f1efe9";
    the new paper they are, in order, a black hole, illegible, invisible and
    alarming. If the dark block ever comes back, it needs its own palette again;
    do not reach for the names below. */
-/* Nearly white, with just enough warmth left to keep the grey pills legible.
-   It was #f8f7f4; the owner asked for whiter. There is a floor here: the active
-   row (#eae7e0) and the hover wash are both TINTS OF THIS PAPER, so taking the
-   rail all the way to #fff leaves them floating on a surface they no longer
-   belong to — and the rail would then be the same value as the content card it
-   sits beside, which is what the warm canvas between them exists to prevent. */
-const RAIL_BG = "#fdfcfa";
+/* WHITE, and the pair of objections I raised against it are both answered.
+   I argued the rail could not go all the way to #fff because (a) the active row
+   and the hover wash are warm tints of the paper, and (b) the rail would then be
+   the same value as the content card beside it. (b) is gone: the content card is
+   CREAM now (SURFACE below), so the two surfaces are further apart than they
+   have ever been, not closer. (a) survives as a note rather than a veto — a warm
+   pill on white reads as a pill, just a warmer one, and keeping the rail's
+   greys in one family is worth more than neutralising them against the ground.
+
+   The relationship is now inverted from the Base44 reference (warm rail, white
+   page) and that is deliberate: the owner asked for it this way round. */
+const RAIL_BG = "#fff";
 /** The rail's own edge and its internal hairlines — one warm grey, matched to
  *  the paper rather than to the cool ramp the content cards use. Two different
  *  greys a few pixels apart read as a mistake. */
@@ -553,11 +572,11 @@ export function AppShell({
             style={{
               height: "100%",
               overflow: fillsTheSurface(pathname) ? "hidden" : "auto",
-              // One white card for the learner app AND the console — the design
-              // draws the console's page as a panel beside the rail, not as a
-              // full-bleed cream ground. Set here rather than in CSS so it
-              // doesn't depend on `:has()` reaching a descendant.
-              background: fullBleed ? "#F4F3EF" : "#fff",
+              // One card for the learner app AND the console — the design draws
+              // the console's page as a panel beside the rail, not as a
+              // full-bleed ground. Set here rather than in CSS so it doesn't
+              // depend on `:has()` reaching a descendant.
+              background: fullBleed ? "#F4F3EF" : SURFACE,
               borderRadius: fullBleed ? 0 : 14,
               border: fullBleed ? "none" : "1px solid #e6e4dc",
               boxShadow: fullBleed ? "none" : "0 4px 14px -10px rgba(22,35,43,.25)",
