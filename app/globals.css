@@ -67,8 +67,14 @@
      (SURFACE in components/app-shell/shell.tsx) and the console's sticky top bar
      has to paint the same value to disappear into it. That bar was hard-coded
      #fff, which was invisible while the surface was also white and became a
-     white band across the top of every console page the moment it went cream. */
-  --lp-surface: #faf8f2;
+     white band across the top of every console page the moment it went cream.
+
+     MAINLY WHITE, with a hint of cream — the owner's calibration after seeing
+     #faf8f2, which read as a cream page rather than a white one. It is only a
+     few points off white now, and that is enough: the 10px canvas gutter is what
+     separates this from the white rail beside it, not the difference between the
+     two values, so this can sit as close to white as the eye still notices. */
+  --lp-surface: #fdfcf8;
   --cn-line: #e2e8f0; /* card edge / table outline */
   --cn-rule: #e9edf2; /* header divider */
   --cn-hair: #eff2f6; /* row + column divider */

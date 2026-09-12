@@ -33,11 +33,12 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
     <div
       className="lp-sb-target"
       style={{
-        // CREAM, not white. It was white while the rail was warm paper; the rail
-        // is white now, and a white card on a white rail is a border with
-        // nothing inside it. It takes the content surface's cream so the one
-        // raised thing in the rail still reads as raised.
-        background: "#faf8f2",
+        // CREAM, not white. It was white while the rail was warm paper; the
+        // rail is white now, and a white card on a white rail is a border with
+        // nothing inside it. It runs a little deeper than the content surface
+        // (--lp-surface) on purpose: that value is nearly white, which would put
+        // this back where it started.
+        background: "#f7f5ee",
         border: "1px solid #e7e4dc",
         borderRadius: 12,
         padding: 12,

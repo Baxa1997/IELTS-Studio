@@ -761,11 +761,6 @@ export function SidebarNav({
         const panelId = section.title
           ? `sb-group-${section.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
           : undefined;
-        /* Where pressing the group's label goes: its FIRST REAL destination.
-           `soon` rows are disabled spans, not links — sending somebody to one is
-           sending them to a page that does not exist yet, so they are skipped
-           and a group of nothing but `soon` gets no link at all. */
-        const groupHref = section.items.find((i) => !i.soon)?.href;
         return (
           <div
             key={section.title ?? si}
@@ -773,38 +768,25 @@ export function SidebarNav({
             style={TRAY}
           >
             {section.title && GroupIcon ? (
-              /* ── ONE control, not two ─────────────────────────────────────
-                 The row was briefly split — a link to navigate, a chevron to
-                 fold — and that was wrong for this rail. It made folding a
-                 group a 26px target you had to aim at, and pressing the obvious
-                 part of the row (the label) could only ever navigate, so a group
-                 you had opened could not be closed by pressing the same place
-                 that opened it. The owner's read was the plain one: press the
-                 group, it opens and takes you to its first page; press it again,
-                 it shuts.
+              /* ── a disclosure, and ONLY a disclosure ───────────────────────
+                 Press it, the group unfolds; press it again, it folds. It does
+                 not navigate.
 
-                 So the WHOLE ROW is one <Link>, and the click decides:
-                   shut  → navigate to the first page inside, and unfold.
-                   open  → fold it, and stay where you are.
+                 It briefly did — pressing a shut group took you to the first
+                 page inside it — and the owner had it removed after using it.
+                 The reason is worth keeping: a row that both moves you and
+                 changes shape is two outcomes behind one press, and which one
+                 you get depends on state you have to look at the chevron to
+                 know. Opening a menu should never be able to take you somewhere.
+                 The destinations are the rows inside; this is the lid.
 
-                 It stays a real <Link> rather than a button because middle-click,
-                 ⌘-click and "open in new tab" are how people actually use
-                 navigation — those are let through untouched (see the modifier
-                 check), and only a plain left click is ever intercepted. */
-              <Link
-                href={groupHref ?? "#"}
-                prefetch={groupHref && shouldPrefetch(groupHref) ? undefined : false}
-                onClick={(event) => {
-                  // A modified click is a request for a new tab/window, not a
-                  // request to fold anything. Let the browser have it.
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  if (open || !groupHref) {
-                    // Folding is not a navigation — and a group with nowhere to
-                    // go must not follow its placeholder href.
-                    event.preventDefault();
-                  }
-                  toggleGroup(section.title as string);
-                }}
+                 A <button>, therefore, and not a <Link> — there is no href to
+                 middle-click or open in a new tab, and making it an anchor that
+                 goes nowhere would be a lie to the browser and to a screen
+                 reader both. */
+              <button
+                type="button"
+                onClick={() => toggleGroup(section.title as string)}
                 aria-expanded={open}
                 aria-controls={panelId}
                 data-label={section.title}
@@ -812,7 +794,10 @@ export function SidebarNav({
                 style={{
                   ...itemBase,
                   justifyContent: "space-between",
+                  width: "100%",
+                  background: "transparent",
                   cursor: "pointer",
+                  textAlign: "left",
                   // A shut group holding the current page keeps the ink, so the
                   // rail still answers "roughly where am I" at a glance.
                   color: !open && activeGroup === section.title ? RAIL_ACTIVE_INK : RAIL_TEXT,
@@ -834,9 +819,6 @@ export function SidebarNav({
                       {rollup.badge}
                     </span>
                   ) : null}
-                  {/* Decorative. The row it sits in is the control, so a second
-                      focusable element here would just be a tab stop that does
-                      the same thing. */}
                   <ChevronRight
                     className="lp-sb-caret"
                     size={15}
@@ -848,7 +830,7 @@ export function SidebarNav({
                     }}
                   />
                 </span>
-              </Link>
+              </button>
             ) : null}
             {/* THE ANIMATION IS A GRID ROW, not a max-height.
                 `grid-template-rows: 0fr → 1fr` tweens to the content's OWN

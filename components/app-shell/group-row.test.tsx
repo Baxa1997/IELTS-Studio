@@ -4,33 +4,26 @@
  *
  * The rest of the rail's guards are static scans over the source, because the
  * things that break there are CSS declarations jsdom cannot evaluate. This one
- * is different: what the owner asked for is a real interaction, and it is one
- * control doing two jobs.
+ * is different: opening and closing a group is a real interaction.
  *
- *   shut  → go to the first page inside the group, and unfold it.
- *   open  → fold it, and stay where you are.
- *
- * Three ways that goes wrong, all behavioural and none visible to a type check:
- *
- *   1. The row only navigates, so a group you opened cannot be closed by
- *      pressing the same place that opened it (this is what shipped first, and
- *      what the owner sent back).
- *   2. The row only toggles, so "choose the first menu inside" never happens.
- *   3. Folding follows the href anyway, so closing a group navigates you off the
- *      page you were reading.
+ * ⚠️ THE ROW IS A DISCLOSURE AND NOTHING ELSE. It went through a round of also
+ * navigating — pressing a shut group took you to the first page inside it — and
+ * the owner had that removed after using it. These tests pin the removal as
+ * hard as they pin the folding, because "helpfully" re-adding navigation here is
+ * an easy and plausible-looking change: a row that both moves you and changes
+ * shape puts two outcomes behind one press, and which one you get depends on
+ * state you have to read the chevron to know.
  */
 
 import { cleanup, fireEvent, render, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const pathname = { current: "/console" };
-/* ⚠️ WHAT THE MOCK <Link> HAS TO RECORD, and why the obvious test was wrong.
-   The mock calls preventDefault itself, so jsdom does not log "Not implemented:
-   navigation" on every click. That makes `event.defaultPrevented` useless to the
-   tests — it is true after EVERY click, whether the component prevented or not.
-   So the mock reads the flag straight after the component's own handler, before
-   adding its own, and the tests assert on that. */
-const lastClick = vi.hoisted(() => ({ preventedByNav: false }));
+/* The mock <Link> records where a click would have taken you, so a test can say
+   "this press went nowhere" — which is the whole claim about a group row now.
+   It also preventDefaults, so jsdom does not log "Not implemented: navigation"
+   for every click on a real nav item. */
+const lastClick = vi.hoisted(() => ({ navigatedTo: null as string | null }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
 vi.mock("next/link", () => ({
   default: ({ children, href, onClick, ...rest }: Record<string, unknown>) => {
@@ -40,7 +33,7 @@ vi.mock("next/link", () => ({
         href={h}
         onClick={(e) => {
           (onClick as React.MouseEventHandler | undefined)?.(e);
-          lastClick.preventedByNav = e.defaultPrevented;
+          if (!e.defaultPrevented) lastClick.navigatedTo = h;
           // Only now, so jsdom does not log "Not implemented: navigation".
           e.preventDefault();
         }}
@@ -66,10 +59,8 @@ function groupRow(title: string): HTMLElement {
   return row as HTMLElement;
 }
 
-/* The row IS the link — one control doing both jobs — so this is the same
-   element as `groupRow`. Kept as its own name because the tests below read very
-   differently depending on which job they are talking about. */
-const groupLink = groupRow;
+/** The row's control. It IS the row — there is no second element inside it. */
+const groupToggle = groupRow;
 
 const panelOf = (title: string) =>
   document.getElementById(`sb-group-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
@@ -77,77 +68,67 @@ const panelOf = (title: string) =>
 beforeEach(() => {
   pathname.current = "/console";
   window.localStorage.clear();
-  lastClick.preventedByNav = false;
+  lastClick.navigatedTo = null;
 });
 afterEach(cleanup);
 
-describe("pressing a shut group chooses its first destination", () => {
-  it("links the label to the first item inside, not to a page of its own", () => {
+describe("the row folds and unfolds, and does nothing else", () => {
+  it("is a button, not a link — it has nowhere to send you", () => {
+    /* THE REGRESSION THIS PINS. An anchor here would mean the rail's menu
+       headings are destinations, which they are not; it would also be a lie to
+       the browser and to a screen reader, since there is no href worth
+       middle-clicking. */
     render(<SidebarNav role="teacher" />);
-    // Teaching holds Groups, Students, Calendar, My pay — Groups is first.
-    expect(groupLink("Teaching")).toHaveAttribute("href", "/console/groups");
-    // Practice leads with Practice AI.
-    expect(groupLink("Practice")).toHaveAttribute("href", "/console/practice-ai");
+    const row = groupRow("Teaching");
+    expect(row.tagName).toBe("BUTTON");
+    expect(row).not.toHaveAttribute("href");
+    expect(within(row).queryByRole("link")).toBeNull();
   });
 
-  it("unfolds on the way in, and folds again on the next press", () => {
+  it("opens no page when pressed", () => {
+    // If a group ever navigates again, the mock <Link> records it.
     render(<SidebarNav role="teacher" />);
+    fireEvent.click(groupToggle("Teaching"));
+    fireEvent.click(groupToggle("Teaching"));
+    expect(lastClick.navigatedTo, "folding a group must not navigate").toBeNull();
+  });
 
-    // Groups default to open, so fold it first to get a shut one.
-    fireEvent.click(groupLink("Teaching"));
-    expect(panelOf("Teaching")).toHaveAttribute("data-open", "0");
-
-    fireEvent.click(groupLink("Teaching"));
+  it("toggles on every press", () => {
+    render(<SidebarNav role="teacher" />);
+    // Groups default to open.
     expect(panelOf("Teaching")).toHaveAttribute("data-open", "1");
-
-    /* THE REGRESSION THIS PINS, and it is the one the owner sent back: pressing
-       an OPEN group used to re-navigate to its first child and leave it open, so
-       there was no way to close a group from the row that opened it. */
-    fireEvent.click(groupLink("Teaching"));
+    fireEvent.click(groupToggle("Teaching"));
     expect(panelOf("Teaching")).toHaveAttribute("data-open", "0");
-  });
-
-  it("does not follow the link when it is folding", () => {
-    // Closing a group must not navigate you off the page you are reading.
-    render(<SidebarNav role="teacher" />);
-    fireEvent.click(groupLink("Teaching")); // open by default → this folds
-    expect(panelOf("Teaching")).toHaveAttribute("data-open", "0");
-    expect(lastClick.preventedByNav, "folding must not navigate").toBe(true);
-  });
-
-  it("follows the link when it is opening", () => {
-    render(<SidebarNav role="teacher" />);
-    fireEvent.click(groupLink("Teaching")); // fold
-    fireEvent.click(groupLink("Teaching")); // open → must navigate
+    fireEvent.click(groupToggle("Teaching"));
     expect(panelOf("Teaching")).toHaveAttribute("data-open", "1");
-    expect(lastClick.preventedByNav, "opening must go to the first child").toBe(false);
   });
 
-  it("lets a modified click through untouched, for a new tab", () => {
+  it("leaves the rows inside it as the only destinations", () => {
+    // The group is the lid; its children are the doors.
     render(<SidebarNav role="teacher" />);
-    // ⌘-click is a request for a new tab, not a request to fold anything.
-    fireEvent.click(groupLink("Practice"), { metaKey: true });
-    expect(lastClick.preventedByNav).toBe(false);
-    expect(panelOf("Practice")).toHaveAttribute("data-open", "1");
+    const panel = panelOf("Teaching") as HTMLElement;
+    const hrefs = Array.from(panel.querySelectorAll("a")).map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual([
+      "/console/groups",
+      "/console/students",
+      "/console/calendar",
+      "/console/finance/payroll",
+    ]);
   });
 });
 
 describe("the row says what it is doing", () => {
   it("carries the disclosure state itself — there is no second control", () => {
     render(<SidebarNav role="teacher" />);
-    const row = groupRow("Practice");
-    // One control. A nested button would be a tab stop doing the same job.
-    expect(within(row).queryByRole("button")).toBeNull();
-
-    const link = groupLink("Practice");
-    expect(link).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(link);
-    expect(groupLink("Practice")).toHaveAttribute("aria-expanded", "false");
+    const row = groupToggle("Practice");
+    expect(row).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(row);
+    expect(groupToggle("Practice")).toHaveAttribute("aria-expanded", "false");
   });
 
   it("points at the list it controls", () => {
     render(<SidebarNav role="teacher" />);
-    expect(groupLink("Learning")).toHaveAttribute("aria-controls", "sb-group-learning");
+    expect(groupToggle("Learning")).toHaveAttribute("aria-controls", "sb-group-learning");
     expect(panelOf("Learning")).not.toBeNull();
   });
 });
@@ -166,7 +147,7 @@ describe("the group you are standing in", () => {
     // fire once on arrival, not hold the group open.
     pathname.current = "/console/marking";
     render(<SidebarNav role="teacher" />);
-    fireEvent.click(groupLink("Learning"));
+    fireEvent.click(groupToggle("Learning"));
     expect(panelOf("Learning")).toHaveAttribute("data-open", "0");
   });
 });
@@ -178,7 +159,7 @@ describe("a folded group still shows what is waiting behind it", () => {
     // Open, the count belongs to Results and not to the group row.
     expect(within(row).queryByText("3")).toBeNull();
 
-    fireEvent.click(groupLink("Learning"));
+    fireEvent.click(groupToggle("Learning"));
     expect(within(groupRow("Learning")).getByText("3")).toBeTruthy();
   });
 });
