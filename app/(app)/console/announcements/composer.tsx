@@ -169,7 +169,7 @@ export function AnnouncementComposer({
       </div>
 
       {/* A second delivery, not a replacement: the bell reaches every account,
-          Telegram reaches whoever joined the channel — usually the parents,
+          Telegram reaches whoever joined the class group — usually the parents,
           who have no account here at all. */}
       {/* NO CHANNELS IS A STATE, NOT AN ABSENCE. Hiding this section when
           nothing is connected is what made a real send look broken: the sender
@@ -191,14 +191,14 @@ export function AnnouncementComposer({
           <FiSend size={15} color="#777581" aria-hidden style={{ marginTop: 1, flexShrink: 0 }} />
           <span>
             <span style={{ display: "block", fontSize: 13, color: MUTED }}>
-              No Telegram channel connected
+              No Telegram group connected
             </span>
             <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 2 }}>
-              This post reaches the app only. Connect a group channel from{" "}
+              This post reaches the app only. Connect a Telegram group from{" "}
               <Link href="/console/groups" style={{ color: INDIGO }}>
                 its group page
               </Link>{" "}
-              → Settings → Telegram to reach parents too.
+              → Class setup → Telegram connection to reach parents too.
             </span>
           </span>
         </div>
@@ -236,7 +236,7 @@ export function AnnouncementComposer({
                 Post it to Telegram as well
               </span>
               <span style={{ display: "block", fontSize: 11.5, color: FAINT, marginTop: 2 }}>
-                {channels.length} channel{channels.length === 1 ? "" : "s"} connected — the parents
+                {channels.length} Telegram group{channels.length === 1 ? "" : "s"} connected — the parents
                 are usually there.
               </span>
             </span>
@@ -245,7 +245,7 @@ export function AnnouncementComposer({
           {toTelegram ? (
             <div style={{ borderTop: "1px solid #DDEEF8", padding: "9px 12px 11px" }}>
               <span style={{ ...label, marginBottom: 7 }}>
-                {locked ? "Goes to this group's channel" : "Choose the channels"}
+                {locked ? "Goes to this class's Telegram group" : "Choose the Telegram groups"}
               </span>
 
               {channels.map((c) => {
@@ -285,8 +285,8 @@ export function AnnouncementComposer({
               {targets.length === 0 ? (
                 <p style={{ fontSize: 11.5, color: "#A63A30", margin: "7px 0 0" }}>
                   {locked
-                    ? "This group has no channel connected — connect one on the group page."
-                    : "Pick at least one channel, or untick Telegram."}
+                    ? "This group has no Telegram group connected — connect one on the group page."
+                    : "Pick at least one Telegram group, or untick Telegram."}
                 </p>
               ) : (
                 <p style={{ fontSize: 11.5, color: FAINT, margin: "7px 0 0", lineHeight: 1.5 }}>

@@ -14,7 +14,7 @@ import { inviteGroupToTelegram, type GroupInviteState } from "../actions";
  * Handing out thirty passwords is the bottleneck that makes the import
  * pointless, and the per-student codes built first do not scale to a room.
  *
- * So: one message in the class channel. Each student taps it, confirms their
+ * So: one message in the class Telegram group. Each student taps it, confirms their
  * phone, and gets their own login privately. The teacher does nothing else.
  *
  * Nothing secret is in that message. The code names a CLASS — it lets the
@@ -40,8 +40,8 @@ export function InviteClassPanel({ groupId }: { groupId: string }) {
         <div style={{ marginTop: 12 }}>
           {!state.posted ? (
             <p style={{ ...note, margin: "0 0 8px" }}>
-              This class has no Telegram channel connected, so nothing was posted. Send this to
-              them yourself, or connect a channel first.
+              This class has no Telegram group connected, so nothing was posted. Send this to
+              them yourself, or connect a Telegram group first.
             </p>
           ) : null}
           <div style={linkBox}>{state.url}</div>

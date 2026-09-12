@@ -27,6 +27,7 @@ const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#EAE8E1";
 const INDIGO = "#4340CB";
+const RED = "#A13A2C";
 
 export interface ScheduleSeries {
   seriesId: string;
@@ -204,10 +205,12 @@ function ScheduleForm({
             onClick={onDone}
             style={{
               background: "transparent",
-              border: 0,
+              border: `1px solid ${RED}`,
+              borderRadius: 8,
+              padding: "6px 11px",
               fontFamily: "inherit",
               fontSize: 12.5,
-              color: MUTED,
+              color: RED,
               cursor: "pointer",
             }}
           >

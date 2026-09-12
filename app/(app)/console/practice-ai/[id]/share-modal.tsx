@@ -304,7 +304,7 @@ export function ShareModal({
                     </span>
                     <span style={{ fontSize: 15, fontWeight: 600, color: INK }}>{g.name}</span>
                     {/* SAID WHERE IT MATTERS. Setting a lesson announces it in
-                        the group's Telegram channel — but only a verified link
+                        the group's Telegram group — but only a verified link
                         has one, and a group without it gets the homework in
                         silence. A teacher who did not know that reads the
                         silence as the assignment having failed. The connect
@@ -313,8 +313,8 @@ export function ShareModal({
                     <span
                       title={
                         g.telegram
-                          ? "This class has a Telegram channel — it will be told"
-                          : "No Telegram channel: this class gets the homework silently. Open the group's Settings to connect one."
+                          ? "This class has a Telegram group — it will be told"
+                          : "No Telegram group: this class gets the homework silently. Open the group's Settings to connect one."
                       }
                       style={{
                         marginLeft: "auto",
@@ -344,7 +344,7 @@ export function ShareModal({
               page, so there is no URL to send anyone to. */}
           {groups.some((g) => !g.telegram) ? (
             <p style={{ margin: "9px 2px 0", fontSize: 12.5, lineHeight: 1.5, color: SOFT }}>
-              A class with no channel still gets the homework — it just is not announced.{" "}
+              A class with no Telegram group still gets the homework — it just is not announced.{" "}
               <Link
                 href="/console/telegram"
                 style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}

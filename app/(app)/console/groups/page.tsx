@@ -32,21 +32,21 @@ export const dynamic = "force-dynamic";
 /** The chips above the grid. Each is a predicate over the same list, so the
  *  count on the chip and the cards below it can never disagree. */
 const FILTERS = {
-  // "All" means all the RUNNING ones. A finished course is not deleted, it is
-  // archived, and it lives behind its own chip rather than padding every count
-  // on this page for the rest of the center's life.
-  all: { label: "All", test: (g: Card_) => g.status === "active" },
-  running: {
-    label: "Active",
-    test: (g: Card_) => g.status === "active" && g.teacherName != null && g.assignments > 0,
-  },
+  // Lifecycle is separate from attention. A group can be running while still
+  // needing a teacher or homework, so these filters describe the question the
+  // person is trying to answer instead of pretending they are one status.
+  all: { label: "Running", test: (g: Card_) => g.status === "active" },
   nopractice: {
-    label: "No practice set",
+    label: "Needs homework",
     test: (g: Card_) => g.status === "active" && g.assignments === 0,
   },
   noteacher: {
-    label: "No teacher",
+    label: "Needs teacher",
     test: (g: Card_) => g.status === "active" && g.teacherName == null,
+  },
+  nostudents: {
+    label: "Needs students",
+    test: (g: Card_) => g.status === "active" && g.students === 0,
   },
   closed: { label: "Closed", test: (g: Card_) => g.status === "closed" },
 } as const;
@@ -61,8 +61,10 @@ interface Card_ {
   id: string;
   name: string;
   status: GroupStatus;
+  branchName: string | null;
   teacherName: string | null;
   students: number;
+  capacity: number | null;
   paused: number;
   assignments: number;
   completionPct: number | null;
@@ -119,8 +121,10 @@ export default async function GroupsPage({
       id: g.id,
       name: g.name,
       status: g.status,
+      branchName: g.branchName,
       teacherName: g.teacherName,
       students: g.memberCount,
+      capacity: g.capacity,
       paused: g.pausedCount,
       assignments: r?.assignments ?? 0,
       completionPct: r?.completionPct ?? null,
@@ -144,11 +148,11 @@ export default async function GroupsPage({
       <PageHead
         eyebrow="Groups"
         title="Groups"
-        // subtitle={
-        //   isAdmin
-        //     ? `${groups.length} group${groups.length === 1 ? "" : "es"} · a group is where practice is set and bands are compared.`
-        //     : "The groups assigned to you — set practice here and read the results."
-        // }
+        subtitle={
+          isAdmin
+            ? "Manage classes, homework, attendance, and student progress in one place."
+            : "Your classes, homework, attendance, and student progress."
+        }
         actions={
           <>
             {/* The other half of the old topbar pair. A link invite always
@@ -232,10 +236,12 @@ function GroupCard({ group: g }: { group: Card_ }) {
     g.status === "closed"
       ? { label: "Closed", tone: "neutral" }
       : g.teacherName == null
-        ? { label: "No teacher", tone: "red" }
-        : g.assignments === 0
-          ? { label: "No practice", tone: "amber" }
-          : { label: "Active", tone: "green" };
+        ? { label: "Needs teacher", tone: "red" }
+        : g.students === 0
+          ? { label: "Needs students", tone: "amber" }
+          : g.assignments === 0
+            ? { label: "Needs homework", tone: "amber" }
+            : { label: "Running", tone: "green" };
 
   return (
     <Link
@@ -245,7 +251,10 @@ function GroupCard({ group: g }: { group: Card_ }) {
         ...cardStyle,
         padding: 16,
         textDecoration: "none",
-        display: "block",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        boxSizing: "border-box",
         opacity: g.status === "closed" ? 0.72 : 1,
       }}
     >
@@ -271,17 +280,45 @@ function GroupCard({ group: g }: { group: Card_ }) {
         <Tag tone={status.tone}>{status.label}</Tag>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 12px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          margin: "14px 0 12px",
+          minHeight: 25,
+        }}
+      >
         {g.teacherName ? (
           <>
             <Avatar name={g.teacherName} size={24} />
-            <span style={{ fontFamily: SANS, fontSize: 12.5, color: BODY }}>{g.teacherName}</span>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, color: BODY }}>
+              {g.teacherName}
+            </span>
           </>
         ) : (
           <span style={{ fontFamily: SANS, fontSize: 12.5, color: FAINT }}>
-            Nobody assigned yet
+            Teacher not assigned yet
           </span>
         )}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          fontFamily: SANS,
+          fontSize: 11.5,
+          color: SOFT,
+          marginBottom: 14,
+        }}
+      >
+        <span>{g.branchName ?? "Branch not set"}</span>
+        <span aria-hidden style={{ color: "#c6c3bb" }}>
+          ·
+        </span>
+        <span>{g.capacity == null ? "Capacity not set" : `${g.capacity} seats`}</span>
       </div>
 
       {/* The design shows enrolled-against-capacity here. There is no capacity
@@ -298,10 +335,15 @@ function GroupCard({ group: g }: { group: Card_ }) {
         }}
       >
         <span>
-          {g.students} student{g.students === 1 ? "" : "s"}
+          <strong style={{ color: INK, fontWeight: 600 }}>
+            {g.capacity == null ? g.students : `${g.students} / ${g.capacity}`}
+          </strong>{" "}
+          student{g.students === 1 ? "" : "s"}
           {g.paused > 0 ? ` · ${g.paused} paused` : ""}
         </span>
-        <span>{g.completionPct == null ? "not started" : `${g.completionPct}% completed`}</span>
+        <span>
+          {g.completionPct == null ? "No homework completed yet" : `${g.completionPct}% complete`}
+        </span>
       </div>
       <div style={{ marginBottom: 14 }}>
         <Bar
@@ -321,9 +363,24 @@ function GroupCard({ group: g }: { group: Card_ }) {
           paddingTop: 12,
         }}
       >
-        <Stat label="Writing" value={<BandCell figure={g.writing} unit="essays" />} />
-        <Stat label="Completion" value={g.completionPct == null ? "—" : `${g.completionPct}%`} />
+        <Stat label="Writing band" value={<BandCell figure={g.writing} unit="essays" />} />
+        <Stat label="Homework" value={g.completionPct == null ? "—" : `${g.completionPct}%`} />
         <Stat label="Attendance" value={g.attendancePct == null ? "—" : `${g.attendancePct}%`} />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginTop: "auto",
+          paddingTop: 13,
+          fontFamily: SANS,
+          fontSize: 12,
+          fontWeight: 600,
+          color: "#4340CB",
+        }}
+      >
+        Open group <span aria-hidden style={{ marginLeft: 5 }}>→</span>
       </div>
     </Link>
   );

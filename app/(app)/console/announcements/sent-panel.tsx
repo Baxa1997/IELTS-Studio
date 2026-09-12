@@ -192,7 +192,7 @@ function SentList({ rows }: { rows: SentRow[] }) {
 }
 
 /**
- * How to connect a group channel, written for someone holding a phone.
+ * How to connect Telegram to a class, written for someone holding a phone.
  *
  * Three steps, not five: the deep link on the group page does the adding, the
  * permissions and the code in one tap. The steps still SAY there is a code and
@@ -214,7 +214,7 @@ function TelegramGuide({
       {!botUsername ? (
         <p style={note}>
           Telegram isn&apos;t configured on this platform yet — <code>TELEGRAM_BOT_USERNAME</code>,
-          the bot token and the webhook have to be set before channels can be connected. Everything
+          the bot token and the webhook have to be set before Telegram groups can be connected. Everything
           below is what it will look like once they are.
         </p>
       ) : null}
@@ -222,18 +222,18 @@ function TelegramGuide({
       <section>
         <h3 style={heading}>
           <FiSend size={14} color={TELEGRAM} aria-hidden />
-          Connect a group channel
+          Connect a Telegram group
         </h3>
         <p style={note}>
-          One channel per group. Posts there reach parents, who usually have no account here at all
+          One Telegram group per class. Posts there reach parents, who usually have no account here at all
           — which is why it is worth the two minutes.
         </p>
         <ol style={steps}>
           <li style={step}>
-            <b>Create the Telegram group or channel</b> for the group, if it doesn&apos;t exist.
+            <b>Create the Telegram group</b> for the class, if it doesn&apos;t exist.
           </li>
           <li style={step}>
-            <b>Open the group</b> → Settings → Telegram, and press <i>Connect Telegram</i>, then{" "}
+            <b>Open the group</b> → Class setup → Telegram connection, and press <i>Connect Telegram</i>, then{" "}
             <i>Add to a group</i>.
           </li>
           <li style={step}>
@@ -244,7 +244,7 @@ function TelegramGuide({
         <p style={{ ...note, marginTop: 9 }}>
           The link carries a one-use code that expires in 15 minutes. That code is the security
           check, not red tape: Telegram chat ids aren&apos;t secret, so without it anyone who
-          guessed one could post into another center&apos;s channel. If Telegram isn&apos;t on the
+          guessed one could post into another center&apos;s group. If Telegram isn&apos;t on the
           device you&apos;re using, the same panel shows the code to post by hand.
         </p>
       </section>
@@ -294,7 +294,7 @@ function TelegramGuide({
                   {c.name}
                 </span>
                 <span style={{ display: "block", fontFamily: SANS, fontSize: 11.5, color: FAINT }}>
-                  {c.channel ? c.channel : `${c.students} students · no channel yet`}
+                  {c.channel ? c.channel : `${c.students} students · no Telegram group yet`}
                 </span>
               </span>
               <span
@@ -315,7 +315,7 @@ function TelegramGuide({
             </Link>
           ))}
           {classes.length === 0 ? (
-            <p style={note}>No groups yet — a channel belongs to one, so create a group first.</p>
+            <p style={note}>No groups yet — a Telegram group belongs to one class, so create a group first.</p>
           ) : null}
         </div>
       </section>

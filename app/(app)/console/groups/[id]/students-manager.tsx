@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FaFileCsv, FaFileExcel } from "react-icons/fa6";
 import { FiChevronDown, FiKey, FiUserPlus } from "react-icons/fi";
 
@@ -252,6 +252,7 @@ function ManageMenu({
   const [at, setAt] = useState<{ top: number; right: number } | null>(null);
   const [sheet, setSheet] = useState<null | "password" | "move" | "left" | "remove">(null);
   const btn = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
 
   const [reset, resetAction, resetting] = useActionState(
     resetStudentPassword,
@@ -290,6 +291,27 @@ function ManageMenu({
     };
   }, [open]);
 
+  function positionMenu() {
+    const button = btn.current?.getBoundingClientRect();
+    if (!button) return;
+
+    const menuHeight = menu.current?.offsetHeight ?? 190;
+    const gap = 6;
+    const below = button.bottom + gap;
+    const above = button.top - gap - menuHeight;
+    const opensAbove = below + menuHeight > window.innerHeight - 8 && above >= 8;
+
+    setAt({
+      top: opensAbove ? above : below,
+      right: Math.max(8, window.innerWidth - button.right),
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    positionMenu();
+  }, [open]);
+
   function toggle() {
     const r = btn.current?.getBoundingClientRect();
     if (r) setAt({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
@@ -319,6 +341,7 @@ function ManageMenu({
             aria-hidden
           />
           <div
+            ref={menu}
             role="menu"
             style={{
               position: "fixed",
@@ -909,4 +932,3 @@ const manageStyle: React.CSSProperties = {
 };
 
 const LINE_STRONG = "#dedcd2";
-

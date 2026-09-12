@@ -90,6 +90,7 @@ export function MarkLeftBody({
       submit="Mark as left"
       onDone={onDone}
       owedLabel={owedLabel}
+      danger
     >
       <label style={label}>
         Why, for whoever asks later (optional)

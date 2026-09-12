@@ -314,7 +314,13 @@ export function CloseGroupButton({ groupId, status }: { groupId: string; status:
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="status" value={closing ? "closed" : "active"} />
-      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+      <Button
+        type="submit"
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        className={closing ? "border-[#a13a2c] text-[#a13a2c] hover:bg-[#fdeceb]" : undefined}
+      >
         {pending
           ? closing
             ? "Closing…"
@@ -339,7 +345,13 @@ export function DeleteGroupButton({ groupId }: { groupId: string }) {
   return (
     <form action={formAction} className="space-y-2">
       <input type="hidden" name="group_id" value={groupId} />
-      <Button type="submit" variant="ghost" size="sm" disabled={pending}>
+      <Button
+        type="submit"
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        className="border-[#a13a2c] text-[#a13a2c] hover:bg-[#fdeceb]"
+      >
         {pending ? "Deleting…" : "Delete group"}
       </Button>
       <p className="text-muted-foreground text-xs">
@@ -358,7 +370,13 @@ export function RemoveMemberButton({ groupId, studentId }: { groupId: string; st
     <form action={formAction} className="flex items-center gap-2">
       <input type="hidden" name="group_id" value={groupId} />
       <input type="hidden" name="student_id" value={studentId} />
-      <Button type="submit" variant="ghost" size="sm" disabled={pending}>
+      <Button
+        type="submit"
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        className="border-[#a13a2c] text-[#a13a2c] hover:bg-[#fdeceb]"
+      >
         {pending ? "Removing…" : "Remove"}
       </Button>
       {state.error ? (

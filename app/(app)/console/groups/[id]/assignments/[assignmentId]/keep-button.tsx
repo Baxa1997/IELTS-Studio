@@ -6,7 +6,6 @@ import { saveToLibrary, type LibraryState } from "../../../../practice/library-a
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#16162E";
-const FAINT = "#6E6C87";
 const GREEN = "#166C4C";
 const RED = "#C24539";
 const RULE = "#C5C4BE";
@@ -128,9 +127,11 @@ export function KeepButton({
           type="button"
           onClick={() => setOpen(false)}
           style={{
-            border: "none",
-            background: "none",
-            color: FAINT,
+            border: `1px solid ${RED}`,
+            background: "#fff",
+            borderRadius: 8,
+            padding: "6px 11px",
+            color: RED,
             fontFamily: SANS,
             fontSize: 12,
             cursor: "pointer",

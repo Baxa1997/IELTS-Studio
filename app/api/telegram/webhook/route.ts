@@ -88,7 +88,7 @@ export async function POST(req: Request): Promise<Response> {
       if (!already) {
         await sendMessage(
           chat.id,
-          "👋 Nearly there. Open the class in your center console → <b>Settings → Telegram</b>, " +
+          "👋 Nearly there. Open the class in your center console → <b>Class setup → Telegram connection</b>, " +
             "and post the code it shows you here as <code>/link CODE</code>.",
         );
       }
@@ -137,8 +137,8 @@ export async function POST(req: Request): Promise<Response> {
         "<i>(If you opened a link and nothing happened, that is why: Telegram only passes " +
         "the code the very first time you start a bot. Sending it as a message always " +
         "works.)</i>\n\n" +
-        "<b>Teachers:</b> to connect a class channel, open the class in the console → " +
-        "<b>Settings → Telegram</b>, press <b>Add to a group</b>, and pick the group there.",
+        "<b>Teachers:</b> to connect a class Telegram group, open the class in the console → " +
+        "<b>Settings → Telegram group</b>, press <b>Add to a group</b>, and pick the group there.",
     );
     return ok();
   }
@@ -237,8 +237,8 @@ export async function POST(req: Request): Promise<Response> {
   if (isPrivate) {
     await sendMessage(
       chat.id,
-      "That connected nothing — this is our private chat, not your class channel.\n\n" +
-        "Open the <b>group or channel</b> the class uses, add me to it, and post " +
+      "That connected nothing — this is our private chat, not your class Telegram group.\n\n" +
+        "Open the <b>Telegram group</b> the class uses, add me to it, and post " +
         `<code>/link ${escapeHtml(code)}</code> there. The code still works.`,
     );
     return ok();
@@ -487,7 +487,7 @@ async function claimByPhone(
     await sendMessage(
       chatId,
       "First send me the code from your class — your teacher posted it in the class " +
-        "Telegram channel, next to the link. It looks like <code>RFSGC9E6</code>.\n\n" +
+        "Telegram group, next to the link. It looks like <code>RFSGC9E6</code>.\n\n" +
         "Then I'll ask for your number.",
     );
     return;

@@ -58,7 +58,6 @@ import {
   FilterPill,
   MiniBar,
   Pill,
-  PipeTile,
   SectionCard,
   SkillChip,
   serifHead,
@@ -226,7 +225,7 @@ export default async function GroupDetailPage({
     .map((e) => ({ ...e, weekdays: [...new Set(e.weekdays)].sort() }))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
-  // The group's Telegram channel, if the handshake completed.
+  // The group's Telegram group, if the handshake completed.
   const { data: tgRow } = await supabase
     .from("telegram_links")
     .select("chat_title, verified_at")
@@ -248,6 +247,8 @@ export default async function GroupDetailPage({
   const withPhone = ((phoneRows ?? []) as { id: string; phone: string | null }[]).filter(
     (r) => phoneKey(r.phone) != null,
   ).length;
+
+  const canInviteClass = telegramLinked != null && roster.length > 0 && withPhone >= roster.length;
 
   // The last dozen registers for this group, oldest-to-newest across the row so
   // the strip reads left to right like a calendar.
@@ -489,12 +490,12 @@ export default async function GroupDetailPage({
       <KpiRow>
         <Kpi label="Students" value={roster.length} sub={`${activeCount} active in 30 days`} />
         <Kpi
-          label="Practice set"
+          label="Homework"
           value={assignments.length}
           sub={openCount > 0 ? `${openCount} still open` : "nothing outstanding"}
         />
         <Kpi
-          label="Completion"
+          label="Homework completion"
           value={completionPct == null ? "—" : `${completionPct}%`}
           sub={
             assignments.length === 0
@@ -503,12 +504,12 @@ export default async function GroupDetailPage({
           }
         />
         <Kpi
-          label="Measured"
+          label="Students measured"
           value={`${measuredMembers.length}/${roster.length}`}
           sub="have a graded band"
         />
         <Kpi
-          label="At target"
+          label="Students at target"
           value={atTarget}
           sub="on their weakest skill"
           deltaTone={atTarget > 0 ? "good" : "flat"}
@@ -523,7 +524,7 @@ export default async function GroupDetailPage({
           { href: tabHref("students"), label: "Students", active: tab === "students" },
           {
             href: tabHref("practice"),
-            label: `Practice (${assignments.length})`,
+            label: `Homework (${assignments.length})`,
             active: tab === "practice",
           },
           { href: tabHref("attendance"), label: "Attendance", active: tab === "attendance" },
@@ -535,172 +536,195 @@ export default async function GroupDetailPage({
       />
 
       {tab === "settings" ? (
-        /* TWO COLUMNS, NOT ONE 760px STACK. Settings holds two unrelated jobs:
-           how the class runs (times, who teaches it, whether it still exists)
-           and how the class gets reached (its channel, and getting everyone
-           signed in). Stacked, the second job sat below the fold behind the
-           first, which is why nobody found it. */
-        <div className="cn-settings-grid" style={{ marginTop: 18 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
-            <SectionCard
-              title="When it meets"
-              note="Fills the register, decides which lessons can be marked, and is the lesson count a part-month fee is divided by."
-              aside={
-                weeklyLessons > 0 ? (
-                  <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint }}>
-                    {weeklyLessons} slot{weeklyLessons === 1 ? "" : "s"} a week
-                  </span>
-                ) : null
-              }
-            >
-              <SchedulePanel
-                groupId={group.id}
-                rooms={allRooms}
-                branchId={(groupRow?.branch_id as string) ?? ""}
-                series={series}
-              />
-            </SectionCard>
-
-            {isAdmin ? (
+        <div style={{ marginTop: 18 }}>
+          <div className="cn-settings-grid" style={{ marginTop: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
+              <span id="schedule" style={{ scrollMarginTop: 24 }} />
               <SectionCard
-                title="Teacher"
-                note="Who owns this group — they are the only person who can set it practice."
+                title="Schedule"
+                note="Choose when this group meets. This controls the timetable, attendance, and part-month billing."
+                aside={
+                  weeklyLessons > 0 ? (
+                    <span style={{ fontFamily: SANS, fontSize: 13, color: V2.faint }}>
+                      {weeklyLessons} lesson{weeklyLessons === 1 ? "" : "s"} a week
+                    </span>
+                  ) : null
+                }
               >
-                <AssignTeacherForm
+                <SchedulePanel
                   groupId={group.id}
-                  teacherId={group.teacherId}
-                  teachers={teachers}
+                  rooms={allRooms}
+                  branchId={(groupRow?.branch_id as string) ?? ""}
+                  series={series}
                 />
               </SectionCard>
-            ) : null}
 
-            {isAdmin ? (
-              <section
-                style={{
-                  ...v2card,
-                  background: "#fdfbf8",
-                  borderColor: "#e9d9d3",
-                  padding: "18px 22px",
-                  display: "grid",
-                  gap: 16,
-                }}
+              {isAdmin ? <span id="teacher" style={{ scrollMarginTop: 24 }} /> : null}
+              {isAdmin ? (
+                <SectionCard
+                  title="Teacher"
+                  note="Assign the teacher responsible for this group and its homework."
+                >
+                  <AssignTeacherForm
+                    groupId={group.id}
+                    teacherId={group.teacherId}
+                    teachers={teachers}
+                  />
+                </SectionCard>
+              ) : null}
+
+              {isAdmin ? <span id="lifecycle" style={{ scrollMarginTop: 24 }} /> : null}
+              {isAdmin ? (
+                <section
+                  style={{
+                    ...v2card,
+                    background: "#fdfbf8",
+                    borderColor: "#e9d9d3",
+                    padding: "18px 22px",
+                    display: "grid",
+                    gap: 16,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: V2.ink }}>
+                      Group lifecycle
+                    </div>
+                    <div style={{ fontFamily: SANS, fontSize: 13, color: "#8b7f7a", marginTop: 2 }}>
+                      Close a finished class to keep its history. Delete only a group created by
+                      mistake.
+                    </div>
+                  </div>
+                  <CloseGroupButton groupId={group.id} status={group.status} />
+                  <DeleteGroupButton groupId={group.id} />
+                </section>
+              ) : null}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
+              <span id="telegram" style={{ scrollMarginTop: 24 }} />
+              <SectionCard
+                title="Telegram group"
+                note="Connect the Telegram group where this class communicates. Homework announcements and private sign-in links are sent there."
+                aside={
+                  <Pill tone={telegramLinked ? "done" : "idle"}>
+                    {telegramLinked ? "Connected" : "Not connected"}
+                  </Pill>
+                }
               >
-                <div>
-                  <div style={{ fontFamily: SANS, fontSize: 15, fontWeight: 700, color: V2.ink }}>
-                    Closing and deleting
+                <TelegramPanel
+                  groupId={group.id}
+                  linked={telegramLinked}
+                  botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
+                />
+              </SectionCard>
+
+              <span id="student-access" style={{ scrollMarginTop: 24 }} />
+              <SectionCard
+                title="Student access"
+                note="Check the roster before sending the private sign-in link to the class."
+              >
+                <CheckRow
+                  ok={roster.length > 0}
+                  label="Students added"
+                  note={
+                    roster.length > 0
+                      ? `${roster.length} student${roster.length === 1 ? "" : "s"} on the roster`
+                      : "Add students before inviting the class"
+                  }
+                  action={
+                    roster.length === 0
+                      ? { href: `/console/groups/${id}?tab=students`, label: "Add students" }
+                      : undefined
+                  }
+                />
+                <CheckRow
+                  ok={roster.length > 0 && withPhone >= roster.length}
+                  label="Phone numbers on the roster"
+                  note={
+                    roster.length === 0
+                      ? "No students in the group yet"
+                      : `${withPhone} of ${roster.length} students — logins are matched by phone`
+                  }
+                  action={
+                    withPhone < roster.length
+                      ? { href: `/console/groups/${id}?tab=students`, label: "Fix roster" }
+                      : undefined
+                  }
+                />
+                <CheckRow
+                  ok={telegramLinked != null}
+                  label="Telegram connected"
+                  note={
+                    telegramLinked
+                      ? (telegramLinked.chatTitle ?? "Ready for class messages")
+                      : "Connect Telegram above before sending the class invite"
+                  }
+                />
+                {canInviteClass ? (
+                  <InviteClassPanel groupId={group.id} />
+                ) : (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      background: "#f8f7f3",
+                      color: V2.faint,
+                      fontFamily: SANS,
+                      fontSize: 12.5,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Complete the steps above to unlock the class invite.
                   </div>
-                  <div style={{ fontFamily: SANS, fontSize: 13, color: "#8b7f7a", marginTop: 2 }}>
-                    Closing keeps every report, band and invoice and takes the group out of
-                    timetables and assigning. Deleting is only for a group created by mistake.
-                  </div>
-                </div>
-                <CloseGroupButton groupId={group.id} status={group.status} />
-                <DeleteGroupButton groupId={group.id} />
-              </section>
-            ) : null}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
-            <SectionCard
-              title="Telegram group"
-              note="One channel per group — where new practice is announced and sign-in links are delivered."
-              aside={
-                <Pill tone={telegramLinked ? "done" : "idle"}>
-                  {telegramLinked ? "Connected" : "Not connected"}
-                </Pill>
-              }
-            >
-              <TelegramPanel
-                groupId={group.id}
-                linked={telegramLinked}
-                botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}
-              />
-            </SectionCard>
-
-            {/* THIS SLOT USED TO HOLD "Invite link" — a tokenised link a
-                person accepts to create their own account and join. It is gone
-                rather than sitting beside this one, because two things called
-                "invite" on one screen, doing different jobs, is how a teacher
-                picks the wrong one. The capability is not lost: the same panel
-                is in the console chrome's own Invite, which is where an invite
-                that is not about a specific class belongs.
-
-                This is the path that matches how a centre actually onboards —
-                accounts already exist from the register, and what is missing is
-                getting each student their own login. */}
-            <SectionCard
-              title="Get the class signed in"
-              note="One message to the channel; each student taps it, confirms their phone number and receives their own login privately. No passwords in the channel, nothing for you to hand out."
-            >
-              <CheckRow
-                ok={telegramLinked != null}
-                label="Channel linked"
-                note={
-                  telegramLinked
-                    ? (telegramLinked.chatTitle ?? "connected")
-                    : "without one the invite has nowhere to be posted"
-                }
-              />
-              <CheckRow
-                ok={roster.length > 0 && withPhone >= roster.length}
-                label="Phone numbers on the roster"
-                note={
-                  roster.length === 0
-                    ? "nobody in the group yet"
-                    : `${withPhone} of ${roster.length} students — logins are matched by phone`
-                }
-                action={
-                  withPhone < roster.length
-                    ? { href: `/console/groups/${id}`, label: "Fix roster" }
-                    : undefined
-                }
-              />
-              <InviteClassPanel groupId={group.id} />
-            </SectionCard>
+                )}
+              </SectionCard>
+            </div>
           </div>
         </div>
       ) : null}
 
       {tab === "practice" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 18 }}>
-          {/* The strip is a filter, not decoration. A teacher opening this tab
-              is nearly always answering one of three questions — what is late,
-              what is still out, what is finished — and each is one tap. */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-              gap: 12,
+              ...v2card,
+              padding: "18px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
             }}
           >
-            <PipeTile
-              href={boardHref({ flow: "overdue", skill: null, q: "" })}
-              label="Overdue"
-              value={overdueCount}
-              note="past the deadline"
-              active={flowFilter === "overdue"}
-            />
-            <PipeTile
-              href={boardHref({ flow: "open", skill: null, q: "" })}
-              label="Open"
-              value={openCount}
-              note="still with the students"
-              active={flowFilter === "open"}
-            />
-            <PipeTile
-              href={boardHref({ flow: "done", skill: null, q: "" })}
-              label="Done"
-              value={doneCount}
-              note="everyone marked"
-              active={flowFilter === "done"}
-            />
-            <PipeTile
-              href={`/console/groups/${id}?tab=practice`}
-              label="All practice"
-              value={board.length}
-              note="clear the filters"
-              active={!flowFilter && !skillFilter && !query}
-            />
+            <div style={{ minWidth: 220, flex: "1 1 260px" }}>
+              <h2 style={{ ...serifHead, fontSize: 22 }}>Homework</h2>
+              <p style={{ margin: "5px 0 0", fontFamily: SANS, fontSize: 13, color: V2.faint }}>
+                Review what was assigned, what is overdue, and what students have finished.
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+              <FilterPill
+                href={boardHref({ flow: null, skill: null, q: "" })}
+                label="All"
+                active={!flowFilter && !skillFilter && !query}
+              />
+              <FilterPill
+                href={boardHref({ flow: "open", skill: null, q: "" })}
+                label={`Open ${openCount}`}
+                active={flowFilter === "open"}
+              />
+              <FilterPill
+                href={boardHref({ flow: "overdue", skill: null, q: "" })}
+                label={`Overdue ${overdueCount}`}
+                active={flowFilter === "overdue"}
+              />
+              <FilterPill
+                href={boardHref({ flow: "done", skill: null, q: "" })}
+                label={`Done ${doneCount}`}
+                active={flowFilter === "done"}
+              />
+            </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -712,8 +736,8 @@ export default async function GroupDetailPage({
               <input
                 name="q"
                 defaultValue={query}
-                placeholder="Search practice by title"
-                aria-label="Search practice by title"
+                placeholder="Search homework"
+                aria-label="Search homework"
                 style={{
                   width: 280,
                   maxWidth: "100%",
@@ -747,9 +771,9 @@ export default async function GroupDetailPage({
           </div>
 
           <Board>
-            <BoardHead
-              cols={BOARD_COLS}
-              labels={["Practice", "Skill", "Set / due", "Submitted", "Band", "Status"]}
+              <BoardHead
+                cols={BOARD_COLS}
+                labels={["Homework", "Skill", "Set / due", "Submitted", "Band", "Status"]}
             />
             {visible.map((a) => {
               const pct = roster.length > 0 ? Math.round((a.completed / roster.length) * 100) : 0;
@@ -866,7 +890,7 @@ export default async function GroupDetailPage({
                   color: V2.faint,
                 }}
               >
-                {board.length === 0 ? "Nothing assigned yet." : "No practice matches this filter."}
+                {board.length === 0 ? "No homework assigned yet." : "No homework matches this filter."}
               </div>
             ) : null}
             {group.teacherId === profile.id ? (

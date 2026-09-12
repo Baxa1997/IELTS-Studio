@@ -107,7 +107,7 @@ export function AssignSheet({
             aria-label="Assign practice"
             style={{
               margin: "auto",
-              width: "min(640px, 100%)",
+              width: "min(720px, 100%)",
               background: "#fff",
               borderRadius: 22,
               overflow: "hidden",
@@ -116,7 +116,7 @@ export function AssignSheet({
           >
             <div
               style={{
-                padding: "20px 24px",
+                padding: "24px 28px",
                 borderBottom: `1px solid ${V2.rule}`,
                 display: "flex",
                 alignItems: "flex-start",
@@ -151,7 +151,7 @@ export function AssignSheet({
                 ×
               </button>
             </div>
-            <div style={{ padding: "20px 24px 24px" }}>
+            <div style={{ padding: "24px 28px 28px" }}>
               <AssignPanel
                 groupId={groupId}
                 libraryTests={libraryTests}

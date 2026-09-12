@@ -2,17 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
-import { FiCheckCircle, FiExternalLink, FiRadio, FiUsers } from "react-icons/fi";
+import { FiCheckCircle, FiExternalLink, FiUsers } from "react-icons/fi";
 
 import { useActionFeedback } from "@/components/console/toast";
 
 import { startTelegramLink, unlinkTelegram, type ActionState } from "../../center-actions";
 
 /**
- * Connect this group to a Telegram channel — in one tap.
+ * Connect this group to its Telegram group — in one tap.
  *
  * HOW THE TAP WORKS. The button is a Telegram deep link carrying the link code:
- * `t.me/<bot>?startgroup=CODE`. Telegram opens, the admin picks a group, the
+ * `t.me/<bot>?startgroup=CODE`. Telegram opens, the admin picks the class group, the
  * bot is added, and Telegram itself sends `/start CODE` into that group. The
  * webhook matches the code and the group is connected. Nobody copies anything.
  *
@@ -22,7 +22,7 @@ import { startTelegramLink, unlinkTelegram, type ActionState } from "../../cente
  * holds something the app only shows to staff who manage this group, and adding
  * the bot proves they can act in that chat. A "paste your chat id" box would
  * prove neither, and would let anyone who guessed an id post into another
- * center's channel. The one-tap flow hides the code without removing it.
+ * center's Telegram group. The one-tap flow hides the code without removing it.
  *
  * The typed `/link CODE` stays as the fallback for a chat the bot is already
  * in, or for an admin reading this on a laptop with no Telegram installed.
@@ -41,7 +41,7 @@ export function TelegramPanel({
   botUsername,
 }: {
   groupId: string;
-  /** The channel already connected, if the handshake has completed. */
+  /** The Telegram group already connected, if the handshake has completed. */
   linked: { chatTitle: string | null } | null;
   /** e.g. "EngProgressBot" — what they search for in Telegram. */
   botUsername: string | null;
@@ -56,7 +56,7 @@ export function TelegramPanel({
     return (
       <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.55 }}>
         Telegram isn&apos;t set up on this platform yet. Once the bot is configured, you&apos;ll be
-        able to connect each group to its own channel here in one tap.
+        able to connect each class to its own Telegram group here in one tap.
       </p>
     );
   }
@@ -81,7 +81,7 @@ export function TelegramPanel({
             Connected{linked.chatTitle ? ` — ${linked.chatTitle}` : ""}
           </span>
           <span style={{ fontSize: 12.5, color: GREEN, marginLeft: "auto" }}>
-            New practice is announced there.
+            New homework is announced there.
           </span>
         </div>
         <form action={unlinkAction} style={{ marginTop: 12 }}>
@@ -91,12 +91,12 @@ export function TelegramPanel({
             disabled={unlinking}
             style={{
               background: "#fff",
-              border: "1px solid #C5C4BE",
+              border: "1px solid #C78A83",
               borderRadius: 8,
               padding: "8px 13px",
               fontFamily: "inherit",
               fontSize: 12.5,
-              color: INK,
+              color: "#A13A2C",
               cursor: unlinking ? "wait" : "pointer",
             }}
           >
@@ -113,7 +113,7 @@ export function TelegramPanel({
         <ConnectChoices code={code} botUsername={botUsername} />
       ) : (
         <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
-          Announce new practice where the group already talks. Parents are usually in the channel
+          Announce new homework where the class already talks. Parents are usually in the group
           and have no account here, so this is often the only way they hear anything.
         </p>
       )}
@@ -129,8 +129,8 @@ export function TelegramPanel({
             alignItems: "center",
             gap: 8,
             background: code ? "#fff" : INDIGO,
-            color: code ? MUTED : "#fff",
-            border: code ? "1px solid #C5C4BE" : 0,
+            color: code ? "#A13A2C" : "#fff",
+            border: code ? "1px solid #C78A83" : 0,
             borderRadius: 9,
             padding: "10px 15px",
             fontFamily: "inherit",
@@ -147,21 +147,15 @@ export function TelegramPanel({
       </form>
 
       <p style={{ fontSize: 11.5, color: FAINT, margin: "12px 0 0", lineHeight: 1.55 }}>
-        Posts say a new practice exists and link to it — never a student&apos;s name, band or score.
-        Anyone in the channel can read it.
+        Posts say new homework exists and link to it — never a student&apos;s name, band or score.
+        Anyone in the group can read it.
       </p>
     </div>
   );
 }
 
 /**
- * The two one-tap targets, plus the manual escape hatch.
- *
- * A group and a channel are different Telegram objects and need different deep
- * links — `startgroup` versus `startchannel` — and a channel additionally needs
- * the bot to hold `post_messages` or it can be a member that cannot speak. The
- * `admin=` parameter asks for exactly that right at the moment of adding, so
- * the admin approves it in the same dialog instead of hunting for it afterwards.
+ * The one-tap group target, plus the manual escape hatch.
  */
 function ConnectChoices({ code, botUsername }: { code: string; botUsername: string }) {
   const router = useRouter();
@@ -170,7 +164,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
   // Telegram tells the SERVER, not this tab, so the page has no idea the
   // connection landed. Once a link has been opened we poll for a couple of
   // minutes; the alternative is an admin staring at an unchanged screen after
-  // the bot has already replied "Connected" in their channel.
+  // the bot has already replied "Connected" in their group.
   useEffect(() => {
     if (!waiting) return;
     const started = Date.now();
@@ -184,10 +178,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
     return () => clearInterval(timer);
   }, [waiting, router]);
 
-  const link = (kind: "group" | "channel") =>
-    kind === "group"
-      ? `https://t.me/${botUsername}?startgroup=${code}`
-      : `https://t.me/${botUsername}?startchannel=${code}&admin=post_messages`;
+  const link = `https://t.me/${botUsername}?startgroup=${code}`;
 
   return (
     <div
@@ -199,26 +190,18 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
       }}
     >
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 11px", lineHeight: 1.55 }}>
-        Pick where this group talks. If Telegram opens a chat with the bot instead of a list of
-        groups, that is the wrong screen — back out and use the manual line below.
+        Add the bot to this class&apos;s Telegram group. If Telegram opens a chat with the bot instead
+        of a list of groups, that is the wrong screen — back out and use the manual line below.
       </p>
 
       <div style={{ display: "grid", gap: 8 }}>
         <TapTarget
-          href={link("group")}
+          href={link}
           onOpen={() => setWaiting(true)}
           icon={<FiUsers size={16} color={TELEGRAM} />}
-          title="Add to a group"
-          badge="connects itself"
-          note="A normal Telegram group the group is already in"
-        />
-        <TapTarget
-          href={link("channel")}
-          onOpen={() => setWaiting(true)}
-          icon={<FiRadio size={16} color={TELEGRAM} />}
-          title="Add to a channel"
-          badge="one paste"
-          note="A broadcast channel. Telegram won't send the code for a channel, so the bot asks for it there — paste the line below."
+          title="Add the bot to the Telegram group"
+          badge="one tap"
+          note="Telegram will let you choose the class group and add the bot."
         />
       </div>
 
