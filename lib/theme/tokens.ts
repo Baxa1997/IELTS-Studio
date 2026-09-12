@@ -60,14 +60,30 @@ export const MUTED = "#6E6C87"; // secondary text             5.1:1
 export const SOFT = "#737189"; // tertiary text              4.7:1
 export const FAINT = "#777581"; // captions                   4.5:1 (AA floor)
 
-export const LINE = "#C5C4BE"; // card border                1.75:1
-export const RULE = "#D4D3CE"; // divider inside a card      1.50:1
-export const HAIR = "#DEDEDA"; // row / column divider       1.35:1
+/* ── edges ─────────────────────────────────────────────────────────────────
+ * COOLER AND LIGHTER, matching the reference kit's border ramp (its `--border`
+ * is hsl(214.3 31.8% 91.4%) — slate-200). The warm greys these replace were
+ * solved for a cream console ground; the console is a white panel now and they
+ * read as dun lines on it.
+ *
+ * ⚠️ THIS KNOWINGLY REVERSES A LEGIBILITY FIX, so the mitigation is not
+ * optional. These values were once ~1.10–1.26:1 against white, were raised to
+ * 1.75:1 precisely "because nobody could see them", and #E2E8F0 is back around
+ * 1.2:1. What makes it work this time is that cards no longer rely on the
+ * border alone — `cardStyle` carries a soft drop shadow, which is how the
+ * reference gets away with the same weight. A card that takes this border and
+ * drops the shadow will be invisible again.
+ */
+export const LINE = "#E2E8F0"; // card border
+export const RULE = "#E9EDF2"; // divider inside a card
+export const HAIR = "#EFF2F6"; // row / column divider
 
 /** Form-control border. Deliberately darker than the card hairline: a card edge
  *  only separates two surfaces, but a field edge has to say "you can type here",
- *  and at the card's weight it disappears on white. */
-export const FIELD_LINE = "#CFCABC";
+ *  and at the card's weight it disappears on white. Moved onto the same cool
+ *  ramp as `LINE`, one step down it, so the distinction survives the change —
+ *  a field cannot borrow the card's shadow to stay visible. */
+export const FIELD_LINE = "#CBD5E1";
 
 export const WHITE = "#FFFFFF";
 
@@ -209,10 +225,14 @@ export const STUDIO: Surface = { ...LEARNER };
  * need — `{ ...cardStyle, padding: 24 }` — rather than retyping the border.
  */
 
+/** ⚠️ THE SHADOW IS LOAD-BEARING, not decoration — see the note on `LINE`. At
+ *  the new lighter border weight it is what separates a card from the surface
+ *  under it; remove it and the card edge goes back to being invisible. */
 export const cardStyle: CSSProperties = {
   background: WHITE,
   border: `1px solid ${LINE}`,
-  borderRadius: 14,
+  borderRadius: 12,
+  boxShadow: "0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)",
 };
 
 export const fieldStyle: CSSProperties = {

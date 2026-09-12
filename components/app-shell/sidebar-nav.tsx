@@ -54,15 +54,18 @@ import {
    shell.tsx beside the markup that draws it. */
 const RAIL_TEXT = "#4b5359"; // resting item text
 const RAIL_MUTED = "#9aa0a6"; // section titles / counts / disabled
-const RAIL_ACTIVE_BG = "#fff"; // active tile — a raised white card in the tray
-const RAIL_ACTIVE_LINE = "#e6e4dc";
-const RAIL_ACTIVE_INK = "#16232b";
-/** The grey group box each section sits in. Its padding is what turns a flat
- *  list into "trays", which is the design's whole organising idea. */
+/* ── the active row ──────────────────────────────────────────────────────────
+   A TINT ON WHITE, not a white card on grey. The rail's sections used to sit in
+   grey trays, so "you are here" could be said with a raised white tile. The
+   trays are gone (the owner asked for one flat white rail), and a white tile on
+   a white rail says nothing at all — so the active row inverts: it becomes the
+   only filled thing in the list. */
+const RAIL_ACTIVE_BG = "#e7eafb";
+const RAIL_ACTIVE_LINE = "transparent";
+const RAIL_ACTIVE_INK = "#3b36c9";
+/** Sections are now plain stacks — no ground, no padding of their own. The rail
+ *  is one white surface and the gap between groups is the only separator. */
 const TRAY: React.CSSProperties = {
-  background: "#f6f6f3",
-  borderRadius: 12,
-  padding: 6,
   display: "flex",
   flexDirection: "column",
   gap: 2,
@@ -715,7 +718,6 @@ export function SidebarNav({
                       color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
                       background: selected ? RAIL_ACTIVE_BG : undefined,
                       border: `1px solid ${selected ? RAIL_ACTIVE_LINE : "transparent"}`,
-                      boxShadow: selected ? "0 1px 2px rgba(22,35,43,.06)" : undefined,
                     }}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: 10 }}>

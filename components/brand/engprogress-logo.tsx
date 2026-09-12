@@ -111,7 +111,18 @@ export function EngProgressLogo({
  * sidebar rail, favicons). Square; `size` is its side in px. The tile is tan on any
  * background, so there's no `tone`.
  */
-export function EngProgressMark({ size = 32, className }: { size?: number; className?: string }) {
+export function EngProgressMark({
+  size = 32,
+  className,
+  /** Tile fill. Defaults to the brand tan; the sidebar rail passes the design's
+   *  near-black so the mark reads as the square drawn in the canvas. Kept as a
+   *  prop rather than changed outright so every other caller is untouched. */
+  bg = TAN,
+}: {
+  size?: number;
+  className?: string;
+  bg?: string;
+}) {
   return (
     <span
       className={`${engprogress.variable} ${className ?? ""}`}
@@ -124,7 +135,7 @@ export function EngProgressMark({ size = 32, className }: { size?: number; class
         width: size,
         height: size,
         flex: "none",
-        background: TAN,
+        background: bg,
         borderRadius: Math.round(size * 0.16),
         fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
       }}
@@ -233,10 +244,13 @@ export function CentreMark({
   name,
   size = 36,
   className,
+  /** Tile fill — see `EngProgressMark`. The rail passes the design's near-black. */
+  bg = TAN,
 }: {
   name: string;
   size?: number;
   className?: string;
+  bg?: string;
 }) {
   const text = centreInitials(name);
   return (
@@ -252,7 +266,7 @@ export function CentreMark({
         width: size,
         height: size,
         flex: "none",
-        background: TAN,
+        background: bg,
         borderRadius: Math.round(size * 0.16),
         fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
       }}

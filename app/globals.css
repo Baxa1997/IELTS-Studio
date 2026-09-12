@@ -52,12 +52,17 @@
    Distinct from competitors' purple / blue / honey. Hues: ~165 teal-emerald,
    ~85 warm sand. All semantic tokens, so the whole app reskins from here. */
 :root {
-  /* Console hairlines, mirroring crm-ui.tsx's palette so CSS and the inline
-     styles cannot drift apart. The ratios beside each are against white; the
-     old values sat at 1.10–1.26, which is why nobody could see them. */
-  --cn-line: #c5c4be; /* card edge / table outline   1.75:1 */
-  --cn-rule: #d4d3ce; /* header divider              1.50:1 */
-  --cn-hair: #dededa; /* row + column divider        1.35:1 */
+  /* Console hairlines, MIRRORING lib/theme/tokens.ts so CSS and the inline
+     styles cannot drift apart — change one of these and you must change the
+     other, or a table's column rules stop matching the card they sit in.
+
+     Moved onto the reference kit's cooler, lighter ramp along with `LINE`.
+     These are close to the weight that was once rejected as invisible; what
+     makes it hold is that cards now carry a drop shadow (`cardStyle`). A rule
+     drawn with these and nothing else is a rule nobody will see. */
+  --cn-line: #e2e8f0; /* card edge / table outline */
+  --cn-rule: #e9edf2; /* header divider */
+  --cn-hair: #eff2f6; /* row + column divider */
 
   --background: oklch(0.992 0.004 95);
   --foreground: oklch(0.21 0.02 175);
@@ -856,7 +861,6 @@
      chips still left-aligned inside it. */
   .lp-shell-sidebar--collapsed .lp-sb-section {
     align-items: center;
-    padding: 6px !important;
     gap: 4px !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-chip {
@@ -890,8 +894,9 @@
     color: #fff !important;
   }
   /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
-     dot on the corner of the chip, ringed in the tray's own grey so it reads as
-     sitting on top of the tile rather than punched out of it. */
+     dot on the corner of the chip, ringed in the RAIL'S OWN WHITE so it reads as
+     sitting on top of the tile rather than punched out of it. (It was ringed in
+     the trays' grey — the trays are gone.) */
   .lp-shell-sidebar--collapsed .lp-sb-badge {
     position: absolute;
     top: -3px;
@@ -904,7 +909,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1.5px solid #f6f6f3;
+    border: 1.5px solid #fff;
   }
   /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
      shared text-collapse rule already gives it `max-width: 0`, and that is NOT
@@ -967,14 +972,16 @@
     margin-top: 0 !important;
     margin-bottom: 0 !important;
   }
-  /* Profile collapses to a clean, centred avatar — drop the frame (fades out via the
-     .lp-sb-item transition) and trim the padding so the 36px avatar sits dead-centre
-     in the 48px rail. */
+  /* Profile collapses to a clean, CENTRED avatar. `justify-content` is the part
+     that was missing: the button is a flex row whose text child collapses to
+     zero width, but the row still packed to the start, so the avatar sat left of
+     centre in the 48px content box. Zeroing the padding alone never fixed that —
+     it only made the box narrower around an off-centre disc. */
   .lp-shell-sidebar--collapsed .lp-sb-profile-btn {
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-    background: transparent !important;
-    border-color: transparent !important;
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    gap: 0 !important;
   }
   /* And the same inside the icon's own wrapper, where an 11px gap sits between
      the glyph and the zero-width label. Both gaps have to go: zeroing only one
@@ -1892,6 +1899,23 @@
   display: none;
 }
 
+/* ── the rail scrolls, and shows nothing for it ──────────────────────────────
+   A permanent gutter of scrollbar down a 250px rail is chrome the layout never
+   asked for, and it moves every icon a few pixels left the moment the menu grows
+   long enough to overflow. The overflow itself is untouched — wheel, trackpad,
+   touch, keyboard and programmatic scrolling all still work, and nothing is ever
+   clipped. All three properties are needed: `scrollbar-width` covers Firefox,
+   `-ms-overflow-style` old Edge, and the pseudo-element WebKit. */
+.lp-sb-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.lp-sb-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* Only the main column scrolls — give it a slim Option A scrollbar. */
 .lp-shell-main {
   scrollbar-width: thin;
@@ -1913,7 +1937,10 @@
 .lp-sb-brandrow {
   margin: 0 -12px;
   padding: 4px 16px 10px;
-  border-bottom: 1px solid #f0eee8;
+  /* Divider weight from the shared ramp (HAIR), not the old warm #f0eee8 — it
+     sits a few pixels from the rail's own edge, so two different greys there
+     read as a mistake. */
+  border-bottom: 1px solid #eff2f6;
   transition:
     margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
@@ -2036,9 +2063,15 @@
   --primary: #4340cb;
   --primary-foreground: #ffffff;
   --ring: #4340cb;
-  --border: #e4e2dc;
-  /* Fields carry a stronger edge than cards — see FIELD_LINE in crm-ui.tsx. */
-  --input: #cfcabc;
+  /* These two MIRROR lib/theme/tokens.ts (LINE and FIELD_LINE) and have to move
+     with it. They retune shadcn for this subtree, so every shared <Input> and
+     <Button> in the console's forms reads them — left on the old warm greys,
+     a form field would keep a dun edge inside a card that had gone cool. */
+  --border: #e2e8f0;
+  /* Fields still carry a stronger edge than cards: a card edge only separates
+     two surfaces, a field edge has to say "you can type here" — and unlike a
+     card it cannot lean on a drop shadow to be seen. */
+  --input: #cbd5e1;
   --background: #ffffff;
   --card: #ffffff;
   --foreground: #16162e;
@@ -2063,7 +2096,10 @@
   --pu-ink: #16162e;
   --pu-muted: #6e6c87;
   --pu-faint: #93919f;
-  --pu-line: #e7e5df;
+  /* The older page-ui kit's hairline, on the same cool ramp — it still draws the
+     pending-invite list, the assignment report and the student report, which sit
+     beside cards that have already moved. */
+  --pu-line: #e2e8f0;
   --pu-tint: #eeedf8;
 }
 /* The console owns the whole content surface. Its pages keep their own internal
@@ -2938,15 +2974,15 @@
 /* Every cell after the first carries the rule, so none hangs off the outside. */
 .cn-table--grid .cn-thead > * + *,
 .cn-table--grid .cn-row > * + * {
-  border-left: 1px solid var(--cn-hair, #dededa);
+  border-left: 1px solid var(--cn-hair, #eff2f6);
 }
 .cn-table--grid .cn-thead > * + * {
-  border-left-color: var(--cn-rule, #d4d3ce);
+  border-left-color: var(--cn-rule, #e9edf2);
 }
 /* The header earns a heavier bottom edge: it is the line that says "figures
    start here", and at the row weight it read as just another row. */
 .cn-table--grid .cn-thead {
-  border-bottom: 1px solid var(--cn-line, #c5c4be);
+  border-bottom: 1px solid var(--cn-line, #e2e8f0);
 }
 /* The last row's own border would sit just inside the card's, leaving what
    looks like a 2px edge. */

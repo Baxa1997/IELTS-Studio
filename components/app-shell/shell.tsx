@@ -45,13 +45,18 @@ const CANVAS = "#f1efe9";
    its dividers are warm grey, and the only dark thing left in it is the profile
    card at the foot (RAIL_DARK below), which keeps its light-on-dark values.
 
-   ⚠️ RAIL_FAINT AND RAIL_LINE NO LONGER MEAN THE SAME THING AS EACH OTHER.
-   RAIL_LINE is a divider ON the white rail. RAIL_FAINT is secondary text INSIDE
-   the dark profile card, so it stays a light value. Swapping one for the other
-   is invisible in review and unreadable on screen. */
+   ⚠️ RAIL_FAINT IS NOT AN EDGE COLOUR. It is secondary text INSIDE the dark
+   profile card, so it stays a LIGHT value while everything else here went dark.
+   Reaching for it as a hairline is invisible in review and unreadable on screen.
+
+   (There was a RAIL_LINE here for dividers on the white rail. The only two
+   dividers left — the brand row's underline and the nav/footer split — are drawn
+   in globals.css, so the constant had no callers.) */
 const RAIL_BG = "#fff";
-const RAIL_BORDER = "#e6e4dc";
-const RAIL_LINE = "#f0eee8"; // dividers on the white rail
+/** The rail's own edge, on the same cool ramp as every other card (`LINE` in
+ *  lib/theme/tokens.ts). It was a warm #e6e4dc, which left the one card the
+ *  learner sees on every screen outlined in a different grey from the rest. */
+const RAIL_BORDER = "#e2e8f0";
 const RAIL_SHADOW = "0 4px 14px -10px rgba(22,35,43,.25)";
 /** The profile card at the foot of the rail — the one dark surface left. */
 const RAIL_DARK = "#16232b";
@@ -66,6 +71,11 @@ const ACCENT = "#0b6b40";
 /** The collapse toggle's chevron. The rail's accent, not the old burgundy —
  *  which would otherwise be the single burgundy mark left on this surface. */
 const TOGGLE_INK = "#3b36c9";
+/** The logomark's tile. The brand square has always been tan (#D89A5C); the
+ *  design draws it near-black, and on a white rail the tan read as a stray warm
+ *  patch against an otherwise cool palette. Passed as a prop so the tan stays
+ *  the default everywhere else the mark is used. */
+const MARK_BG = "#16232b";
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -973,7 +983,11 @@ function Logo({ tone = "light", centre }: { tone?: "light" | "dark"; centre?: st
         )}
       </span>
       <span className="lp-sb-logo-mark">
-        {centre ? <CentreMark name={centre} size={32} /> : <EngProgressMark size={32} />}
+        {centre ? (
+          <CentreMark name={centre} size={32} bg={MARK_BG} />
+        ) : (
+          <EngProgressMark size={32} bg={MARK_BG} />
+        )}
       </span>
     </span>
   );

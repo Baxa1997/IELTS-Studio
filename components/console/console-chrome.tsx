@@ -219,22 +219,33 @@ export function ConsoleChrome({
   return (
     <PanelContext.Provider value={api}>
       {bare ? null : (
+        /* THE BAR IS INSIDE THE CARD NOW. It used to float on the console's own
+           cream ground with a translucent fill and a blur, because the page it
+           sat on was full-bleed cream. The console page is a white panel beside
+           the rail, so the bar is simply the top of that panel: white, one
+           hairline under it, no blur to see through to.
+
+           ⚠️ A PLAIN BLOCK COMMENT, NOT A BRACED JSX ONE. This sits directly
+           inside `bare ? null : (`, which must hold exactly ONE expression — a
+           braced comment there is read as an object literal and the whole file
+           stops parsing. The tests do not catch it either: nothing imports this
+           module, so the suite stayed green through two runs while the build
+           was broken. */
         <header
           className="cn-topbar"
           style={{
             position: "sticky",
             top: 0,
             zIndex: 20,
-            background: "rgba(244,243,239,.88)",
-            backdropFilter: "blur(10px)",
-            borderBottom: "1px solid #C5C4BE",
-            padding: "12px 28px",
+            background: "#fff",
+            borderBottom: "1px solid #f0eee8",
+            padding: "14px 22px",
             display: "flex",
             alignItems: "center",
-            gap: 16,
+            gap: 12,
           }}
         >
-          <div style={{ fontSize: 12.5, color: "#6E6C87" }}>{crumb ?? "Center"}</div>
+          <div style={{ fontSize: 14, color: "#6b7178" }}>{crumb ?? "Center"}</div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
             {/* ON EVERY PAGE, because the moment you need it is the moment you do
               not know which page would have answered you. It navigates rather
@@ -245,21 +256,24 @@ export function ConsoleChrome({
               href="/console/assistant"
               className="cn-askai"
               style={{
+                // Filled, not outlined. On the cream ground a white chip with a
+                // hairline read as a button; on the white panel the same chip is
+                // invisible, so the fill does the work the border used to.
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 7,
-                background: "#fff",
-                border: "1px solid #C5C4BE",
+                background: "#f6f6f3",
+                border: 0,
                 borderRadius: 8,
-                padding: "7px 11px",
-                fontSize: 12.5,
-                fontWeight: 600,
-                color: INK,
+                padding: "7px 12px",
+                fontSize: 13.5,
+                fontWeight: 500,
+                color: "#16232b",
                 textDecoration: "none",
                 whiteSpace: "nowrap",
               }}
             >
-              <Sparkles size={14} aria-hidden />
+              <Sparkles size={15} color="#b9770e" aria-hidden />
               Ask AI
             </Link>
             <span
@@ -268,16 +282,17 @@ export function ConsoleChrome({
                 display: "flex",
                 alignItems: "center",
                 gap: 7,
-                background: "#fff",
-                border: "1px solid #C5C4BE",
+                background: "#f6f6f3",
+                border: 0,
                 borderRadius: 8,
-                padding: "7px 11px",
-                fontSize: 12.5,
-                color: INK,
+                padding: "7px 12px",
+                fontSize: 13.5,
+                fontWeight: 500,
+                color: "#16232b",
                 whiteSpace: "nowrap",
               }}
             >
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#16794C" }} />
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#0b6b40" }} />
               {windowLabel}
             </span>
             {/* No global actions live here any more.
@@ -288,18 +303,20 @@ export function ConsoleChrome({
               group detail), where the thing it creates is already on screen.
               The panels themselves are unchanged — pages open them through
               <PanelButton>, which is why they are still handed to this chrome. */}
-            <div className="cn-hide-sm" style={{ width: 1, height: 24, background: "#C5C4BE" }} />
+            {/* No divider. The chips are filled now, so they already read as a
+                group; a rule between them and the avatar was separating two
+                things nobody was confusing. */}
             <div
               className="cn-hide-sm"
               title={userName}
               style={{
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 flex: "none",
                 borderRadius: "50%",
-                background: "#14133A",
+                background: "#1b2a4a",
                 color: "#fff",
-                fontSize: 11.5,
+                fontSize: 12,
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",

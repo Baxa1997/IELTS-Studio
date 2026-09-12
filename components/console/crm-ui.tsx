@@ -128,10 +128,16 @@ export function initials(name: string): string {
 }
 
 /* ── shared shapes ────────────────────────────────────────────────────────── */
+/** ⚠️ THE SHADOW IS LOAD-BEARING. `LINE` moved onto the reference kit's lighter,
+ *  cooler ramp (see lib/theme/tokens.ts), which is roughly the weight that was
+ *  once rejected as invisible. The drop shadow is what carries the separation
+ *  now — it is how the reference's own cards read as solid at this border
+ *  weight. Strip it and every console card loses its edge. */
 export const cardStyle: React.CSSProperties = {
   background: "#fff",
   border: `1px solid ${LINE}`,
-  borderRadius: 14,
+  borderRadius: 12,
+  boxShadow: "0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)",
 };
 
 const headingStyle: React.CSSProperties = {
@@ -1041,7 +1047,10 @@ export function buttonStyle(
     ...btnBase,
     background: "#fff",
     color: INK,
-    border: `1px solid #C5C4BE`,
+    // FIELD_LINE, not LINE. A ghost button has to say "this is pressable"
+    // against white, and unlike a card it cannot lean on a drop shadow to be
+    // seen — at card weight the outline all but vanishes.
+    border: `1px solid ${FIELD_LINE}`,
     fontWeight: 500,
   };
 }
@@ -1071,7 +1080,9 @@ export function ChipLink({ href, children }: { href: string; children: React.Rea
       style={{
         display: "inline-block",
         background: CANVAS,
-        border: `1px solid #C5C4BE`,
+        // Control weight: this is the "Mark" / "See them" / "Chase" button at
+        // the end of an alert row, so it reads as pressable, not as a divider.
+        border: `1px solid ${FIELD_LINE}`,
         borderRadius: 7,
         padding: "6px 11px",
         fontFamily: SANS,
@@ -1115,7 +1126,9 @@ export function Tabs({ tabs }: { tabs: { href: string; label: string; active: bo
       style={{
         display: "flex",
         gap: 4,
-        borderBottom: `1px solid #C5C4BE`,
+        // RULE, not FIELD_LINE: the strip's underline is a divider, and the
+        // active tab's own 2px indigo border is what carries the emphasis.
+        borderBottom: `1px solid ${RULE}`,
         marginBottom: 16,
         overflowX: "auto",
       }}
@@ -1164,7 +1177,8 @@ export function Chip({
         fontSize: 12.5,
         textDecoration: "none",
         whiteSpace: "nowrap",
-        border: `1px solid ${active ? INDIGO : "#C5C4BE"}`,
+        // A filter pill is pressable, so its resting edge takes control weight.
+        border: `1px solid ${active ? INDIGO : FIELD_LINE}`,
         background: active ? INDIGO : "#fff",
         color: active ? "#fff" : BODY,
       }}
