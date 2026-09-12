@@ -85,8 +85,19 @@ const STATS: {
     note: "vs. 650 last month",
     icon: "users",
   },
-  { label: "Education centers", value: 2, note: "Schools and IELTS centers onboard", icon: "centers" },
-  { label: "Total users", value: 300, suffix: "+", note: "Learners, teachers and admins", icon: "checks" },
+  {
+    label: "Education centers",
+    value: 2,
+    note: "Schools and IELTS centers onboard",
+    icon: "centers",
+  },
+  {
+    label: "Total users",
+    value: 3000,
+    suffix: "+",
+    note: "Learners, teachers and admins",
+    icon: "checks",
+  },
   {
     label: "Tasks practised",
     value: 6500,
@@ -431,7 +442,11 @@ const COACHES = [
 
 function Platform() {
   return (
-    <section id="platform" className="lp-below-fold" style={{ ...SHELL, padding: "40px 28px 20px" }}>
+    <section
+      id="platform"
+      className="lp-below-fold"
+      style={{ ...SHELL, padding: "40px 28px 20px" }}
+    >
       <div style={eyebrow(true)}>The platform</div>
       <h2
         style={{

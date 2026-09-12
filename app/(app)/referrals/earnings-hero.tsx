@@ -1,11 +1,4 @@
-import {
-  BRAND,
-  BRAND_DARKEST,
-  BRAND_MID,
-  BRAND_PALE,
-  SANS,
-  SERIF,
-} from "@/lib/theme/tokens";
+import { BRAND, BRAND_DARKEST, BRAND_MID, BRAND_PALE, SANS, SERIF } from "@/lib/theme/tokens";
 import {
   formatMoney,
   nextPayoutDate,
@@ -45,7 +38,10 @@ export function EarningsHero({
   const lead =
     [...totals].sort(
       (a, b) =>
-        b.pendingMinor + b.payableMinor + b.paidMinor - (a.pendingMinor + a.payableMinor + a.paidMinor),
+        b.pendingMinor +
+        b.payableMinor +
+        b.paidMinor -
+        (a.pendingMinor + a.payableMinor + a.paidMinor),
     )[0] ?? null;
   const rest = totals.filter((t) => t.currency !== lead?.currency);
 
@@ -55,7 +51,7 @@ export function EarningsHero({
         position: "relative",
         overflow: "hidden",
         borderRadius: 20,
-        padding: "32px 32px 26px",
+        padding: "26px 32px 26px",
         background: `linear-gradient(120deg, ${BRAND_DARKEST} 0%, ${BRAND} 58%, ${BRAND_MID} 100%)`,
         color: "#fff",
         marginTop: 18,
@@ -68,7 +64,7 @@ export function EarningsHero({
           top: -120,
           right: -70,
           width: 380,
-          height: 380,
+          height: 300,
           borderRadius: "50%",
           background: "radial-gradient(circle, rgba(255,255,255,.13), transparent 62%)",
         }}
@@ -90,14 +86,16 @@ export function EarningsHero({
             style={{
               fontFamily: SERIF,
               fontWeight: 600,
-              fontSize: "clamp(52px,7vw,84px)",
+              fontSize: "clamp(52px,7vw,64px)",
               lineHeight: 0.95,
               letterSpacing: "-.02em",
               margin: "10px 0 0",
               fontVariantNumeric: "tabular-nums",
             }}
           >
-            {lead ? formatMoney(lead.pendingMinor + lead.payableMinor + lead.paidMinor, lead.currency) : "$0.00"}
+            {lead
+              ? formatMoney(lead.pendingMinor + lead.payableMinor + lead.paidMinor, lead.currency)
+              : "$0.00"}
           </div>
           {rest.map((t) => (
             <div
@@ -116,7 +114,15 @@ export function EarningsHero({
           ))}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 9, paddingBottom: 6, minWidth: 240 }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 9,
+            paddingBottom: 6,
+            minWidth: 240,
+          }}
+        >
           {lead ? (
             <>
               <Line label="Available now" value={formatMoney(lead.payableMinor, lead.currency)} />
@@ -128,7 +134,11 @@ export function EarningsHero({
                 label="Next payout"
                 value={
                   lead.payableMinor >= payoutFloor(settings, lead.currency)
-                    ? payout.toLocaleDateString("en", { day: "numeric", month: "short", timeZone: "UTC" })
+                    ? payout.toLocaleDateString("en", {
+                        day: "numeric",
+                        month: "short",
+                        timeZone: "UTC",
+                      })
                     : "—"
                 }
                 last
