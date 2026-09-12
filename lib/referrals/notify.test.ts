@@ -177,3 +177,25 @@ describe("what the review caught", () => {
     expect(migration).toMatch(/add column if not exists min_payout_uzs_minor/);
   });
 });
+
+describe("telling a reviewer that an application arrived", () => {
+  it("reuses the platform-admin helper instead of scanning auth users again", () => {
+    /* THE DUPLICATE THIS REPLACED. `platformAdminEmail()` already answers this
+       exact question for "a centre has applied": PLATFORM_ADMIN_EMAIL when the
+       owner has set it, the super admin's own address otherwise, cached, and
+       paged properly. The copy written here was uncached, capped at a single
+       page of users, and blind to the env var that was already filled in — a
+       second answer to a settled question, which is how two answers drift. */
+    expect(notify).toMatch(/platformAdminEmail\(\)/);
+    expect(notify).not.toMatch(/listUsers\(/);
+  });
+
+  it("gives the reviewer the applicant's own address to reply to", () => {
+    // The whole point of the alert: who applied, and how to reach them.
+    expect(notify).toMatch(/Their account:/);
+  });
+
+  it("stays silent rather than throwing when there is nobody to tell", () => {
+    expect(notify).toMatch(/nobody to notify about a new application/);
+  });
+});

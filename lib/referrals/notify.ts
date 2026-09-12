@@ -1,5 +1,6 @@
 import "server-only";
 
+import { platformAdminEmail } from "@/lib/email/platform-admin";
 import { sendEmail } from "@/lib/email/send";
 import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -69,11 +70,12 @@ async function recipient(referralAccountId: string): Promise<{ email: string; na
  * feature is broken. Nothing told the reviewer anything: the queue only filled
  * up for whoever happened to open /admin/referrals.
  *
- * The address is resolved from `auth.users` rather than an env var, because
- * `app_metadata.role` is already the source of truth for super_admin (CLAUDE.md)
- * and a setting the owner must remember to fill in is one more way for this to
- * silently not work. It scans one page of users, which is ample now and stated
- * here as the thing to revisit if the platform grows past it.
+ * The address comes from `platformAdminEmail()`, which already answers exactly
+ * this question for "a centre has applied" — PLATFORM_ADMIN_EMAIL when it is
+ * set, and the super admin's own address otherwise, so it works with no
+ * configuration at all. This originally hand-rolled its own scan of auth users,
+ * which was a second answer to a settled question: uncached, capped at one page,
+ * and blind to the env var the owner had already filled in.
  */
 export async function notifyApplied(referralAccountId: string): Promise<void> {
   try {
@@ -92,8 +94,8 @@ export async function notifyApplied(referralAccountId: string): Promise<void> {
       from = user?.user?.email?.trim() ?? "";
     }
 
-    const reviewers = await superAdminEmails(admin);
-    if (reviewers.length === 0) {
+    const reviewer = await platformAdminEmail();
+    if (!reviewer) {
       console.warn("[referrals] nobody to notify about a new application");
       return;
     }
@@ -103,7 +105,7 @@ export async function notifyApplied(referralAccountId: string): Promise<void> {
     const link = data.audience_url ?? "(no audience link)";
 
     await sendEmail({
-      to: reviewers.join(", "),
+      to: reviewer,
       subject: `Referral application from ${name}`,
       text:
         `${name} has applied to the referral programme.\n\n` +
@@ -123,14 +125,6 @@ export async function notifyApplied(referralAccountId: string): Promise<void> {
   }
 }
 
-/** Every platform admin's address. Empty is possible and is logged, not thrown. */
-async function superAdminEmails(admin: ReturnType<typeof createAdminClient>): Promise<string[]> {
-  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  return (data?.users ?? [])
-    .filter((u) => (u.app_metadata as { role?: string } | null)?.role === "super_admin")
-    .map((u) => u.email?.trim() ?? "")
-    .filter((e) => e.includes("@"));
-}
 
 /** Their application was approved. Carries the code, because that is the point. */
 export async function notifyApproved(referralAccountId: string, code: string, percent: number): Promise<void> {
