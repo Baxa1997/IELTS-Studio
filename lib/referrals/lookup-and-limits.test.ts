@@ -102,7 +102,7 @@ describe("no balance is summed from a capped select", () => {
   it("stops paging on a short page rather than looping forever", () => {
     const fn = db.slice(db.indexOf("export async function fetchAll"));
     expect(fn).toMatch(/if \(data\.length < SIZE\) break;/);
-    expect(fn).toMatch(/if \(error \|\| !data\) break;/); // and on failure
+    expect(fn).toMatch(/if \(error\) throw new Error/); // never return a partial balance on failure
   });
 
   it("leaves no unbounded select behind in the aggregate readers", () => {

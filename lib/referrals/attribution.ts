@@ -25,6 +25,21 @@ import { isCodeShape, normalizeCode } from "./code";
 
 export const REFERRAL_COOKIE = "ep_ref";
 
+/** Preserve a code typed into the signup form across email confirmation or
+ * OAuth, where the original server action no longer has a live session. */
+export async function stashReferralCode(raw: string | null | undefined): Promise<void> {
+  const code = normalizeCode(raw ?? "");
+  if (!isCodeShape(code)) return;
+  const store = await cookies();
+  store.set(REFERRAL_COOKIE, code, {
+    maxAge: 90 * 24 * 60 * 60,
+    sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+}
+
 /**
  * Claim the stashed referral for the now-authenticated user.
  *
@@ -44,11 +59,6 @@ export async function claimReferral(typedCode?: string | null): Promise<boolean>
     const typed = typedCode?.trim() || null;
     if (!cookieCode && !typed) return false;
 
-    // Consumed whichever way this goes, and before anything can fail: a stash
-    // that survives a failed claim will attribute a LATER account to somebody
-    // who never introduced it.
-    if (cookieCode) store.delete(REFERRAL_COOKIE);
-
     const session = await getSession();
     if (!session?.profile) return false;
     const target = {
@@ -63,8 +73,15 @@ export async function claimReferral(typedCode?: string | null): Promise<boolean>
        Only ONE of them can land regardless — `organization_id` is unique on
        `referral_attributions` — so this decides which is tried first, not how
        many rows appear. */
-    if (typed && (await attribute({ ...target, code: typed, source: "code" }))) return true;
-    if (cookieCode) return await attribute({ ...target, code: cookieCode, source: "link" });
+    if (typed && (await attribute({ ...target, code: typed, source: "code" }))) {
+      if (cookieCode) store.delete(REFERRAL_COOKIE);
+      return true;
+    }
+    if (cookieCode) {
+      const claimed = await attribute({ ...target, code: cookieCode, source: "link" });
+      if (claimed) store.delete(REFERRAL_COOKIE);
+      return claimed;
+    }
     return false;
   } catch (err) {
     console.error("[referrals] claim failed:", err);

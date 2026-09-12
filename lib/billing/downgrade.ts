@@ -27,6 +27,7 @@ import { notifyPlanExpired } from "./notify-expiry";
 export async function downgradeToFree(
   organizationId: string,
   reason: DowngradeReason,
+  periodEnd?: string | null,
 ): Promise<"downgraded" | "already_free" | "failed"> {
   const admin = createAdminClient();
 
@@ -57,6 +58,6 @@ export async function downgradeToFree(
   if (!flipped || flipped.length === 0) return "already_free";
 
   // After the downgrade has landed, and never allowed to undo it.
-  await notifyPlanExpired(organizationId, previous, reason);
+  await notifyPlanExpired(organizationId, previous, reason, periodEnd ?? undefined);
   return "downgraded";
 }

@@ -26,6 +26,10 @@ export type NotificationType =
   | "grading_failed"
   | "quota_warning"
   | "quota_exhausted"
+  | "billing_expiring"
+  | "billing_expired"
+  | "billing_renewed"
+  | "billing_payment_failed"
   /** A center-wide message from the center admin. */
   | "announcement";
 
@@ -37,11 +41,13 @@ export interface NotifyInput {
   body?: string | null;
   href?: string | null;
   payload?: Record<string, unknown>;
+  /** Optional per-recipient idempotency key for scheduled/system notices. */
+  dedupeKey?: string | null;
 }
 
-export async function notify(input: NotifyInput): Promise<void> {
+export async function notify(input: NotifyInput): Promise<boolean> {
   const recipients = [...new Set(input.recipientIds)].filter(Boolean);
-  if (recipients.length === 0) return;
+  if (recipients.length === 0) return false;
 
   try {
     const admin = createAdminClient();
@@ -54,10 +60,16 @@ export async function notify(input: NotifyInput): Promise<void> {
         body: input.body ?? null,
         href: input.href ?? null,
         payload: input.payload ?? {},
+        dedupe_key: input.dedupeKey ?? null,
       })),
     );
-    if (error) console.error("[notify] insert failed:", input.type, error.message);
+    if (error) {
+      if (error.code !== "23505") console.error("[notify] insert failed:", input.type, error.message);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error("[notify] failed:", input.type, err);
+    return false;
   }
 }

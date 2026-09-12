@@ -135,12 +135,12 @@ describe("one downgrade path, and the write is the de-duplication", () => {
     const flip = body.indexOf('.update({ plan: "trial" })');
     const mail = body.indexOf("notifyPlanExpired(");
     expect(mail).toBeGreaterThan(flip);
-    expect(body).toMatch(/notifyPlanExpired\(organizationId, previous, reason\)/);
+    expect(body).toMatch(/notifyPlanExpired\(organizationId, previous, reason, periodEnd/);
   });
 
   it("is the only place a webhook downgrade goes through", () => {
     const apply = fn(service, "applyPlanChange");
-    expect(apply).toMatch(/downgradeToFree\(change\.organizationId, effect\)/);
+    expect(apply).toMatch(/downgradeToFree\(change\.organizationId, effect, existing\?\.current_period_end\)/);
     expect(apply).not.toMatch(/plan: active \? change\.plan : "trial"/);
   });
 });

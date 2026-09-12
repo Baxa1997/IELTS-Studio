@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 import { downgradeToFree } from "./downgrade";
 import { hasLapsed } from "./lifecycle";
+import { notifyPlanExpiring } from "./notify-expiry";
 import { applyPlanChange, coercePlan } from "./service";
 import { changeFromSubscription, fetchLiveStripeSubscription } from "./stripe";
 
@@ -54,6 +55,7 @@ export async function expireLapsedSubscriptions(): Promise<{
 
   let expired = 0;
   let reconciled = 0;
+  const reminderWindow = now + 7 * 24 * 60 * 60 * 1000;
 
   for (const row of rows ?? []) {
     const organizationId = String(row.organization_id);
@@ -63,6 +65,12 @@ export async function expireLapsedSubscriptions(): Promise<{
         // `incomplete` row is an abandoned checkout with nothing to take away.
         const claimsPaid = row.status === "active" || row.status === "trialing" || row.status === "past_due";
         if (!claimsPaid) continue;
+        if (row.current_period_end) {
+          const end = Date.parse(row.current_period_end);
+          if (Number.isFinite(end) && end > now && end <= reminderWindow) {
+            await notifyPlanExpiring(organizationId, String(row.plan), row.current_period_end);
+          }
+        }
         if (row.current_period_end && !hasLapsed(row, now)) continue;
 
         const live = await fetchLiveStripeSubscription({
@@ -92,9 +100,15 @@ export async function expireLapsedSubscriptions(): Promise<{
       }
 
       // Payme and Click: the stored date is the whole truth.
+      if (row.current_period_end) {
+        const end = Date.parse(row.current_period_end);
+        if (Number.isFinite(end) && end > now && end <= reminderWindow) {
+          await notifyPlanExpiring(organizationId, String(row.plan), row.current_period_end);
+        }
+      }
       if (!hasLapsed(row, now)) continue;
 
-      const result = await downgradeToFree(organizationId, "ended");
+      const result = await downgradeToFree(organizationId, "ended", row.current_period_end);
       if (result === "failed") {
         errors.push(`${organizationId}: downgrade failed — row left open for the next run`);
         continue;

@@ -4,6 +4,8 @@ import { accrueCommission } from "@/lib/referrals/accrual";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { downgradeToFree } from "./downgrade";
+import { hasLapsed } from "./lifecycle";
+import { notifyPlanRenewed } from "./notify-expiry";
 import {
   isAboutAnotherSubscription,
   orgEffect,
@@ -39,11 +41,12 @@ export async function applyPlanChange(
   const admin = createAdminClient();
   const now = Date.now();
 
-  const { data: existing } = await admin
+  const { data: existing, error: existingError } = await admin
     .from("subscriptions")
     .select("status, current_period_end, provider, external_subscription_id")
     .eq("organization_id", change.organizationId)
     .maybeSingle();
+  if (existingError) throw new Error(`could not read subscription: ${existingError.message}`);
 
   /* A DEAD SECOND SUBSCRIPTION MUST NOT END A LIVE FIRST ONE. Every checkout
      creates a fresh Stripe subscription, so an abandoned or failed second one
@@ -57,15 +60,31 @@ export async function applyPlanChange(
     return;
   }
 
-  await admin
+  const { error: subscriptionError } = await admin
     .from("subscriptions")
     .upsert(subscriptionUpsert(change, new Date(now).toISOString()), { onConflict: "organization_id" });
+  if (subscriptionError) throw new Error(`could not save subscription: ${subscriptionError.message}`);
 
   const effect = orgEffect(change.status);
   if (effect === "grant") {
-    await admin.from("organizations").update({ plan: change.plan }).eq("id", change.organizationId);
+    const { error: organizationError } = await admin
+      .from("organizations")
+      .update({ plan: change.plan })
+      .eq("id", change.organizationId);
+    if (organizationError) throw new Error(`could not apply organization plan: ${organizationError.message}`);
+
+    const previousEnd = existing?.current_period_end ? Date.parse(existing.current_period_end) : NaN;
+    const nextEnd = change.currentPeriodEnd ? Date.parse(change.currentPeriodEnd) : NaN;
+    const isRenewal =
+      Boolean(existing && (existing.status === "active" || existing.status === "trialing")) &&
+      Number.isFinite(previousEnd) &&
+      Number.isFinite(nextEnd) &&
+      nextEnd > previousEnd;
+    if (isRenewal && change.currentPeriodEnd) {
+      await notifyPlanRenewed(change.organizationId, change.plan, change.currentPeriodEnd);
+    }
   } else if (effect !== "none") {
-    await downgradeToFree(change.organizationId, effect);
+    await downgradeToFree(change.organizationId, effect, existing?.current_period_end);
   }
 
   /**
@@ -122,7 +141,18 @@ export async function recordBillingEvent(args: {
     .select("id")
     .single();
   if (error) {
-    if (error.code === "23505") return { fresh: false, id: null }; // duplicate → already processed
+    if (error.code === "23505") {
+      // Return the existing row id as well. This is important for Payme/Click,
+      // whose transaction state is stored in the same billing_events row before
+      // the payment is applied, and for safe retries after a transient failure.
+      const { data: existing } = await admin
+        .from("billing_events")
+        .select("id")
+        .eq("provider", args.provider)
+        .eq("external_event_id", args.externalEventId)
+        .maybeSingle();
+      return { fresh: false, id: (existing?.id as string | null) ?? null };
+    }
     throw error;
   }
   return { fresh: true, id: (data?.id as string | null) ?? null };
@@ -144,11 +174,16 @@ export async function getSubscription(organizationId: string): Promise<Subscript
     .eq("organization_id", organizationId)
     .maybeSingle();
   if (!data) return { plan: "trial", status: "trialing", provider: null, currentPeriodEnd: null };
+  const provider = (data.provider as BillingProviderId | null) ?? null;
+  const currentPeriodEnd = (data.current_period_end as string | null) ?? null;
+  if (hasLapsed({ status: data.status as SubscriptionStatus, current_period_end: currentPeriodEnd, provider })) {
+    return { plan: "trial", status: "canceled", provider, currentPeriodEnd };
+  }
   return {
     plan: data.plan as OrgPlan,
     status: data.status as SubscriptionStatus,
-    provider: (data.provider as BillingProviderId | null) ?? null,
-    currentPeriodEnd: (data.current_period_end as string | null) ?? null,
+    provider,
+    currentPeriodEnd,
   };
 }
 

@@ -69,9 +69,8 @@ describe("when both doors are open at once", () => {
     expect(typed).toBeLessThan(stashed);
   });
 
-  it("consumes the cookie even when the typed code wins", () => {
-    // Otherwise a cookie that lost this race survives and attributes the NEXT
-    // account created in the same browser to a referrer who never sent them.
+  it("only consumes the cookie after attribution succeeds", () => {
+    // A transient database failure must not permanently lose a valid referral.
     const body = attribution.slice(
       attribution.indexOf("export async function claimReferral"),
       attribution.indexOf("export async function attribute"),
@@ -79,7 +78,7 @@ describe("when both doors are open at once", () => {
     const consume = body.indexOf("store.delete(REFERRAL_COOKIE)");
     const firstAttribute = body.indexOf("await attribute(");
     expect(consume).toBeGreaterThan(-1);
-    expect(consume).toBeLessThan(firstAttribute);
+    expect(consume).toBeGreaterThan(firstAttribute);
   });
 
   it("still records which door was used", () => {

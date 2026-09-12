@@ -7,7 +7,7 @@ import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 import { platformAdminEmail } from "@/lib/email/platform-admin";
 import { sendEmail } from "@/lib/email/send";
 import { applyPendingPlan } from "@/lib/plan/apply-pending";
-import { claimReferral } from "@/lib/referrals/attribution";
+import { claimReferral, stashReferralCode } from "@/lib/referrals/attribution";
 import { placeUserInOrg } from "@/lib/provision";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -88,8 +88,10 @@ export async function signUp(_prev: AuthFormState, formData: FormData): Promise<
     .trim()
     .toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const referralCode = String(formData.get("referral_code") ?? "").trim();
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  await stashReferralCode(referralCode);
 
   const headerList = await headers();
   const origin =
@@ -338,6 +340,38 @@ export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/sign-in");
+}
+
+/** Send a recovery link without revealing whether an address is registered. */
+export async function requestPasswordReset(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email || !email.includes("@")) return { error: "Enter a valid email address." };
+  const headerList = await headers();
+  const origin = headerList.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  });
+  if (error) console.error("[auth] password reset request failed:", error.message);
+  return { notice: "If an account uses that address, a password reset link is on its way." };
+}
+
+/** Finish a password reset after Supabase has established the recovery session. */
+export async function updatePassword(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const password = String(formData.get("password") ?? "");
+  const confirmation = String(formData.get("confirmation") ?? "");
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  if (password !== confirmation) return { error: "Passwords do not match." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  redirect("/dashboard");
 }
 
 /**

@@ -114,13 +114,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
           <label htmlFor="password" style={label}>
             Password
           </label>
-          {/* There is no self-serve reset route in this app — the canvas draws
-              this as `href="#"`, and a dead link is worse than an honest one.
-              /contact is where it can actually be dealt with, and it is also the
-              right answer for a centre student, whose account has a synthetic
-              address that no reset email could ever reach: their teacher resets
-              it. Repoint this the day a reset flow exists. */}
-          <Link href="/contact" style={{ fontSize: 14, fontWeight: 600, color: BRAND }}>
+          <Link href="/forgot-password" style={{ fontSize: 14, fontWeight: 600, color: BRAND }}>
             Forgot password?
           </Link>
         </div>

@@ -19,6 +19,9 @@ const PUBLIC_PATHS = [
   "/",
   "/start",
   "/sign-in",
+  "/forgot-password",
+  "/reset-password",
+  "/recover-account",
   "/accept-invite",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
@@ -171,14 +174,6 @@ export async function updateSession(request: NextRequest) {
   // Unauthenticated trying to reach a protected page -> sign-in.
   if (!signedIn && !isPublicPath(pathname)) {
     return redirectKeepingCookies(request, supabaseResponse, "/sign-in");
-  }
-
-  // Authenticated landing on an auth page -> straight into the app. We send to
-  // /dashboard (the student home) rather than the marketing root `/`, which does
-  // NOT forward signed-in visitors and so reads as "sign-in went nowhere".
-  // super_admins are bounced on to /admin by the dashboard guard.
-  if (signedIn && pathname === "/sign-in") {
-    return redirectKeepingCookies(request, supabaseResponse, "/dashboard");
   }
 
   return supabaseResponse;

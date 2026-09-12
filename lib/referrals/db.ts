@@ -67,7 +67,8 @@ export async function fetchAll<T>(
   const out: T[] = [];
   for (let from = 0; ; from += SIZE) {
     const { data, error } = await page(from, from + SIZE - 1);
-    if (error || !data) break;
+    if (error) throw new Error(`paged referral query failed: ${String(error)}`);
+    if (!data) throw new Error("paged referral query returned no data");
     out.push(...data);
     if (data.length < SIZE) break;
   }

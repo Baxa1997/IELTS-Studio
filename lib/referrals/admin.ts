@@ -129,7 +129,7 @@ export async function decideApplication(args: {
       return { error: "A rate has to be between 1 and 100.", notice: null };
     }
 
-    const { error } = await admin
+    const { data: updated, error } = await admin
       .from("referral_accounts")
       .update({
         ...base,
@@ -138,8 +138,11 @@ export async function decideApplication(args: {
         stopped_at: null,
         ...(rateOverride !== null ? { percent: rateOverride } : null),
       })
-      .eq("id", args.accountId);
+      .eq("id", args.accountId)
+      .eq("status", account.status)
+      .select("id");
     if (error) return { error: `Update failed: ${error.message}`, notice: null };
+    if (!updated || updated.length === 0) return { error: "That application changed while you were reviewing it.", notice: null };
 
     // After the decision has landed, and never allowed to undo it. The same
     // rule `recordAdminAction` follows: the approval matters more than the
@@ -165,22 +168,28 @@ export async function decideApplication(args: {
   }
 
   if (args.decision === "reject") {
-    const { error } = await admin
+    const { data: updated, error } = await admin
       .from("referral_accounts")
       .update({ ...base, status: "rejected" })
-      .eq("id", args.accountId);
+      .eq("id", args.accountId)
+      .eq("status", account.status)
+      .select("id");
     if (error) return { error: `Update failed: ${error.message}`, notice: null };
+    if (!updated || updated.length === 0) return { error: "That application changed while you were reviewing it.", notice: null };
     await notifyRejected(args.accountId, args.note);
     return { error: null, notice: "Rejected — email sent." };
   }
 
   // close | revoke — both kill the link immediately.
   const status = args.decision === "revoke" ? "revoked" : "closed";
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from("referral_accounts")
     .update({ ...base, status, stopped_at: now })
-    .eq("id", args.accountId);
+    .eq("id", args.accountId)
+    .eq("status", account.status)
+    .select("id");
   if (error) return { error: `Update failed: ${error.message}`, notice: null };
+  if (!updated || updated.length === 0) return { error: "That application changed while you were reviewing it.", notice: null };
 
   if (args.decision === "revoke") {
     /* Everything not yet settled. `paid` is left alone — that money has left.
@@ -647,15 +656,20 @@ export async function recordPayout(args: {
   const admin = createAdminClient();
   const settings = await loadSettings();
 
-  const rows = await fetchAll<CommissionQueryRow>((from, to) =>
-    admin
-      .from("referral_commissions")
-      .select("id, amount_minor, currency, status, payable_after")
-      .eq("referral_account_id", args.referralAccountId)
-      .eq("currency", args.currency)
-      .in("status", ["pending", "payable"])
-      .range(from, to),
-  );
+  let rows: CommissionQueryRow[];
+  try {
+    rows = await fetchAll<CommissionQueryRow>((from, to) =>
+      admin
+        .from("referral_commissions")
+        .select("id, amount_minor, currency, status, payable_after")
+        .eq("referral_account_id", args.referralAccountId)
+        .eq("currency", args.currency)
+        .in("status", ["pending", "payable"])
+        .range(from, to),
+    );
+  } catch (err) {
+    return { error: `Couldn't read the balance safely: ${err instanceof Error ? err.message : String(err)}`, notice: null };
+  }
 
   const now = Date.now();
   const cleared = rows.filter(

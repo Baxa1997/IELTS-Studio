@@ -33,7 +33,9 @@ export async function GET(request: Request) {
       // attributed; never before a session exists.
       await claimReferral();
       const session = await getSession();
-      const dest = next ?? (session ? roleHome(session.role) : "/dashboard");
+      // An Auth identity without a profile means provisioning failed or an old
+      // account was partially deleted. Avoid a dashboard/sign-in redirect loop.
+      const dest = next ?? (session ? roleHome(session.role) : "/recover-account");
       return NextResponse.redirect(`${origin}${dest}`);
     }
   }

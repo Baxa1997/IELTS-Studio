@@ -46,10 +46,11 @@ export async function POST(req: Request): Promise<Response> {
 
   const { expired, reconciled, errors } = await expireLapsedSubscriptions();
 
-  // Errors are reported, not thrown: one org that fails to downgrade must not
-  // stop the rest, and a 500 would make the scheduler retry the whole pass.
+  // Successful orgs are idempotent, so a non-zero result should be visible to
+  // Vercel and retried rather than silently marking a partial pass as healthy.
   if (errors.length > 0) {
     console.error("[billing] expiry pass had failures:", errors);
+    return NextResponse.json({ expired, reconciled, errors: errors.length }, { status: 500 });
   }
   return NextResponse.json({ expired, reconciled, errors: errors.length });
 }

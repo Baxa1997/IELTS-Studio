@@ -2,6 +2,7 @@ import "server-only";
 
 import { serverEnv } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reverseCommission } from "@/lib/referrals/accrual";
 
 import { applyPlanChange, planForUzsAmount, recordBillingEvent } from "./service";
 
@@ -117,8 +118,6 @@ async function performTransaction(params: Record<string, unknown>): Promise<Meth
   if (tx.state !== 1) return { _error: ERR.cannotPerform };
 
   const performTime = Date.now();
-  await saveTx(paycomId, tx.organization_id, { ...tx, state: 2, perform_time: performTime });
-
   /* LOG THE PAYMENT, THEN APPLY IT.
      Payme and Click never wrote to `billing_events` — only Stripe did — so UZS
      payments were invisible in the one table that answers "what did we take,
@@ -150,6 +149,10 @@ async function performTransaction(params: Record<string, unknown>): Promise<Meth
     },
     event.id,
   );
+  // Mark the gateway transaction complete only after the subscription write has
+  // succeeded. If Supabase briefly fails, Payme retries PerformTransaction and
+  // the payment is not permanently stuck in a completed-but-unapplied state.
+  await saveTx(paycomId, tx.organization_id, { ...tx, state: 2, perform_time: performTime });
   return { transaction: paycomId, perform_time: performTime, state: 2 };
 }
 
@@ -160,6 +163,7 @@ async function cancelTransaction(params: Record<string, unknown>): Promise<Metho
   const cancelTime = tx.cancel_time || Date.now();
   const state = tx.state === 2 ? -2 : -1;
   await saveTx(paycomId, tx.organization_id, { ...tx, state, cancel_time: cancelTime });
+  if (tx.state === 2) await reverseCommission(tx.organization_id, `payme cancellation ${paycomId}`);
   return { transaction: paycomId, cancel_time: cancelTime, state };
 }
 
@@ -208,7 +212,7 @@ async function saveTx(
   payload: Omit<TxState, "organization_id">,
 ): Promise<void> {
   const admin = createAdminClient();
-  await admin.from("billing_events").upsert(
+  const { error } = await admin.from("billing_events").upsert(
     {
       provider: "payme",
       event_type: "transaction",
@@ -218,6 +222,7 @@ async function saveTx(
     },
     { onConflict: "provider,external_event_id" },
   );
+  if (error) throw new Error(`Payme transaction save failed: ${error.message}`);
 }
 
 async function orgExists(organizationId: string): Promise<boolean> {

@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { serverEnv } from "@/lib/env";
+import { reverseCommission } from "@/lib/referrals/accrual";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { applyPlanChange, planForUzsAmount, recordBillingEvent } from "./service";
@@ -72,6 +73,10 @@ async function prepare(
   organizationId: string,
   amountTiyin: number,
 ): Promise<ClickResponse> {
+  const existing = await loadTx(p.click_trans_id);
+  if (existing?.state === 1) return { ...base, merchant_confirm_id: existing.prepare_id, ...E.ALREADY };
+  if (existing?.state === 0) return { ...base, merchant_prepare_id: existing.prepare_id, ...E.OK };
+  if (existing) return { ...base, ...E.TX_NOT_FOUND };
   const prepareId = Date.now();
   await saveTx(p.click_trans_id, organizationId, { state: 0, prepare_id: prepareId, amount: amountTiyin });
   return { ...base, merchant_prepare_id: prepareId, ...E.OK };
@@ -85,15 +90,16 @@ async function complete(
 ): Promise<ClickResponse> {
   const tx = await loadTx(p.click_trans_id);
   if (!tx) return { ...base, ...E.TX_NOT_FOUND };
-  if (tx.state === 1) return { ...base, merchant_confirm_id: tx.prepare_id, ...E.ALREADY };
 
   // Click sends error<0 on its side when the user cancels — don't activate then.
   if (Number(p.error) < 0) {
     await saveTx(p.click_trans_id, organizationId, { ...tx, state: -1 });
+    if (tx.state === 1) await reverseCommission(organizationId, `click cancellation ${p.click_trans_id}`);
     return { ...base, error: Number(p.error), error_note: p.error_note ?? "Cancelled" };
   }
 
-  await saveTx(p.click_trans_id, organizationId, { ...tx, state: 1 });
+  if (tx.state === 1) return { ...base, merchant_confirm_id: tx.prepare_id, ...E.ALREADY };
+  if (tx.state !== 0) return { ...base, ...E.TX_NOT_FOUND };
 
   /* Same reasoning as Payme: this payment belongs in `billing_events` both as a
      record of money taken and as the row referral commission de-duplicates on.
@@ -121,6 +127,7 @@ async function complete(
     },
     event.id,
   );
+  await saveTx(p.click_trans_id, organizationId, { ...tx, state: 1 });
   return { ...base, merchant_confirm_id: tx.prepare_id, ...E.OK };
 }
 
@@ -170,7 +177,7 @@ async function saveTx(
   payload: Omit<ClickTx, "organization_id">,
 ): Promise<void> {
   const admin = createAdminClient();
-  await admin.from("billing_events").upsert(
+  const { error } = await admin.from("billing_events").upsert(
     {
       provider: "click",
       event_type: "transaction",
@@ -180,6 +187,7 @@ async function saveTx(
     },
     { onConflict: "provider,external_event_id" },
   );
+  if (error) throw new Error(`Click transaction save failed: ${error.message}`);
 }
 
 async function orgExists(organizationId: string): Promise<boolean> {

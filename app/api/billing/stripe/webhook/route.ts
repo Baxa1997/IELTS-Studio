@@ -34,7 +34,11 @@ export async function POST(req: Request): Promise<Response> {
     organizationId: parsed.change?.organizationId ?? null,
     payload: JSON.parse(raw),
   });
-  if (event.fresh && parsed.change) {
+  // Re-apply on provider retries as well. The event log is idempotent, but the
+  // subscription/org update may have failed after the log insert. Replaying the
+  // normalized change is safe because subscription writes and referral accrual
+  // are themselves conditional/idempotent.
+  if (parsed.change && event.id) {
     // The event id travels with the change so referral commission can key its
     // own idempotency to the same row this log already de-duplicates on.
     await applyPlanChange(parsed.change, event.id);

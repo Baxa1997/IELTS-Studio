@@ -230,7 +230,7 @@ export async function getSpeakingQuota(organizationId: string): Promise<Quota> {
 async function getSpeakingQuotaFromOrg(organizationId: string, loaded: LoadedOrg): Promise<Quota> {
   const { admin, org } = loaded;
   const plan = (org?.plan ?? "trial") as OrgPlan;
-  const limit = planTier(plan).fullMockLimit;
+  const limit = org?.billing_enforced === false ? null : planTier(plan).fullMockLimit;
   const { start, resetAt } = monthWindow();
 
   const { count } = await admin
