@@ -339,98 +339,16 @@
   flex: none;
 }
 
-/* ── collapsed rail (design artboard 3B) ────────────────────────────────────
-   The trays survive the collapse — they are what stops ten icons reading as one
-   undifferentiated column — but they centre, and each chip grows from the 26px
-   it is in a labelled row to a 36px standalone tile.
+/* The collapsed-rail rules (design artboard 3B) used to sit here, in a second
+   desktop media block of their own. They now live in the ONE such block further
+   down, beside the rest of the rail's collapse behaviour — two media queries
+   governing a single element is how a value gets changed in one place and
+   silently contradicted in the other.
 
-   EVERY RULE HERE NEEDS `!important`, and that is not laziness. The chip's size
-   and the active row's fill, border and shadow are all INLINE styles set in
-   sidebar-nav.tsx, and an inline style beats an external stylesheet whatever
-   its specificity. Without it the rail would collapse to 72px with 26px chips
-   still left-aligned inside it. */
-@media (min-width: 768px) {
-  .lp-shell-sidebar--collapsed .lp-sb-section {
-    align-items: center;
-    padding: 6px !important;
-    gap: 4px !important;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-chip {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 9px !important;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-chip svg {
-    width: 17px;
-    height: 17px;
-  }
-  /* The row stops being a row: no padding, no border, no white tile. The tile IS
-     the chip now, and the current page is the one solid-filled chip.
-
-     ⚠️ THIS IS THE RULE THAT CENTRES THE GLYPH, and it does it differently from
-     the rule it replaces. The old one zeroed four things by hand
-     (justify-content, padding-left, padding-right, gap) because the link was a
-     flex row of two in-flow children and a gap beside a zero-WIDTH item is still
-     a gap. Now `.lp-sb-trail` is taken out of flow entirely (below), so the link
-     has ONE in-flow child, shrinks to the chip's 36px, and is centred by the
-     tray's own `align-items: center`. `justify-content` and the link's gap have
-     nothing left to act on.
-
-     `padding` shorthand, not the two longhands — with the trail out of flow
-     there is no asymmetry left to correct. `!important` throughout because every
-     one of these is set inline by `itemBase` for the expanded layout, and an
-     inline style beats an external rule. */
-  .lp-shell-sidebar--collapsed .lp-sb-link {
-    position: relative;
-    padding: 0 !important;
-    border-color: transparent !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip {
-    background: #3b36c9 !important;
-    color: #fff !important;
-  }
-  /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
-     dot on the corner of the chip, ringed in the tray's own grey so it reads as
-     sitting on top of the tile rather than punched out of it. */
-  .lp-shell-sidebar--collapsed .lp-sb-badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    min-width: 15px;
-    height: 15px;
-    padding: 0 !important;
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px solid #f6f6f3;
-  }
-  /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
-     shared text-collapse rule already gives it `max-width: 0`, and that is NOT
-     enough on its own: a zero-width flex item still has a gap beside it. */
-  .lp-shell-sidebar--collapsed .lp-sb-trail {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-  /* The brand row centres and loses the name; the toggle sits under the mark. */
-  .lp-shell-sidebar--collapsed .lp-sb-brandrow {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-brandtext {
-    display: none;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-collapse {
-    margin-left: 0 !important;
-  }
-  .lp-shell-sidebar--collapsed .lp-sb-footer {
-    align-items: center;
-  }
-}
+   (Deliberately not quoting the query verbatim: the tests search this file as
+   raw text, so a comment naming a selector can be found ahead of the rule it
+   describes. collapsed-rail.test.ts strips comments now, but leaving the
+   landmine for the next grep would be rude.) */
 
 /* ── "AI is ready" cue ────────────────────────────────────────────────────────
    A small, looping nudge on the generate button + its sparkle, so the eye lands on
@@ -898,14 +816,13 @@
 
 @media (min-width: 768px) {
   .lp-shell-sidebar {
-    /* `relative` (not `static`) rather than participating in the page's
-       positioning by accident. On mobile the base rule keeps it `fixed` so the
-       off-canvas drawer works.
-
-       (It used to say "so the collapse toggle, absolutely positioned at
-       right:-15px, anchors to the rail's edge". That toggle is in the brand row
-       now — see shell.tsx — so this no longer has a dependant, but a positioned
-       rail is still what the collapsed badge dots resolve against.) */
+    /* `relative` (not `static`) SO THE COLLAPSE TOGGLE HAS AN EDGE TO ANCHOR TO.
+       It is absolutely positioned at right:-15px (shell.tsx), straddling the
+       rail's boundary, and `position: absolute` resolves against the nearest
+       positioned ancestor — without this the button escapes to the viewport and
+       lands anywhere. The collapsed badge dots resolve against it too. On mobile
+       the base rule keeps this `fixed` so the off-canvas drawer works.
+       collapsed-rail.test.ts asserts this declaration for that reason. */
     position: relative;
     transform: none;
     z-index: auto;
@@ -925,6 +842,95 @@
     width: 72px;
     padding-left: 12px !important;
     padding-right: 12px !important;
+  }
+
+  /* ── collapsed rail (design artboard 3B) ──────────────────────────────────
+     The trays survive the collapse — they are what stops ten icons reading as
+     one undifferentiated column — but they centre, and each chip grows from the
+     26px it is in a labelled row to a 36px standalone tile.
+
+     ALMOST EVERY RULE HERE NEEDS `!important`, and that is not laziness. The
+     chip's size and the row's fill, border and shadow are all INLINE styles set
+     in sidebar-nav.tsx, and an inline style beats an external stylesheet
+     whatever its specificity. Without it the rail collapses to 72px with 26px
+     chips still left-aligned inside it. */
+  .lp-shell-sidebar--collapsed .lp-sb-section {
+    align-items: center;
+    padding: 6px !important;
+    gap: 4px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-chip {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-chip svg {
+    width: 17px;
+    height: 17px;
+  }
+  /* The row stops being a row: no padding, no border, no white tile. The tile IS
+     the chip now, and the current page is the one solid-filled chip.
+
+     ⚠️ THIS IS THE RULE THAT CENTRES THE GLYPH. `.lp-sb-trail` is taken out of
+     flow (below), so the link has ONE in-flow child, shrinks to the chip's 36px,
+     and is centred by the tray's own `align-items: center`. The link's own
+     `justify-content: space-between` and its gap have nothing left to act on —
+     which is why, unlike the rule this replaces, neither has to be zeroed by
+     hand. A gap beside a zero-WIDTH item is still a gap; a gap beside an
+     out-of-flow one is not. */
+  .lp-shell-sidebar--collapsed .lp-sb-link {
+    position: relative;
+    padding: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip {
+    background: #3b36c9 !important;
+    color: #fff !important;
+  }
+  /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
+     dot on the corner of the chip, ringed in the tray's own grey so it reads as
+     sitting on top of the tile rather than punched out of it. */
+  .lp-shell-sidebar--collapsed .lp-sb-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #f6f6f3;
+  }
+  /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
+     shared text-collapse rule already gives it `max-width: 0`, and that is NOT
+     enough on its own — see above. */
+  .lp-shell-sidebar--collapsed .lp-sb-trail {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  /* The brand row centres and loses the name. The toggle does NOT stack under
+     the mark — it is anchored to the rail's edge (shell.tsx) and moves with that
+     edge as the rail narrows, so it needs no collapsed rule of its own. */
+  .lp-shell-sidebar--collapsed .lp-sb-brandrow {
+    justify-content: center;
+  }
+  /* ⚠️ `!important`, AND IT IS THE WHOLE BUG THIS RULE ONCE HAD.
+     `.lp-sb-brandtext` sets `display: flex` INLINE (it is the name-over-role
+     column), and an inline style beats an external rule whatever the
+     specificity. Without !important this declaration did nothing: the centre's
+     name stayed on screen in the 72px collapsed rail, clipped mid-word, and
+     squeezed out the logomark it was supposed to make room for. */
+  .lp-shell-sidebar--collapsed .lp-sb-brandtext {
+    display: none !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-footer {
+    align-items: center;
   }
   /* Inline text collapses to zero width — the rail narrows without clipping the
      tooltips (which need overflow:visible below). */

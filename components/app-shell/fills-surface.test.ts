@@ -168,11 +168,31 @@ describe("the surface follows the route, not the role", () => {
     }
   });
 
-  it("keeps the console flush and the learner page on a card", () => {
-    // The two halves of the decision, so a later edit cannot quietly drop one.
-    expect(shell).toMatch(/padding: consoleSurface \? 0 : 10/);
-    expect(shell).toMatch(/borderRadius: consoleSurface \? 0 : 18/);
-    expect(shell).toMatch(/border: consoleSurface \? "none"/);
+  it("puts the console on a card too, and keeps only /admin flush", () => {
+    /* THE SPLIT MOVED, ON PURPOSE. It used to be console-flush /
+       learner-on-a-card, both keyed off `consoleSurface`. The Sidebar design
+       draws the console's page as a white rounded panel beside the rail — the
+       breadcrumb bar inside it — so /console joined the card and the dividing
+       line is now `fullBleed`, which is /admin alone.
+
+       Still two halves of one decision, so a later edit cannot quietly drop
+       one. */
+    expect(shell).toMatch(/padding: fullBleed \? 0 : 10/);
+    expect(shell).toMatch(/borderRadius: fullBleed \? 0 : 14/);
+    expect(shell).toMatch(/border: fullBleed \? "none"/);
+  });
+
+  it("leaves /admin full-bleed, because its pages own their own inset", () => {
+    /* ⚠️ THIS IS THE REGRESSION THIS FILE ALREADY RECORDS ONCE. Each admin page
+       insets itself through `Surface` (components/admin/ui). Hand it a card plus
+       a 10px gutter and every admin screen renders double-inset — a rounded
+       panel floating inside another one. When /console moved onto the card,
+       /admin had to be the thing that stayed behind, and `fullBleed` is the only
+       thing now holding that line. */
+    const at = shell.indexOf("const fullBleed =");
+    expect(at, "fullBleed is what keeps /admin off the card").toBeGreaterThan(-1);
+    expect(shell.slice(at, at + 120)).toMatch(/pathname\.startsWith\("\/admin"\)/);
+    expect(shell.slice(at, at + 120)).not.toMatch(/\/console/);
   });
 
   it("still skips the content wrapper's padding on console routes", () => {

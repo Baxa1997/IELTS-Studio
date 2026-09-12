@@ -29,7 +29,24 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync(fileURLToPath(new URL("../../app/globals.css", import.meta.url)), "utf8");
+/**
+ * DECLARATIONS ONLY — comments stripped before anything searches this.
+ *
+ * Every assertion here is a raw text search over the stylesheet, and globals.css
+ * is a heavily commented file whose comments routinely quote the selectors and
+ * values they replaced. A naive search finds that prose: a note reading "these
+ * rules used to sit in a second `@media (min-width: 768px)` block" was matched
+ * by the media-query lookup below, ahead of the real rule, and the test failed
+ * while the CSS was entirely correct.
+ *
+ * `brand-row.test.ts` already learned this — "a naive search for a removed value
+ * finds its own obituary" — and strips the same way. This is that fix, applied
+ * to the one file that had been missed.
+ */
+const css = readFileSync(
+  fileURLToPath(new URL("../../app/globals.css", import.meta.url)),
+  "utf8",
+).replace(/\/\*[\s\S]*?\*\//g, "");
 
 /** The declaration body of a rule, by exact selector. */
 function ruleBody(selector: string): string {
@@ -152,43 +169,53 @@ describe("collapsed rail: the box the glyph is centred in", () => {
  * guard is that it STAYS in flow and that the collapsed row stacks, because
  * putting it back on top of the mark is still one careless rule away.
  */
-describe("collapsed rail: the toggle stays clear of the logomark", () => {
+describe("collapsed rail: the toggle straddles the edge, clear of the logomark", () => {
   const shell = readFileSync(fileURLToPath(new URL("./shell.tsx", import.meta.url)), "utf8");
 
-  /** The toggle's own JSX block. */
-  const toggle = (() => {
-    const at = shell.indexOf('className="lp-sb-collapse"');
-    expect(at, "the collapse toggle should carry .lp-sb-collapse").toBeGreaterThan(-1);
-    return shell.slice(at, at + 900);
-  })();
-
-  it("is in normal flow, not absolutely positioned over the rail", () => {
-    // The whole point: an in-flow button cannot land on the logomark, whatever
-    // the rail's width. A `position: absolute` here reintroduces the class of
-    // bug that hid the control under the brand.
-    expect(toggle).not.toMatch(/position: "absolute"/);
-    expect(toggle).not.toMatch(/right: "-?\d+px"/);
+  it("anchors the button to the rail's edge, not inside it", () => {
+    // Half of 30px. A positive value here is the regression.
+    expect(shell).toMatch(/right: "-15px"/);
+    expect(shell).not.toMatch(/right: "10px"/);
   });
 
-  it("stacks under the mark when the rail collapses, instead of beside it", () => {
-    // At 72px there is no room for a 32px mark and a 28px button on one line.
-    const row = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-brandrow");
-    expect(declaration(row, "flex-direction")).toBe("column");
+  it("gives it a positioned rail to anchor to on desktop", () => {
+    // `position: absolute` resolves against the nearest positioned ancestor.
+    // Without this the button escapes to the viewport and lands anywhere.
+    const desktopRail = css.slice(css.indexOf("@media (min-width: 768px)"));
+    expect(desktopRail.slice(0, desktopRail.indexOf("}"))).toMatch(/position:\s*relative/);
   });
 
-  it("neutralises the auto margin that right-aligns it when expanded", () => {
-    // `marginLeft: "auto"` is inline (it pushes the toggle opposite the brand on
-    // one line). In a COLUMN it would shove the button to the right edge of a
-    // 72px rail instead of centring it — and inline beats an external rule, so
-    // this override has to be !important or it silently does nothing.
-    const rule = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-collapse");
-    expect(declaration(rule, "margin-left")).toBe("0 !important");
+  it("needs no collapsed-only rule, because the edge moves for it", () => {
+    // A collapsed override would be a second source of truth for the same
+    // position, and the two would drift. The arithmetic below is why none is
+    // needed; if someone adds one, this says to re-check the sum instead.
+    expect(css).not.toMatch(/\.lp-shell-sidebar--collapsed \.lp-sb-collapse\s*\{/);
   });
 
-  it("is dressed for the white rail it now sits on", () => {
-    // It borrows the rail's own ground and hairline. A translucent white fill —
-    // correct when half of it lay on a dark rail — is invisible here.
-    expect(toggle).toMatch(/background: WHITE/);
-    expect(toggle).not.toMatch(/background: "rgba\(255,255,255/);
+  it("clears the logomark at 72px — the sum, kept honest", () => {
+    const rail = ruleBody(".lp-shell-sidebar--collapsed");
+    const width = Number(declaration(rail, "width")?.replace("px", ""));
+    const pad = Number(declaration(rail, "padding-left")?.replace(/\D/g, ""));
+    const button = 30;
+    const overhang = 15;
+    // 32px since the rail was rebuilt to the design — the mark shrank with the
+    // brand row, so the sum is re-run rather than assumed.
+    const mark = 32;
+
+    // Button: anchored `overhang` past the rail's right edge.
+    const buttonLeft = width - (button - overhang);
+    // Mark: centred in the content box.
+    const markRight = pad + (width - pad * 2 + mark) / 2;
+
+    expect(buttonLeft, "button starts after the mark ends").toBeGreaterThanOrEqual(markRight);
+  });
+
+  it("is dressed for BOTH grounds it sits on", () => {
+    // Half on the white rail, half on the warm canvas: it can borrow neither, so
+    // a translucent fill is wrong here — it needs a solid disc and a hairline.
+    const at = shell.indexOf("lp-sb-collapse lp-sb-item");
+    const block = shell.slice(at, at + 1600);
+    expect(block).toMatch(/background: WHITE/);
+    expect(block).not.toMatch(/background: "rgba\(255,255,255/);
   });
 });

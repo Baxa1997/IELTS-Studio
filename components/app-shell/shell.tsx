@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Bell,
+  ChevronsLeft,
+  ChevronsRight,
   ChevronUp,
   CreditCard,
   LogOut,
   type LucideIcon,
   Megaphone,
-  PanelLeftClose,
-  PanelLeftOpen,
   Send,
   Menu,
   Settings,
@@ -63,6 +63,9 @@ const RAIL_DARK_TEXT = "#e6e9ea";
  *  on a white rail a filled chip beside the name competed with the nav's own
  *  active tile for "this is the highlighted thing". */
 const ACCENT = "#0b6b40";
+/** The collapse toggle's chevron. The rail's accent, not the old burgundy —
+ *  which would otherwise be the single burgundy mark left on this surface. */
+const TOGGLE_INK = "#3b36c9";
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -245,6 +248,22 @@ export function AppShell({
    * a prop to a route, every route that relied on the prop has to move with it.
    */
   const consoleSurface = pathname.startsWith("/console") || pathname.startsWith("/admin");
+  /**
+   * WHICH ROUTES GET THE FLOATING WHITE CARD, and which still paint their own
+   * ground edge to edge.
+   *
+   * The console joined the card: the Sidebar design draws its page as a white
+   * rounded panel beside the rail, with the breadcrumb bar inside it, so
+   * `/console/*` now gets the same treatment every learner page already had.
+   * Its own `.cn-page` padding supplies the inset, so the shell adds none.
+   *
+   * `/admin` DELIBERATELY DOES NOT. Its pages each own their inset through
+   * `Surface` (components/admin/ui), and this is exactly where that broke
+   * before: handing them a card plus a 10px gutter rendered every admin screen
+   * double-inset, a rounded panel floating inside another one. It keeps the
+   * cream full-bleed ground until it gets a pass of its own.
+   */
+  const fullBleed = pathname.startsWith("/admin");
   const asideClass = [
     "lp-shell-sidebar",
     open ? "lp-shell-sidebar--open" : "",
@@ -402,40 +421,54 @@ export function AppShell({
                 </span>
               </span>
             </Link>
-            {/* IT SITS IN THE ROW NOW, NOT ON THE RAIL'S EDGE.
-                It used to be absolutely positioned at `right: -15px`, straddling
-                the boundary so half of it lay on the dark rail and half on the
-                page — a treatment invented because no single colour was legible
-                on both grounds. That problem is gone: the rail is white, so the
-                button can simply be a bordered square in the brand row, which is
-                where the design draws it. With it back in flow, the z-index war
-                with the console's sticky bar and the collision with the 36px
-                logomark in the collapsed rail both stop existing. */}
+            {/* ANCHORED TO THE RAIL'S EDGE, AND BACK BY REQUEST.
+                I had moved this into the brand row as a bordered square, on the
+                reasoning that a white rail removes the reason it straddled (no
+                single fill was legible on both a dark rail and a light page).
+                The owner wants the original: a disc on the boundary, at the top,
+                visible at every rail width.
+
+                That position is also what keeps it clear of the logomark. At
+                72px an in-flow button has to stack under the mark; anchored to
+                the edge it sits at x=57..87 while the mark occupies x=20..52, so
+                the two never meet and no collapsed-only rule has to be kept in
+                sync. `right: -15px` is half the 30px button. See
+                collapsed-rail.test.ts, which holds the arithmetic. */}
             <button
               type="button"
               onClick={toggleCollapsed}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!collapsed}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="lp-sb-collapse"
+              className="lp-sb-collapse lp-sb-item"
               style={{
                 alignItems: "center",
                 justifyContent: "center",
-                width: 28,
-                height: 28,
+                width: 30,
+                height: 30,
                 flex: "none",
-                marginLeft: "auto",
+                /* A solid light disc with a hairline: half of it sits on the
+                   rail and half on the canvas, so it can borrow neither ground.
+                   The chevron takes the rail's own accent rather than the old
+                   burgundy, which would be the only burgundy left on this
+                   surface. */
                 border: `1px solid ${RAIL_BORDER}`,
                 background: WHITE,
-                borderRadius: 8,
+                borderRadius: 999,
                 cursor: "pointer",
-                color: "#4b5359",
+                color: TOGGLE_INK,
+                boxShadow: "0 2px 6px -1px rgba(22,35,43,.28)",
+                position: "absolute",
+                right: "-15px",
+                // Above the rail's mobile scrim (30) and every content layer (≤21):
+                // half this button lies over the page, so it needs to win there.
+                zIndex: 40,
               }}
             >
               {collapsed ? (
-                <PanelLeftOpen size={16} color="#4b5359" />
+                <ChevronsRight size={16} color={TOGGLE_INK} />
               ) : (
-                <PanelLeftClose size={16} color="#4b5359" />
+                <ChevronsLeft size={16} color={TOGGLE_INK} />
               )}
             </button>
           </div>
@@ -492,7 +525,7 @@ export function AppShell({
             that scrolls internally, so it reads as a separated surface on the canvas. */}
         <main
           className="lp-shell-main"
-          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: consoleSurface ? 0 : 10 }}
+          style={{ flex: 1, minWidth: 0, overflow: "hidden", padding: fullBleed ? 0 : 10 }}
         >
           <div
             /* The space before `lp-shell-surface--fills` is load-bearing: without it
@@ -505,15 +538,14 @@ export function AppShell({
             style={{
               height: "100%",
               overflow: fillsTheSurface(pathname) ? "hidden" : "auto",
-              // The console's ground is the CRM design's cream, not the learner
-              // app's white card. Set here rather than in CSS so it doesn't
-              // depend on `:has()` reaching a descendant.
-              background: consoleSurface ? "#F4F3EF" : "#fff",
-              borderRadius: consoleSurface ? 0 : 18,
-              border: consoleSurface ? "none" : "1px solid #E6E8EC",
-              boxShadow: consoleSurface
-                ? "none"
-                : "0 1px 2px rgba(30,10,18,.04), 0 18px 40px -28px rgba(30,10,18,.18)",
+              // One white card for the learner app AND the console — the design
+              // draws the console's page as a panel beside the rail, not as a
+              // full-bleed cream ground. Set here rather than in CSS so it
+              // doesn't depend on `:has()` reaching a descendant.
+              background: fullBleed ? "#F4F3EF" : "#fff",
+              borderRadius: fullBleed ? 0 : 14,
+              border: fullBleed ? "none" : "1px solid #e6e4dc",
+              boxShadow: fullBleed ? "none" : "0 4px 14px -10px rgba(22,35,43,.25)",
             }}
           >
             {quotaBar}
