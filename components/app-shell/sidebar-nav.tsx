@@ -795,7 +795,12 @@ export function SidebarNav({
                   ...itemBase,
                   justifyContent: "space-between",
                   width: "100%",
-                  background: "transparent",
+                  /* ⚠️ NO `background` HERE, not even "transparent". A <button>
+                     needs its UA background cleared, and the obvious way to do
+                     that is inline — which beats `.lp-sb-item:hover` in
+                     globals.css whatever its specificity, so the row silently
+                     loses its hover. The reset lives in `.lp-sb-grouprow`
+                     instead, beside the hover it must not cancel. */
                   cursor: "pointer",
                   textAlign: "left",
                   // A shut group holding the current page keeps the ink, so the

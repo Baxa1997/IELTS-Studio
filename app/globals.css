@@ -887,6 +887,11 @@
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
+  /* THE UA BUTTON RESET LIVES HERE, NOT INLINE. Setting it inline — even to
+     "transparent" — beats `.lp-sb-item:hover` and silently removes the row's
+     hover, which is exactly how these rows ended up as the only ones in the
+     rail that did not light up under the pointer. */
+  background: none;
 }
 /* The flyout's heading exists at every rail width but only SHOWS at 72px, where
    the panel stops being an indented list under a labelled row and becomes a card
@@ -2296,7 +2301,12 @@
     border-color 0.15s ease;
 }
 .lp-sb-item:hover {
-  background: rgba(28, 25, 15, 0.055);
+  /* The reference's hover: a soft warm grey pill filling the whole row, not the
+     near-invisible 5.5% wash this was. A SOLID value rather than an alpha,
+     because the rail is a known white and an alpha that reads correctly there
+     goes muddy the moment anything sits behind it — the flyout card and the
+     account menu both reuse this. */
+  background: #f0eeea;
 }
 /* The active row already carries a white fill inline, and an inline background
    beats this rule — so hovering the current item correctly does nothing. */
@@ -2313,15 +2323,20 @@
   background: transparent;
 }
 .lp-sb-profile-btn:hover {
-  background: rgba(28, 25, 15, 0.055);
+  background: #f0eeea;
 }
 /* Account-menu rows — a warm grey wash on the white menu card. It was a soft red
    tuned for a dark menu; on white that reads as an error state on every row. */
 .lp-menu-item {
   transition: background 0.15s ease;
+  /* Same reset, same reason as `.lp-sb-grouprow` — Sign out is a <button> and
+     its UA background has to go. ONE rule for this selector: I had just added a
+     second one right below and two rules for one selector is how a value gets
+     changed in one place and contradicted in the other. */
+  background: none;
 }
 .lp-menu-item:hover {
-  background: #f4f2ec;
+  background: #f0eeea;
 }
 /* Sign out is the one destructive row, so it alone keeps a red wash. */
 .lp-menu-item--danger:hover {

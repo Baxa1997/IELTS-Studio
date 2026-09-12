@@ -819,7 +819,10 @@ function ProfileMenu({
                 fontSize: 14,
                 fontWeight: 500,
                 color: "#b3261e",
-                background: "transparent",
+                // ⚠️ AND STILL NO INLINE BACKGROUND — see the note above. I
+                // added `background: "transparent"` here while rewriting this
+                // menu and it turned the comment into a lie: the row lost its
+                // red hover wash. The <button> reset lives in `.lp-menu-item`.
                 cursor: "pointer",
               }}
             >

@@ -282,3 +282,72 @@ describe("class lists survive the formatter", () => {
     expect(nav.slice(at, at + 240)).toContain('.join(" ")');
   });
 });
+
+/**
+ * THE INLINE-BACKGROUND TRAP, guarded because it has now bitten three times.
+ *
+ * Every row in the rail and in the account menu gets its hover from a
+ * stylesheet rule — `.lp-sb-item:hover`, `.lp-menu-item:hover`. An inline
+ * `background` on the element beats that rule whatever its specificity, and
+ * "transparent" beats it just as thoroughly as a colour does. The row then looks
+ * completely correct at rest and simply never lights up under the pointer.
+ *
+ * It is an easy thing to write, because a <button> really does need its user-
+ * agent background cleared — and clearing it inline is the obvious move. The
+ * reset belongs in the stylesheet, next to the hover it must not cancel.
+ *
+ * globals.css has carried a note about this for a long time ("Items must NOT set
+ * an inline background when resting"). The note did not stop me writing it on
+ * the group rows, or on Sign out directly beneath a comment saying not to.
+ */
+describe("rows keep the hover the stylesheet gives them", () => {
+  const shell = readFileSync(fileURLToPath(new URL("./shell.tsx", import.meta.url)), "utf8");
+
+  /* ⚠️ COMMENTS STRIPPED FIRST. This test failed on its own first run by
+     matching the words `background: "transparent"` inside the comment warning
+     against writing them — the same "a naive search finds its own obituary"
+     trap brand-row.test.ts and collapsed-rail.test.ts both already record, now
+     in a .tsx rather than a stylesheet. */
+  const code = (source: string) =>
+    source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
+  /** Every inline `background: "transparent"` whose element also carries a class
+   *  whose hover lives in CSS. */
+  function conflicts(raw: string): string[] {
+    const source = code(raw);
+    const found: string[] = [];
+    const needle = 'background: "transparent"';
+    for (let at = source.indexOf(needle); at !== -1; at = source.indexOf(needle, at + 1)) {
+      // The element's own JSX, roughly: back to the opening tag, forward a little.
+      const from = source.lastIndexOf("<", at);
+      const chunk = source.slice(Math.max(0, from), at);
+      if (chunk.includes("lp-sb-item") || chunk.includes("lp-menu-item")) {
+        found.push(source.slice(Math.max(0, at - 160), at + 40));
+      }
+    }
+    return found;
+  }
+
+  it("sets no inline background on anything that hovers from CSS", () => {
+    expect(conflicts(nav), "sidebar-nav.tsx").toEqual([]);
+    expect(conflicts(shell), "shell.tsx").toEqual([]);
+  });
+
+  it("puts the <button> reset in the stylesheet instead", () => {
+    // Where the inline value used to be. Both of these are buttons and both need
+    // the UA background gone.
+    expect(declaration(ruleBody(".lp-sb-grouprow"), "background")).toBe("none");
+    expect(declaration(ruleBody(".lp-menu-item"), "background")).toBe("none");
+  });
+
+  it("fills the whole row on hover, not a near-invisible wash", () => {
+    // The reference is a soft warm grey pill. 5.5% black was not visible.
+    for (const selector of [
+      ".lp-sb-item:hover",
+      ".lp-menu-item:hover",
+      ".lp-sb-profile-btn:hover",
+    ]) {
+      expect(declaration(ruleBody(selector), "background"), selector).toBe("#f0eeea");
+    }
+  });
+});
