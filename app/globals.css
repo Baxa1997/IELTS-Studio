@@ -327,15 +327,109 @@
   outline-offset: 2px;
 }
 
-/* Lives on the dark sidebar rail — white-based so it reads on the dark surface. */
+/* Lives on the sidebar rail. DARK-based since the rail turned white — the old
+   white-on-white spinner was a click that produced no feedback at all. */
 .lp-nav-spin {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
+  border: 2px solid rgba(22, 35, 43, 0.18);
+  border-top-color: #4b5359;
   animation: lp-spin 0.6s linear infinite;
   flex: none;
+}
+
+/* ── collapsed rail (design artboard 3B) ────────────────────────────────────
+   The trays survive the collapse — they are what stops ten icons reading as one
+   undifferentiated column — but they centre, and each chip grows from the 26px
+   it is in a labelled row to a 36px standalone tile.
+
+   EVERY RULE HERE NEEDS `!important`, and that is not laziness. The chip's size
+   and the active row's fill, border and shadow are all INLINE styles set in
+   sidebar-nav.tsx, and an inline style beats an external stylesheet whatever
+   its specificity. Without it the rail would collapse to 72px with 26px chips
+   still left-aligned inside it. */
+@media (min-width: 768px) {
+  .lp-shell-sidebar--collapsed .lp-sb-section {
+    align-items: center;
+    padding: 6px !important;
+    gap: 4px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-chip {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-chip svg {
+    width: 17px;
+    height: 17px;
+  }
+  /* The row stops being a row: no padding, no border, no white tile. The tile IS
+     the chip now, and the current page is the one solid-filled chip.
+
+     ⚠️ THIS IS THE RULE THAT CENTRES THE GLYPH, and it does it differently from
+     the rule it replaces. The old one zeroed four things by hand
+     (justify-content, padding-left, padding-right, gap) because the link was a
+     flex row of two in-flow children and a gap beside a zero-WIDTH item is still
+     a gap. Now `.lp-sb-trail` is taken out of flow entirely (below), so the link
+     has ONE in-flow child, shrinks to the chip's 36px, and is centred by the
+     tray's own `align-items: center`. `justify-content` and the link's gap have
+     nothing left to act on.
+
+     `padding` shorthand, not the two longhands — with the trail out of flow
+     there is no asymmetry left to correct. `!important` throughout because every
+     one of these is set inline by `itemBase` for the expanded layout, and an
+     inline style beats an external rule. */
+  .lp-shell-sidebar--collapsed .lp-sb-link {
+    position: relative;
+    padding: 0 !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip {
+    background: #3b36c9 !important;
+    color: #fff !important;
+  }
+  /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
+     dot on the corner of the chip, ringed in the tray's own grey so it reads as
+     sitting on top of the tile rather than punched out of it. */
+  .lp-shell-sidebar--collapsed .lp-sb-badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #f6f6f3;
+  }
+  /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
+     shared text-collapse rule already gives it `max-width: 0`, and that is NOT
+     enough on its own: a zero-width flex item still has a gap beside it. */
+  .lp-shell-sidebar--collapsed .lp-sb-trail {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  /* The brand row centres and loses the name; the toggle sits under the mark. */
+  .lp-shell-sidebar--collapsed .lp-sb-brandrow {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-brandtext {
+    display: none;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-collapse {
+    margin-left: 0 !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-footer {
+    align-items: center;
+  }
 }
 
 /* ── "AI is ready" cue ────────────────────────────────────────────────────────
@@ -738,7 +832,10 @@
   top: 0;
   bottom: 0;
   left: 0;
-  width: 272px;
+  /* 250px, from the design. The old 272 was sized for a row that put a wordmark
+     and a role pill side by side; the brand row stacks now, so the extra 22px
+     was buying nothing. */
+  width: 250px;
   z-index: 40;
   transform: translateX(-100%);
   transition: transform 0.2s ease;
@@ -801,12 +898,25 @@
 
 @media (min-width: 768px) {
   .lp-shell-sidebar {
-    /* `relative` (not `static`) so the collapse toggle, absolutely positioned at
-       right:-15px, anchors to the rail's edge. On mobile the base rule keeps it
-       `fixed` so the off-canvas drawer works. */
+    /* `relative` (not `static`) rather than participating in the page's
+       positioning by accident. On mobile the base rule keeps it `fixed` so the
+       off-canvas drawer works.
+
+       (It used to say "so the collapse toggle, absolutely positioned at
+       right:-15px, anchors to the rail's edge". That toggle is in the brand row
+       now — see shell.tsx — so this no longer has a dependant, but a positioned
+       rail is still what the collapsed badge dots resolve against.) */
     position: relative;
     transform: none;
     z-index: auto;
+    /* THE MARGIN THAT MAKES IT A FLOATING CARD, and it lives HERE rather than in
+       a second `@media (min-width: 768px)` block of its own. Two media queries
+       styling one element is how a rule gets changed in one place and silently
+       contradicted in the other — and it broke a test that reasonably assumed
+       the first such block it found was this one. Desktop only: on mobile this
+       element is a full-height fixed drawer, where a margin would leave a strip
+       of canvas down the side of a panel meant to cover the screen. */
+    margin: 10px 0 10px 10px;
     transition:
       width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
       padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
@@ -870,39 +980,36 @@
   .lp-shell-sidebar--collapsed .lp-sb-scroll {
     overflow: visible !important;
   }
-  /* A faint divider stands in for each hidden section title. */
+  /* NO DIVIDER NEEDED ANY MORE. This drew a faint white line to stand in for a
+     section title the collapsed rail had hidden — on a flat burgundy panel,
+     where the groups were otherwise indistinguishable. Each section is now its
+     own grey tray, which separates them whether the titles are showing or not,
+     and a white line on a white rail would be invisible anyway. Its old
+     `padding-top` also fought the tray's own padding. */
   .lp-shell-sidebar--collapsed .lp-sb-section--titled {
-    border-top-color: rgba(255, 255, 255, 0.09);
-    padding-top: 12px;
-    margin-top: 4px;
+    border-top-color: transparent;
   }
-  /* Collapsed nav: hover a glyph → a label tooltip to its right (the only place the
-     name shows once labels are hidden). */
-  .lp-shell-sidebar--collapsed .lp-sb-link {
-    position: relative;
-    /* CENTRE THE GLYPH, PROPERLY.
-       It used to be left-anchored and the rail padding was expected to
-       "≈centre" it. It does not, and the arithmetic says by how much: the
-       collapsed rail is 72px with 12px of padding, so the link box is 48px;
-       the link carries 11px of its own padding and the icon is 18px, which
-       puts the glyph's centre at 20px against a box centre of 24px. Every
-       icon in the rail sat 4px left, which is exactly enough to look like a
-       mistake without looking like anything in particular.
-       `!important` because the link sets `justify-content: space-between`
-       and its padding inline (for the label/trail split when expanded), and
-       an inline style beats an external rule. */
-    justify-content: center !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    /* The LINK'S OWN gap, which is the one that was still doing the damage.
-       The link is a flex row of TWO children — the icon's wrapper and the
-       trailing count/badge strip — and `itemBase` puts 11px between them. The
-       trail collapses to zero WIDTH but the gap beside it does not collapse
-       with it, so `justify-content: center` was centring an 18 + 11 + 0 = 29px
-       group and leaving the glyph 5.5px left of centre. Zero here and the group
-       is the glyph alone. */
-    gap: 0 !important;
-  }
+  /* ⚠️ THE CENTRING RULE FOR .lp-sb-link IS EARLIER IN THIS FILE, not here.
+     There was a second `.lp-shell-sidebar--collapsed .lp-sb-link` block at this
+     point, and two rules for one selector in a file this size is how a value
+     gets changed in one place and silently contradicted in the other. It has
+     been folded into the collapsed-rail block above; this note is what is left
+     of it, because the arithmetic is still the reason that guard exists:
+
+       the collapsed rail is 72px with 12px of padding, so the link box is 48px.
+       The link used to carry 11px of its own padding either side and an 11px
+       flex gap beside a zero-WIDTH trailing strip — a gap beside a zero-width
+       item is still a gap — so `justify-content: center` was centring a 29px
+       group and leaving the glyph 5.5px left of a 24px centre. "Exactly enough
+       to look like a mistake without looking like anything in particular."
+
+     The rail is rebuilt to the Sidebar design now and solves it differently:
+     the trailing strip leaves the flow entirely, so the link shrinks to its
+     36px chip and the tray centres it. If that ever regresses, this is the
+     failure to look for — collapsed-rail.test.ts asserts each step of it.
+
+     Collapsed nav: hover a glyph → a label tooltip to its right (the only place
+     the name shows once labels are hidden). */
   .lp-shell-sidebar--collapsed .lp-sb-link:hover::after {
     content: attr(data-label);
     position: absolute;
@@ -1798,17 +1905,20 @@
    edge-to-edge (like the section lines in the reference design). The brand row
    keeps an extra 2px inset so the logo stays optically aligned with the nav. */
 .lp-sb-brandrow {
-  margin: 0 -16px;
-  padding: 0 18px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 0 -12px;
+  padding: 4px 16px 10px;
+  border-bottom: 1px solid #f0eee8;
   transition:
     margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
 }
+/* NO RULE ABOVE THE FOOTER ANY MORE. It carried a hairline to separate itself
+   from the nav on a flat burgundy panel. The footer is now a solid dark card on
+   a white rail, which is about as separated as a thing can be — a line above it
+   just read as a stray tick. */
 .lp-sb-footer {
-  margin: 14px -16px 0;
-  padding: 12px 16px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 10px 0 0;
+  padding: 0;
   transition:
     margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
@@ -1837,9 +1947,10 @@
   }
 }
 
-/* App-shell sidebar nav — items sit on the dark rail, so hover is a faint light
-   wash. (Items must NOT set an inline background when resting: inline styles —
-   even "transparent" — beat this rule.) */
+/* App-shell sidebar nav — items sit on a WHITE rail inside a grey tray, so hover
+   is a faint DARK wash. It was `rgba(255,255,255,.06)` when the rail was
+   burgundy; on the tray that is invisible. (Items must NOT set an inline
+   background when resting: inline styles — even "transparent" — beat this rule.) */
 .lp-sb-item {
   transition:
     background 0.15s ease,
@@ -1847,15 +1958,19 @@
     border-color 0.15s ease;
 }
 .lp-sb-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(22, 35, 43, 0.05);
 }
-/* Profile card: resting/hover backgrounds live here (not inline) for the same
-   reason; the open state is set inline and wins over both. */
+/* The active row already carries a white fill inline, and an inline background
+   beats this rule — so hovering the current item correctly does nothing. */
+
+/* Profile card: this is the ONE part of the rail that is still dark, so its
+   washes stay light-on-dark. The resting fill lives here (not inline) so the
+   hover works; the open state is set inline and wins over both. */
 .lp-sb-profile-btn {
-  background: rgba(255, 255, 255, 0.05);
+  background: #0f1a21;
 }
 .lp-sb-profile-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: #17242c;
 }
 /* Profile-menu rows (Sign out) — soft red wash on hover, tuned for the dark menu. */
 .lp-menu-item {

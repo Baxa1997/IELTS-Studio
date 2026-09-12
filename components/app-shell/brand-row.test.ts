@@ -54,10 +54,23 @@ describe("a long centre name truncates instead of painting over the role chip", 
 });
 
 describe("the role chip gets out of the way", () => {
-  it("stacks under a centre's name and stays beside our own wordmark", () => {
-    // One line leaves ~99px for the name — nine characters. The chip has to
-    // move for the truncation above to have anything worth showing.
-    expect(shell).toContain('flexDirection: centreName ? "column" : "row"');
+  it("always stacks under the name, for a centre and for us alike", () => {
+    /* IT USED TO STACK ONLY FOR A CENTRE. The row was
+       `flexDirection: centreName ? "column" : "row"` — stacked under a long
+       centre name, side by side with our own fixed-width wordmark. The rail is
+       250px now (was 272) and the brand row was rebuilt to the design as a
+       square mark beside a name with the role beneath it, so there is one
+       layout instead of two conditional ones.
+
+       The guarantee is unchanged and is what this asserts: the role never
+       shares a line with the name. One line leaves ~99px for the name — nine
+       characters — which truncates every real centre to nonsense and leaves the
+       ellipsis work above with nothing worth showing. */
+    const at = shell.indexOf('className="lp-sb-brandtext"');
+    expect(at, "the brand row should carry a stacked name/role block").toBeGreaterThan(-1);
+    const block = shell.slice(at, at + 1200);
+    expect(block).toMatch(/flexDirection: "column"/);
+    expect(shell).not.toContain('flexDirection: centreName ? "column" : "row"');
   });
 
   it("is removed from flow in the collapsed rail, not merely zero-width", () => {

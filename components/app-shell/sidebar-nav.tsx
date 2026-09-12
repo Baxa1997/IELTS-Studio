@@ -43,25 +43,114 @@ import {
  * rail to an icon-only strip purely in CSS (no prop drilling of a collapsed flag).
  */
 
-/* On-rail palette — one solid deep-teal surface (see shell.tsx), so everything
-   here is light-on-dark and the content surface stays visually separate. */
-const RAIL_TEXT = "#E4EFEE"; // resting item text — near-white, calm
-const RAIL_MUTED = "#7F9B9D"; // section titles / disabled
-const RAIL_ACTIVE_BG = "rgba(255,255,255,.07)"; // active tile — a calm lighter panel
-const RAIL_ACTIVE_LINE = "rgba(255,255,255,.09)";
-/* The two accent rows. These two are the rail's only colour, and they are far
-   enough apart to be told apart at 18px.
+/* ── the rail palette ────────────────────────────────────────────────────────
+   THE RAIL IS WHITE NOW, and every value here inverted with it. It was a solid
+   burgundy panel with light-on-dark text; the design it was rebuilt to (the
+   "Sidebar final" canvas) makes it a white floating card with grey trays, so
+   what used to be a translucent white wash is now a translucent dark one.
 
-   `assistant` was violet, justified at the time as "the colour the product
-   reaches for when something is thinking (the listening runner)". That runner is
-   burgundy now, so the justification is gone — and violet against a burgundy rail
-   goes muddy, being a near neighbour of it. Cool blue is the one hue on the rail
-   that cannot be mistaken for the brand. Gold is unchanged: it was picked up from
-   the logomark, it still reads on burgundy, and it stays the "make something" row. */
-const ACCENTS = {
-  assistant: { fg: "#93B4E8", bg: "rgba(147,180,232,.10)", line: "rgba(147,180,232,.26)" },
-  generate: { fg: "#E5A85C", bg: "rgba(229,168,92,.09)", line: "rgba(229,168,92,.24)" },
+   Nothing here may be reused on a dark surface. The one part of the rail that
+   is still dark is the profile card at the foot of it, and its colours live in
+   shell.tsx beside the markup that draws it. */
+const RAIL_TEXT = "#4b5359"; // resting item text
+const RAIL_MUTED = "#9aa0a6"; // section titles / counts / disabled
+const RAIL_ACTIVE_BG = "#fff"; // active tile — a raised white card in the tray
+const RAIL_ACTIVE_LINE = "#e6e4dc";
+const RAIL_ACTIVE_INK = "#16232b";
+/** The grey group box each section sits in. Its padding is what turns a flat
+ *  list into "trays", which is the design's whole organising idea. */
+const TRAY: React.CSSProperties = {
+  background: "#f6f6f3",
+  borderRadius: 12,
+  padding: 6,
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+};
+
+/**
+ * The icon chips.
+ *
+ * EVERY ROW IS COLOURED NOW, which is the biggest single change from the old
+ * rail. That rail had exactly two accent rows and the rest were monochrome, on
+ * the argument that "two animated/coloured items is a busy sidebar in which
+ * neither one wins". That argument was about a DARK rail, where colour is
+ * scarce and therefore loud. On the white rail the chip is a small tinted
+ * square behind a 15px glyph, and the colour is doing a different job: it is a
+ * landmark, so the eye finds "Marking" by its red rather than by reading four
+ * labels. Rows are told apart by hue; the CURRENT row is still told by the
+ * white card under it.
+ */
+const CHIP = {
+  violet: { bg: "#efeafb", fg: "#6d3fc4" },
+  indigo: { bg: "#e7eafb", fg: "#3b36c9" },
+  green: { bg: "#e6f1ea", fg: "#0b6b40" },
+  forest: { bg: "#e6f1ea", fg: "#14714a" },
+  blue: { bg: "#e3f0f6", fg: "#1d6f92" },
+  rose: { bg: "#fbe9ef", fg: "#a83a5b" },
+  teal: { bg: "#e4f2f0", fg: "#0f7168" },
+  amber: { bg: "#fdf0dc", fg: "#b9770e" },
+  periwinkle: { bg: "#eae7fa", fg: "#5b4bd1" },
+  red: { bg: "#fbe6e4", fg: "#b3261e" },
+  neutral: { bg: "#f0efea", fg: "#6b7178" },
 } as const;
+
+type ChipTone = keyof typeof CHIP;
+
+/**
+ * Which chip each destination wears, keyed by href.
+ *
+ * BY HREF RATHER THAN BY ICON, because the icons are not unique: `SquarePen`
+ * draws both Writing and Marking, and the design gives those two different
+ * colours on purpose (one is something you make, the other is something owed).
+ * Keying by the icon component would have silently tied them together.
+ *
+ * The eleven entries the canvas actually specifies are copied from it; the rest
+ * of the product's routes — which the canvas never drew — are assigned by the
+ * same logic it uses, so a skill keeps one hue wherever it appears (Reading is
+ * always forest, Listening always blue) and money is always teal. Anything
+ * unlisted falls back to `neutral` rather than going uncoloured, so a new route
+ * looks deliberate on the day it is added.
+ */
+const CHIP_BY_HREF: Record<string, ChipTone> = {
+  // — from the canvas —
+  "/console/assistant": "violet",
+  "/console": "indigo",
+  "/console/groups": "green",
+  "/console/students": "blue",
+  "/console/calendar": "rose",
+  "/console/finance/payroll": "teal",
+  "/console/practice-ai": "amber",
+  "/write": "periwinkle",
+  "/read": "forest",
+  "/listen": "blue",
+  "/console/practice": "indigo",
+  "/console/marking": "red",
+  "/console/reports": "teal",
+  // — the rest of the product, by the same logic —
+  "/dashboard": "indigo",
+  "/plan": "rose",
+  "/activities": "teal",
+  "/referrals": "amber",
+  "/assignments": "green",
+  "/speak": "violet",
+  "/cefr": "blue",
+  "/vocabulary": "periwinkle",
+  "/certificates": "amber",
+  "/console/teachers": "blue",
+  "/console/finance": "teal",
+  "/console/finance/invoices": "teal",
+  "/console/payments": "green",
+  "/console/practices": "indigo",
+  // platform console
+  "/admin": "indigo",
+  "/admin/centers": "green",
+  "/admin/users": "blue",
+  "/admin/plans": "teal",
+  "/admin/referrals": "amber",
+  "/admin/moderation": "red",
+  "/admin/health": "forest",
+};
 
 type Item = {
   label: string;
@@ -437,6 +526,18 @@ function sectionsFor(
   ];
 }
 
+/** The tinted square behind every glyph. Its size is overridden in globals.css
+ *  when the rail collapses (26px in the list, 36px as a standalone tile). */
+const chipStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 26,
+  height: 26,
+  borderRadius: 8,
+  flex: "none",
+};
+
 /**
  * Instant click feedback. Rendered INSIDE the <Link>, so it reads that link's
  * navigation state: the moment it's clicked, `pending` flips true and a spinner
@@ -447,17 +548,20 @@ function PendingDot() {
   return pending ? <span className="lp-nav-spin" aria-hidden /> : null;
 }
 
+/* Padding rather than a fixed height: the row is now as tall as its 26px chip
+   plus 7px of air either side, so the chip is what sets the rhythm. A height
+   here would fight it the moment the chip resizes in the collapsed rail. */
 const itemBase: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  gap: 11,
-  height: 36,
-  padding: "0 11px",
+  gap: 10,
+  padding: "7px 8px",
   borderRadius: 9,
   fontFamily: SANS,
-  fontSize: 14,
+  fontSize: 14.5,
   textDecoration: "none",
   whiteSpace: "nowrap",
+  border: "1px solid transparent",
 };
 
 /**
@@ -518,11 +622,12 @@ export function SidebarNav({
   const activeHref = resolveActiveHref(all, pathname);
 
   return (
-    <nav style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+    <nav style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {sections.map((section, si) => (
         <div
           key={section.title ?? si}
           className={section.title ? "lp-sb-section lp-sb-section--titled" : "lp-sb-section"}
+          style={TRAY}
         >
           {section.title ? (
             <div
@@ -530,20 +635,21 @@ export function SidebarNav({
               style={{
                 fontFamily: SANS,
                 fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: ".09em",
+                fontSize: 10.5,
+                letterSpacing: ".14em",
                 textTransform: "uppercase",
                 color: RAIL_MUTED,
-                padding: "0 11px",
-                margin: "0 0 5px",
+                padding: "6px 8px 4px",
+                margin: 0,
               }}
             >
               {section.title}
             </div>
           ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {section.items.map(
               ({ label, href, icon: Icon, soon, badge, badgeTone, countKey, accent }) => {
+                const chip = CHIP[CHIP_BY_HREF[href] ?? "neutral"];
                 if (soon) {
                   return (
                     <span
@@ -560,8 +666,10 @@ export function SidebarNav({
                         cursor: "default",
                       }}
                     >
-                      <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
-                        <Icon size={18} strokeWidth={1.8} />
+                      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span className="lp-sb-chip" style={{ ...chipStyle, opacity: 0.5 }}>
+                          <Icon size={15} strokeWidth={1.75} />
+                        </span>
                         <span className="lp-sb-label">{label}</span>
                       </span>
                       <span
@@ -571,8 +679,8 @@ export function SidebarNav({
                           fontWeight: 700,
                           fontSize: 10,
                           letterSpacing: ".05em",
-                          color: "#B08E9B",
-                          background: "rgba(255,255,255,.07)",
+                          color: RAIL_MUTED,
+                          background: "#eceae3",
                           padding: "2px 7px",
                           borderRadius: 6,
                         }}
@@ -583,10 +691,14 @@ export function SidebarNav({
                   );
                 }
                 const active = href === activeHref;
-                // Assistant and Practice AI are product actions with their own
-                // accent. They must not look like a second dashboard default.
-                const selected = active && !accent;
-                const accentTone = accent ? ACCENTS[accent] : null;
+                /* EVERY active row gets the raised white tile now, accent rows
+                   included. The old rule excluded them so they would not "look
+                   like a second dashboard default" — but that was when colour
+                   WAS the selection signal, so a coloured row that was also
+                   selected said the same thing twice. Now the chip says what a
+                   row is and the white tile says where you are; they are two
+                   different statements and can safely both be true. */
+                const selected = active;
                 return (
                   <Link
                     key={href}
@@ -595,31 +707,27 @@ export function SidebarNav({
                     data-label={label}
                     aria-label={label}
                     aria-current={selected ? "page" : undefined}
-                    className={`lp-sb-link lp-sb-item${accent === "assistant" ? "lp-sb-assistant" : ""}${active && accent ? "lp-sb-accent-active" : ""}`}
+                    className={`lp-sb-link lp-sb-item${selected ? " lp-sb-link--active" : ""}${accent === "assistant" ? " lp-sb-assistant" : ""}${active && accent ? " lp-sb-accent-active" : ""}`}
                     style={{
                       ...itemBase,
                       justifyContent: "space-between",
-                      fontWeight: selected || accent ? 600 : 400,
-                      color: selected ? "#fff" : (accentTone?.fg ?? RAIL_TEXT),
-                      // Accent destinations are color-coded only. The single
-                      // selected tile belongs to the current ordinary page.
+                      fontWeight: selected ? 600 : 400,
+                      color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
                       background: selected ? RAIL_ACTIVE_BG : undefined,
                       border: `1px solid ${selected ? RAIL_ACTIVE_LINE : "transparent"}`,
+                      boxShadow: selected ? "0 1px 2px rgba(22,35,43,.06)" : undefined,
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span
                         /* Only the Assistant breathes, and only while you are
                            not on it: once you are ON the page, an icon nudging
                            for attention is asking you to go somewhere you
                            already are. */
-                        className={accent === "assistant" ? "lp-sb-ai" : undefined}
-                        style={{
-                          display: "inline-flex",
-                          color: accentTone?.fg,
-                        }}
+                        className={`lp-sb-chip${accent === "assistant" ? " lp-sb-ai" : ""}`}
+                        style={{ ...chipStyle, background: chip.bg, color: chip.fg }}
                       >
-                        <Icon size={18} strokeWidth={1.8} />
+                        <Icon size={15} strokeWidth={1.75} />
                       </span>
                       <span className="lp-sb-label">{label}</span>
                     </span>
@@ -633,7 +741,7 @@ export function SidebarNav({
                         <span
                           style={{
                             fontFamily: SANS,
-                            fontSize: 11,
+                            fontSize: 12,
                             color: RAIL_MUTED,
                             fontVariantNumeric: "tabular-nums",
                           }}
@@ -643,24 +751,17 @@ export function SidebarNav({
                       ) : null}
                       {badge ? (
                         <span
+                          className="lp-sb-badge"
                           style={{
                             fontFamily: SANS,
-                            fontWeight: 700,
-                            fontSize: 10,
-                            letterSpacing: ".05em",
-                            color: selected
-                              ? "rgba(255,255,255,.85)"
-                              : badgeTone === "alert"
-                                ? "#FFC069"
-                                : "#7CE2AC",
-                            background: selected
-                              ? "rgba(255,255,255,.16)"
-                              : badgeTone === "alert"
-                                ? "rgba(255,176,74,.15)"
-                                : "rgba(124,226,172,.14)",
-                            padding: "2px 7px",
-                            borderRadius: 6,
+                            fontWeight: 600,
+                            fontSize: 11.5,
+                            color: "#fff",
+                            background: badgeTone === "alert" ? "#b3261e" : "#0b6b40",
+                            padding: "1px 7px",
+                            borderRadius: 20,
                             flexShrink: 0,
+                            fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {badge}

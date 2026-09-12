@@ -54,35 +54,57 @@ describe("collapsed rail: the glyph sits dead centre", () => {
   const link = ruleBody(LINK);
   const inner = ruleBody(INNER);
 
-  it("centres the flex row", () => {
-    // `space-between` inline would push the glyph to the left edge.
-    expect(declaration(link, "justify-content")).toBe("center !important");
+  /* THE MECHANISM CHANGED; THE BUG IT PREVENTS DID NOT.
+     The rail was rebuilt to the "Sidebar final" design: each section is a grey
+     tray and each item's icon is a tinted chip, so the row is centred by taking
+     the trailing strip OUT OF FLOW and letting the link shrink to its chip,
+     rather than by zeroing four separate values on a two-child flex row.
+
+     What is still being guarded is the original failure: an icon sitting a few
+     pixels left of centre, which "is exactly enough to look like a mistake
+     without looking like anything in particular". Every assertion below is one
+     of the things that, if it regressed, would put it back there. */
+
+  it("takes the trailing strip out of flow, so the link shrinks to its chip", () => {
+    // `max-width: 0` alone is NOT enough — a zero-width flex item still has a
+    // gap beside it, which is the trap the previous fix fell into.
+    const trail = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-trail");
+    expect(declaration(trail, "position")).toBe("absolute");
   });
 
-  it("removes the link's horizontal padding", () => {
-    expect(declaration(link, "padding-left")).toBe("0 !important");
-    expect(declaration(link, "padding-right")).toBe("0 !important");
+  it("removes the link's padding", () => {
+    expect(declaration(link, "padding")).toBe("0 !important");
   });
 
-  /** The one the first fix missed. */
-  it("removes the gap between the icon wrapper and the trailing strip", () => {
-    expect(declaration(link, "gap")).toBe("0 !important");
+  it("centres the shrunk link inside its tray", () => {
+    // The tray is the flex column the links sit in; with the link shrunk to the
+    // chip, this is what actually puts the glyph in the middle of the rail.
+    const tray = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-section");
+    expect(declaration(tray, "align-items")).toBe("center");
   });
 
   it("removes the gap between the glyph and its collapsed label", () => {
     expect(declaration(inner, "gap")).toBe("0 !important");
   });
 
-  it("uses !important on every one of them", () => {
-    // All four are set inline by `itemBase` for the EXPANDED layout, and an
-    // inline style beats an external rule. A declaration here without
-    // !important is a silent no-op.
+  it("grows the chip to a standalone tile", () => {
+    // 26px in a labelled row, 36px alone. Set INLINE in sidebar-nav.tsx, so
+    // without !important this is a silent no-op and the rail collapses to 72px
+    // with undersized icons rattling around in it.
+    const chip = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-chip");
+    expect(declaration(chip, "width")).toBe("36px !important");
+    expect(declaration(chip, "height")).toBe("36px !important");
+  });
+
+  it("uses !important wherever it is beating an inline style", () => {
+    // `itemBase` and `chipStyle` set these inline for the EXPANDED layout, and
+    // an inline style beats an external rule whatever its specificity.
+    const chip = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-chip");
     for (const [body, prop] of [
-      [link, "justify-content"],
-      [link, "padding-left"],
-      [link, "padding-right"],
-      [link, "gap"],
+      [link, "padding"],
       [inner, "gap"],
+      [chip, "width"],
+      [chip, "height"],
     ] as const) {
       expect(declaration(body, prop), `${prop} needs !important`).toContain("!important");
     }
@@ -113,64 +135,60 @@ describe("collapsed rail: the box the glyph is centred in", () => {
 /**
  * The way OUT of the collapsed rail.
  *
- * The toggle is anchored to the rail's right EDGE and hangs half over the page —
- * that overhang is the design (a two-tone button straddling the boundary) and it
- * is also what keeps the button clear of the brand as the rail narrows.
+ * ⚠️ THE SOLUTION CHANGED. THE BUG IT PREVENTS IS THE SAME ONE.
  *
- * It had drifted to `right: 10px`, INSIDE the rail. Expanded that merely lost the
- * straddle; collapsed it was fatal. A 30px button at `right: 10px` on a 72px rail
- * occupies x=32..62, and the 36px logomark centred in the 48px content box
- * occupies x=18..54 — so the only control that reopens the rail was drawn
- * underneath the brand, and a rail you cannot reopen is a rail you cannot use.
+ * The toggle used to be absolutely positioned at `right: -15px`, straddling the
+ * rail's edge — a two-tone button half on the dark rail and half on the page,
+ * because no single fill was legible on both grounds. It had once drifted to
+ * `right: 10px`, INSIDE the rail, where at 72px a 30px button (x=32..62) landed
+ * on top of the 36px logomark (x=18..54): the only control that reopens the rail
+ * was drawn underneath the brand, and a rail you cannot reopen is a rail you
+ * cannot use.
  *
- * Anchored to the edge instead, the button sits at x=57..87 and the two never
- * meet — at any rail width, with no collapsed-only rule to keep in sync.
+ * The rail is white now, so the two-ground problem does not exist and the
+ * straddle bought nothing; the design puts the toggle in the brand row, in
+ * normal flow. That removes the overlap by construction rather than by
+ * arithmetic — there is no absolute position left to drift. What these tests now
+ * guard is that it STAYS in flow and that the collapsed row stacks, because
+ * putting it back on top of the mark is still one careless rule away.
  */
-describe("collapsed rail: the toggle straddles the edge, clear of the logomark", () => {
+describe("collapsed rail: the toggle stays clear of the logomark", () => {
   const shell = readFileSync(fileURLToPath(new URL("./shell.tsx", import.meta.url)), "utf8");
 
-  it("anchors the button to the rail's edge, not inside it", () => {
-    // Half of 30px. A positive value here is the regression.
-    expect(shell).toMatch(/right: "-15px"/);
-    expect(shell).not.toMatch(/right: "10px"/);
+  /** The toggle's own JSX block. */
+  const toggle = (() => {
+    const at = shell.indexOf('className="lp-sb-collapse"');
+    expect(at, "the collapse toggle should carry .lp-sb-collapse").toBeGreaterThan(-1);
+    return shell.slice(at, at + 900);
+  })();
+
+  it("is in normal flow, not absolutely positioned over the rail", () => {
+    // The whole point: an in-flow button cannot land on the logomark, whatever
+    // the rail's width. A `position: absolute` here reintroduces the class of
+    // bug that hid the control under the brand.
+    expect(toggle).not.toMatch(/position: "absolute"/);
+    expect(toggle).not.toMatch(/right: "-?\d+px"/);
   });
 
-  it("gives it a positioned rail to anchor to on desktop", () => {
-    // `position: absolute` resolves against the nearest positioned ancestor.
-    // Without this the button escapes to the viewport and lands anywhere.
-    const desktopRail = css.slice(css.indexOf("@media (min-width: 768px)"));
-    expect(desktopRail.slice(0, desktopRail.indexOf("}"))).toMatch(/position:\s*relative/);
+  it("stacks under the mark when the rail collapses, instead of beside it", () => {
+    // At 72px there is no room for a 32px mark and a 28px button on one line.
+    const row = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-brandrow");
+    expect(declaration(row, "flex-direction")).toBe("column");
   });
 
-  it("needs no collapsed-only rule, because the edge moves for it", () => {
-    // A collapsed override would be a second source of truth for the same
-    // position, and the two would drift. The arithmetic below is why none is
-    // needed; if someone adds one, this says to re-check the sum instead.
-    expect(css).not.toMatch(/\.lp-shell-sidebar--collapsed \.lp-sb-collapse\s*\{/);
+  it("neutralises the auto margin that right-aligns it when expanded", () => {
+    // `marginLeft: "auto"` is inline (it pushes the toggle opposite the brand on
+    // one line). In a COLUMN it would shove the button to the right edge of a
+    // 72px rail instead of centring it — and inline beats an external rule, so
+    // this override has to be !important or it silently does nothing.
+    const rule = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-collapse");
+    expect(declaration(rule, "margin-left")).toBe("0 !important");
   });
 
-  it("clears the logomark at 72px — the sum, kept honest", () => {
-    const rail = ruleBody(".lp-shell-sidebar--collapsed");
-    const width = Number(declaration(rail, "width")?.replace("px", ""));
-    const pad = Number(declaration(rail, "padding-left")?.replace(/\D/g, ""));
-    const button = 30;
-    const overhang = 15;
-    const mark = 36;
-
-    // Button: anchored `overhang` past the rail's right edge.
-    const buttonLeft = width - (button - overhang);
-    // Mark: centred in the content box.
-    const markRight = pad + (width - pad * 2 + mark) / 2;
-
-    expect(buttonLeft, "button starts after the mark ends").toBeGreaterThanOrEqual(markRight);
-  });
-
-  it("is dressed for BOTH grounds it sits on", () => {
-    // Half on a dark rail, half on a light page: it can borrow neither, so a
-    // translucent-white fill (what the rail's own items use) is wrong here.
-    const at = shell.indexOf("lp-sb-collapse lp-sb-item");
-    const block = shell.slice(at, at + 1400);
-    expect(block).toMatch(/background: WHITE/);
-    expect(block).not.toMatch(/background: "rgba\(255,255,255/);
+  it("is dressed for the white rail it now sits on", () => {
+    // It borrows the rail's own ground and hairline. A translucent white fill —
+    // correct when half of it lay on a dark rail — is invisible here.
+    expect(toggle).toMatch(/background: WHITE/);
+    expect(toggle).not.toMatch(/background: "rgba\(255,255,255/);
   });
 });

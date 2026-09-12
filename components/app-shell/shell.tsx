@@ -5,13 +5,13 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Bell,
-  ChevronsLeft,
-  ChevronsRight,
   ChevronUp,
   CreditCard,
   LogOut,
   type LucideIcon,
   Megaphone,
+  PanelLeftClose,
+  PanelLeftOpen,
   Send,
   Menu,
   Settings,
@@ -24,26 +24,45 @@ import {
   EngProgressLogo,
   EngProgressMark,
 } from "@/components/brand/engprogress-logo";
-/* The collapse toggle straddles the rail edge, so it is dressed in the PAGE's
-   palette rather than the rail's — hence the shared tokens here. */
-import { BRAND, LINE, WHITE } from "@/lib/theme/tokens";
+/* Only WHITE survives here. BRAND and LINE dressed the collapse toggle back when
+   it straddled the rail's edge and had to be legible against both the dark rail
+   and the light page; the toggle now sits inside the brand row on a white rail,
+   so it takes the rail's own greys instead. */
+import { WHITE } from "@/lib/theme/tokens";
 
 import { SidebarNav } from "./sidebar-nav";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#121317";
-const BORDER = "#3333";
-/** Light app canvas behind the floating content card. The canvas's own paper
- *  (`CANVAS` in app/_landing/design.ts), so the shell stands on the same ground
- *  as the marketing site and sign-in. */
-const CANVAS = "#F6F7F9";
-/** One solid burgundy rail, matching the primary brand panel. */
-const RAIL_BG = "rgb(60 2 25)";
-const RAIL_LINE = "rgba(255,255,255,.07)"; // hairlines/borders on the rail
-const RAIL_FAINT = "#8EAAAB"; // secondary on-rail text (email, chevrons)
-/* The role chip uses the positive green accent so it stays legible against the
-   burgundy rail without looking like another selected navigation item. */
-const ACCENT = "#7CE2AC";
+const INK = "#16232b";
+const BORDER = "#e6e4dc";
+/** The ground both cards float on. Warmer than the old #F6F7F9 — the design's
+ *  own paper, and the thing that makes two white cards read as cards rather
+ *  than as one continuous surface with a line drawn down it. */
+const CANVAS = "#f1efe9";
+/* ── the rail is a white card now ─────────────────────────────────────────────
+   It was a solid burgundy panel, and every colour that touched it was written
+   light-on-dark. That inverted wholesale: the rail is the design's white card,
+   its dividers are warm grey, and the only dark thing left in it is the profile
+   card at the foot (RAIL_DARK below), which keeps its light-on-dark values.
+
+   ⚠️ RAIL_FAINT AND RAIL_LINE NO LONGER MEAN THE SAME THING AS EACH OTHER.
+   RAIL_LINE is a divider ON the white rail. RAIL_FAINT is secondary text INSIDE
+   the dark profile card, so it stays a light value. Swapping one for the other
+   is invisible in review and unreadable on screen. */
+const RAIL_BG = "#fff";
+const RAIL_BORDER = "#e6e4dc";
+const RAIL_LINE = "#f0eee8"; // dividers on the white rail
+const RAIL_SHADOW = "0 4px 14px -10px rgba(22,35,43,.25)";
+/** The profile card at the foot of the rail — the one dark surface left. */
+const RAIL_DARK = "#16232b";
+const RAIL_DARKER = "#0f1a21"; // the user strip inside it
+const RAIL_DARK_LINE = "#2b3a44";
+const RAIL_FAINT = "#8ea3af"; // secondary text INSIDE the dark card
+const RAIL_DARK_TEXT = "#e6e9ea";
+/** The role line under the centre/product name. Plain green text, not a pill:
+ *  on a white rail a filled chip beside the name competed with the nav's own
+ *  active tile for "this is the highlighted thing". */
+const ACCENT = "#0b6b40";
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -303,7 +322,15 @@ export function AppShell({
             background: RAIL_BG,
             display: "flex",
             flexDirection: "column",
-            padding: "18px 16px",
+            padding: 12,
+            /* The card look is inline; the MARGIN that lifts it off the edges is
+               in globals.css behind the desktop media query. On mobile this same
+               element is a full-height `position: fixed` drawer, and a margin
+               there would leave a strip of canvas down the side of a panel that
+               is supposed to cover the screen. */
+            border: `1px solid ${RAIL_BORDER}`,
+            borderRadius: 14,
+            boxShadow: RAIL_SHADOW,
             // NOTE: positioning is owned by CSS (.lp-shell-sidebar), not inline —
             // an inline `position` would beat the class and stop the mobile drawer
             // from going `position: fixed` (it'd stay in-flow and crush <main>).
@@ -330,94 +357,85 @@ export function AppShell({
               style={{
                 textDecoration: "none",
                 display: "flex",
-                /* ⚠️ A CENTRE NAME AND A ROLE CHIP DO NOT FIT ON ONE LINE.
-                   The rail is 272px; take its padding, the collapse toggle and
-                   the chip out and about 99px is left for the name — nine
-                   characters, which truncates every real centre to nonsense
-                   ("Laqod Mar…"). Stacked, the name gets the row: "Laqod
-                   Market LLC" fits whole and only a genuinely long one is cut.
-                   Our own wordmark is a fixed width beside a short role, so it
-                   keeps the single line of the reference design. */
-                flexDirection: centreName ? "column" : "row",
-                alignItems: centreName ? "flex-start" : "center",
-                gap: centreName ? 5 : 9,
+                alignItems: "center",
+                gap: 10,
                 minWidth: 0,
               }}
             >
-              <Logo tone="dark" centre={centreName} />
-              {/* Role chip: beside our wordmark, beneath a centre's name.
-                  lp-sb-trail makes it collapse away with the rest of the rail
-                  text; lp-sb-rolechip additionally takes it out of flow when
-                  stacked, where a zeroed max-width still leaves a row of
-                  height under the logomark. */}
+              <Logo centre={centreName} />
+              {/* Name over role, always. The old row put our wordmark beside a
+                  role pill and only stacked for a centre, because a centre name
+                  plus a pill would not fit. The design stacks both, and doing it
+                  unconditionally means one layout to reason about instead of
+                  two — the rail is 250px now, which is tighter still. */}
               <span
-                className="lp-sb-trail lp-sb-rolechip"
-                style={{
-                  flex: "none",
-                  maxWidth: "100%",
-                  fontFamily: SANS,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: ACCENT,
-                  background: "rgba(124,226,172,.10)",
-                  border: "1px solid rgba(124,226,172,.28)",
-                  padding: "2.5px 10px",
-                  borderRadius: 8,
-                }}
+                className="lp-sb-brandtext"
+                style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}
               >
-                {roleLabel}
+                <span
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: INK,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                  title={centreName ?? "EngProgress"}
+                >
+                  {centreName ?? "EngProgress"}
+                </span>
+                <span
+                  className="lp-sb-rolechip"
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: ".06em",
+                    textTransform: "uppercase",
+                    color: ACCENT,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {roleLabel}
+                </span>
               </span>
             </Link>
+            {/* IT SITS IN THE ROW NOW, NOT ON THE RAIL'S EDGE.
+                It used to be absolutely positioned at `right: -15px`, straddling
+                the boundary so half of it lay on the dark rail and half on the
+                page — a treatment invented because no single colour was legible
+                on both grounds. That problem is gone: the rail is white, so the
+                button can simply be a bordered square in the brand row, which is
+                where the design draws it. With it back in flow, the z-index war
+                with the console's sticky bar and the collision with the 36px
+                logomark in the collapsed rail both stop existing. */}
             <button
               type="button"
               onClick={toggleCollapsed}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!collapsed}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="lp-sb-collapse lp-sb-item"
+              className="lp-sb-collapse"
               style={{
                 alignItems: "center",
                 justifyContent: "center",
-                width: 30,
-                height: 30,
+                width: 28,
+                height: 28,
                 flex: "none",
-                /* IT STRADDLES THE RAIL'S EDGE, AND THAT IS WHY IT IS PALE.
-                   Half of this button sits on the dark rail and half on the
-                   light page, so it cannot borrow either ground: a translucent
-                   white read as a smudge on the page half, and a burgundy fill
-                   would vanish into the rail half. A solid light disc with a
-                   hairline is the one treatment that is legible on both — light
-                   against the rail, outlined against the page. */
-                border: `1px solid ${LINE}`,
+                marginLeft: "auto",
+                border: `1px solid ${RAIL_BORDER}`,
                 background: WHITE,
-                borderRadius: 999,
+                borderRadius: 8,
                 cursor: "pointer",
-                color: BRAND,
-                boxShadow: "0 2px 6px -1px rgba(20,0,9,.30)",
-                // Half on the rail, half on the page — which is the whole
-                // reason it needs a z-index. It sat with none, so it took the
-                // rail's stacking position and lost to anything on the content
-                // side that had one: the console's sticky top bar is z-20, the
-                // page cards paint over it, and the button ended up buried under
-                // the page it is supposed to sit on top of. 40 puts it above the
-                // rail's own mobile scrim (30) and every content layer (≤21).
-                position: "absolute",
-                /* Dead centre on the rail's edge: half the 30px button hangs
-                   over the page. `.lp-shell-sidebar` is `position: relative` on
-                   desktop precisely so this anchors to that edge (globals.css).
-
-                   It was `10px`, which tucked the whole button inside the rail —
-                   losing the two-tone straddle, and, once the rail collapses to
-                   72px, parking it on top of the 36px logomark so the only way
-                   to reopen the rail was hidden under the brand. */
-                right: "-15px",
-                zIndex: 40,
+                color: "#4b5359",
               }}
             >
               {collapsed ? (
-                <ChevronsRight size={16} color={BRAND} />
+                <PanelLeftOpen size={16} color="#4b5359" />
               ) : (
-                <ChevronsLeft size={16} color={BRAND} />
+                <PanelLeftClose size={16} color="#4b5359" />
               )}
             </button>
           </div>
@@ -450,6 +468,9 @@ export function AppShell({
             }}
           >
             {sidebarFooter}
+            {/* The profile card is the rail's one dark surface — a solid block at
+                the foot of a white panel, per the design. The button below is its
+                user strip; the account menu opens above it. */}
             {/* The bell used to sit here, above the profile button. It is gone
                 from the rail — but this was the ONLY way to reach notifications
                 on desktop (the top bar carrying the other one is hidden above
@@ -619,10 +640,10 @@ function ProfileMenu({
             right: "auto",
             minWidth: 210,
             zIndex: 21,
-            background: "rgb(48 1 20)",
-            border: `1px solid rgba(255,255,255,.10)`,
-            borderRadius: 14,
-            boxShadow: "0 22px 48px -18px rgba(20,0,9,.75)",
+            background: RAIL_DARK,
+            border: `1px solid ${RAIL_DARK_LINE}`,
+            borderRadius: 12,
+            boxShadow: "0 22px 48px -18px rgba(22,35,43,.55)",
             padding: 7,
           }}
         >
@@ -633,7 +654,7 @@ function ProfileMenu({
                 style={{
                   fontSize: 13.5,
                   fontWeight: 700,
-                  color: "#FBF3F6",
+                  color: "#fff",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -654,7 +675,7 @@ function ProfileMenu({
               </div>
             </div>
           </div>
-          <div style={{ height: 1, background: RAIL_LINE, margin: "2px 4px 6px" }} />
+          <div style={{ height: 1, background: RAIL_DARK_LINE, margin: "2px 4px 6px" }} />
 
           <Link
             href="/notifications"
@@ -671,7 +692,7 @@ function ProfileMenu({
               fontFamily: SANS,
               fontSize: 14,
               fontWeight: 600,
-              color: "#F3E4EA",
+              color: RAIL_DARK_TEXT,
               textDecoration: "none",
             }}
           >
@@ -685,8 +706,8 @@ function ProfileMenu({
                   padding: "0 6px",
                   height: 20,
                   borderRadius: 10,
-                  background: "#F0857A",
-                  color: "#241016",
+                  background: "#ff9b8f",
+                  color: "#16232b",
                   fontSize: 11.5,
                   fontWeight: 800,
                   display: "grid",
@@ -717,7 +738,7 @@ function ProfileMenu({
                     fontFamily: SANS,
                     fontSize: 14,
                     fontWeight: 600,
-                    color: "#F3E4EA",
+                    color: RAIL_DARK_TEXT,
                     textDecoration: "none",
                   }}
                 >
@@ -727,7 +748,7 @@ function ProfileMenu({
               ))}
               {/* Sign out is fenced off. It is the only irreversible thing in
                   here and it sits where a mis-aimed click lands. */}
-              <div style={{ height: 1, background: RAIL_LINE, margin: "6px 4px" }} />
+              <div style={{ height: 1, background: RAIL_DARK_LINE, margin: "6px 4px" }} />
             </>
           ) : null}
 
@@ -750,7 +771,7 @@ function ProfileMenu({
                 fontFamily: SANS,
                 fontSize: 14,
                 fontWeight: 600,
-                color: "#F0857A",
+                color: "#ff9b8f",
                 cursor: "pointer",
               }}
             >
@@ -767,18 +788,24 @@ function ProfileMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         title={name}
-        className="lp-sb-profile-btn lp-sb-item"
+        /* NOT `lp-sb-item` any more. That class now carries the nav's DARK hover
+           wash (rgba(22,35,43,.05)), which is invisible on this dark card — and
+           it only happened to look right before because the two rules were
+           adjacent in the file and the later one won. The profile card has its
+           own hover in .lp-sb-profile-btn; sharing the nav's was always a
+           coincidence rather than a decision. */
+        className="lp-sb-profile-btn"
         style={{
           width: "100%",
           display: "flex",
           alignItems: "center",
-          gap: 11,
-          padding: "9px 10px",
-          border: `1px solid ${open ? "rgba(255,255,255,.16)" : RAIL_LINE}`,
+          gap: 10,
+          padding: "11px 12px",
+          border: 0,
           // Resting background lives in .lp-sb-profile-btn (globals.css) so the
           // hover wash works; inline only when open (inline beats the class).
-          background: open ? "rgba(255,255,255,.10)" : undefined,
-          borderRadius: 13,
+          background: open ? "#17242c" : undefined,
+          borderRadius: 12,
           cursor: "pointer",
           textAlign: "left",
         }}
@@ -800,54 +827,42 @@ function ProfileMenu({
                 height: 17,
                 padding: "0 4px",
                 borderRadius: 9,
-                background: "#F0857A",
-                color: "#241016",
+                background: "#ff9b8f",
+                color: "#16232b",
                 fontSize: 10.5,
                 fontWeight: 800,
                 display: "grid",
                 placeItems: "center",
-                // Rings the rail's own burgundy so the badge reads as sitting ON
-                // the avatar rather than floating behind it.
-                boxShadow: "0 0 0 2px rgb(60 2 25)",
+                // Rings the strip it sits on, so the badge reads as sitting ON the
+                // avatar rather than floating behind it. It was the rail's old
+                // burgundy, which would now draw a maroon halo on a near-black card.
+                boxShadow: `0 0 0 2px ${RAIL_DARKER}`,
               }}
             >
               {unread > 9 ? "9+" : unread}
             </span>
           ) : null}
         </span>
+        {/* Name over email, and NO role pill. The role already has a permanent
+            home in the brand row at the top of the rail, where it sits under the
+            centre's name; repeating it here spent the only horizontal space this
+            strip has on a word that is already on screen. */}
         <div className="lp-sb-profile-text" style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <span
-              style={{
-                fontSize: 13.5,
-                fontWeight: 700,
-                color: "#FBF3F6",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {name}
-            </span>
-            <span
-              style={{
-                flex: "none",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: ".04em",
-                color: "#D9BEC8",
-                background: "rgba(255,255,255,.09)",
-                border: `1px solid ${RAIL_LINE}`,
-                padding: "1.5px 7px",
-                borderRadius: 6,
-              }}
-            >
-              {roleLabel}
-            </span>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#fff",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {name}
           </div>
           <div
             style={{
-              fontSize: 11.5,
+              fontSize: 11,
               color: RAIL_FAINT,
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -880,7 +895,9 @@ function Avatar({ name, size }: { name: string; size: number }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: "linear-gradient(135deg,#1A8A68,#0E5F50)",
+        // Flat, not a gradient. It sits on the dark #0f1a21 user strip, where a
+        // two-stop gradient at 30px just reads as an uneven disc.
+        background: "#0b6b40",
         color: "#fff",
         fontSize: Math.round(size * 0.36),
         fontWeight: 700,
@@ -895,22 +912,27 @@ function Avatar({ name, size }: { name: string; size: number }) {
   );
 }
 
+/**
+ * The square mark at the top of the rail.
+ *
+ * IT IS ONLY THE MARK NOW. The rail used to carry the whole lockup — our full
+ * wordmark, or a centre's name set as a wordmark — and swap to the square only
+ * when collapsed. The design puts a 32px square beside plain text instead, and
+ * the text is drawn by the brand row (which also owns the role line under it),
+ * so the wordmark components are no longer what the rail renders.
+ *
+ * `centre` is still the ONE decision about whose brand this is: an approved
+ * centre wears its own initial, everyone else wears ours.
+ *
+ * `tone` survives for the MOBILE TOP BAR, which is a different surface (white,
+ * with the full wordmark) and still calls this component — see the top bar
+ * above. Dropping the prop would have silently restyled that bar too.
+ */
 function Logo({ tone = "light", centre }: { tone?: "light" | "dark"; centre?: string | null }) {
-  // tone: "light" for the white mobile topbar, "dark" for the dark sidebar rail.
-  // Expanded shows the full wordmark; the collapsed rail swaps to the square
-  // logomark (CSS in globals).
-  //
-  // `centre` is the ONE decision about whose brand this is, made here so it is
-  // made once: an approved centre wears its own name, and everyone else — solo
-  // learners, and the platform console — wears ours. A teacher opening this
-  // every morning works for their school, and the rail should say so.
-  //
-  // The swap classes go on plain wrapper spans, not the brand components
-  // themselves — the brand components set their own inline `display`, which
-  // (being inline style) always wins over the external .lp-sb-logo-full/-mark
-  // rules trying to show/hide them, so both rendered at once either way.
   return (
     <span style={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}>
+      {/* The mobile top bar keeps the wordmark: it has the width for it, and a
+          bare square with no name beside it says nothing on a bar with no rail. */}
       <span className="lp-sb-logo-full" style={{ minWidth: 0 }}>
         {centre ? (
           <CentreWordmark name={centre} tone={tone} fontSize={19} />
@@ -919,7 +941,7 @@ function Logo({ tone = "light", centre }: { tone?: "light" | "dark"; centre?: st
         )}
       </span>
       <span className="lp-sb-logo-mark">
-        {centre ? <CentreMark name={centre} size={36} /> : <EngProgressMark size={36} />}
+        {centre ? <CentreMark name={centre} size={32} /> : <EngProgressMark size={32} />}
       </span>
     </span>
   );

@@ -45,7 +45,10 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
           position: "relative",
           background: "none",
           border: "none",
-          color: "#E3A7BD",
+          // The bell renders in the WHITE mobile top bar, not on the rail. It was
+          // #E3A7BD — a pale pink picked to read against the old burgundy rail —
+          // which on white is nearly invisible. The design's icon grey instead.
+          color: "#4b5359",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
@@ -62,8 +65,10 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
               minWidth: 16,
               height: 16,
               borderRadius: 999,
-              background: "#F0857A",
-              color: "#121317",
+              // The design's alert red, matching the rail's own count badges —
+              // a light salmon on a white bar reads as decoration, not a count.
+              background: "#b3261e",
+              color: "#fff",
               fontFamily: SANS,
               fontSize: 10.5,
               fontWeight: 800,

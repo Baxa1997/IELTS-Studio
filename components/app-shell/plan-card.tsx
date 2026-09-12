@@ -8,8 +8,15 @@ import type { UsageSummary } from "@/lib/quota";
  * The learner's PLAN, pinned to the bottom of the sidebar rail (replaces the
  * old target-band card): current plan name, how much of the month's quota is
  * left (gradings + practice sets), and an Upgrade button when a higher tier
- * exists. Sits on the dark rail — quiet translucent tile, light-on-dark, same
- * palette as the nav (see sidebar-nav.tsx / shell.tsx).
+ * exists.
+ *
+ * ⚠️ REPAINTED FOR A WHITE RAIL. Every colour in here used to be light-on-dark
+ * — a translucent white fill, `#B08E9B` labels, a `#F2C3D3` button — because
+ * the rail was a solid burgundy panel. The rail is now the design's white card,
+ * and none of that survives the change: a white-on-white card with pale pink
+ * text is invisible, and this is the one thing in the rail that tells a learner
+ * how much practice they have left. It now dresses as a tray, like the nav
+ * groups above it.
  */
 export function PlanCard({ usage }: { usage: UsageSummary }) {
   const upgradable = usage.plan !== "enterprise";
@@ -17,11 +24,11 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
     <div
       className="lp-sb-target"
       style={{
-        background: "rgba(255,255,255,.05)",
-        border: "1px solid rgba(255,255,255,.08)",
-        borderRadius: 14,
-        padding: 14,
-        color: "#fff",
+        background: "#f6f6f3",
+        border: "1px solid #e6e4dc",
+        borderRadius: 12,
+        padding: 12,
+        color: "#16232b",
         display: "flex",
         flexDirection: "column",
         gap: 10,
@@ -31,11 +38,11 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
         <span
           style={{
             fontFamily: SANS,
-            fontWeight: 600,
-            fontSize: 11,
-            letterSpacing: ".1em",
+            fontWeight: 700,
+            fontSize: 10.5,
+            letterSpacing: ".14em",
             textTransform: "uppercase",
-            color: "#B08E9B",
+            color: "#9aa0a6",
           }}
         >
           Your plan
@@ -43,10 +50,10 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
         <span
           style={{
             fontFamily: SANS,
-            fontWeight: 700,
-            fontSize: 12,
-            color: usage.plan === "trial" ? "#E7D5DC" : "#F2C3D3",
-            background: usage.plan === "trial" ? "rgba(255,255,255,.09)" : "rgba(242,195,211,.14)",
+            fontWeight: 600,
+            fontSize: 11.5,
+            color: usage.plan === "trial" ? "#6b7178" : "#3b36c9",
+            background: usage.plan === "trial" ? "#eceae3" : "#e7eafb",
             padding: "2px 9px",
             borderRadius: 999,
           }}
@@ -73,16 +80,18 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
             height: 34,
             marginTop: 2,
             borderRadius: 9,
-            // Light fill, dark ink. On a burgundy rail the upgrade CTA cannot be
-            // another burgundy button — it would vanish into the rail — so it
-            // inverts instead, the way the marketing CTA block's button does.
-            background: "#F2C3D3",
-            color: "#43001D",
+            // Solid indigo on the grey tray. The old light-fill/dark-ink
+            // inversion existed only because a burgundy button would have
+            // vanished into a burgundy rail; against #f6f6f3 the filled button
+            // is both legible and the loudest thing in the card, which is what
+            // an upgrade CTA should be.
+            background: "#3b36c9",
+            color: "#fff",
             fontFamily: SANS,
             fontSize: 13,
-            fontWeight: 700,
+            fontWeight: 600,
             textDecoration: "none",
-            boxShadow: "0 8px 18px -8px rgba(0,0,0,.55)",
+            boxShadow: "0 6px 14px -8px rgba(59,54,201,.7)",
           }}
         >
           Upgrade <ArrowUpRight size={14} />
@@ -104,12 +113,12 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
           alignItems: "baseline",
           fontFamily: SANS,
           fontSize: 12,
-          color: "#E7D5DC",
+          color: "#6b7178",
           marginBottom: 4,
         }}
       >
         <span>{label}</span>
-        <span style={{ fontWeight: 700, color: left === 0 ? "#FCA5A5" : "#fff" }}>
+        <span style={{ fontWeight: 700, color: left === 0 ? "#b3261e" : "#16232b" }}>
           {limit == null ? "Unlimited" : `${left} left`}
         </span>
       </div>
@@ -118,7 +127,7 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
           style={{
             height: 4,
             borderRadius: 999,
-            background: "rgba(255,255,255,.12)",
+            background: "#e0ded6",
             overflow: "hidden",
           }}
         >
@@ -127,7 +136,7 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
               height: "100%",
               width: `${Math.round((1 - frac) * 100)}%`,
               borderRadius: 999,
-              background: left === 0 ? "#F87171" : "#F2C3D3",
+              background: left === 0 ? "#b3261e" : "#3b36c9",
             }}
           />
         </div>
