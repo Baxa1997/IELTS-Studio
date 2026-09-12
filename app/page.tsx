@@ -275,9 +275,14 @@ function Hero() {
           AI · IELTS &amp; CEFR
         </div>
 
-        <h1 style={{ ...DISPLAY_XL, margin: "26px 0 0" }}>
-          The professional AI platform for <span style={{ color: BRAND }}>IELTS &amp; CEFR</span>{" "}
-          practice
+        {/* `nowrap` on the coloured run is the whole trick. "IELTS & CEFR" is one
+            phrase and one colour, and letting it break put "& CEFR" alone at the
+            head of a line — the burgundy split across the fold, which read as a
+            mistake rather than as emphasis. Held together, the colour lands on a
+            single unbroken phrase wherever the line happens to break. */}
+        <h1 style={{ ...DISPLAY_XL, margin: "22px 0 0", maxWidth: 620 }}>
+          The professional AI platform for{" "}
+          <span style={{ color: BRAND, whiteSpace: "nowrap" }}>IELTS &amp; CEFR</span> practice
         </h1>
 
         <p style={{ ...LEDE, maxWidth: 600, margin: "24px 0 0" }}>

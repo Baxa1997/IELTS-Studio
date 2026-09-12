@@ -123,35 +123,50 @@ export const ISLAND = {
 
 /* ── display scale ─────────────────────────────────────────────────────────── */
 /*
- * Adopted from the reference: big, light, tightly tracked. Two departures, both
- * because our typeface is not theirs:
+ * Big, light, tightly tracked — but sized for OUR headline, which is not the
+ * reference's. Theirs is four short words ("Where ideas come to life") and can
+ * afford 64px on one line. Ours is a fifty-character sentence that always wraps,
+ * and a display size that wraps three times is not a display size, it is a
+ * paragraph set in headline type.
+ *
+ * Three things were decided by our typeface and our copy rather than copied:
  *
  *  - WEIGHT 500, NOT 400. The reference sets its headlines in Geist at 400.
  *    Sora's 400 is meaningfully lighter than Geist's at the same number, so a
- *    literal copy came out spindly at 60px. 500 is the optical match, and it is
- *    why `fonts.ts` now loads that weight.
- *  - THE CEILING IS 62px, NOT 64px. Sora is the wider face; at 64 the hero
- *    headline broke to a third line at laptop widths, which is the one thing a
- *    display size is supposed to prevent.
+ *    literal copy came out spindly. 500 is the optical match, and it is why
+ *    `fonts.ts` loads that weight.
+ *  - LEADING 1.1, NOT 1.03. A near-solid 1.03 is right for the single line the
+ *    reference sets; on our three-line headline the descenders of one line ran
+ *    into the caps of the next, which read as cramped rather than tight.
+ *  - THE CEILING IS 48px. At 62 the headline dominated everything beside it and
+ *    left the lede looking like a footnote. The point of the big-light-tracked
+ *    treatment is the PROPORTION between headline, lede and action, and at 48
+ *    that proportion is legible instead of merely large.
  */
 
 /** Hero headline. */
 export const DISPLAY_XL: React.CSSProperties = {
   fontFamily: DISPLAY,
   fontWeight: 500,
-  fontSize: "clamp(40px,6.2vw,62px)",
-  lineHeight: 1.03,
-  letterSpacing: "-0.04em",
+  fontSize: "clamp(32px,4.2vw,48px)",
+  lineHeight: 1.1,
+  letterSpacing: "-0.03em",
   textWrap: "balance",
 };
 
-/** Section headings — the one place every `<h2>` on the page gets its size. */
+/**
+ * Section headings — the one place every `<h2>` on the page gets its size.
+ *
+ * KEPT A CLEAR STEP UNDER `DISPLAY_XL`. These were 52px against a 62px hero: a
+ * 10px gap, which at a glance is no gap at all, so every section heading read as
+ * loud as the page's one headline. 40 against 48 is a step the eye can see.
+ */
 export const DISPLAY_LG: React.CSSProperties = {
   fontFamily: DISPLAY,
   fontWeight: 500,
-  fontSize: "clamp(32px,4.4vw,52px)",
-  lineHeight: 1.1,
-  letterSpacing: "-0.04em",
+  fontSize: "clamp(27px,3.3vw,40px)",
+  lineHeight: 1.14,
+  letterSpacing: "-0.03em",
   textWrap: "pretty",
 };
 
