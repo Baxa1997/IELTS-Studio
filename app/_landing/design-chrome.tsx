@@ -10,15 +10,16 @@ import {
   FIELD,
   ghostButton,
   INK,
+  ISLAND,
+  LINE,
   RULE,
   SANS,
-  SHELL,
   solidButton,
   STRONG,
   WELL,
   WHITE,
 } from "./design";
-import { LangPicker } from "./lang-picker";
+import { SiteNav } from "./site-nav";
 
 // The dark footer lives in its own module and is re-exported here so every
 // existing importer of `SiteFooter` keeps working unchanged.
@@ -35,16 +36,9 @@ import { FOOTER_CSS } from "./site-footer";
  * follow-up, and until it happens `chrome.tsx` is still the right import there.
  */
 
-/** Nav destinations. `/pricing` is behind auth and 307s a logged-out visitor, so
- *  the header points at the anchor on this page — the same fix the SEO pass made. */
-const NAV = [
-  { label: "Platform", href: "/#platform" },
-  { label: "Pricing", href: "/#pricing" },
-  { label: "How to use", href: "/how-to-use" },
-  // Opens the guide, not the marketing page: a centre clicking this wants to
-  // know how to run the console, and /how-to-use is where that lives.
-  { label: "For centers", href: "/how-to-use/education-centers" },
-];
+// The nav destinations moved to `site-nav.tsx`, which is where they are rendered
+// now — both in the island and in the mobile drawer. Keeping a second copy here
+// is how the two lists drift apart.
 
 export function Wordmark({ onDark = false }: { onDark?: boolean }) {
   return (
@@ -90,52 +84,27 @@ export function Wordmark({ onDark = false }: { onDark?: boolean }) {
   );
 }
 
+/**
+ * The floating header island.
+ *
+ * STICKY WITH A TRANSPARENT WRAPPER, not `position: fixed`. The reference fixes
+ * its header and then pays for it by adding ~104px of top padding to the hero —
+ * which works when one page owns the header. Ours dresses six, and a fixed
+ * header would have slid under the first heading of all six until each was given
+ * padding to match. A sticky wrapper with its own top padding occupies the space
+ * it needs, floats at the same offset once stuck, and no page below has to know
+ * it changed.
+ *
+ * The wrapper is deliberately transparent: the gap above the pill is what makes
+ * it read as an island, and painting it would just reinstate the bar this
+ * replaces.
+ */
 export function SiteHeader() {
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 20,
-        background: "rgba(255,255,255,0.92)",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        borderBottom: `1px solid ${RULE}`,
-      }}
-    >
-      <div
-        style={{
-          ...SHELL,
-          height: 74,
-          display: "flex",
-          alignItems: "center",
-          gap: 36,
-        }}
-      >
+    <header className="lp-island-wrap">
+      <div className="lp-island">
         <Wordmark />
-        <nav
-          className="lp-nav"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 28,
-            fontSize: 15,
-            fontWeight: 500,
-            color: BODY,
-          }}
-        >
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="lp-navlink" style={{ color: BODY }}>
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-          <LangPicker />
-          <Link href="/sign-in" className="lp-solid" style={{ ...solidButton("md"), display: "inline-block" }}>
-            Sign in
-          </Link>
-        </div>
+        <SiteNav />
       </div>
     </header>
   );
@@ -234,8 +203,78 @@ export const DESIGN_CSS = `
   ${FOOTER_CSS}
   @keyframes lp-demo-shimmer{to{background-position:-200% 0}}
   .lp-below-fold{content-visibility:auto;contain-intrinsic-size:760px}
-  .lp-navlink{text-decoration:none;transition:color .15s}
-  .lp-navlink:hover{color:${INK}}
+
+  /* ── the header island ──────────────────────────────────────────────────────
+     The wrapper holds the sticky offset and stays transparent; the pill inside
+     it is the object. Both live here rather than inline because the pill needs
+     a hover and the whole thing needs breakpoints, and an inline style can
+     express neither. */
+  .lp-island-wrap{position:sticky;top:0;z-index:50;padding:14px 16px 0;pointer-events:none}
+  .lp-island{
+    pointer-events:auto;
+    max-width:${ISLAND.maxWidth}px;margin:0 auto;
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;
+    background:rgba(255,255,255,.92);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);
+    border:1px solid ${ISLAND.line};border-radius:999px;
+    padding:9px 10px 9px 18px;
+    box-shadow:${ISLAND.shadow};
+    transition:box-shadow .2s ease,background .2s ease;
+  }
+  .lp-island:hover{background:rgba(255,255,255,.97)}
+
+  .lp-nav{display:inline-flex;align-items:center;justify-content:center;gap:2px}
+  .lp-navlink{
+    display:inline-flex;align-items:center;white-space:nowrap;
+    padding:8px 12px;border-radius:10px;
+    font-family:${SANS};font-size:15px;font-weight:500;letter-spacing:-.005em;
+    color:${BODY};text-decoration:none;
+    transition:color .15s,background .15s;
+  }
+  .lp-navlink:hover{color:${INK};background:rgba(18,19,23,.055)}
+
+  .lp-nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+  .lp-island-cta{
+    display:inline-flex;align-items:center;white-space:nowrap;justify-content:center;
+    /* Holds its width through the signed-out → signed-in swap, so the row does
+       not jump when the session resolves after paint. */
+    min-width:124px;
+    background:${BRAND};color:${WHITE};
+    border-radius:999px;padding:10px 20px;
+    font-family:${SANS};font-size:14.5px;font-weight:700;letter-spacing:-.005em;
+    text-decoration:none;
+    box-shadow:0 1px 0 rgba(255,255,255,.16) inset,0 6px 16px -8px rgba(125,1,50,.65);
+    transition:background .15s,transform .15s;
+  }
+  .lp-island-cta:hover{background:${BRAND_DEEP}}
+  .lp-island-cta:active{transform:translateY(1px)}
+
+  .lp-burger{
+    display:none;width:38px;height:38px;align-items:center;justify-content:center;
+    border:1px solid ${FIELD};border-radius:999px;background:${WHITE};
+    color:${INK};cursor:pointer;
+  }
+  .lp-mobile-menu{
+    position:absolute;left:16px;right:16px;top:calc(100% + 10px);
+    background:${WHITE};border:1px solid ${LINE};border-radius:22px;
+    box-shadow:0 24px 60px -24px rgba(18,19,23,.35);
+    padding:14px;pointer-events:auto;
+  }
+
+  /* The nav and the language picker are the first things to go: below this the
+     four links and the picker stop fitting beside the wordmark, and the pill
+     starts wrapping to two rows. The action button never goes — it is the one
+     control the header exists for. */
+  @media(max-width:980px){
+    .lp-nav{display:none}
+    .lp-nav-lang{display:none}
+    .lp-burger{display:inline-flex}
+    .lp-island{grid-template-columns:1fr auto;padding-right:9px}
+  }
+  @media(max-width:420px){
+    .lp-island{padding-left:12px}
+    .lp-island-cta{min-width:0;padding:10px 15px;font-size:13.5px}
+  }
   .lp-solid{transition:background .15s}
   .lp-solid:hover{background:${BRAND_DEEP}}
   .lp-ghost{transition:border-color .15s,color .15s}
@@ -251,7 +290,6 @@ export const DESIGN_CSS = `
   .lp-doctab:focus-visible{outline:2px solid ${BRAND};outline-offset:-2px}
   .lp-field:focus-visible{outline:2px solid ${BRAND};outline-offset:2px;border-color:${BRAND}}
   .lp-field{border:1px solid ${FIELD};font-family:${SANS}}
-  @media(max-width:860px){.lp-nav{display:none!important}}
 
   /* ── sign-in, below the two-panel width ────────────────────────────────────
      THE PAGE CLIPPED THE FORM AND OFFERED NO WAY TO REACH IT. The desktop

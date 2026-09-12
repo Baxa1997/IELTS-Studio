@@ -93,8 +93,76 @@ export const RADIUS = {
   badge: 8,
 } as const;
 
-/** The page gutter every section shares. */
-export const SHELL = { maxWidth: 1240, margin: "0 auto", padding: "0 28px" } as const;
+/** The page gutter every section shares.
+ *
+ *  WIDENED 1240 → 1400. The reference this page was re-cut against runs its
+ *  content to 1400 with a 1320 header island inside it, and at 1240 our hero
+ *  columns were being squeezed narrow enough that the right-hand card and the
+ *  headline fought for the same measure. Everything spreading from `SHELL` moves
+ *  together, which is the point of it being one constant. */
+export const SHELL = { maxWidth: 1400, margin: "0 auto", padding: "0 28px" } as const;
+
+/**
+ * The floating header island.
+ *
+ * DELIBERATELY NARROWER THAN `SHELL`. The island has to read as an object lying
+ * on the page rather than as the page's own top edge, and it only does that if
+ * the content beneath it is visibly wider than it is. Matching the two makes it
+ * look like a header that failed to reach the corners.
+ */
+export const ISLAND = {
+  maxWidth: 1320,
+  /** Warm white rather than a grey hairline — the border is catching light, not
+   *  drawing a box. */
+  line: "rgba(255,255,255,0.72)",
+  /** An inset highlight along the top plus a soft drop — what makes it read as
+   *  raised instead of merely outlined. */
+  shadow:
+    "0 1px 0 rgba(255,255,255,0.65) inset, 0 10px 30px -18px rgba(18,19,23,0.45), 0 2px 8px -4px rgba(18,19,23,0.08)",
+} as const;
+
+/* ── display scale ─────────────────────────────────────────────────────────── */
+/*
+ * Adopted from the reference: big, light, tightly tracked. Two departures, both
+ * because our typeface is not theirs:
+ *
+ *  - WEIGHT 500, NOT 400. The reference sets its headlines in Geist at 400.
+ *    Sora's 400 is meaningfully lighter than Geist's at the same number, so a
+ *    literal copy came out spindly at 60px. 500 is the optical match, and it is
+ *    why `fonts.ts` now loads that weight.
+ *  - THE CEILING IS 62px, NOT 64px. Sora is the wider face; at 64 the hero
+ *    headline broke to a third line at laptop widths, which is the one thing a
+ *    display size is supposed to prevent.
+ */
+
+/** Hero headline. */
+export const DISPLAY_XL: React.CSSProperties = {
+  fontFamily: DISPLAY,
+  fontWeight: 500,
+  fontSize: "clamp(40px,6.2vw,62px)",
+  lineHeight: 1.03,
+  letterSpacing: "-0.04em",
+  textWrap: "balance",
+};
+
+/** Section headings — the one place every `<h2>` on the page gets its size. */
+export const DISPLAY_LG: React.CSSProperties = {
+  fontFamily: DISPLAY,
+  fontWeight: 500,
+  fontSize: "clamp(32px,4.4vw,52px)",
+  lineHeight: 1.1,
+  letterSpacing: "-0.04em",
+  textWrap: "pretty",
+};
+
+/** The lede under a headline. */
+export const LEDE: React.CSSProperties = {
+  fontSize: 18,
+  lineHeight: 1.55,
+  letterSpacing: "-0.01em",
+  color: BODY,
+  textWrap: "pretty",
+};
 
 /* ── recurring pieces ──────────────────────────────────────────────────────── */
 

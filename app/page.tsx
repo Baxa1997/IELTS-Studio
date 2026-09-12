@@ -16,9 +16,12 @@ import {
   BRAND_TINT_LINE,
   cardStyle,
   DISPLAY,
+  DISPLAY_LG,
+  DISPLAY_XL,
   eyebrow,
   ghostButton,
   INK,
+  LEDE,
   LINE,
   MUTED,
   RADIUS,
@@ -235,10 +238,15 @@ function Hero() {
     <section
       style={{
         ...SHELL,
-        padding: "76px 28px 40px",
+        // The island header is sticky and occupies its own space, so the hero no
+        // longer has to clear a bar — it just needs room to breathe under it.
+        padding: "clamp(44px,6vw,76px) 28px 48px",
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit,minmax(min(420px,100%),1fr))",
-        gap: 64,
+        // Still wrapped in `min()`: at 460px flat, a single column is 460px wide
+        // inside a 319px phone and the page scrolls sideways. responsive.test.ts
+        // fails the build if this loses its cap.
+        gridTemplateColumns: "repeat(auto-fit,minmax(min(460px,100%),1fr))",
+        gap: 72,
         alignItems: "center",
       }}
     >
@@ -267,31 +275,12 @@ function Hero() {
           AI · IELTS &amp; CEFR
         </div>
 
-        <h1
-          style={{
-            fontFamily: DISPLAY,
-            fontWeight: 500,
-            fontSize: "clamp(36px,5.2vw,50px)",
-            lineHeight: 1.04,
-            letterSpacing: "-0.035em",
-            margin: "26px 0 0",
-            textWrap: "pretty",
-          }}
-        >
+        <h1 style={{ ...DISPLAY_XL, margin: "26px 0 0" }}>
           The professional AI platform for <span style={{ color: BRAND }}>IELTS &amp; CEFR</span>{" "}
           practice
         </h1>
 
-        <p
-          style={{
-            fontSize: 18,
-            lineHeight: 1.6,
-            color: BODY,
-            maxWidth: 560,
-            margin: "24px 0 0",
-            textWrap: "pretty",
-          }}
-        >
+        <p style={{ ...LEDE, maxWidth: 600, margin: "24px 0 0" }}>
           From a complete beginner to Band 9. AI generates exam-standard Writing, Reading, Listening
           and Speaking tasks at your exact level, coaches you while you practise, then scores you
           against the official IELTS bands and CEFR descriptors.
@@ -448,21 +437,10 @@ function Platform() {
       style={{ ...SHELL, padding: "40px 28px 20px" }}
     >
       <div style={eyebrow(true)}>The platform</div>
-      <h2
-        style={{
-          fontFamily: DISPLAY,
-          fontWeight: 700,
-          fontSize: 42,
-          lineHeight: 1.08,
-          letterSpacing: "-0.03em",
-          margin: "16px 0 0",
-          maxWidth: 720,
-          textWrap: "pretty",
-        }}
-      >
+      <h2 style={{ ...DISPLAY_LG, margin: "16px 0 0", maxWidth: 860 }}>
         All four skills, plus CEFR — generated fresh, marked against the real criteria
       </h2>
-      <p style={{ fontSize: 19, lineHeight: 1.6, color: BODY, maxWidth: 660, margin: "18px 0 0" }}>
+      <p style={{ ...LEDE, maxWidth: 680, margin: "18px 0 0" }}>
         Nothing here is a past paper. Every task is original and produced to the exam spec at your
         level — a first attempt at Band 4 or a final push for a 9 — so there is no way to memorise
         the content in advance.
@@ -635,17 +613,7 @@ function Pricing() {
   return (
     <section id="pricing" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <div style={eyebrow(true)}>Pricing</div>
-      <h2
-        style={{
-          fontFamily: DISPLAY,
-          fontWeight: 700,
-          fontSize: 42,
-          lineHeight: 1.08,
-          letterSpacing: "-0.03em",
-          margin: "16px 0 0",
-          textWrap: "pretty",
-        }}
-      >
+      <h2 style={{ ...DISPLAY_LG, margin: "16px 0 0" }}>
         Start free. Upgrade when you are practising every day.
       </h2>
       <div
@@ -776,18 +744,7 @@ function Faq() {
   return (
     <section className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
       <div style={eyebrow(true)}>Questions</div>
-      <h2
-        style={{
-          fontFamily: DISPLAY,
-          fontWeight: 700,
-          fontSize: 42,
-          lineHeight: 1.08,
-          letterSpacing: "-0.03em",
-          margin: "16px 0 28px",
-        }}
-      >
-        The things worth asking first
-      </h2>
+      <h2 style={{ ...DISPLAY_LG, margin: "16px 0 28px" }}>The things worth asking first</h2>
       <div
         style={{
           display: "grid",
@@ -815,32 +772,8 @@ function Head({ eyebrow: label, title, sub }: { eyebrow: string; title: string; 
   return (
     <>
       <div style={eyebrow(true)}>{label}</div>
-      <h2
-        style={{
-          fontFamily: DISPLAY,
-          fontWeight: 700,
-          fontSize: 42,
-          lineHeight: 1.08,
-          letterSpacing: "-0.03em",
-          margin: "16px 0 0",
-          maxWidth: 760,
-          textWrap: "pretty",
-        }}
-      >
-        {title}
-      </h2>
-      <p
-        style={{
-          fontSize: 19,
-          lineHeight: 1.6,
-          color: BODY,
-          maxWidth: 680,
-          margin: "18px 0 0",
-          textWrap: "pretty",
-        }}
-      >
-        {sub}
-      </p>
+      <h2 style={{ ...DISPLAY_LG, margin: "16px 0 0", maxWidth: 900 }}>{title}</h2>
+      <p style={{ ...LEDE, maxWidth: 700, margin: "18px 0 0" }}>{sub}</p>
     </>
   );
 }
