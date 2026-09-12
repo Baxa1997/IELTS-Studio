@@ -64,7 +64,7 @@ import {
 
 /* ── the rail palette (Base44) ────────────────────────────────────────────────
    Warm greys, near-black ink, no hue anywhere in the list. Every value here is
-   for a LIGHT warm surface (#f8f7f4, set in shell.tsx) — nothing here may be
+   for a LIGHT near-white surface (#fdfcfa, set in shell.tsx) — nothing here may be
    reused on a dark one. The rail no longer HAS a dark surface: the profile card
    at its foot went light with everything else. */
 const RAIL_TEXT = "#3f3d39"; // resting item text
@@ -761,6 +761,11 @@ export function SidebarNav({
         const panelId = section.title
           ? `sb-group-${section.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
           : undefined;
+        /* Where pressing the group's label goes: its FIRST REAL destination.
+           `soon` rows are disabled spans, not links — sending somebody to one is
+           sending them to a page that does not exist yet, so they are skipped
+           and a group of nothing but `soon` gets no link at all. */
+        const groupHref = section.items.find((i) => !i.soon)?.href;
         return (
           <div
             key={section.title ?? si}
@@ -768,27 +773,53 @@ export function SidebarNav({
             style={TRAY}
           >
             {section.title && GroupIcon ? (
-              <button
-                type="button"
-                onClick={() => toggleGroup(section.title as string)}
+              /* ── ONE control, not two ─────────────────────────────────────
+                 The row was briefly split — a link to navigate, a chevron to
+                 fold — and that was wrong for this rail. It made folding a
+                 group a 26px target you had to aim at, and pressing the obvious
+                 part of the row (the label) could only ever navigate, so a group
+                 you had opened could not be closed by pressing the same place
+                 that opened it. The owner's read was the plain one: press the
+                 group, it opens and takes you to its first page; press it again,
+                 it shuts.
+
+                 So the WHOLE ROW is one <Link>, and the click decides:
+                   shut  → navigate to the first page inside, and unfold.
+                   open  → fold it, and stay where you are.
+
+                 It stays a real <Link> rather than a button because middle-click,
+                 ⌘-click and "open in new tab" are how people actually use
+                 navigation — those are let through untouched (see the modifier
+                 check), and only a plain left click is ever intercepted. */
+              <Link
+                href={groupHref ?? "#"}
+                prefetch={groupHref && shouldPrefetch(groupHref) ? undefined : false}
+                onClick={(event) => {
+                  // A modified click is a request for a new tab/window, not a
+                  // request to fold anything. Let the browser have it.
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  if (open || !groupHref) {
+                    // Folding is not a navigation — and a group with nowhere to
+                    // go must not follow its placeholder href.
+                    event.preventDefault();
+                  }
+                  toggleGroup(section.title as string);
+                }}
                 aria-expanded={open}
                 aria-controls={panelId}
                 data-label={section.title}
-                className="lp-sb-link lp-sb-item lp-sb-grouprow"
+                className="lp-sb-item lp-sb-grouprow"
                 style={{
                   ...itemBase,
                   justifyContent: "space-between",
-                  width: "100%",
-                  background: "transparent",
                   cursor: "pointer",
-                  textAlign: "left",
                   // A shut group holding the current page keeps the ink, so the
                   // rail still answers "roughly where am I" at a glance.
                   color: !open && activeGroup === section.title ? RAIL_ACTIVE_INK : RAIL_TEXT,
                   fontWeight: !open && activeGroup === section.title ? 600 : 500,
                 }}
               >
-                <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <span className="lp-sb-chip" style={chipStyle}>
                     <GroupIcon size={17} strokeWidth={1.9} />
                   </span>
@@ -803,17 +834,21 @@ export function SidebarNav({
                       {rollup.badge}
                     </span>
                   ) : null}
+                  {/* Decorative. The row it sits in is the control, so a second
+                      focusable element here would just be a tab stop that does
+                      the same thing. */}
                   <ChevronRight
                     className="lp-sb-caret"
                     size={15}
                     strokeWidth={2}
+                    aria-hidden
                     style={{
                       color: RAIL_MUTED,
                       transform: open ? "rotate(90deg)" : "rotate(0deg)",
                     }}
                   />
                 </span>
-              </button>
+              </Link>
             ) : null}
             {/* THE ANIMATION IS A GRID ROW, not a max-height.
                 `grid-template-rows: 0fr → 1fr` tweens to the content's OWN

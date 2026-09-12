@@ -53,7 +53,13 @@ const CANVAS = "#f1efe9";
    the new paper they are, in order, a black hole, illegible, invisible and
    alarming. If the dark block ever comes back, it needs its own palette again;
    do not reach for the names below. */
-const RAIL_BG = "#f8f7f4";
+/* Nearly white, with just enough warmth left to keep the grey pills legible.
+   It was #f8f7f4; the owner asked for whiter. There is a floor here: the active
+   row (#eae7e0) and the hover wash are both TINTS OF THIS PAPER, so taking the
+   rail all the way to #fff leaves them floating on a surface they no longer
+   belong to — and the rail would then be the same value as the content card it
+   sits beside, which is what the warm canvas between them exists to prevent. */
+const RAIL_BG = "#fdfcfa";
 /** The rail's own edge and its internal hairlines — one warm grey, matched to
  *  the paper rather than to the cool ramp the content cards use. Two different
  *  greys a few pixels apart read as a mistake. */
@@ -90,18 +96,18 @@ function readCollapsed(fallback: boolean): boolean {
 }
 
 /**
- * Routes that own their whole surface, where the rail starts collapsed.
+ * Routes that own their whole surface — they lay themselves out edge to edge, so
+ * the shell adds no content padding around them.
  *
- * Practice AI drops the console's bar and padding and lays out its own hero
- * edge to edge; an expanded rail eats 240px of a page built around a centred
- * headline and a three-card grid. The lesson runner is the same argument twice
- * over: it is a test, it puts a navigator down its own right-hand side, and a
- * second rail beside that one is just noise while someone is answering.
+ * Practice AI drops the console's bar and padding for its own hero; the lesson
+ * runner is a test with a navigator down its own right-hand side.
  *
- * Collapsed, NOT removed. A learner has to be able to get back to their
- * assignments without hunting, and a teacher previewing has to be able to leave
- * — the rail is the way out of both. Collapsing is a DEFAULT, not a lock: the
- * toggle still works and the choice made here is remembered like any other.
+ * ⚠️ THIS NO LONGER COLLAPSES THE RAIL. It used to: entering one of these routes
+ * forced the icon strip, on the argument that an expanded rail eats 240px of a
+ * page built around a centred headline. The owner removed it — clicking a menu
+ * item and watching the menu fold itself away is worse than a page being 240px
+ * narrower, and a rail that rearranges itself under you is hard to trust. The
+ * collapse is the reader's alone now. This function decides padding only.
  */
 function ownsTheSurface(pathname: string): boolean {
   return pathname.startsWith("/console/practice-ai") || pathname.startsWith("/learn/");
@@ -205,23 +211,22 @@ export function AppShell({
   const [open, setOpen] = useState(false); // mobile drawer
   // Seed from the live cookie (not just the prop) so a menu click that remounts the
   // shell can't re-expand a collapsed rail off a stale cached prop.
-  const [collapsed, setCollapsed] = useState(
-    () => ownsTheSurface(pathname) || readCollapsed(initialCollapsed),
-  ); // desktop icon-rail
+  // Desktop icon-rail. THE ROUTE NO LONGER GETS A VOTE — see below.
+  const [collapsed, setCollapsed] = useState(() => readCollapsed(initialCollapsed));
   const close = () => setOpen(false);
 
-  // Entering a full-surface route collapses the rail; leaving one gives back
-  // whatever the reader had chosen. Adjusted DURING RENDER rather than in an
-  // effect — the same pattern the console's panels use — so the rail is never
-  // painted expanded for a frame and then yanked in.
-  const [lastPath, setLastPath] = useState(pathname);
-  if (pathname !== lastPath) {
-    const leaving = ownsTheSurface(lastPath);
-    const entering = ownsTheSurface(pathname);
-    setLastPath(pathname);
-    if (entering && !leaving) setCollapsed(true);
-    else if (leaving && !entering) setCollapsed(readCollapsed(initialCollapsed));
-  }
+  /* ⚠️ NAVIGATING NO LONGER COLLAPSES THE RAIL. Removed at the owner's request.
+     Entering a full-surface route (Practice AI, the lesson runner) used to
+     collapse it automatically and leaving one used to give back whatever had
+     been chosen. The intent was to hand those pages their 250px back, but from
+     the reader's seat it just meant that clicking a menu item made the menu
+     disappear — a rail that rearranges itself under you is harder to trust than
+     one that is occasionally too wide.
+
+     The COLLAPSE IS NOW THE READER'S ALONE: the toggle sets it, the cookie
+     remembers it, and nothing else touches it. `ownsTheSurface` survives because
+     it still decides which routes get no content padding (below); it just no
+     longer has an opinion about the rail. */
 
   // Persist the collapse choice in a cookie so it holds across navigation — the
   // (app)↔(shell) layout boundary remounts the shell, which would otherwise reset it.

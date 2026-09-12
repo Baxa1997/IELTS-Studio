@@ -862,9 +862,20 @@
   flex: none;
   transition: transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
 }
+/* ── the group row ───────────────────────────────────────────────────────────
+   ONE control: the whole row is a <Link> that navigates when the group is shut
+   and folds when it is open (see sidebar-nav.tsx). It was briefly split into a
+   link plus a chevron button — `.lp-sb-grouplink` / `.lp-sb-caretbtn`, both gone
+   — which made folding a 26px target you had to aim at and left the obvious part
+   of the row unable to close what it had opened. */
 .lp-sb-grouprow {
   appearance: none;
   -webkit-appearance: none;
+  cursor: pointer;
+}
+.lp-sb-grouprow:focus-visible {
+  outline: 2px solid #3b36c9;
+  outline-offset: -2px;
 }
 @media (prefers-reduced-motion: reduce) {
   .lp-sb-sub,
@@ -1000,7 +1011,7 @@
     justify-content: center;
     /* Rings the RAIL'S OWN ground so the dot reads as sitting on the tile rather
        than punched out of it. Warm paper now, not white. */
-    border: 1.5px solid #f8f7f4;
+    border: 1.5px solid #fdfcfa;
   }
   /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
      shared text-collapse rule already gives it `max-width: 0`, and that is NOT
