@@ -75,36 +75,91 @@ describe("a group opens and shuts to its own height", () => {
   });
 });
 
-describe("the collapsed rail flattens the disclosures away", () => {
-  it("hides the group row, which cannot work at 72px", () => {
+describe("the collapsed rail keeps its groups and flies them out", () => {
+  const flyout = ".lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat)";
+
+  it("keeps the group row on screen as a centred tile", () => {
+    // It used to be `display: none` — the rail flattened into one column of
+    // glyphs. The groups stay groups at 72px now.
     const row = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-grouprow");
-    expect(declaration(row, "display")).toBe("none !important");
+    expect(declaration(row, "display")).toBeNull();
+    expect(declaration(row, "justify-content")).toBe("center");
   });
 
-  it("forces every group open, so nothing is unreachable at 72px", () => {
-    // With the parent row hidden, a shut group's destinations would have no
-    // route to them at all.
-    const sub = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-sub");
-    expect(declaration(sub, "grid-template-rows")).toBe("minmax(0, 1fr) !important");
+  it("anchors the card to the SECTION, not the rail", () => {
+    /* ⚠️ THE FAILURE THIS PREVENTS IS SPECTACULAR AND SILENT. `position:
+       absolute` resolves against the nearest positioned ancestor; without this
+       the nearest one is the rail, so every group's card lands at the same y and
+       they stack on top of each other. */
+    expect(
+      declaration(ruleBody(".lp-shell-sidebar--collapsed .lp-sb-section--group"), "position"),
+    ).toBe("relative");
+    expect(declaration(ruleBody(flyout), "position")).toBe("absolute");
+    expect(declaration(ruleBody(flyout), "left")).toBe("100%");
   });
 
-  it("lets the hover tooltip escape the clip", () => {
-    // At 72px the row's name exists ONLY as a `::after` beside the glyph,
-    // outside the wrapper that clips the tween. Hidden here and it is sliced
-    // off at the rail's edge — the same trade `.lp-sb-scroll` makes above it.
-    for (const selector of [
-      ".lp-shell-sidebar--collapsed .lp-sb-sub",
-      ".lp-shell-sidebar--collapsed .lp-sb-sub-inner",
-    ]) {
-      expect(declaration(ruleBody(selector), "overflow")).toBe("visible !important");
-    }
+  it("hides the card with visibility, so its links leave the tab order", () => {
+    // `display` cannot be transitioned; `opacity` alone leaves three dozen
+    // invisible tab stops in a 72px rail.
+    const body = ruleBody(flyout);
+    expect(declaration(body, "visibility")).toBe("hidden");
+    expect(declaration(body, "transition")).toContain("visibility");
   });
 
-  it("drops the indent, so the glyphs line up in one column", () => {
-    const inner = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-sub-inner");
+  it("keeps a hover bridge across the rail's own padding", () => {
+    /* The rail carries 12px of padding, so the section's right edge sits INSIDE
+       the rail's edge. Without padding on the flyout the pointer crosses a dead
+       gap between icon and card, the hover drops, and the menu closes under the
+       cursor — the classic flyout bug. */
+    expect(declaration(ruleBody(flyout), "padding-left")).toBe("20px");
+  });
+
+  it("opens on hover AND on focus, or the keyboard cannot reach it", () => {
+    const show = ruleBody(
+      ".lp-shell-sidebar--collapsed .lp-sb-section--group:hover .lp-sb-sub,\n  .lp-shell-sidebar--collapsed .lp-sb-section--group:focus-within .lp-sb-sub",
+    );
+    expect(declaration(show, "visibility")).toBe("visible");
+    expect(declaration(show, "opacity")).toBe("1");
+  });
+
+  it("gives the rows inside their labels back", () => {
+    // Every rule above the flyout shrinks a row to its glyph; the card is 206px
+    // wide and exists precisely so the labels can be read.
+    expect(declaration(ruleBody(`${flyout} .lp-sb-label`), "max-width")).toBe("200px !important");
+    expect(declaration(ruleBody(`${flyout} .lp-sb-label`), "opacity")).toBe("1 !important");
+    expect(declaration(ruleBody(`${flyout} .lp-sb-link`), "padding")).toBe("7px 9px !important");
+  });
+
+  it("leaves the untitled stacks flat, with no phantom card", () => {
+    // Assistant and Dashboard have no group row and nothing to fly out.
+    const flat = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-sub--flat");
+    expect(declaration(flat, "grid-template-rows")).toBe("minmax(0, 1fr) !important");
+    expect(declaration(flat, "position")).toBeNull();
+
+    const inner = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-sub-inner");
     expect(declaration(inner, "margin-left")).toBe("0 !important");
-    expect(declaration(inner, "padding-left")).toBe("0 !important");
-    expect(declaration(inner, "align-items")).toBe("center");
+    // At 72px a flat row's name is only a `::after` tooltip, drawn outside this
+    // box — clipping here slices it off at the rail's edge.
+    expect(declaration(inner, "overflow")).toBe("visible !important");
+  });
+
+  it("scopes every flyout rule away from the flat stacks", () => {
+    /* THE ONE-CHARACTER MISTAKE THIS CATCHES: dropping `:not(.lp-sb-sub--flat)`
+       from any of these turns Assistant and Dashboard into a card anchored to a
+       group row that does not exist. */
+    const collapsed = css.slice(css.indexOf(".lp-shell-sidebar--collapsed .lp-sb-grouprow"));
+    const flyoutRules = collapsed
+      .split("\n")
+      .filter(
+        (line) => line.includes(".lp-shell-sidebar--collapsed .lp-sb-sub") && line.includes("{"),
+      );
+    for (const line of flyoutRules) {
+      expect(
+        line.includes("--flat"),
+        `every collapsed .lp-sb-sub rule must name --flat, either way: ${line.trim()}`,
+      ).toBe(true);
+    }
+    expect(flyoutRules.length).toBeGreaterThan(5);
   });
 });
 

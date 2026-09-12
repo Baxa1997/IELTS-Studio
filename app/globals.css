@@ -888,6 +888,13 @@
   -webkit-appearance: none;
   cursor: pointer;
 }
+/* The flyout's heading exists at every rail width but only SHOWS at 72px, where
+   the panel stops being an indented list under a labelled row and becomes a card
+   beside a bare icon. In the expanded rail the group row above it is already the
+   heading, and a second copy inside the list is the same word twice. */
+.lp-sb-flyout-title {
+  display: none;
+}
 .lp-sb-grouprow:focus-visible {
   outline: 2px solid #3b36c9;
   outline-offset: -2px;
@@ -1126,43 +1133,178 @@
      own grey tray, which separates them whether the titles are showing or not,
      and a white line on a white rail would be invisible anyway. Its old
      `padding-top` also fought the tray's own padding. */
-  .lp-shell-sidebar--collapsed .lp-sb-section--group {
-    border-top-color: transparent;
-  }
 
-  /* ── the collapsed rail has no disclosures ───────────────────────────────
-     A 72px strip cannot show a group row: there is no label to put a chevron
-     beside, and a disclosure whose contents are hidden by a DIFFERENT mechanism
-     is a button that does nothing when you press it — which is precisely what
-     happens if the group row survives here and its items stay behind `0fr`.
+  /* ── the collapsed rail KEEPS its groups ─────────────────────────────────
+     It used to flatten them: the group row was hidden, every group forced open,
+     and the rail became one undifferentiated column of glyphs. The owner asked
+     for the opposite — the groups stay groups at 72px, and hovering one opens
+     its children as a card beside the rail.
 
-     So the rail flattens. The parent row goes, every child is forced open, and
-     the indent that made the nesting legible is removed, leaving the same flat
-     column of glyphs the collapsed rail has always been. Nothing is unreachable
-     at 72px that is reachable at 250px. */
+     That is the better trade. A flat column of fourteen icons is not a menu you
+     can read, and the tooltip that named each one could only ever name ONE at a
+     time. The flyout shows a whole group at once, with labels, which is what the
+     collapsed rail had been missing.
+
+     ⚠️ EVERY RULE BELOW EXCLUDES `.lp-sb-sub--flat`. The untitled sections
+     (Assistant, Dashboard) have no group row and nothing to fly out — they stay
+     exactly what they were, a plain stack of centred icons. Forgetting the
+     `:not()` gives those a phantom flyout anchored to nothing. */
   .lp-shell-sidebar--collapsed .lp-sb-grouprow {
-    display: none !important;
+    /* A centred 36px tile, like every other glyph in the strip. */
+    padding: 0 !important;
+    justify-content: center;
+    background: transparent !important;
+    border-color: transparent !important;
   }
-  .lp-shell-sidebar--collapsed .lp-sb-sub {
+  /* The flyout anchors to the section, so the section has to be the positioned
+     ancestor — without this every group's card resolves against the rail and
+     they all stack at the same y.
+
+     ⚠️ THIS IS THE ONLY RULE FOR THIS SELECTOR, and it has to stay that way.
+     There was a second one a few lines up carrying `border-top-color:
+     transparent` (a leftover from when collapsed sections were separated by a
+     hairline), and two rules for one selector is how a value gets changed in one
+     place and silently contradicted in the other — it is the exact trap the note
+     further down this file already records. The border declaration went with it:
+     nothing sets a top border on these any more. */
+  .lp-shell-sidebar--collapsed .lp-sb-section--group {
+    position: relative;
+  }
+
+  /* The untitled stacks: unchanged — forced open, flat, no indent. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub--flat {
     grid-template-rows: minmax(0, 1fr) !important;
     opacity: 1 !important;
-    /* Nothing is clipped at 72px — see the note on the inner wrapper below. */
     overflow: visible !important;
   }
-  .lp-shell-sidebar--collapsed .lp-sb-sub-inner {
+  .lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-sub-inner {
     margin-left: 0 !important;
     padding-left: 0 !important;
     border-left: none !important;
     align-items: center;
     gap: 4px !important;
-    /* ⚠️ THE CLIP HAS TO GO, OR THE COLLAPSED RAIL LOSES ITS ONLY LABELS.
+    /* ⚠️ THE CLIP HAS TO GO, OR THESE ROWS LOSE THEIR ONLY LABELS.
        `overflow: hidden` is what makes the open/shut tween possible at 250px,
-       but at 72px the row's name exists ONLY as a hover tooltip drawn with
-       `::after` beside the glyph — outside this box. Hidden here and the
-       tooltip is sliced off at the rail's edge. Nothing needs clipping in the
-       collapsed rail anyway: every group is forced open above. This is the same
-       trade `.lp-sb-scroll` already makes one level up. */
+       but at 72px a row's name exists ONLY as a hover tooltip drawn with
+       `::after` beside the glyph — outside this box. Same trade `.lp-sb-scroll`
+       makes one level up. */
     overflow: visible !important;
+  }
+
+  /* ── the flyout ───────────────────────────────────────────────────────────
+     Hidden by `visibility`, not `display`. A display swap cannot be
+     transitioned, and — more importantly — `visibility: hidden` takes the links
+     out of the tab order while the card is shut, so a collapsed rail does not
+     hand the keyboard three dozen invisible stops. The delayed `visibility` in
+     the transition is what lets the fade-out finish before it is pulled. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) {
+    position: absolute;
+    left: 100%;
+    top: -6px;
+    z-index: 60;
+    display: block;
+    grid-template-rows: none !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-4px);
+    overflow: visible !important;
+    /* THE HOVER BRIDGE, AND IT IS LOAD-BEARING. The rail carries 12px of its own
+       padding, so the section's right edge sits 12px INSIDE the rail's edge: a
+       card flush at `left: 100%` would overlap the rail, and one pushed past it
+       would leave a dead gap the pointer falls through on the way across. This
+       padding belongs to the flyout's hover area and spans both. */
+    padding-left: 20px;
+    transition:
+      opacity 0.14s ease,
+      transform 0.14s ease,
+      visibility 0s linear 0.14s;
+  }
+  /* `:focus-within` is not decoration — it is the only way to reach these links
+     from the keyboard. Focusing the group button opens the card, which makes its
+     contents focusable, which lets you tab straight on into them. */
+  .lp-shell-sidebar--collapsed .lp-sb-section--group:hover .lp-sb-sub,
+  .lp-shell-sidebar--collapsed .lp-sb-section--group:focus-within .lp-sb-sub {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition-delay: 0s;
+  }
+  /* The card itself. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-sub-inner {
+    min-width: 206px;
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    margin: 0 !important;
+    padding: 6px !important;
+    border: 1px solid #e7e4dc;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 18px 40px -18px rgba(28, 25, 15, 0.35);
+    align-items: stretch !important;
+    gap: 2px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-flyout-title {
+    display: block;
+    font-family: var(--font-hanken), system-ui, sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8b8883;
+    padding: 5px 9px 6px;
+  }
+  /* ── rows inside the card are FULL rows again ────────────────────────────
+     Every collapsed rule above this point shrinks a row to its glyph. Inside the
+     flyout all of it has to be undone, because the card is 206px wide and the
+     whole point of it is that the labels are readable. This is the one place in
+     the rail where a collapsed override gets overridden back. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link {
+    padding: 7px 9px !important;
+    justify-content: flex-start !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link > span {
+    gap: 10px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-chip {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 8px !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-label {
+    max-width: 200px !important;
+    opacity: 1 !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-trail {
+    position: static !important;
+    inset: auto !important;
+    max-width: none !important;
+    opacity: 1 !important;
+    margin-left: auto !important;
+    pointer-events: auto;
+  }
+  /* The active row wears its pill here, not the solid near-black tile the bare
+     strip uses — that tile exists because a 36px glyph has no label to put a
+     pill behind, and in the card it does. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link--active {
+    background: #eae7e0 !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link--active .lp-sb-chip {
+    background: transparent !important;
+    color: inherit !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-badge {
+    position: static !important;
+    border: 0 !important;
+    min-width: 0;
+    height: auto;
+    padding: 1px 7px !important;
+    font-size: 11.5px !important;
+  }
+  /* No tooltip inside the card — the label is right there, and the tooltip would
+     be a second copy of it floating over the next row down. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link:hover::after,
+  .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link:hover::before {
+    content: none;
   }
 
   /* ⚠️ THE CENTRING RULE FOR .lp-sb-link IS EARLIER IN THIS FILE, not here.

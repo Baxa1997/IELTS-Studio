@@ -846,6 +846,12 @@ export function SidebarNav({
               aria-hidden={section.title && !open ? true : undefined}
             >
               <div className="lp-sb-sub-inner">
+                {/* The flyout's heading. Hidden at every rail width except the
+                    collapsed one, where this panel is no longer an indented list
+                    under a labelled row but a card floating beside a bare icon —
+                    and a list of four links with nothing naming it is a menu you
+                    have to recognise by its contents. */}
+                {section.title ? <div className="lp-sb-flyout-title">{section.title}</div> : null}
                 {section.items.map(
                   ({ label, href, icon: Icon, soon, badge, badgeTone, countKey, accent }) => {
                     if (soon) {
