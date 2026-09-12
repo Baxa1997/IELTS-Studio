@@ -1312,6 +1312,36 @@
     content: none;
   }
 
+  /* ── hover, at 72px ──────────────────────────────────────────────────────
+     ⚠️ `.lp-sb-item:hover` REACHES NONE OF THIS. The collapsed rules above strip
+     each row's fill with `background: transparent !important` — the row has to
+     lose its pill so the chip can become the tile — and an `!important`
+     declaration beats a non-important one whatever the specificity. So every
+     hover in the collapsed rail has to be re-stated here. Without it the whole
+     strip goes dead under the pointer, and so does the flyout card, which is a
+     real menu and the one place it would be least forgivable.
+
+     In the bare strip THE ROW IS THE CHIP, so the fill goes on the chip. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-link:hover .lp-sb-chip,
+  .lp-shell-sidebar--collapsed .lp-sb-grouprow:hover .lp-sb-chip {
+    background: #f0eeea;
+  }
+  /* The current row keeps its solid near-black tile through a hover: it is the
+     only mark in a 72px strip and swapping it for the hover grey would read as
+     losing your place. Nothing to write — the active rule carries `!important`
+     and this one does not, so it already wins. This note is here because that
+     is not obvious from either rule on its own.
+
+     Inside the flyout the rows are full rows again, so the fill goes back on the
+     ROW — and needs `!important` of its own to beat the strip's. The active row
+     is excluded rather than outranked, matching the expanded rail, where an
+     inline fill means hovering the current item correctly does nothing. */
+  .lp-shell-sidebar--collapsed
+    .lp-sb-sub:not(.lp-sb-sub--flat)
+    .lp-sb-link:not(.lp-sb-link--active):hover {
+    background: #f0eeea !important;
+  }
+
   /* ⚠️ THE CENTRING RULE FOR .lp-sb-link IS EARLIER IN THIS FILE, not here.
      There was a second `.lp-shell-sidebar--collapsed .lp-sb-link` block at this
      point, and two rules for one selector in a file this size is how a value

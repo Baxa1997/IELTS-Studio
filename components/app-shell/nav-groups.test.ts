@@ -340,6 +340,44 @@ describe("rows keep the hover the stylesheet gives them", () => {
     expect(declaration(ruleBody(".lp-menu-item"), "background")).toBe("none");
   });
 
+  /**
+   * ⚠️ THE COLLAPSED RAIL DOES NOT INHERIT ANY OF IT.
+   *
+   * `.lp-shell-sidebar--collapsed .lp-sb-link` and `.lp-sb-grouprow` both strip
+   * the row's fill with `background: transparent !important` — the row has to
+   * lose its pill so the chip can become the 36px tile — and an `!important`
+   * declaration beats a non-important one whatever the specificity. So
+   * `.lp-sb-item:hover` reaches nothing at 72px, and every hover there has to be
+   * re-stated. Miss it and the strip goes dead under the pointer; miss it in the
+   * flyout and a real menu does.
+   */
+  it("re-states the hover at 72px, where !important has cut it off", () => {
+    // The bare strip: the row IS the chip, so the fill lands on the chip.
+    const strip = ruleBody(
+      ".lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-link:hover .lp-sb-chip,\n  .lp-shell-sidebar--collapsed .lp-sb-grouprow:hover .lp-sb-chip",
+    );
+    expect(declaration(strip, "background")).toBe("#f0eeea");
+  });
+
+  it("hovers the rows inside the flyout card, where they are full rows again", () => {
+    const card = ruleBody(
+      ".lp-shell-sidebar--collapsed\n    .lp-sb-sub:not(.lp-sb-sub--flat)\n    .lp-sb-link:not(.lp-sb-link--active):hover",
+    );
+    // `!important` of its own, or the strip's transparent wins.
+    expect(declaration(card, "background")).toBe("#f0eeea !important");
+  });
+
+  it("leaves the current row alone under the pointer, at every rail width", () => {
+    /* Expanded, the active row carries an inline fill that beats the hover rule.
+       Collapsed, its tile is `!important` and the chip hover is not. In the
+       flyout the active row is EXCLUDED by `:not()` rather than outranked —
+       without that it would go LIGHTER on hover than at rest, which reads as
+       losing your place. */
+    expect(css).toContain(".lp-sb-link:not(.lp-sb-link--active):hover");
+    const activeTile = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip");
+    expect(declaration(activeTile, "background")).toBe("#16150f !important");
+  });
+
   it("fills the whole row on hover, not a near-invisible wash", () => {
     // The reference is a soft warm grey pill. 5.5% black was not visible.
     for (const selector of [
