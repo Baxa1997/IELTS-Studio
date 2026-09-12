@@ -7,7 +7,7 @@ import {
   Bell,
   ChevronsLeft,
   ChevronsRight,
-  ChevronUp,
+  ChevronsUpDown,
   CreditCard,
   LogOut,
   type LucideIcon,
@@ -39,38 +39,38 @@ const BORDER = "#e6e4dc";
  *  own paper, and the thing that makes two white cards read as cards rather
  *  than as one continuous surface with a line drawn down it. */
 const CANVAS = "#f1efe9";
-/* ── the rail is a white card now ─────────────────────────────────────────────
-   It was a solid burgundy panel, and every colour that touched it was written
-   light-on-dark. That inverted wholesale: the rail is the design's white card,
-   its dividers are warm grey, and the only dark thing left in it is the profile
-   card at the foot (RAIL_DARK below), which keeps its light-on-dark values.
+/* ── the rail is WARM PAPER, and it is light all the way down ─────────────────
+   Two rebuilds ago this was a solid burgundy panel; one rebuild ago it was a
+   white card with a dark profile block at its foot. It is now the Base44
+   reference the owner supplied: one warm off-white surface, near-black ink,
+   warm-grey fills for hover and for "you are here", and NO dark region at all.
 
-   ⚠️ RAIL_FAINT IS NOT AN EDGE COLOUR. It is secondary text INSIDE the dark
-   profile card, so it stays a LIGHT value while everything else here went dark.
-   Reaching for it as a hairline is invisible in review and unreadable on screen.
-
-   (There was a RAIL_LINE here for dividers on the white rail. The only two
-   dividers left — the brand row's underline and the nav/footer split — are drawn
-   in globals.css, so the constant had no callers.) */
-const RAIL_BG = "#fff";
-/** The rail's own edge, on the same cool ramp as every other card (`LINE` in
- *  lib/theme/tokens.ts). It was a warm #e6e4dc, which left the one card the
- *  learner sees on every screen outlined in a different grey from the rest. */
-const RAIL_BORDER = "#e2e8f0";
-const RAIL_SHADOW = "0 4px 14px -10px rgba(22,35,43,.25)";
-/** The profile card at the foot of the rail — the one dark surface left. */
-const RAIL_DARK = "#16232b";
-const RAIL_DARKER = "#0f1a21"; // the user strip inside it
-const RAIL_DARK_LINE = "#2b3a44";
-const RAIL_FAINT = "#8ea3af"; // secondary text INSIDE the dark card
-const RAIL_DARK_TEXT = "#e6e9ea";
+   THE DARK PROFILE CARD IS GONE, and that is the change most likely to be
+   reverted by accident. It existed to anchor the foot of a white rail, and the
+   reference anchors it with a hairline instead. Every value that dressed it —
+   the #0f1a21 strip, the #8ea3af secondary text, the #e6e9ea menu ink, the
+   coral badge — was a light-on-dark value and none of them survive: dropped on
+   the new paper they are, in order, a black hole, illegible, invisible and
+   alarming. If the dark block ever comes back, it needs its own palette again;
+   do not reach for the names below. */
+const RAIL_BG = "#f8f7f4";
+/** The rail's own edge and its internal hairlines — one warm grey, matched to
+ *  the paper rather than to the cool ramp the content cards use. Two different
+ *  greys a few pixels apart read as a mistake. */
+const RAIL_BORDER = "#e7e4dc";
+const RAIL_SHADOW = "0 4px 14px -10px rgba(28,25,15,.18)";
+/** Rail ink. `RAIL_INK` is a label you read; `RAIL_FAINT` is the line under a
+ *  name that you don't. Both are DARK-on-light now. */
+const RAIL_INK = "#16150f";
+const RAIL_FAINT = "#8b8883";
 /** The role line under the centre/product name. Plain green text, not a pill:
- *  on a white rail a filled chip beside the name competed with the nav's own
- *  active tile for "this is the highlighted thing". */
+ *  a filled chip beside the name competes with the nav's own active pill for
+ *  "this is the highlighted thing". */
 const ACCENT = "#0b6b40";
-/** The collapse toggle's chevron. The rail's accent, not the old burgundy —
- *  which would otherwise be the single burgundy mark left on this surface. */
-const TOGGLE_INK = "#3b36c9";
+/** The collapse toggle's chevron — the rail's own ink, because the rail has no
+ *  accent colour any more and a lone indigo chevron would be the only hue on
+ *  the surface. */
+const TOGGLE_INK = "#4a463d";
 /** The logomark's tile. The brand square has always been tan (#D89A5C); the
  *  design draws it near-black, and on a white rail the tan read as a stray warm
  *  patch against an otherwise cool palette. Passed as a prop so the tan stays
@@ -568,7 +568,9 @@ export function AppShell({
             <div
               className={`lp-shell-content ${
                 contentClassName ??
-                (consoleSurface || ownsTheSurface(pathname) ? "" : "w-full px-4 py-5 sm:px-6 sm:py-6")
+                (consoleSurface || ownsTheSurface(pathname)
+                  ? ""
+                  : "w-full px-4 py-5 sm:px-6 sm:py-6")
               }`}
             >
               {children}
@@ -680,15 +682,18 @@ function ProfileMenu({
             bottom: "calc(100% + 8px)",
             left: 0,
             right: "auto",
-            minWidth: 210,
+            minWidth: 248,
             zIndex: 21,
-            background: RAIL_DARK,
-            border: `1px solid ${RAIL_DARK_LINE}`,
-            borderRadius: 12,
-            boxShadow: "0 22px 48px -18px rgba(22,35,43,.55)",
+            background: "#fff",
+            border: `1px solid ${RAIL_BORDER}`,
+            borderRadius: 14,
+            boxShadow: "0 24px 52px -20px rgba(28,25,15,.32)",
             padding: 7,
           }}
         >
+          {/* The header repeats the strip below it — avatar, name, subtitle —
+              because the menu opens OVER that strip and a panel that starts
+              with a bare list of links loses track of whose account it is. */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px 10px" }}>
             <Avatar name={name} size={36} />
             <div style={{ minWidth: 0 }}>
@@ -696,7 +701,7 @@ function ProfileMenu({
                 style={{
                   fontSize: 13.5,
                   fontWeight: 700,
-                  color: "#fff",
+                  color: RAIL_INK,
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
@@ -713,32 +718,38 @@ function ProfileMenu({
                   whiteSpace: "nowrap",
                 }}
               >
-                {email ?? roleLabel}
+                {roleLabel}
               </div>
             </div>
           </div>
-          <div style={{ height: 1, background: RAIL_DARK_LINE, margin: "2px 4px 6px" }} />
+          <div style={{ height: 1, background: RAIL_BORDER, margin: "2px 4px 6px" }} />
 
-          <Link
-            href="/notifications"
-            role="menuitem"
-            className="lp-menu-item"
-            onClick={() => setOpen(false)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              height: 40,
-              padding: "0 10px",
-              borderRadius: 9,
-              fontFamily: SANS,
-              fontSize: 14,
-              fontWeight: 600,
-              color: RAIL_DARK_TEXT,
-              textDecoration: "none",
-            }}
-          >
-            <Bell size={17} strokeWidth={2} />
+          {items.length > 0 ? (
+            <>
+              {/* The section label the reference uses over its workspace links.
+                  It earns its keep here for the same reason: these rows are
+                  about the CENTRE, and the rows under the email below are about
+                  the person signed in. One list would blur the two. */}
+              <MenuLabel>Workspace</MenuLabel>
+              {items.map(({ label, href, icon: Icon }) => (
+                <MenuRow key={href} href={href} icon={Icon} onClick={() => setOpen(false)}>
+                  {label}
+                </MenuRow>
+              ))}
+              <div style={{ height: 1, background: RAIL_BORDER, margin: "6px 4px" }} />
+            </>
+          ) : null}
+
+          {/* The email as a label rather than a row, exactly as the reference
+              draws it: it is not a link, it is the answer to "which account am I
+              in", sitting over the rows that act on that account. */}
+          <MenuLabel>{email ?? roleLabel}</MenuLabel>
+          {/* Notifications is ALSO in the strip below as a bell, and this copy is
+              not redundant: collapse the rail to 72px and the bell goes with the
+              rest of the strip, leaving this the only way to reach the page on
+              desktop (the top bar carrying the other bell is hidden above
+              768px). Deleting it quietly deletes the feature at one rail width. */}
+          <MenuRow href="/notifications" icon={Bell} onClick={() => setOpen(false)}>
             Notifications
             {unread > 0 ? (
               <span
@@ -748,10 +759,10 @@ function ProfileMenu({
                   padding: "0 6px",
                   height: 20,
                   borderRadius: 10,
-                  background: "#ff9b8f",
-                  color: "#16232b",
+                  background: "#b3261e",
+                  color: "#fff",
                   fontSize: 11.5,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   display: "grid",
                   placeItems: "center",
                 }}
@@ -759,174 +770,221 @@ function ProfileMenu({
                 {unread > 9 ? "9+" : unread}
               </span>
             ) : null}
-          </Link>
+          </MenuRow>
 
-          {items.length > 0 ? (
-            <>
-              {items.map(({ label, href, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  role="menuitem"
-                  className="lp-menu-item"
-                  onClick={() => setOpen(false)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    height: 40,
-                    padding: "0 10px",
-                    borderRadius: 9,
-                    fontFamily: SANS,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: RAIL_DARK_TEXT,
-                    textDecoration: "none",
-                  }}
-                >
-                  <Icon size={17} strokeWidth={2} />
-                  {label}
-                </Link>
-              ))}
-              {/* Sign out is fenced off. It is the only irreversible thing in
-                  here and it sits where a mis-aimed click lands. */}
-              <div style={{ height: 1, background: RAIL_DARK_LINE, margin: "6px 4px" }} />
-            </>
-          ) : null}
-
+          {/* Sign out is fenced off. It is the only irreversible thing in here
+              and it sits where a mis-aimed click lands. */}
+          <div style={{ height: 1, background: RAIL_BORDER, margin: "6px 4px" }} />
           <form action={signOut}>
             {/* No inline background — the .lp-menu-item:hover wash (globals.css)
                 can't beat an inline value. */}
             <button
               type="submit"
               role="menuitem"
-              className="lp-menu-item"
+              className="lp-menu-item lp-menu-item--danger"
               style={{
                 width: "100%",
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                height: 40,
+                height: 38,
                 padding: "0 10px",
                 border: "none",
                 borderRadius: 9,
                 fontFamily: SANS,
                 fontSize: 14,
-                fontWeight: 600,
-                color: "#ff9b8f",
+                fontWeight: 500,
+                color: "#b3261e",
+                background: "transparent",
                 cursor: "pointer",
               }}
             >
-              <LogOut size={17} strokeWidth={2} />
+              <LogOut size={17} strokeWidth={1.9} />
               Sign out
             </button>
           </form>
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={name}
-        /* NOT `lp-sb-item` any more. That class now carries the nav's DARK hover
-           wash (rgba(22,35,43,.05)), which is invisible on this dark card — and
-           it only happened to look right before because the two rules were
-           adjacent in the file and the later one won. The profile card has its
-           own hover in .lp-sb-profile-btn; sharing the nav's was always a
-           coincidence rather than a decision. */
-        className="lp-sb-profile-btn"
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "11px 12px",
-          border: 0,
-          // Resting background lives in .lp-sb-profile-btn (globals.css) so the
-          // hover wash works; inline only when open (inline beats the class).
-          background: open ? "#17242c" : undefined,
-          borderRadius: 12,
-          cursor: "pointer",
-          textAlign: "left",
-        }}
-      >
-        {/* The avatar carries the unread count, because the bell it replaced was
-            visible at a glance and a menu item is not. It survives the rail
-            being collapsed to icons, which is when the old bell disappeared
-            anyway. */}
-        <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
-          <Avatar name={name} size={36} />
-          {unread > 0 ? (
-            <span
-              aria-label={`${unread} unread`}
+      {/* The strip the reference draws: avatar, name over subtitle, the
+          up/down handle, and the bell beside it. It is a ROW OF TWO CONTROLS —
+          the account button and a separate link to /notifications — which is why
+          the bell is a sibling rather than a child: a <Link> nested inside a
+          <button> is invalid HTML and the browser un-nests it, which is how you
+          get a bell that opens the account menu. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title={name}
+          /* NOT `lp-sb-item`. That class carries the nav's hover wash and its
+             resting transparency; the profile strip has its own in
+             .lp-sb-profile-btn, and sharing the nav's was always a coincidence
+             of rule order rather than a decision. */
+          className="lp-sb-profile-btn"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "9px 8px",
+            border: 0,
+            // Resting background lives in .lp-sb-profile-btn (globals.css) so the
+            // hover wash works; inline only when open (inline beats the class).
+            background: open ? "rgba(28,25,15,.055)" : undefined,
+            borderRadius: 10,
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <Avatar name={name} size={34} />
+          {/* Name over email, and NO role pill. The role already has a permanent
+              home in the brand row at the top of the rail, where it sits under the
+              centre's name; repeating it here spent the only horizontal space this
+              strip has on a word that is already on screen. */}
+          <div className="lp-sb-profile-text" style={{ minWidth: 0, flex: 1 }}>
+            <div
               style={{
-                position: "absolute",
-                top: -2,
-                right: -3,
-                minWidth: 17,
-                height: 17,
-                padding: "0 4px",
-                borderRadius: 9,
-                background: "#ff9b8f",
-                color: "#16232b",
-                fontSize: 10.5,
-                fontWeight: 800,
-                display: "grid",
-                placeItems: "center",
-                // Rings the strip it sits on, so the badge reads as sitting ON the
-                // avatar rather than floating behind it. It was the rail's old
-                // burgundy, which would now draw a maroon halo on a near-black card.
-                boxShadow: `0 0 0 2px ${RAIL_DARKER}`,
+                fontSize: 13.5,
+                fontWeight: 600,
+                color: RAIL_INK,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              {unread > 9 ? "9+" : unread}
-            </span>
-          ) : null}
-        </span>
-        {/* Name over email, and NO role pill. The role already has a permanent
-            home in the brand row at the top of the rail, where it sits under the
-            centre's name; repeating it here spent the only horizontal space this
-            strip has on a word that is already on screen. */}
-        <div className="lp-sb-profile-text" style={{ minWidth: 0, flex: 1 }}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#fff",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {name}
+              {name}
+            </div>
+            <div
+              style={{
+                fontSize: 11.5,
+                color: RAIL_FAINT,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                marginTop: 1,
+              }}
+            >
+              {email ?? roleLabel}
+            </div>
           </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: RAIL_FAINT,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              marginTop: 1,
-            }}
-          >
-            {email ?? roleLabel}
-          </div>
-        </div>
-        <ChevronUp
-          className="lp-sb-profile-chev"
-          size={16}
-          color={RAIL_FAINT}
+          {/* Up-and-down, not up. The strip is a switcher in the reference and
+              the handle says "this opens", not "this opens upward" — and the old
+              chevron rotated 180° to point at the menu it had just opened. */}
+          <ChevronsUpDown
+            className="lp-sb-profile-chev"
+            size={15}
+            color={RAIL_FAINT}
+            style={{ flex: "none" }}
+          />
+        </button>
+        {/* The bell is BACK IN THE RAIL, where the reference puts it. It had been
+            folded into the account menu when the strip went dark, and the unread
+            count moved onto the avatar to compensate — a count you can see but
+            not click. This is the click. The dot is the count: at 8px there is
+            no room for a number, and "something is waiting" is the whole message
+            a bell has to carry (the menu row below it still shows how many). */}
+        <Link
+          href="/notifications"
+          className="lp-sb-profile-bell lp-sb-item"
+          aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
+          title="Notifications"
           style={{
+            position: "relative",
             flex: "none",
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform .15s ease",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            color: RAIL_FAINT,
           }}
-        />
-      </button>
+        >
+          <Bell size={17} strokeWidth={1.9} />
+          {unread > 0 ? (
+            <span
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 7,
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                background: "#d2571f",
+                // Rings the rail's own paper so the dot sits ON the glyph rather
+                // than behind it.
+                boxShadow: `0 0 0 2px ${RAIL_BG}`,
+              }}
+            />
+          ) : null}
+        </Link>
+      </div>
     </div>
+  );
+}
+
+/** A small uppercase label over a run of menu rows ("Workspace", the email). */
+function MenuLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontFamily: SANS,
+        fontSize: 11.5,
+        fontWeight: 500,
+        color: RAIL_FAINT,
+        padding: "6px 10px 4px",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** One row of the account menu. Same metrics for every row so the list reads as
+ *  one column — the reference's rows are all the same height whether they carry
+ *  a badge or not. */
+function MenuRow({
+  href,
+  icon: Icon,
+  onClick,
+  children,
+}: {
+  href: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      role="menuitem"
+      className="lp-menu-item"
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        height: 38,
+        padding: "0 10px",
+        borderRadius: 9,
+        fontFamily: SANS,
+        fontSize: 14,
+        fontWeight: 500,
+        color: RAIL_INK,
+        textDecoration: "none",
+      }}
+    >
+      <Icon size={17} strokeWidth={1.9} />
+      {children}
+    </Link>
   );
 }
 
@@ -936,11 +994,16 @@ function Avatar({ name, size }: { name: string; size: number }) {
       style={{
         width: size,
         height: size,
-        borderRadius: "50%",
-        // Flat, not a gradient. It sits on the dark #0f1a21 user strip, where a
-        // two-stop gradient at 30px just reads as an uneven disc.
-        background: "#0b6b40",
-        color: "#fff",
+        // A ROUNDED SQUARE, not a disc — the reference's account chip, and the
+        // one shape in the rail that is not a nav row, so it reads as an object
+        // (an account) rather than as another button.
+        borderRadius: Math.round(size * 0.28),
+        // Pastel fill, dark initials. It used to be solid emerald with white
+        // text because it sat on a near-black strip; on warm paper a saturated
+        // disc is the loudest thing in the rail, which the signed-in name is not
+        // supposed to be.
+        background: "#ece7f8",
+        color: "#4a3f8f",
         fontSize: Math.round(size * 0.36),
         fontWeight: 700,
         display: "flex",

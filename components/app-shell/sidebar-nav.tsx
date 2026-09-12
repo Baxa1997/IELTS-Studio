@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { SANS } from "@/lib/theme/tokens";
 import {
   Activity,
@@ -12,6 +12,7 @@ import {
   BookA,
   BookOpen,
   Building2,
+  ChevronRight,
   ClipboardList,
   CalendarRange,
   ChartNoAxesColumn,
@@ -21,9 +22,12 @@ import {
   Gift,
   Headphones,
   History,
+  Layers,
   LayoutDashboard,
+  type LucideIcon,
   Mic,
   Receipt,
+  School,
   ShieldAlert,
   SquarePen,
   Target,
@@ -34,125 +38,49 @@ import {
 } from "lucide-react";
 
 /**
- * The primary navigation (Option A brand). Students get a deliberately minimal
- * menu grouped into sections; staff get the console set. Active state by pathname.
- * Client component — it needs `usePathname` and holds the icons (which can't cross
- * the server→client boundary), so the server shell passes only the role string.
+ * The primary navigation. Students get a deliberately minimal menu; staff get
+ * the console set. Active state by pathname. Client component — it needs
+ * `usePathname` and holds the icons (which can't cross the server→client
+ * boundary), so the server shell passes only the role string.
  *
  * Labels/section titles/badges carry `lp-sb-*` classes so the shell can collapse the
  * rail to an icon-only strip purely in CSS (no prop drilling of a collapsed flag).
+ *
+ * ── WHAT CHANGED, AND WHY IT LOOKS SO DIFFERENT ─────────────────────────────
+ * The rail was rebuilt to the Base44 reference the owner supplied: warm paper
+ * instead of white, MONOCHROME icons instead of eleven tinted chips, and — the
+ * structural part — every titled section is now a COLLAPSIBLE GROUP: one row
+ * with an icon, a label and a chevron, its items nested underneath and animated
+ * open and shut.
+ *
+ * The tinted chips are gone on purpose and the argument for them is worth
+ * keeping, because it was a good one: a hue per destination is a landmark, so
+ * the eye finds "Marking" by its red rather than by reading four labels. What
+ * killed it is the group structure on top of it — a rail of eleven colours AND
+ * four disclosure rows has two competing systems for "what kind of thing is
+ * this", and the reference resolves that by letting the STRUCTURE speak and the
+ * colour stay quiet. The one thing still allowed to be loud is where you are.
  */
 
-/* ── the rail palette ────────────────────────────────────────────────────────
-   THE RAIL IS WHITE NOW, and every value here inverted with it. It was a solid
-   burgundy panel with light-on-dark text; the design it was rebuilt to (the
-   "Sidebar final" canvas) makes it a white floating card with grey trays, so
-   what used to be a translucent white wash is now a translucent dark one.
-
-   Nothing here may be reused on a dark surface. The one part of the rail that
-   is still dark is the profile card at the foot of it, and its colours live in
-   shell.tsx beside the markup that draws it. */
-const RAIL_TEXT = "#4b5359"; // resting item text
-const RAIL_MUTED = "#9aa0a6"; // section titles / counts / disabled
-/* ── the active row ──────────────────────────────────────────────────────────
-   A TINT ON WHITE, not a white card on grey. The rail's sections used to sit in
-   grey trays, so "you are here" could be said with a raised white tile. The
-   trays are gone (the owner asked for one flat white rail), and a white tile on
-   a white rail says nothing at all — so the active row inverts: it becomes the
-   only filled thing in the list. */
-const RAIL_ACTIVE_BG = "#e7eafb";
-const RAIL_ACTIVE_LINE = "transparent";
-const RAIL_ACTIVE_INK = "#3b36c9";
-/** Sections are now plain stacks — no ground, no padding of their own. The rail
- *  is one white surface and the gap between groups is the only separator. */
+/* ── the rail palette (Base44) ────────────────────────────────────────────────
+   Warm greys, near-black ink, no hue anywhere in the list. Every value here is
+   for a LIGHT warm surface (#f8f7f4, set in shell.tsx) — nothing here may be
+   reused on a dark one. The rail no longer HAS a dark surface: the profile card
+   at its foot went light with everything else. */
+const RAIL_TEXT = "#3f3d39"; // resting item text
+const RAIL_MUTED = "#8b8883"; // counts / disabled / secondary
+/** The active row: a warm grey pill with near-black ink. Base44 says "you are
+ *  here" with a fill one step darker than the rail and no colour at all, which
+ *  is why it survives the icons going monochrome — the fill was never the thing
+ *  carrying the message, the contrast was. */
+const RAIL_ACTIVE_BG = "#eae7e0";
+const RAIL_ACTIVE_INK = "#16150f";
+/** Sections are plain stacks — the rail is one surface and the gap between
+ *  groups is the only separator. */
 const TRAY: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 2,
-};
-
-/**
- * The icon chips.
- *
- * EVERY ROW IS COLOURED NOW, which is the biggest single change from the old
- * rail. That rail had exactly two accent rows and the rest were monochrome, on
- * the argument that "two animated/coloured items is a busy sidebar in which
- * neither one wins". That argument was about a DARK rail, where colour is
- * scarce and therefore loud. On the white rail the chip is a small tinted
- * square behind a 15px glyph, and the colour is doing a different job: it is a
- * landmark, so the eye finds "Marking" by its red rather than by reading four
- * labels. Rows are told apart by hue; the CURRENT row is still told by the
- * white card under it.
- */
-const CHIP = {
-  violet: { bg: "#efeafb", fg: "#6d3fc4" },
-  indigo: { bg: "#e7eafb", fg: "#3b36c9" },
-  green: { bg: "#e6f1ea", fg: "#0b6b40" },
-  forest: { bg: "#e6f1ea", fg: "#14714a" },
-  blue: { bg: "#e3f0f6", fg: "#1d6f92" },
-  rose: { bg: "#fbe9ef", fg: "#a83a5b" },
-  teal: { bg: "#e4f2f0", fg: "#0f7168" },
-  amber: { bg: "#fdf0dc", fg: "#b9770e" },
-  periwinkle: { bg: "#eae7fa", fg: "#5b4bd1" },
-  red: { bg: "#fbe6e4", fg: "#b3261e" },
-  neutral: { bg: "#f0efea", fg: "#6b7178" },
-} as const;
-
-type ChipTone = keyof typeof CHIP;
-
-/**
- * Which chip each destination wears, keyed by href.
- *
- * BY HREF RATHER THAN BY ICON, because the icons are not unique: `SquarePen`
- * draws both Writing and Marking, and the design gives those two different
- * colours on purpose (one is something you make, the other is something owed).
- * Keying by the icon component would have silently tied them together.
- *
- * The eleven entries the canvas actually specifies are copied from it; the rest
- * of the product's routes — which the canvas never drew — are assigned by the
- * same logic it uses, so a skill keeps one hue wherever it appears (Reading is
- * always forest, Listening always blue) and money is always teal. Anything
- * unlisted falls back to `neutral` rather than going uncoloured, so a new route
- * looks deliberate on the day it is added.
- */
-const CHIP_BY_HREF: Record<string, ChipTone> = {
-  // — from the canvas —
-  "/console/assistant": "violet",
-  "/console": "indigo",
-  "/console/groups": "green",
-  "/console/students": "blue",
-  "/console/calendar": "rose",
-  "/console/finance/payroll": "teal",
-  "/console/practice-ai": "amber",
-  "/write": "periwinkle",
-  "/read": "forest",
-  "/listen": "blue",
-  "/console/practice": "indigo",
-  "/console/marking": "red",
-  "/console/reports": "teal",
-  // — the rest of the product, by the same logic —
-  "/dashboard": "indigo",
-  "/plan": "rose",
-  "/activities": "teal",
-  "/referrals": "amber",
-  "/assignments": "green",
-  "/speak": "violet",
-  "/cefr": "blue",
-  "/vocabulary": "periwinkle",
-  "/certificates": "amber",
-  "/console/teachers": "blue",
-  "/console/finance": "teal",
-  "/console/finance/invoices": "teal",
-  "/console/payments": "green",
-  "/console/practices": "indigo",
-  // platform console
-  "/admin": "indigo",
-  "/admin/centers": "green",
-  "/admin/users": "blue",
-  "/admin/plans": "teal",
-  "/admin/referrals": "amber",
-  "/admin/moderation": "red",
-  "/admin/health": "forest",
 };
 
 type Item = {
@@ -185,25 +113,30 @@ type Item = {
    */
   alsoMatches?: string[];
   /**
-   * The two rows in the rail that are not places.
+   * The one row in the rail that is not a place.
    *
-   * Everything else takes you somewhere. These two DO something, and they were
-   * both wearing the same sparkle as each other, so the two features the console
-   * is built around read as links seven and eight in a list of nine.
+   * Everything else takes you somewhere; the Assistant DOES something, and it is
+   * the only animated row in the product — a slow breath on the icon, because it
+   * is the one item whose whole proposition is that something is listening.
    *
-   *   "assistant" — the thing that answers. Violet, and the only animated row in
-   *     the product: a slow breath on the icon, because it is the one item whose
-   *     whole proposition is that something is listening.
-   *   "generate"  — the thing that makes a lesson. Gold, tinted and outlined the
-   *     same way, and deliberately STILL. Two animated rows is a busy rail and
-   *     neither one wins; the colour alone is enough to lift it out of the list.
-   *
-   * Three would be too many. If a third row wants an accent, the honest move is
-   * to take one away from these.
+   * `generate` (Practice AI) keeps the marker so the two can be told apart in
+   * CSS, but with the chips gone it is no longer tinted: inside a collapsible
+   * "Practice" group it is already the first row under the heading, which is the
+   * position the tint was buying.
    */
   accent?: "assistant" | "generate";
 };
-type Section = { title?: string; items: Item[] };
+
+/**
+ * A run of the rail.
+ *
+ * A TITLE NOW MEANS A COLLAPSIBLE GROUP, not a heading. It used to render as a
+ * 10px uppercase label with the items loose underneath; it now renders as a real
+ * row — icon, label, chevron — that opens and shuts, with the items nested and
+ * indented under it. `icon` is therefore required wherever `title` is set, and
+ * an untitled section stays exactly what it was: a bare stack of top-level rows.
+ */
+type Section = { title?: string; icon?: LucideIcon; items: Item[] };
 
 /**
  * Which rail item the current path belongs to.
@@ -244,6 +177,7 @@ const STUDENT: Section[] = [
   },
   {
     title: "Practice",
+    icon: Layers,
     items: [
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
@@ -263,16 +197,23 @@ const STUDENT: Section[] = [
    CLAUDE.md) and they made the menu read like an unfinished admin tool. Add the
    line back to restore either. */
 const ADMIN: Section[] = [
-  /* The daily work, with NO heading over it.
-     It carried one — "Run" — and a heading on the FIRST group is the one place
-     it cannot earn its keep: every other section title says "you have left the
-     previous thing", but the top one sits under the logo naming a category
-     nobody chose to enter. The sections below still have titles, because there
-     the reader has actually crossed a boundary. */
+  /* The two rows that are never nested.
+     Assistant and Dashboard stay at the top level because they are where you
+     land and what you ask — an extra click to reach either is a click paid on
+     every visit. Everything else earns its group. */
   {
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+    ],
+  },
+  /* The centre itself — its people and its week. One group, because an owner
+     opens it with a single question ("who is in what, and when") and then works
+     inside it for a while. */
+  {
+    title: "Centre",
+    icon: Users,
+    items: [
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
@@ -285,12 +226,13 @@ const ADMIN: Section[] = [
       },
     ],
   },
-  /* Money is the owner's alone — a teacher's rail has no Finance section, and
+  /* Money is the owner's alone — a teacher's rail has no Finance group, and
      the pages redirect as well, because a rail is a hint and RLS is the gate.
      The one exception is /console/finance/payroll, which a teacher reaches from
      Teaching → My pay and which shows them exactly one payslip: their own. */
   {
     title: "Money",
+    icon: Wallet,
     items: [
       { label: "Finance", href: "/console/finance", icon: Wallet },
       { label: "Invoices", href: "/console/finance/invoices", icon: Receipt },
@@ -301,10 +243,11 @@ const ADMIN: Section[] = [
     ],
   },
   /* Learning, not "Insight" — and Announcements is out of it. A broadcast is
-     not an insight; putting it here is what made the section a drawer for
+     not an insight; putting it here is what made the group a drawer for
      anything that wasn't people or money. */
   {
     title: "Learning",
+    icon: School,
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
@@ -315,13 +258,11 @@ const ADMIN: Section[] = [
   },
   /* Announcements, Billing & plan and Settings are NOT here. They moved under
      the avatar (see accountItemsFor in shell.tsx): all three are things you go
-     and do occasionally and then leave alone, and as permanent sections they
-     cost two of the rail's six headings for pages an owner opens about once a
-     month — pushing the daily work further down every screen. */
+     and do occasionally and then leave alone. */
 ];
 
 /* The front desk. Runs classes and people, takes tuition, and never sees what
-   the center is worth or what staff are paid — so there is no Money section,
+   the center is worth or what staff are paid — so there is no Money group,
    no Billing and no Settings. "Take payment" is a purpose-built screen rather
    than the owner's Finance page with parts hidden: a redacted page still shows
    its own shape, and one wrong condition leaks a balance. */
@@ -330,6 +271,12 @@ const ADMINISTRATOR: Section[] = [
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: "Centre",
+    icon: Users,
+    items: [
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
@@ -340,14 +287,12 @@ const ADMINISTRATOR: Section[] = [
         // Attendance is this item's other tab — see ScheduleTabs.
         alsoMatches: ["/console/attendance"],
       },
+      { label: "Take payment", href: "/console/payments", icon: Wallet },
     ],
   },
   {
-    title: "Front desk",
-    items: [{ label: "Take payment", href: "/console/payments", icon: Wallet }],
-  },
-  {
     title: "Learning",
+    icon: School,
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
@@ -364,6 +309,17 @@ const TEACHER: Section[] = [
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+    ],
+  },
+  /* THE GROUP THE OWNER ASKED FOR, IN THE ORDER THEY NAMED IT.
+     Groups, Students, Calendar and My pay were four loose rows under no heading
+     at all; they are one disclosure now. My pay belongs with them rather than in
+     a Money group of its own — a teacher has no finances, they have a payslip,
+     and a one-item group is a heading spent on nothing. */
+  {
+    title: "Teaching",
+    icon: Users,
+    items: [
       { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
       { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
       {
@@ -385,8 +341,9 @@ const TEACHER: Section[] = [
      mean doing exactly what the student will do. */
   {
     title: "Practice",
+    icon: Layers,
     items: [
-      // First in the section: it is the only one a teacher MAKES rather than
+      // First in the group: it is the only one a teacher MAKES rather than
       // sits, and it is the reason they open this rail on a planning day.
       {
         label: "Practice AI",
@@ -401,6 +358,7 @@ const TEACHER: Section[] = [
   },
   {
     title: "Learning",
+    icon: School,
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
@@ -410,13 +368,9 @@ const TEACHER: Section[] = [
     ],
   },
   // Announcements is under the avatar (accountItemsFor), still scoped to their
-  // own groups. A teacher sets the group's homework and connects its Telegram
-  // channel, so barring them from mentioning it was the least defensible line
-  // in the whole permission split — moving it out of the rail does not undo
-  // that, it just stops a one-item section costing a heading.
+  // own groups.
 ];
 
-/** The platform owner: no organization, so none of the org menus apply. */
 /**
  * The platform rail, in the two halves the Super Admin design names.
  *
@@ -424,12 +378,17 @@ const TEACHER: Section[] = [
  * OPERATIONS is running the business behind them: what it earns, what needs
  * policing, and whether the machinery is up. They are separated because a super
  * admin arrives with one of those two questions and never both at once.
+ *
+ * Overview is lifted OUT of Platform and left at the top level, for the same
+ * reason Dashboard is on every other rail: it is where you land, and a landing
+ * page behind a disclosure is a click paid on every visit.
  */
 const SUPER_ADMIN: Section[] = [
+  { items: [{ label: "Overview", href: "/admin", icon: LayoutDashboard }] },
   {
     title: "Platform",
+    icon: Building2,
     items: [
-      { label: "Overview", href: "/admin", icon: LayoutDashboard },
       { label: "Centers", href: "/admin/centers", icon: Building2 },
       { label: "Users", href: "/admin/users", icon: Users },
       { label: "Plans & revenue", href: "/admin/plans", icon: CreditCard },
@@ -440,6 +399,7 @@ const SUPER_ADMIN: Section[] = [
   },
   {
     title: "Operations",
+    icon: Activity,
     items: [
       { label: "Moderation", href: "/admin/moderation", icon: ShieldAlert },
       { label: "System health", href: "/admin/health", icon: Activity },
@@ -459,6 +419,11 @@ const SUPER_ADMIN: Section[] = [
  * The number is DISTINCT STUDENTS, matching the Alerts badge and the list the
  * page opens with. A rail that says 3 over a page listing one name is worse
  * than no badge at all.
+ *
+ * ⚠️ Reports now lives inside a collapsible group, so the badge can be behind a
+ * shut disclosure. That is what `groupBadge` (below) is for: a closed group
+ * carries the sum of its children's alerts on its own row, so nothing that was
+ * visible before the rebuild can hide behind it.
  */
 function withReportsBadge(sections: Section[], newWork: number): Section[] {
   return sections.map((section) => ({
@@ -517,6 +482,7 @@ function sectionsFor(
     withAssignments,
     {
       title: "Practice",
+      icon: Layers,
       items: [
         { label: "Writing", href: "/write", icon: SquarePen },
         { label: "Reading", href: "/read", icon: BookOpen },
@@ -525,12 +491,24 @@ function sectionsFor(
         { label: "Vocabulary", href: "/vocabulary", icon: BookA },
       ],
     },
-    { title: "You", items: [{ label: "Certificates", href: "/certificates", icon: Award }] },
+    {
+      title: "You",
+      icon: Award,
+      items: [{ label: "Certificates", href: "/certificates", icon: Award }],
+    },
   ];
 }
 
-/** The tinted square behind every glyph. Its size is overridden in globals.css
- *  when the rail collapses (26px in the list, 36px as a standalone tile). */
+/**
+ * The square behind every glyph.
+ *
+ * IT HAS NO FILL ANY MORE — it is a positioning box, not a chip. It stays in the
+ * markup (rather than the icon sitting bare in the row) because the COLLAPSED
+ * rail is built on it: globals.css grows it from 26px to a 36px standalone tile
+ * and paints the active one, which is the only way a 72px icon strip can show
+ * "you are here" with no label to put a pill behind. Deleting this span is how
+ * the collapsed rail loses its highlight — see collapsed-rail.test.ts.
+ */
 const chipStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
@@ -551,14 +529,14 @@ function PendingDot() {
   return pending ? <span className="lp-nav-spin" aria-hidden /> : null;
 }
 
-/* Padding rather than a fixed height: the row is now as tall as its 26px chip
-   plus 7px of air either side, so the chip is what sets the rhythm. A height
-   here would fight it the moment the chip resizes in the collapsed rail. */
+/* Padding rather than a fixed height: the row is as tall as its 26px glyph box
+   plus 8px of air either side, so the glyph is what sets the rhythm. A height
+   here would fight it the moment the box resizes in the collapsed rail. */
 const itemBase: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 10,
-  padding: "7px 8px",
+  padding: "8px 9px",
   borderRadius: 9,
   fontFamily: SANS,
   fontSize: 14.5,
@@ -580,6 +558,84 @@ function shouldPrefetch(href: string): boolean {
     href.startsWith("/console/marking") ||
     href.startsWith("/console/practice-ai")
   );
+}
+
+/* ── where "which groups are open" is remembered ──────────────────────────────
+   Per browser, like the rail's own collapse: it is a preference about this
+   screen, not about the account, and it must not cost a round trip to read.
+
+   ⚠️ IT IS READ THROUGH `useSyncExternalStore`, NOT IN AN EFFECT, and the
+   difference matters twice over. localStorage cannot be read during render —
+   the server has none, so the first client paint would disagree with the
+   server's HTML and React would throw a hydration mismatch over the single most
+   visible component in the app. Reading it in an effect instead fixes the
+   mismatch but sets state on the first commit, which is a cascading render on
+   every page in the product (and the lint rule that catches it). This hook is
+   the answer to exactly that shape: `getServerSnapshot` returns the empty
+   preference the server rendered, and the stored value arrives afterwards
+   without a render of our own.
+
+   The snapshot is the RAW STRING rather than a parsed object on purpose —
+   `getSnapshot` is called on every render and must return something React can
+   compare with `Object.is`. A fresh `JSON.parse` is a new object every time and
+   would loop forever. */
+const OPEN_KEY = "sb_open_groups";
+
+const openStoreListeners = new Set<() => void>();
+
+function subscribeOpenGroups(listener: () => void): () => void {
+  openStoreListeners.add(listener);
+  // Another tab (or another mount of this rail) changing the preference.
+  window.addEventListener("storage", listener);
+  return () => {
+    openStoreListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function readOpenGroups(): string {
+  try {
+    return window.localStorage.getItem(OPEN_KEY) ?? "";
+  } catch {
+    // Blocked or full storage must not take the navigation down with it; every
+    // group simply stays open, which is the default anyway.
+    return "";
+  }
+}
+
+/** What the server rendered: no stored preference, so every group is open. */
+function serverOpenGroups(): string {
+  return "";
+}
+
+function writeOpenGroups(next: Record<string, boolean>): void {
+  try {
+    window.localStorage.setItem(OPEN_KEY, JSON.stringify(next));
+  } catch {
+    // Preference only — losing it costs a click, not a feature.
+  }
+  // `storage` does not fire in the tab that wrote, so tell our own subscribers.
+  for (const listener of openStoreListeners) listener();
+}
+
+/**
+ * What a SHUT group has to keep saying out loud.
+ *
+ * A badge inside a closed disclosure is a badge nobody sees, and two of the
+ * rail's badges are the ones the product exists to surface: unfinished homework
+ * and unopened marking. So a closed group carries the sum of its children's
+ * badges on its own row, and the tone escalates — one `alert` child makes the
+ * whole roll-up an alert, because "someone is waiting on you" outranks "here is
+ * your list".
+ */
+function groupBadge(items: Item[]): { badge: string; tone: "good" | "alert" } | null {
+  const badged = items.filter((i) => i.badge && Number(i.badge) > 0);
+  if (badged.length === 0) return null;
+  const total = badged.reduce((sum, i) => sum + Number(i.badge), 0);
+  return {
+    badge: String(total),
+    tone: badged.some((i) => i.badgeTone === "alert") ? "alert" : "good",
+  };
 }
 
 export function SidebarNav({
@@ -624,160 +680,261 @@ export function SidebarNav({
   const all = sections.flatMap((s) => s.items);
   const activeHref = resolveActiveHref(all, pathname);
 
+  /* ── which groups are open ───────────────────────────────────────────────
+     TWO SOURCES, MERGED, and they are separate because they answer different
+     questions. `stored` is the preference this browser has carried across
+     sessions; `session` is what has happened since this rail mounted — a
+     chevron pressed, or a group opened automatically because you navigated into
+     it. A missing entry in both means OPEN: the rail should show everything it
+     has until somebody says otherwise. */
+  const storedRaw = useSyncExternalStore(subscribeOpenGroups, readOpenGroups, serverOpenGroups);
+  const stored = useMemo<Record<string, boolean>>(() => {
+    if (!storedRaw) return {};
+    try {
+      const parsed: unknown = JSON.parse(storedRaw);
+      // A hand-edited or half-written value must not crash the navigation.
+      return parsed && typeof parsed === "object" ? (parsed as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  }, [storedRaw]);
+  const [session, setSession] = useState<Record<string, boolean>>({});
+  const openGroups = useMemo(() => ({ ...stored, ...session }), [stored, session]);
+
+  const groupOf = (href?: string) =>
+    href ? sections.find((s) => s.title && s.items.some((i) => i.href === href))?.title : undefined;
+  const activeGroup = groupOf(activeHref);
+
+  /* Navigating INTO a shut group opens it — otherwise you land on a page whose
+     rail shows nothing lit, which is the "you are nowhere" failure the active
+     highlight exists to prevent. Adjusted during render (the same pattern the
+     shell uses for its own collapse) so the group is never painted shut for a
+     frame and then yanked open.
+
+     It opens the group ONCE, on arrival, rather than forcing it open while you
+     are inside it — a disclosure you cannot close is not a disclosure. */
+  const [lastActiveGroup, setLastActiveGroup] = useState(activeGroup);
+  if (activeGroup !== lastActiveGroup) {
+    setLastActiveGroup(activeGroup);
+    if (activeGroup) setSession((prev) => ({ ...prev, [activeGroup]: true }));
+  }
+
+  const isOpen = (title: string) => openGroups[title] ?? true;
+  const toggleGroup = (title: string) => {
+    const next = { ...openGroups, [title]: !isOpen(title) };
+    setSession(next);
+    writeOpenGroups(next);
+  };
+
   return (
-    <nav style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {sections.map((section, si) => (
-        <div
-          key={section.title ?? si}
-          className={section.title ? "lp-sb-section lp-sb-section--titled" : "lp-sb-section"}
-          style={TRAY}
-        >
-          {section.title ? (
+    <nav style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {sections.map((section, si) => {
+        const open = section.title ? isOpen(section.title) : true;
+        const rollup = section.title && !open ? groupBadge(section.items) : null;
+        const GroupIcon = section.icon;
+        /* Ties the chevron to the list it opens for a screen reader. Derived
+           from the title rather than `useId` so it is stable across the
+           server/client boundary and readable in the DOM inspector. */
+        const panelId = section.title
+          ? `sb-group-${section.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
+          : undefined;
+        return (
+          <div
+            key={section.title ?? si}
+            className={section.title ? "lp-sb-section lp-sb-section--group" : "lp-sb-section"}
+            style={TRAY}
+          >
+            {section.title && GroupIcon ? (
+              <button
+                type="button"
+                onClick={() => toggleGroup(section.title as string)}
+                aria-expanded={open}
+                aria-controls={panelId}
+                data-label={section.title}
+                className="lp-sb-link lp-sb-item lp-sb-grouprow"
+                style={{
+                  ...itemBase,
+                  justifyContent: "space-between",
+                  width: "100%",
+                  background: "transparent",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  // A shut group holding the current page keeps the ink, so the
+                  // rail still answers "roughly where am I" at a glance.
+                  color: !open && activeGroup === section.title ? RAIL_ACTIVE_INK : RAIL_TEXT,
+                  fontWeight: !open && activeGroup === section.title ? 600 : 500,
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="lp-sb-chip" style={chipStyle}>
+                    <GroupIcon size={17} strokeWidth={1.9} />
+                  </span>
+                  <span className="lp-sb-label">{section.title}</span>
+                </span>
+                <span
+                  className="lp-sb-trail"
+                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  {rollup ? (
+                    <span className="lp-sb-badge" style={badgeStyle(rollup.tone)}>
+                      {rollup.badge}
+                    </span>
+                  ) : null}
+                  <ChevronRight
+                    className="lp-sb-caret"
+                    size={15}
+                    strokeWidth={2}
+                    style={{
+                      color: RAIL_MUTED,
+                      transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                    }}
+                  />
+                </span>
+              </button>
+            ) : null}
+            {/* THE ANIMATION IS A GRID ROW, not a max-height.
+                `grid-template-rows: 0fr → 1fr` tweens to the content's OWN
+                height, so a four-item group and a six-item group take the same
+                time and neither one snaps at the end. A max-height has to be
+                guessed at: too small clips the last row, too large spends most
+                of the transition animating empty space, which is what makes
+                accordions feel slow. */}
             <div
-              className="lp-sb-section-title"
-              style={{
-                fontFamily: SANS,
-                fontWeight: 700,
-                fontSize: 10.5,
-                letterSpacing: ".14em",
-                textTransform: "uppercase",
-                color: RAIL_MUTED,
-                padding: "6px 8px 4px",
-                margin: 0,
-              }}
+              id={panelId}
+              className={`lp-sb-sub${section.title ? "" : "lp-sb-sub--flat"}`}
+              data-open={open ? "1" : "0"}
+              aria-hidden={section.title && !open ? true : undefined}
             >
-              {section.title}
-            </div>
-          ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {section.items.map(
-              ({ label, href, icon: Icon, soon, badge, badgeTone, countKey, accent }) => {
-                const chip = CHIP[CHIP_BY_HREF[href] ?? "neutral"];
-                if (soon) {
-                  return (
-                    <span
-                      key={label}
-                      data-label={label}
-                      aria-label={label}
-                      aria-disabled="true"
-                      className="lp-sb-link"
-                      style={{
-                        ...itemBase,
-                        justifyContent: "space-between",
-                        color: RAIL_MUTED,
-                        fontWeight: 400,
-                        cursor: "default",
-                      }}
-                    >
-                      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span className="lp-sb-chip" style={{ ...chipStyle, opacity: 0.5 }}>
-                          <Icon size={15} strokeWidth={1.75} />
+              <div className="lp-sb-sub-inner">
+                {section.items.map(
+                  ({ label, href, icon: Icon, soon, badge, badgeTone, countKey, accent }) => {
+                    if (soon) {
+                      return (
+                        <span
+                          key={label}
+                          data-label={label}
+                          aria-label={label}
+                          aria-disabled="true"
+                          className="lp-sb-link"
+                          style={{
+                            ...itemBase,
+                            justifyContent: "space-between",
+                            color: RAIL_MUTED,
+                            fontWeight: 400,
+                            cursor: "default",
+                          }}
+                        >
+                          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span className="lp-sb-chip" style={{ ...chipStyle, opacity: 0.5 }}>
+                              <Icon size={17} strokeWidth={1.75} />
+                            </span>
+                            <span className="lp-sb-label">{label}</span>
+                          </span>
+                          <span
+                            className="lp-sb-soon-badge"
+                            style={{
+                              fontFamily: SANS,
+                              fontWeight: 700,
+                              fontSize: 10,
+                              letterSpacing: ".05em",
+                              color: RAIL_MUTED,
+                              background: "#eceae3",
+                              padding: "2px 7px",
+                              borderRadius: 6,
+                            }}
+                          >
+                            SOON
+                          </span>
                         </span>
-                        <span className="lp-sb-label">{label}</span>
-                      </span>
-                      <span
-                        className="lp-sb-soon-badge"
+                      );
+                    }
+                    const selected = href === activeHref;
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        prefetch={shouldPrefetch(href) ? undefined : false}
+                        data-label={label}
+                        aria-label={label}
+                        aria-current={selected ? "page" : undefined}
+                        /* `tabIndex={-1}` inside a shut group: the rows are
+                           still in the DOM (they have to be — the grid tween
+                           measures them), and a link you cannot see but can tab
+                           to is a keyboard trap. `aria-hidden` on the wrapper
+                           handles screen readers; this handles the focus ring. */
+                        tabIndex={section.title && !open ? -1 : undefined}
+                        className={`lp-sb-link lp-sb-item${selected ? "lp-sb-link--active" : ""}${accent === "assistant" ? "lp-sb-assistant" : ""}${selected && accent ? "lp-sb-accent-active" : ""}`}
                         style={{
-                          fontFamily: SANS,
-                          fontWeight: 700,
-                          fontSize: 10,
-                          letterSpacing: ".05em",
-                          color: RAIL_MUTED,
-                          background: "#eceae3",
-                          padding: "2px 7px",
-                          borderRadius: 6,
+                          ...itemBase,
+                          justifyContent: "space-between",
+                          fontWeight: selected ? 600 : 400,
+                          color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
+                          background: selected ? RAIL_ACTIVE_BG : undefined,
                         }}
                       >
-                        SOON
-                      </span>
-                    </span>
-                  );
-                }
-                const active = href === activeHref;
-                /* EVERY active row gets the raised white tile now, accent rows
-                   included. The old rule excluded them so they would not "look
-                   like a second dashboard default" — but that was when colour
-                   WAS the selection signal, so a coloured row that was also
-                   selected said the same thing twice. Now the chip says what a
-                   row is and the white tile says where you are; they are two
-                   different statements and can safely both be true. */
-                const selected = active;
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    prefetch={shouldPrefetch(href) ? undefined : false}
-                    data-label={label}
-                    aria-label={label}
-                    aria-current={selected ? "page" : undefined}
-                    className={`lp-sb-link lp-sb-item${selected ? " lp-sb-link--active" : ""}${accent === "assistant" ? " lp-sb-assistant" : ""}${active && accent ? " lp-sb-accent-active" : ""}`}
-                    style={{
-                      ...itemBase,
-                      justifyContent: "space-between",
-                      fontWeight: selected ? 600 : 400,
-                      color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
-                      background: selected ? RAIL_ACTIVE_BG : undefined,
-                      border: `1px solid ${selected ? RAIL_ACTIVE_LINE : "transparent"}`,
-                    }}
-                  >
-                    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span
-                        /* Only the Assistant breathes, and only while you are
-                           not on it: once you are ON the page, an icon nudging
-                           for attention is asking you to go somewhere you
-                           already are. */
-                        className={`lp-sb-chip${accent === "assistant" ? " lp-sb-ai" : ""}`}
-                        style={{ ...chipStyle, background: chip.bg, color: chip.fg }}
-                      >
-                        <Icon size={15} strokeWidth={1.75} />
-                      </span>
-                      <span className="lp-sb-label">{label}</span>
-                    </span>
-                    <span
-                      className="lp-sb-trail"
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      {/* A count of zero is still worth showing — "Teachers 0" is
-                        the fact an empty center most needs to see. */}
-                      {countKey && counts?.[countKey] != null ? (
-                        <span
-                          style={{
-                            fontFamily: SANS,
-                            fontSize: 12,
-                            color: RAIL_MUTED,
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {counts[countKey].toLocaleString()}
+                        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span
+                            /* Only the Assistant breathes, and only while you are
+                               not on it: once you are ON the page, an icon nudging
+                               for attention is asking you to go somewhere you
+                               already are. */
+                            className={`lp-sb-chip${accent === "assistant" ? "lp-sb-ai" : ""}`}
+                            style={chipStyle}
+                          >
+                            <Icon size={17} strokeWidth={selected ? 2 : 1.75} />
+                          </span>
+                          <span className="lp-sb-label">{label}</span>
                         </span>
-                      ) : null}
-                      {badge ? (
                         <span
-                          className="lp-sb-badge"
-                          style={{
-                            fontFamily: SANS,
-                            fontWeight: 600,
-                            fontSize: 11.5,
-                            color: "#fff",
-                            background: badgeTone === "alert" ? "#b3261e" : "#0b6b40",
-                            padding: "1px 7px",
-                            borderRadius: 20,
-                            flexShrink: 0,
-                            fontVariantNumeric: "tabular-nums",
-                          }}
+                          className="lp-sb-trail"
+                          style={{ display: "flex", alignItems: "center", gap: 6 }}
                         >
-                          {badge}
+                          {/* A count of zero is still worth showing — "Teachers 0" is
+                            the fact an empty center most needs to see. */}
+                          {countKey && counts?.[countKey] != null ? (
+                            <span
+                              style={{
+                                fontFamily: SANS,
+                                fontSize: 12,
+                                color: RAIL_MUTED,
+                                fontVariantNumeric: "tabular-nums",
+                              }}
+                            >
+                              {counts[countKey].toLocaleString()}
+                            </span>
+                          ) : null}
+                          {badge ? (
+                            <span className="lp-sb-badge" style={badgeStyle(badgeTone)}>
+                              {badge}
+                            </span>
+                          ) : null}
+                          <PendingDot />
                         </span>
-                      ) : null}
-                      <PendingDot />
-                    </span>
-                  </Link>
-                );
-              },
-            )}
+                      </Link>
+                    );
+                  },
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </nav>
   );
+}
+
+/** The two badge tones, shared by an item and by a shut group's roll-up so the
+ *  number does not change colour when the disclosure closes over it. */
+function badgeStyle(tone: "good" | "alert" = "good"): React.CSSProperties {
+  return {
+    fontFamily: SANS,
+    fontWeight: 600,
+    fontSize: 11.5,
+    color: "#fff",
+    background: tone === "alert" ? "#b3261e" : "#0b6b40",
+    padding: "1px 7px",
+    borderRadius: 20,
+    flexShrink: 0,
+    fontVariantNumeric: "tabular-nums",
+  };
 }

@@ -805,6 +805,74 @@
     padding 0.28s ease,
     margin 0.28s ease;
 }
+
+/* ── collapsible groups (Base44) ─────────────────────────────────────────────
+   A titled section is a disclosure now: one row with an icon, a label and a
+   chevron, its items nested underneath.
+
+   ⚠️ THE OPEN/SHUT TWEEN IS A GRID ROW, NOT A MAX-HEIGHT, and that is the whole
+   reason this reads as smooth. `grid-template-rows: 0fr → 1fr` animates to the
+   content's OWN height, so a two-item group and a six-item group take the same
+   time and neither snaps at the end. A max-height has to be guessed: too small
+   clips the last row, too large spends most of the duration animating empty
+   space — which is exactly what makes an accordion feel sluggish.
+
+   The `minmax(0, …)` is load-bearing: a grid row's default minimum is
+   `auto`, which refuses to go below the content's height, so `0fr` alone
+   collapses to nothing at all only if the minimum is pinned to 0 first. */
+.lp-sb-sub {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.22s ease;
+}
+.lp-sb-sub[data-open="0"] {
+  grid-template-rows: minmax(0, 0fr);
+  opacity: 0;
+}
+/* The inner wrapper is what actually clips. It must carry NO margin or border of
+   its own in the vertical axis — an overflow-hidden box with margin still
+   reserves that margin at 0fr, and the group would never quite shut. */
+.lp-sb-sub-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  /* The nested rows step in, with a hairline running down the group so the
+     indent reads as containment rather than as a stray left margin. */
+  margin-left: 21px;
+  padding-left: 10px;
+  border-left: 1px solid #e7e4dc;
+  transition:
+    margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    padding 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    border-color 0.2s ease;
+}
+/* An UNTITLED section has no disclosure and no parent to indent under, so it
+   keeps the full width. Same element, so the tween machinery above is shared. */
+.lp-sb-sub--flat .lp-sb-sub-inner {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+/* The chevron is the only thing in the rail that rotates. Same easing as the
+   rows it opens, so the two read as one gesture. */
+.lp-sb-caret {
+  flex: none;
+  transition: transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.lp-sb-grouprow {
+  appearance: none;
+  -webkit-appearance: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-sb-sub,
+  .lp-sb-caret,
+  .lp-sb-sub-inner {
+    transition: none;
+  }
+}
 /* The EngProgress lockup: full wordmark when expanded, boxed-"P" logomark when the rail
    collapses. The mark is hidden until the desktop media query swaps them. */
 .lp-sb-logo-mark {
@@ -889,8 +957,12 @@
     background: transparent !important;
     box-shadow: none !important;
   }
+  /* The one solid mark in a 72px strip. Near-black rather than the expanded
+     rail's grey pill: with no label beside it, a two-step-darker tile on warm
+     paper is not enough to find at a glance, and orientation is the only job
+     the collapsed rail's highlight has. */
   .lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip {
-    background: #3b36c9 !important;
+    background: #16150f !important;
     color: #fff !important;
   }
   /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
@@ -909,7 +981,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1.5px solid #fff;
+    /* Rings the RAIL'S OWN ground so the dot reads as sitting on the tile rather
+       than punched out of it. Warm paper now, not white. */
+    border: 1.5px solid #f8f7f4;
   }
   /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
      shared text-collapse rule already gives it `max-width: 0`, and that is NOT
@@ -977,6 +1051,13 @@
      zero width, but the row still packed to the start, so the avatar sat left of
      centre in the 48px content box. Zeroing the padding alone never fixed that —
      it only made the box narrower around an off-centre disc. */
+  /* The bell goes with the rest of the strip. A 48px content box cannot hold an
+     avatar AND a second control side by side — it would overflow the rail — and
+     the account menu keeps its own Notifications row precisely so this width
+     does not lose the feature. */
+  .lp-shell-sidebar--collapsed .lp-sb-profile-bell {
+    display: none !important;
+  }
   .lp-shell-sidebar--collapsed .lp-sb-profile-btn {
     justify-content: center !important;
     padding-left: 0 !important;
@@ -999,9 +1080,45 @@
      own grey tray, which separates them whether the titles are showing or not,
      and a white line on a white rail would be invisible anyway. Its old
      `padding-top` also fought the tray's own padding. */
-  .lp-shell-sidebar--collapsed .lp-sb-section--titled {
+  .lp-shell-sidebar--collapsed .lp-sb-section--group {
     border-top-color: transparent;
   }
+
+  /* ── the collapsed rail has no disclosures ───────────────────────────────
+     A 72px strip cannot show a group row: there is no label to put a chevron
+     beside, and a disclosure whose contents are hidden by a DIFFERENT mechanism
+     is a button that does nothing when you press it — which is precisely what
+     happens if the group row survives here and its items stay behind `0fr`.
+
+     So the rail flattens. The parent row goes, every child is forced open, and
+     the indent that made the nesting legible is removed, leaving the same flat
+     column of glyphs the collapsed rail has always been. Nothing is unreachable
+     at 72px that is reachable at 250px. */
+  .lp-shell-sidebar--collapsed .lp-sb-grouprow {
+    display: none !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub {
+    grid-template-rows: minmax(0, 1fr) !important;
+    opacity: 1 !important;
+    /* Nothing is clipped at 72px — see the note on the inner wrapper below. */
+    overflow: visible !important;
+  }
+  .lp-shell-sidebar--collapsed .lp-sb-sub-inner {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    border-left: none !important;
+    align-items: center;
+    gap: 4px !important;
+    /* ⚠️ THE CLIP HAS TO GO, OR THE COLLAPSED RAIL LOSES ITS ONLY LABELS.
+       `overflow: hidden` is what makes the open/shut tween possible at 250px,
+       but at 72px the row's name exists ONLY as a hover tooltip drawn with
+       `::after` beside the glyph — outside this box. Hidden here and the
+       tooltip is sliced off at the rail's edge. Nothing needs clipping in the
+       collapsed rail anyway: every group is forced open above. This is the same
+       trade `.lp-sb-scroll` already makes one level up. */
+    overflow: visible !important;
+  }
+
   /* ⚠️ THE CENTRING RULE FOR .lp-sb-link IS EARLIER IN THIS FILE, not here.
      There was a second `.lp-shell-sidebar--collapsed .lp-sb-link` block at this
      point, and two rules for one selector in a file this size is how a value
@@ -1940,7 +2057,7 @@
   /* Divider weight from the shared ramp (HAIR), not the old warm #f0eee8 — it
      sits a few pixels from the rail's own edge, so two different greys there
      read as a mistake. */
-  border-bottom: 1px solid #eff2f6;
+  border-bottom: 1px solid #eae7df;
   transition:
     margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
@@ -1991,7 +2108,7 @@
     border-color 0.15s ease;
 }
 .lp-sb-item:hover {
-  background: rgba(22, 35, 43, 0.05);
+  background: rgba(28, 25, 15, 0.055);
 }
 /* The active row already carries a white fill inline, and an inline background
    beats this rule — so hovering the current item correctly does nothing. */
@@ -1999,18 +2116,28 @@
 /* Profile card: this is the ONE part of the rail that is still dark, so its
    washes stay light-on-dark. The resting fill lives here (not inline) so the
    hover works; the open state is set inline and wins over both. */
+/* Profile strip: the rail's last dark surface went LIGHT with everything else.
+   It was a solid #0f1a21 block at the foot of a white panel; the Base44
+   reference makes it part of the same paper, separated by a hairline rather
+   than by a colour. The resting fill lives here (not inline) so the hover
+   works; the open state is set inline and wins over both. */
 .lp-sb-profile-btn {
-  background: #0f1a21;
+  background: transparent;
 }
 .lp-sb-profile-btn:hover {
-  background: #17242c;
+  background: rgba(28, 25, 15, 0.055);
 }
-/* Profile-menu rows (Sign out) — soft red wash on hover, tuned for the dark menu. */
+/* Account-menu rows — a warm grey wash on the white menu card. It was a soft red
+   tuned for a dark menu; on white that reads as an error state on every row. */
 .lp-menu-item {
   transition: background 0.15s ease;
 }
 .lp-menu-item:hover {
-  background: rgba(240, 133, 122, 0.14);
+  background: #f4f2ec;
+}
+/* Sign out is the one destructive row, so it alone keeps a red wash. */
+.lp-menu-item--danger:hover {
+  background: #fbeceb;
 }
 .lp-row {
   transition: background 0.15s ease;

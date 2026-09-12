@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { Crown } from "lucide-react";
 
 import { SANS } from "@/lib/theme/tokens";
 import type { UsageSummary } from "@/lib/quota";
@@ -10,25 +10,34 @@ import type { UsageSummary } from "@/lib/quota";
  * left (gradings + practice sets), and an Upgrade button when a higher tier
  * exists.
  *
- * ⚠️ REPAINTED FOR A WHITE RAIL. Every colour in here used to be light-on-dark
- * — a translucent white fill, `#B08E9B` labels, a `#F2C3D3` button — because
- * the rail was a solid burgundy panel. The rail is now the design's white card,
- * and none of that survives the change: a white-on-white card with pale pink
- * text is invisible, and this is the one thing in the rail that tells a learner
- * how much practice they have left. It now dresses as a tray, like the nav
- * groups above it.
+ * ⚠️ REPAINTED TWICE. It was light-on-dark (the rail was a burgundy panel),
+ * then a grey tray on a white rail. The rail is warm paper now, so a grey tray
+ * has nothing to sit against: this is the Base44 reference's "Upgrade your
+ * plan" card — WHITE on the warm ground, hairline border, the crown on the
+ * right — which is the one place in the rail where a raised surface still says
+ * something, because everything around it is flat.
+ *
+ * The quota rows stay. The reference's card is a pure CTA, but this is the only
+ * thing that tells a learner how much practice is left before they hit a wall,
+ * and moving that behind a click to sell an upgrade harder is the wrong trade.
  */
+/** The rail's single hue — the Base44 reference's orange, used ONLY on the
+ *  upgrade CTA (and, in the shell, the unread dot). Everything else in the rail
+ *  is warm grey; if a third thing wants this colour, one of these two should
+ *  give it up. */
+const ACCENT = "#d2571f";
+
 export function PlanCard({ usage }: { usage: UsageSummary }) {
   const upgradable = usage.plan !== "enterprise";
   return (
     <div
       className="lp-sb-target"
       style={{
-        background: "#f6f6f3",
-        border: "1px solid #e6e4dc",
+        background: "#fff",
+        border: "1px solid #e7e4dc",
         borderRadius: 12,
         padding: 12,
-        color: "#16232b",
+        color: "#16150f",
         display: "flex",
         flexDirection: "column",
         gap: 10,
@@ -38,28 +47,14 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
         <span
           style={{
             fontFamily: SANS,
-            fontWeight: 700,
-            fontSize: 10.5,
-            letterSpacing: ".14em",
-            textTransform: "uppercase",
-            color: "#9aa0a6",
-          }}
-        >
-          Your plan
-        </span>
-        <span
-          style={{
-            fontFamily: SANS,
             fontWeight: 600,
-            fontSize: 11.5,
-            color: usage.plan === "trial" ? "#6b7178" : "#3b36c9",
-            background: usage.plan === "trial" ? "#eceae3" : "#e7eafb",
-            padding: "2px 9px",
-            borderRadius: 999,
+            fontSize: 13.5,
+            color: "#16150f",
           }}
         >
           {usage.planName}
         </span>
+        <Crown size={16} strokeWidth={1.9} color={ACCENT} />
       </div>
 
       <QuotaRow label="Gradings" used={usage.grade.used} limit={usage.grade.limit} />
@@ -80,21 +75,21 @@ export function PlanCard({ usage }: { usage: UsageSummary }) {
             height: 34,
             marginTop: 2,
             borderRadius: 9,
-            // Solid indigo on the grey tray. The old light-fill/dark-ink
-            // inversion existed only because a burgundy button would have
-            // vanished into a burgundy rail; against #f6f6f3 the filled button
-            // is both legible and the loudest thing in the card, which is what
-            // an upgrade CTA should be.
-            background: "#3b36c9",
-            color: "#fff",
+            // OUTLINED, NOT FILLED — the reference's upgrade button, and the
+            // right weight here: the card is already the only raised surface in
+            // a flat rail, so a solid block inside it is the second shout in a
+            // row. The warm accent is the rail's ONE hue; everything else on
+            // this surface is grey on purpose.
+            background: "#fff",
+            border: `1px solid ${ACCENT}`,
+            color: ACCENT,
             fontFamily: SANS,
             fontSize: 13,
             fontWeight: 600,
             textDecoration: "none",
-            boxShadow: "0 6px 14px -8px rgba(59,54,201,.7)",
           }}
         >
-          Upgrade <ArrowUpRight size={14} />
+          Upgrade your plan
         </Link>
       ) : null}
     </div>
@@ -113,12 +108,12 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
           alignItems: "baseline",
           fontFamily: SANS,
           fontSize: 12,
-          color: "#6b7178",
+          color: "#8b8883",
           marginBottom: 4,
         }}
       >
         <span>{label}</span>
-        <span style={{ fontWeight: 700, color: left === 0 ? "#b3261e" : "#16232b" }}>
+        <span style={{ fontWeight: 600, color: left === 0 ? "#b3261e" : "#16150f" }}>
           {limit == null ? "Unlimited" : `${left} left`}
         </span>
       </div>
@@ -127,7 +122,7 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
           style={{
             height: 4,
             borderRadius: 999,
-            background: "#e0ded6",
+            background: "#eceae2",
             overflow: "hidden",
           }}
         >
@@ -136,7 +131,7 @@ function QuotaRow({ label, used, limit }: { label: string; used: number; limit: 
               height: "100%",
               width: `${Math.round((1 - frac) * 100)}%`,
               borderRadius: 999,
-              background: left === 0 ? "#b3261e" : "#3b36c9",
+              background: left === 0 ? "#b3261e" : "#4a463d",
             }}
           />
         </div>
