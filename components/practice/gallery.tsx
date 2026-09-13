@@ -124,6 +124,7 @@ export function PracticeGallery({
   columns = 4,
   statusLabel = "All statuses",
   statuses,
+  bleed = false,
 }: {
   /** Omit when the page already draws its own header — the console pages keep
    *  their `PageHead` and their status tabs above the grid. */
@@ -151,6 +152,16 @@ export function PracticeGallery({
   /** The second filter's options. Omit and the Filter select falls back to
    *  filtering by category, which is what the pages with only one axis want. */
   statuses?: string[];
+  /**
+   * Run the grid edge to edge across the page instead of inside its gutter,
+   * with as many columns as the width actually holds.
+   *
+   * For a page that owns its full width — the centre's practice board. The
+   * toolbar and chips keep the gutter; only the ruled grid reaches the edges,
+   * which is what makes it read as one collection spanning the page. `columns`
+   * is ignored when this is on: the count follows the space, not the viewport.
+   */
+  bleed?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -290,10 +301,12 @@ export function PracticeGallery({
           </span>
         </div>
       ) : (
-        <div className={cx("pg-grid", `pg-grid--${columns}`)}>
-          {visible.map((item) => (
-            <Card key={item.id} item={item} />
-          ))}
+        <div className={cx(bleed && "pg-bleed")}>
+          <div className={cx("pg-grid", bleed ? "pg-grid--fill" : `pg-grid--${columns}`)}>
+            {visible.map((item) => (
+              <Card key={item.id} item={item} />
+            ))}
+          </div>
         </div>
       )}
     </div>

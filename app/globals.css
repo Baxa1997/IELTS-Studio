@@ -264,8 +264,8 @@
    THE ONLY ANIMATED THING IN THE RAIL, and that exclusivity is the whole
    mechanism. Two moving items is a busy sidebar in which neither one wins, so
    Practice AI — the other row that does something rather than going somewhere —
-   is given its own colour (gold, in sidebar-nav.tsx) and left deliberately
-   still. One thing moves; everything else is quiet around it.
+   wears its own colour (gold, `.lp-sb-airow--generate` below) and is left
+   deliberately still. One thing moves; everything else is quiet around it.
 
    A BREATH, NOT A PULSE. ~4.2s, and the opacity floor sits at 0.72 — high
    enough that the icon never dips into looking disabled, stalled or mid-fetch.
@@ -299,29 +299,93 @@
     filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.55));
   }
 }
+/* The two layers sit on different elements now. The tile is FILLED (see the AI
+   rows below), and breathing a filled tile down to 0.72 opacity reads as
+   disabled — so the halo glows around the tile and only the glyph breathes. */
 .lp-sb-ai {
-  animation:
-    lp-sb-ai-breathe 4.2s ease-in-out infinite,
-    lp-sb-ai-halo 6.4s ease-in-out infinite;
+  animation: lp-sb-ai-halo 6.4s ease-in-out infinite;
+}
+.lp-sb-ai svg {
+  animation: lp-sb-ai-breathe 4.2s ease-in-out infinite;
   transform-origin: center;
   will-change: transform, opacity;
 }
 .lp-sb-accent-active .lp-sb-ai {
-  animation-duration: 2.8s, 4.4s;
+  animation-duration: 4.4s;
+}
+.lp-sb-accent-active .lp-sb-ai svg {
+  animation-duration: 2.8s;
 }
 /* Hovering the row is a question being asked — it quickens, and the two layers
    stay on different periods so the effect never collapses into one flash. */
 .lp-sb-link:hover .lp-sb-ai {
-  animation-duration: 2.4s, 3.2s;
+  animation-duration: 3.2s;
+}
+.lp-sb-link:hover .lp-sb-ai svg {
+  animation-duration: 2.4s;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lp-sb-ai {
+  .lp-sb-ai,
+  .lp-sb-ai svg {
     animation: none;
     opacity: 1;
-    /* The glow is the identity, not the motion — so a static one stays, and the
-       row still reads as the accented item without anything moving. */
-    filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.4));
   }
+  /* The glow is the identity, not the motion — so a static one stays, and the
+     row still reads as the accented item without anything moving. */
+  .lp-sb-ai {
+    filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.5));
+  }
+}
+
+/* ── the AI rows ──────────────────────────────────────────────────────────────
+   Assistant and Practice AI are the two rows that DO something rather than go
+   somewhere, so they are not dressed like places. Each is a tinted pill with a
+   filled gradient tile: violet for the Assistant, gold for Practice AI. Every
+   other row in the rail stays monochrome, which is what lets these two stand
+   out without the rail turning into a colour chart.
+
+   The colours are custom properties on the modifier, so the base rule, hover,
+   active and the collapsed rail (in the 768px block) all read one set.
+
+   ⚠️ sidebar-nav.tsx must not set an inline background, colour or border on
+   these rows — an inline style beats every rule here. */
+.lp-sb-airow {
+  border: 1px solid var(--ai-line);
+  background: linear-gradient(135deg, var(--ai-bg-1), var(--ai-bg-2));
+  color: var(--ai-ink);
+}
+.lp-sb-airow--assistant {
+  --ai-bg-1: #f7f3ff;
+  --ai-bg-2: #ede6ff;
+  --ai-line: #e0d6fb;
+  --ai-ink: #4527a0;
+  --ai-tile-1: #6d4ae8;
+  --ai-tile-2: #a78bfa;
+}
+.lp-sb-airow--generate {
+  --ai-bg-1: #fff9ec;
+  --ai-bg-2: #fdedcc;
+  --ai-line: #f2dcaa;
+  --ai-ink: #7a4a00;
+  --ai-tile-1: #c97a0a;
+  --ai-tile-2: #efb34a;
+}
+.lp-sb-airow .lp-sb-chip {
+  background: linear-gradient(135deg, var(--ai-tile-1), var(--ai-tile-2));
+  color: #fff;
+}
+/* Three classes, to outrank `.lp-sb-item:hover` further down this file — it
+   would otherwise swap the tint for the plain rows' grey. */
+.lp-sb-item.lp-sb-airow:hover {
+  background: linear-gradient(135deg, var(--ai-bg-2), var(--ai-bg-2));
+  border-color: var(--ai-tile-2);
+}
+/* "You are here" on an AI row: the tint deepens and the edge takes the tile's
+   colour, instead of the grey pill a plain row gets. */
+.lp-sb-airow.lp-sb-accent-active,
+.lp-sb-item.lp-sb-airow.lp-sb-accent-active:hover {
+  background: linear-gradient(135deg, var(--ai-bg-2), var(--ai-line));
+  border-color: var(--ai-tile-1);
 }
 
 /* ── shared primitive kit (components/ui/*) ───────────────────────────────────
@@ -1338,6 +1402,12 @@
   .lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-link:hover .lp-sb-chip,
   .lp-shell-sidebar--collapsed .lp-sb-grouprow:hover .lp-sb-chip {
     background: #f0eeea;
+  }
+  /* The AI rows' tiles keep their colour under the pointer. Same specificity as
+     the grey rule above and written after it, so it wins without !important —
+     which leaves the near-black active tile (which does carry !important) alone. */
+  .lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-airow:hover .lp-sb-chip {
+    background: linear-gradient(135deg, var(--ai-tile-1), var(--ai-tile-1));
   }
   /* The current row keeps its solid near-black tile through a hover: it is the
      only mark in a 72px strip and swapping it for the hover grey would read as
@@ -3573,6 +3643,30 @@ section[id] {
 }
 .pg-grid--2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* ── edge to edge (`bleed`) ──────────────────────────────────────────────
+   The centre's practice board runs its grid across the whole page card.
+
+   The negative margin cancels `.cn-page`'s side padding, and has to match it:
+   that padding is set INLINE in console-chrome.tsx (26px 28px 60px), which is
+   also why the 640px media query on `.cn-page` never reaches it.
+
+   The clip is for the last column. Every card draws its own `border-right`, and
+   with `auto-fill` there is no selector for "the last column", so the grid is
+   pushed 1px past the edge and the wrapper clips that final hairline — otherwise
+   it sits against the card's own border as a doubled line.
+
+   `auto-fill`, not `auto-fit`: a centre with two practices keeps two cards of a
+   normal width instead of stretching them across the page. */
+.pg-bleed {
+  margin-inline: -28px;
+  overflow: hidden;
+}
+.pg-bleed > .pg-grid {
+  margin-right: -1px;
+}
+.pg-grid--fill {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
 }
 /* The step-down is on VIEWPORT width, which is why the column count is also a
    prop — see the note in gallery.tsx. These only ever narrow it further. */

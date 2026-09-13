@@ -86,6 +86,7 @@ export default async function PracticePage() {
         statuses={BOARD_STATUSES}
         emptyTitle="Nothing set yet"
         emptyNote="Practice appears here the moment a group is given some."
+        bleed
       />
     </div>
   );

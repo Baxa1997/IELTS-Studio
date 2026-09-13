@@ -191,9 +191,9 @@ const ADMINISTRATOR: Section[] = [
 const TEACHER: Section[] = [
   {
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      { label: "Assistant AI", href: "/console/assistant", icon: Bot, accent: "assistant" },
       {
-        label: "Practice AI",
+        label: "Practice English with AI",
         href: "/console/practice-ai",
         icon: WandSparkles,
         accent: "generate",
@@ -649,14 +649,25 @@ export function SidebarNav({
                           "lp-sb-item",
                           selected && "lp-sb-link--active",
                           accent === "assistant" && "lp-sb-assistant",
+                          accent && "lp-sb-airow",
+                          accent === "assistant" && "lp-sb-airow--assistant",
+                          accent === "generate" && "lp-sb-airow--generate",
                           selected && accent && "lp-sb-accent-active",
                         )}
                         style={{
                           ...itemBase,
                           justifyContent: "space-between",
-                          fontWeight: selected ? 600 : 400,
-                          color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
-                          background: selected ? RAIL_ACTIVE_BG : undefined,
+                          fontWeight: selected ? 600 : accent ? 500 : 400,
+                          /* An AI row takes its fill, ink and edge from
+                             `.lp-sb-airow` in globals.css. Any inline value here
+                             — even the transparent border in itemBase — beats the
+                             stylesheet and flattens it back into a plain row. */
+                          ...(accent
+                            ? { border: undefined }
+                            : {
+                                color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
+                                background: selected ? RAIL_ACTIVE_BG : undefined,
+                              }),
                         }}
                       >
                         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
