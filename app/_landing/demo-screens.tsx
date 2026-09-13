@@ -4,6 +4,7 @@ import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { bandColor as productBandColor } from "@/lib/ui/band";
+import { BRAND as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Live, coded replicas of the real product screens — rendered with the SAME
@@ -25,8 +26,6 @@ const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monosp
 // The listening runner uses DM Sans; fall back to the marketing sans if the var
 // isn't loaded on a given page.
 const LSANS = "var(--font-manrope), system-ui, sans-serif";
-
-const INDIGO = "#7d0132";
 
 /**
  * Band colours for the MARKETING mock screens only.

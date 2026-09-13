@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { reviewAttempt, type ReviewState } from "@/app/(app)/console/marking-actions";
 import { WRITING_CRITERIA, type AttemptKind } from "@/lib/console/attempts";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The footer of an attempt report: what the AI said, what the centre says, and
@@ -24,7 +25,6 @@ const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#C5C4BE";
-const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const AMBER = "#8A5A12";
 

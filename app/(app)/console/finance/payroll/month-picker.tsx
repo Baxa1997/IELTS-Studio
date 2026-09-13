@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Which month you are paying — year included.
@@ -23,7 +24,6 @@ const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#C5C4BE";
-const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const AMBER = "#9A6B00";
 

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
 import type { DemoTab } from "./demo-content";
+import { BRAND as INDIGO } from "@/lib/theme/tokens";
 
 const DeferredDemoScreen = dynamic(
   () => import("./demo-screens").then((mod) => mod.DemoScreen),
@@ -21,7 +22,6 @@ const DeferredDemoScreen = dynamic(
 
 const SANS = "var(--font-manrope), system-ui, sans-serif";
 const SERIF = "var(--font-sora), system-ui, sans-serif";
-const INDIGO = "#7d0132";
 const INK = "#121317";
 
 export function DemoTabs({

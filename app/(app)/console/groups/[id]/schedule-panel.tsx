@@ -7,6 +7,7 @@ import { describeDays } from "@/lib/console/timetable-days";
 import { type GroupFormState, setGroupSchedule } from "../actions";
 import { type RoomChoice, ScheduleFields } from "../schedule-fields";
 import { useActionFeedback } from "@/components/console/toast";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Change when an existing group meets.
@@ -26,7 +27,6 @@ import { useActionFeedback } from "@/components/console/toast";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#EAE8E1";
-const INDIGO = "#4340CB";
 const RED = "#A13A2C";
 
 export interface ScheduleSeries {

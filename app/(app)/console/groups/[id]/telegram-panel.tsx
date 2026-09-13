@@ -7,6 +7,7 @@ import { FiCheckCircle, FiExternalLink, FiUsers } from "react-icons/fi";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { startTelegramLink, unlinkTelegram, type ActionState } from "../../center-actions";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Connect this group to its Telegram group — in one tap.
@@ -28,7 +29,6 @@ import { startTelegramLink, unlinkTelegram, type ActionState } from "../../cente
  * in, or for an admin reading this on a laptop with no Telegram installed.
  */
 
-const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const INK = "#16162E";
 const MUTED = "#6E6C87";

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { INDIGO } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#16162E";
 const FAINT = "#6E6C87";
-const INDIGO = "#3B43B5";
 
 /**
  * §12's two tabs: Broadcast (what you write) and Automatic (what sends itself).

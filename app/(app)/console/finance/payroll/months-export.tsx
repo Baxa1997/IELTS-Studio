@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Pick the months, download the sheet.
@@ -15,7 +16,6 @@ import { useState } from "react";
  * client-side navigation to it would try to render a spreadsheet as a page.
  */
 
-const INDIGO = "#4340CB";
 const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";

@@ -18,12 +18,12 @@ import { DAY_PRESETS, orderedWeekdays } from "@/lib/console/timetable-days";
 
 import { type ActionState, deleteSlot, saveSlot } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /** Common lesson lengths, so the end time fills itself in. */
 const DURATIONS = [45, 60, 90, 120];
 
 const MUTED = "#6E6C87";
-const INDIGO = "#4340CB";
 
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);

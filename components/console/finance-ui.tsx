@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The client-side furniture the finance pages need: a slide-over that opens
@@ -13,7 +14,6 @@ import { createContext, useContext, useEffect, useState } from "react";
  * Same geometry, same escape/backdrop behaviour, no new chrome props.
  */
 
-const INDIGO = "#4340CB";
 const GREEN = "#16794C";
 const RED = "#A63A30";
 const INK = "#16162E";

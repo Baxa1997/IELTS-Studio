@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FiCheckCircle, FiExternalLink, FiSend } from "react-icons/fi";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The right-hand column: what you sent, and how Telegram gets connected.
@@ -19,7 +20,6 @@ const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#EFEDE7";
 const GREEN = "#16794C";
-const INDIGO = "#4340CB";
 const TELEGRAM = "#229ED9";
 
 const AUDIENCE_LABEL: Record<string, string> = {

@@ -7,6 +7,7 @@ import { useActionFeedback } from "@/components/console/toast";
 import { type AlertChannel, type AlertSettings } from "@/lib/console/alerts";
 
 import { type ActionState, saveAlertSettings } from "../center-actions";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Who gets told when a student misses a lesson.
@@ -26,7 +27,6 @@ const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#EAE8E1";
-const INDIGO = "#4340CB";
 const AMBER = "#9A6B00";
 
 const CHANNELS: { key: AlertChannel; label: string; icon: React.ReactNode; note: string }[] = [

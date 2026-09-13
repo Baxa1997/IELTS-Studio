@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand/logo";
+import { INDIGO } from "@/lib/theme/tokens";
 
 // Shared landing chrome: the brand tokens, the floating island nav, and the
 // dark site footer — used by the marketing front door (app/page.tsx) and the
@@ -11,7 +12,7 @@ import { BrandLogo } from "@/components/brand/logo";
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
 export const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
-export const INDIGO = "#3B43B5";
+export { INDIGO };
 export const INK = "#1A1C33";
 export const MUTED = "#565a72";
 

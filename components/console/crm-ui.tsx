@@ -29,8 +29,13 @@ import { ArrowLeft } from "lucide-react";
  * the console's INDIGO is #4340CB, the shared brand indigo is #3B43B5. They are
  * two of the four indigos that were in circulation, they are a hair apart, and
  * unifying them is a visible change across every console screen — so it is left
- * as a decision, not made silently here. To unify: delete the override below and
- * add INDIGO to the re-export list.
+ * as a decision, not made silently here.
+ *
+ * That value now comes from the token module too, as `INDIGO_CONSOLE` — it is
+ * still the console's own colour, it is just no longer WRITTEN DOWN here. To
+ * unify: point `INDIGO_CONSOLE` at `INDIGO` in lib/theme/tokens.ts, look at the
+ * console, then move INDIGO into the re-export list above and delete the line
+ * below.
  */
 
 export {
@@ -67,6 +72,7 @@ import {
   SOFT,
   BODY,
   RED,
+  INDIGO_CONSOLE as INDIGO,
 } from "@/lib/theme/tokens";
 
 /** Page ground. */
@@ -74,9 +80,9 @@ export const CANVAS = CONSOLE.canvas; // #F4F3EF
 /** Table header / input fill. */
 export const HEADBG = CONSOLE.well; // #FAFAF8
 
-/** The console's action colour — see the note above; the one value that has NOT
- *  been folded into the shared token set. */
-export const INDIGO = "#4340CB";
+/** The console's action colour — see the note above. Re-exported so the 24 files
+ *  that import it from this kit keep working. */
+export { INDIGO };
 
 /** Rail (the dark sidebar). Console-only: nothing else in the product has one. */
 export const RAIL = {

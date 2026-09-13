@@ -43,6 +43,39 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  /**
+   * The brand colour specifically, everywhere — not just in the shared kit.
+   *
+   * The rule above holds absolutely but reaches two directories, because turning
+   * it on tree-wide today would report ~2,000 violations across ten drifted
+   * names (72 inks, 63 muteds, …) and get switched off. That is still true.
+   *
+   * INDIGO is the exception, because it is DONE: `scripts/codemod-tokens.ts` has
+   * folded all 65 private `const INDIGO = "…"` declarations into
+   * `lib/theme/tokens.ts`, so there is now exactly one place each of the four
+   * indigos is written down. This rule is what keeps it that way — without it the
+   * 66th file re-introduces its own next week and the count starts climbing
+   * again, which is precisely how the first four got there.
+   *
+   * It is deliberately narrow: it fires only on a hex assigned to an INDIGO-named
+   * const, so it says nothing about the 2,000 literals still waiting for their
+   * own codemod rows. When one of those names is converted, add it here the same
+   * way.
+   */
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "VariableDeclarator[id.name=/^INDIGO/] > Literal[value=/^#[0-9a-fA-F]{3,8}$/]",
+          message:
+            "The brand indigo lives in @/lib/theme/tokens — import it (`INDIGO`, or `INDIGO_CONSOLE as INDIGO` for the console, `INDIGO_SHELL` for the skill hubs, `INDIGO_STUDIO` for the reading studio) instead of writing the hex here. All 65 of these were just centralised; please don't start a 66th.",
+        },
+      ],
+    },
+  },
+
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

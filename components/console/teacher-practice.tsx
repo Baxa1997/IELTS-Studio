@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
+import { INDIGO } from "@/lib/theme/tokens";
 
 /**
  * The two pieces every practice hub shares for setting content to a group: the
@@ -16,7 +17,6 @@ import { assignPractice, type PracticeFormState } from "@/app/(app)/console/prac
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INDIGO = "#3B43B5";
 const INK = "#1A2138";
 const MUTED = "#5A6076";
 const FAINT = "#8A8FA0";

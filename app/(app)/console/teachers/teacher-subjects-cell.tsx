@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { setTeacherSubjects, type SubjectState } from "../settings/subject-actions";
+import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
 
 /**
  * Which subjects this teacher can be given.
@@ -22,7 +23,6 @@ const INK = "#16162E";
 const MUTED = "#6E6C87";
 const FAINT = "#777581";
 const LINE = "#C5C4BE";
-const INDIGO = "#4340CB";
 
 export interface SubjectChoice {
   id: string;
