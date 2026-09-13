@@ -2612,9 +2612,11 @@
 .cn-settings-link:hover {
   background: #f1f0eb;
 }
+/* The colours come from custom properties so the learner's settings can wear
+   burgundy on the same layout; the fallbacks are the console's indigo. */
 .cn-settings-link[aria-current="page"] {
-  background: #eeedf8;
-  color: #4340cb;
+  background: var(--settings-tint, #eeedf8);
+  color: var(--settings-accent, #4340cb);
 }
 .cn-settings-link-label {
   display: block;
@@ -2628,13 +2630,13 @@
   color: #8a889c;
 }
 .cn-settings-link[aria-current="page"] .cn-settings-link-note {
-  color: #6d6ab8;
+  color: var(--settings-note, #6d6ab8);
 }
 .cn-settings-title {
   margin: 0 0 14px;
   font-size: 18px;
   font-weight: 650;
-  color: #16162e;
+  color: var(--settings-ink, #16162e);
 }
 @media (max-width: 900px) {
   .cn-settings-hub {

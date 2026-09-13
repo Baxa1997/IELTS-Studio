@@ -120,7 +120,7 @@ export function safeNextPath(raw: string | null | undefined): string | null {
  */
 const ROLE_AREAS: Record<AppRole, readonly string[]> = {
   super_admin: ["/admin"],
-  student: ["/dashboard", "/activities", "/assignments", "/learn", "/plan", "/vocabulary"],
+  student: ["/dashboard", "/activities", "/assignments", "/learn", "/plan", "/vocabulary", "/settings"],
   teacher: ["/console"],
   administrator: ["/console"],
   center_admin: ["/console"],

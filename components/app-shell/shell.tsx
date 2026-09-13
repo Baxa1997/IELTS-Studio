@@ -547,7 +547,7 @@ export function AppShell({
               name={name}
               roleLabel={roleLabel}
               email={email}
-              items={accountItemsFor(role)}
+              items={accountItemsFor(role, homeworkOnly)}
               unread={unread}
             />
           </div>
@@ -625,7 +625,7 @@ export interface AccountItem {
  * redirect and RLS refuses independently — but it should not offer somebody a
  * door that will shut in their face.
  */
-export function accountItemsFor(role: string): AccountItem[] {
+export function accountItemsFor(role: string, homeworkOnly = false): AccountItem[] {
   const announcements = {
     label: "Announcements",
     href: "/console/announcements",
@@ -642,8 +642,12 @@ export function accountItemsFor(role: string): AccountItem[] {
     case "administrator":
     case "teacher":
       return [announcements, settings];
+    case "student":
+      // A solo learner's own settings: account, study goal, plan. A center
+      // student gets none — their center creates and resets their account.
+      return homeworkOnly ? [] : [{ label: "Settings", href: "/settings", icon: Settings }];
     default:
-      // Students and the platform owner have none of these.
+      // The platform owner has none of these.
       return [];
   }
 }

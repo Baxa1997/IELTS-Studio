@@ -264,6 +264,44 @@ export async function fetchLiveStripeSubscription(ref: {
   }
 }
 
+/**
+ * Cancel a customer's live subscription immediately — used when the account it
+ * pays for is being deleted, so the card is not charged for an account that no
+ * longer exists.
+ *
+ * `ok: false` means we could not confirm it is cancelled, and the caller must
+ * then stop: deleting the account while the subscription might still be live is
+ * the one outcome worse than not deleting it. A subscription that is already
+ * gone (404, or not live) counts as cancelled.
+ */
+export async function stripeCancelSubscription(ref: {
+  subscriptionId?: string | null;
+  customerId?: string | null;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const cfg = serverEnv.stripe;
+  if (!cfg) return { ok: false, error: "stripe is not configured" };
+
+  const live = await fetchLiveStripeSubscription(ref);
+  if (!live.ok) return live;
+  const sub = live.subscription;
+  const status = String(sub?.status ?? "");
+  if (!sub || !["active", "trialing", "past_due", "incomplete"].includes(status)) {
+    return { ok: true };
+  }
+
+  try {
+    const res = await fetch(`${API}/subscriptions/${encodeURIComponent(String(sub.id))}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${cfg.secretKey}` },
+    });
+    if (res.status === 404) return { ok: true };
+    if (!res.ok) return { ok: false, error: `stripe responded ${res.status}` };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 /** The end of the period a tier's single payment buys. */
 function periodEndFor(plan: OrgPlan): string {
   const months = planTier(plan)?.months ?? 1;
