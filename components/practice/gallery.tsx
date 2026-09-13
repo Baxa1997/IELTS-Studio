@@ -73,6 +73,16 @@ export interface GalleryItem {
   /** Sort keys. `date` is an ISO string; `value` is a band or score. */
   date?: string;
   value?: number | null;
+  /**
+   * A SECOND axis to filter on, independent of `category`.
+   *
+   * The chips answer "what kind of practice is this" and are always the skill.
+   * A centre's practice board also has to answer "what is overdue", which is not
+   * a kind — it is a state, and a row is exactly one of both. Giving it its own
+   * dimension is what stops the chip row growing into a mixed list where
+   * "Reading" and "Overdue" sit side by side looking like alternatives.
+   */
+  status?: string;
 }
 
 export type SortKey = "recent" | "oldest" | "band" | "title";
@@ -93,6 +103,8 @@ export function PracticeGallery({
   emptyNote,
   defaultSort = "recent",
   columns = 4,
+  statusLabel = "All statuses",
+  statuses,
 }: {
   /** Omit when the page already draws its own header — the console pages keep
    *  their `PageHead` and their status tabs above the grid. */
@@ -115,9 +127,15 @@ export function PracticeGallery({
    * much room it gave away; the stylesheet does not.
    */
   columns?: 2 | 3 | 4;
+  /** What the "no status chosen" option reads as. */
+  statusLabel?: string;
+  /** The second filter's options. Omit and the Filter select falls back to
+   *  filtering by category, which is what the pages with only one axis want. */
+  statuses?: string[];
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>(defaultSort);
 
   const visible = useMemo(() => {
@@ -125,6 +143,10 @@ export function PracticeGallery({
     const filtered = items.filter(
       (item) =>
         (!category || item.category === category) &&
+        (!status || item.status === status) &&
+        // The byline carries the group and the teacher on the board, so
+        // searching it is how "Group B" and a teacher's name are found without
+        // a filter of their own.
         (!needle ||
           item.title.toLowerCase().includes(needle) ||
           (item.byline ?? "").toLowerCase().includes(needle)),
@@ -145,7 +167,7 @@ export function PracticeGallery({
       return sort === "oldest" ? at.localeCompare(bt) : bt.localeCompare(at);
     });
     return sorted;
-  }, [items, query, category, sort]);
+  }, [items, query, category, status, sort]);
 
   /* A category with nothing in it is a chip that leads to an empty grid. They
      are computed from the items rather than taken on trust, so a learner who has

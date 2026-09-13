@@ -1,19 +1,6 @@
 import { redirect } from "next/navigation";
 
-import {
-  Card,
-  CardHead,
-  FAINT,
-  fieldStyle,
-  INDIGO,
-  Kpi,
-  KpiRow,
-  PageHead,
-  SANS,
-  Tag,
-  Toolbar,
-  type Tone,
-} from "@/components/console/crm-ui";
+import { Card, CardHead, type Tone } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/console/attempts";
 import {
@@ -52,205 +39,52 @@ const dateFmt = (iso: string) =>
  * (a centre sets tens of practices a term, not thousands) and a filtered view
  * that can be sent to a colleague is worth more than a keystroke saved.
  */
-export default async function PracticePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ group?: string; teacher?: string; skill?: string; status?: string }>;
-}) {
+export default async function PracticePage() {
   const { profile } = await requireOrgUser();
   if (profile.role === "student") redirect("/dashboard");
 
-  const sp = await searchParams;
   const board = await loadPracticeBoard(profile);
   // §9: the shelf lives on this page, under the board. The board answers "is
   // what we set landing"; the library answers "what do we already have" — the
   // two questions a teacher has when they sit down to set work.
   const library = await loadLibrary();
 
-  const shown = board.rows.filter(
-    (r) =>
-      (!sp.group || r.groupId === sp.group) &&
-      (!sp.teacher || r.teacherId === sp.teacher) &&
-      (!sp.skill || r.skill === sp.skill) &&
-      (!sp.status || r.status === sp.status),
-  );
-
-  const overdue = board.rows.filter((r) => r.status === "overdue");
-  const expected = board.rows.reduce((n, r) => n + r.expected, 0);
-  const handedIn = board.rows.reduce((n, r) => n + r.handedIn, 0);
-  const marked = board.rows.reduce((n, r) => n + r.marked, 0);
-  const completion = expected > 0 ? Math.round((handedIn / expected) * 100) : null;
-
   return (
     <div>
-      <PageHead
-        eyebrow="Learning"
+      {/* ⚠️ EVERYTHING THAT USED TO SIT ABOVE THIS GRID IS GONE, at the owner's
+          instruction, and it is worth recording what went so nobody puts it
+          back by halves:
+
+            - the four KPIs (set / handed in / marked / overdue);
+            - the "N groups have no practice at all" card, which the Overview's
+              alert used to point at — that alert now has no destination again;
+            - the URL-filter toolbar (group / teacher / skill / status).
+
+          The toolbar's job did not disappear with it. The grid searches title
+          AND byline, and the byline carries the group and the teacher, so those
+          two are found by typing them. Skill is the chip row. Status is the
+          Filter select — which is why the gallery grew a second filter axis
+          rather than this page losing "show me what is overdue".
+
+          WHAT IS GENUINELY LOST is the shareable filtered URL: the filters live
+          in the browser now, so a colleague cannot be sent a link to "overdue in
+          Group B". That was a deliberate feature of this page once. If it is
+          wanted back, the fix is to lift the grid's state into searchParams —
+          not to bring the old toolbar back alongside it. */}
+      <PracticeGallery
         title="Practice"
         subtitle={
           board.rows.length === 0
             ? "Nothing has been set yet — practice appears here the moment a group is given some."
             : `${board.rows.length} set across ${board.groups.length} group${board.groups.length === 1 ? "" : "s"}.`
         }
+        items={board.rows.map(toGalleryItem)}
+        categories={BOARD_CATEGORIES}
+        statusLabel="All statuses"
+        statuses={BOARD_STATUSES}
+        emptyTitle="Nothing set yet"
+        emptyNote="Practice appears here the moment a group is given some."
       />
-
-      <KpiRow mb={12}>
-        <Kpi label="Practices set" value={board.rows.length} sub="most recent first" />
-        <Kpi
-          label="Handed in"
-          value={completion == null ? "—" : `${completion}%`}
-          sub={`${handedIn} of ${expected} expected`}
-          deltaTone={completion != null && completion >= 60 ? "good" : "bad"}
-        />
-        <Kpi
-          label="Marked"
-          value={handedIn > 0 ? `${marked} of ${handedIn}` : "—"}
-          sub="a teacher has signed off"
-          deltaTone={handedIn > 0 && marked === handedIn ? "good" : "flat"}
-        />
-        <Kpi
-          label="Overdue"
-          value={overdue.length}
-          deltaTone={overdue.length > 0 ? "bad" : "good"}
-          sub="past due and still owed"
-        />
-      </KpiRow>
-
-      {/* ── the thing the Overview alert points at ─────────────────────────── */}
-      {board.groupsWithNothingSet.length > 0 ? (
-        <Card flush>
-          <CardHead
-            title={`${board.groupsWithNothingSet.length} group${board.groupsWithNothingSet.length === 1 ? " has" : "s have"} no practice at all`}
-            divided
-            badge={<Tag tone="amber">nothing set</Tag>}
-            note="nothing to hand in means nothing to mark, and nothing to report on"
-          />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "14px 18px" }}>
-            {board.groupsWithNothingSet.map((g) => (
-              <a
-                key={g.id}
-                href={`/console/groups/${g.id}/homework`}
-                className="cn-btn cn-btn--ghost"
-                style={{
-                  ...fieldStyle,
-                  background: "#fff",
-                  textDecoration: "none",
-                  fontFamily: SANS,
-                  fontSize: 12.5,
-                  color: INDIGO,
-                  fontWeight: 600,
-                }}
-              >
-                {g.name}
-                <span style={{ color: FAINT, fontWeight: 400 }}>
-                  {" "}
-                  · {g.teacherName ?? "no teacher"}
-                </span>
-              </a>
-            ))}
-          </div>
-        </Card>
-      ) : null}
-
-      <div style={{ height: 14 }} />
-
-      <Card flush>
-        <CardHead
-          title="Everything set"
-          divided
-          note="handed in counts the work done, whether or not it came through the homework link"
-        />
-        <Toolbar>
-          <form
-            method="GET"
-            style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", flex: 1 }}
-          >
-            <select
-              name="group"
-              defaultValue={sp.group ?? ""}
-              aria-label="Group"
-              style={fieldStyle}
-            >
-              <option value="">All groups</option>
-              {board.groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-            {profile.role !== "teacher" ? (
-              <select
-                name="teacher"
-                defaultValue={sp.teacher ?? ""}
-                aria-label="Teacher"
-                style={fieldStyle}
-              >
-                <option value="">All teachers</option>
-                {board.teachers.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            <select
-              name="skill"
-              defaultValue={sp.skill ?? ""}
-              aria-label="Skill"
-              style={fieldStyle}
-            >
-              <option value="">All skills</option>
-              {(["writing", "reading", "listening"] as const).map((k) => (
-                <option key={k} value={k}>
-                  {KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
-            <select
-              name="status"
-              defaultValue={sp.status ?? ""}
-              aria-label="Status"
-              style={fieldStyle}
-            >
-              <option value="">Any status</option>
-              <option value="set">Set</option>
-              <option value="overdue">Overdue</option>
-              <option value="complete">All in</option>
-            </select>
-            <button
-              type="submit"
-              className="cn-btn cn-btn--ghost"
-              style={{ ...fieldStyle, background: "#fff", cursor: "pointer", fontWeight: 500 }}
-            >
-              Apply
-            </button>
-          </form>
-          <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>
-            {shown.length} shown
-            {shown.length !== board.rows.length ? ` of ${board.rows.length}` : ""}
-          </span>
-        </Toolbar>
-
-        {/* The same grid as the learner's Activities, the teacher's library and a
-            student's report — one piece of practice looks the same wherever it
-            is seen. The toolbar above stays: those filters are in the URL on
-            purpose, so "what is overdue in Group B" is a link a colleague can be
-            sent, which is worth more here than the keystroke the grid's own
-            search would save. */}
-        <div style={{ padding: "14px 16px 16px" }}>
-          <PracticeGallery
-            items={shown.map(toGalleryItem)}
-            categories={BOARD_CATEGORIES}
-            emptyTitle={
-              board.rows.length === 0 ? "Nothing set yet" : "Nothing matches those filters"
-            }
-            emptyNote={
-              board.rows.length === 0
-                ? "Practice appears here the moment a group is given some."
-                : "Clear a filter above to see the rest."
-            }
-          />
-        </div>
-      </Card>
 
       {/* ── the shelf ──────────────────────────────────────────────────────── */}
       <Card flush>
@@ -270,6 +104,9 @@ export default async function PracticePage({
     </div>
   );
 }
+
+/** The Filter select's options — the three states a practice can be in. */
+const BOARD_STATUSES = ["Set", "Overdue", "All in"];
 
 /** The chip row. Skills in the order the product teaches them; the gallery
  *  drops any this centre has never set. */
@@ -297,6 +134,7 @@ function toGalleryItem(r: PracticeBoardRow): GalleryItem {
     headline: `${pct}%`,
     headnote: `${r.handedIn}/${r.expected} handed in`,
     badge: STATUS[r.status].label,
+    status: STATUS[r.status].label,
     stats: [
       r.handedIn > 0 ? `${r.marked}/${r.handedIn} marked` : "nothing to mark yet",
       r.medianBand != null ? `median ${r.medianBand.toFixed(1)}` : null,
