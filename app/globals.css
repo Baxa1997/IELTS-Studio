@@ -2507,6 +2507,26 @@
   gap: 18px;
   align-items: start;
 }
+@media (max-width: 760px) {
+  .cn-setup-row {
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+  .cn-setup-row > a {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@keyframes cn-skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
 @media (max-width: 1080px) {
   .cn-settings-grid {
     grid-template-columns: minmax(0, 1fr);

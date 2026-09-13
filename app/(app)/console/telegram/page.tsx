@@ -8,9 +8,9 @@ import { TelegramPanel } from "../groups/[id]/telegram-panel";
 export const dynamic = "force-dynamic";
 
 /**
- * Every class's Telegram channel, in one place.
+ * Every class's Telegram group, in one place.
  *
- * WHY A PAGE OF ITS OWN. Connecting a channel lived inside one group at a time,
+ * WHY A PAGE OF ITS OWN. Connecting Telegram lived inside one group at a time,
  * which is the wrong shape for the question anybody actually has. Nobody
  * wonders "is 9B connected?" — they wonder "why did nothing get announced?",
  * and answering that meant opening every group in turn and remembering what
@@ -34,10 +34,13 @@ export default async function TelegramPage() {
   // requires verified_at, so anything less announces nothing — and showing it
   // as linked here would send someone away satisfied with a class that will
   // still be told nothing.
-  const linked = new Map<string, { chatTitle: string | null }>();
+  const linked = new Map<string, { chatTitle: string | null; verifiedAt: string }>();
   for (const row of links ?? []) {
     if (!row.verified_at) continue;
-    linked.set(row.group_id as string, { chatTitle: (row.chat_title as string | null) ?? null });
+    linked.set(row.group_id as string, {
+      chatTitle: (row.chat_title as string | null) ?? null,
+      verifiedAt: String(row.verified_at),
+    });
   }
 
   const rows = [...groups].sort((a, b) => {
@@ -51,11 +54,11 @@ export default async function TelegramPage() {
     <div>
       <PageHead
         back={{ href: "/console", label: "Dashboard" }}
-        title="Telegram channels"
+        title="Telegram groups"
         subtitle={
           groups.length === 0
             ? "No classes yet."
-            : `${connected} of ${groups.length} class${groups.length === 1 ? "" : "es"} connected. A class without a channel still gets its homework — it just is not announced.`
+            : `${connected} of ${groups.length} class${groups.length === 1 ? "" : "es"} connected. A class without a Telegram group still gets its homework — it just is not announced.`
         }
       />
 
@@ -101,6 +104,7 @@ export default async function TelegramPage() {
             </div>
 
             <TelegramPanel
+              key={linked.get(g.id)?.verifiedAt ?? "not-connected"}
               groupId={g.id}
               linked={linked.get(g.id) ?? null}
               botUsername={process.env.TELEGRAM_BOT_USERNAME ?? null}

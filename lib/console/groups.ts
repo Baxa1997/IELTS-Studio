@@ -2,7 +2,8 @@ import "server-only";
 
 import { type Profile } from "@/lib/auth";
 import { signAvatars } from "@/lib/console/avatars";
-import { type MemberStatus } from "@/lib/console/status";
+import { ENROLLED, type MemberStatus } from "@/lib/console/status";
+import { phoneKey } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
 /** A course that finished, versus one that is running. Never a deletion — a
@@ -70,6 +71,82 @@ export interface GroupDetail {
   /** Everyone ever enrolled, including those who left — the roster filters. */
   members: GroupMemberRow[];
   pendingInvites: { email: string; expiresAt: string }[];
+}
+
+/**
+ * The small, shared payload used by every group tab. It deliberately contains
+ * counts and setup flags rather than the roster, assignments, marks or finance
+ * rows. Those datasets belong to their own tab and should not be loaded when a
+ * teacher only opens the group header.
+ */
+export interface GroupHeaderSummary {
+  id: string;
+  name: string;
+  status: GroupStatus;
+  capacity: number | null;
+  teacherId: string | null;
+  teacherName: string | null;
+  memberCount: number;
+  phoneReadyCount: number;
+  weeklyLessons: number;
+  homeworkCount: number;
+  telegramConnected: boolean;
+}
+
+/** Load only the group header and aggregate setup facts shared by its tabs. */
+export async function loadGroupSummary(groupId: string): Promise<GroupHeaderSummary | null> {
+  const supabase = await createClient();
+
+  const { data: group, error } = await supabase
+    .from("groups")
+    .select("id, name, status, teacher_id, capacity")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (error) console.error("[loadGroupSummary] group select failed:", groupId, error.message);
+  if (!group) return null;
+
+  const [teacherRes, membersRes, slotsRes, assignmentsRes, telegramRes] = await Promise.all([
+    group.teacher_id
+      ? supabase.from("profiles").select("full_name").eq("id", group.teacher_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase.from("group_members").select("student_id").eq("group_id", groupId),
+    supabase.from("lesson_slots").select("weekday").eq("group_id", groupId),
+    supabase.from("assignments").select("id", { count: "exact", head: true }).eq("group_id", groupId),
+    supabase
+      .from("telegram_links")
+      .select("verified_at")
+      .eq("group_id", groupId)
+      .maybeSingle(),
+  ]);
+
+  const memberIds = (membersRes.data ?? []).map((row) => row.student_id as string);
+  let memberCount = 0;
+  let phoneReadyCount = 0;
+  if (memberIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, phone, member_status")
+      .in("id", memberIds);
+    for (const profile of profiles ?? []) {
+      if (!ENROLLED.includes((profile.member_status as MemberStatus) ?? "active")) continue;
+      memberCount += 1;
+      if (phoneKey((profile.phone as string | null) ?? null) != null) phoneReadyCount += 1;
+    }
+  }
+
+  return {
+    id: group.id as string,
+    name: group.name as string,
+    status: ((group.status as GroupStatus | null) ?? "active") as GroupStatus,
+    capacity: (group.capacity as number | null) ?? null,
+    teacherId: (group.teacher_id as string | null) ?? null,
+    teacherName: (teacherRes.data as { full_name: string | null } | null)?.full_name ?? null,
+    memberCount,
+    phoneReadyCount,
+    weeklyLessons: (slotsRes.data ?? []).length,
+    homeworkCount: assignmentsRes.count ?? 0,
+    telegramConnected: telegramRes.data?.verified_at != null,
+  };
 }
 
 /**

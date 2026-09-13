@@ -42,12 +42,13 @@ export function TelegramPanel({
 }: {
   groupId: string;
   /** The Telegram group already connected, if the handshake has completed. */
-  linked: { chatTitle: string | null } | null;
+  linked: { chatTitle: string | null; verifiedAt: string } | null;
   /** e.g. "EngProgressBot" — what they search for in Telegram. */
   botUsername: string | null;
 }) {
   const [startState, startAction, starting] = useActionState(startTelegramLink, {} as ActionState);
   const [unlinkState, unlinkAction, unlinking] = useActionState(unlinkTelegram, {} as ActionState);
+  const [changing, setChanging] = useState(false);
   useActionFeedback(unlinkState, { keepOpen: true });
 
   const code = startState.ok;
@@ -61,7 +62,7 @@ export function TelegramPanel({
     );
   }
 
-  if (linked) {
+  if (linked && !changing) {
     return (
       <div>
         <div
@@ -84,25 +85,43 @@ export function TelegramPanel({
             New homework is announced there.
           </span>
         </div>
-        <form action={unlinkAction} style={{ marginTop: 12 }}>
-          <input type="hidden" name="group_id" value={groupId} />
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           <button
-            type="submit"
-            disabled={unlinking}
+            type="button"
+            onClick={() => setChanging(true)}
             style={{
               background: "#fff",
-              border: "1px solid #C78A83",
+              border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "8px 13px",
               fontFamily: "inherit",
               fontSize: 12.5,
-              color: "#A13A2C",
-              cursor: unlinking ? "wait" : "pointer",
+              color: INK,
+              cursor: "pointer",
             }}
           >
-            {unlinking ? "Disconnecting…" : "Disconnect"}
+            Change group
           </button>
-        </form>
+          <form action={unlinkAction}>
+            <input type="hidden" name="group_id" value={groupId} />
+            <button
+              type="submit"
+              disabled={unlinking}
+              style={{
+                background: "#fff",
+                border: "1px solid #C78A83",
+                borderRadius: 8,
+                padding: "8px 13px",
+                fontFamily: "inherit",
+                fontSize: 12.5,
+                color: "#A13A2C",
+                cursor: unlinking ? "wait" : "pointer",
+              }}
+            >
+              {unlinking ? "Disconnecting…" : "Disconnect"}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -113,8 +132,9 @@ export function TelegramPanel({
         <ConnectChoices code={code} botUsername={botUsername} />
       ) : (
         <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 12px", lineHeight: 1.6 }}>
-          Announce new homework where the class already talks. Parents are usually in the group
-          and have no account here, so this is often the only way they hear anything.
+          {linked && changing
+            ? "Choose the Telegram group for this class. The current group stays connected until you finish."
+            : "Announce new homework where the class already talks. Parents are usually in the group and have no account here, so this is often the only way they hear anything."}
         </p>
       )}
 
@@ -139,8 +159,33 @@ export function TelegramPanel({
             cursor: starting ? "wait" : "pointer",
           }}
         >
-          {starting ? "Preparing…" : code ? "Start over with a new code" : "Connect Telegram"}
+          {starting
+            ? "Preparing…"
+            : code
+              ? "Start over with a new code"
+              : linked && changing
+                ? "Choose another group"
+                : "Connect Telegram"}
         </button>
+        {linked && changing ? (
+          <button
+            type="button"
+            onClick={() => setChanging(false)}
+            style={{
+              marginLeft: 8,
+              background: "#fff",
+              border: "1px solid #C78A83",
+              borderRadius: 9,
+              padding: "9px 13px",
+              fontFamily: "inherit",
+              fontSize: 12.5,
+              color: "#A13A2C",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        ) : null}
         {startState.error ? (
           <p style={{ fontSize: 12.5, color: "#A63A30", margin: "8px 0 0" }}>{startState.error}</p>
         ) : null}

@@ -135,7 +135,7 @@ export default async function PracticePage({
             {board.groupsWithNothingSet.map((g) => (
               <a
                 key={g.id}
-                href={`/console/groups/${g.id}?tab=practice`}
+                href={`/console/groups/${g.id}/homework`}
                 className="cn-btn cn-btn--ghost"
                 style={{
                   ...fieldStyle,

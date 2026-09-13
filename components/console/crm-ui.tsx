@@ -1119,7 +1119,11 @@ export function TextLink({ href, children }: { href: string; children: React.Rea
 /* ── tabs ─────────────────────────────────────────────────────────────────── */
 
 /** Underlined tab strip (group detail). Tabs are links, so each is a real URL. */
-export function Tabs({ tabs }: { tabs: { href: string; label: string; active: boolean }[] }) {
+export function Tabs({
+  tabs,
+}: {
+  tabs: { href: string; label: string; active: boolean; prefetch?: boolean }[];
+}) {
   return (
     <div
       className="cn-noscrollbar"
@@ -1137,6 +1141,7 @@ export function Tabs({ tabs }: { tabs: { href: string; label: string; active: bo
         <Link
           key={t.href}
           href={t.href}
+          prefetch={t.prefetch}
           className="cn-tab"
           style={{
             borderBottom: `2px solid ${t.active ? INDIGO : "transparent"}`,
