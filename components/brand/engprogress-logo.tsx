@@ -24,7 +24,7 @@ const engprogress = Poppins({
 });
 
 const NAVY = "#121317"; // wordmark + tagline ink
-const TAN = "#D89A5C"; // the "P" block
+const MARK = "#B8421E"; // the square behind the "P" (and a centre's initials)
 const WHITE = "#FFFFFF"; // the reversed-out "P"
 const CREAM = "#F4EEE1"; // on-dark ink variant
 
@@ -106,20 +106,18 @@ export function EngProgressLogo({
 }
 
 /**
- * The logomark on its own — the white "P" on the tan square, the most distinctive
+ * The logomark on its own — the white "P" on the #B8421E square, the most distinctive
  * fragment of the wordmark. Used where the full lockup doesn't fit (the collapsed
- * sidebar rail, favicons). Square; `size` is its side in px. The tile is tan on any
- * background, so there's no `tone`.
+ * sidebar rail, favicons). Square; `size` is its side in px. The tile is the same
+ * colour on any background, so there's no `tone`.
  */
 export function EngProgressMark({
   size = 32,
   className,
-  /** Tile fill. Defaults to the brand tan; the sidebar rail passes its own light
-   *  orange tint (MARK_BG in app-shell/shell.tsx). Kept as a prop rather than
-   *  changed outright so every other caller is untouched. */
-  bg = TAN,
-  /** The "P". White on the tan and dark tiles; the rail's light tile passes a
-   *  deep orange so the letter still reads. */
+  /** Tile fill. Defaults to the brand's #B8421E; kept as a prop so a surface can
+   *  tune its own tile without changing the shared mark. */
+  bg = MARK,
+  /** The "P". White by default — 5.47:1 on the #B8421E tile. */
   fg = WHITE,
 }: {
   size?: number;
@@ -222,7 +220,7 @@ export function CentreWordmark({
  *
  * It was two letters, taken from the first two words, and that was the wrong
  * read of what this square is. It is not an avatar standing in for a person; it
- * is a LOGOMARK, and a logomark is one glyph. "CA" in a rounded tan square looks
+ * is a LOGOMARK, and a logomark is one glyph. "CA" in a rounded square looks
  * like a monogram badge; "C" looks like a mark, at the same weight and size our
  * own "P" carries.
  *
@@ -246,8 +244,8 @@ export function CentreMark({
   name,
   size = 36,
   className,
-  /** Tile fill — see `EngProgressMark`. The rail passes its light orange tint. */
-  bg = TAN,
+  /** Tile fill — see `EngProgressMark`. */
+  bg = MARK,
   /** The initials — see `EngProgressMark`'s `fg`. */
   fg = WHITE,
 }: {
