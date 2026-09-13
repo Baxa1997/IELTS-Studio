@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { resolveActiveHref } from "./sidebar-nav";
+import { resolveActiveHref, settingsHrefFor } from "./sidebar-nav";
 
 const RAIL = [
   { href: "/console" },
@@ -85,5 +85,29 @@ describe("resolveActiveHref", () => {
     // longest-match is what keeps Dashboard from being permanently lit.
     expect(resolveActiveHref(RAIL, "/console/students")).toBe("/console/students");
     expect(resolveActiveHref(RAIL, "/console")).toBe("/console");
+  });
+
+  it("keeps Settings lit on every settings section", () => {
+    const withSettings = [...RAIL, { href: "/console/settings" }];
+    expect(resolveActiveHref(withSettings, "/console/settings/billing")).toBe("/console/settings");
+    expect(resolveActiveHref(withSettings, "/console/settings")).toBe("/console/settings");
+  });
+});
+
+/** Who gets the Settings row pinned at the foot of the rail, and where it goes. */
+describe("settingsHrefFor", () => {
+  it("sends all staff to the console's settings", () => {
+    for (const role of ["center_admin", "administrator", "teacher"]) {
+      expect(settingsHrefFor(role, false), role).toBe("/console/settings");
+    }
+  });
+
+  it("sends a solo learner to their own settings", () => {
+    expect(settingsHrefFor("student", false)).toBe("/settings");
+  });
+
+  it("gives a center student and the platform owner no Settings row", () => {
+    expect(settingsHrefFor("student", true)).toBeNull();
+    expect(settingsHrefFor("super_admin", false)).toBeNull();
   });
 });

@@ -12,7 +12,6 @@ import {
   type LucideIcon,
   Megaphone,
   Menu,
-  Settings,
 } from "lucide-react";
 
 import { signOut } from "@/app/(auth)/actions";
@@ -156,7 +155,7 @@ function fillsTheSurface(pathname: string): boolean {
  * The authenticated app shell (Option A brand). The sidebar is the only chrome: it
  * owns the brand (top), navigation (middle), and the signed-in user as a profile
  * menu pinned to the bottom — clicking it reveals the account menu: Announcements,
- * Billing & plan and Settings (by role), then Sign out. There
+ * for staff, then Sign out (Settings is a row in the rail itself). There
  * is no desktop top header, so <main> runs the full height of the viewport; on
  * mobile a slim bar carries the hamburger + brand and the sidebar slides in as a
  * drawer. The frame itself doesn't scroll; only <main> does.
@@ -547,7 +546,7 @@ export function AppShell({
               name={name}
               roleLabel={roleLabel}
               email={email}
-              items={accountItemsFor(role, homeworkOnly)}
+              items={accountItemsFor(role)}
               unread={unread}
             />
           </div>
@@ -625,29 +624,21 @@ export interface AccountItem {
  * redirect and RLS refuses independently — but it should not offer somebody a
  * door that will shut in their face.
  */
-export function accountItemsFor(role: string, homeworkOnly = false): AccountItem[] {
+export function accountItemsFor(role: string): AccountItem[] {
   const announcements = {
     label: "Announcements",
     href: "/console/announcements",
     icon: Megaphone,
   };
-  // ONE "Settings" for everything you set up once and then leave alone — your
-  // password, your Telegram, the classes' Telegram groups, and for the owner the
-  // center, its billing and its subjects. Telegram and Billing used to be menu
-  // items of their own; they are sections of /console/settings now, and which
-  // sections a role sees is decided in console/settings/section-list.ts.
-  const settings = { label: "Settings", href: "/console/settings", icon: Settings };
+  // Settings is NOT here: it sits in the rail itself, pinned at the foot of the
+  // list (settingsHrefFor in sidebar-nav.tsx), for staff and solo learners alike.
   switch (role) {
     case "center_admin":
     case "administrator":
     case "teacher":
-      return [announcements, settings];
-    case "student":
-      // A solo learner's own settings: account, study goal, plan. A center
-      // student gets none — their center creates and resets their account.
-      return homeworkOnly ? [] : [{ label: "Settings", href: "/settings", icon: Settings }];
+      return [announcements];
     default:
-      // The platform owner has none of these.
+      // Students and the platform owner have none of these.
       return [];
   }
 }

@@ -35,6 +35,7 @@ import {
   Users,
   Wallet,
   WandSparkles,
+  Settings,
 } from "lucide-react";
 
 const RAIL_TEXT = "#3f3d39"; // resting item text
@@ -64,7 +65,13 @@ type Item = {
   accent?: "assistant" | "generate";
 };
 
-type Section = { title?: string; icon?: LucideIcon; items: Item[] };
+type Section = {
+  title?: string;
+  icon?: LucideIcon;
+  items: Item[];
+  /** Pinned to the foot of the rail, below every other section — Settings. */
+  pinned?: boolean;
+};
 
 export function resolveActiveHref(
   items: Pick<Item, "href" | "soon" | "alsoMatches">[],
@@ -433,6 +440,33 @@ function groupBadge(items: Item[]): { badge: string; tone: "good" | "alert" } | 
   };
 }
 
+/**
+ * Where this person's settings live, or null when they have none.
+ *
+ * Staff share the console's settings (which sections each role sees is decided
+ * in console/settings/section-list.ts); a solo learner has their own. A center
+ * student has none — their center runs their account — and neither does the
+ * platform owner.
+ */
+export function settingsHrefFor(role: string, homeworkOnly: boolean): string | null {
+  if (role === "center_admin" || role === "administrator" || role === "teacher") {
+    return "/console/settings";
+  }
+  if (role === "student" && !homeworkOnly) return "/settings";
+  return null;
+}
+
+/**
+ * The rail with Settings pinned at its foot, for anyone who has settings. It is a
+ * flat section like Assistant and Dashboard, so it gets the same row, the same
+ * active highlight and the same collapsed tile — only its position differs.
+ */
+function withSettings(sections: Section[], role: string, homeworkOnly: boolean): Section[] {
+  const href = settingsHrefFor(role, homeworkOnly);
+  if (!href) return sections;
+  return [...sections, { pinned: true, items: [{ label: "Settings", href, icon: Settings }] }];
+}
+
 export function SidebarNav({
   role,
   showAssignments = false,
@@ -465,12 +499,10 @@ export function SidebarNav({
       cancelled = true;
     };
   }, [showAssignments]);
-  const sections = sectionsFor(
+  const sections = withSettings(
+    sectionsFor(role, showAssignments, pendingCount, homeworkOnly, counts?.newWork ?? 0),
     role,
-    showAssignments,
-    pendingCount,
     homeworkOnly,
-    counts?.newWork ?? 0,
   );
   const all = sections.flatMap((s) => s.items);
   const activeHref = resolveActiveHref(all, pathname);
@@ -513,7 +545,7 @@ export function SidebarNav({
   };
 
   return (
-    <nav style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <nav style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: "100%" }}>
       {sections.map((section, si) => {
         const open = section.title ? isOpen(section.title) : true;
         const rollup = section.title && !open ? groupBadge(section.items) : null;
@@ -528,7 +560,9 @@ export function SidebarNav({
           <div
             key={section.title ?? si}
             className={section.title ? "lp-sb-section lp-sb-section--group" : "lp-sb-section"}
-            style={TRAY}
+            /* `marginTop: auto` inside a column at least as tall as the rail is
+               what pushes a pinned section to the foot, however short the list. */
+            style={section.pinned ? { ...TRAY, marginTop: "auto", paddingTop: 12 } : TRAY}
           >
             {section.title && GroupIcon ? (
               <button
@@ -657,17 +691,11 @@ export function SidebarNav({
                         style={{
                           ...itemBase,
                           justifyContent: "space-between",
-                          fontWeight: selected ? 600 : accent ? 500 : 400,
-                          /* An AI row takes its fill, ink and edge from
-                             `.lp-sb-airow` in globals.css. Any inline value here
-                             — even the transparent border in itemBase — beats the
-                             stylesheet and flattens it back into a plain row. */
-                          ...(accent
-                            ? { border: undefined }
-                            : {
-                                color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
-                                background: selected ? RAIL_ACTIVE_BG : undefined,
-                              }),
+                          fontWeight: selected ? 600 : 400,
+                          // AI rows too: only their icon tile is coloured
+                          // (`.lp-sb-airow .lp-sb-chip` in globals.css).
+                          color: selected ? RAIL_ACTIVE_INK : RAIL_TEXT,
+                          background: selected ? RAIL_ACTIVE_BG : undefined,
                         }}
                       >
                         <span style={{ display: "flex", alignItems: "center", gap: 10 }}>

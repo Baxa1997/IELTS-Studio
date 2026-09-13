@@ -339,57 +339,27 @@
 
 /* ── the AI rows ──────────────────────────────────────────────────────────────
    Assistant and Practice AI are the two rows that DO something rather than go
-   somewhere, so they are not dressed like places. Each is a tinted pill with a
-   filled gradient tile: violet for the Assistant, gold for Practice AI. Every
-   other row in the rail stays monochrome, which is what lets these two stand
-   out without the rail turning into a colour chart.
+   somewhere. They are marked by their ICON TILE alone — a filled gradient,
+   violet for the Assistant, gold for Practice AI — and otherwise behave exactly
+   like every other row: no tint, no border, the same grey hover and active pill.
 
-   The colours are custom properties on the modifier, so the base rule, hover,
-   active and the collapsed rail (in the 768px block) all read one set.
+   A tinted pill per row was tried on 2026-09-13 and the owner took it back out:
+   the colour belongs on the icon. Every other row stays monochrome, which is
+   what lets two coloured tiles stand out without the rail becoming a chart.
 
-   ⚠️ sidebar-nav.tsx must not set an inline background, colour or border on
-   these rows — an inline style beats every rule here. */
-/* NO VISIBLE EDGE AT REST — the gradient alone carries the row. The border is
-   still there, transparent, so the active row can colour it without the row
-   growing by 2px and nudging everything below it. */
-.lp-sb-airow {
-  border: 1px solid transparent;
-  background: linear-gradient(135deg, var(--ai-bg-1), var(--ai-bg-2));
-  color: var(--ai-ink);
-}
+   The tile colours are custom properties on the modifier, so the tile here and
+   its collapsed-rail hover (in the 768px block) read one set. */
 .lp-sb-airow--assistant {
-  --ai-bg-1: #f7f3ff;
-  --ai-bg-2: #ede6ff;
-  --ai-line: #e0d6fb;
-  --ai-ink: #4527a0;
   --ai-tile-1: #6d4ae8;
   --ai-tile-2: #a78bfa;
 }
 .lp-sb-airow--generate {
-  --ai-bg-1: #fff9ec;
-  --ai-bg-2: #fdedcc;
-  --ai-line: #f2dcaa;
-  --ai-ink: #7a4a00;
   --ai-tile-1: #c97a0a;
   --ai-tile-2: #efb34a;
 }
 .lp-sb-airow .lp-sb-chip {
   background: linear-gradient(135deg, var(--ai-tile-1), var(--ai-tile-2));
   color: #fff;
-}
-/* Three classes, to outrank `.lp-sb-item:hover` further down this file — it
-   would otherwise swap the tint for the plain rows' grey. Hover only deepens the
-   tint: the coloured edge is reserved for the active row, so it always means
-   "you are here" and never just "the pointer is here". */
-.lp-sb-item.lp-sb-airow:hover {
-  background: linear-gradient(135deg, var(--ai-bg-2), var(--ai-bg-2));
-}
-/* "You are here" on an AI row: the tint deepens and the edge takes the tile's
-   colour — the only state in which an AI row shows a border at all. */
-.lp-sb-airow.lp-sb-accent-active,
-.lp-sb-item.lp-sb-airow.lp-sb-accent-active:hover {
-  background: linear-gradient(135deg, var(--ai-bg-2), var(--ai-line));
-  border-color: var(--ai-tile-1);
 }
 
 /* ── shared primitive kit (components/ui/*) ───────────────────────────────────
