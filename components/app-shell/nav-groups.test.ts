@@ -84,7 +84,10 @@ describe("the collapsed rail keeps its groups and flies them out", () => {
     // glyphs. The groups stay groups at 72px now.
     const row = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-grouprow");
     expect(declaration(row, "display")).toBeNull();
-    expect(declaration(row, "justify-content")).toBe("center");
+    // `!important` on both, because the row's inline width and justification
+    // are written for the 250px rail — see collapsed-rail.test.ts.
+    expect(declaration(row, "justify-content")).toBe("center !important");
+    expect(declaration(row, "width")).toBe("auto !important");
   });
 
   it("anchors the card to the SECTION, not the rail", () => {

@@ -602,6 +602,26 @@ function cx(...parts: (string | false | undefined)[]): string {
    `getSnapshot` is called on every render and must return something React can
    compare with `Object.is`. A fresh `JSON.parse` is a new object every time and
    would loop forever. */
+/**
+ * Which groups are open, with at most ONE of them unfolded.
+ *
+ * A free function rather than a closure because both callers need it and they
+ * live on either side of the component's own scope: the click handler, and the
+ * render-phase adjustment that unfolds whichever group you have just navigated
+ * into — which runs before any of the component's own helpers exist.
+ *
+ * Only used to OPEN one. Closing a group is a plain single-key update — see the
+ * note in `toggleGroup` — because folding every other group as a side effect of
+ * closing the one you are in is not something anybody asks for.
+ */
+function exclusivelyFor(sections: Section[], openTitle: string | null): Record<string, boolean> {
+  const next: Record<string, boolean> = {};
+  for (const section of sections) {
+    if (section.title) next[section.title] = section.title === openTitle;
+  }
+  return next;
+}
+
 const OPEN_KEY = "sb_open_groups";
 
 const openStoreListeners = new Set<() => void>();
@@ -739,12 +759,36 @@ export function SidebarNav({
   const [lastActiveGroup, setLastActiveGroup] = useState(activeGroup);
   if (activeGroup !== lastActiveGroup) {
     setLastActiveGroup(activeGroup);
-    if (activeGroup) setSession((prev) => ({ ...prev, [activeGroup]: true }));
+    // Same rule on arrival: land in Learning and Teaching folds behind you.
+    // Not persisted — `writeOpenGroups` is a side effect and this runs during
+    // render; navigating somewhere is not the same as choosing a layout.
+    if (activeGroup) setSession(exclusivelyFor(sections, activeGroup));
   }
 
   const isOpen = (title: string) => openGroups[title] ?? true;
+
+  /**
+   * ONE GROUP OPEN AT A TIME — opening one folds the rest.
+   *
+   * It used to be independent switches, so a rail with four groups could have
+   * all four unfolded and stand twenty rows tall, most of them somewhere you
+   * were not. The whole point of the disclosures is that the rail stays short
+   * enough to read without scrolling, and four switches nobody ever turns back
+   * off does not achieve that.
+   *
+   * CLOSING IS STILL JUST CLOSING. Pressing the group you are already in folds
+   * it and opens nothing — an accordion that insists something is always open
+   * takes away the one thing a disclosure is for.
+   */
   const toggleGroup = (title: string) => {
-    const next = { ...openGroups, [title]: !isOpen(title) };
+    /* ⚠️ CLOSING IS NOT THE MIRROR OF OPENING, and treating it as one is
+       genuinely surprising: `exclusivelyFor(null)` would fold EVERY group when
+       you pressed the one you were in, so closing Teaching also swept away
+       Practice and Learning. Opening is exclusive — that is the point — but
+       closing touches only the group you pressed. */
+    const next = isOpen(title)
+      ? { ...openGroups, [title]: false }
+      : exclusivelyFor(sections, title);
     setSession(next);
     writeOpenGroups(next);
   };

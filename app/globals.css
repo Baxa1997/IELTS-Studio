@@ -986,10 +986,12 @@
     align-items: center;
     gap: 4px !important;
   }
+  /* 40px, from 36. The strip is 48px of content inside a 72px rail, so this is
+     as large as a tile can be and still breathe — 4px either side. */
   .lp-shell-sidebar--collapsed .lp-sb-chip {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 9px !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-chip svg {
     width: 17px;
@@ -1154,10 +1156,21 @@
      (Assistant, Dashboard) have no group row and nothing to fly out — they stay
      exactly what they were, a plain stack of centred icons. Forgetting the
      `:not()` gives those a phantom flyout anchored to nothing. */
+  /* ⚠️ BOTH OF THESE BEAT AN INLINE STYLE, AND WITHOUT THEM THE GROUP ICONS SIT
+     LEFT OF EVERY OTHER ONE. The group row is a <button> carrying
+     `width: "100%"` and `justifyContent: "space-between"` inline — right for the
+     250px rail, where the chevron belongs at the far end — and an inline style
+     beats an external rule whatever its specificity. So the button stayed full
+     width with its chip packed to the left edge while the plain nav rows, which
+     shrink to their chip and are centred by the tray, sat in the middle. Two
+     columns of icons in a 72px strip.
+
+     `width: auto` is the half that actually does it: centring a full-width row
+     centres nothing, because the row already fills the rail. */
   .lp-shell-sidebar--collapsed .lp-sb-grouprow {
-    /* A centred 36px tile, like every other glyph in the strip. */
+    width: auto !important;
     padding: 0 !important;
-    justify-content: center;
+    justify-content: center !important;
     background: transparent !important;
     border-color: transparent !important;
   }

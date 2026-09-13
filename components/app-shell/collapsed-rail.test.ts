@@ -105,12 +105,24 @@ describe("collapsed rail: the glyph sits dead centre", () => {
   });
 
   it("grows the chip to a standalone tile", () => {
-    // 26px in a labelled row, 36px alone. Set INLINE in sidebar-nav.tsx, so
+    // 26px in a labelled row, 40px alone. Set INLINE in sidebar-nav.tsx, so
     // without !important this is a silent no-op and the rail collapses to 72px
     // with undersized icons rattling around in it.
     const chip = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-chip");
-    expect(declaration(chip, "width")).toBe("36px !important");
-    expect(declaration(chip, "height")).toBe("36px !important");
+    expect(declaration(chip, "width")).toBe("40px !important");
+    expect(declaration(chip, "height")).toBe("40px !important");
+  });
+
+  it("centres the group rows too, against two inline styles", () => {
+    /* The group row is a <button> with `width: "100%"` and
+       `justifyContent: "space-between"` set inline for the expanded rail. Both
+       have to be beaten here or its icon sits at the left edge while every
+       plain row sits in the middle — two columns of glyphs in one 72px strip.
+       `width` is the half that matters: centring a full-width row centres
+       nothing. */
+    const row = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-grouprow");
+    expect(declaration(row, "width")).toBe("auto !important");
+    expect(declaration(row, "justify-content")).toBe("center !important");
   });
 
   it("uses !important wherever it is beating an inline style", () => {

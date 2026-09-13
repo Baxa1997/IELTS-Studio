@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { Card, CardHead, type Tone } from "@/components/console/crm-ui";
+import { type Tone } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/console/attempts";
 import {
@@ -8,11 +8,9 @@ import {
   type PracticeBoardRow,
   type PracticeStatus,
 } from "@/lib/console/practice-board";
-import { libraryFacets, loadLibrary } from "@/lib/console/practice-library";
 
 import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
 
-import { LibraryPanel } from "./library-panel";
 import { RemindButton } from "./remind-button";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +27,14 @@ const dateFmt = (iso: string) =>
 /**
  * Practice across the whole centre — what has been set, and is it landing.
  *
+ * ⚠️ THE PRACTICE LIBRARY IS NO LONGER ON THIS PAGE. The shelf — §9's "kept so
+ * the same paper can be set again" — used to sit under the board, on the
+ * argument that "is what we set landing" and "what do we already have" are the
+ * two questions a teacher has when they sit down to set work. The owner removed
+ * it when this page was cut back to the reference layout. It is not deleted,
+ * only unmounted: `LibraryPanel`, `loadLibrary` and `libraryFacets` are all
+ * still there, so putting it back is an import and six lines of JSX.
+ *
  * THE ALERT FINALLY HAS SOMEWHERE TO GO. "2 groups have no practice set" has
  * been on the Overview with no destination since it was written; §2 of the
  * restructure names that as the gap. The groups with nothing set are the first
@@ -44,10 +50,6 @@ export default async function PracticePage() {
   if (profile.role === "student") redirect("/dashboard");
 
   const board = await loadPracticeBoard(profile);
-  // §9: the shelf lives on this page, under the board. The board answers "is
-  // what we set landing"; the library answers "what do we already have" — the
-  // two questions a teacher has when they sit down to set work.
-  const library = await loadLibrary();
 
   return (
     <div>
@@ -85,22 +87,6 @@ export default async function PracticePage() {
         emptyTitle="Nothing set yet"
         emptyNote="Practice appears here the moment a group is given some."
       />
-
-      {/* ── the shelf ──────────────────────────────────────────────────────── */}
-      <Card flush>
-        <CardHead
-          title="Practice library"
-          note="kept so the same paper can be set again — two groups sitting the same task are comparable"
-          divided
-        />
-        <div style={{ padding: "14px 16px 16px" }}>
-          <LibraryPanel
-            items={library}
-            facets={libraryFacets(library)}
-            canEdit={profile.role === "teacher" || profile.role === "center_admin"}
-          />
-        </div>
-      </Card>
     </div>
   );
 }

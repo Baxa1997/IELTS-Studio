@@ -163,3 +163,68 @@ describe("a folded group still shows what is waiting behind it", () => {
     expect(within(groupRow("Learning")).getByText("3")).toBeTruthy();
   });
 });
+
+/**
+ * ONE OPEN AT A TIME.
+ *
+ * The groups were independent switches, so a teacher's rail could have Teaching,
+ * Practice and Learning all unfolded at once and stand twenty rows tall — most
+ * of them somewhere they were not. The disclosures exist to keep the rail short
+ * enough to read without scrolling, which four switches nobody turns back off
+ * does not achieve.
+ */
+describe("the groups behave as an accordion", () => {
+  it("folds the others when one is opened", () => {
+    render(<SidebarNav role="teacher" />);
+    // They all start open; fold Teaching so there is one to re-open.
+    fireEvent.click(groupToggle("Teaching"));
+    expect(panelOf("teaching")).toHaveAttribute("data-open", "0");
+
+    fireEvent.click(groupToggle("Teaching"));
+    expect(panelOf("teaching")).toHaveAttribute("data-open", "1");
+    expect(panelOf("practice")).toHaveAttribute("data-open", "0");
+    expect(panelOf("learning")).toHaveAttribute("data-open", "0");
+  });
+
+  it("closes only the group you pressed", () => {
+    /* ⚠️ ONLY OBSERVABLE FROM THE INITIAL STATE, which is why this starts there
+       and does not first open something. Once exclusivity holds, at most one
+       group is open, so "close just this one" and "close everything" leave the
+       identical result and no test can tell them apart. They differ exactly
+       once: on the first fold, when the others are still open.
+
+       THE REGRESSION IT PINS: closing is not the mirror of opening. Folding
+       every other group as a side effect of closing the one you are in is
+       surprising, and it is one `exclusivelyFor(…, null)` away — an earlier
+       version of this file shipped that way. */
+    render(<SidebarNav role="teacher" />);
+    fireEvent.click(groupToggle("Teaching"));
+
+    expect(panelOf("teaching")).toHaveAttribute("data-open", "0");
+    expect(panelOf("practice"), "closing Teaching must not fold Practice").toHaveAttribute(
+      "data-open",
+      "1",
+    );
+    expect(panelOf("learning"), "closing Teaching must not fold Learning").toHaveAttribute(
+      "data-open",
+      "1",
+    );
+  });
+
+  it("folds the others when you navigate into one", () => {
+    /* ⚠️ IT HAS TO BE A REAL NAVIGATION, not a first render. The adjustment
+       fires on a CHANGE of active group, and on first mount there is no change
+       — `lastActiveGroup` is seeded with the current one. A test that simply
+       rendered at /console/marking would pass whatever the code did, because
+       every group defaults to open anyway. */
+    pathname.current = "/console";
+    const view = render(<SidebarNav role="teacher" />);
+    expect(panelOf("teaching")).toHaveAttribute("data-open", "1");
+
+    pathname.current = "/console/marking"; // Marking lives inside Learning
+    view.rerender(<SidebarNav role="teacher" />);
+    expect(panelOf("learning")).toHaveAttribute("data-open", "1");
+    expect(panelOf("teaching")).toHaveAttribute("data-open", "0");
+    expect(panelOf("practice")).toHaveAttribute("data-open", "0");
+  });
+});
