@@ -20,7 +20,8 @@
  * the thing that actually regresses.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -243,6 +244,68 @@ describe("class lists survive the formatter", () => {
     }
     return out;
   }
+
+  /**
+   * ⚠️ EVERY COMPONENT, NOT JUST THIS ONE.
+   *
+   * The first version of this guard scanned `sidebar-nav.tsx` alone, because
+   * that is where the bug had been found. It then happened a fourth time in
+   * `components/practice/gallery.tsx` — written, formatted and shipped in a
+   * single session — where the selected filter chip lost BOTH its classes and
+   * rendered as bare text. A guard that only watches the file that already
+   * burned you is not a guard.
+   */
+  it("emits no interpolated class anywhere that could have lost its separator", () => {
+    /* ⚠️ THE CHECK IS PER INTERPOLATION, AND IT LOOKS AT THE CHARACTER BEFORE IT.
+       Two earlier versions of this guard were wrong in opposite directions and
+       both looked reasonable:
+
+         1. "is there a quote-then-space anywhere in the interpolation" — the
+            BROKEN form satisfies that too (`? "pg-chip--on" : ""` has a closing
+            quote followed by a space), so it passed against the very defect it
+            was written for.
+         2. "every literal must start with a space" — that condemns three
+            legitimate shapes: `cn-btn cn-btn--${p ? "primary" : "ghost"}`, where
+            the interpolation COMPLETES a class name; `p-1 ${...}`, where the
+            static half already ended in a space; and `role === "ignore"`, where
+            the literal is a comparison value rather than a class at all.
+
+       What actually distinguishes the bug is the JOIN. If the character
+       immediately before `${` is a space, the interpolation starts a fresh class
+       and needs no leading space of its own. If it is a hyphen, the
+       interpolation is finishing a class name. Only when it is a word character
+       — `pg-chip${`, `lp-shell-surface${` — is the next class being welded onto
+       the previous one, and only then must every literal begin with a space. */
+    const roots = ["app", "components"];
+    const offenders: string[] = [];
+
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name !== "node_modules") walk(full);
+          continue;
+        }
+        if (!entry.name.endsWith(".tsx")) continue;
+        for (const body of classNameTemplates(readFileSync(full, "utf8"))) {
+          for (let at = body.indexOf("${"); at !== -1; at = body.indexOf("${", at + 1)) {
+            const before = at === 0 ? " " : body[at - 1];
+            if (/[\s-]/.test(before)) continue; // starts a class, or finishes one
+            const close = body.indexOf("}", at);
+            const inside = body.slice(at + 2, close === -1 ? undefined : close);
+            for (const literal of inside.match(/"[^"]*"|'[^']*'/g) ?? []) {
+              const inner = literal.slice(1, -1);
+              if (inner === "" || inner.startsWith(" ")) continue;
+              offenders.push(`${full}: ${literal} welded onto \`${body.slice(0, at)}\``);
+            }
+          }
+        }
+      }
+    };
+    for (const r of roots) walk(r);
+
+    expect(offenders, "a class list has lost its separating space").toEqual([]);
+  });
 
   it("emits no interpolated class that could have lost its separator", () => {
     /* ⚠️ THE CHECK HAS TO LOOK IN BOTH BRANCHES OF THE TERNARY, which is what the

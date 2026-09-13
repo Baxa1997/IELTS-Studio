@@ -3516,6 +3516,15 @@ section[id] {
 .pg-chip:hover {
   background: #e3e0d9;
 }
+/* "All" is not one of the named filters, it is the absence of one — the
+   reference fences it off with a hairline rather than letting it read as the
+   first category in the list. */
+.pg-chip-rule {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 6px 4px 2px;
+  background: var(--pg-line);
+}
 /* The selected chip inverts to near-black, exactly as the reference does. It is
    the one high-contrast mark on the page, which is what makes "you are filtered"
    impossible to miss — a tinted chip among tinted chips is not. */
@@ -3525,13 +3534,23 @@ section[id] {
   color: #fff;
 }
 
-/* ── the grid ────────────────────────────────────────────────────────────── */
+/* ── the grid ────────────────────────────────────────────────────────────
+   ⚠️ THE RULES ARE BORDERS ON THE CARDS, NOT A COLOURED GROUND BEHIND A GAP.
+
+   The first version did the usual trick: `gap: 1px` over a line-coloured grid,
+   letting each white card punch a hole in it. That draws perfect hairlines
+   between cards AND a solid grey slab everywhere a card is missing — so a row
+   holding two cards out of four ended in a large grey rectangle, which is what
+   the owner photographed. There is no CSS that tells a coloured ground to stop
+   at the last child; the fix is to stop colouring the ground at all.
+
+   So the cards carry the lines. `border-right` and `border-bottom` on every
+   card means exactly one hairline between any two neighbours, the last row and
+   the last column close the grid's own edge, and empty cells draw nothing
+   because there is no card there to draw anything. */
 .pg-grid {
   display: grid;
-  gap: 1px;
-  background: var(--pg-line);
   border-top: 1px solid var(--pg-line);
-  border-bottom: 1px solid var(--pg-line);
 }
 .pg-grid--4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3564,21 +3583,27 @@ section[id] {
 .pg-card {
   display: flex;
   flex-direction: column;
-  padding: 22px 22px 18px;
-  /* Paints over the grid's line-coloured ground — see the note at the top. */
-  background: #fff;
+  padding: 24px 24px 20px;
+  border-right: 1px solid var(--pg-line);
+  border-bottom: 1px solid var(--pg-line);
+  /* ⚠️ NO FILL. The reference's cards sit ON the page's own ground rather than
+     as white panels floating over it — which is what makes the grid read as one
+     ruled collection instead of a tray of tiles. It is also the second half of
+     the empty-cell fix: a transparent card and an empty cell are the same
+     colour, so a short last row simply stops. */
+  background: transparent;
   text-decoration: none;
   color: inherit;
   transition: background 0.15s ease;
 }
 .pg-card:hover {
-  background: #faf9f6;
+  background: rgba(28, 25, 15, 0.028);
 }
 /* A practice with no report yet. It still says what happened; it just is not a
    door, so it must not light up like one. */
 .pg-card--flat,
 .pg-card--flat:hover {
-  background: #fdfcfa;
+  background: transparent;
   cursor: default;
 }
 
@@ -3591,8 +3616,8 @@ section[id] {
   gap: 2px;
   aspect-ratio: 16 / 10;
   border: 1px solid;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  border-radius: 10px;
+  margin-bottom: 18px;
 }
 .pg-face-big {
   font-size: clamp(30px, 3.4vw, 42px);
@@ -3622,16 +3647,17 @@ section[id] {
 
 .pg-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
 }
 .pg-name {
   margin: 0;
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  /* Two lines, then an ellipsis. A writing prompt is a paragraph, and letting it
-     set the card's height makes a grid of ragged boxes. */
+  /* The reference sets the card's name a clear step above its byline — it is
+     the thing being scanned. 17px was reading as a list item. */
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -3640,18 +3666,18 @@ section[id] {
 .pg-badge {
   flex: none;
   margin-left: auto;
-  padding: 4px 11px;
+  padding: 5px 11px;
   border-radius: 8px;
-  background: #f0eeea;
+  background: #eceae5;
   color: #3f3d39;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .pg-by {
-  margin: 5px 0 0;
-  font-size: 14px;
+  margin: 6px 0 0;
+  font-size: 15px;
   color: var(--pg-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3665,10 +3691,10 @@ section[id] {
   /* Pins the footer to the bottom however tall the title ran, so the arrows line
      up across a row of cards with one- and two-line names. */
   margin-top: auto;
-  padding-top: 18px;
+  padding-top: 20px;
 }
 .pg-stats {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--pg-muted);
   font-variant-numeric: tabular-nums;
   overflow: hidden;
@@ -3678,7 +3704,7 @@ section[id] {
 .pg-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: none;
 }
 .pg-go {
@@ -3686,8 +3712,8 @@ section[id] {
   text-decoration: none;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   background: #16150f;
   color: #fff;

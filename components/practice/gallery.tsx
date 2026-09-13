@@ -28,6 +28,25 @@ import { ArrowRight, Search } from "lucide-react";
 /** The hue a card wears. Skills keep one colour wherever they appear, which is
  *  what lets somebody find their reading practice by colour rather than by
  *  reading every title. */
+/**
+ * Join class names.
+ *
+ * ⚠️ THIS EXISTS BECAUSE OF PRETTIER. These lists were template literals whose
+ * two class names were separated by a SPACE INSIDE A STRING LITERAL —
+ * `` `pg-chip${on ? " pg-chip--on" : ""}` `` — and `prettier --write` removes
+ * it. The result compiles, renders, and is silently wrong: the two names fuse
+ * into one token that matches no rule, so the element loses BOTH classes. The
+ * selected chip stopped being a chip at all and rendered as bare text.
+ *
+ * It is the fourth time this has happened in this repo. See the identical note
+ * in components/app-shell/sidebar-nav.tsx, and the guard in
+ * components/app-shell/nav-groups.test.ts, which now scans every component
+ * rather than only the one it was written for.
+ */
+function cx(...parts: (string | false | undefined)[]): string {
+  return parts.filter(Boolean).join(" ");
+}
+
 export type Tone = "writing" | "reading" | "listening" | "speaking" | "lesson" | "neutral";
 
 const TONE: Record<Tone, { bg: string; ink: string; line: string; label: string }> = {
@@ -209,14 +228,31 @@ export function PracticeGallery({
           </label>
           <label className="pg-select">
             <span className="pg-sr">Filter</span>
-            <select value={category ?? ""} onChange={(e) => setCategory(e.target.value || null)}>
-              <option value="">All practice</option>
-              {live.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            {/* The second filter does whichever job the page has for it. A page
+                with a state axis (the centre board's set / overdue / all-in)
+                puts it here, because a state is not a kind and would read as an
+                alternative to "Reading" if it were dropped into the chip row.
+                Everywhere else it mirrors the chips, which is what the reference
+                does with its own second dropdown. */}
+            {statuses ? (
+              <select value={status ?? ""} onChange={(e) => setStatus(e.target.value || null)}>
+                <option value="">{statusLabel}</option>
+                {statuses.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <select value={category ?? ""} onChange={(e) => setCategory(e.target.value || null)}>
+                <option value="">All practice</option>
+                {live.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            )}
           </label>
         </div>
       </div>
@@ -225,17 +261,18 @@ export function PracticeGallery({
         <div className="pg-chips" role="group" aria-label="Filter by type">
           <button
             type="button"
-            className={`pg-chip${category === null ? "pg-chip--on" : ""}`}
+            className={cx("pg-chip", category === null && "pg-chip--on")}
             aria-pressed={category === null}
             onClick={() => setCategory(null)}
           >
             All
           </button>
+          <span className="pg-chip-rule" aria-hidden />
           {live.map((c) => (
             <button
               key={c}
               type="button"
-              className={`pg-chip${category === c ? "pg-chip--on" : ""}`}
+              className={cx("pg-chip", category === c && "pg-chip--on")}
               aria-pressed={category === c}
               onClick={() => setCategory(c)}
             >
@@ -253,7 +290,7 @@ export function PracticeGallery({
           </span>
         </div>
       ) : (
-        <div className={`pg-grid pg-grid--${columns}`}>
+        <div className={cx("pg-grid", `pg-grid--${columns}`)}>
           {visible.map((item) => (
             <Card key={item.id} item={item} />
           ))}
@@ -324,6 +361,6 @@ function Card({ item }: { item: GalleryItem }) {
       {face}
     </Link>
   ) : (
-    <div className={`pg-card${item.href ? "" : "pg-card--flat"}`}>{face}</div>
+    <div className={cx("pg-card", !item.href && "pg-card--flat")}>{face}</div>
   );
 }
