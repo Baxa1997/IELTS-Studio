@@ -2586,6 +2586,75 @@
    across every console screen is its own job, and these selectors only bite
    where the markup opts in. */
 
+/* ── the console's settings hub (/console/settings/<section>) ─────────────────
+   The sections listed on the left, the open one on the right. Below 900px the
+   list turns into a scrolling row of tabs above the section, and each entry
+   drops its note — at that width the note costs a line per section. */
+.cn-settings-hub {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.cn-settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cn-settings-link {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 9px;
+  text-decoration: none;
+  color: #4c4a63;
+  transition: background 0.15s ease;
+}
+.cn-settings-link:hover {
+  background: #f1f0eb;
+}
+.cn-settings-link[aria-current="page"] {
+  background: #eeedf8;
+  color: #4340cb;
+}
+.cn-settings-link-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.cn-settings-link-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8a889c;
+}
+.cn-settings-link[aria-current="page"] .cn-settings-link-note {
+  color: #6d6ab8;
+}
+.cn-settings-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 650;
+  color: #16162e;
+}
+@media (max-width: 900px) {
+  .cn-settings-hub {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .cn-settings-nav {
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .cn-settings-link {
+    white-space: nowrap;
+  }
+  .cn-settings-link-note {
+    display: none;
+  }
+}
+
 /* How the class RUNS on the left, how it is REACHED on the right. One column
    below 1080px, where 320px of sidebar plus two columns stops fitting. */
 .cn-settings-grid {

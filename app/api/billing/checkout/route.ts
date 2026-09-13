@@ -35,7 +35,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const base = serverEnv.siteUrl;
-  const returnPath = role === "student" ? "/dashboard" : "/console/billing";
+  const returnPath = role === "student" ? "/dashboard" : "/console/settings/billing";
   const successUrl = `${base}${returnPath}?billing=success`;
   const cancelUrl = `${base}${returnPath}?billing=cancel`;
 

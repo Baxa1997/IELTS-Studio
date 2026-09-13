@@ -489,7 +489,7 @@ export async function saveHoliday(_prev: ActionState, formData: FormData): Promi
     };
   }
 
-  revalidatePath("/console/settings");
+  revalidatePath("/console/settings", "layout");
   revalidatePath("/console/calendar");
   revalidatePath("/console/attendance");
   revalidatePath("/console");
@@ -509,7 +509,7 @@ export async function deleteHoliday(_prev: ActionState, formData: FormData): Pro
   const { error } = await supabase.from("center_holidays").delete().eq("id", id).select("id");
   if (error) return { error: error.message };
 
-  revalidatePath("/console/settings");
+  revalidatePath("/console/settings", "layout");
   revalidatePath("/console/calendar");
   revalidatePath("/console/attendance");
   return { ok: "Removed — those days are working days again." };

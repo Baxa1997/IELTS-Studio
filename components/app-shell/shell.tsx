@@ -8,11 +8,9 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
   type LucideIcon,
   Megaphone,
-  Send,
   Menu,
   Settings,
 } from "lucide-react";
@@ -633,25 +631,17 @@ export function accountItemsFor(role: string): AccountItem[] {
     href: "/console/announcements",
     icon: Megaphone,
   };
-  // Under the avatar for the same reason as the others here: something you set
-  // up once and then leave alone. It is not in the rail because a permanent
-  // heading for it would cost one of the six the rail has, and it is not buried
-  // in a group any more because "why did nothing get announced?" is a question
-  // about the whole centre rather than about one class.
-  const telegram = { label: "Telegram channels", href: "/console/telegram", icon: Send };
+  // ONE "Settings" for everything you set up once and then leave alone — your
+  // password, your Telegram, the classes' Telegram groups, and for the owner the
+  // center, its billing and its subjects. Telegram and Billing used to be menu
+  // items of their own; they are sections of /console/settings now, and which
+  // sections a role sees is decided in console/settings/section-list.ts.
+  const settings = { label: "Settings", href: "/console/settings", icon: Settings };
   switch (role) {
     case "center_admin":
-      return [
-        announcements,
-        telegram,
-        { label: "Billing & plan", href: "/console/billing", icon: CreditCard },
-        { label: "Settings", href: "/console/settings", icon: Settings },
-      ];
     case "administrator":
     case "teacher":
-      // A teacher sees it too: they own groups, and they are the ones who
-      // notice the announcement did not arrive.
-      return [announcements, telegram];
+      return [announcements, settings];
     default:
       // Students and the platform owner have none of these.
       return [];

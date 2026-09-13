@@ -340,13 +340,13 @@ export function ShareModal({
           )}
 
           {/* A badge that only diagnoses is half a fix. This says what to do
-              about it, and names where — "Settings" is a drawer on the group
-              page, so there is no URL to send anyone to. */}
+              about it and links straight to the Telegram section of Settings,
+              where every class can be connected from one list. */}
           {groups.some((g) => !g.telegram) ? (
             <p style={{ margin: "9px 2px 0", fontSize: 12.5, lineHeight: 1.5, color: SOFT }}>
               A class with no Telegram group still gets the homework — it just is not announced.{" "}
               <Link
-                href="/console/telegram"
+                href="/console/settings/telegram"
                 style={{ color: INK, fontWeight: 600, textDecoration: "underline" }}
               >
                 Connect one →

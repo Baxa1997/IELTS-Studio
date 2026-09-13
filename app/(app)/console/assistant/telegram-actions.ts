@@ -18,6 +18,7 @@ export async function connectMyTelegram(): Promise<StaffLinkState> {
   if (profile.role === "student") return { error: "Not allowed." };
   const link = await createStaffLink(profile);
   revalidatePath("/console/assistant");
+  revalidatePath("/console/settings/account");
   return { code: link.code, url: link.url };
 }
 
@@ -26,5 +27,6 @@ export async function disconnectMyTelegram(): Promise<StaffLinkState> {
   if (profile.role === "student") return { error: "Not allowed." };
   await unlinkStaff(profile);
   revalidatePath("/console/assistant");
+  revalidatePath("/console/settings/account");
   return { ok: "Disconnected." };
 }

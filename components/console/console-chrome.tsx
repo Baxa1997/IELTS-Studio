@@ -50,7 +50,7 @@ const CRUMBS: [string, string][] = [
   // Under the avatar now, so they name the menu they live in rather than a
   // section that no longer exists.
   ["/console/announcements", "Account · Announcements"],
-  ["/console/billing", "Account · Billing & plan"],
+  // Billing and Telegram are sections of Settings now; their old routes redirect.
   ["/console/settings", "Account · Settings"],
   ["/console", "Dashboard"],
 ];

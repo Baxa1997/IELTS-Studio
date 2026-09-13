@@ -29,7 +29,9 @@ async function requireOwner(): Promise<{ error: SubjectState } | { organizationI
 }
 
 function refresh(): void {
-  revalidatePath("/console/settings");
+  // "layout" so every /console/settings/<section> is refreshed, not only the
+  // bare /console/settings path, which is now just a redirect.
+  revalidatePath("/console/settings", "layout");
   revalidatePath("/console/groups");
   revalidatePath("/console/teachers");
 }
