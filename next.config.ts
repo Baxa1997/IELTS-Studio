@@ -49,6 +49,12 @@ const nextConfig: NextConfig = {
      * upgrades a hover into a complete prefetch, so by the time the click lands
      * the payload is usually already there.
      *
+     * ⚠️ THIS FLAG DOES NOTHING ON ITS OWN. Next upgrades a hover only when the
+     * `<Link>` ALSO carries `unstable_dynamicOnHover` (next/dist/client/
+     * components/links.js checks both). For months no link did, so every hover
+     * fetched the skeleton alone. The sidebar now opts its rows in — see
+     * `renderOnHover` in components/app-shell/sidebar-nav.tsx.
+     *
      * The cost is server renders for pages the user hovered but did not open.
      * That is a real cost and worth watching in the Vercel function count; it is
      * bounded by hover intent rather than by viewport, which is what makes it

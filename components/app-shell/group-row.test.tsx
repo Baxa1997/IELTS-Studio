@@ -26,7 +26,10 @@ const pathname = { current: "/console" };
 const lastClick = vi.hoisted(() => ({ navigatedTo: null as string | null }));
 vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
 vi.mock("next/link", () => ({
-  default: ({ children, href, onClick, ...rest }: Record<string, unknown>) => {
+  // `prefetch` and `unstable_dynamicOnHover` are Next's, not the DOM's — dropped
+  // here so React does not warn about unknown attributes on every row.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  default: ({ children, href, onClick, prefetch, unstable_dynamicOnHover, ...rest }: Record<string, unknown>) => {
     const h = href as string;
     return (
       <a
@@ -226,5 +229,49 @@ describe("the groups behave as an accordion", () => {
     expect(panelOf("learning")).toHaveAttribute("data-open", "1");
     expect(panelOf("teaching")).toHaveAttribute("data-open", "0");
     expect(panelOf("practices")).toHaveAttribute("data-open", "0");
+  });
+});
+
+/**
+ * THE CLICK ANSWERS BEFORE THE SERVER DOES.
+ *
+ * The highlight used to follow the URL, and the URL changes only once the next
+ * page has arrived — so for the whole server round trip the rail still lit the
+ * page you were leaving, and a press looked ignored.
+ */
+describe("the row you press", () => {
+  const link = (href: string) => document.querySelector<HTMLElement>(`a[href="${href}"]`) as HTMLElement;
+  const lit = () =>
+    Array.from(document.querySelectorAll<HTMLElement>(".lp-sb-link--active")).map((a) =>
+      a.getAttribute("href"),
+    );
+
+  it("lights at once, while the old page is still on screen", () => {
+    render(<SidebarNav role="teacher" />);
+    fireEvent.click(link("/console/students"));
+    expect(lit()).toEqual(["/console/students"]);
+  });
+
+  it("does not claim to be the page until it is", () => {
+    // The look is optimistic; what a screen reader is told is not.
+    render(<SidebarNav role="teacher" />);
+    fireEvent.click(link("/console/students"));
+    expect(link("/console/students")).not.toHaveAttribute("aria-current");
+  });
+
+  it("stays lit when the page arrives", () => {
+    const view = render(<SidebarNav role="teacher" />);
+    fireEvent.click(link("/console/students"));
+    pathname.current = "/console/students";
+    view.rerender(<SidebarNav role="teacher" />);
+    expect(lit()).toEqual(["/console/students"]);
+    expect(link("/console/students")).toHaveAttribute("aria-current", "page");
+  });
+
+  it("does not light for a click that opens a new tab", () => {
+    // Cmd/Ctrl-click leaves this tab where it is, so its rail must not move.
+    render(<SidebarNav role="teacher" />);
+    fireEvent.click(link("/console/students"), { metaKey: true });
+    expect(lit()).not.toContain("/console/students");
   });
 });

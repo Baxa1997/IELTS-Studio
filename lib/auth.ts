@@ -154,29 +154,39 @@ export function landingFor(role: AppRole, next: string | null | undefined): stri
 /**
  * Who is asking, once per request.
  *
- * WRAPPED IN `cache()`, and that wrapper is worth more than it looks. This
- * function makes a network call to Supabase Auth (`getUser` verifies the token
- * with the auth server — it does not merely read a cookie) and then a second
- * query for the profile and its organisation. It is called by the app layout,
- * by the console layout, and again by every page inside them, so a single
- * navigation was paying for that pair three or four times over, in series,
- * before anything rendered.
+ * WRAPPED IN `cache()`, and that wrapper is worth more than it looks. It is
+ * called by the app layout, by the console layout, and again by every page
+ * inside them, so a single navigation was paying for the identity check and the
+ * profile query three or four times over, in series, before anything rendered.
  *
  * `cache()` is React's own request-scoped memo: the first caller in a render
  * pass does the work and the rest get the same promise. It is per-REQUEST, so
  * nothing leaks between users — which is the property that makes it safe to use
  * on the function that decides who someone is.
+ *
+ * getClaims(), NOT getUser(). getUser() asks the Supabase Auth server on every
+ * call, and with the database in Singapore that was a full round trip on every
+ * page render. The project signs with an asymmetric key (ES256), so getClaims()
+ * checks the token's signature locally against the cached JWKS — the same call
+ * the proxy already makes on this request. The signature is verified either
+ * way; this is not getSession(), which trusts the cookie unread.
+ *
+ * THE TRADE: a token stays valid until it expires (at most an hour) even if the
+ * session was revoked server-side in the meantime, and `app_metadata.role` is as
+ * of when the token was issued. Neither weakens what matters: the profile below
+ * is read fresh under RLS on every request, so a role change, a suspended org or
+ * a deleted account still takes effect at once.
  */
 export const getSession = cache(async function getSession(): Promise<Session | null> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+  if (!claims?.sub) return null;
+  const user = { id: claims.sub, email: claims.email };
 
-  const appMeta = (user.app_metadata ?? {}) as { role?: string };
+  const appMeta = (claims.app_metadata ?? {}) as { role?: string };
   if (appMeta.role === "super_admin") {
-    return { user: { id: user.id, email: user.email }, role: "super_admin", profile: null };
+    return { user, role: "super_admin", profile: null };
   }
 
   // Embed the org's approval state in the same query (profiles → organizations

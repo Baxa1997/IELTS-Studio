@@ -2,7 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SANS } from "@/lib/theme/tokens";
 import {
   Activity,
@@ -355,8 +355,24 @@ const chipStyle: React.CSSProperties = {
   flex: "none",
 };
 
-function PendingDot() {
+/**
+ * The spinner beside a row while its page loads — and the signal that ends the
+ * row's optimistic highlight. `onSettle` fires when a navigation stops being
+ * pending. The pathname alone cannot end it: a click that redirects straight
+ * back to the page you were on leaves the pathname unchanged, and the row you
+ * pressed would stay lit.
+ */
+function PendingDot({ onSettle }: { onSettle: () => void }) {
   const { pending } = useLinkStatus();
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (pending) {
+      wasPending.current = true;
+    } else if (wasPending.current) {
+      wasPending.current = false;
+      onSettle();
+    }
+  }, [pending, onSettle]);
   return pending ? <span className="lp-nav-spin" aria-hidden /> : null;
 }
 
@@ -373,7 +389,22 @@ const itemBase: React.CSSProperties = {
   border: "1px solid transparent",
 };
 
-function shouldPrefetch(href: string): boolean {
+/**
+ * Which rows are rendered in full while the pointer rests on them.
+ *
+ * ⚠️ `experimental.dynamicOnHover` in next.config is not enough by itself: Next
+ * upgrades a hover to a full prefetch only when the link ALSO carries
+ * `unstable_dynamicOnHover`. This rail never passed it, so a hover fetched the
+ * loading skeleton alone and every click still waited on a whole server render.
+ *
+ * The heavy screens below are still not rendered on hover — sweeping the pointer
+ * down the rail should not run payroll and report queries. But they are no
+ * longer `prefetch={false}`, which also skipped their loading boundary: a click
+ * on Finance showed nothing at all until the server answered. The default
+ * prefetch fetches just that skeleton, which is cheap and is what lets the click
+ * paint at once.
+ */
+function renderOnHover(href: string): boolean {
   return !(
     href.startsWith("/admin") ||
     href.startsWith("/console/finance") ||
@@ -510,6 +541,17 @@ export function SidebarNav({
   );
   const all = sections.flatMap((s) => s.items);
   const activeHref = resolveActiveHref(all, pathname);
+
+  /* The row just pressed, lit before its page arrives — the URL only changes once
+     the server has answered, so a highlight that followed it made every click look
+     ignored for the whole round trip. Remembered WITH the page it was pressed from
+     and dropped the moment the pathname moves on (the same adjust-during-render
+     pattern as `lastActiveGroup` below), so pressing BACK later cannot revive it.
+     `PendingDot` drops it for a navigation that lands where it started. */
+  const [pressed, setPressed] = useState<{ href: string; from: string } | null>(null);
+  if (pressed && pressed.from !== pathname) setPressed(null);
+  const shownHref = pressed && pressed.from === pathname ? pressed.href : activeHref;
+  const settle = useCallback(() => setPressed(null), []);
 
   const storedRaw = useSyncExternalStore(subscribeOpenGroups, readOpenGroups, serverOpenGroups);
   const stored = useMemo<Record<string, boolean>>(() => {
@@ -667,15 +709,25 @@ export function SidebarNav({
                         </span>
                       );
                     }
-                    const selected = href === activeHref;
+                    const selected = href === shownHref;
                     return (
                       <Link
                         key={href}
                         href={href}
-                        prefetch={shouldPrefetch(href) ? undefined : false}
+                        /* Spread, not an attribute: the App Router's Link reads this
+                           (next/dist/client/app-dir/link.d.ts), but `next/link`'s
+                           types point at the Pages Router Link, which lacks it. */
+                        {...({ unstable_dynamicOnHover: renderOnHover(href) } as object)}
+                        onClick={(e) => {
+                          // A modified click opens another tab; this one stays put.
+                          if (e.defaultPrevented || e.button !== 0) return;
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                          setPressed({ href, from: pathname });
+                        }}
                         data-label={label}
                         aria-label={label}
-                        aria-current={selected ? "page" : undefined}
+                        // The truth, not the optimistic look: the page you are on.
+                        aria-current={href === activeHref ? "page" : undefined}
                         /* `tabIndex={-1}` inside a shut group: the rows are
                            still in the DOM (they have to be — the grid tween
                            measures them), and a link you cannot see but can tab
@@ -738,7 +790,7 @@ export function SidebarNav({
                               {badge}
                             </span>
                           ) : null}
-                          <PendingDot />
+                          <PendingDot onSettle={settle} />
                         </span>
                       </Link>
                     );
