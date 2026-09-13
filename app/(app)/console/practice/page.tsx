@@ -1,24 +1,17 @@
 import { redirect } from "next/navigation";
 
 import {
-  Bar,
   Card,
   CardHead,
-  Empty,
   FAINT,
   fieldStyle,
-  GREEN,
   INDIGO,
   Kpi,
   KpiRow,
   PageHead,
   SANS,
-  Table,
   Tag,
-  TD,
-  THead,
   Toolbar,
-  TRow,
   type Tone,
 } from "@/components/console/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
@@ -30,12 +23,12 @@ import {
 } from "@/lib/console/practice-board";
 import { libraryFacets, loadLibrary } from "@/lib/console/practice-library";
 
+import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
+
 import { LibraryPanel } from "./library-panel";
 import { RemindButton } from "./remind-button";
 
 export const dynamic = "force-dynamic";
-
-const COLS = "2fr 1.2fr 1fr .9fr 1.2fr 1fr .8fr";
 
 const STATUS: Record<PracticeStatus, { label: string; tone: Tone }> = {
   set: { label: "Set", tone: "indigo" },
@@ -237,23 +230,26 @@ export default async function PracticePage({
           </span>
         </Toolbar>
 
-        {shown.length > 0 ? (
-          <Table cols={COLS}>
-            <THead
-              cols={COLS}
-              labels={["Practice", "Group", "Skill", "Set", "Handed in", "Marked", "Median"]}
-            />
-            {shown.map((r) => (
-              <PracticeRow key={r.assignmentId} row={r} />
-            ))}
-          </Table>
-        ) : board.rows.length === 0 ? (
-          <Empty action={{ href: "/console/groups", label: "Set the first practice →" }}>
-            Nothing has been set yet.
-          </Empty>
-        ) : (
-          <Empty>Nothing matches those filters.</Empty>
-        )}
+        {/* The same grid as the learner's Activities, the teacher's library and a
+            student's report — one piece of practice looks the same wherever it
+            is seen. The toolbar above stays: those filters are in the URL on
+            purpose, so "what is overdue in Group B" is a link a colleague can be
+            sent, which is worth more here than the keystroke the grid's own
+            search would save. */}
+        <div style={{ padding: "14px 16px 16px" }}>
+          <PracticeGallery
+            items={shown.map(toGalleryItem)}
+            categories={BOARD_CATEGORIES}
+            emptyTitle={
+              board.rows.length === 0 ? "Nothing set yet" : "Nothing matches those filters"
+            }
+            emptyNote={
+              board.rows.length === 0
+                ? "Practice appears here the moment a group is given some."
+                : "Clear a filter above to see the rest."
+            }
+          />
+        </div>
       </Card>
 
       {/* ── the shelf ──────────────────────────────────────────────────────── */}
@@ -275,64 +271,43 @@ export default async function PracticePage({
   );
 }
 
-function PracticeRow({ row: r }: { row: PracticeBoardRow }) {
-  const pct = r.expected > 0 ? Math.round((r.handedIn / r.expected) * 100) : 0;
-  const status = STATUS[r.status];
+/** The chip row. Skills in the order the product teaches them; the gallery
+ *  drops any this centre has never set. */
+const BOARD_CATEGORIES = ["Writing", "Reading", "Listening", "Speaking", "Lesson"];
 
-  return (
-    <TRow cols={COLS}>
-      <TD tone="ink" weight={500}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <a
-            href={`/console/groups/${r.groupId}/assignments/${r.assignmentId}`}
-            style={{
-              color: "inherit",
-              textDecoration: "none",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {r.title}
-          </a>
-          <Tag tone={status.tone}>{status.label}</Tag>
-        </span>
-      </TD>
-      <TD tone="soft">
-        <a
-          href={`/console/groups/${r.groupId}`}
-          style={{ color: "inherit", textDecoration: "none" }}
-        >
-          {r.groupName}
-        </a>
-        {r.teacherName ? (
-          <span style={{ color: FAINT }}> · {r.teacherName}</span>
-        ) : (
-          <span style={{ color: FAINT }}> · no teacher</span>
-        )}
-      </TD>
-      <TD tone="body">{KIND_LABEL[r.skill]}</TD>
-      <TD tone="soft">{dateFmt(r.setOn)}</TD>
-      <TD>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Bar pct={pct} width={54} fill={pct >= 60 ? GREEN : INDIGO} />
-          <span style={{ fontSize: 12 }}>
-            {r.handedIn}/{r.expected}
-          </span>
-          {/* The row action §9 asks for. Only where it would do something —
-              a reminder to nobody is a button that teaches people to ignore
-              buttons. */}
-          {r.missing.length > 0 ? (
-            <RemindButton groupId={r.groupId} title={r.title} missing={r.missing} dueAt={r.dueAt} />
-          ) : null}
-        </span>
-      </TD>
-      <TD tone={r.marked < r.handedIn ? "faint" : "body"}>
-        {r.handedIn > 0 ? `${r.marked}/${r.handedIn}` : "—"}
-      </TD>
-      <TD tone="ink" weight={600}>
-        {r.medianBand?.toFixed(1) ?? "—"}
-      </TD>
-    </TRow>
-  );
+/** A board row → the shared gallery's flat shape. */
+function toGalleryItem(r: PracticeBoardRow): GalleryItem {
+  const pct = r.expected > 0 ? Math.round((r.handedIn / r.expected) * 100) : 0;
+  const label = KIND_LABEL[r.skill] ?? "Practice";
+
+  return {
+    id: r.assignmentId,
+    href: `/console/groups/${r.groupId}/assignments/${r.assignmentId}`,
+    title: r.title,
+    byline: `${r.groupName} · ${r.teacherName ?? "no teacher"} · set ${dateFmt(r.setOn)}`,
+    tone: (["writing", "reading", "listening", "speaking"].includes(r.skill)
+      ? r.skill
+      : "lesson") as GalleryItem["tone"],
+    category: label,
+    /* THE FACE IS THE COMPLETION, NOT THE BAND, and that is the difference
+       between this grid and the other three. They look back at work that is
+       finished, so the band is the answer. This page asks whether what was set
+       is LANDING — the median band of four hand-ins out of twenty says nothing
+       until the twenty are in. */
+    headline: `${pct}%`,
+    headnote: `${r.handedIn}/${r.expected} handed in`,
+    badge: STATUS[r.status].label,
+    stats: [
+      r.handedIn > 0 ? `${r.marked}/${r.handedIn} marked` : "nothing to mark yet",
+      r.medianBand != null ? `median ${r.medianBand.toFixed(1)}` : null,
+    ].filter((x): x is string => Boolean(x)),
+    date: r.setOn,
+    value: r.medianBand,
+    // Only where it would do something — a reminder to nobody is a button that
+    // teaches people to ignore buttons.
+    actions:
+      r.missing.length > 0 ? (
+        <RemindButton groupId={r.groupId} title={r.title} missing={r.missing} dueAt={r.dueAt} />
+      ) : null,
+  };
 }
