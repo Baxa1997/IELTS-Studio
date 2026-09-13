@@ -98,7 +98,7 @@ const STUDENT: Section[] = [
     ],
   },
   {
-    title: "Practice",
+    title: "Practices",
     icon: Layers,
     items: [
       { label: "Writing", href: "/write", icon: SquarePen },
@@ -154,7 +154,7 @@ const ADMIN: Section[] = [
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practice", href: "/console/practice", icon: ClipboardList },
+      { label: "Practices", href: "/console/practice", icon: ClipboardList },
       { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
@@ -214,7 +214,7 @@ const TEACHER: Section[] = [
   },
 
   {
-    title: "Practice",
+    title: "Practices",
     icon: Layers,
     items: [
       { label: "Writing", href: "/write", icon: SquarePen },
@@ -247,7 +247,7 @@ const TEACHER: Section[] = [
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practice", href: "/console/practice", icon: ClipboardList },
+      { label: "Practices", href: "/console/practice", icon: ClipboardList },
       { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
       { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],

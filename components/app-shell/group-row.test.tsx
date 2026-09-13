@@ -49,8 +49,8 @@ vi.mock("next/link", () => ({
 const { SidebarNav } = await import("./sidebar-nav");
 
 /* ⚠️ SCOPED TO THE GROUP ROWS, because the labels are not unique and a plain
-   `getByRole("link", { name: "Practice" })` is ambiguous: the teacher's rail has
-   a "Practice" GROUP and a "Practice" item (/console/practice) inside Learning.
+   `getByRole("link", { name: "Practices" })` is ambiguous: the teacher's rail has
+   a "Practices" GROUP and a "Practices" item (/console/practice) inside Learning.
    Querying the whole document finds both and throws. */
 function groupRow(title: string): HTMLElement {
   const rows = Array.from(document.querySelectorAll<HTMLElement>(".lp-sb-grouprow"));
@@ -120,10 +120,10 @@ describe("the row folds and unfolds, and does nothing else", () => {
 describe("the row says what it is doing", () => {
   it("carries the disclosure state itself — there is no second control", () => {
     render(<SidebarNav role="teacher" />);
-    const row = groupToggle("Practice");
+    const row = groupToggle("Practices");
     expect(row).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(row);
-    expect(groupToggle("Practice")).toHaveAttribute("aria-expanded", "false");
+    expect(groupToggle("Practices")).toHaveAttribute("aria-expanded", "false");
   });
 
   it("points at the list it controls", () => {
@@ -182,7 +182,7 @@ describe("the groups behave as an accordion", () => {
 
     fireEvent.click(groupToggle("Teaching"));
     expect(panelOf("teaching")).toHaveAttribute("data-open", "1");
-    expect(panelOf("practice")).toHaveAttribute("data-open", "0");
+    expect(panelOf("practices")).toHaveAttribute("data-open", "0");
     expect(panelOf("learning")).toHaveAttribute("data-open", "0");
   });
 
@@ -201,7 +201,7 @@ describe("the groups behave as an accordion", () => {
     fireEvent.click(groupToggle("Teaching"));
 
     expect(panelOf("teaching")).toHaveAttribute("data-open", "0");
-    expect(panelOf("practice"), "closing Teaching must not fold Practice").toHaveAttribute(
+    expect(panelOf("practices"), "closing Teaching must not fold Practice").toHaveAttribute(
       "data-open",
       "1",
     );
@@ -225,6 +225,6 @@ describe("the groups behave as an accordion", () => {
     view.rerender(<SidebarNav role="teacher" />);
     expect(panelOf("learning")).toHaveAttribute("data-open", "1");
     expect(panelOf("teaching")).toHaveAttribute("data-open", "0");
-    expect(panelOf("practice")).toHaveAttribute("data-open", "0");
+    expect(panelOf("practices")).toHaveAttribute("data-open", "0");
   });
 });

@@ -75,11 +75,11 @@ export default async function PracticePage() {
           not to bring the old toolbar back alongside it. */}
       <PracticeGallery
         title="Practice"
-        subtitle={
-          board.rows.length === 0
-            ? "Nothing has been set yet — practice appears here the moment a group is given some."
-            : `${board.rows.length} set across ${board.groups.length} group${board.groups.length === 1 ? "" : "s"}.`
-        }
+        // subtitle={
+        //   board.rows.length === 0
+        //     ? "Nothing has been set yet — practice appears here the moment a group is given some."
+        //     : `${board.rows.length} set across ${board.groups.length} group${board.groups.length === 1 ? "" : "s"}.`
+        // }
         items={board.rows.map(toGalleryItem)}
         categories={BOARD_CATEGORIES}
         statusLabel="All statuses"
