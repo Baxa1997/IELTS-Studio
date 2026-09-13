@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSession } from "@/lib/auth";
+import { canOpenLibraryItem } from "@/lib/quota";
 import { instantiateLibraryTest, ReadingServiceError } from "@/lib/reading/service";
 
 // Clones a shared library test into the learner's org (a row copy, no model call).
@@ -22,6 +23,24 @@ export async function POST(req: Request): Promise<Response> {
   const body = (await req.json().catch(() => ({}))) as { id?: unknown };
   const libraryTestId = typeof body.id === "string" ? body.id : "";
   if (!libraryTestId) return fail(422, "invalid_input", "Missing test id.");
+
+  /* ⭐ THE FREE-PLAN SHELF, ENFORCED HERE AND NOWHERE ELSE THAT MATTERS.
+     Client-side dimming is decoration — this is the copy being made, so this is
+     where it has to be refused. Deliberately NOT inside `instantiateLibraryTest`
+     itself: staff assigning homework call that same function, and a teacher
+     setting practice for a class is not a learner spending an unlock. */
+  const gate = await canOpenLibraryItem(session.profile.organization_id, libraryTestId);
+  if (!gate.allowed) {
+    return NextResponse.json(
+      {
+        error: "quota_exceeded",
+        message: `You've opened all ${gate.quota.limit} free practices — upgrade to Pro to open the whole library.`,
+        used: gate.quota.used,
+        limit: gate.quota.limit,
+      },
+      { status: 402 },
+    );
+  }
 
   try {
     const id = await instantiateLibraryTest(

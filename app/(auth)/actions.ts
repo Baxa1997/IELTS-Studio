@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { getSession, roleHome, safeNextPath } from "@/lib/auth";
+import { getSession, landingFor, safeNextPath } from "@/lib/auth";
 import { platformAdminEmail } from "@/lib/email/platform-admin";
 import { sendEmail } from "@/lib/email/send";
 import { applyPendingPlan } from "@/lib/plan/apply-pending";
@@ -53,7 +53,10 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
   if (error) return { error: isLogin ? "Invalid login or password." : error.message };
 
   const session = await getSession();
-  redirect(next ?? (session ? roleHome(session.role) : "/dashboard"));
+  // `next` is honoured only when this role may actually have it — see
+  // `landingFor`. Signing in as a learner on /sign-in?next=/console used to
+  // land that learner in the centre console.
+  redirect(session ? landingFor(session.role, next) : (next ?? "/dashboard"));
 }
 
 /**

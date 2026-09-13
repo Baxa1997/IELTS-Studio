@@ -30,6 +30,17 @@ export interface PlanTier {
    *  we run (~$0.50–1/session), so it is gated hardest. 0 = not included (free).
    *  MUST stay in sync with the engine's PLAN_FULL_MOCK_LIMITS (quota.py). */
   fullMockLimit: number;
+  /** How many READY-MADE library practices a learner may open. null = the whole
+   *  shelf. Distinct from `generateLimit`, and the distinction is the point:
+   *  generating costs a model call, opening a library item costs a row copy. A
+   *  free learner who could open all of them would have no reason to upgrade
+   *  the moment the library got big.
+   *
+   *  ⚠️ MUST stay in sync with the engine's FREE_LIBRARY_LIMIT
+   *  (ielts-ai-engine/listening/service.py) — that is the gate for listening,
+   *  which the browser calls directly. Two numbers, one promise: a learner told
+   *  "10 free practices" who gets 10 reading and 5 listening reads it as a bug. */
+  libraryLimit: number | null;
   /** Student seats. null = unlimited. */
   seatLimit: number | null;
   features: string[];
@@ -53,11 +64,18 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     // One live full mock per month on the free tier — MUST stay in sync with the
     // engine's PLAN_FULL_MOCK_LIMITS (that's the gate that actually enforces it).
     fullMockLimit: 1,
+    // Ten ready-made practices, then the shelf locks. Matches the engine's
+    // FREE_LIBRARY_LIMIT for listening — see the note on `libraryLimit`.
+    libraryLimit: 10,
     seatLimit: 10,
     stripePriceId: null,
     // Feature copy is learner-facing (B2C — CLAUDE.md); seatLimit stays in the
     // schema for the dormant B2B path but is never sold as a feature.
-    features: ["Calibrated, conservative AI grading", "IELTS + CEFR practice, generated fresh", "5 gradings · 5 practice sets / month"],
+    features: [
+      "Calibrated, conservative AI grading",
+      "IELTS + CEFR practice, generated fresh",
+      "5 gradings · 5 practice sets / month",
+    ],
   },
   // Pricing strategy 2026-07-08 (user): Free 5/5 · Standard $5.99 25/25 ·
   // Pro $14.99 unlimited monthly · Enterprise $29.99 for THREE months
@@ -78,8 +96,15 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: 25,
     generateLimit: 25,
     fullMockLimit: 2,
+    libraryLimit: null,
     seatLimit: 50,
-    features: ["Everything in Free", "25 gradings / month", "25 practice sets / month", "2 live speaking mock tests / month", "Full mock reading tests"],
+    features: [
+      "Everything in Free",
+      "25 gradings / month",
+      "25 practice sets / month",
+      "2 live speaking mock tests / month",
+      "Full mock reading tests",
+    ],
   },
   pro: {
     id: "pro",
@@ -92,8 +117,15 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: null,
     generateLimit: null,
     fullMockLimit: 8,
+    libraryLimit: null,
     seatLimit: 250,
-    features: ["Everything in Standard", "Unlimited gradings", "Unlimited practice sets", "8 live speaking mock tests / month", "Priority grading queue"],
+    features: [
+      "Everything in Standard",
+      "Unlimited gradings",
+      "Unlimited practice sets",
+      "8 live speaking mock tests / month",
+      "Priority grading queue",
+    ],
   },
   enterprise: {
     id: "enterprise",
@@ -106,8 +138,13 @@ export const PLAN_TIERS: Record<OrgPlan, PlanTier> = {
     gradeLimit: null,
     generateLimit: null,
     fullMockLimit: 8,
+    libraryLimit: null,
     seatLimit: null,
-    features: ["Everything in Pro, for 3 months", "One payment — $29.99 per quarter", "Best value: under $10 / month"],
+    features: [
+      "Everything in Pro, for 3 months",
+      "One payment — $29.99 per quarter",
+      "Best value: under $10 / month",
+    ],
   },
 };
 

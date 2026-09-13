@@ -6,6 +6,7 @@ import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import type { ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getLibraryQuota } from "@/lib/quota";
 
 import { ReadingHub, type LibraryTest, type PassageCard, type TestCard } from "./read-hub";
 
@@ -101,6 +102,26 @@ export default async function ReadingHubPage() {
         .eq("status", "graded"),
     ]);
 
+  /* ⭐ THE FREE SHELF. Which library items this learner may still open, worked
+     out here so the card can carry a lock rather than the learner discovering
+     it after a click. The route enforces it for real — this is the honest
+     shop window, not the till. Already-opened items are never locked, however
+     far over the limit the org is: the copy is theirs already. */
+  const libraryQuota = await getLibraryQuota(profile.organization_id);
+  const openedKeys = new Set<string>();
+  if (libraryQuota.limit !== null) {
+    const [t, pg] = await Promise.all([
+      supabase.from("reading_tests").select("library_key").not("library_key", "is", null),
+      supabase.from("reading_passages").select("library_key").not("library_key", "is", null),
+    ]);
+    for (const row of [...(t.data ?? []), ...(pg.data ?? [])]) {
+      const key = (row as { library_key: string | null }).library_key;
+      if (key) openedKeys.add(key);
+    }
+  }
+  const isLocked = (libraryId: string) =>
+    libraryQuota.limit !== null && libraryQuota.exceeded && !openedKeys.has(libraryId);
+
   const practisedTests = new Set<string>();
   const practisedPassages = new Set<string>();
   for (const a of attemptsRes.data ?? []) {
@@ -115,6 +136,7 @@ export default async function ReadingHubPage() {
   const libraryTests: LibraryTest[] = (libTestsRes.data ?? []).map((t) => ({
     id: t.id as string,
     targetBand: (t.target_band as number | null) ?? null,
+    locked: isLocked(t.id as string),
   }));
 
   // Number generated tests "Reading test 1, 2, …" in the order they were created.
@@ -160,7 +182,8 @@ export default async function ReadingHubPage() {
   };
   const libraryPassages = (libPassagesRes.data ?? [])
     .map(toPassageCard)
-    .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS);
+    .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS)
+    .map((c) => ({ ...c, locked: isLocked(c.id) }));
   const ownPassages = (ownPassagesRes.data ?? [])
     .map(toPassageCard)
     .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS)
@@ -184,6 +207,8 @@ export default async function ReadingHubPage() {
         ownPassages={ownPassages}
         isTeacher={isTeacher}
         groups={teacherGroups}
+        freeUsed={libraryQuota.used}
+        freeLimit={libraryQuota.limit}
       />
     </div>
   );

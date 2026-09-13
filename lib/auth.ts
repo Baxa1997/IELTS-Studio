@@ -104,6 +104,48 @@ export function safeNextPath(raw: string | null | undefined): string | null {
 }
 
 /**
+ * The areas of the app each role may be sent to after signing in.
+ *
+ * ⚠️ WHY `safeNextPath` IS NOT ENOUGH. That function answers "is this a local
+ * path that will not loop back into auth" — nothing about WHO is going there.
+ * Sign-in then honoured `next` ahead of `roleHome`, so a bounce off /console
+ * (an expired staff session, a bookmark, a link from a colleague) left
+ * `?next=/console` in the URL, and signing in there with a LEARNER account
+ * redirected that learner into the centre console. It looked exactly like two
+ * accounts being mixed up. They were not: one email, one account, one role —
+ * the redirect simply never asked whether the role could go where the URL said.
+ *
+ * A path nobody claims is allowed: this gates the areas that belong to a role,
+ * not the whole app.
+ */
+const ROLE_AREAS: Record<AppRole, readonly string[]> = {
+  super_admin: ["/admin"],
+  student: ["/dashboard", "/activities", "/assignments", "/learn", "/plan", "/vocabulary"],
+  teacher: ["/console"],
+  administrator: ["/console"],
+  center_admin: ["/console"],
+};
+
+/**
+ * Where to land after authenticating: the requested path when this role may
+ * have it, otherwise their own home.
+ *
+ * Silently correcting beats refusing. Somebody who followed a stale link has
+ * done nothing wrong, and an error page would tell them less than simply
+ * arriving somewhere that works.
+ */
+export function landingFor(role: AppRole, next: string | null | undefined): string {
+  const wanted = safeNextPath(next);
+  if (!wanted) return roleHome(role);
+  // Owned by another role → send them home instead.
+  const owner = Object.entries(ROLE_AREAS).find(([, areas]) =>
+    areas.some((a) => wanted === a || wanted.startsWith(`${a}/`)),
+  );
+  if (owner && owner[0] !== role) return roleHome(role);
+  return wanted;
+}
+
+/**
  * Resolve the current session's identity. super_admin is read from app_metadata
  * (set by the provisioning script, never user-editable); everyone else resolves
  * their role from their profile row, read under RLS (own row only).
@@ -169,6 +211,20 @@ export async function requireOrgUser(): Promise<{
   // org) sees only the status page — no app, no console, no data.
   if (session.profile.org.status !== "active") redirect("/awaiting-approval");
   return { user: session.user, profile: session.profile };
+}
+
+/**
+ * Guard for the STAFF console (/console). `requireOrgUser` only asks whether
+ * somebody belongs to an active org — a student passes it, which is why a
+ * learner sent to /console got the console shell rather than a bounce.
+ */
+export async function requireStaff(): Promise<{
+  user: Session["user"];
+  profile: Profile;
+}> {
+  const { user, profile } = await requireOrgUser();
+  if (profile.role === "student") redirect(roleHome(profile.role));
+  return { user, profile };
 }
 
 /** Guard for the platform console (/admin). */

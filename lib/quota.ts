@@ -253,3 +253,84 @@ function toQuota(limit: number | null, used: number, resetAt: string): Quota {
     exceeded: limit !== null && used >= limit,
   };
 }
+
+/**
+ * How much of the ready-made library this org has opened, and whether it may
+ * open more.
+ *
+ * ⚠️ NOT A MONTHLY WINDOW, unlike everything above it. Gradings and generations
+ * reset each month because they are consumption; a library unlock is a
+ * PERMANENT entitlement — the learner keeps the copy, can re-open it forever,
+ * and re-opening must never cost a second unlock. So this counts for all time
+ * and `resetAt` is meaningless here.
+ *
+ * IT NEEDS NO TABLE. A learner opens a library item by cloning it, and the
+ * clone records `library_key` — the template it came from. Distinct
+ * `library_key` values in the org therefore ARE the unlock count, already
+ * written by the code that does the opening. A separate counter could drift
+ * from the thing it counts; this cannot.
+ *
+ * Centres are unmetered like everywhere else: `billing_enforced = false` makes
+ * the limit null, so a centre's students are never shown a locked shelf.
+ */
+export async function getLibraryQuota(organizationId: string): Promise<Omit<Quota, "resetAt">> {
+  const { admin, org } = await loadOrg(organizationId);
+  const plan = (org?.plan ?? "trial") as OrgPlan;
+  const limit = effectiveLimit(org, planTier(plan).libraryLimit);
+
+  // Both shapes count against one shelf: a learner who has opened 10 passages
+  // has used the allowance, whether or not any of them were full tests.
+  const [tests, passages] = await Promise.all([
+    admin
+      .from("reading_tests")
+      .select("library_key")
+      .eq("organization_id", organizationId)
+      .not("library_key", "is", null),
+    admin
+      .from("reading_passages")
+      .select("library_key")
+      .eq("organization_id", organizationId)
+      .not("library_key", "is", null),
+  ]);
+  const keys = new Set<string>();
+  for (const row of [...(tests.data ?? []), ...(passages.data ?? [])]) {
+    const key = (row as { library_key: string | null }).library_key;
+    if (key) keys.add(key);
+  }
+  const used = keys.size;
+
+  return {
+    limit,
+    used,
+    remaining: limit === null ? null : Math.max(0, limit - used),
+    exceeded: limit !== null && used >= limit,
+  };
+}
+
+/**
+ * May this org open THIS library item?
+ *
+ * Something already opened is always allowed through, however far over the
+ * limit the org is. Re-opening is not a new unlock — the copy is already
+ * theirs, and a learner locked out of work they have already started would be
+ * a bug that looks like theft.
+ */
+export async function canOpenLibraryItem(
+  organizationId: string,
+  libraryKey: string,
+): Promise<{ allowed: boolean; quota: Omit<Quota, "resetAt"> }> {
+  const quota = await getLibraryQuota(organizationId);
+  if (!quota.exceeded) return { allowed: true, quota };
+
+  const { admin } = await loadOrg(organizationId);
+  for (const table of ["reading_tests", "reading_passages"] as const) {
+    const { data } = await admin
+      .from(table)
+      .select("id")
+      .eq("organization_id", organizationId)
+      .eq("library_key", libraryKey)
+      .limit(1);
+    if ((data ?? []).length > 0) return { allowed: true, quota };
+  }
+  return { allowed: false, quota };
+}
