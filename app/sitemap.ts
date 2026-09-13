@@ -17,7 +17,6 @@ const publicRoutes = [
   { path: "/ielts-speaking-practice", priority: 0.8, changeFrequency: "monthly" },
   { path: "/cefr-multilevel-practice", priority: 0.8, changeFrequency: "monthly" },
   { path: "/for-education-centers", priority: 0.8, changeFrequency: "monthly" },
-  { path: "/start", priority: 0.65, changeFrequency: "monthly" },
   { path: "/sign-in", priority: 0.3, changeFrequency: "yearly" },
   { path: "/contact", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },

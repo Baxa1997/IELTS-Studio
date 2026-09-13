@@ -772,7 +772,7 @@ function bandTier(d: number | null): { label: string; bg: string; fg: string } |
 
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return new Date(iso).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
   } catch {
     return "";
   }

@@ -348,7 +348,7 @@ const WRITING_TASKS_META = [
 
 function fmtWhen(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return new Date(iso).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
   } catch {
     return "Saved";
   }
@@ -3582,7 +3582,7 @@ function TaskStudio({
                   <strong style={{ color: W_INK, fontWeight: 700 }}>{words}</strong> words
                 </span>
                 <span style={{ fontSize: 13, color: W_MUTED, fontVariantNumeric: "tabular-nums" }}>
-                  {chars.toLocaleString()} characters
+                  {chars.toLocaleString("en-GB")} characters
                 </span>
                 <span style={{ fontSize: 13, color: W_MUTED }}>
                   {paragraphs} paragraph{paragraphs === 1 ? "" : "s"}

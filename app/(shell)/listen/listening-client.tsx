@@ -1177,7 +1177,7 @@ function MineCard({
   attach?: AttachSlot;
 }) {
   const when = it.created_at
-    ? new Date(it.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+    ? new Date(it.created_at).toLocaleDateString("en-GB", { month: "short", day: "numeric" })
     : "";
   return (
     <CardBox

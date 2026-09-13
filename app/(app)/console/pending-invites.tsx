@@ -77,7 +77,7 @@ function InviteRow({ invite, first }: { invite: PendingInvite; first: boolean })
           </span>
           <span style={{ display: "block", fontSize: 12.5, color: FAINT, marginTop: 2 }}>
             {invite.role === "teacher" ? "Teacher" : "Student"} · expires{" "}
-            {new Date(invite.expiresAt).toLocaleDateString()}
+            {new Date(invite.expiresAt).toLocaleDateString("en-GB")}
           </span>
         </span>
 

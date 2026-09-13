@@ -79,7 +79,16 @@ export function StudentsManager({
 }) {
   if (students.length === 0) {
     return (
-      <p style={{ fontSize: 14, color: MUTED, margin: 0, padding: "40px 20px", textAlign: "center", lineHeight: 1.6 }}>
+      <p
+        style={{
+          fontSize: 14,
+          color: MUTED,
+          margin: 0,
+          padding: "40px 20px",
+          textAlign: "center",
+          lineHeight: 1.6,
+        }}
+      >
         Nobody in this group yet. Add them one at a time, or import the register you already keep —
         logins and passwords are made for you.
       </p>
@@ -199,12 +208,10 @@ function StudentLine({
         </span>
 
         <span style={{ fontSize: 12.5, color: MUTED }}>
-          {student.lastActive ? new Date(student.lastActive).toLocaleDateString() : "never"}
+          {student.lastActive ? new Date(student.lastActive).toLocaleDateString("en-GB") : "never"}
         </span>
 
-        <span
-          style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}
-        >
+        <span style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
           <a
             href={`/console/groups/${groupId}/students/${student.id}`}
             className="cn-reportbtn"
@@ -394,7 +401,12 @@ function ManageMenu({
       ) : null}
 
       {sheet === "move" ? (
-        <Modal onClose={() => setSheet(null)} title="Move to another group" note={student.name} width={460}>
+        <Modal
+          onClose={() => setSheet(null)}
+          title="Move to another group"
+          note={student.name}
+          width={460}
+        >
           <MoveBody
             groupId={groupId}
             student={person}

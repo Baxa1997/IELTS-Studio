@@ -957,7 +957,7 @@ export function SidebarNav({
                                 fontVariantNumeric: "tabular-nums",
                               }}
                             >
-                              {counts[countKey].toLocaleString()}
+                              {counts[countKey].toLocaleString("en-GB")}
                             </span>
                           ) : null}
                           {badge ? (

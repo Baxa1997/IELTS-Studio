@@ -76,14 +76,18 @@ export function SiteNav() {
     };
   }, [open]);
 
-  /* THE DESTINATION IS `/start`, NOT `/dashboard`, and that matters for staff.
-     `roleHome()` sends a student to /dashboard, a teacher or centre admin to
-     /console and a super admin to /admin — but the browser can only see THAT
-     there is a session, not which role it carries. `/start` is the server route
-     that already exists for exactly this: it resolves the role and redirects.
-     Linking straight to /dashboard would land every teacher on a student page. */
+  /* `/dashboard` RESOLVES THE ROLE ITSELF — this used to point at `/start` on
+     the reasoning that it had to, because the browser can only see THAT there is
+     a session and not which role it carries, so linking to a student page would
+     land every teacher on it.
+
+     That reasoning was wrong, and it had been repeated in this comment for long
+     enough to look settled. `/dashboard` redirects a non-student to /console on
+     its own (app/(app)/dashboard/page.tsx), and `requireOrgUser` sends a super
+     admin to /admin before that line is reached. The hop through `/start` was
+     resolving a role that the destination already resolves. */
   const action = signedIn
-    ? { href: "/start", label: "Dashboard" }
+    ? { href: "/dashboard", label: "Dashboard" }
     : { href: "/sign-in", label: "Start learning" };
 
   return (

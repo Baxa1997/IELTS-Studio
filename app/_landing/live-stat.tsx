@@ -3,6 +3,8 @@
 import { Building2, CheckCheck, ListChecks, Users } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { UI_LOCALE } from "@/lib/format/locale";
+
 import { BRAND, BRAND_TINT, BRAND_TINT_LINE, DISPLAY, INK, LINE, MUTED, RADIUS } from "./design";
 
 type IconName = "users" | "centers" | "tasks" | "checks";
@@ -29,12 +31,12 @@ const ICONS = {
  * what makes it worth a comment: the bug is in the READER's settings, not in
  * the code, so it cannot be reproduced by looking harder at the number.
  *
- * `en-US` rather than the reader's locale because this is the English marketing
- * page — the copy around the figure is English, so a comma is the grouping the
- * sentence expects. Any fixed locale would fix the hydration; this one also
- * matches what the server was already rendering, so nothing on screen moves.
+ * A FIXED locale rather than the reader's, because this is the English
+ * marketing page — the copy around the figure is English, so a comma is the
+ * grouping the sentence expects. `UI_LOCALE` is en-GB, which groups thousands
+ * with a comma exactly as en-US does, so nothing on screen moves.
  */
-const GROUPED = new Intl.NumberFormat("en-US");
+const GROUPED = new Intl.NumberFormat(UI_LOCALE);
 
 export function LiveStat({
   label,

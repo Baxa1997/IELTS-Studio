@@ -803,8 +803,8 @@ function when(iso: string): string {
   const today = new Date();
   const sameDay = d.toDateString() === today.toDateString();
   return sameDay
-    ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString([], { day: "numeric", month: "short" });
+    ? d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
 function Bubble({

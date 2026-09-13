@@ -554,7 +554,7 @@ export function WritingStudio({
           <div style={{ flexShrink: 0, minHeight: 48, padding: "0 22px", borderTop: `1px solid ${theme.softLine}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.soft, gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: SANS }}>
               <span style={{ fontSize: 13, color: "#4A505C", fontVariantNumeric: "tabular-nums" }}><strong style={{ color: INK, fontWeight: 700 }}>{words}</strong> words</span>
-              <span style={{ fontSize: 13, color: "#4A505C", fontVariantNumeric: "tabular-nums" }}>{chars.toLocaleString()} characters</span>
+              <span style={{ fontSize: 13, color: "#4A505C", fontVariantNumeric: "tabular-nums" }}>{chars.toLocaleString("en-GB")} characters</span>
               <span style={{ fontSize: 13, color: "#4A505C" }}>{paragraphs} paragraph{paragraphs === 1 ? "" : "s"}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
