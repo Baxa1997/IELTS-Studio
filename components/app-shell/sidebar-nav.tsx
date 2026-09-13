@@ -40,8 +40,12 @@ import {
 
 const RAIL_TEXT = "#3f3d39"; // resting item text
 const RAIL_MUTED = "#8b8883"; // counts / disabled / secondary
-const RAIL_ACTIVE_BG = "#eae7e0";
-const RAIL_ACTIVE_INK = "#16150f";
+/* "You are here": a light tint of the brand orange #dc5426, with a deeper orange
+   for the text and icon. The tint is 12% of #dc5426 over white; the ink is
+   4.98:1 on it — #dc5426 itself only reaches 3.4:1, too faint for a label.
+   Mirrored in globals.css for the collapsed rail's active tile and flyout row. */
+const RAIL_ACTIVE_BG = "#fbeae5";
+const RAIL_ACTIVE_INK = "#b23f14";
 /** Sections are plain stacks — the rail is one surface and the gap between
  *  groups is the only separator. */
 const TRAY: React.CSSProperties = {

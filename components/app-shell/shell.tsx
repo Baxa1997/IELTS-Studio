@@ -93,11 +93,13 @@ const ACCENT = "#0b6b40";
  *  accent colour any more and a lone indigo chevron would be the only hue on
  *  the surface. */
 const TOGGLE_INK = "#4a463d";
-/** The logomark's tile. The brand square has always been tan (#D89A5C); the
- *  design draws it near-black, and on a white rail the tan read as a stray warm
- *  patch against an otherwise cool palette. Passed as a prop so the tan stays
- *  the default everywhere else the mark is used. */
-const MARK_BG = "#16232b";
+/** The logomark's tile: a light tint of the brand orange #dc5426 (20% over
+ *  white), with the letter in a deeper orange (3.9:1 — enough for a 19px bold
+ *  glyph). The active row uses a paler 12% tint, so the logo stays the stronger
+ *  of the two. Passed as props so the tan mark stays the default everywhere else
+ *  it is used. */
+const MARK_BG = "#f8ddd4";
+const MARK_FG = "#c2461c";
 
 /** Read the collapse choice from the live cookie on the client. The (app)↔(shell)
  *  layout boundary remounts this component, and Next's Router Cache can hand back a
@@ -1059,9 +1061,9 @@ function Logo({ tone = "light", centre }: { tone?: "light" | "dark"; centre?: st
       </span>
       <span className="lp-sb-logo-mark">
         {centre ? (
-          <CentreMark name={centre} size={32} bg={MARK_BG} />
+          <CentreMark name={centre} size={32} bg={MARK_BG} fg={MARK_FG} />
         ) : (
-          <EngProgressMark size={32} bg={MARK_BG} />
+          <EngProgressMark size={32} bg={MARK_BG} fg={MARK_FG} />
         )}
       </span>
     </span>

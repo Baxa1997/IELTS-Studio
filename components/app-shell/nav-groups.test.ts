@@ -441,7 +441,9 @@ describe("rows keep the hover the stylesheet gives them", () => {
        losing your place. */
     expect(css).toContain(".lp-sb-link:not(.lp-sb-link--active):hover");
     const activeTile = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip");
-    expect(declaration(activeTile, "background")).toBe("#16150f !important");
+    // The brand-orange tint (owner, 2026-09-13). What this guards is the
+    // `!important`: without it the grey chip hover would replace the active tile.
+    expect(declaration(activeTile, "background")).toBe("#fbeae5 !important");
   });
 
   it("fills the whole row on hover, not a near-invisible wash", () => {

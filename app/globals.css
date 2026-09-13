@@ -1056,9 +1056,12 @@
      rail's grey pill: with no label beside it, a two-step-darker tile on warm
      paper is not enough to find at a glance, and orientation is the only job
      the collapsed rail's highlight has. */
+  /* The brand-orange tint and ink the expanded rail's active row uses
+     (RAIL_ACTIVE_BG / RAIL_ACTIVE_INK in sidebar-nav.tsx) — one "you are here"
+     colour at every rail width. */
   .lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip {
-    background: #16150f !important;
-    color: #fff !important;
+    background: #fbeae5 !important;
+    color: #b23f14 !important;
   }
   /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
      dot on the corner of the chip, ringed in the RAIL'S OWN WHITE so it reads as
@@ -1342,7 +1345,7 @@
      strip uses — that tile exists because a 36px glyph has no label to put a
      pill behind, and in the card it does. */
   .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link--active {
-    background: #eae7e0 !important;
+    background: #fbeae5 !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link--active .lp-sb-chip {
     background: transparent !important;

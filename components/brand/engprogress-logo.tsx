@@ -114,14 +114,18 @@ export function EngProgressLogo({
 export function EngProgressMark({
   size = 32,
   className,
-  /** Tile fill. Defaults to the brand tan; the sidebar rail passes the design's
-   *  near-black so the mark reads as the square drawn in the canvas. Kept as a
-   *  prop rather than changed outright so every other caller is untouched. */
+  /** Tile fill. Defaults to the brand tan; the sidebar rail passes its own light
+   *  orange tint (MARK_BG in app-shell/shell.tsx). Kept as a prop rather than
+   *  changed outright so every other caller is untouched. */
   bg = TAN,
+  /** The "P". White on the tan and dark tiles; the rail's light tile passes a
+   *  deep orange so the letter still reads. */
+  fg = WHITE,
 }: {
   size?: number;
   className?: string;
   bg?: string;
+  fg?: string;
 }) {
   return (
     <span
@@ -140,9 +144,7 @@ export function EngProgressMark({
         fontFamily: "var(--font-engprogress), 'Baloo 2', 'Nunito', system-ui, sans-serif",
       }}
     >
-      <span
-        style={{ fontWeight: 700, fontSize: Math.round(size * 0.6), lineHeight: 1, color: WHITE }}
-      >
+      <span style={{ fontWeight: 700, fontSize: Math.round(size * 0.6), lineHeight: 1, color: fg }}>
         P
       </span>
     </span>
@@ -244,13 +246,16 @@ export function CentreMark({
   name,
   size = 36,
   className,
-  /** Tile fill — see `EngProgressMark`. The rail passes the design's near-black. */
+  /** Tile fill — see `EngProgressMark`. The rail passes its light orange tint. */
   bg = TAN,
+  /** The initials — see `EngProgressMark`'s `fg`. */
+  fg = WHITE,
 }: {
   name: string;
   size?: number;
   className?: string;
   bg?: string;
+  fg?: string;
 }) {
   const text = centreInitials(name);
   return (
@@ -278,7 +283,7 @@ export function CentreMark({
           // ours are visibly the same object wearing a different letter.
           fontSize: Math.round(size * 0.6),
           lineHeight: 1,
-          color: WHITE,
+          color: fg,
         }}
       >
         {text}
