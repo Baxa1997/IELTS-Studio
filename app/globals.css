@@ -349,8 +349,11 @@
 
    ⚠️ sidebar-nav.tsx must not set an inline background, colour or border on
    these rows — an inline style beats every rule here. */
+/* NO VISIBLE EDGE AT REST — the gradient alone carries the row. The border is
+   still there, transparent, so the active row can colour it without the row
+   growing by 2px and nudging everything below it. */
 .lp-sb-airow {
-  border: 1px solid var(--ai-line);
+  border: 1px solid transparent;
   background: linear-gradient(135deg, var(--ai-bg-1), var(--ai-bg-2));
   color: var(--ai-ink);
 }
@@ -375,13 +378,14 @@
   color: #fff;
 }
 /* Three classes, to outrank `.lp-sb-item:hover` further down this file — it
-   would otherwise swap the tint for the plain rows' grey. */
+   would otherwise swap the tint for the plain rows' grey. Hover only deepens the
+   tint: the coloured edge is reserved for the active row, so it always means
+   "you are here" and never just "the pointer is here". */
 .lp-sb-item.lp-sb-airow:hover {
   background: linear-gradient(135deg, var(--ai-bg-2), var(--ai-bg-2));
-  border-color: var(--ai-tile-2);
 }
 /* "You are here" on an AI row: the tint deepens and the edge takes the tile's
-   colour, instead of the grey pill a plain row gets. */
+   colour — the only state in which an AI row shows a border at all. */
 .lp-sb-airow.lp-sb-accent-active,
 .lp-sb-item.lp-sb-airow.lp-sb-accent-active:hover {
   background: linear-gradient(135deg, var(--ai-bg-2), var(--ai-line));
