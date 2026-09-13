@@ -192,6 +192,12 @@ const TEACHER: Section[] = [
   {
     items: [
       { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      {
+        label: "Practice AI",
+        href: "/console/practice-ai",
+        icon: WandSparkles,
+        accent: "generate",
+      },
       { label: "Dashboard", href: "/console", icon: LayoutDashboard },
     ],
   },
@@ -200,14 +206,6 @@ const TEACHER: Section[] = [
     title: "Practice",
     icon: Layers,
     items: [
-      // First in the group: it is the only one a teacher MAKES rather than
-      // sits, and it is the reason they open this rail on a planning day.
-      {
-        label: "Practice AI",
-        href: "/console/practice-ai",
-        icon: WandSparkles,
-        accent: "generate",
-      },
       { label: "Writing", href: "/write", icon: SquarePen },
       { label: "Reading", href: "/read", icon: BookOpen },
       { label: "Listening", href: "/listen", icon: Headphones },
