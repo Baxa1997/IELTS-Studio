@@ -14,6 +14,28 @@ const ICONS = {
   checks: CheckCheck,
 } as const;
 
+/**
+ * ⚠️ THE LOCALE IS PINNED, AND IT IS A HYDRATION BUG IF IT IS NOT.
+ *
+ * This was `count.toLocaleString()` with no locale, which means "use the
+ * default" — and the default is a different thing in the two places this
+ * component renders. Node picks it up from the server's environment (en-US:
+ * `1,100`); the browser picks it up from the reader's own settings (ru-RU:
+ * `1 100`, grouped with a narrow no-break space). React compared the two,
+ * found different text in the same node, and threw the whole landing page's
+ * hydration away to re-render it on the client.
+ *
+ * It is invisible to everyone developing in an en-* locale, which is exactly
+ * what makes it worth a comment: the bug is in the READER's settings, not in
+ * the code, so it cannot be reproduced by looking harder at the number.
+ *
+ * `en-US` rather than the reader's locale because this is the English marketing
+ * page — the copy around the figure is English, so a comma is the grouping the
+ * sentence expects. Any fixed locale would fix the hydration; this one also
+ * matches what the server was already rendering, so nothing on screen moves.
+ */
+const GROUPED = new Intl.NumberFormat("en-US");
+
 export function LiveStat({
   label,
   value,
@@ -95,7 +117,9 @@ export function LiveStat({
         borderRight: !isLast ? `1px solid ${LINE}` : undefined,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
+      >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, ...statLabel() }}>
           {label}
         </span>
@@ -141,7 +165,8 @@ export function LiveStat({
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          {count.toLocaleString()}{suffix}
+          {GROUPED.format(count)}
+          {suffix}
         </div>
         {delta ? (
           <span
@@ -160,7 +185,6 @@ export function LiveStat({
         ) : null}
       </div>
       <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>{note}</div>
-
     </div>
   );
 }
