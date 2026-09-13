@@ -1,26 +1,20 @@
 import { redirect } from "next/navigation";
 
 import {
-  EmptyRow,
-  FAINT,
-  INK,
-  LINE,
   List,
-  MUTED,
   PageHead,
   Panel,
-  Pill,
   Row,
   RowLink,
   RowText,
-  SANS,
   StatRow,
   StatTile,
-  TINT,
 } from "@/components/console/page-ui";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadPractices, type PracticeRow, type PracticeTab } from "@/lib/console/practices";
 import { TASK2_CATEGORY_LABELS, type Task2Category } from "@/lib/prompts/types";
+
+import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
 
 import { PracticeRowActions } from "./practice-row-actions";
 
@@ -109,106 +103,84 @@ export default async function PracticesPage({
         </List>
       </Panel>
 
-      <Panel
-        title={TABS.find((t) => t.key === tab)!.label}
-        description={TABS.find((t) => t.key === tab)!.blurb}
-      >
-        <List>
-          {rows.map((p, i) => (
-            <PracticeListRow key={`${p.kind}-${p.id}`} practice={p} first={i === 0} />
-          ))}
-          {rows.length === 0 ? (
-            <EmptyRow>
-              {tab === "drafts"
-                ? "No drafts. Anything you generate in Writing lands here until you set it to a group."
-                : tab === "published"
-                  ? "Nothing published yet. Open Writing, generate a prompt, then set it to a group."
-                  : "Nothing archived."}
-            </EmptyRow>
-          ) : null}
-        </List>
-      </Panel>
+      {/* The list became a gallery — the same grid the learner's Activities and a
+          student's report use, so a practice looks the same wherever it is seen.
+          The status tabs above stay: drafts/published/archived is a different
+          axis from the chips, which filter by what the practice IS. */}
+      <PracticeGallery
+        items={rows.map(toGalleryItem)}
+        categories={["Writing", "Reading"]}
+        emptyTitle={TABS.find((t) => t.key === tab)!.label}
+        emptyNote={
+          tab === "drafts"
+            ? "Anything you generate in Writing lands here until you set it to a group."
+            : tab === "published"
+              ? "Nothing published yet. Open Writing, generate a prompt, then set it to a group."
+              : "Nothing archived."
+        }
+      />
     </div>
   );
 }
 
-function PracticeListRow({ practice, first }: { practice: PracticeRow; first: boolean }) {
-  const meta = [
-    practice.kind === "reading"
-      ? "Reading"
-      : practice.category
-        ? TASK2_CATEGORY_LABELS[practice.category as Task2Category]
-        : "Task 2",
-    practice.topicFamily,
-    practice.targetBand ? `band ${practice.targetBand}` : null,
-    new Date(practice.createdAt).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+/** This page's row → the shared gallery's flat shape. */
+function toGalleryItem(practice: PracticeRow): GalleryItem {
+  const isReading = practice.kind === "reading";
+  const category = isReading
+    ? "Reading"
+    : practice.category
+      ? TASK2_CATEGORY_LABELS[practice.category as Task2Category]
+      : "Task 2";
 
-  return (
-    <Row first={first}>
-      <span style={{ minWidth: 0, flex: 1 }}>
-        <span
-          style={{
-            display: "-webkit-box",
-            fontWeight: 500,
-            color: INK,
-            overflow: "hidden",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {practice.title || "Untitled prompt"}
-        </span>
-        <span style={{ display: "block", fontSize: 12.5, color: FAINT, marginTop: 3 }}>{meta}</span>
+  const stats =
+    practice.groups.length > 0
+      ? [
+          practice.groups.join(", "),
+          `${practice.completed}/${practice.assigned} done`,
+          practice.averageBand != null ? `avg ${practice.averageBand.toFixed(1)}` : null,
+        ].filter((x): x is string => Boolean(x))
+      : ["not set to anyone"];
 
-        {practice.groups.length > 0 ? (
-          <span style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 7 }}>
-            {practice.groups.map((g) => (
-              <span
-                key={g}
-                style={{
-                  background: TINT,
-                  border: `1px solid ${LINE}`,
-                  borderRadius: 999,
-                  padding: "2px 9px",
-                  fontFamily: SANS,
-                  fontSize: 11.5,
-                  color: MUTED,
-                }}
-              >
-                {g}
-              </span>
-            ))}
-            <span style={{ fontFamily: SANS, fontSize: 11.5, color: FAINT, alignSelf: "center" }}>
-              {practice.completed}/{practice.assigned} done
-              {practice.averageBand != null ? ` · avg ${practice.averageBand.toFixed(1)}` : ""}
-            </span>
-          </span>
-        ) : (
-          <span style={{ display: "inline-block", marginTop: 7 }}>
-            <Pill tone="neutral">not set to anyone</Pill>
-          </span>
-        )}
-      </span>
-
-      <span style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
-        {practice.kind === "writing" ? (
-          <PracticeRowActions promptId={practice.id} archived={practice.tab === "archived"} />
-        ) : null}
-        {/* "Open" is the real runner, not a console preview: the only honest way
-            to see a practice is the screen the student sees. */}
-        <RowLink
-          href={practice.kind === "writing" ? `/write/${practice.id}` : `/read/test/${practice.id}`}
-        >
-          Open →
-        </RowLink>
-      </span>
-    </Row>
-  );
+  return {
+    id: `${practice.kind}-${practice.id}`,
+    // "Open" is the real runner, not a console preview: the only honest way to
+    // see a practice is the screen the student sees.
+    href: isReading ? `/read/test/${practice.id}` : `/write/${practice.id}`,
+    title: practice.title || "Untitled prompt",
+    byline: [
+      category,
+      practice.topicFamily,
+      new Date(practice.createdAt).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    tone: isReading ? "reading" : "writing",
+    // The chips filter by skill; the task category is already in the byline,
+    // and a chip row of nine Task 2 topics would be longer than the grid.
+    category: isReading ? "Reading" : "Writing",
+    headline:
+      practice.averageBand != null
+        ? practice.averageBand.toFixed(1)
+        : practice.targetBand
+          ? String(practice.targetBand)
+          : "—",
+    headnote:
+      practice.averageBand != null
+        ? "average band"
+        : practice.targetBand
+          ? "target band"
+          : "not attempted",
+    badge: practice.assigned > 0 ? `${practice.completed}/${practice.assigned}` : undefined,
+    stats,
+    date: practice.createdAt,
+    value: practice.averageBand,
+    actions:
+      practice.kind === "writing" ? (
+        <PracticeRowActions promptId={practice.id} archived={practice.tab === "archived"} />
+      ) : null,
+  };
 }

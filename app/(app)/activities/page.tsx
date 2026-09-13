@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, PenLine } from "lucide-react";
 
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
+
+import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +50,10 @@ export default async function ActivitiesPage() {
       .in("essay_id", essayIds)
       .order("created_at", { ascending: true });
     for (const g of gradings ?? []) {
-      latest.set(g.essay_id as string, { band: Number(g.overall_band), at: g.created_at as string });
+      latest.set(g.essay_id as string, {
+        band: Number(g.overall_band),
+        at: g.created_at as string,
+      });
     }
   }
   const writing: Row[] = (essays ?? [])
@@ -75,10 +77,15 @@ export default async function ActivitiesPage() {
     .eq("student_id", profile.id)
     .eq("status", "graded")
     .order("submitted_at", { ascending: false });
-  const passageIds = [...new Set((attempts ?? []).map((a) => a.passage_id as string).filter(Boolean))];
+  const passageIds = [
+    ...new Set((attempts ?? []).map((a) => a.passage_id as string).filter(Boolean)),
+  ];
   const titles = new Map<string, string>();
   if (passageIds.length) {
-    const { data: ps } = await supabase.from("reading_passages").select("id, title").in("id", passageIds);
+    const { data: ps } = await supabase
+      .from("reading_passages")
+      .select("id, title")
+      .in("id", passageIds);
     for (const p of ps ?? []) titles.set(p.id as string, p.title as string);
   }
   const reading: Row[] = (attempts ?? []).map((a) => {
@@ -87,102 +94,60 @@ export default async function ActivitiesPage() {
     return {
       id: a.id as string,
       href: `/activities/reading/${a.id}`,
-      title: isTest ? "Full reading test" : (titles.get(a.passage_id as string) ?? "Reading passage"),
+      title: isTest
+        ? "Full reading test"
+        : (titles.get(a.passage_id as string) ?? "Reading passage"),
       date: (a.submitted_at as string) ?? (a.created_at as string),
       band: a.band == null ? null : Number(a.band),
       sub: isTest ? `3 passages${pct ? ` · ${pct}` : ""}` : pct,
     };
   });
 
-  const empty = writing.length === 0 && reading.length === 0;
+  /* Mapped into the gallery's flat shape here rather than in the component —
+     the grid is shared with the teacher's library and a student's report, and
+     each of those has a different row of its own. See components/practice/gallery.tsx. */
+  const items: GalleryItem[] = [
+    ...writing.map((r) => ({
+      id: r.id,
+      href: r.href,
+      title: r.title,
+      byline: fmtDate(r.date),
+      tone: "writing" as const,
+      category: "Writing",
+      // An ungraded piece shows a dash, never a zero: not marked is not the
+      // same as marked badly, and the sort keeps it out of the band order too.
+      headline: r.band == null ? "—" : r.band.toFixed(1),
+      headnote: r.band == null ? "not graded" : "overall band",
+      badge: r.band == null ? undefined : `Band ${r.band.toFixed(1)}`,
+      stats: r.sub ? [r.sub] : [],
+      date: r.date,
+      value: r.band,
+    })),
+    ...reading.map((r) => ({
+      id: r.id,
+      href: r.href,
+      title: r.title,
+      byline: fmtDate(r.date),
+      tone: "reading" as const,
+      category: "Reading",
+      headline: r.band == null ? "—" : r.band.toFixed(1),
+      headnote: r.band == null ? "not graded" : "overall band",
+      badge: r.band == null ? undefined : `Band ${r.band.toFixed(1)}`,
+      stats: r.sub ? [r.sub] : [],
+      date: r.date,
+      value: r.band,
+    })),
+  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Activities</h1>
-        <p className="text-muted-foreground">
-          Your past writing and reading — open any to see the feedback and band.
-        </p>
-      </div>
-
-      {empty ? (
-        <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
-          Nothing here yet. Start <span className="text-foreground font-medium">Writing</span> or{" "}
-          <span className="text-foreground font-medium">Reading</span> from the sidebar — your graded work
-          and feedback collect here.
-        </div>
-      ) : (
-        <>
-          {writing.length > 0 ? (
-            <Section title="Writing" icon={PenLine}>
-              {writing.map((r) => (
-                <HistoryRow key={r.id} row={r} />
-              ))}
-            </Section>
-          ) : null}
-          {reading.length > 0 ? (
-            <Section title="Reading" icon={BookOpen}>
-              {reading.map((r) => (
-                <HistoryRow key={r.id} row={r} />
-              ))}
-            </Section>
-          ) : null}
-        </>
-      )}
-    </div>
-  );
-}
-
-function Section({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <Icon className="text-primary size-4" /> {title}
-      </h2>
-      <div className="space-y-2">{children}</div>
-    </section>
-  );
-}
-
-function HistoryRow({ row }: { row: Row }) {
-  return (
-    <Link
-      href={row.href}
-      className="bg-card hover:border-primary/40 flex items-center justify-between gap-3 rounded-xl border p-4 transition-colors"
-    >
-      <div className="min-w-0">
-        <p className="truncate font-medium">{row.title}</p>
-        <p className="text-muted-foreground text-xs">
-          {fmtDate(row.date)}
-          {row.sub ? ` · ${row.sub}` : ""}
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <BandPill band={row.band} />
-        <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-      </div>
-    </Link>
-  );
-}
-
-function BandPill({ band }: { band: number | null }) {
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2.5 py-0.5 text-sm font-semibold tabular-nums",
-        band == null ? "text-muted-foreground" : "bg-primary/10 text-primary",
-      )}
-    >
-      {band == null ? "—" : band.toFixed(1)}
-    </span>
+    <PracticeGallery
+      title="Activities"
+      subtitle="Every piece of practice you have had marked. Open any one to see its feedback and band."
+      items={items}
+      categories={["Writing", "Reading"]}
+      emptyTitle="Nothing here yet"
+      emptyNote="Start Writing or Reading from the sidebar — your graded work and feedback collect here."
+    />
   );
 }
 

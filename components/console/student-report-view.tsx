@@ -1,5 +1,11 @@
 import { progressSince } from "@/lib/console/progress";
-import type { StudentReport, WeaknessRow } from "@/lib/console/student-report";
+import type {
+  PracticeRow as ReportPracticeRow,
+  StudentReport,
+  WeaknessRow,
+} from "@/lib/console/student-report";
+
+import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
 
 import {
   AMBER,
@@ -7,12 +13,10 @@ import {
   Card,
   CardHead,
   CardNote,
-  Empty,
   FAINT,
   GREEN,
   INDIGO,
   INK,
-  KindBadge,
   MeterRow,
   PageHead,
   RED,
@@ -20,13 +24,7 @@ import {
   SOFT,
   Split,
   Stack,
-  Table,
   Tag,
-  TD,
-  TextLink,
-  THead,
-  TRow,
-  type Tone,
 } from "./crm-ui";
 
 const SKILL_LABEL = {
@@ -36,16 +34,38 @@ const SKILL_LABEL = {
   speaking: "Speaking",
 } as const;
 
-const SKILL_BADGE: Record<string, { text: string; tone: Tone }> = {
-  writing: { text: "WR", tone: "indigo" },
-  reading: { text: "RD", tone: "green" },
-  speaking: { text: "SP", tone: "amber" },
-  listening: { text: "LS", tone: "neutral" },
-};
+/** The chip row for both practice grids. Skills in the order the product
+ *  teaches them; the gallery drops any that this student has never done. */
+const PRACTICE_CATEGORIES = ["Writing", "Reading", "Listening", "Speaking", "Lesson"];
 
-const COLS = "1.1fr 1.6fr 1fr .7fr .8fr";
-/** Homework carries a weakness column; self-directed practice does not. */
-const HW_COLS = "1fr 1.7fr 1.4fr .6fr .8fr";
+/** A report row → the shared gallery's flat shape. */
+function toGalleryItem(p: ReportPracticeRow): GalleryItem {
+  const label = SKILL_LABEL[p.skill] ?? "Practice";
+  return {
+    id: `${p.skill}-${p.id}`,
+    // Null while a piece of work has no report — the card still renders,
+    // because "they did this and it was not marked" is a fact the teacher
+    // needs, but it must not pretend to be a door.
+    href: p.reportHref,
+    title: p.title ?? label,
+    byline: longDate(p.when),
+    tone: (["writing", "reading", "listening", "speaking"].includes(p.skill)
+      ? p.skill
+      : "lesson") as GalleryItem["tone"],
+    category: label,
+    // A listening quick practice may only have a raw score, never a band.
+    headline: p.band != null ? p.band.toFixed(1) : (p.score ?? "—"),
+    headnote: p.band != null ? "overall band" : p.score ? "score" : "not graded",
+    badge: p.reportHref ? undefined : "Not graded",
+    // The one thing that held THIS piece back. On the card rather than only in
+    // the roll-up because "Band 6.0" alone tells a teacher nothing they can
+    // teach from, and making them open every report to find out is how a report
+    // page goes unread.
+    stats: p.weakness ? [p.weakness] : [],
+    date: p.when,
+    value: p.band,
+  };
+}
 
 const longDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -234,48 +254,27 @@ export function StudentReportView({
                   : "nothing set to this student's group yet"
               }
             />
-            <Table cols={HW_COLS} minWidth={680}>
-              <THead cols={HW_COLS} labels={["Date", "Task", "What held it back", "Band", ""]} />
-              {homework.map((p) => (
-                <TRow key={`hw-${p.skill}-${p.id}`} cols={HW_COLS}>
-                  <TD tone="soft">{longDate(p.when)}</TD>
-                  <TD>
-                    <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                      <KindBadge tone={SKILL_BADGE[p.skill].tone}>
-                        {SKILL_BADGE[p.skill].text}
-                      </KindBadge>
-                      <span style={{ color: INK, minWidth: 0 }}>
-                        {p.title ?? SKILL_LABEL[p.skill]}
-                      </span>
-                    </span>
-                  </TD>
-                  <TD tone="body">{p.weakness ?? <span style={{ color: FAINT }}>—</span>}</TD>
-                  <TD tone="ink" weight={600}>
-                    {p.band != null ? p.band.toFixed(1) : (p.score ?? "—")}
-                  </TD>
-                  <TD align="right">
-                    {p.reportHref ? (
-                      <TextLink href={p.reportHref}>Full report →</TextLink>
-                    ) : (
-                      <span style={{ fontSize: 12, color: FAINT }}>Not graded</span>
-                    )}
-                  </TD>
-                </TRow>
-              ))}
-              {homework.length === 0 ? (
-                <Empty
-                  action={
-                    report.homework.assigned > 0
-                      ? undefined
-                      : { href: "/console/groups", label: "Set some →" }
-                  }
-                >
-                  {report.homework.assigned > 0
-                    ? "Nothing handed in yet."
-                    : "No homework has been set to this student's group."}
-                </Empty>
-              ) : null}
-            </Table>
+            <div style={{ padding: "16px 18px 18px" }}>
+              {/* The same grid the learner's Activities and the teacher's
+                  library use, so one piece of practice looks the same wherever
+                  it is seen. Two columns, not four: this sits in the report's
+                  narrow left column and the stylesheet cannot see that. */}
+              <PracticeGallery
+                items={homework.map(toGalleryItem)}
+                categories={PRACTICE_CATEGORIES}
+                columns={2}
+                emptyTitle={
+                  report.homework.assigned > 0
+                    ? "Nothing handed in yet"
+                    : "No homework set to this student's group"
+                }
+                emptyNote={
+                  report.homework.assigned > 0
+                    ? "It has been set, but nothing has come back."
+                    : "Set some from the group page."
+                }
+              />
+            </div>
           </Card>
 
           {/* ── their own practice ────────────────────────────────────────── */}
@@ -285,35 +284,15 @@ export function StudentReportView({
               divided
               note="anything they did that nobody set them"
             />
-            <Table cols={COLS} minWidth={620}>
-              <THead cols={COLS} labels={["Date", "Practice", "Score", "Band", ""]} />
-              {ownPractice.map((p) => {
-                const badge = SKILL_BADGE[p.skill];
-                return (
-                  <TRow key={`${p.skill}-${p.id}`} cols={COLS}>
-                    <TD tone="soft">{longDate(p.when)}</TD>
-                    <TD>
-                      <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                        <KindBadge tone={badge.tone}>{badge.text}</KindBadge>
-                        <span style={{ color: INK, minWidth: 0 }}>{SKILL_LABEL[p.skill]}</span>
-                      </span>
-                    </TD>
-                    <TD tone="soft">{p.score ?? "—"}</TD>
-                    <TD tone="ink" weight={600}>
-                      {p.band != null ? p.band.toFixed(1) : "—"}
-                    </TD>
-                    <TD align="right">
-                      {p.reportHref ? (
-                        <TextLink href={p.reportHref}>Report →</TextLink>
-                      ) : (
-                        <span style={{ fontSize: 12, color: FAINT }}>Not graded</span>
-                      )}
-                    </TD>
-                  </TRow>
-                );
-              })}
-              {ownPractice.length === 0 ? <Empty>Nothing beyond what was set.</Empty> : null}
-            </Table>
+            <div style={{ padding: "16px 18px 18px" }}>
+              <PracticeGallery
+                items={ownPractice.map(toGalleryItem)}
+                categories={PRACTICE_CATEGORIES}
+                columns={2}
+                emptyTitle="Nothing beyond what was set"
+                emptyNote="They have not practised anything on their own yet."
+              />
+            </div>
           </Card>
         </Stack>
 
