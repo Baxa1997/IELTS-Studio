@@ -286,6 +286,11 @@ export function KpiRow({
  *
  * `href` turns the tile into the filter for the list below — a number you can
  * click is a number you can check — and `active` rings the one now filtering.
+ *
+ * `accent` gives a tile its own colour: a coloured edge, a stripe down the left
+ * and a coloured label. For a strip whose tiles mean different kinds of thing
+ * (the dashboard's), so each reads at a glance. Opt-in — without it a tile looks
+ * as it always has, and `active` still wins over it.
  */
 export function Kpi({
   label,
@@ -295,6 +300,7 @@ export function Kpi({
   sub,
   href,
   active = false,
+  accent,
 }: {
   label: string;
   value: React.ReactNode;
@@ -303,11 +309,23 @@ export function Kpi({
   sub?: React.ReactNode;
   href?: string;
   active?: boolean;
+  accent?: Tone;
 }) {
   const deltaColor = deltaTone === "good" ? GREEN : deltaTone === "bad" ? RED : FAINT;
+  const accentInk = accent ? TINT[accent].fg : null;
   const body = (
     <>
-      <div style={{ fontFamily: SANS, fontSize: 12, color: MUTED, marginBottom: 8 }}>{label}</div>
+      <div
+        style={{
+          fontFamily: SANS,
+          fontSize: 12,
+          fontWeight: accentInk ? 600 : undefined,
+          color: accentInk ?? MUTED,
+          marginBottom: 8,
+        }}
+      >
+        {label}
+      </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <div
           style={{
@@ -338,6 +356,10 @@ export function Kpi({
     ...cardStyle,
     borderRadius: 12,
     padding: "14px 16px",
+    // The stripe is an inset shadow rather than a thicker left border, so the
+    // tile keeps the same box and the strip's tiles stay the same width.
+    ...(accentInk ? { borderColor: accentInk, boxShadow: `inset 4px 0 0 ${accentInk}` } : null),
+    // After the accent, so the tile now filtering the list is still the one ringed.
     ...(active ? { borderColor: INDIGO, boxShadow: `0 0 0 1px ${INDIGO}` } : null),
   };
 

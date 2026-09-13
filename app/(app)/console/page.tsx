@@ -195,8 +195,12 @@ export default async function ConsolePage() {
           running 3" above "2 idle" — a KPI that contradicts its own sub-line
           teaches the reader to stop reading the strip. Each of these is one
           definition, stated in the label. */}
+      {/* Each tile wears its own colour so the strip reads at a glance: indigo
+          for the headcount, green for what is going well, amber for who has
+          gone quiet, red for work waiting on you. */}
       <KpiRow mb={12} min={165}>
         <Kpi
+          accent="indigo"
           label={isAdmin ? "Students enrolled" : "Your students"}
           value={students.toLocaleString()}
           delta={withoutGroup > 0 ? `${withoutGroup} in no group` : undefined}
@@ -204,11 +208,13 @@ export default async function ConsolePage() {
           sub="active and paused"
         />
         <Kpi
+          accent="green"
           label="Practised this week"
           value={`${report.practisedThisWeek.students} of ${report.practisedThisWeek.of}`}
           sub="since Monday · always current"
         />
         <Kpi
+          accent="amber"
           label="Gone quiet"
           value={report.atRisk.length}
           delta={report.atRisk.length > 0 ? "worth a call" : "nobody"}
@@ -216,6 +222,7 @@ export default async function ConsolePage() {
           sub="14 days · always current"
         />
         <Kpi
+          accent="red"
           label="Registers to mark"
           value={overdueRegisters.length}
           deltaTone={overdueRegisters.length > 0 ? "bad" : "good"}
