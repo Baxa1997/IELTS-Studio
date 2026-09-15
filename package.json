@@ -11,6 +11,7 @@
     "calibrate": "NODE_ENV=production node --conditions=react-server --import tsx scripts/calibrate.ts",
     "seed:reading": "NODE_ENV=production node --conditions=react-server --import tsx scripts/seed-reading-library.ts",
     "seed:writing": "NODE_ENV=production node --conditions=react-server --import tsx scripts/topup-writing-practices.ts",
+    "seed:reading:curated": "NODE_ENV=production node --conditions=react-server --import tsx scripts/seed-reading-curated.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
