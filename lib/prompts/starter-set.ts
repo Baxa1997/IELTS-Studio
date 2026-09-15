@@ -5,9 +5,10 @@
  *
  * Two generations of content:
  *   - the original 35 below: 14 Academic Task 1 and 21 Task 2;
- *   - 121 more in ./curated, written against the real exam's shape: 55 Task 2
- *     essays, 36 Academic Task 1 reports and the first 30 General Training
- *     letters. Each file's header says what it covers and what it can't yet.
+ *   - 141 more in ./curated, written against the real exam's shape: 55 Task 2
+ *     essays, 56 Academic Task 1 reports (20 of them on 2026 topics in recent
+ *     exam styling) and the first 30 General Training letters. Each file's
+ *     header says what it covers and what it can't yet.
  *
  * All ORIGINAL content (CLAUDE.md §IP); figures use invented data.
  *

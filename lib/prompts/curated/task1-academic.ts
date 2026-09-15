@@ -8,6 +8,14 @@
  * ("Country A", "one city") so no figure reads as a real statistic about a real
  * place.
  *
+ * The last 20 (TRENDS_2026) follow what reported 2026 papers look like: 2026
+ * subjects (the energy transition, AI at work and study, tourism recovery,
+ * cost of living, economic-indicator tables, education gaps between groups,
+ * heat and pollution) and the current rubric conventions — "gives information
+ * about", "compares", "the proportion of", "Units are measured in …", three
+ * spaced years or a two-year snapshot, forecasts past the present. Themes only;
+ * no reported question is reproduced.
+ *
  * NOT covered, because the figure pipeline cannot draw them yet: process
  * diagrams, maps and paired or mixed charts — about half of real Task 1 papers.
  * See lib/writing/figure.ts.
@@ -681,10 +689,373 @@ const TABLE: StarterPrompt[] = [
   ),
 ];
 
+// ---- 2026 topics, recent exam styling --------------------------------------
+// Mixed kinds on purpose, weighted towards pies and tables the way 2026 papers
+// are (among the kinds the studio can draw).
+
+const TRENDS_2026: StarterPrompt[] = [
+  report(
+    "transport",
+    7,
+    "The line graph below shows the proportion of new cars sold that were electric in three countries between 2010 and 2025, with projections for 2030 and 2035.",
+    {
+      kind: "line",
+      title:
+        "Electric cars as a share of new car sales, 2010–2035 (figures from 2030 are projections)",
+      unit: "%",
+      x_label: "Year",
+      y_label: "Share of new car sales (%)",
+      categories: ["2010", "2015", "2020", "2025", "2030", "2035"],
+      series: [
+        { name: "Country A", values: [0.5, 3, 14, 38, 62, 80] },
+        { name: "Country B", values: [0, 1, 5, 19, 41, 65] },
+        { name: "Country C", values: [0, 0.5, 2, 6, 15, 30] },
+      ],
+    },
+  ),
+  report(
+    "technology",
+    7,
+    "The graph below gives information about the percentage of one country's electricity demand used by data centres and by electric vehicle charging from 2015 to 2024, with forecasts up to 2030.",
+    {
+      kind: "line",
+      title: "Share of national electricity demand, 2015–2030 (figures from 2027 are forecasts)",
+      unit: "%",
+      x_label: "Year",
+      y_label: "Share of electricity demand (%)",
+      categories: ["2015", "2018", "2021", "2024", "2027", "2030"],
+      series: [
+        { name: "Data centres", values: [1.2, 1.6, 2.1, 3.4, 5.8, 8.5] },
+        { name: "Electric vehicle charging", values: [0.1, 0.2, 0.5, 1.1, 2.4, 4.0] },
+      ],
+    },
+  ),
+  report(
+    "environment",
+    6,
+    "The line graph below illustrates the average number of days per year on which temperatures rose above 35°C in three cities between 1995 and 2025.",
+    {
+      kind: "line",
+      title: "Days per year with temperatures above 35°C, 1995–2025",
+      x_label: "Year",
+      y_label: "Days above 35°C",
+      categories: ["1995", "2000", "2005", "2010", "2015", "2020", "2025"],
+      series: [
+        { name: "City A", values: [4, 5, 7, 9, 12, 16, 21] },
+        { name: "City B", values: [11, 10, 13, 15, 14, 19, 24] },
+        { name: "City C", values: [0, 1, 1, 2, 4, 5, 9] },
+      ],
+    },
+  ),
+  report(
+    "society",
+    8,
+    "The graph below compares the average number of children born per woman in four countries from 1975 to 2025.",
+    {
+      kind: "line",
+      title: "Average number of children per woman, 1975–2025",
+      x_label: "Year",
+      y_label: "Children per woman",
+      categories: ["1975", "1985", "1995", "2005", "2015", "2025"],
+      series: [
+        { name: "Country A", values: [2.9, 2.4, 2.0, 1.8, 1.6, 1.3] },
+        { name: "Country B", values: [5.8, 5.1, 4.2, 3.3, 2.6, 2.1] },
+        { name: "Country C", values: [1.9, 1.8, 1.7, 1.9, 1.8, 1.6] },
+        { name: "Country D", values: [3.6, 2.9, 2.1, 1.5, 1.2, 0.9] },
+      ],
+    },
+  ),
+  report(
+    "food",
+    5,
+    "The line graph below shows sales of dairy milk and plant-based milk in one country between 2013 and 2025. Sales are measured in millions of litres.",
+    {
+      kind: "line",
+      title: "Sales of dairy and plant-based milk, 2013–2025 (million litres)",
+      x_label: "Year",
+      y_label: "Sales (million litres)",
+      categories: ["2013", "2015", "2017", "2019", "2021", "2023", "2025"],
+      series: [
+        { name: "Dairy milk", values: [940, 915, 880, 850, 820, 790, 760] },
+        { name: "Plant-based milk", values: [20, 45, 80, 130, 190, 250, 310] },
+      ],
+    },
+  ),
+  report(
+    "housing",
+    5,
+    "The bar chart below shows the average age at which people bought their first home in seven cities in 2025.",
+    {
+      kind: "bar",
+      title: "Average age of first-time home buyers, 2025",
+      x_label: "City",
+      y_label: "Average age (years)",
+      categories: ["City A", "City B", "City C", "City D", "City E", "City F", "City G"],
+      series: [{ name: "Average age", values: [31, 34, 29, 37, 33, 36, 30] }],
+    },
+  ),
+  report(
+    "economy",
+    6,
+    "The bar chart below compares the percentage of household income spent on energy bills in seven countries in 2025.",
+    {
+      kind: "bar",
+      title: "Household income spent on energy bills, 2025",
+      unit: "%",
+      x_label: "Country",
+      y_label: "Share of household income (%)",
+      categories: [
+        "Country A",
+        "Country B",
+        "Country C",
+        "Country D",
+        "Country E",
+        "Country F",
+        "Country G",
+      ],
+      series: [{ name: "Energy bills", values: [4.2, 6.8, 9.5, 3.1, 7.4, 11.2, 5.6] }],
+    },
+  ),
+  report(
+    "technology",
+    6,
+    "The bar chart below gives information about the purposes for which adults in one country used AI chatbots in 2025.",
+    {
+      kind: "bar",
+      title: "Adults using AI chatbots, by purpose, 2025 (more than one answer allowed)",
+      unit: "%",
+      x_label: "Purpose",
+      y_label: "Adults (%)",
+      categories: ["Search", "Work tasks", "Writing", "Study", "Translation", "Advice", "Coding"],
+      series: [{ name: "Adults", values: [45, 34, 31, 27, 22, 18, 12] }],
+    },
+  ),
+  report(
+    "work",
+    6,
+    "The chart below compares the percentage of employees in six sectors who used artificial intelligence tools at least once a week in 2023 and 2025.",
+    {
+      kind: "grouped_bar",
+      title: "Employees using AI tools at least once a week, by sector",
+      unit: "%",
+      x_label: "Sector",
+      y_label: "Employees (%)",
+      categories: ["Finance", "Education", "Health", "Retail", "Industry", "Media"],
+      series: [
+        { name: "2023", values: [22, 15, 9, 11, 8, 30] },
+        { name: "2025", values: [58, 47, 26, 24, 19, 66] },
+      ],
+    },
+  ),
+  report(
+    "tourism",
+    8,
+    "The bar chart below gives information about international tourist arrivals in five regions of the world in 2019, 2021 and 2025. Units are measured in millions.",
+    {
+      kind: "grouped_bar",
+      title: "International tourist arrivals by region (millions)",
+      unit: "m",
+      x_label: "Region",
+      y_label: "Arrivals (millions)",
+      categories: ["Region A", "Region B", "Region C", "Region D", "Region E"],
+      series: [
+        { name: "2019", values: [710, 360, 220, 110, 70] },
+        { name: "2021", values: [290, 70, 80, 45, 30] },
+        { name: "2025", values: [745, 320, 245, 125, 95] },
+      ],
+    },
+  ),
+  report(
+    "economy",
+    7,
+    "The chart below shows the proportion of in-store purchases paid for by different methods in one country in 2015, 2020 and 2025.",
+    {
+      kind: "grouped_bar",
+      title: "How in-store purchases were paid for, 2015–2025",
+      unit: "%",
+      x_label: "Method of payment",
+      y_label: "Share of purchases (%)",
+      categories: ["Cash", "Debit card", "Credit card", "Mobile phone", "Other"],
+      series: [
+        { name: "2015", values: [48, 27, 17, 2, 6] },
+        { name: "2020", values: [24, 38, 19, 13, 6] },
+        { name: "2025", values: [9, 33, 16, 38, 4] },
+      ],
+    },
+  ),
+  report(
+    "society",
+    6,
+    "The pie chart below shows the main reasons people gave for moving out of a capital city in 2025.",
+    {
+      kind: "pie",
+      title: "Reasons for moving out of the capital, 2025",
+      unit: "%",
+      slices: [
+        { label: "Lower housing costs", value: 36 },
+        { label: "Remote working", value: 21 },
+        { label: "Quality of life", value: 17 },
+        { label: "Family reasons", value: 12 },
+        { label: "A new job elsewhere", value: 9 },
+        { label: "Other", value: 5 },
+      ],
+    },
+  ),
+  report(
+    "crime",
+    6,
+    "The pie chart below gives information about the types of online fraud reported to the police in one country in 2025.",
+    {
+      kind: "pie",
+      title: "Reported online fraud by type, 2025",
+      unit: "%",
+      slices: [
+        { label: "Fake shopping websites", value: 29 },
+        { label: "Phishing messages", value: 24 },
+        { label: "Investment scams", value: 17 },
+        { label: "Criminals posing as banks", value: 13 },
+        { label: "Romance scams", value: 8 },
+        { label: "Ticket fraud", value: 5 },
+        { label: "Other", value: 4 },
+      ],
+    },
+  ),
+  report(
+    "environment",
+    5,
+    "The pie chart below shows the proportion of homes in one country using each main type of heating system in 2025.",
+    {
+      kind: "pie",
+      title: "Main heating systems in homes, 2025",
+      unit: "%",
+      slices: [
+        { label: "Gas boiler", value: 52 },
+        { label: "Heat pump", value: 17 },
+        { label: "Electric heaters", value: 13 },
+        { label: "District heating network", value: 9 },
+        { label: "Oil boiler", value: 6 },
+        { label: "Wood or other", value: 3 },
+      ],
+    },
+  ),
+  report(
+    "education",
+    6,
+    "The pie chart below illustrates how university students in one country divided their study time between different activities in 2025.",
+    {
+      kind: "pie",
+      title: "How university students divided their study time, 2025",
+      unit: "%",
+      slices: [
+        { label: "Attending classes", value: 28 },
+        { label: "Independent reading", value: 19 },
+        { label: "Using AI study tools", value: 16 },
+        { label: "Group projects", value: 14 },
+        { label: "Watching recorded lectures", value: 13 },
+        { label: "Library research", value: 6 },
+        { label: "Other", value: 4 },
+      ],
+    },
+  ),
+  report(
+    "environment",
+    7,
+    "The pie chart below shows the main sources of microplastic pollution entering rivers in one country in 2025.",
+    {
+      kind: "pie",
+      title: "Sources of microplastics entering rivers, 2025",
+      unit: "%",
+      slices: [
+        { label: "Synthetic clothing", value: 35 },
+        { label: "Car tyres", value: 28 },
+        { label: "Plastic packaging", value: 17 },
+        { label: "Road and building paint", value: 9 },
+        { label: "Fishing equipment", value: 7 },
+        { label: "Cosmetics", value: 4 },
+      ],
+    },
+  ),
+  report(
+    "economy",
+    8,
+    "The table below gives information about four economic indicators in five regions of one country in 2025.",
+    {
+      kind: "table",
+      title: "Economic indicators by region, 2025",
+      columns: [
+        "Region",
+        "GDP growth (%)",
+        "Unemployment (%)",
+        "Inflation (%)",
+        "Average monthly wage ($)",
+      ],
+      rows: [
+        ["Region A", 2.8, 4.1, 3.2, 3150],
+        ["Region B", 1.2, 7.9, 4.5, 2280],
+        ["Region C", 3.9, 3.5, 2.7, 3620],
+        ["Region D", 0.6, 9.4, 5.1, 1940],
+        ["Region E", 2.1, 5.2, 3.8, 2710],
+      ],
+    },
+  ),
+  report(
+    "education",
+    7,
+    "The table below shows the percentage of adults aged 25 to 34 in one country who held a university degree in 2005, 2015 and 2025, by gender and by whether they lived in a city or the countryside.",
+    {
+      kind: "table",
+      title: "Adults aged 25–34 with a university degree (%)",
+      unit: "%",
+      columns: ["Group", "2005", "2015", "2025"],
+      rows: [
+        ["Men in cities", 34, 39, 43],
+        ["Women in cities", 33, 44, 55],
+        ["Men in the countryside", 15, 18, 21],
+        ["Women in the countryside", 12, 19, 28],
+      ],
+    },
+  ),
+  report(
+    "transport",
+    6,
+    "The table below shows the average number of trips made each month on four shared transport services in one city in 2019, 2022 and 2025. Units are measured in thousands.",
+    {
+      kind: "table",
+      title: "Monthly trips on shared transport services (thousands)",
+      unit: "k",
+      columns: ["Service", "2019", "2022", "2025"],
+      rows: [
+        ["Shared bicycles", 210, 340, 390],
+        ["Shared electric bikes", 0, 120, 410],
+        ["Electric scooters", 0, 260, 305],
+        ["Car sharing", 55, 70, 62],
+      ],
+    },
+  ),
+  report(
+    "economy",
+    5,
+    "The table below compares the average price, in US dollars, of five everyday goods and services in four cities in 2025.",
+    {
+      kind: "table",
+      title: "Average prices in four cities, 2025 (US dollars)",
+      columns: ["Item", "City A", "City B", "City C", "City D"],
+      rows: [
+        ["Cup of coffee", 3.2, 4.8, 2.1, 5.5],
+        ["Loaf of bread", 2.4, 3.6, 1.3, 4.1],
+        ["Bus ticket", 1.5, 2.9, 0.8, 3.4],
+        ["Cinema ticket", 9, 14, 6, 16],
+        ["Monthly gym membership", 30, 55, 22, 70],
+      ],
+    },
+  ),
+];
+
 export const CURATED_TASK1_ACADEMIC: StarterPrompt[] = [
   ...LINE,
   ...BAR,
   ...GROUPED_BAR,
   ...PIE,
   ...TABLE,
+  ...TRENDS_2026,
 ];

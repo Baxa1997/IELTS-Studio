@@ -43,10 +43,10 @@ const QUESTION_COUNT: Record<string, number> = {
 const AXIS_KINDS = new Set(["bar", "grouped_bar", "line"]);
 
 describe("curated writing practice set", () => {
-  it("offers at least 150 practices, with every tab stocked", () => {
-    expect(STARTER_PROMPTS.length).toBeGreaterThanOrEqual(150);
+  it("offers at least 170 practices, with every tab stocked", () => {
+    expect(STARTER_PROMPTS.length).toBeGreaterThanOrEqual(170);
     expect(task2.length).toBeGreaterThanOrEqual(70);
-    expect(academic.length).toBeGreaterThanOrEqual(50);
+    expect(academic.length).toBeGreaterThanOrEqual(70);
     expect(letters.length).toBeGreaterThanOrEqual(30);
   });
 
@@ -112,7 +112,8 @@ describe("curated writing practice set", () => {
 
     it("names the figure the learner will see and ends with the rubric sentence", () => {
       const LEAD: Record<string, RegExp> = {
-        line: /^The line graph below/,
+        // Recent papers often say just "The graph below …" for a line graph.
+        line: /^The (line )?graph below/,
         bar: /^The (bar )?chart below/,
         grouped_bar: /^The (bar )?chart below/,
         pie: /^The pie chart below/,
