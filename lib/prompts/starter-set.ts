@@ -1,25 +1,29 @@
 /**
- * Curated starter prompts — 14 Academic Task 1 (each with its figure) + 22 Task 2
- * (36 total), spread across bands 5–8 and topic families, so a new learner's
- * library isn't empty. Copied into each org once (see ./starter, source = 'seed').
- * All ORIGINAL content (no copyrighted test material); figures use clean, invented
- * data.
+ * The curated writing practice set — the ready-made prompts behind the three
+ * tabs of the writing library, copied into a learner's org the first time they
+ * open it (see ./starter, source = 'seed').
+ *
+ * Two generations of content:
+ *   - the original 35 below: 14 Academic Task 1 and 21 Task 2;
+ *   - 121 more in ./curated, written against the real exam's shape: 55 Task 2
+ *     essays, 36 Academic Task 1 reports and the first 30 General Training
+ *     letters. Each file's header says what it covers and what it can't yet.
+ *
+ * All ORIGINAL content (CLAUDE.md §IP); figures use invented data.
+ *
+ * ⚠️ NEVER REWORD A PROMPT THAT HAS SHIPPED. Orgs seeded before a prompt existed
+ * are topped up by scripts/topup-writing-practices.ts, which matches existing
+ * rows on the exact prompt_text — reword one and every seeded learner gets a
+ * second copy. Add a new prompt instead. Category, difficulty and topic are safe
+ * to correct: the same script re-syncs them onto rows it matches.
  */
 
-import type { Figure } from "@/lib/writing/figure";
-import type { Task2Category } from "./types";
+import { CURATED_TASK1_ACADEMIC } from "./curated/task1-academic";
+import { CURATED_TASK1_GENERAL } from "./curated/task1-general";
+import { T1_TAIL, type StarterPrompt } from "./curated/shared";
+import { CURATED_TASK2 } from "./curated/task2";
 
-export interface StarterPrompt {
-  task_type: "task1_academic" | "task2";
-  category: Task2Category | null;
-  topic_family: string;
-  difficulty: number;
-  prompt_text: string;
-  figure?: Figure;
-}
-
-const T1_TAIL =
-  "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.";
+export type { StarterPrompt };
 
 // ---- Academic Task 1 (chart description) -----------------------------------
 
@@ -396,7 +400,9 @@ const TASK2: StarterPrompt[] = [
   },
   {
     task_type: "task2",
-    category: "opinion",
+    // Asks why, then what could be done — a cause-and-solution question, not
+    // agree/disagree. Was mislabelled "opinion".
+    category: "problem_solution",
     topic_family: "culture",
     difficulty: 7,
     prompt_text:
@@ -404,7 +410,8 @@ const TASK2: StarterPrompt[] = [
   },
   {
     task_type: "task2",
-    category: "opinion",
+    // "Do the advantages … outweigh the disadvantages?" Was mislabelled "opinion".
+    category: "advantages_disadvantages",
     topic_family: "health",
     difficulty: 6,
     prompt_text:
@@ -452,4 +459,10 @@ const TASK2: StarterPrompt[] = [
   },
 ];
 
-export const STARTER_PROMPTS: StarterPrompt[] = [...TASK1, ...TASK2];
+export const STARTER_PROMPTS: StarterPrompt[] = [
+  ...TASK1,
+  ...TASK2,
+  ...CURATED_TASK2,
+  ...CURATED_TASK1_ACADEMIC,
+  ...CURATED_TASK1_GENERAL,
+];

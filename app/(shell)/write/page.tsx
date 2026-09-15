@@ -55,7 +55,10 @@ export default async function WritePage() {
     .eq("status", "approved")
     .in("source", ["ai", "seed"])
     .order("created_at", { ascending: false })
-    .limit(60);
+    // The curated set alone is ~156 prompts across the three tabs, so a cap of
+    // 60 silently cut most of it off. A learner's org holds only that set plus
+    // what they generate, so this stays a few hundred small rows.
+    .limit(500);
 
   const library: LibraryPrompt[] = (lib ?? []).map((r) => ({
     id: r.id as string,

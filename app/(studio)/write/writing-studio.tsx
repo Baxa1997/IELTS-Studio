@@ -87,6 +87,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   discussion: "Discuss both views",
   problem_solution: "Problem / Solution",
   two_part: "Two-part question",
+  advantages_disadvantages: "Advantages / Disadvantages",
+  positive_negative: "Positive / Negative",
 };
 
 // IELTS prompts ship with boilerplate ("spend 40 minutes…", "write at least 250
