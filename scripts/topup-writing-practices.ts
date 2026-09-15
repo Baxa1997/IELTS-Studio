@@ -27,6 +27,10 @@
  *
  * Idempotent: a second run finds nothing to do. Each org's insert is one
  * statement, so an org is either fully topped up or untouched.
+ *
+ * Safe while learners are active: the scan pages by id rather than by offset,
+ * and each org is re-read just before its insert, so a learner who opens the
+ * library mid-run is never given a second copy.
  */
 
 import { readFileSync } from "node:fs";
@@ -68,17 +72,25 @@ async function main(): Promise<void> {
   );
 
   // ── 1. Every seed row, grouped by org ────────────────────────────────────
+  // Paged by id (after the last id seen), NOT by offset. A learner opening the
+  // library mid-scan inserts 176 rows at random uuids, which shifts every later
+  // offset: on 2026-09-15 an offset scan read some rows twice, skipped others,
+  // and reported a fully seeded org as missing 140 prompts.
   const rows: SeedRow[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await admin
+  for (let lastId = ""; ; ) {
+    let query = admin
       .from("writing_prompts")
       .select("id, organization_id, prompt_text, category, difficulty, topic_family, created_by")
       .eq("source", "seed")
       .order("id")
-      .range(from, from + PAGE - 1);
+      .limit(PAGE);
+    if (lastId) query = query.gt("id", lastId);
+    const { data, error } = await query;
     if (error) throw new Error(`reading seed rows: ${error.message}`);
-    rows.push(...((data ?? []) as SeedRow[]));
-    if ((data ?? []).length < PAGE) break;
+    const page = (data ?? []) as SeedRow[];
+    rows.push(...page);
+    if (page.length < PAGE) break;
+    lastId = page[page.length - 1].id;
   }
 
   const byOrg = new Map<string, SeedRow[]>();
@@ -160,11 +172,25 @@ async function main(): Promise<void> {
   for (const plan of plans) {
     const label = `${plan.orgId} (${plan.kind})`;
     try {
-      if (plan.missing.length > 0) {
+      // Re-read this org's seed prompts just before writing. The scan can be
+      // minutes old, and a learner who opened the library since then already
+      // holds the full set from starter.ts, so the stale plan would give them a
+      // second copy. That copy is one statement, so this read sees all of it or
+      // none of it.
+      const { data: current, error: readError } = await admin
+        .from("writing_prompts")
+        .select("prompt_text")
+        .eq("organization_id", plan.orgId)
+        .eq("source", "seed");
+      if (readError) throw new Error(`re-read: ${readError.message}`);
+      const have = new Set((current ?? []).map((r) => r.prompt_text as string));
+      const missing = plan.missing.filter((p) => !have.has(p.prompt_text));
+
+      if (missing.length > 0) {
         const { data, error } = await admin
           .from("writing_prompts")
           .insert(
-            plan.missing.map((p) => ({
+            missing.map((p) => ({
               organization_id: plan.orgId,
               task_type: p.task_type,
               category: p.category,
@@ -179,8 +205,8 @@ async function main(): Promise<void> {
           )
           .select("id");
         if (error) throw new Error(`insert: ${error.message}`);
-        if ((data ?? []).length !== plan.missing.length) {
-          throw new Error(`insert wrote ${(data ?? []).length} of ${plan.missing.length} rows`);
+        if ((data ?? []).length !== missing.length) {
+          throw new Error(`insert wrote ${(data ?? []).length} of ${missing.length} rows`);
         }
       }
       for (const fix of plan.resync) {
@@ -193,9 +219,7 @@ async function main(): Promise<void> {
         if (error) throw new Error(`re-label ${fix.id}: ${error.message}`);
         if ((data ?? []).length === 0) throw new Error(`re-label ${fix.id} changed no row`);
       }
-      console.log(
-        `  ✓ ${label}  +${plan.missing.length} prompts, ${plan.resync.length} re-labelled`,
-      );
+      console.log(`  ✓ ${label}  +${missing.length} prompts, ${plan.resync.length} re-labelled`);
     } catch (err) {
       failed++;
       console.log(`  ✗ ${label}  ${errMsg(err)}`);
