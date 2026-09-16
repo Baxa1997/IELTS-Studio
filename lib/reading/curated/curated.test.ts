@@ -4,14 +4,15 @@ import { codeCheckProblem, keyAlternatives } from "@/lib/reading/code-checks";
 import { READING_QUESTION_TYPES } from "@/lib/reading/constants";
 import { isCorrect, norm, PICK_TWO_KEY_RE, type GradableQuestion } from "@/lib/reading/grade";
 
-import { CURATED_READING_PASSAGES } from "./index";
-import type { CuratedPassage, CuratedQuestion } from "./shared";
+import { CURATED_READING_PASSAGES, CURATED_READING_TESTS } from "./index";
+import type { CuratedPassage, CuratedQuestion, CuratedTest } from "./shared";
 
 /**
- * Hand-written library passages go straight to learners with no generator and no
+ * Hand-written library content goes straight to learners with no generator and no
  * teacher in between, so these tests stand in for both: the production code
- * checks, the grader marking each key as correct, and the structural rules the
- * runner relies on to draw a block (one bank, one notes title, one word limit).
+ * checks, the grader marking each key as correct, the structural rules the runner
+ * relies on to draw a block (one bank, one notes title, one word limit), and —
+ * for full tests — the shape of a real exam paper.
  */
 
 const COMPLETION = new Set(["sentence_completion", "summary_completion", "note_completion"]);
@@ -21,6 +22,9 @@ const SHARED_BANK = new Set([
   "matching_headings",
   "matching_information",
 ]);
+
+const TEST_PASSAGES = CURATED_READING_TESTS.flatMap((t) => t.passages);
+const ALL_PASSAGES = [...CURATED_READING_PASSAGES, ...TEST_PASSAGES];
 
 /** Runs of consecutive same-type questions, as the runner groups them. */
 function blocks(questions: CuratedQuestion[]): CuratedQuestion[][] {
@@ -182,17 +186,51 @@ function checkPassage(p: CuratedPassage) {
   });
 }
 
-describe("curated reading passages", () => {
-  it("never repeats a key or a title", () => {
-    const keys = CURATED_READING_PASSAGES.map((p) => p.key);
-    const titles = CURATED_READING_PASSAGES.map((p) => p.title);
+/** The shape of a real paper (Cambridge 19–21): see FULL_TEST_LAYOUTS in lib/reading/constants. */
+function checkTest(t: CuratedTest) {
+  describe(`full test ${t.key}`, () => {
+    const [p1, p2, p3] = t.passages;
+    const types = (p: CuratedPassage) => new Set(p.questions.map((q) => q.type));
+
+    it("has 13, 13 and 14 questions — 40 in all", () => {
+      expect(t.passages.map((p) => p.questions.length)).toEqual([13, 13, 14]);
+    });
+
+    it("rises in difficulty around its target band", () => {
+      expect(p1.difficulty).toBeLessThanOrEqual(p2.difficulty);
+      expect(p2.difficulty).toBeLessThanOrEqual(p3.difficulty);
+      expect(p1.difficulty).toBeLessThan(p3.difficulty);
+      expect(t.targetBand).toBe(p2.difficulty);
+    });
+
+    it("opens with True/False/Not Given and a completion task", () => {
+      expect(types(p1).has("true_false_not_given")).toBe(true);
+      expect([...types(p1)].some((type) => COMPLETION.has(type))).toBe(true);
+    });
+
+    it("keeps writer's-views and paragraph-matching questions out of the easier passages", () => {
+      expect(types(p1).has("yes_no_not_given")).toBe(false);
+      expect(types(p2).has("yes_no_not_given")).toBe(false);
+      expect(types(p1).has("matching_information")).toBe(false);
+    });
+
+    it("gives its three passages three different subjects", () => {
+      expect(new Set(t.passages.map((p) => p.topic)).size).toBe(3);
+    });
+  });
+}
+
+describe("curated reading library", () => {
+  it("never repeats a key or a title anywhere in the library", () => {
+    const keys = [...ALL_PASSAGES.map((p) => p.key), ...CURATED_READING_TESTS.map((t) => t.key)];
+    const titles = ALL_PASSAGES.map((p) => p.title);
     expect(new Set(keys).size).toBe(keys.length);
     expect(new Set(titles).size).toBe(titles.length);
   });
 
-  it("practises every question type the exam uses", () => {
-    const types = new Set(CURATED_READING_PASSAGES.flatMap((p) => p.questions.map((q) => q.type)));
-    expect([...types].sort()).toEqual([...READING_QUESTION_TYPES].sort());
+  it("practises every question type the exam uses in the standalone passages", () => {
+    const seen = new Set(CURATED_READING_PASSAGES.flatMap((p) => p.questions.map((q) => q.type)));
+    expect([...seen].sort()).toEqual([...READING_QUESTION_TYPES].sort());
   });
 
   it("spans accessible to demanding passages", () => {
@@ -201,5 +239,6 @@ describe("curated reading passages", () => {
     expect(Math.max(...bands)).toBeGreaterThanOrEqual(8);
   });
 
-  for (const p of CURATED_READING_PASSAGES) checkPassage(p);
+  for (const p of ALL_PASSAGES) checkPassage(p);
+  for (const t of CURATED_READING_TESTS) checkTest(t);
 });

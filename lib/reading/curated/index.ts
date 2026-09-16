@@ -20,7 +20,31 @@ import { DEEP_SEA_MINING } from "./p07-deep-sea-mining";
 import { CAHOKIA } from "./p08-cahokia";
 import { LANGUAGE_TECHNOLOGY } from "./p09-language-technology";
 import { COOLING_CITIES } from "./p10-cooling-cities";
-import type { CuratedPassage } from "./shared";
+import type { CuratedPassage, CuratedTest } from "./shared";
+import { TEST_01 } from "./tests/test-01";
+import { TEST_02 } from "./tests/test-02";
+import { TEST_03 } from "./tests/test-03";
+import { TEST_04 } from "./tests/test-04";
+import { TEST_05 } from "./tests/test-05";
+import { TEST_06 } from "./tests/test-06";
+import { TEST_07 } from "./tests/test-07";
+import { TEST_08 } from "./tests/test-08";
+import { TEST_09 } from "./tests/test-09";
+import { TEST_10 } from "./tests/test-10";
+
+/** Full three-passage library tests (13 + 13 + 14 questions). */
+export const CURATED_READING_TESTS: CuratedTest[] = [
+  TEST_01,
+  TEST_02,
+  TEST_03,
+  TEST_04,
+  TEST_05,
+  TEST_06,
+  TEST_07,
+  TEST_08,
+  TEST_09,
+  TEST_10,
+];
 
 export const CURATED_READING_PASSAGES: CuratedPassage[] = [
   CARRINGTON_EVENT,
