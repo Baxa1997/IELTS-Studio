@@ -104,6 +104,15 @@ describe("collapsed rail: the glyph sits dead centre", () => {
     expect(declaration(inner, "gap")).toBe("0 !important");
   });
 
+  it("removes the same gap inside a group row, which is not an .lp-sb-link", () => {
+    /* The rule above is scoped to `.lp-sb-link`; a group row (Practices,
+       Teaching, Centre…) is a <button class="lp-sb-grouprow">, so it never got
+       it. Its icon kept a 10px gap beside the zero-width label and, measured in
+       Chromium, every group tile sat 5px left of every plain row. */
+    const groupInner = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-grouprow > span");
+    expect(declaration(groupInner, "gap")).toBe("0 !important");
+  });
+
   it("grows the chip to a standalone tile", () => {
     // 26px in a labelled row, 40px alone. Set INLINE in sidebar-nav.tsx, so
     // without !important this is a silent no-op and the rail collapses to 72px

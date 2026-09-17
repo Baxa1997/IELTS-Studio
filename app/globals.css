@@ -1171,6 +1171,15 @@
   .lp-shell-sidebar--collapsed .lp-sb-link > span {
     gap: 0 !important;
   }
+  /* ⚠️ AND THE GROUP ROW'S TOO — IT IS NOT AN `.lp-sb-link`. A group row
+     (Practices, Teaching, Centre…) is a <button class="lp-sb-grouprow">, so the
+     rule above never reached it: its icon kept the 10px gap beside a zero-width
+     label, the row came out 50px wide instead of 40, and every group tile sat
+     5px left of the plain rows above and below it. Measured in a real browser,
+     not guessed — collapsed-rail.test.ts pins it. */
+  .lp-shell-sidebar--collapsed .lp-sb-grouprow > span {
+    gap: 0 !important;
+  }
   /* Let the rail overflow so hover tooltips can sit beside the icons. */
   .lp-shell-sidebar--collapsed .lp-sb-scroll {
     overflow: visible !important;
@@ -2432,6 +2441,87 @@
 .lp-menu-item--danger:hover {
   background: #fbeceb;
 }
+
+/* ── the plan button at the foot of the rail (plan-card.tsx) ─────────────────
+   The Base44 "Upgrade your plan" row: a white button with a hairline and the
+   crown on the right, opening a dialog with the detail. Its fill and hover live
+   HERE, not inline — an inline background beats `:hover` whatever the
+   specificity, which is how rows in this rail have lost their hover before. */
+.lp-plan-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  /* Room for the two lines it has; it only exists as a number so the collapse
+     below has something to tween from. */
+  max-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid #e7e4dc;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(28, 25, 15, 0.05);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    max-height 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    padding 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    border-width 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    visibility 0s linear 0s,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.lp-plan-btn:hover,
+.lp-plan-btn[aria-expanded="true"] {
+  background: #faf8f3;
+  border-color: #dcd8ce;
+}
+/* The dialog's two ways out. The upgrade fill is the logo tile's #B8421E, which
+   holds white text at 5.47:1; the rail's lighter orange only reaches 4.1:1. */
+.lp-plan-cta {
+  background: #b8421e;
+  transition: background 0.15s ease;
+}
+.lp-plan-cta:hover {
+  background: #9f3818;
+}
+/* Colour here rather than inline, for the same reason as the fill above. */
+.lp-plan-link {
+  color: #6f6b64;
+  transition: color 0.15s ease;
+}
+.lp-plan-link:hover {
+  color: #16150f;
+}
+.lp-plan-btn:focus-visible,
+.lp-plan-cta:focus-visible,
+.lp-plan-link:focus-visible {
+  outline: 2px solid #b8421e;
+  outline-offset: 2px;
+}
+@media (min-width: 768px) {
+  /* The 72px rail has no room for it, so it folds away with the labels — and
+     it must stop taking clicks and focus too, which an opacity-0 button still
+     does. `max-height` alone cannot reach zero while the padding and border
+     are there, so they go with it. */
+  .lp-shell-sidebar--collapsed .lp-plan-btn {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    /* One delay per transition above, in the same order: `visibility` flips
+       only once the fade has finished, or the button would blink out first. */
+    transition-delay: 0s, 0s, 0s, 0s, 0.18s, 0s, 0s;
+  }
+}
+
 .lp-row {
   transition: background 0.15s ease;
 }

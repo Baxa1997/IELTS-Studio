@@ -1,146 +1,380 @@
-import Link from "next/link";
-import { Crown } from "lucide-react";
+"use client";
 
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Crown, Layers, type LucideIcon, Mic, SquarePen } from "lucide-react";
+
+import { Modal } from "@/components/ui/interactive";
+import type { Quota, UsageSummary } from "@/lib/quota";
 import { SANS } from "@/lib/theme/tokens";
-import type { UsageSummary } from "@/lib/quota";
 
 /**
- * The learner's PLAN, pinned to the bottom of the sidebar rail (replaces the
- * old target-band card): current plan name, how much of the month's quota is
- * left (gradings + practice sets), and an Upgrade button when a higher tier
- * exists.
+ * The learner's PLAN, pinned to the foot of the sidebar rail — as a BUTTON.
  *
- * ⚠️ REPAINTED THREE TIMES, and the rule behind all three is the same: this
- * card must never be the same value as the rail it sits on. It was light-on-dark
- * (burgundy rail), then a grey tray (white rail), then white (warm-paper rail),
- * and now cream — because the rail went white again. It is the one place in the
- * rail where a raised surface still says something, since everything around it
- * is flat, and that only works while the two values differ.
+ * It was a card: plan name, three quota meters and an outlined upgrade button,
+ * about 180px of a 250px rail. The owner asked for the Base44 reference instead
+ * (2026-09-17): one compact row, "Upgrade your plan" over a short line with the
+ * crown on the right, that opens a dialog holding the detail — what is left of
+ * each allowance, and the upgrade button. Nothing the card showed was dropped;
+ * it moved behind the click.
  *
- * The quota rows stay. The reference's card is a pure CTA, but this is the only
- * thing that tells a learner how much practice is left before they hit a wall,
- * and moving that behind a click to sell an upgrade harder is the wrong trade.
+ * ⚠️ THE "RUNNING OUT" SIGNAL STAYS IN THE RAIL. The card's meters were the
+ * only thing telling a learner they were about to hit a wall, and hiding that
+ * behind a click hides it exactly when it matters. So once an allowance is
+ * spent, the button's second line says which one, in red.
  */
-/** The rail's single hue — the Base44 reference's orange, used ONLY on the
- *  upgrade CTA (and, in the shell, the unread dot). Everything else in the rail
- *  is warm grey; if a third thing wants this colour, one of these two should
- *  give it up. */
+
+/** The rail's single hue — the Base44 reference's orange — on the crown only. */
 const ACCENT = "#d2571f";
+const INK = "#16150f";
+/** The rail's usual secondary grey (#8b8883) is 3.5:1 on white — too faint for
+ *  a 12px line somebody is meant to read. This is 5.3:1. Mirrored in
+ *  globals.css for the dialog's settings link. */
+const SUB = "#6f6b64";
+const LINE = "#e7e4dc";
+const RED = "#b3261e";
 
-export function PlanCard({ usage }: { usage: UsageSummary }) {
+type AllowanceKey = "grade" | "generate" | "speaking";
+
+interface Allowance {
+  key: AllowanceKey;
+  label: string;
+  /** What spends it — the counting rules live in lib/quota.ts and the engine's
+   *  quota.py; this is the plain-English version of them. */
+  covers: string;
+  icon: LucideIcon;
+}
+
+const ALLOWANCES: readonly Allowance[] = [
+  {
+    key: "grade",
+    label: "Gradings",
+    covers: "Writing essays marked by the AI examiner",
+    icon: SquarePen,
+  },
+  {
+    key: "generate",
+    label: "Practice sets",
+    covers: "Each new Writing, Reading, Listening, Speaking or CEFR practice",
+    icon: Layers,
+  },
+  {
+    // Counted apart because a live 3-part exam is real audio minutes, not a
+    // text call. A free plan gets exactly one.
+    key: "speaking",
+    label: "Speaking mocks",
+    covers: "Full 3-part live Speaking tests with the AI examiner",
+    icon: Mic,
+  },
+];
+
+/** Used up this month. A limit of 0 is "not in this plan", not "spent". */
+function isSpent(quota: Quota): boolean {
+  return quota.limit != null && quota.limit > 0 && (quota.remaining ?? 0) <= 0;
+}
+
+/** The first allowance this month has used up, in the dialog's order. */
+function spentAllowance(usage: UsageSummary): Allowance | null {
+  return ALLOWANCES.find((a) => isSpent(usage[a.key])) ?? null;
+}
+
+/** Spelled as a char code on purpose: a literal one is invisible in the source,
+ *  where `.replace(" ", " ")` reads as a line that does nothing. */
+const NO_BREAK_SPACE = String.fromCharCode(0xa0);
+
+const oneLine: React.CSSProperties = {
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+export function PlanCard({ usage: fromLayout }: { usage: UsageSummary }) {
+  /* Where the dialog is drawn, and whether it is open at all. Captured on the
+     click rather than read from a ref during render. */
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const open = host !== null;
+  const button = useRef<HTMLButtonElement>(null);
+
+  /* The numbers the dialog fetched for itself. A layout does not re-render on a
+     client-side navigation, so the copy it handed down can be a practice or a
+     mock behind by the time anyone asks "what is left". If the layout DOES
+     render again, its numbers are the newer ones and the fetched copy goes. */
+  const [latest, setLatest] = useState<UsageSummary | null>(null);
+  const [basis, setBasis] = useState(fromLayout);
+  if (basis !== fromLayout) {
+    setBasis(fromLayout);
+    setLatest(null);
+  }
+  const usage = latest ?? fromLayout;
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/usage", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body: { usage?: UsageSummary | null } | null) => {
+        if (!cancelled && body?.usage) setLatest(body.usage);
+      })
+      .catch(() => {
+        // The layout's numbers are already on screen; a failed refresh keeps them.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const close = useCallback(() => {
+    setHost(null);
+    // Back to the control that opened it, not the top of the page.
+    button.current?.focus();
+  }, []);
+
   const upgradable = usage.plan !== "enterprise";
+  const spent = spentAllowance(usage);
+
   return (
-    <div
-      className="lp-sb-target"
-      style={{
-        // CREAM, not white. It was white while the rail was warm paper; the
-        // rail is white now, and a white card on a white rail is a border with
-        // nothing inside it. It runs a little deeper than the content surface
-        // (--lp-surface) on purpose: that value is nearly white, which would put
-        // this back where it started.
-        background: "#f7f5ee",
-        border: "1px solid #e7e4dc",
-        borderRadius: 12,
-        padding: 12,
-        color: "#16150f",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span
-          style={{
-            fontFamily: SANS,
-            fontWeight: 600,
-            fontSize: 13.5,
-            color: "#16150f",
-          }}
-        >
-          {usage.planName}
+    <>
+      <button
+        ref={button}
+        type="button"
+        className="lp-plan-btn"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        /* ⚠️ INTO `.lp-root`, NOT <body>. The app's typefaces are CSS variables
+           declared on that wrapper by the layout, so a dialog drawn under <body>
+           loses them and falls back to the system font. It has to leave the rail
+           all the same: on a phone the rail is a transformed drawer, and a
+           transform makes `position: fixed` inside it stick to the drawer
+           instead of the screen. */
+        onClick={(e) => setHost(e.currentTarget.closest<HTMLElement>(".lp-root") ?? document.body)}
+      >
+        <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              ...oneLine,
+              fontFamily: SANS,
+              fontSize: 13.5,
+              fontWeight: 600,
+              lineHeight: 1.25,
+              color: INK,
+            }}
+          >
+            {upgradable ? "Upgrade your plan" : `${usage.planName} plan`}
+          </span>
+          <span
+            style={{
+              ...oneLine,
+              fontFamily: SANS,
+              fontSize: 12,
+              lineHeight: 1.3,
+              color: spent ? RED : SUB,
+              fontWeight: spent ? 600 : 400,
+            }}
+          >
+            {spent
+              ? `No ${spent.label.toLowerCase()} left`
+              : upgradable
+                ? `${usage.planName} · see what's left`
+                : "See what's left this month"}
+          </span>
         </span>
-        <Crown size={16} strokeWidth={1.9} color={ACCENT} />
-      </div>
+        <Crown size={17} strokeWidth={1.9} color={ACCENT} aria-hidden style={{ flex: "none" }} />
+      </button>
 
-      <QuotaRow label="Gradings" used={usage.grade.used} limit={usage.grade.limit} />
-      <QuotaRow label="Practice sets" used={usage.generate.used} limit={usage.generate.limit} />
-      {/* Speaking mocks are counted separately because they are separately
-          expensive — a live 3-part exam is real audio minutes, not a text call.
-          A trial gets exactly one, so "1 left" is the whole allowance. */}
-      <QuotaRow label="Speaking mocks" used={usage.speaking.used} limit={usage.speaking.limit} />
-
-      {upgradable ? (
-        <Link
-          href="/pricing"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 7,
-            height: 34,
-            marginTop: 2,
-            borderRadius: 9,
-            // OUTLINED, NOT FILLED — the reference's upgrade button, and the
-            // right weight here: the card is already the only raised surface in
-            // a flat rail, so a solid block inside it is the second shout in a
-            // row. The warm accent is the rail's ONE hue; everything else on
-            // this surface is grey on purpose.
-            background: "#fff",
-            border: `1px solid ${ACCENT}`,
-            color: ACCENT,
-            fontFamily: SANS,
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: "none",
-          }}
-        >
-          Upgrade your plan
-        </Link>
-      ) : null}
-    </div>
+      {host
+        ? createPortal(<PlanDialog usage={usage} upgradable={upgradable} onClose={close} />, host)
+        : null}
+    </>
   );
 }
 
-function QuotaRow({ label, used, limit }: { label: string; used: number; limit: number | null }) {
-  const left = limit == null ? null : Math.max(0, limit - used);
-  const frac = limit == null || limit === 0 ? 0 : Math.min(1, used / limit);
+function PlanDialog({
+  usage,
+  upgradable,
+  onClose,
+}: {
+  usage: UsageSummary;
+  upgradable: boolean;
+  onClose: () => void;
+}) {
+  // UTC, because the window rolls over at midnight UTC (lib/quota.ts); a local
+  // date would read "30 September" to anyone west of Greenwich. The space is a
+  // non-breaking one so the note never strands "1" at the end of a line.
+  const resets = new Date(usage.grade.resetAt)
+    .toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })
+    .replace(" ", NO_BREAK_SPACE);
+
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "baseline",
-          fontFamily: SANS,
-          fontSize: 12,
-          color: "#8b8883",
-          marginBottom: 4,
-        }}
-      >
-        <span>{label}</span>
-        <span style={{ fontWeight: 600, color: left === 0 ? "#b3261e" : "#16150f" }}>
-          {limit == null ? "Unlimited" : `${left} left`}
-        </span>
-      </div>
-      {limit != null ? (
+    <Modal
+      title={`${usage.planName} plan`}
+      note={`What's left this month. Counts reset on ${resets}.`}
+      onClose={onClose}
+      width={440}
+      footer={
         <div
           style={{
-            height: 4,
-            borderRadius: 999,
-            background: "#eceae2",
-            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
           }}
         >
-          <div
-            style={{
-              height: "100%",
-              width: `${Math.round((1 - frac) * 100)}%`,
-              borderRadius: 999,
-              background: left === 0 ? "#b3261e" : "#4a463d",
-            }}
-          />
+          <Link
+            href="/settings/billing"
+            onClick={onClose}
+            className="lp-plan-link"
+            style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+          >
+            Billing &amp; plan settings
+          </Link>
+          {upgradable ? (
+            <Link
+              href="/pricing"
+              onClick={onClose}
+              className="lp-plan-cta"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                height: 40,
+                padding: "0 16px",
+                borderRadius: 10,
+                color: "#fff",
+                fontFamily: SANS,
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              <Crown size={16} strokeWidth={2} aria-hidden />
+              Upgrade your plan
+            </Link>
+          ) : null}
         </div>
-      ) : null}
-    </div>
+      }
+    >
+      <ul
+        style={{
+          margin: 0,
+          padding: 0,
+          listStyle: "none",
+          border: `1px solid ${LINE}`,
+          borderRadius: 14,
+          fontFamily: SANS,
+        }}
+      >
+        {ALLOWANCES.map((allowance, i) => (
+          <AllowanceRow
+            key={allowance.key}
+            allowance={allowance}
+            quota={usage[allowance.key]}
+            first={i === 0}
+          />
+        ))}
+      </ul>
+    </Modal>
+  );
+}
+
+function AllowanceRow({
+  allowance: { label, covers, icon: Icon },
+  quota,
+  first,
+}: {
+  allowance: Allowance;
+  quota: Quota;
+  first: boolean;
+}) {
+  const limit = quota.limit;
+  const left = quota.remaining ?? 0;
+  const spent = isSpent(quota);
+  const metered = limit != null && limit > 0;
+  const status =
+    limit == null
+      ? "Unlimited"
+      : limit === 0
+        ? "Not in your plan"
+        : spent
+          ? "None left"
+          : `${left} of ${limit} left`;
+
+  return (
+    <li
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+        padding: "13px 14px",
+        borderTop: first ? "none" : `1px solid ${LINE}`,
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 34,
+          height: 34,
+          flex: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 10,
+          background: "#f7f5ee",
+          border: "1px solid #ece9e1",
+          color: "#3f3d39",
+        }}
+      >
+        <Icon size={17} strokeWidth={1.9} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
+          <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{label}</span>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: spent ? RED : INK,
+              whiteSpace: "nowrap",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {status}
+          </span>
+        </div>
+        <div style={{ marginTop: 2, fontSize: 12.5, lineHeight: 1.4, color: SUB }}>{covers}</div>
+        {metered ? (
+          // What is LEFT, so the bar drains as the month goes — the same
+          // reading the rail card had. The status line above carries the
+          // number for a screen reader; the bar is decoration.
+          <div
+            aria-hidden
+            style={{
+              height: 5,
+              marginTop: 9,
+              borderRadius: 999,
+              background: spent ? "#f5dedb" : "#eceae2",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${Math.round((left / limit) * 100)}%`,
+                height: "100%",
+                borderRadius: 999,
+                background: "#4a463d",
+              }}
+            />
+          </div>
+        ) : null}
+      </div>
+    </li>
   );
 }
