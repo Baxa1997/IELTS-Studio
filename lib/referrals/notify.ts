@@ -112,13 +112,13 @@ export async function notifyApplied(referralAccountId: string): Promise<void> {
         `Their account: ${from || "no email on file"}\n` +
         `Audience link: ${link}\n\n` +
         `What they wrote:\n${pitch}\n\n` +
-        `Review it: ${serverEnv.siteUrl}/admin/referrals\n`,
+        `Review it: ${serverEnv.outboundSiteUrl}/admin/referrals\n`,
       html:
         `<p><strong>${escapeHtml(name)}</strong> has applied to the referral programme.</p>` +
         `<p>Their account: <strong>${escapeHtml(from || "no email on file")}</strong></p>` +
         `<p>Audience link: ${escapeHtml(link)}</p>` +
         `<p>What they wrote:</p><blockquote>${escapeHtml(pitch)}</blockquote>` +
-        `<p><a href="${serverEnv.siteUrl}/admin/referrals">Review it</a></p>`,
+        `<p><a href="${serverEnv.outboundSiteUrl}/admin/referrals">Review it</a></p>`,
     });
   } catch (err) {
     console.error("[referrals] application alert failed:", err);
@@ -131,7 +131,7 @@ export async function notifyApproved(referralAccountId: string, code: string, pe
   try {
     const who = await recipient(referralAccountId);
     if (!who) return;
-    const url = `${serverEnv.siteUrl}/?ref=${code}`;
+    const url = `${serverEnv.outboundSiteUrl}/?ref=${code}`;
 
     await sendEmail({
       to: who.email,
@@ -142,7 +142,7 @@ export async function notifyApproved(referralAccountId: string, code: string, pe
         `Or just give people the code: ${code}\n\n` +
         `You earn ${percent}% of the first payment each person you refer makes — once per person. ` +
         `Someone who signs up and stays on the free plan doesn't earn you anything; the commission comes from a real payment.\n\n` +
-        `Track it here: ${serverEnv.siteUrl}/referrals\n\n— The EngProgress team`,
+        `Track it here: ${serverEnv.outboundSiteUrl}/referrals\n\n— The EngProgress team`,
       html:
         `<p>Hi ${escapeHtml(who.name)},</p>` +
         `<p>You're in. Here's your referral link:</p>` +
@@ -150,7 +150,7 @@ export async function notifyApproved(referralAccountId: string, code: string, pe
         `<p>Or just give people the code: <strong>${escapeHtml(code)}</strong></p>` +
         `<p>You earn <strong>${percent}%</strong> of the first payment each person you refer makes — once per person. ` +
         `Someone who signs up and stays on the free plan doesn't earn you anything; the commission comes from a real payment.</p>` +
-        `<p><a href="${serverEnv.siteUrl}/referrals">Track your referrals</a></p>` +
+        `<p><a href="${serverEnv.outboundSiteUrl}/referrals">Track your referrals</a></p>` +
         `<p>— The EngProgress team</p>`,
     });
   } catch (err) {
@@ -204,12 +204,12 @@ export async function notifyEarned(
         `Hi ${who.name},\n\n` +
         `Someone you referred just upgraded — you've earned ${amount}.\n\n` +
         `It's held for ${holdDays} days in case that payment is refunded, then it goes into the next monthly payout.\n\n` +
-        `See your referrals: ${serverEnv.siteUrl}/referrals\n\n— The EngProgress team`,
+        `See your referrals: ${serverEnv.outboundSiteUrl}/referrals\n\n— The EngProgress team`,
       html:
         `<p>Hi ${escapeHtml(who.name)},</p>` +
         `<p>Someone you referred just upgraded — you've earned <strong>${escapeHtml(amount)}</strong>.</p>` +
         `<p>It's held for ${holdDays} days in case that payment is refunded, then it goes into the next monthly payout.</p>` +
-        `<p><a href="${serverEnv.siteUrl}/referrals">See your referrals</a></p>` +
+        `<p><a href="${serverEnv.outboundSiteUrl}/referrals">See your referrals</a></p>` +
         `<p>— The EngProgress team</p>`,
     });
   } catch (err) {
@@ -247,12 +247,12 @@ export async function notifyPaid(
         `Hi ${who.name},\n\n` +
         `We've sent your referral payout of ${amount}.\n\n` +
         `Anything earned since then keeps building for the next one.\n\n` +
-        `See your referrals: ${serverEnv.siteUrl}/referrals\n\n— The EngProgress team`,
+        `See your referrals: ${serverEnv.outboundSiteUrl}/referrals\n\n— The EngProgress team`,
       html:
         `<p>Hi ${escapeHtml(who.name)},</p>` +
         `<p>We've sent your referral payout of <strong>${escapeHtml(amount)}</strong>.</p>` +
         `<p>Anything earned since then keeps building for the next one.</p>` +
-        `<p><a href="${serverEnv.siteUrl}/referrals">See your referrals</a></p>` +
+        `<p><a href="${serverEnv.outboundSiteUrl}/referrals">See your referrals</a></p>` +
         `<p>— The EngProgress team</p>`,
     });
   } catch (err) {

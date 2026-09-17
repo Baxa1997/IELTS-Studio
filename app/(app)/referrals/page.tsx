@@ -180,7 +180,10 @@ function Active({
   percent: number;
   settings: ReferralSettings;
 }) {
-  const url = `${serverEnv.siteUrl}/?ref=${account.code}`;
+  // The PUBLIC site, never the address this server runs on: the link is pasted
+  // into Telegram and sent to strangers, and on a dev machine `siteUrl` is
+  // localhost — a link nobody else can open.
+  const url = `${serverEnv.outboundSiteUrl}/?ref=${account.code}`;
   // Averaged inside one currency only — the busiest one. There is no rate in
   // this system to average across two with.
   const busiest = [...earnings.totals].sort((a, b) => b.count - a.count)[0] ?? null;
