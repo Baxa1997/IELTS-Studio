@@ -21,6 +21,7 @@
  *   npm run seed:reading:curated                      # dry run: checks only
  *   npm run seed:reading:curated -- --apply           # store what isn't in the library yet
  *   npm run seed:reading:curated -- --apply --replace # also re-store existing items
+ *   npm run seed:reading:curated -- --only=full-test-14,full-test-15  # just these keys
  *
  * ⚠️ .env.local points at PRODUCTION. The checker makes one model call per
  * passage; rate-limit errors are retried with a growing pause.
@@ -36,6 +37,14 @@ loadEnvLocal();
 
 const APPLY = process.argv.includes("--apply");
 const REPLACE = process.argv.includes("--replace");
+/** Passage or test keys to limit the run to; empty means everything. */
+const ONLY = new Set(
+  (process.argv.find((a) => a.startsWith("--only="))?.slice("--only=".length) ?? "")
+    .split(",")
+    .map((key) => key.trim())
+    .filter(Boolean),
+);
+const selected = (key: string) => ONLY.size === 0 || ONLY.has(key);
 
 /** Synthetic ids for AI-usage logging — non-UUIDs, so the usage insert is rejected
  *  and swallowed (the same convention as the generated library seed). */
@@ -219,6 +228,7 @@ async function main(): Promise<void> {
   // ── Standalone practice passages ─────────────────────────────────────────
   console.log("Passage practice");
   for (const p of CURATED_READING_PASSAGES) {
+    if (!selected(p.key)) continue;
     const id = libraryIdFor(p.key);
     const label = `"${p.title}" (band ${p.difficulty}, ${p.questions.length} Qs)`;
 
@@ -261,6 +271,7 @@ async function main(): Promise<void> {
   // ── Full tests ────────────────────────────────────────────────────────────
   console.log("\nFull tests");
   for (const t of CURATED_READING_TESTS) {
+    if (!selected(t.key)) continue;
     const testId = libraryIdFor(t.key);
     const label = `${t.key} (band ${t.targetBand}: ${t.passages.map((p) => p.title).join(" / ")})`;
 

@@ -17,6 +17,10 @@ export const dynamic = "force-dynamic";
 // short CEFR sets) so the practice hub only offers exam-realistic passages.
 const MIN_PRACTICE_QUESTIONS = 11;
 
+// The hand-written library holds 30 full tests (lib/reading/curated); the cap only
+// guards against a runaway table, so every library test shows.
+const LIBRARY_TEST_LIMIT = 100;
+
 /**
  * Reading hub — sidebar shell (like /write); the runner pages are full-screen.
  * This page only loads data; the compact tabbed UI lives in <ReadingHub>. Students
@@ -68,7 +72,11 @@ export default async function ReadingHubPage() {
         .eq("organization_id", READING_LIBRARY_ORG_ID)
         .eq("is_library", true)
         .order("target_band", { ascending: true })
-        .limit(12),
+        // Many tests share a band; without a tie-break their "Practice test N"
+        // numbers could swap between visits.
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(LIBRARY_TEST_LIMIT),
       admin
         .from("reading_passages")
         .select("id, title, topic, difficulty")

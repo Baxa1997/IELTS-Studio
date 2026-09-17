@@ -31,6 +31,26 @@ import { TEST_07 } from "./tests/test-07";
 import { TEST_08 } from "./tests/test-08";
 import { TEST_09 } from "./tests/test-09";
 import { TEST_10 } from "./tests/test-10";
+import { TEST_11 } from "./tests/test-11";
+import { TEST_12 } from "./tests/test-12";
+import { TEST_13 } from "./tests/test-13";
+import { TEST_14 } from "./tests/test-14";
+import { TEST_15 } from "./tests/test-15";
+import { TEST_16 } from "./tests/test-16";
+import { TEST_17 } from "./tests/test-17";
+import { TEST_18 } from "./tests/test-18";
+import { TEST_19 } from "./tests/test-19";
+import { TEST_20 } from "./tests/test-20";
+import { TEST_21 } from "./tests/test-21";
+import { TEST_22 } from "./tests/test-22";
+import { TEST_23 } from "./tests/test-23";
+import { TEST_24 } from "./tests/test-24";
+import { TEST_25 } from "./tests/test-25";
+import { TEST_26 } from "./tests/test-26";
+import { TEST_27 } from "./tests/test-27";
+import { TEST_28 } from "./tests/test-28";
+import { TEST_29 } from "./tests/test-29";
+import { TEST_30 } from "./tests/test-30";
 
 /** Full three-passage library tests (13 + 13 + 14 questions). */
 export const CURATED_READING_TESTS: CuratedTest[] = [
@@ -44,6 +64,26 @@ export const CURATED_READING_TESTS: CuratedTest[] = [
   TEST_08,
   TEST_09,
   TEST_10,
+  TEST_11,
+  TEST_12,
+  TEST_13,
+  TEST_14,
+  TEST_15,
+  TEST_16,
+  TEST_17,
+  TEST_18,
+  TEST_19,
+  TEST_20,
+  TEST_21,
+  TEST_22,
+  TEST_23,
+  TEST_24,
+  TEST_25,
+  TEST_26,
+  TEST_27,
+  TEST_28,
+  TEST_29,
+  TEST_30,
 ];
 
 export const CURATED_READING_PASSAGES: CuratedPassage[] = [
