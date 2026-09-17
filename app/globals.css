@@ -1432,7 +1432,8 @@
 
      Collapsed nav: hover a glyph → a label tooltip to its right (the only place
      the name shows once labels are hidden). */
-  .lp-shell-sidebar--collapsed .lp-sb-link:hover::after {
+  .lp-shell-sidebar--collapsed .lp-sb-link:hover::after,
+  .lp-shell-sidebar--collapsed .lp-plan-btn:hover::after {
     content: attr(data-label);
     position: absolute;
     left: calc(100% + 14px);
@@ -1450,7 +1451,8 @@
     z-index: 60;
     pointer-events: none;
   }
-  .lp-shell-sidebar--collapsed .lp-sb-link:hover::before {
+  .lp-shell-sidebar--collapsed .lp-sb-link:hover::before,
+  .lp-shell-sidebar--collapsed .lp-plan-btn:hover::before {
     content: "";
     position: absolute;
     left: calc(100% + 8px);
@@ -2443,25 +2445,21 @@
 }
 
 /* ── the plan button at the foot of the rail (plan-card.tsx) ─────────────────
-   HOVER AND FOCUS ONLY. Its layout is inline in the component, like every other
-   row in the rail, and the 72px fold is the old card's `.lp-sb-target` rule on a
-   wrapper. The fill is here because an inline background beats `:hover`. */
+   Its layout is inline in the component, like every other row in the rail.
+   Here: the fill (an inline background would beat `:hover`), and — in the
+   desktop block below — the 72px crown tile. */
 .lp-plan-btn {
   appearance: none;
   -webkit-appearance: none;
   background: #fff;
   transition:
     background 0.15s ease,
-    visibility 0s;
+    width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .lp-plan-btn:hover,
 .lp-plan-btn[aria-expanded="true"] {
   background: #faf8f3;
-}
-/* INSET, because the `.lp-sb-target` wrapper clips anything drawn outside it. */
-.lp-plan-btn:focus-visible {
-  outline: 2px solid #b8421e;
-  outline-offset: -2px;
 }
 /* The dialog's upgrade button carries its fill inline, so its hover darkens
    with a filter — which an inline background does not block. */
@@ -2474,19 +2472,27 @@
 .lp-plan-link:hover {
   text-decoration: underline;
 }
+.lp-plan-btn:focus-visible,
 .lp-plan-cta:focus-visible,
 .lp-plan-link:focus-visible {
   outline: 2px solid #b8421e;
   outline-offset: 2px;
 }
 @media (min-width: 768px) {
-  /* Folded, the wrapper hides it from the eye; this hides it from the Tab key,
-     once the fade has finished. */
+  /* COLLAPSED, IT IS THE CROWN IN A BORDERED TILE — the owner's design
+     (2026-09-17). Its text column is an `.lp-sb-label`, so the shared collapse
+     rule already takes that to zero width; this shrinks the button around the
+     crown to the nav tiles' 40px, centred by the footer. `!important` because
+     every one of these is inline in plan-card.tsx. Its hover name is the nav
+     tooltip (see `.lp-sb-link:hover::after` above). */
   .lp-shell-sidebar--collapsed .lp-plan-btn {
-    visibility: hidden;
-    transition:
-      background 0.15s ease,
-      visibility 0s linear 0.18s;
+    position: relative;
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
   }
 }
 

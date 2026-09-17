@@ -161,8 +161,8 @@ function fillsTheSurface(pathname: string): boolean {
  * drawer. The frame itself doesn't scroll; only <main> does.
  *
  * On desktop the rail collapses to an icon-only strip (a CSS-only transform driven by
- * the `--collapsed` class). An optional `sidebarFooter` (e.g. the "Your target" card)
- * sits just above the profile menu and is hidden while collapsed.
+ * the `--collapsed` class). An optional `sidebarFooter` (the learner's plan button)
+ * sits just above the profile menu; collapsed, it draws its own 72px form.
  */
 export function AppShell({
   role,
@@ -520,8 +520,9 @@ export function AppShell({
             />
           </div>
 
-          {/* footer: optional target card (hidden when collapsed), then profile menu.
-              Separated from the nav by a full-bleed hairline (.lp-sb-footer). */}
+          {/* footer: optional plan button (a crown tile when collapsed), then
+              profile menu. Separated from the nav by a full-bleed hairline
+              (.lp-sb-footer). */}
           <div
             className="lp-sb-footer"
             style={{

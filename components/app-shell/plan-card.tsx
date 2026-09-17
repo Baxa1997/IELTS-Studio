@@ -23,6 +23,9 @@ import { SANS } from "@/lib/theme/tokens";
  * only thing telling a learner they were about to hit a wall, and hiding that
  * behind a click hides it exactly when it matters. So once an allowance is
  * spent, the button's second line says which one, in red.
+ *
+ * In the collapsed 72px rail it is just the crown in a bordered tile (owner's
+ * design), and the same click opens the same dialog.
  */
 
 /** The rail's single hue — the Base44 reference's orange — on the crown only. */
@@ -133,77 +136,79 @@ export function PlanCard({ usage: fromLayout }: { usage: UsageSummary }) {
   const upgradable = usage.plan !== "enterprise";
   const spent = spentAllowance(usage);
 
+  const title = upgradable ? "Upgrade your plan" : `${usage.planName} plan`;
+
   return (
     <>
-      {/* `.lp-sb-target` is what folds this away in the 72px rail — the rule the
-          old card used, so it needs nothing new from globals.css. It sits on a
-          WRAPPER because the fold is a max-height tween: on the button itself its
-          padding and border would stop it short of zero. */}
-      <div className="lp-sb-target" style={{ width: "100%" }}>
-        <button
-          ref={button}
-          type="button"
-          className="lp-plan-btn"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          /* ⚠️ INTO `.lp-root`, NOT <body>. The app's typefaces are CSS variables
-             declared on that wrapper by the layout, so a dialog drawn under <body>
-             loses them and falls back to the system font. It has to leave the rail
-             all the same: on a phone the rail is a transformed drawer, and a
-             transform makes `position: fixed` inside it stick to the drawer
-             instead of the screen. */
-          onClick={(e) => setHost(e.currentTarget.closest<HTMLElement>(".lp-root") ?? document.body)}
-          /* LAYOUT INLINE, like every other row in this rail; only the hover
-             fill lives in globals.css (an inline background would beat it).
-             The first version put the layout in the stylesheet too, and a dev
-             server serving a stale globals.css drew it as centred text with the
-             crown wrapped underneath. */
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            width: "100%",
-            minWidth: 0,
-            padding: "10px 12px",
-            border: `1px solid ${LINE}`,
-            borderRadius: 12,
-            textAlign: "left",
-            cursor: "pointer",
-          }}
+      <button
+        ref={button}
+        type="button"
+        className="lp-plan-btn"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        // The collapsed rail's hover tooltip: at 72px the crown is all that shows.
+        data-label={title}
+        /* ⚠️ INTO `.lp-root`, NOT <body>. The app's typefaces are CSS variables
+           declared on that wrapper by the layout, so a dialog drawn under <body>
+           loses them and falls back to the system font. It has to leave the rail
+           all the same: on a phone the rail is a transformed drawer, and a
+           transform makes `position: fixed` inside it stick to the drawer
+           instead of the screen. */
+        onClick={(e) => setHost(e.currentTarget.closest<HTMLElement>(".lp-root") ?? document.body)}
+        /* LAYOUT INLINE, like every other row in this rail. globals.css holds the
+           hover fill (an inline background would beat it) and the 72px crown
+           tile, whose rules carry `!important` because they override these. */
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          width: "100%",
+          minWidth: 0,
+          padding: "10px 12px",
+          border: `1px solid ${LINE}`,
+          borderRadius: 12,
+          textAlign: "left",
+          cursor: "pointer",
+        }}
+      >
+        {/* `lp-sb-label` is the rail's own text-collapse class: at 72px this
+            column tweens to zero width with every other label, leaving the crown
+            alone in its tile — the owner's collapsed design (2026-09-17). */}
+        <span
+          className="lp-sb-label"
+          style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}
         >
-          <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-            <span
-              style={{
-                ...oneLine,
-                fontFamily: SANS,
-                fontSize: 13.5,
-                fontWeight: 600,
-                lineHeight: 1.25,
-                color: INK,
-              }}
-            >
-              {upgradable ? "Upgrade your plan" : `${usage.planName} plan`}
-            </span>
-            <span
-              style={{
-                ...oneLine,
-                fontFamily: SANS,
-                fontSize: 12,
-                lineHeight: 1.3,
-                color: spent ? RED : SUB,
-                fontWeight: spent ? 600 : 400,
-              }}
-            >
-              {spent
-                ? `No ${spent.label.toLowerCase()} left`
-                : upgradable
-                  ? `${usage.planName} · see what's left`
-                  : "See what's left this month"}
-            </span>
+          <span
+            style={{
+              ...oneLine,
+              fontFamily: SANS,
+              fontSize: 13.5,
+              fontWeight: 600,
+              lineHeight: 1.25,
+              color: INK,
+            }}
+          >
+            {title}
           </span>
-          <Crown size={17} strokeWidth={1.9} color={ACCENT} aria-hidden style={{ flex: "none" }} />
-        </button>
-      </div>
+          <span
+            style={{
+              ...oneLine,
+              fontFamily: SANS,
+              fontSize: 12,
+              lineHeight: 1.3,
+              color: spent ? RED : SUB,
+              fontWeight: spent ? 600 : 400,
+            }}
+          >
+            {spent
+              ? `No ${spent.label.toLowerCase()} left`
+              : upgradable
+                ? `${usage.planName} · see what's left`
+                : "See what's left this month"}
+          </span>
+        </span>
+        <Crown size={17} strokeWidth={1.9} color={ACCENT} aria-hidden style={{ flex: "none" }} />
+      </button>
 
       {host
         ? createPortal(<PlanDialog usage={usage} upgradable={upgradable} onClose={close} />, host)
