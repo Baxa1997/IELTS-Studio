@@ -135,52 +135,75 @@ export function PlanCard({ usage: fromLayout }: { usage: UsageSummary }) {
 
   return (
     <>
-      <button
-        ref={button}
-        type="button"
-        className="lp-plan-btn"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        /* ⚠️ INTO `.lp-root`, NOT <body>. The app's typefaces are CSS variables
-           declared on that wrapper by the layout, so a dialog drawn under <body>
-           loses them and falls back to the system font. It has to leave the rail
-           all the same: on a phone the rail is a transformed drawer, and a
-           transform makes `position: fixed` inside it stick to the drawer
-           instead of the screen. */
-        onClick={(e) => setHost(e.currentTarget.closest<HTMLElement>(".lp-root") ?? document.body)}
-      >
-        <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-          <span
-            style={{
-              ...oneLine,
-              fontFamily: SANS,
-              fontSize: 13.5,
-              fontWeight: 600,
-              lineHeight: 1.25,
-              color: INK,
-            }}
-          >
-            {upgradable ? "Upgrade your plan" : `${usage.planName} plan`}
+      {/* `.lp-sb-target` is what folds this away in the 72px rail — the rule the
+          old card used, so it needs nothing new from globals.css. It sits on a
+          WRAPPER because the fold is a max-height tween: on the button itself its
+          padding and border would stop it short of zero. */}
+      <div className="lp-sb-target" style={{ width: "100%" }}>
+        <button
+          ref={button}
+          type="button"
+          className="lp-plan-btn"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          /* ⚠️ INTO `.lp-root`, NOT <body>. The app's typefaces are CSS variables
+             declared on that wrapper by the layout, so a dialog drawn under <body>
+             loses them and falls back to the system font. It has to leave the rail
+             all the same: on a phone the rail is a transformed drawer, and a
+             transform makes `position: fixed` inside it stick to the drawer
+             instead of the screen. */
+          onClick={(e) => setHost(e.currentTarget.closest<HTMLElement>(".lp-root") ?? document.body)}
+          /* LAYOUT INLINE, like every other row in this rail; only the hover
+             fill lives in globals.css (an inline background would beat it).
+             The first version put the layout in the stylesheet too, and a dev
+             server serving a stale globals.css drew it as centred text with the
+             crown wrapped underneath. */
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            width: "100%",
+            minWidth: 0,
+            padding: "10px 12px",
+            border: `1px solid ${LINE}`,
+            borderRadius: 12,
+            textAlign: "left",
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span
+              style={{
+                ...oneLine,
+                fontFamily: SANS,
+                fontSize: 13.5,
+                fontWeight: 600,
+                lineHeight: 1.25,
+                color: INK,
+              }}
+            >
+              {upgradable ? "Upgrade your plan" : `${usage.planName} plan`}
+            </span>
+            <span
+              style={{
+                ...oneLine,
+                fontFamily: SANS,
+                fontSize: 12,
+                lineHeight: 1.3,
+                color: spent ? RED : SUB,
+                fontWeight: spent ? 600 : 400,
+              }}
+            >
+              {spent
+                ? `No ${spent.label.toLowerCase()} left`
+                : upgradable
+                  ? `${usage.planName} · see what's left`
+                  : "See what's left this month"}
+            </span>
           </span>
-          <span
-            style={{
-              ...oneLine,
-              fontFamily: SANS,
-              fontSize: 12,
-              lineHeight: 1.3,
-              color: spent ? RED : SUB,
-              fontWeight: spent ? 600 : 400,
-            }}
-          >
-            {spent
-              ? `No ${spent.label.toLowerCase()} left`
-              : upgradable
-                ? `${usage.planName} · see what's left`
-                : "See what's left this month"}
-          </span>
-        </span>
-        <Crown size={17} strokeWidth={1.9} color={ACCENT} aria-hidden style={{ flex: "none" }} />
-      </button>
+          <Crown size={17} strokeWidth={1.9} color={ACCENT} aria-hidden style={{ flex: "none" }} />
+        </button>
+      </div>
 
       {host
         ? createPortal(<PlanDialog usage={usage} upgradable={upgradable} onClose={close} />, host)
@@ -225,7 +248,7 @@ function PlanDialog({
             href="/settings/billing"
             onClick={onClose}
             className="lp-plan-link"
-            style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+            style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: SUB }}
           >
             Billing &amp; plan settings
           </Link>
@@ -241,6 +264,10 @@ function PlanDialog({
                 height: 40,
                 padding: "0 16px",
                 borderRadius: 10,
+                // The logo tile's #B8421E: white on it is 5.47:1, where the rail's
+                // lighter orange only reaches 4.1:1. Its hover is a `filter` in
+                // globals.css, which an inline background does not block.
+                background: "#b8421e",
                 color: "#fff",
                 fontFamily: SANS,
                 fontSize: 14,

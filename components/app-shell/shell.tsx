@@ -548,6 +548,7 @@ export function AppShell({
               email={email}
               items={accountItemsFor(role)}
               unread={unread}
+              collapsed={collapsed}
             />
           </div>
         </aside>
@@ -656,6 +657,7 @@ function ProfileMenu({
   email,
   items = [],
   unread = 0,
+  collapsed = false,
 }: {
   name: string;
   roleLabel: string;
@@ -663,6 +665,8 @@ function ProfileMenu({
   items?: AccountItem[];
   /** Unread notifications, shown on the avatar and beside the menu item. */
   unread?: number;
+  /** The desktop rail is at 72px, so the strip is just the avatar. */
+  collapsed?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -846,7 +850,11 @@ function ProfileMenu({
             border: 0,
             // Resting background lives in .lp-sb-profile-btn (globals.css) so the
             // hover wash works; inline only when open (inline beats the class).
-            background: open ? "rgba(28,25,15,.055)" : undefined,
+            // COLLAPSED, NO WASH AT ALL — hover or open. The button is taller than
+            // the avatar it holds, so at 72px the wash drew a tall grey box that
+            // read as the button growing; the owner asked for none (2026-09-17).
+            // Inline `transparent` is what beats the :hover rule.
+            background: collapsed ? "transparent" : open ? "rgba(28,25,15,.055)" : undefined,
             borderRadius: 10,
             cursor: "pointer",
             textAlign: "left",

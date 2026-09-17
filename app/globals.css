@@ -2443,82 +2443,50 @@
 }
 
 /* ── the plan button at the foot of the rail (plan-card.tsx) ─────────────────
-   The Base44 "Upgrade your plan" row: a white button with a hairline and the
-   crown on the right, opening a dialog with the detail. Its fill and hover live
-   HERE, not inline — an inline background beats `:hover` whatever the
-   specificity, which is how rows in this rail have lost their hover before. */
+   HOVER AND FOCUS ONLY. Its layout is inline in the component, like every other
+   row in the rail, and the 72px fold is the old card's `.lp-sb-target` rule on a
+   wrapper. The fill is here because an inline background beats `:hover`. */
 .lp-plan-btn {
   appearance: none;
   -webkit-appearance: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
-  /* Room for the two lines it has; it only exists as a number so the collapse
-     below has something to tween from. */
-  max-height: 72px;
-  padding: 10px 12px;
-  border: 1px solid #e7e4dc;
-  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(28, 25, 15, 0.05);
-  text-align: left;
-  cursor: pointer;
-  overflow: hidden;
   transition:
-    max-height 0.3s cubic-bezier(0.33, 1, 0.68, 1),
-    padding 0.3s cubic-bezier(0.33, 1, 0.68, 1),
-    border-width 0.3s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.18s ease,
-    visibility 0s linear 0s,
     background 0.15s ease,
-    border-color 0.15s ease;
+    visibility 0s;
 }
 .lp-plan-btn:hover,
 .lp-plan-btn[aria-expanded="true"] {
   background: #faf8f3;
-  border-color: #dcd8ce;
 }
-/* The dialog's two ways out. The upgrade fill is the logo tile's #B8421E, which
-   holds white text at 5.47:1; the rail's lighter orange only reaches 4.1:1. */
+/* INSET, because the `.lp-sb-target` wrapper clips anything drawn outside it. */
+.lp-plan-btn:focus-visible {
+  outline: 2px solid #b8421e;
+  outline-offset: -2px;
+}
+/* The dialog's upgrade button carries its fill inline, so its hover darkens
+   with a filter — which an inline background does not block. */
 .lp-plan-cta {
-  background: #b8421e;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease;
 }
 .lp-plan-cta:hover {
-  background: #9f3818;
-}
-/* Colour here rather than inline, for the same reason as the fill above. */
-.lp-plan-link {
-  color: #6f6b64;
-  transition: color 0.15s ease;
+  filter: brightness(0.9);
 }
 .lp-plan-link:hover {
-  color: #16150f;
+  text-decoration: underline;
 }
-.lp-plan-btn:focus-visible,
 .lp-plan-cta:focus-visible,
 .lp-plan-link:focus-visible {
   outline: 2px solid #b8421e;
   outline-offset: 2px;
 }
 @media (min-width: 768px) {
-  /* The 72px rail has no room for it, so it folds away with the labels — and
-     it must stop taking clicks and focus too, which an opacity-0 button still
-     does. `max-height` alone cannot reach zero while the padding and border
-     are there, so they go with it. */
+  /* Folded, the wrapper hides it from the eye; this hides it from the Tab key,
+     once the fade has finished. */
   .lp-shell-sidebar--collapsed .lp-plan-btn {
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-width: 0;
-    opacity: 0;
     visibility: hidden;
-    pointer-events: none;
-    /* One delay per transition above, in the same order: `visibility` flips
-       only once the fade has finished, or the button would blink out first. */
-    transition-delay: 0s, 0s, 0s, 0s, 0.18s, 0s, 0s;
+    transition:
+      background 0.15s ease,
+      visibility 0s linear 0.18s;
   }
 }
 
