@@ -24,13 +24,13 @@ const TOMB = {
 const HEADINGS = [
   "A treatment that was set aside",
   "Hunting for the right virus",
-  "Why one patient at a time is not a trial",
+  "Putting it to a proper test",
   "How a phage kills a bacterium",
   "Growing bacteria in the laboratory",
   "Where phages were first collected",
   "Rules written for medicines, not for living things",
   "Why antibiotics were first discovered",
-  "Mixtures, and what they cost",
+  "Using several phages at once",
   "Bacteria that resist everything",
 ];
 
@@ -231,7 +231,7 @@ G) Properly controlled trials are now under way, and their design has had to be 
         ),
         heading(
           "E",
-          "Mixtures, and what they cost",
+          "Using several phages at once",
           "Physicians answer by using cocktails of several phages at once, so that resistance to one does not confer escape from all, and by pairing phages with antibiotics, since the changes a bacterium makes to evade a phage often make it vulnerable to a drug again.",
           "Paragraph E is about cocktails and combinations.",
         ),
@@ -243,7 +243,7 @@ G) Properly controlled trials are now under way, and their design has had to be 
         ),
         heading(
           "G",
-          "Why one patient at a time is not a trial",
+          "Putting it to a proper test",
           "Properly controlled trials are now under way, and their design has had to be unusual: some randomise patients to a phage preparation or a placebo alongside standard treatment, others compare a fixed cocktail across many patients with the same organism, accepting that a fixed product will suit fewer people in order to produce an interpretable result.",
           "Paragraph G: controlled trials replace the case-by-case approach.",
         ),
