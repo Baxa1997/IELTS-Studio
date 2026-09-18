@@ -76,46 +76,236 @@ export function AiGenerateSection({
     >
       {/* Ambient orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: -80, left: -60, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(124,58,237,0.48) 0%,transparent 58%)", animation: "aib-orb-a 10s ease infinite" }} />
-        <div style={{ position: "absolute", bottom: -90, left: "38%", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle,rgba(167,139,250,0.28) 0%,transparent 58%)", animation: "aib-orb-b 13s ease infinite 2.5s" }} />
-        <div style={{ position: "absolute", top: -55, right: 80, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle,rgba(99,102,241,0.32) 0%,transparent 58%)", animation: "aib-orb-c 7.5s ease infinite 1.2s" }} />
+        <div
+          style={{
+            position: "absolute",
+            top: -80,
+            left: -60,
+            width: 300,
+            height: 300,
+            borderRadius: "50%",
+            background: "radial-gradient(circle,rgba(124,58,237,0.48) 0%,transparent 58%)",
+            animation: "aib-orb-a 10s ease infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: -90,
+            left: "38%",
+            width: 280,
+            height: 280,
+            borderRadius: "50%",
+            background: "radial-gradient(circle,rgba(167,139,250,0.28) 0%,transparent 58%)",
+            animation: "aib-orb-b 13s ease infinite 2.5s",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: -55,
+            right: 80,
+            width: 220,
+            height: 220,
+            borderRadius: "50%",
+            background: "radial-gradient(circle,rgba(99,102,241,0.32) 0%,transparent 58%)",
+            animation: "aib-orb-c 7.5s ease infinite 1.2s",
+          }}
+        />
       </div>
 
       {/* Floating sparkles */}
-      <Spark size={11} fill="rgba(255,255,255,0.55)" style={{ top: "22%", left: "26%", animation: "aib-spark-a 3.6s ease infinite" }} />
-      <Spark size={7} fill="rgba(255,255,255,0.4)" style={{ top: "58%", left: "50%", animation: "aib-spark-b 4.3s ease infinite 1.2s" }} />
-      <Spark size={9} fill="rgba(255,255,255,0.45)" style={{ top: "28%", right: "30%", animation: "aib-spark-c 3.9s ease infinite 0.6s" }} />
-      <Spark size={6} fill="rgba(255,255,255,0.38)" style={{ bottom: "22%", left: "17%", animation: "aib-spark-a 5.1s ease infinite 2.1s" }} />
-      <Spark size={8} fill="rgba(255,255,255,0.32)" style={{ bottom: "32%", right: "22%", animation: "aib-spark-b 4.7s ease infinite 3.3s" }} />
+      <Spark
+        size={11}
+        fill="rgba(255,255,255,0.55)"
+        style={{ top: "22%", left: "26%", animation: "aib-spark-a 3.6s ease infinite" }}
+      />
+      <Spark
+        size={7}
+        fill="rgba(255,255,255,0.4)"
+        style={{ top: "58%", left: "50%", animation: "aib-spark-b 4.3s ease infinite 1.2s" }}
+      />
+      <Spark
+        size={9}
+        fill="rgba(255,255,255,0.45)"
+        style={{ top: "28%", right: "30%", animation: "aib-spark-c 3.9s ease infinite 0.6s" }}
+      />
+      <Spark
+        size={6}
+        fill="rgba(255,255,255,0.38)"
+        style={{ bottom: "22%", left: "17%", animation: "aib-spark-a 5.1s ease infinite 2.1s" }}
+      />
+      <Spark
+        size={8}
+        fill="rgba(255,255,255,0.32)"
+        style={{ bottom: "32%", right: "22%", animation: "aib-spark-b 4.7s ease infinite 3.3s" }}
+      />
 
       {/* Left: haloed icon + text */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1, minWidth: 220, position: "relative", zIndex: 1 }}>
-        <div style={{ position: "relative", flexShrink: 0, width: 54, height: 54, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: -8, borderRadius: 20, background: "rgba(139,92,246,0.35)", animation: "aib-glow 2.6s ease infinite" }} />
-          <div style={{ position: "absolute", inset: -3, borderRadius: 16, border: "1.5px solid rgba(255,255,255,0.22)", animation: "aib-ring-spin 5.5s linear infinite" }}>
-            <div style={{ position: "absolute", top: -4, left: "50%", transform: "translateX(-50%)", width: 7, height: 7, borderRadius: "50%", background: "white", boxShadow: "0 0 10px 3px rgba(255,255,255,0.85)" }} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          flex: 1,
+          minWidth: 220,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            flexShrink: 0,
+            width: 54,
+            height: 54,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: -8,
+              borderRadius: 20,
+              background: "rgba(139,92,246,0.35)",
+              animation: "aib-glow 2.6s ease infinite",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: -3,
+              borderRadius: 16,
+              border: "1.5px solid rgba(255,255,255,0.22)",
+              animation: "aib-ring-spin 5.5s linear infinite",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: -4,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "white",
+                boxShadow: "0 0 10px 3px rgba(255,255,255,0.85)",
+              }}
+            />
           </div>
-          <div style={{ position: "absolute", inset: 2, borderRadius: 13, border: "1px dashed rgba(255,255,255,0.14)", animation: "aib-ring-spin 9s linear infinite reverse" }} />
-          <div style={{ position: "relative", width: 48, height: 48, borderRadius: 15, background: "rgba(255,255,255,0.13)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.28)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 28px rgba(0,0,0,0.22),inset 0 1px 0 rgba(255,255,255,0.22)" }}>
+          <div
+            style={{
+              position: "absolute",
+              inset: 2,
+              borderRadius: 13,
+              border: "1px dashed rgba(255,255,255,0.14)",
+              animation: "aib-ring-spin 9s linear infinite reverse",
+            }}
+          />
+          <div
+            style={{
+              position: "relative",
+              width: 48,
+              height: 48,
+              borderRadius: 15,
+              background: "rgba(255,255,255,0.13)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              border: "1px solid rgba(255,255,255,0.28)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 8px 28px rgba(0,0,0,0.22),inset 0 1px 0 rgba(255,255,255,0.22)",
+            }}
+          >
             {icon ?? (
               <svg width="22" height="22" viewBox="0 0 30 30" fill="none" aria-hidden>
-                <path d="M15 1L17.8 12.2L29 15L17.8 17.8L15 29L12.2 17.8L1 15L12.2 12.2L15 1Z" fill="white" />
+                <path
+                  d="M15 1L17.8 12.2L29 15L17.8 17.8L15 29L12.2 17.8L1 15L12.2 12.2L15 1Z"
+                  fill="white"
+                />
               </svg>
             )}
           </div>
         </div>
 
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: SANS, fontSize: 17, fontWeight: 800, color: "white", letterSpacing: "-0.3px", lineHeight: 1.2 }}>{title}</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              marginBottom: 4,
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: SANS,
+                fontSize: 17,
+                fontWeight: 800,
+                color: "white",
+                letterSpacing: "-0.3px",
+                lineHeight: 1.2,
+              }}
+            >
+              {title}
+            </span>
             {badge ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(255,255,255,0.12)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.22)", borderRadius: 999, padding: "3px 9px 3px 7px" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 6px rgba(74,222,128,0.85)", animation: "aib-live-dot 2s ease infinite", flexShrink: 0 }} />
-                <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 600, color: "white", whiteSpace: "nowrap" }}>{badge}</span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  background: "rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  borderRadius: 999,
+                  padding: "3px 9px 3px 7px",
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#4ade80",
+                    boxShadow: "0 0 6px rgba(74,222,128,0.85)",
+                    animation: "aib-live-dot 2s ease infinite",
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: "white",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {badge}
+                </span>
               </span>
             ) : null}
           </div>
-          <p style={{ fontFamily: SANS, color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 400, margin: 0, lineHeight: 1.5, maxWidth: 440 }}>{description}</p>
+          <p
+            style={{
+              fontFamily: SANS,
+              color: "rgba(255,255,255,0.7)",
+              fontSize: 13,
+              fontWeight: 400,
+              margin: 0,
+              lineHeight: 1.5,
+              maxWidth: 500,
+            }}
+          >
+            {description}
+          </p>
         </div>
       </div>
 
@@ -189,9 +379,26 @@ export function AiGenerateButton({
           </svg>
           <span>{label}</span>
           <svg width="13" height="13" viewBox="0 0 15 15" fill="none" aria-hidden>
-            <path d="M2 7.5H13M13 7.5L8.5 3M13 7.5L8.5 12" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M2 7.5H13M13 7.5L8.5 3M13 7.5L8.5 12"
+              stroke={color}
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
-          <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "45%", background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.65),transparent)", animation: "aib-shimmer 3.8s ease infinite 1s", pointerEvents: "none" }} />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              bottom: 0,
+              width: "45%",
+              background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.65),transparent)",
+              animation: "aib-shimmer 3.8s ease infinite 1s",
+              pointerEvents: "none",
+            }}
+          />
         </>
       )}
     </button>

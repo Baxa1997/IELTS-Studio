@@ -245,7 +245,7 @@ export function ReadingHub({
       {tab === "test" ? (
         <Panel
           title="Full reading test"
-          blurb="Three original passages that rise in difficulty, pitched to your band — moved through freely under one 60-minute timer."
+          blurb="Three original passages that rise in difficulty, pitched to your band."
           action={<StartTestButton label="Generate fresh test" />}
         >
           {ownTests.length > 0 ? (
@@ -301,7 +301,7 @@ export function ReadingHub({
       ) : (
         <Panel
           title="Passage practice"
-          blurb="One original passage with marked questions (~20 min) — the same instant feedback, when you're short on time."
+          blurb="One original passage with marked questions (~20 min)"
           action={<GeneratePassageButton label="Generate fresh passage" />}
         >
           {ownPassages.length > 0 ? (

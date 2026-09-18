@@ -738,10 +738,10 @@ export function WritingLibrary({
       ) : (
         <>
           {/* AI banner — the shared aurora "AI generate" section */}
-          <div style={{ marginBottom: 38 }}>
+          <div style={{ marginBottom: 28 }}>
             <AiGenerateSection
               title="Let AI choose a fresh topic"
-              badge={`Tuned to band ${pitchBand.toFixed(1)}`}
+              badge={`Tuned to band ${pitchBand.toFixed(0)}`}
               description="A brand-new, exam-style prompt pitched at your level — closest to the real test."
               cta={
                 <AiGenerateButton
@@ -757,7 +757,7 @@ export function WritingLibrary({
           </div>
 
           {/* ready topics header */}
-          <div
+          {/* <div
             style={{
               display: "flex",
               alignItems: "baseline",
@@ -772,7 +772,7 @@ export function WritingLibrary({
             <span style={{ fontFamily: SANS, fontSize: 14, color: "#8B919D" }}>
               Showing <strong style={{ color: INK }}>{visible.length}</strong> of {cards.length}
             </span>
-          </div>
+          </div> */}
 
           {/* toolbar */}
           {cards.length > 0 ? (

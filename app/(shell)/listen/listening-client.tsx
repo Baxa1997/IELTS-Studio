@@ -671,7 +671,7 @@ function Hub({
             <AiGenerateSection
               title="Generate a full test"
               badge="AI Studio"
-              description="All four parts, forty questions, recorded as studio audio at your chosen level — the same shape as the real exam. About two and a half minutes to make, and it counts as one generation."
+              description="All four parts, forty questions"
               cta={
                 <GenerateCta
                   generating={busy === "compose"}
