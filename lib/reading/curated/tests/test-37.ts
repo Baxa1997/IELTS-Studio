@@ -52,16 +52,7 @@ const PEAT_METHODS = [
 
 // ---- Passage 3 · research debate · word bank --------------------------------
 
-const DUNBAR_BANK = [
-  "brain",
-  "layers",
-  "cards",
-  "primates",
-  "range",
-  "villages",
-  "names",
-  "army",
-];
+const DUNBAR_BANK = ["brain", "layers", "cards", "primates", "range", "villages", "names", "army"];
 
 export const TEST_37: CuratedTest = {
   key: "full-test-37",

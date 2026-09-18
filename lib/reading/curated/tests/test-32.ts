@@ -73,7 +73,7 @@ Borrowdale's graphite ran out in the nineteenth century, and the mine closed. By
         tfng(
           "Pencil cores have contained small amounts of lead since the sixteenth century.",
           "FALSE",
-          "It was given the name plumbago, meaning \"lead ore\", and the mistake has lasted to this day: the core of a pencil is still commonly called its lead, although it contains no lead whatsoever.",
+          'It was given the name plumbago, meaning "lead ore", and the mistake has lasted to this day: the core of a pencil is still commonly called its lead, although it contains no lead whatsoever.',
           "The core 'contains no lead whatsoever'.",
         ),
         tfng(
@@ -213,7 +213,7 @@ G) Governments have set themselves a target of halving food waste by 2030, and a
           LABEL_STEM,
           LABEL_CHANGES,
           "A or C",
-          "Several large chains in Britain and elsewhere have removed \"best before\" dates from fresh fruit and vegetables entirely, on the grounds that customers can see and smell whether a tomato is fit to eat.",
+          'Several large chains in Britain and elsewhere have removed "best before" dates from fresh fruit and vegetables entirely, on the grounds that customers can see and smell whether a tomato is fit to eat.',
           "A is correct: chains have removed 'best before' from fresh produce.",
         ),
         pickTwo(
@@ -381,7 +381,7 @@ Some caution is needed about how far the findings reach. Much of the research in
         ynng(
           "The writer thinks written plans naming a time and place are worth using.",
           "YES",
-          "Volunteers who write down exactly when and where they will act — a plan of the form \"after I do X, I will do Y\" — are considerably more likely to carry out an intention than those who simply resolve to do better, and the effect is largest for behaviours people already want to perform but keep forgetting.",
+          'Volunteers who write down exactly when and where they will act — a plan of the form "after I do X, I will do Y" — are considerably more likely to carry out an intention than those who simply resolve to do better, and the effect is largest for behaviours people already want to perform but keep forgetting.',
           "Such plans make people 'considerably more likely to carry out an intention'.",
         ),
         ynng(

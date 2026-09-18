@@ -309,12 +309,7 @@ The practical consequences are not abstract at all. Test scores are used to deci
         ),
         mcq(
           "On which parts of the tests were the gains largest?",
-          [
-            "arithmetic",
-            "vocabulary",
-            "abstract pattern-finding",
-            "general knowledge",
-          ],
+          ["arithmetic", "vocabulary", "abstract pattern-finding", "general knowledge"],
           "abstract pattern-finding",
           "They are largest on the subtests that involve abstract pattern-finding — completing sequences of shapes, sorting items by rule, reasoning about hypothetical situations — and much smaller, sometimes absent, on arithmetic and vocabulary, which look more like the contents of a classroom.",
           "The gains are 'largest on the subtests that involve abstract pattern-finding'.",
