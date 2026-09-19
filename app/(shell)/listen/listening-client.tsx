@@ -40,7 +40,19 @@ import {
   splitAudioByPart,
   useSegmentPlayer,
 } from "./player";
-import { BAD, GOOD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
+import {
+  CardAction,
+  CardBody,
+  CardFoot,
+  CardHead,
+  CardTags,
+  PracticeCard,
+  StatusPill,
+  Waveform,
+  clock,
+  shortDate,
+} from "@/components/practice/card";
+import { BAD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
 import type {
   Catalogue,
   ClusterView,
@@ -121,14 +133,6 @@ function typeTagsFor(part: number, variant?: string, layout?: string): string[] 
 }
 
 type HubTab = "tests" | "parts";
-
-const LEVEL_STYLE: Record<number, { bg: string; fg: string; ring: string }> = {
-  1: { bg: "#16a34a", fg: "#ffffff", ring: "rgba(22,163,74,.30)" },
-  2: { bg: "#0891b2", fg: "#ffffff", ring: "rgba(8,145,178,.30)" },
-  3: { bg: "#7D0132", fg: "#ffffff", ring: "rgba(125,1,50,.30)" },
-  4: { bg: "#d97706", fg: "#ffffff", ring: "rgba(217,119,6,.30)" },
-  5: { bg: "#dc2626", fg: "#ffffff", ring: "rgba(220,38,38,.30)" },
-};
 
 // ---- Top-level ---------------------------------------------------------------
 
@@ -833,219 +837,17 @@ function GenerateCta({
   );
 }
 
-function LevelChip({ level, mr }: { level: number; mr?: number }) {
-  const lvl = LEVEL_STYLE[level] ?? LEVEL_STYLE[3];
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "5px 11px",
-        borderRadius: 999,
-        fontSize: 12.5,
-        fontWeight: 800,
-        letterSpacing: 0.2,
-        background: lvl.bg,
-        color: lvl.fg,
-        boxShadow: `0 1px 2px ${lvl.ring}, 0 0 0 3px ${lvl.ring}`,
-        whiteSpace: "nowrap",
-        marginRight: mr,
-      }}
-    >
-      Level {level}
-    </span>
-  );
-}
-
-function BestChip({ score, max }: { score: number; max: number }) {
-  const good = score / max >= 0.7;
-  return (
-    <span
-      style={{
-        padding: "4px 10px",
-        borderRadius: 8,
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: good ? "#EAF6F0" : "#FFF7E8",
-        color: good ? GOOD : "#B45309",
-        whiteSpace: "nowrap",
-      }}
-    >
-      Best {score}/{max}
-    </span>
-  );
-}
-
-function StartAction({
-  loading,
-  locked,
-  done,
-}: {
-  loading: boolean;
-  locked: boolean;
-  done: boolean;
-}) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        color: locked ? "#8B919D" : BRAND,
-        fontSize: 14,
-        fontWeight: 600,
-      }}
-    >
-      {loading ? (
-        <>
-          <Loader2 className="animate-spin" size={14} /> Opening…
-        </>
-      ) : locked ? (
-        <>
-          <Lock size={13} /> Pro
-        </>
-      ) : done ? (
-        <>
-          Retake <RotateCcw size={13} />
-        </>
-      ) : (
-        <>
-          Start <ArrowRight size={14} />
-        </>
-      )}
-    </span>
-  );
-}
-
-function TypeTags({ part, variant, layout }: { part: number; variant?: string; layout?: string }) {
-  const tags = typeTagsFor(part, variant, layout);
-  if (tags.length === 0) return null;
-  return (
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-      {tags.map((t) => (
-        <span
-          key={t}
-          style={{
-            background: "#FDF4F7",
-            border: "1px solid #E6E8EC",
-            color: "#4A505C",
-            fontSize: 12,
-            fontWeight: 600,
-            padding: "3px 9px",
-            borderRadius: 7,
-          }}
-        >
-          {t}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** A FULL 4-part test card ("Practice test N" — 40 questions). */
-
 /** What a teacher's card needs for its Attach action. */
 type AttachSlot = { onAttach: () => void; disabled: boolean };
 
 /**
- * The card's outer element. A student's card is one big <button> — the whole
- * surface opens the practice. A teacher's carries two actions, so it cannot be:
- * a button inside a button is invalid, and the outer target would swallow
- * Attach. Same visuals either way.
+ * A FULL 4-part test card ("Practice test N" — 40 questions), on the shared kit
+ * in components/practice/card.tsx.
+ *
+ * The canvas gives Listening a head of its own: two bordered chips (the skill,
+ * then the accent the audio is actually in) where Reading and Writing carry a
+ * single mono eyebrow. Its footer leads with a waveform before the running time.
  */
-function CardBox({
-  attach,
-  onOpen,
-  disabled,
-  style,
-  children,
-}: {
-  attach?: AttachSlot;
-  onOpen: () => void;
-  disabled: boolean;
-  style: React.CSSProperties;
-  children: React.ReactNode;
-}) {
-  if (attach) return <div style={style}>{children}</div>;
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      disabled={disabled}
-      className="lp-hover"
-      style={{ ...style, textAlign: "left", cursor: disabled ? "default" : "pointer" }}
-    >
-      {children}
-    </button>
-  );
-}
-
-/** Footer: the meta line and Start for a student; Attach + Start for a teacher. */
-function CardFoot({
-  meta,
-  attach,
-  onOpen,
-  loading,
-  locked,
-  done,
-}: {
-  meta: string;
-  attach?: AttachSlot;
-  onOpen: () => void;
-  loading: boolean;
-  locked?: boolean;
-  done?: boolean;
-}) {
-  if (!attach) {
-    return (
-      <div style={rowBetween}>
-        <span style={metaText}>{meta}</span>
-        <StartAction loading={loading} locked={!!locked} done={!!done} />
-      </div>
-    );
-  }
-  const act: React.CSSProperties = {
-    flex: 1,
-    borderRadius: 10,
-    padding: "9px 12px",
-    fontFamily: SANS,
-    fontSize: 13.5,
-    fontWeight: 600,
-    cursor: "pointer",
-  };
-  return (
-    <>
-      <div style={{ ...metaText, marginBottom: 10 }}>{meta}</div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button
-          type="button"
-          onClick={attach.onAttach}
-          disabled={attach.disabled}
-          title={attach.disabled ? "Create a class first" : undefined}
-          style={{
-            ...act,
-            background: BRAND,
-            border: 0,
-            color: "#fff",
-            cursor: attach.disabled ? "not-allowed" : "pointer",
-            opacity: attach.disabled ? 0.45 : 1,
-          }}
-        >
-          Attach
-        </button>
-        <button
-          type="button"
-          onClick={onOpen}
-          disabled={loading}
-          style={{ ...act, background: "#1C7A4F", border: 0, color: "#fff" }}
-        >
-          {loading ? "Opening…" : done ? "Retake" : "Start"}
-        </button>
-      </div>
-    </>
-  );
-}
-
 function TestCard({
   it,
   loading,
@@ -1059,42 +861,18 @@ function TestCard({
   onOpen: () => void;
   attach?: AttachSlot;
 }) {
-  const done = it.best_score != null;
   return (
-    <CardBox
-      attach={attach}
-      onOpen={onOpen}
+    <ListenCard
+      it={it}
+      title={`Practice test ${it.seq}`}
+      subtitle="4 parts · 40 questions · band score"
+      maxScore={40}
+      questions={40}
+      loading={loading}
       disabled={disabled}
-      style={{
-        ...cardStyle,
-        width: "100%",
-        fontFamily: SANS,
-        opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1,
-      }}
-    >
-      <div style={rowBetween}>
-        <span style={iconTile}>
-          <Headphones size={19} />
-        </span>
-        <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {done ? <BestChip score={it.best_score ?? 0} max={40} /> : null}
-          <LevelChip level={it.difficulty} />
-        </span>
-      </div>
-      <div>
-        <h4 style={cardTitle}>Practice test {it.seq}</h4>
-        <span style={{ ...cardSub, display: "block" }}>4 parts · 40 questions · band score</span>
-      </div>
-      <Divider />
-      <CardFoot
-        meta={"≈ 35 min · replay anytime"}
-        attach={attach}
-        onOpen={onOpen}
-        loading={loading}
-        locked={it.locked}
-        done={done}
-      />
-    </CardBox>
+      onOpen={onOpen}
+      attach={attach}
+    />
   );
 }
 
@@ -1112,53 +890,101 @@ function QuickCard({
   onOpen: () => void;
   attach?: AttachSlot;
 }) {
-  const done = it.best_score != null;
   return (
-    <CardBox
-      attach={attach}
-      onOpen={onOpen}
+    <ListenCard
+      it={it}
+      title={`Quick practice ${it.seq}`}
+      subtitle={it.topic || "Listening practice"}
+      maxScore={10}
+      questions={10}
+      tags={typeTagsFor(it.part, it.variant, it.layout)}
+      loading={loading}
       disabled={disabled}
-      style={{
-        ...cardStyle,
-        width: "100%",
-        fontFamily: SANS,
-        opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1,
-      }}
+      onOpen={onOpen}
+      attach={attach}
+    />
+  );
+}
+
+/**
+ * The shared body of both library cards. A test and a quick practice differ only
+ * in their title, how many questions they carry, and whether they show type tags.
+ */
+function ListenCard({
+  it,
+  title,
+  subtitle,
+  maxScore,
+  questions,
+  tags,
+  loading,
+  disabled,
+  onOpen,
+  attach,
+}: {
+  it: LibraryItem & { seq: number };
+  title: string;
+  subtitle: string;
+  maxScore: number;
+  questions: number;
+  tags?: string[];
+  loading: boolean;
+  disabled: boolean;
+  onOpen: () => void;
+  attach?: AttachSlot;
+}) {
+  const done = it.best_score != null;
+  const length = clock(it.duration_seconds);
+  return (
+    <PracticeCard
+      tone={it.locked || loading || disabled ? null : done ? "done" : "brand"}
+      style={{ opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1 }}
     >
-      <div style={rowBetween}>
-        <span style={iconTile}>
-          <Headphones size={19} />
-        </span>
-        <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {done ? <BestChip score={it.best_score ?? 0} max={10} /> : null}
-          <LevelChip level={it.difficulty} />
-        </span>
-      </div>
-      <div>
-        <h4 style={cardTitle}>Quick practice {it.seq}</h4>
-        <span
-          style={{
-            ...cardSub,
-            display: "block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {it.topic || "Listening practice"}
-        </span>
-      </div>
-      <TypeTags part={it.part} variant={it.variant} layout={it.layout} />
-      <Divider />
-      <CardFoot
-        meta={"10 questions · replay anytime"}
-        attach={attach}
-        onOpen={onOpen}
-        loading={loading}
-        locked={it.locked}
-        done={done}
+      <CardHead
+        seq={it.seq}
+        chips={[
+          { icon: <Headphones size={12} strokeWidth={1.9} />, label: "LISTENING" },
+          // Absent rather than guessed if the engine did not say.
+          ...(it.accent ? [{ label: it.accent.toUpperCase() }] : []),
+        ]}
+        pill={
+          done ? (
+            <StatusPill tone="band" icon={<Check size={9} strokeWidth={3} />}>
+              {it.best_score}/{maxScore}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="target">Level {it.difficulty}</StatusPill>
+          )
+        }
       />
-    </CardBox>
+      <CardBody title={title} subtitle={subtitle} />
+      {tags?.length ? <CardTags tags={tags} /> : null}
+      <CardFoot
+        lead={done ? undefined : <Waveform />}
+        meta={
+          done
+            ? `${it.best_score} of ${maxScore} correct${length ? ` · ${length}` : ""}`
+            : [length, `${questions} questions`].filter(Boolean).join(" · ")
+        }
+      >
+        {attach ? (
+          <CardAction
+            kind="attach"
+            onClick={attach.onAttach}
+            disabled={attach.disabled}
+            title={attach.disabled ? "Create a class first" : undefined}
+          >
+            Attach
+          </CardAction>
+        ) : null}
+        <OpenAction
+          onOpen={onOpen}
+          loading={loading}
+          locked={it.locked}
+          label={done ? "Retake" : "Start"}
+        />
+      </CardFoot>
+    </PracticeCard>
   );
 }
 
@@ -1176,51 +1002,81 @@ function MineCard({
   onOpen: () => void;
   attach?: AttachSlot;
 }) {
-  const when = it.created_at
-    ? new Date(it.created_at).toLocaleDateString("en-GB", { month: "short", day: "numeric" })
-    : "";
+  const tags = typeTagsFor(it.part, it.variant, it.layout);
   return (
-    <CardBox
-      attach={attach}
-      onOpen={onOpen}
-      disabled={disabled}
-      style={{
-        ...cardStyle,
-        width: "100%",
-        fontFamily: SANS,
-        opacity: disabled && !loading ? 0.7 : 1,
-      }}
+    <PracticeCard
+      tone={loading || disabled ? null : "brand"}
+      style={{ opacity: disabled && !loading ? 0.7 : 1 }}
     >
-      <AiCorner />
-      <div style={rowBetween}>
-        <span style={iconTile}>
-          <Sparkles size={19} />
-        </span>
-        <LevelChip level={it.difficulty} mr={34} />
-      </div>
-      <div>
-        <h4 style={cardTitle}>My practice {it.seq}</h4>
-        <span
-          style={{
-            ...cardSub,
-            display: "block",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {it.topic || "Listening practice"}
-        </span>
-      </div>
-      <TypeTags part={it.part} variant={it.variant} layout={it.layout} />
-      <Divider />
-      <CardFoot
-        meta={when ? `Generated ${when}` : "Saved to your account"}
-        attach={attach}
-        onOpen={onOpen}
-        loading={loading}
+      <CardHead
+        seq={it.seq}
+        chips={[{ icon: <Headphones size={12} strokeWidth={1.9} />, label: "LISTENING" }]}
+        pill={
+          <StatusPill tone="new" icon={<Sparkles size={9} strokeWidth={2.2} />}>
+            New
+          </StatusPill>
+        }
       />
-    </CardBox>
+      <CardBody title={`My practice ${it.seq}`} subtitle={it.topic || "Listening practice"} />
+      {tags.length ? <CardTags tags={tags} /> : null}
+      <CardFoot
+        lead={<Waveform />}
+        meta={
+          it.created_at
+            ? `Generated ${shortDate(it.created_at)} · Level ${it.difficulty}`
+            : `Level ${it.difficulty}`
+        }
+      >
+        {attach ? (
+          <CardAction
+            kind="attach"
+            onClick={attach.onAttach}
+            disabled={attach.disabled}
+            title={attach.disabled ? "Create a class first" : undefined}
+          >
+            Attach
+          </CardAction>
+        ) : null}
+        <OpenAction onOpen={onOpen} loading={loading} label="Start" />
+      </CardFoot>
+    </PracticeCard>
+  );
+}
+
+/** Open a practice — always a button here, since every listening practice is
+ *  opened through the engine rather than by following a link. */
+function OpenAction({
+  onOpen,
+  loading,
+  locked,
+  label,
+}: {
+  onOpen: () => void;
+  loading: boolean;
+  locked?: boolean;
+  label: string;
+}) {
+  if (locked) {
+    return (
+      <CardAction onClick={onOpen} icon={<Lock size={13} />}>
+        Unlock
+      </CardAction>
+    );
+  }
+  return (
+    <CardAction
+      onClick={onOpen}
+      disabled={loading}
+      icon={
+        loading ? (
+          <Loader2 className="animate-spin" size={14} />
+        ) : (
+          <ArrowRight size={14} strokeWidth={2.4} />
+        )
+      }
+    >
+      {loading ? "Opening…" : label}
+    </CardAction>
   );
 }
 
@@ -1312,77 +1168,6 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
     <p style={{ marginTop: 18, fontSize: 13.5, color: "#8B919D", fontFamily: SANS }}>{children}</p>
   );
 }
-
-function Divider() {
-  return <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />;
-}
-
-/** Top-right corner marker for the learner's own AI-generated cards. */
-function AiCorner() {
-  return (
-    <span
-      title="AI-generated"
-      aria-label="AI-generated"
-      style={{
-        position: "absolute",
-        top: 14,
-        right: 14,
-        zIndex: 2,
-        width: 26,
-        height: 26,
-        borderRadius: 8,
-        background: "linear-gradient(135deg,#9B1044,#7D0132)",
-        color: "#fff",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)",
-      }}
-    >
-      <Sparkles size={14} strokeWidth={2.4} />
-    </span>
-  );
-}
-
-const cardStyle: React.CSSProperties = {
-  position: "relative",
-  background: "#fff",
-  border: "1px solid rgba(28,27,46,.09)",
-  borderRadius: 14,
-  padding: 16,
-  display: "flex",
-  flexDirection: "column",
-  gap: 11,
-  color: INK,
-  boxShadow: "0 1px 3px rgba(28,27,46,.04)",
-};
-const rowBetween: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-};
-const cardTitle: React.CSSProperties = {
-  fontFamily: SANS,
-  fontWeight: 700,
-  fontSize: 15.5,
-  lineHeight: 1.3,
-  margin: "0 0 3px",
-  color: INK,
-};
-const cardSub: React.CSSProperties = { fontSize: 13.5, color: "#8B919D", fontWeight: 500 };
-const metaText: React.CSSProperties = { fontSize: 13, color: "#8B919D" };
-const iconTile: React.CSSProperties = {
-  width: 40,
-  height: 40,
-  borderRadius: 11,
-  background: "#FDF4F7",
-  color: BRAND,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flex: "none",
-};
 
 // ---- Runner --------------------------------------------------------------------
 

@@ -142,6 +142,14 @@ export type LibraryItem = {
   layout?: string;
   /** content schema version — v1 items omit it; v2 (group-based) items send >= 2. */
   version?: number;
+  /** Which accent the audio is actually spoken in. Everything seeded so far is
+   *  British — see tts.ACCENT_LABEL in the engine, and the note there about why
+   *  a second accent is a re-synthesis job rather than a relabelling. */
+  accent?: string;
+  /** Total running time, pauses included, summed by the engine from the audio
+   *  manifest. Null when it cannot be known — the card then omits it rather
+   *  than showing "0:00". */
+  duration_seconds?: number | null;
   unlocked: boolean;
   locked: boolean;
   best_score: number | null;
