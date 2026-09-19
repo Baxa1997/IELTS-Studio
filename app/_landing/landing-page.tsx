@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { translator } from "@/lib/i18n";
-import { DEFAULT_LOCALE, HTML_LANG, LOCALES, type Locale } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, HTML_LANG, LOCALES, SOURCE_LOCALE, type Locale } from "@/lib/i18n/locales";
 import type { MessageKey, Translate } from "@/lib/i18n";
 import Link from "next/link";
 
@@ -128,15 +128,23 @@ const STATS: {
 /**
  * The landing page's metadata, per locale.
  *
- * ⚠️ ENGLISH KEEPS THE BARE URL. `/` is the page Google has indexed, the one
- * every backlink points at and the one `sitemap.ts` lists; moving it to `/en`
- * would throw that away for a tidier tree. The other two sit under a prefix,
- * which is the pattern Google documents for "default locale unprefixed".
+ * ⚠️ THE DEFAULT LOCALE KEEPS THE BARE URL — and the default is now Uzbek, so
+ * `/` answers in Uzbek and English moved to `/en`. `/` is the page Google has
+ * indexed, the one every backlink points at and the one `sitemap.ts` lists;
+ * putting the default under a prefix would throw that away for a tidier tree.
+ * The other two sit under a prefix, which is the pattern Google documents for
+ * "default locale unprefixed".
  *
  * `alternates.languages` is what tells a crawler the three are the same page in
  * different languages — without it each one competes with the others as
- * near-duplicate content. `x-default` points at English, which is what a
- * visitor with no matching language should get.
+ * near-duplicate content.
+ *
+ * ⚠️ `x-default` POINTS AT ENGLISH, NOT AT `/`. It is the page for a visitor
+ * whose language matches none of the three, and that visitor is not Uzbek — a
+ * Turkish or German searcher should land on English, not on the local-market
+ * page. It is the one place where the default locale and the fallback locale
+ * deliberately part company; `SOURCE_LOCALE` is the same distinction in the
+ * dictionary layer.
  */
 export function landingMetadata(locale: Locale): Metadata {
   const path = locale === DEFAULT_LOCALE ? "/" : `/${locale}`;
@@ -154,7 +162,7 @@ export function landingMetadata(locale: Locale): Metadata {
         ...Object.fromEntries(
           LOCALES.map((l) => [HTML_LANG[l], l === DEFAULT_LOCALE ? "/" : `/${l}`]),
         ),
-        "x-default": "/",
+        "x-default": SOURCE_LOCALE === DEFAULT_LOCALE ? "/" : `/${SOURCE_LOCALE}`,
       },
     },
     openGraph: {
@@ -182,7 +190,7 @@ export function landingMetadata(locale: Locale): Metadata {
 }
 
 /**
- * The landing page itself, rendered by three routes: `/`, `/uz` and `/ru`.
+ * The landing page itself, rendered by three routes: `/`, `/en` and `/ru`.
  *
  * ⚠️ IT TAKES ITS LOCALE FROM THE URL, NOT FROM THE COOKIE, and that is the
  * whole reason this file moved out of `app/page.tsx`. A cookie is invisible to
@@ -193,7 +201,7 @@ export function landingMetadata(locale: Locale): Metadata {
  *
  * The provider is re-declared here with `initial` so the client chrome inside
  * (the language picker, the theme toggle) starts in the page's language rather
- * than the visitor's cookie — on `/uz` the page IS Uzbek, whatever the cookie
+ * than the visitor's cookie — on `/en` the page IS English, whatever the cookie
  * says. The root layout's provider stays for every other public route.
  */
 export function LandingPage({ locale }: { locale: Locale }) {
@@ -263,16 +271,19 @@ export function LandingPage({ locale }: { locale: Locale }) {
   };
 
   return (
-    /* The page's OWN locale, not the visitor's cookie. On /uz the page is Uzbek
-       whatever `ep-locale` says, so the client chrome inside — the picker, the
-       theme toggle — has to start there too or the first paint disagrees with
-       the URL. Nested inside the root layout's provider, which keeps serving
-       every other public route. */
-    <LocaleProvider initial={locale}>
-      {/* ⚠️ `<html lang>` IS SET BY THE ROOT LAYOUT AND HARD-CODED TO "en", so
-          the statically generated /uz and /ru shipped claiming to be English —
-          wrong for a screen reader, which picks its voice from this attribute,
-          and for the browser's own offer to translate the page. The provider
+    /* ⚠️ `pin`, NOT `initial`: the page's OWN locale, and the cookie does not
+       get a vote here. On /en the page is English whatever `ep-locale` says, so
+       the client chrome inside — the picker, the theme toggle — has to stay
+       there too, not just start there. With `initial` the chrome read the
+       cookie straight after hydration and a visitor who had once chosen English
+       got an Uzbek page wearing an English header. Nested inside the root
+       layout's provider, which keeps serving every other public route. */
+    <LocaleProvider pin={locale}>
+      {/* ⚠️ `<html lang>` IS SET BY THE ROOT LAYOUT TO THE *DEFAULT* LOCALE —
+          it is a static layout and cannot read the cookie — so the statically
+          generated /en and /ru would ship claiming to be Uzbek: wrong for a
+          screen reader, which picks its voice from this attribute, and for the
+          browser's own offer to translate the page. The provider
           corrects it after hydration; this corrects it before first paint, the
           same trick and for the same reason as the theme's no-flash script.
 
@@ -792,7 +803,7 @@ function Pricing({ t }: { t: Translate }) {
 /* ── faq ───────────────────────────────────────────────────────────────────── */
 
 /* Keys, not copy — and the JSON-LD below reads the same list, so the FAQ a
-   crawler sees on /uz is Uzbek too rather than English structured data under a
+   crawler sees on /en is English too rather than Uzbek structured data under a
    translated page. */
 const FAQ: { qKey: MessageKey; aKey: MessageKey }[] = [
   { qKey: "lp.faq1q", aKey: "lp.faq1a" },

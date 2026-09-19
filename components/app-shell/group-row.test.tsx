@@ -15,8 +15,10 @@
  * state you have to read the chevron to know.
  */
 
-import { cleanup, fireEvent, render, within } from "@testing-library/react";
+import { cleanup, fireEvent, render as rtlRender, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 
 const pathname = { current: "/console" };
 /* The mock <Link> records where a click would have taken you, so a test can say
@@ -24,7 +26,12 @@ const pathname = { current: "/console" };
    It also preventDefaults, so jsdom does not log "Not implemented: navigation"
    for every click on a real nav item. */
 const lastClick = vi.hoisted(() => ({ navigatedTo: null as string | null }));
-vi.mock("next/navigation", () => ({ usePathname: () => pathname.current }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => pathname.current,
+  // `LocaleProvider` takes a router to move between /en and /ru; nothing in
+  // these tests changes language, so it only has to exist.
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
 vi.mock("next/link", () => ({
   // `prefetch` and `unstable_dynamicOnHover` are Next's, not the DOM's — dropped
   // here so React does not warn about unknown attributes on every row.
@@ -50,6 +57,24 @@ vi.mock("next/link", () => ({
 }));
 
 const { SidebarNav } = await import("./sidebar-nav");
+
+/**
+ * Render the rail IN ENGLISH, because every query below looks for an English
+ * label.
+ *
+ * ⚠️ `pin`, NOT the cookie. The rail's labels come from `useT`, and with no
+ * provider above it that resolves to `DEFAULT_LOCALE` — which is Uzbek, so this
+ * whole file went red the day the default moved and every `groupRow("Teaching")`
+ * stopped finding a row. Pinning states the assumption these tests were already
+ * making silently, and keeps them about the disclosure rather than about which
+ * language the product ships in.
+ */
+const render = (ui: React.ReactElement) =>
+  rtlRender(ui, {
+    wrapper: ({ children }: { children: React.ReactNode }) => (
+      <LocaleProvider pin="en">{children}</LocaleProvider>
+    ),
+  });
 
 /* ⚠️ SCOPED TO THE GROUP ROWS, because the labels are not unique and a plain
    `getByRole("link", { name: "Practices" })` is ambiguous: the teacher's rail has
@@ -240,7 +265,8 @@ describe("the groups behave as an accordion", () => {
  * page you were leaving, and a press looked ignored.
  */
 describe("the row you press", () => {
-  const link = (href: string) => document.querySelector<HTMLElement>(`a[href="${href}"]`) as HTMLElement;
+  const link = (href: string) =>
+    document.querySelector<HTMLElement>(`a[href="${href}"]`) as HTMLElement;
   const lit = () =>
     Array.from(document.querySelectorAll<HTMLElement>(".lp-sb-link--active")).map((a) =>
       a.getAttribute("href"),

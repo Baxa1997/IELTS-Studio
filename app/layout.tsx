@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { DEFAULT_LOCALE, HTML_LANG } from "@/lib/i18n/locales";
 import { ThemeFab } from "@/components/theme/theme-fab";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
@@ -96,8 +97,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  /* <html lang> carries the DEFAULT language, not a hardcoded "en". This is the
+     root layout and it has to stay static, so it cannot read the locale cookie
+     to learn what this particular request is being rendered in.
+     `LocaleProvider` corrects the attribute on the client the moment it knows
+     better — see its effect on `HTML_LANG` — and that attribute is what a
+     screen reader switches voice on, and what the browser picks hyphenation and
+     spell-check from. */
   return (
-    <html lang="en" className={`${geistMono.variable} h-full antialiased`}>
+    <html lang={HTML_LANG[DEFAULT_LOCALE]} className={`${geistMono.variable} h-full antialiased`}>
       {/* `suppressHydrationWarning` for the BODY TAG ONLY, and only its own
           attributes — React still reports every mismatch inside it.
 

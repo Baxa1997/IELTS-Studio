@@ -15,6 +15,7 @@ import {
   DEFAULT_LOCALE,
   HTML_LANG,
   isLocale,
+  LOCALES,
   LOCALE_COOKIE,
   LOCALE_COOKIE_MAX_AGE,
   type Locale,
@@ -44,10 +45,25 @@ let cached: Locale | null = null;
  *  sitemap does not claim (or worse, one that 404s). */
 const LOCALISED_ROUTES = new Set(["/"]);
 
+/**
+ * Every locale that lives under a path prefix — i.e. all of them but the
+ * default, which owns the bare URL.
+ *
+ * ⚠️ DERIVED, NEVER SPELLED OUT. This was once the literal `/^\/(uz|ru)/`, back
+ * when English was the default and those two were the prefixed pair. Moving the
+ * default to Uzbek made that expression silently wrong rather than broken: it no
+ * longer stripped `/en`, so choosing Russian from the English landing page
+ * produced a path the picker did not recognise as localised and the switch did
+ * nothing at all. Deriving the list from `DEFAULT_LOCALE` is what keeps a future
+ * flip a one-line change.
+ */
+const PREFIXED = LOCALES.filter((l) => l !== DEFAULT_LOCALE);
+const PREFIX_RE = new RegExp(`^/(${PREFIXED.join("|")})(?=/|$)`);
+
 /** The same path in another language, or the path unchanged when that page has
  *  no localised sibling yet. */
 function localisedPath(pathname: string, next: Locale): string {
-  const stripped = pathname.replace(/^\/(uz|ru)(?=\/|$)/, "") || "/";
+  const stripped = pathname.replace(PREFIX_RE, "") || "/";
   if (!LOCALISED_ROUTES.has(stripped)) return pathname;
   if (next === DEFAULT_LOCALE) return stripped;
   return stripped === "/" ? `/${next}` : `/${next}${stripped}`;
@@ -78,21 +94,34 @@ function subscribe(listener: () => void): () => void {
  * layout that already reads cookies and the first paint is in the right
  * language with no swap — that is what `getServerSnapshot` returns during
  * hydration, so the markup matches. Omit it on a STATIC route and the server
- * snapshot is English; the cookie is picked up straight after hydration and the
+ * snapshot is the default locale; the cookie is picked up after hydration and the
  * chrome settles a tick later. That tick is the price of those pages staying
  * cacheable, and it is why the authenticated layouts pass `initial` and the
  * marketing tree does not.
+ *
+ * `pin` is for a route whose language is in its URL. There the cookie is not
+ * just unnecessary, it is WRONG: `/en` is the English page for everybody who
+ * opens it, whatever they last chose. Without this the body (rendered from the
+ * route's own locale) and the chrome (subscribed to the cookie) disagree the
+ * moment the two differ — which stopped being a corner case when the default
+ * moved to Uzbek, because everyone who had ever chosen English or Russian now
+ * has a cookie that contradicts `/`. Changing language still works: the picker
+ * writes the cookie AND navigates, and the new route pins the new locale.
  */
 export function LocaleProvider({
   initial,
+  pin,
   children,
 }: {
   initial?: Locale;
+  pin?: Locale;
   children: React.ReactNode;
 }) {
   // Must be referentially stable per `initial`, or the hook re-reads endlessly.
-  const serverSnapshot = useCallback(() => initial ?? DEFAULT_LOCALE, [initial]);
-  const locale = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  const serverSnapshot = useCallback(() => pin ?? initial ?? DEFAULT_LOCALE, [pin, initial]);
+  const fromCookie = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  // Hooks run unconditionally; the pin wins afterwards.
+  const locale = pin ?? fromCookie;
   const router = useRouter();
   const pathname = usePathname();
 
@@ -124,8 +153,8 @@ export function LocaleProvider({
          keeping client state and scroll position. It is what makes the control
          a language switch rather than a preference that takes effect later. */
       /* ⚠️ ON A LOCALISED ROUTE THE URL IS THE SOURCE OF TRUTH, SO IT HAS TO
-         MOVE. `/uz` renders Uzbek because of the path, not the cookie —
-         refreshing it in place would re-render the same Uzbek page and the
+         MOVE. `/en` renders English because of the path, not the cookie —
+         refreshing it in place would re-render the same English page and the
          picker would look broken. So: if the current path carries a locale
          prefix (or the page we are on has localised siblings), navigate to the
          chosen language's URL; everywhere else the cookie is the only signal
@@ -149,9 +178,9 @@ export function LocaleProvider({
 /**
  * The locale and its `t`.
  *
- * Falls back to English rather than throwing when no provider is above: this is
- * chrome, and a component rendering English in a tree nobody wrapped is a much
- * smaller failure than a page that will not render at all.
+ * Falls back to the default locale rather than throwing when no provider is
+ * above: this is chrome, and a component rendering Uzbek in a tree nobody
+ * wrapped is a much smaller failure than a page that will not render at all.
  */
 export function useLocale(): LocaleCtx {
   const v = useContext(Ctx);

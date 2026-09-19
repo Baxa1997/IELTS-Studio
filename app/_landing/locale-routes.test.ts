@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { LOCALES } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 
 /**
  * THE LANDING PAGE IS THREE URLS AND THEY HAVE TO AGREE.
@@ -31,7 +31,8 @@ const localised = read("../[locale]/page.tsx");
 
 describe("the localised landing routes", () => {
   it("are public", () => {
-    for (const l of LOCALES.filter((x) => x !== "en")) {
+    // Every locale but the default, which lives at "/" and is public already.
+    for (const l of LOCALES.filter((x) => x !== DEFAULT_LOCALE)) {
       expect(middleware, `/${l} is not in PUBLIC_PATHS`).toContain(`"/${l}"`);
     }
   });
@@ -48,11 +49,35 @@ describe("the localised landing routes", () => {
     expect(landing).toContain('"x-default"');
   });
 
-  it("keep English on the bare URL", () => {
+  it("keep the default language on the bare URL", () => {
     /* The one thing that must never quietly change: `/` is the indexed page and
-       every backlink points at it. A canonical of `/en` would 301 away the
-       site's most valuable URL. */
+       every backlink points at it. A canonical of `/uz` would 301 away the
+       site's most valuable URL. WHICH language `/` answers in is a product
+       decision and may move again — that it is the unprefixed one may not. */
     expect(landing).toMatch(/locale === DEFAULT_LOCALE \? "\/" : `\/\$\{locale\}`/);
+  });
+
+  it("send an unmatched language to English, not to the default", () => {
+    /* `x-default` is for the searcher whose language is none of the three. That
+       person is not an Uzbek speaker, so pointing it at `/` — which is now the
+       Uzbek page — would hand every unmatched international visitor the
+       local-market copy. It follows SOURCE_LOCALE instead. */
+    expect(landing).toMatch(/"x-default":\s*SOURCE_LOCALE/);
+  });
+
+  it("let the picker derive the prefixes rather than spelling them out", () => {
+    /* THE BUG THIS EXISTS FOR, because it was a live one: the switcher stripped
+       a literal /^\/(uz|ru)/ from the path, which was correct only while
+       English was the default. Moving the default to Uzbek did not break that
+       expression, it made it silently wrong — `/en` stopped being recognised as
+       a localised path and choosing another language from the English page did
+       nothing at all. A derived list cannot go stale. */
+    expect(provider).toContain("LOCALES.filter((l) => l !== DEFAULT_LOCALE)");
+    // The literal form, matched as a plain string so the docstring that quotes
+    // it as history does not trip this.
+    expect(provider, "a locale is hardcoded into the prefix regex").not.toContain(
+      ".replace(/^\\/(",
+    );
   });
 
   it("agree with the picker about which routes are localised", () => {

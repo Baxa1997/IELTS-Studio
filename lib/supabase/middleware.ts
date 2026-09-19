@@ -17,12 +17,16 @@ const REFERRAL_COOKIE_DAYS = 90;
 // `/start` is the pre-auth onboarding wizard (account creation is its last step).
 const PUBLIC_PATHS = [
   "/",
-  // The landing page in the other two languages. A public route MUST be listed
-  // here or the middleware 307s every logged-out visitor AND every crawler to
-  // /sign-in — which would make the localised pages worse than not having them,
-  // since Google would index a redirect where the hreflang promised a page.
-  "/uz",
+  // The landing page in the two NON-DEFAULT languages. A public route MUST be
+  // listed here or the middleware 307s every logged-out visitor AND every
+  // crawler to /sign-in — which would make the localised pages worse than not
+  // having them, since Google would index a redirect where the hreflang
+  // promised a page. Uzbek is the default and lives at "/" above, so there is
+  // no "/uz": that path is a 404 by design, and it is listed anyway so it
+  // ANSWERS 404 instead of redirecting a crawler to the sign-in page.
+  "/en",
   "/ru",
+  "/uz",
   "/start",
   "/sign-in",
   "/forgot-password",

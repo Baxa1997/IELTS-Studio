@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, type Locale } from "./locales";
+import { SOURCE_LOCALE, type Locale } from "./locales";
 import { en, type MessageKey, type Messages } from "./messages/en";
 import { ru } from "./messages/ru";
 import { uz } from "./messages/uz";
@@ -14,6 +14,13 @@ const PLACEHOLDER = /\{(\w+)\}/g;
 /**
  * Look up `key` in `locale`, falling back to English and finally to the key.
  *
+ * ⚠️ THE FALLBACK IS `SOURCE_LOCALE`, NOT `DEFAULT_LOCALE`. The default locale
+ * is Uzbek — what a visitor with no cookie is greeted in — but English is the
+ * dictionary the other two are typed against, so it is the only one guaranteed
+ * to carry every key. Falling back to the default would mean a key added to
+ * English and not yet to Uzbek resolves to the key name rather than to the
+ * English text that exists.
+ *
  * ⚠️ THE LAST FALLBACK RETURNS THE KEY ITSELF, NOT AN EMPTY STRING. A missing
  * translation then renders as `nav.dashboard` — visibly wrong, in the exact spot
  * it is wrong, which someone reports in a day. Returning "" instead produces a
@@ -26,8 +33,8 @@ export function translate(
   key: MessageKey,
   vars?: Record<string, string | number>,
 ): string {
-  const dict = DICTIONARIES[locale] ?? DICTIONARIES[DEFAULT_LOCALE];
-  const raw = dict[key] ?? DICTIONARIES[DEFAULT_LOCALE][key] ?? key;
+  const dict = DICTIONARIES[locale] ?? DICTIONARIES[SOURCE_LOCALE];
+  const raw = dict[key] ?? DICTIONARIES[SOURCE_LOCALE][key] ?? key;
   if (!vars) return raw;
   return raw.replace(PLACEHOLDER, (whole, name: string) =>
     name in vars ? String(vars[name]) : whole,

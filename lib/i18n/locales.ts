@@ -27,10 +27,32 @@ export const LOCALES = ["uz", "en", "ru"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
-/** The locale served when nobody has chosen one. English: the product is an
- *  English exam, the marketing copy is written in English, and it is the only
- *  one of the three in which every string is known to exist. */
-export const DEFAULT_LOCALE: Locale = "en";
+/**
+ * The locale served when nobody has chosen one, and the one that owns the
+ * UNPREFIXED URL. Uzbek: the learners are in Uzbekistan, the centres teach in
+ * Uzbek, and the exam being in English is a reason to translate the chrome
+ * AROUND the exam, not a reason to greet a first-time visitor in a language
+ * they may be here to learn.
+ *
+ * ⚠️ THIS CONSTANT IS TWO DECISIONS AT ONCE, so know what you move when you
+ * move it. It is (a) the fallback when the cookie is absent or junk, and (b)
+ * the locale with no path prefix — `/` is Uzbek, `/en` and `/ru` are real
+ * routes. Flipping it flips both: `app/[locale]/page.tsx` derives its static
+ * params from it, `sitemap.ts` and `landingMetadata` derive their URL shape
+ * from it, and `locale-provider.tsx` derives the prefixes it strips from it.
+ * Nothing hardcodes a locale string against it — keep it that way.
+ *
+ * ⚠️ IT IS NOT THE DICTIONARY FALLBACK. A key missing at runtime falls back to
+ * `SOURCE_LOCALE` below, which is English because English is the dictionary
+ * every other one is typed against.
+ */
+export const DEFAULT_LOCALE: Locale = "uz";
+
+/** The dictionary every other dictionary is typed against, and therefore the
+ *  one a missing key falls back to. Deliberately independent of
+ *  `DEFAULT_LOCALE`: which language a visitor is greeted in is a market
+ *  decision, which dictionary is the source of truth is a code fact. */
+export const SOURCE_LOCALE: Locale = "en";
 
 /** Cookie name. Read on the server, written by the picker on the client. */
 export const LOCALE_COOKIE = "ep-locale";

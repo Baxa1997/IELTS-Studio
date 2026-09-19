@@ -5,7 +5,7 @@ import { LandingPage, landingMetadata } from "@/app/_landing/landing-page";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/locales";
 
 /**
- * The landing page in a language that is not English: `/uz` and `/ru`.
+ * The landing page in a language that is not the default: `/en` and `/ru`.
  *
  * ⚠️ `dynamicParams = false` IS LOAD-BEARING. A single dynamic segment at the
  * root matches ANY unknown one-segment path, so without this `/pricing-typo`
@@ -14,6 +14,11 @@ import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/local
  * own — a static segment beats a dynamic one — but nothing protects the paths
  * that do not exist at all. Pinning the params to the locale list turns every
  * other segment back into a 404, and makes both pages static at build time.
+ *
+ * It also means `/uz` is now a 404 rather than a page: Uzbek became the default
+ * locale and the default owns `/`. The prefix belongs to whichever locales are
+ * NOT default, which is why the params below are derived from `DEFAULT_LOCALE`
+ * instead of being typed out.
  */
 export const dynamicParams = false;
 
@@ -32,7 +37,7 @@ export async function generateMetadata({
 
 export default async function LocalisedHome({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  // Belt and braces: generateStaticParams already limits this to uz/ru, but the
+  // Belt and braces: generateStaticParams already limits this to en/ru, but the
   // segment is a plain string as far as the type system is concerned.
   if (!isLocale(locale) || locale === DEFAULT_LOCALE) notFound();
   return <LandingPage locale={locale} />;

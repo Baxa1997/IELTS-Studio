@@ -32,7 +32,7 @@ const publicRoutes = [
  * Which routes exist in more than one language.
  *
  * Only the landing page so far. The other marketing pages are still
- * English-only, and listing a `/uz/...` that 404s is worse than listing
+ * English-only, and listing a `/ru/...` that 404s is worse than listing
  * nothing — so this list grows as each page gets a localised route, not before.
  */
 const LOCALISED = new Set(["/"]);
@@ -44,7 +44,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
   return publicRoutes.flatMap((route) => {
-    const locales = LOCALISED.has(route.path) ? LOCALES : [DEFAULT_LOCALE];
+    const many = LOCALISED.has(route.path);
+    /* A single-language route is served unprefixed, i.e. at the DEFAULT
+       locale's URL — but being at that URL does not make it that language.
+       The marketing pages below the landing page are all still written in
+       English while the default locale is Uzbek. */
+    const locales = many ? LOCALES : [DEFAULT_LOCALE];
     return locales.map((locale) => ({
       url: absoluteUrl(localisedPath(route.path, locale)),
       lastModified,
@@ -53,12 +58,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
       /* Each entry names all three, which is the sitemap half of the same
          promise the pages' `hreflang` tags make. A crawler that finds one
          language through the sitemap learns the others exist without having to
-         fetch the page first. */
-      alternates: {
-        languages: Object.fromEntries(
-          locales.map((l) => [HTML_LANG[l], absoluteUrl(localisedPath(route.path, l))]),
-        ),
-      },
+         fetch the page first.
+
+         ⚠️ ONLY FOR ROUTES THAT REALLY HAVE SIBLINGS. A one-language page used
+         to emit an alternates block too, which was harmless while it named the
+         language that page was written in. With the default moved to Uzbek the
+         same code started labelling English-only pages `uz-Latn` — an hreflang
+         that lies, which is worse than none, and a self-referencing alternate
+         for a page with no siblings says nothing anyway. */
+      ...(many
+        ? {
+            alternates: {
+              languages: Object.fromEntries(
+                locales.map((l) => [HTML_LANG[l], absoluteUrl(localisedPath(route.path, l))]),
+              ),
+            },
+          }
+        : {}),
     }));
   });
 }
