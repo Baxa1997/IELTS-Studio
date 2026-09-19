@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 
-import { BRAND, DISPLAY, INK as GROUND, MUTED as HEADING, SANS, WHITE } from "./design";
+import { BRAND, BRAND_FILL, DISPLAY, INK as GROUND, MUTED as HEADING, SANS, WHITE } from "./design";
 
 /**
  * The dark site footer.
@@ -136,7 +136,7 @@ export function SiteFooter() {
                   width: 30,
                   height: 30,
                   borderRadius: 9,
-                  background: BRAND,
+                  background: BRAND_FILL,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

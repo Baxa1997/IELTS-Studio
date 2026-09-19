@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { GraduationCap, Trash2, Volume2, X } from "lucide-react";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_LINE as TINT_BORDER,
   BRAND_SOFT,
   BRAND_SOFT as TINT,
@@ -221,7 +222,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
               <button
                 type="button"
                 onClick={() => setReviewing(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
               >
                 Start review
                 <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 999, padding: "2px 9px", fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
@@ -420,7 +421,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
               <strong style={{ color: EMERALD }}>{good}</strong> remembered ·{" "}
               <strong style={{ color: SLATE_RED }}>{again}</strong> to see again soon
             </p>
-            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
+            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
               Done
             </button>
           </div>
@@ -464,7 +465,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
                 <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "1.5px solid #F0C8C0", background: "#FDF3F1", color: SLATE_RED, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Again
                 </button>
-                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Got it
                 </button>
               </div>

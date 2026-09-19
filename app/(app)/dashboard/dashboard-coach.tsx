@@ -6,6 +6,7 @@ import { Send, Sparkles, X } from "lucide-react";
 import { Typewriter } from "@/components/typewriter";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_MID,
   BRAND_SOFT,
@@ -280,7 +281,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
               borderRadius: 10,
               border: "none",
               cursor: sending || !input.trim() ? "default" : "pointer",
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               opacity: sending || !input.trim() ? 0.5 : 1,
             }}

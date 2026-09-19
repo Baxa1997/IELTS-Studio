@@ -5,6 +5,7 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
   PANEL,
@@ -466,7 +467,7 @@ export function WritingStudio({
           ) : null}
           <SaveBadge state={saveState} />
           <div style={{ width: 1, height: 24, background: theme.line }} />
-          <button type="button" onClick={() => void submit()} disabled={submitDisabled} style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: BRAND, color: WHITE, fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: submitDisabled ? "default" : "pointer", opacity: submitDisabled ? 0.55 : 1, boxShadow: theme.accentShadow }}>
+          <button type="button" onClick={() => void submit()} disabled={submitDisabled} style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: submitDisabled ? "default" : "pointer", opacity: submitDisabled ? 0.55 : 1, boxShadow: theme.accentShadow }}>
             {submitting ? "Grading…" : hasGraded ? "Resubmit for grading" : "Submit for grading"}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </button>
@@ -522,7 +523,7 @@ export function WritingStudio({
                       <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>{`At least ${minWords} words`}</span>
                       <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: BRAND, fontVariantNumeric: "tabular-nums" }}>{words}</span>
                     </div>
-                    <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: theme.accentSoft, overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: BRAND, transition: "width .3s ease" }} /></div>
+                    <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: theme.accentSoft, overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: BRAND_FILL, transition: "width .3s ease" }} /></div>
                   </div>
                 </div>
               </div>
@@ -614,7 +615,7 @@ export function WritingStudio({
             onClick={() => setTutorOpen(true)}
             className="lp-fab lp-fab-ring"
             aria-label="Open writing coach"
-            style={{ position: "absolute", right: 28, bottom: 28, zIndex: 7, display: "inline-flex", alignItems: "center", gap: 10, padding: "12px 20px 12px 14px", borderRadius: 999, border: "none", background: BRAND, color: WHITE, cursor: "pointer", fontFamily: SANS, fontWeight: 700, fontSize: 15, boxShadow: "0 14px 30px -12px rgba(125,1,50,.55)" }}
+            style={{ position: "absolute", right: 28, bottom: 28, zIndex: 7, display: "inline-flex", alignItems: "center", gap: 10, padding: "12px 20px 12px 14px", borderRadius: 999, border: "none", background: BRAND_FILL, color: WHITE, cursor: "pointer", fontFamily: SANS, fontWeight: 700, fontSize: 15, boxShadow: "0 14px 30px -12px rgba(125,1,50,.55)" }}
           >
             <span style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
@@ -710,7 +711,7 @@ function TutorPanel({
       <div style={{ flexShrink: 0, padding: "12px 14px", borderTop: `1px solid ${theme.softLine}` }}>
         <form onSubmit={(e) => { e.preventDefault(); onSend(); }} style={{ display: "flex", alignItems: "center", gap: 8, background: theme.soft, border: `1px solid ${theme.line}`, borderRadius: 11, padding: "5px 6px 5px 13px" }} className="lp-field">
           <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask in any language…" style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none", fontFamily: SANS, fontSize: 13.5, color: INK }} />
-          <button type="submit" disabled={pending || !input.trim()} aria-label="Send" style={{ flexShrink: 0, width: 34, height: 34, border: "none", borderRadius: 9, background: BRAND, cursor: pending || !input.trim() ? "default" : "pointer", opacity: pending || !input.trim() ? 0.5 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button type="submit" disabled={pending || !input.trim()} aria-label="Send" style={{ flexShrink: 0, width: 34, height: 34, border: "none", borderRadius: 9, background: BRAND_FILL, cursor: pending || !input.trim() ? "default" : "pointer", opacity: pending || !input.trim() ? 0.5 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
           </button>
         </form>

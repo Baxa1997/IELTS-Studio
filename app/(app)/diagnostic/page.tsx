@@ -6,6 +6,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import {
   BRAND,
+  BRAND_FILL,
   PANEL,
   SLATE_GREEN as EMERALD,
   SLATE_INK as INK,
@@ -47,7 +48,7 @@ export default async function DiagnosticPage() {
       {/* header */}
       <div>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".1em", textTransform: "uppercase", color: BRAND }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }} />
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND_FILL }} />
           Getting started
         </div>
         <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(25px,2.6vw,32px)", lineHeight: 1.08, letterSpacing: "-.015em", margin: "10px 0 0", color: INK }}>
@@ -61,7 +62,7 @@ export default async function DiagnosticPage() {
         {!diagnosticComplete ? (
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
             <div style={{ flex: "1 1 auto", height: 7, background: "#EFEEE2", borderRadius: 999, overflow: "hidden", maxWidth: 320 }} aria-hidden>
-              <div style={{ width: `${(doneCount / 2) * 100}%`, height: "100%", background: BRAND, borderRadius: 999, transition: "width .3s ease" }} />
+              <div style={{ width: `${(doneCount / 2) * 100}%`, height: "100%", background: BRAND_FILL, borderRadius: 999, transition: "width .3s ease" }} />
             </div>
             <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 13, color: MUTED, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
               {doneCount} of 2 complete
@@ -95,7 +96,7 @@ export default async function DiagnosticPage() {
 
           <Link
             href="/dashboard"
-            style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
           >
             Go to dashboard {ARROW}
           </Link>
@@ -228,7 +229,7 @@ function DiagnosticStep({
         ) : (
           <Link
             href={href}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 18px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -14px rgba(125,1,50,.7)", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 18px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -14px rgba(125,1,50,.7)", whiteSpace: "nowrap" }}
           >
             {cta} {ARROW}
           </Link>

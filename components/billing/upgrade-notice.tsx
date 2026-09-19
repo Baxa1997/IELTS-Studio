@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 import { planTier } from "@/lib/billing/plans";
-import { BRAND, BRAND_LINE, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
+import { BRAND, BRAND_FILL, BRAND_LINE, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 
@@ -172,7 +172,7 @@ export function UpgradeNotice({ message }: { message: string }) {
           padding: "11px 18px",
           borderRadius: 11,
           border: "none",
-          background: BRAND,
+          background: BRAND_FILL,
           color: WHITE,
           fontFamily: SANS,
           fontSize: 14,

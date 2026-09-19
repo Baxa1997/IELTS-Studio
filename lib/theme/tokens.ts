@@ -191,6 +191,20 @@ export const PANEL = "var(--tk-panel)";
  * different surface, and repainting them was explicitly out of scope.
  */
 export const BRAND = "var(--tk-brand)"; // primary action           10.9:1
+/**
+ * The brand as a FILL THAT CARRIES WHITE TEXT — buttons, filled pills, solid
+ * badges. `BRAND` is the same colour in light and a different one in dark.
+ *
+ * ⚠️ THEY HAD TO SPLIT WHEN DARK MODE WENT ORANGE. One mid-tone orange cannot
+ * be both: lighten it until it is AA-legible as small text on a dark card and
+ * white stops clearing 4.5:1 on it; darken it until white passes and the text
+ * fails. Burgundy never forced the issue because #7D0132 is dark enough to do
+ * both (10.9:1 against white), which is why this is one token in light.
+ *
+ * Rule of thumb: `background: BRAND_FILL` + `color: WHITE`, but
+ * `color: BRAND` / `border: BRAND` for everything else.
+ */
+export const BRAND_FILL = "var(--tk-brand-fill)";
 export const BRAND_DEEP = "var(--tk-brand-deep)"; // pressed / hover
 export const BRAND_DARK = "var(--tk-brand-dark)"; // panel ground
 export const BRAND_DARKEST = "var(--tk-brand-darkest)"; // darkest gradient stop
@@ -200,6 +214,15 @@ export const BRAND_PALE = "var(--tk-brand-pale)"; // disabled / empty-track fill
 export const BRAND_SOFT = "var(--tk-brand-soft)"; // tinted fill
 export const BRAND_LINE = "var(--tk-brand-line)"; // tinted border
 export const BRAND_WASH = "var(--tk-brand-wash)"; // between SOFT and LINE — hover on a tint
+
+/* The three stops of the dark brand panel every hero uses — the dashboard's
+ * next task, the referrals earnings block, the sign-in artwork. They carry
+ * WHITE body copy, so in dark they are deliberately deeper than the brand ramp:
+ * an orange bright enough to read as the brand is too bright to put 14px white
+ * on. Identical to BRAND_DARKEST / BRAND / BRAND_MID in light. */
+export const HERO_A = "var(--tk-hero-a)";
+export const HERO_B = "var(--tk-hero-b)";
+export const HERO_C = "var(--tk-hero-c)";
 
 /** Staff only. See the note above before reaching for these on a learner screen. */
 export const INDIGO = "var(--tk-indigo)"; // primary action            7.9:1
@@ -392,7 +415,7 @@ export const btnBase: CSSProperties = {
 
 /** A primary button fill in `accent` (defaults to the learner burgundy — pass
  *  `INDIGO` explicitly on a staff screen). */
-export function primaryBtn(disabled = false, accent: string = BRAND): CSSProperties {
+export function primaryBtn(disabled = false, accent: string = BRAND_FILL): CSSProperties {
   return {
     ...btnBase,
     background: accent,

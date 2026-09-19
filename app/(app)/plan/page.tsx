@@ -12,6 +12,7 @@ import { startLevelCheck } from "./actions";
 import { PlanBandCard } from "./plan-band-card";
 import {
   BRAND,
+  BRAND_FILL,
   PANEL,
   SLATE_BODY as MUTED,
   SLATE_GREEN as EMERALD,
@@ -247,7 +248,7 @@ function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: bool
           gap: 9,
           padding: 14,
           borderRadius: 12,
-          background: BRAND,
+          background: BRAND_FILL,
           color: WHITE,
           fontFamily: SANS,
           fontSize: 15,

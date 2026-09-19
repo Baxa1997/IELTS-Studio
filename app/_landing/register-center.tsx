@@ -8,6 +8,7 @@ import {
   BODY,
   BRAND,
   BRAND_DEEP,
+  BRAND_FILL,
   BRAND_TINT,
   DISPLAY,
   FIELD,
@@ -187,7 +188,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
               style={{
                 width: "100%",
                 marginTop: 18,
-                background: BRAND,
+                background: BRAND_FILL,
                 color: WHITE,
                 border: 0,
                 borderRadius: RADIUS.field,

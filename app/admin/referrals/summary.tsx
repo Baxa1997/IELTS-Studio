@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Card, FAINT, INK, LINE, MUTED, SANS, SERIF } from "@/components/admin/ui";
 import { formatMoney, type CurrencyTotal } from "@/lib/referrals/types";
-import { BRAND, BRAND_DARKEST, BRAND_PALE, WHITE } from "@/lib/theme/tokens";
+import { BRAND, BRAND_DARKEST, BRAND_PALE, HERO_A, HERO_B, WHITE } from "@/lib/theme/tokens";
 
 /**
  * What the programme costs, and what it is holding.
@@ -48,7 +48,7 @@ export function ProgrammeSummary({
         style={{
           borderRadius: 14,
           padding: "22px 24px",
-          background: `linear-gradient(120deg, ${BRAND_DARKEST} 0%, ${BRAND} 100%)`,
+          background: `linear-gradient(120deg, ${HERO_A} 0%, ${HERO_B} 100%)`,
           color: WHITE,
           border: `1px solid ${BRAND_DARKEST}`,
         }}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Zap } from "lucide-react";
 
-import { BRAND, SANS, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
+import { BRAND, BRAND_FILL, SANS, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
 import type { UsageSummary } from "@/lib/quota";
 
 /** Show the warning once any limited counter has this many (or fewer) left. */
@@ -66,7 +66,7 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
           fontWeight: 700,
           fontSize: 12.5,
           color: WHITE,
-          background: BRAND,
+          background: BRAND_FILL,
           borderRadius: 999,
           padding: "4px 13px",
           textDecoration: "none",

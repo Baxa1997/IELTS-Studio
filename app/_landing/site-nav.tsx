@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
-import { BODY, BRAND, INK, LINE, RADIUS, SANS, WHITE } from "./design";
+import { BODY, BRAND, BRAND_FILL, INK, LINE, RADIUS, SANS, WHITE } from "./design";
 import { LangPicker } from "./lang-picker";
 
 /**
@@ -152,7 +152,7 @@ export function SiteNav() {
               style={{
                 display: "block",
                 textAlign: "center",
-                background: BRAND,
+                background: BRAND_FILL,
                 color: WHITE,
                 borderRadius: RADIUS.pill,
                 padding: "14px 22px",

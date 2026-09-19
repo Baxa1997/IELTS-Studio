@@ -12,6 +12,7 @@ import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/
 import {
   BODY,
   BRAND,
+  BRAND_FILL,
   BRAND_PANEL,
   BRAND_TINT,
   BRAND_TINT_LINE,
@@ -19,6 +20,9 @@ import {
   DISPLAY_LG,
   DISPLAY_XL,
   FAINT,
+  HERO_A,
+  HERO_B,
+  HERO_MID,
   INK,
   LEDE,
   LINE,
@@ -273,7 +277,7 @@ function Hero() {
         >
           <span
             aria-hidden
-            style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }}
+            style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND_FILL }}
           />
           AI · IELTS &amp; CEFR
         </div>
@@ -837,7 +841,7 @@ function FinalCta() {
       <div
         style={{
           background: BRAND_PANEL,
-          backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
+          backgroundImage: `linear-gradient(155deg,${HERO_B} 0%,${HERO_MID} 52%,${HERO_A} 100%)`,
           color: WHITE,
           borderRadius: RADIUS.panel,
           padding: "clamp(38px,6vw,60px)",

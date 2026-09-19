@@ -314,7 +314,11 @@ describe("the card keeps the hover the stylesheet gives it", () => {
       expect(b, `${hover} has no background`).toBeTruthy();
       expect(b, `${hover} does not differ from its rest state`).not.toBe(a);
     }
-    expect(declaration(ruleBody(".pc-act--primary"), "background")).toBe("var(--tk-brand)");
+    /* `--tk-brand-fill`, not `--tk-brand`: this pill carries WHITE text, and in
+       dark the two are different colours precisely because of that — the fill
+       is darker so white clears 4.5:1 on it. Using the plain brand here would
+       put white on a 3.81:1 ground. */
+    expect(declaration(ruleBody(".pc-act--primary"), "background")).toBe("var(--tk-brand-fill)");
     expect(declaration(ruleBody(".pc-act--secondary"), "background")).toBe("var(--pc-surface)");
     expect(declaration(ruleBody(".pc-act--attach"), "background")).toBe("var(--tk-brand-soft)");
   });

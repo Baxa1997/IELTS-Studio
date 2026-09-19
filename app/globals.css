@@ -201,6 +201,12 @@
 
   /* brand — learner burgundy */
   --tk-brand: #7d0132;
+  /* WHAT WHITE TEXT SITS ON. Identical to `--tk-brand` in light, and not in
+     dark — see the note in the dark block. Split because one mid-tone cannot
+     be both an AA-legible small text colour on a dark card AND a fill that
+     carries white text: lighten it for the first and white fails, darken it for
+     the second and the text fails. */
+  --tk-brand-fill: #7d0132;
   --tk-brand-deep: #5c0125;
   --tk-brand-dark: #43001d;
   --tk-brand-darkest: #2c0013;
@@ -210,6 +216,18 @@
   --tk-brand-soft: #fdf4f7;
   --tk-brand-line: #f0d3de;
   --tk-brand-wash: #f8e8ee;
+  /* ── the hero gradient's three stops ────────────────────────────────────
+   * The dark burgundy panels — the dashboard's next-task hero, the referrals
+   * earnings block, the sign-in artwork. They all run darkest → brand →
+   * lighter, and they all carry WHITE body copy at ~14px.
+   *
+   * ⚠️ THEY CANNOT REUSE BRAND / BRAND_MID IN DARK. Those went orange, and an
+   * orange bright enough to read as the brand is too bright to put 14px white
+   * on: #e2631f gives 3.48:1. In LIGHT these are byte-identical to the
+   * BRAND_DARKEST / BRAND / BRAND_MID they replaced, so nothing moves. */
+  --tk-hero-a: #2c0013;
+  --tk-hero-b: #7d0132;
+  --tk-hero-c: #9b1044;
 
   /* brand — staff indigo (and the three unresolved variants it drifted into) */
   --tk-indigo: #3b43b5;
@@ -481,16 +499,39 @@
 
   --tk-panel: #16161f;
 
-  --tk-brand: #ce4271;
-  --tk-brand-deep: #dd5c86; /* hover goes LIGHTER on dark, not darker */
-  --tk-brand-dark: #2a0f1a;
-  --tk-brand-darkest: #1b0910;
-  --tk-brand-mid: #d9527d;
-  --tk-brand-light: #e4708f;
-  --tk-brand-pale: #4a2433;
-  --tk-brand-soft: #2a141e;
-  --tk-brand-line: #472333;
-  --tk-brand-wash: #331923;
+  /* ⚠️ THE DARK BRAND IS ORANGE, NOT BURGUNDY, AND NOT A LIGHTER PINK.
+   *
+   * The first dark palette re-anchored the burgundy by lightness alone and
+   * landed on #ce4271 — a pink. It was legible and it was wrong: the product
+   * does not read as the same product in it. Orange was the owner's call, and
+   * it is the more defensible one, because the shell was ALREADY orange in both
+   * themes — the logomark tile is #B8421E and the rail's "you are here" tint is
+   * the brand orange #dc5426. Dark mode now agrees with the rail instead of
+   * fighting it.
+   *
+   * The owner's colour is #D8501F. This is #d85d1f: the same red, the same
+   * blue, +13 on green — a difference nobody can see, and the smallest change
+   * that clears 4.5:1 as small text on a dark card (4.35 → 4.71) and on the
+   * brand tint (4.17 → 4.51). The unnudged value failed both by ~3%. */
+  --tk-brand: #d85d1f;
+  /* Darker than `--tk-brand`, because this one carries WHITE: 4.99:1 against
+     it, where the brand itself manages only 3.81. The two swap which direction
+     they need, which is the whole reason they are separate tokens. */
+  --tk-brand-fill: #c2471b;
+  --tk-brand-deep: #e97338; /* hover goes LIGHTER on dark, not darker */
+  --tk-brand-dark: #2a1208;
+  --tk-brand-darkest: #1b0b04;
+  --tk-brand-mid: #e2631f;
+  --tk-brand-light: #ee8552;
+  --tk-brand-pale: #4a2416;
+  --tk-brand-soft: #2a1610;
+  --tk-brand-line: #4a2718;
+  --tk-brand-wash: #33190f;
+  /* Deep orange, kept dark enough that white body copy clears 4.5:1 on the
+     lightest stop (5.59:1) instead of the 3.48:1 the brand ramp would give. */
+  --tk-hero-a: #1b0b04;
+  --tk-hero-b: #8f3413;
+  --tk-hero-c: #b2451b;
 
   --tk-indigo: #7c84e8;
   --tk-indigo-deep: #9098f0;
@@ -573,25 +614,25 @@
   --pc-surface-done: #131319;
   --pc-surface-locked: #191520;
 
-  --pc-hover-brand: #6b2c41;
+  --pc-hover-brand: #6b3520;
   --pc-hover-done: #24513c;
   --pc-hover-ink: #43434f;
-  --pc-glow-brand: 0 10px 24px rgba(206, 66, 113, 0.18);
+  --pc-glow-brand: 0 10px 24px rgba(216, 93, 31, 0.18);
   --pc-glow-done: 0 10px 24px rgba(63, 191, 133, 0.16);
   --pc-glow-ink: 0 10px 24px rgba(0, 0, 0, 0.55);
 
-  --pc-primary-hover: #e05c87;
-  --pc-primary-disabled: #6b2c41;
-  --pc-attach-hover: #3a1c27;
+  --pc-primary-hover: #d85d1f;
+  --pc-primary-disabled: #6b3520;
+  --pc-attach-hover: #3a1c12;
 
   /* Tints invert: pale-over-white becomes deep-over-near-black, keeping each
      skill's hue so a Reading chip still reads as Reading. The inks lighten to
      stay legible on them — the pairs carry the contrast, as everywhere else. */
-  --pc-read-top: #2a1420;
-  --pc-read-base: #3a1a28;
-  --pc-read-foot: #4a2233;
-  --pc-read-ink: #e4708f; /* 5.16:1 on --pc-read-base */
-  --pc-read-glow: rgba(206, 66, 113, 0.22);
+  --pc-read-top: #2a1610;
+  --pc-read-base: #3a1c10;
+  --pc-read-foot: #4a2515;
+  --pc-read-ink: #e97338; /* 5.15:1 on --pc-read-base */
+  --pc-read-glow: rgba(216, 93, 31, 0.22);
   --pc-write-top: #1c1c24;
   --pc-write-base: #26262f;
   --pc-write-foot: #32323b;
@@ -603,9 +644,9 @@
   --pc-listen-ink: #8fb0ee;
   --pc-listen-glow: rgba(60, 110, 220, 0.22);
 
-  --pc-pill-new-a: #2a141e;
-  --pc-pill-new-b: #3a1a28;
-  --pc-pill-new-line: #4a2233;
+  --pc-pill-new-a: #2a1610;
+  --pc-pill-new-b: #3a1c10;
+  --pc-pill-new-line: #4a2718;
   --pc-pill-band-a: #122a1f;
   --pc-pill-band-b: #17382a;
   --pc-pill-band-line: #1e4534;
@@ -615,9 +656,9 @@
   --pc-pill-target-a: #1c1c24;
   --pc-pill-target-b: #24242d;
   --pc-pill-target-line: #2e2e3a;
-  --pc-pill-locked-a: #2a141e;
-  --pc-pill-locked-b: #3d1c2b;
-  --pc-pill-locked-line: #52263a;
+  --pc-pill-locked-a: #2a1610;
+  --pc-pill-locked-b: #3d1f12;
+  --pc-pill-locked-line: #522a18;
 
   --pc-amber: #e0a84a;
   --pc-rule: rgba(255, 255, 255, 0.1);
@@ -627,8 +668,8 @@
   --pc-chip: #22222b;
   --pc-track: #2a2a34;
   --pc-dim: #9a98a8;
-  --pc-quote-muted: #5a3540;
-  --pc-wave: #8a5a6d;
+  --pc-quote-muted: #5a3524;
+  --pc-wave: #8a5a3d;
 
   --hb-cream-line: #2e2b22;
   --hb-soon-ink: #a89d86;
@@ -680,11 +721,19 @@
  * ───────────────────────────────────────────────────────────────────────── */
 :root {
   --mk-brand: #7d0132;
+  --mk-brand-fill: #7d0132;
   --mk-brand-deep: #5c0125;
   --mk-brand-darkest: #2c0013;
   --mk-brand-panel: #43001d;
   --mk-brand-tint: #fdf4f7;
   --mk-brand-tint-line: #f0d3de;
+  /* The landing + sign-in hero panel's three stops. White body copy sits on
+     them, so in dark they stay deep — an orange bright enough to read as the
+     brand is too bright for 14px white. Light values are byte-identical to the
+     literals they replaced. */
+  --mk-hero-b: #7d0132;
+  --mk-hero-mid: #5c0125;
+  --mk-hero-a: #2c0013;
 
   --mk-ink: #121317;
   --mk-body: #4a505c;
@@ -709,12 +758,16 @@
 }
 
 .dark {
-  --mk-brand: #ce4271;
-  --mk-brand-deep: #dd5c86;
-  --mk-brand-darkest: #1b0910;
-  --mk-brand-panel: #2a0f1a;
-  --mk-brand-tint: #2a141e;
-  --mk-brand-tint-line: #472333;
+  --mk-brand: #d85d1f;
+  --mk-brand-fill: #c2471b;
+  --mk-brand-deep: #e97338;
+  --mk-brand-darkest: #1b0b04;
+  --mk-brand-panel: #2a1208;
+  --mk-brand-tint: #2a1610;
+  --mk-brand-tint-line: #4a2718;
+  --mk-hero-b: #8f3413;
+  --mk-hero-mid: #5c2410;
+  --mk-hero-a: #1b0b04;
 
   --mk-ink: #edeef2;
   --mk-body: #c4c8d2;
@@ -812,8 +865,8 @@
   --sh-rail-muted: #94929d;
   --sh-rail-hover: #1c1c23;
   --sh-rail-press: #24242d;
-  --sh-rail-active-bg: #3a1a10;
-  --sh-rail-active-ink: #f08a5d;
+  --sh-rail-active-bg: #3a1c10;
+  --sh-rail-active-ink: #f08a5d; /* 6.5:1 on --sh-rail-active-bg */
   --sh-accent: #4ec08a;
   --sh-toggle-ink: #b9b6c4;
   --sh-fullbleed: #0c0c12;
@@ -4736,7 +4789,7 @@ section[id] {
 .pc-act--primary {
   padding: 0 16px;
   border: 0;
-  background: var(--tk-brand);
+  background: var(--tk-brand-fill);
   color: #fff;
 }
 .pc-act--primary:hover:not(:disabled) {

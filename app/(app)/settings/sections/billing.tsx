@@ -4,7 +4,13 @@ import { getSubscription } from "@/lib/billing/service";
 import { getUsageSummary, type Quota } from "@/lib/quota";
 
 import { Panel } from "./frame";
-import { BRAND, SLATE_BODY as MUTED, SLATE_INK as INK, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 
 const STATUS: Record<string, string> = {
@@ -44,7 +50,7 @@ export async function LearnerBillingSection({ organizationId }: { organizationId
               marginLeft: "auto",
               padding: "10px 18px",
               borderRadius: 11,
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               fontSize: 14.5,
               fontWeight: 700,

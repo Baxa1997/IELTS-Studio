@@ -9,6 +9,7 @@ import type { StudyPlanInput } from "@/lib/plan/types";
 import { saveOnboarding } from "./actions";
 import {
   BRAND,
+  BRAND_FILL,
   PANEL,
   SLATE_BODY as MUTED,
   SLATE_INK as INK,
@@ -123,7 +124,7 @@ export function OnboardingForm({ mode, initial }: Props) {
           type="button"
           onClick={submit}
           disabled={pending}
-          style={{ width: "100%", height: 48, border: "none", borderRadius: 12, background: BRAND, color: WHITE, fontFamily: SANS, fontSize: 15.5, fontWeight: 700, cursor: pending ? "default" : "pointer", opacity: pending ? 0.6 : 1, boxShadow: "0 12px 26px -12px rgba(125,1,50,.8)" }}
+          style={{ width: "100%", height: 48, border: "none", borderRadius: 12, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontSize: 15.5, fontWeight: 700, cursor: pending ? "default" : "pointer", opacity: pending ? 0.6 : 1, boxShadow: "0 12px 26px -12px rgba(125,1,50,.8)" }}
         >
           {pending ? "Saving…" : mode === "create" ? "Save & start diagnostic" : "Save changes"}
         </button>

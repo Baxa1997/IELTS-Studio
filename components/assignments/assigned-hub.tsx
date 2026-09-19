@@ -2,7 +2,15 @@ import Link from "next/link";
 
 import { LegalFooter } from "@/components/legal-footer";
 import type { StudentAssignment } from "@/lib/assignments/student";
-import { BRAND, BRAND_SOFT, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_MUTED as FAINT } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  BRAND_SOFT,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_MUTED as FAINT,
+} from "@/lib/theme/tokens";
 
 /**
  * What a CENTER student sees in place of a practice hub.
@@ -101,7 +109,7 @@ export function AssignedHub({
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }} />
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND_FILL }} />
             {todo.length} to do
           </span>
         ) : null}

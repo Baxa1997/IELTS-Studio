@@ -1,12 +1,4 @@
-import {
-  BRAND,
-  BRAND_DARKEST,
-  BRAND_MID,
-  BRAND_PALE,
-  SANS,
-  SERIF,
-  WHITE,
-} from "@/lib/theme/tokens";
+import { BRAND, BRAND_PALE, HERO_A, HERO_B, HERO_C, SANS, SERIF, WHITE } from "@/lib/theme/tokens";
 import { commissionRange, formatMoney, type ReferralSettings } from "@/lib/referrals/types";
 
 /**
@@ -33,7 +25,7 @@ export function PitchPanel({ percent, settings }: { percent: number; settings: R
         overflow: "hidden",
         borderRadius: 20,
         padding: "34px 32px",
-        background: `linear-gradient(120deg, ${BRAND_DARKEST} 0%, ${BRAND} 58%, ${BRAND_MID} 100%)`,
+        background: `linear-gradient(120deg, ${HERO_A} 0%, ${HERO_B} 58%, ${HERO_C} 100%)`,
         color: WHITE,
         display: "flex",
         flexDirection: "column",

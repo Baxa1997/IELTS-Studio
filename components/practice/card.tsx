@@ -30,6 +30,7 @@ import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_SOFT,
   SLATE_BODY as MUTED,
   SLATE_GREEN as EMERALD,
@@ -590,7 +591,7 @@ export function ProgressRow({ pct, label }: { pct: number; label: string }) {
           overflow: "hidden",
         }}
       >
-        <div style={{ width: `${clamped}%`, height: "100%", background: BRAND }} />
+        <div style={{ width: `${clamped}%`, height: "100%", background: BRAND_FILL }} />
       </div>
       <span style={{ fontSize: 11, fontWeight: 700, color: BRAND, whiteSpace: "nowrap" }}>
         {label}

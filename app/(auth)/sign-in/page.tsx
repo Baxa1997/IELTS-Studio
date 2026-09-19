@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import { DESIGN_CSS, Wordmark } from "@/app/_landing/design-chrome";
 import { landingManrope, landingSora } from "@/app/_landing/fonts";
 import {
-  BRAND,
   BRAND_PANEL,
   CANVAS,
   DISPLAY,
+  HERO_A,
+  HERO_B,
+  HERO_MID,
   INK,
   RADIUS,
   SANS,
@@ -95,7 +97,7 @@ export default async function SignInPage({
         className="lp-auth-panel"
         style={{
           background: BRAND_PANEL,
-          backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
+          backgroundImage: `linear-gradient(155deg,${HERO_B} 0%,${HERO_MID} 52%,${HERO_A} 100%)`,
           color: WHITE,
           borderRadius: RADIUS.panel,
           padding: "clamp(32px,4vh,54px) clamp(32px,4vw,52px)",

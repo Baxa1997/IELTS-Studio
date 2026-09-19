@@ -36,6 +36,7 @@ import { AttachForm, PracticeModal } from "@/components/console/teacher-practice
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_LIGHT,
   BRAND_SOFT,
   CANVAS,
@@ -259,7 +260,7 @@ export function ReadingHub({
             whiteSpace: "nowrap",
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND }} />
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: BRAND_FILL }} />
           {levelBand != null
             ? `${levelMeasured ? "Your band" : "Target"} · ${levelBand.toFixed(1)}`
             : "Level not set"}

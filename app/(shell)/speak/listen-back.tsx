@@ -10,7 +10,15 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { BRAND, PANEL, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const GOOD = "#1A7A48"; // the "stronger version" rail, matching the report
@@ -173,7 +181,7 @@ export function ListenBack({
               height: 40,
               borderRadius: "50%",
               border: "none",
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               fontSize: 15,
               cursor: "pointer",

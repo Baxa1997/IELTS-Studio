@@ -28,6 +28,7 @@ import {
 import { AMBER, BRAND, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens";
 import { WordLookup } from "../../_shared/word-lookup";
 import {
+  BRAND_FILL,
   BRAND_SOFT,
   PANEL,
   SLATE_BODY,
@@ -852,7 +853,7 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
       color: BRAND,
       boxShadow: "0 0 0 3px rgba(125,1,50,.16)",
     };
-  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: WHITE };
+  if (answered) return { ...base, borderColor: BRAND, background: BRAND_FILL, color: WHITE };
   return { ...base, borderColor: SLATE_LINE, background: PANEL, color: SLATE_MUTED };
 }
 
@@ -958,7 +959,7 @@ function ConfirmFinishModal({
               padding: "10px 20px",
               borderRadius: 11,
               border: "none",
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               fontFamily: SANS,
               fontWeight: 600,
@@ -1101,7 +1102,7 @@ function TestResultsView({
                 padding: "9px 20px",
                 borderRadius: 10,
                 border: "none",
-                background: BRAND,
+                background: BRAND_FILL,
                 color: WHITE,
                 fontWeight: 600,
                 fontSize: 14,

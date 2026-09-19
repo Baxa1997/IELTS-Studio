@@ -8,6 +8,7 @@ import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 import { PublicGrader } from "./grader";
 import {
   BRAND,
+  BRAND_FILL,
   PANEL,
   SLATE_BODY,
   SLATE_BODY as MUTED,
@@ -191,7 +192,7 @@ export default async function PublicGradePage() {
               <Link href="/sign-in" style={{ ...navBtn, color: SLATE_STRONG }}>
                 Sign in
               </Link>
-              <Link href="/sign-in" style={{ ...navBtn, background: BRAND, color: WHITE, boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
+              <Link href="/sign-in" style={{ ...navBtn, background: BRAND_FILL, color: WHITE, boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
                 Create free account
               </Link>
             </>

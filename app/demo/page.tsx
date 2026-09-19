@@ -8,6 +8,7 @@ import { DeferredReportShowcase } from "@/app/_landing/deferred-report-showcase"
 import { DemoTabs } from "@/app/_landing/demo-tabs";
 import {
   BRAND,
+  BRAND_FILL,
   DISPLAY,
   INK,
   PANEL,
@@ -143,7 +144,7 @@ export default function DemoPage() {
       <section style={{ ...SHELL, paddingTop: "clamp(56px,8vw,80px)", paddingBottom: "clamp(56px,8vw,80px)" }}>
         <div
           style={{
-            background: BRAND,
+            background: BRAND_FILL,
             color: WHITE,
             borderRadius: 20,
             padding: "clamp(32px,5vw,48px)",

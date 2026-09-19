@@ -14,6 +14,7 @@ import type { PublicTeaser } from "@/lib/public-grader/teaser";
 import { bandColor } from "@/lib/ui/band";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
   PANEL,
@@ -280,7 +281,7 @@ export function PublicGrader() {
               padding: "0 30px",
               border: "none",
               borderRadius: 11,
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               fontFamily: "inherit",
               fontSize: 15.5,
@@ -357,7 +358,7 @@ function SignupWall({ onClose }: { onClose: () => void }) {
           model answer, and the revision loop to rewrite and re-grade.
         </p>
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 12, background: BRAND, color: WHITE, fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
+          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 12, background: BRAND_FILL, color: WHITE, fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
             Create a free account
           </Link>
           <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, borderRadius: 12, background: PANEL, border: `1px solid ${BRAND_LINE}`, color: BRAND, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
@@ -510,7 +511,7 @@ function Result({
           </p>
         </div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: BRAND, color: WHITE, fontSize: 14.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
+          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: BRAND_FILL, color: WHITE, fontSize: 14.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
             Create a free account
           </Link>
           <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: PANEL, border: `1px solid ${BRAND_LINE}`, color: BRAND, fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>

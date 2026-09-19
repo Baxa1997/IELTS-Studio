@@ -18,6 +18,16 @@
 
 /** The burgundy. Buttons, links, accents, the logo mark. */
 export const BRAND = "var(--mk-brand)";
+/** The brand as a fill carrying WHITE text. Same value as `BRAND` in light, a
+ *  darker orange in dark — see the note on `BRAND_FILL` in lib/theme/tokens. */
+export const BRAND_FILL = "var(--mk-brand-fill)";
+
+/* The hero panel on the front door and sign-in: a three-stop brand gradient
+ * carrying white copy. Deep in dark for that reason — see the note in
+ * globals.css. Identical to the literals they replaced in light. */
+export const HERO_B = "var(--mk-hero-b)";
+export const HERO_MID = "var(--mk-hero-mid)";
+export const HERO_A = "var(--mk-hero-a)";
 /** Pressed / hover. */
 export const BRAND_DEEP = "var(--mk-brand-deep)";
 /** The darkest stop in the sign-in panel's gradient. */

@@ -6,7 +6,7 @@ import { MessageCircle, Send, X } from "lucide-react";
 import { Typewriter } from "@/components/typewriter";
 
 import { BRAND, INK, MUTED, SANS } from "./tokens";
-import { FAB_CLEARANCE, PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import { BRAND_FILL, FAB_CLEARANCE, PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 interface ChatMessage {
   role: "student" | "assistant";
@@ -117,7 +117,7 @@ export function CoachPanel({
           borderRadius: 999,
           border: "none",
           cursor: "pointer",
-          background: BRAND,
+          background: BRAND_FILL,
           color: WHITE,
           fontFamily: SANS,
           fontWeight: 700,
@@ -231,7 +231,7 @@ export function CoachPanel({
             className="lp-input"
             style={{ flex: 1, padding: "9px 11px", border: "1px solid #DAD8C9", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 13.5, color: INK }}
           />
-          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: BRAND, color: WHITE, opacity: sending || !input.trim() ? 0.5 : 1 }}>
+          <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: BRAND_FILL, color: WHITE, opacity: sending || !input.trim() ? 0.5 : 1 }}>
             <Send size={16} />
           </button>
         </div>

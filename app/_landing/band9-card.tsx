@@ -3,6 +3,7 @@ import { BandCountUp } from "@/components/landing/band-countup";
 import {
   BODY,
   BRAND,
+  BRAND_FILL,
   BRAND_TINT,
   BRAND_TINT_LINE,
   DISPLAY,
@@ -60,7 +61,7 @@ export function Band9Card() {
               width: 38,
               height: 38,
               borderRadius: RADIUS.icon,
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               display: "flex",
               alignItems: "center",

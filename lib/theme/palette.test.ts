@@ -36,6 +36,37 @@ function names(text: string, prefix: string): string[] {
     .map((m) => m[1]);
 }
 
+
+/** `--var: #hex` for one theme, from every matching block. */
+function vars(theme: "light" | "dark"): Record<string, string> {
+  const selector = theme === "light" ? ":root" : ".dark";
+  const out: Record<string, string> = {};
+  for (const b of css.matchAll(/(^|\n)(:root|\.dark)\s*\{([^}]*)\}/g)) {
+    if (b[2] !== selector) continue;
+    for (const m of b[3].matchAll(/^\s*(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{3,8});/gm)) {
+      if (!(m[1] in out)) out[m[1]] = m[2].toLowerCase();
+    }
+  }
+  return out;
+}
+
+/** Relative luminance, per WCAG 2.x. */
+function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    })
+    .reduce((acc, c, i) => acc + [0.2126, 0.7152, 0.0722][i] * c, 0);
+}
+
+/** Contrast ratio, per WCAG 2.x. */
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 describe("the runtime palette", () => {
   for (const [label, prefix] of [
     ["--tk-", "--tk-"],
@@ -57,6 +88,49 @@ describe("the runtime palette", () => {
       expect([...dark].filter((n) => !light.has(n))).toEqual([]);
     });
   }
+
+  /* ── the pairings the brand split exists to protect ───────────────────────
+   *
+   * Dark mode's brand is ORANGE, and a mid orange cannot do two jobs at once:
+   * light enough to be AA-legible as small text on a dark card, and dark enough
+   * to carry white text as a button fill. That is the entire reason `BRAND` and
+   * `BRAND_FILL` are separate tokens, and why the hero panels have their own
+   * three stops rather than reusing the brand ramp.
+   *
+   * ⚠️ WITHOUT THIS TEST THE SPLIT SILENTLY UNDOES ITSELF. Nothing about
+   * `--tk-brand-fill: <same as brand>` looks wrong in a diff, and in LIGHT it
+   * is genuinely correct — the two are the same colour there. The failure only
+   * exists in dark, only on text nobody re-measures, and the reviewer who
+   * "tidied up a duplicate token" will have been looking at the light block. */
+  const AA = 4.5;
+
+  it.each([
+    ["--tk-brand-fill", "white text on the primary button", "#ffffff"],
+    ["--tk-hero-c", "white body copy on the hero's lightest stop", "#ffffff"],
+    ["--mk-brand-fill", "white text on a marketing button", "#ffffff"],
+    ["--mk-hero-b", "white copy on the landing hero's lightest stop", "#ffffff"],
+  ])("keeps %s legible in dark — %s", (token, _label, against) => {
+    const dark = vars("dark");
+    const hex = dark[token];
+    expect(hex, `${token} has no dark value`).toBeTruthy();
+    expect(contrast(hex, against), `${token} (${hex}) vs ${against}`).toBeGreaterThanOrEqual(AA);
+  });
+
+  it.each([
+    ["--tk-panel", "the card it sits on"],
+    ["--tk-brand-soft", "its own tint"],
+  ])("keeps the dark brand legible as TEXT on %s (%s)", (ground) => {
+    const dark = vars("dark");
+    expect(contrast(dark["--tk-brand"], dark[ground]), `--tk-brand on ${ground}`).toBeGreaterThanOrEqual(AA);
+  });
+
+  it("keeps BRAND and BRAND_FILL identical in light and different in dark", () => {
+    // Identical in light is not laziness — #7D0132 is dark enough to do both
+    // jobs (10.9:1 against white). Orange is not, which is what forces them
+    // apart. If they ever match in dark, the split has been undone.
+    expect(vars("light")["--tk-brand-fill"]).toBe(vars("light")["--tk-brand"]);
+    expect(vars("dark")["--tk-brand-fill"]).not.toBe(vars("dark")["--tk-brand"]);
+  });
 
   for (const source of ["lib/theme/tokens.ts", "app/_landing/design.ts"]) {
     it(`${source} exports no colour literal except WHITE`, () => {

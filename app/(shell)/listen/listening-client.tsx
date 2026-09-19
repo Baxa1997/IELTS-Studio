@@ -78,6 +78,7 @@ import type {
 } from "./types";
 import {
   BRAND as TK_BRAND,
+  BRAND_FILL,
   BRAND_LIGHT,
   CANVAS,
   PANEL,
@@ -475,7 +476,7 @@ function FreshPractice({
             disabled={!canAttach || attaching}
             title={canAttach ? undefined : "Create a class first"}
             style={{
-              background: BRAND,
+              background: BRAND_FILL,
               color: WHITE,
               border: 0,
               borderRadius: 10,

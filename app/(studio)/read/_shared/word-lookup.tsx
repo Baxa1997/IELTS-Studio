@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
 import { EMERALD, BRAND, INK, MUTED, SANS } from "./tokens";
-import { BRAND_LINE, PANEL, SLATE_LINE, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import { BRAND_FILL, BRAND_LINE, PANEL, SLATE_LINE, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
 
 /**
  * In-practice word lookup. The learner selects a word/short phrase inside the
@@ -291,7 +291,7 @@ export function WordLookup({
           type="button"
           onClick={() => void translate(sel.word, sel.sentence, language)}
           disabled={loading || !language.trim()}
-          style={{ flex: "none", padding: "7px 12px", borderRadius: 9, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: loading || !language.trim() ? "default" : "pointer", opacity: loading || !language.trim() ? 0.55 : 1 }}
+          style={{ flex: "none", padding: "7px 12px", borderRadius: 9, border: "none", background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 13, cursor: loading || !language.trim() ? "default" : "pointer", opacity: loading || !language.trim() ? 0.55 : 1 }}
         >
           {loading ? <Loader2 size={14} style={{ animation: "lp-spin .7s linear infinite" }} /> : "Translate"}
         </button>

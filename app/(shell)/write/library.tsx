@@ -27,6 +27,7 @@ import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
 import { saveDraft } from "@/app/(studio)/write/actions";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_MID,
   BRAND_PALE,
@@ -1060,7 +1061,7 @@ export function WritingLibrary({
                 disabled={busy}
                 style={{
                   flex: 1,
-                  background: BRAND,
+                  background: BRAND_FILL,
                   color: WHITE,
                   border: 0,
                   borderRadius: 10,
@@ -1234,7 +1235,7 @@ function GradingModal() {
                 width: 7,
                 height: 7,
                 borderRadius: 999,
-                background: BRAND,
+                background: BRAND_FILL,
                 animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out`,
               }}
             />
@@ -1254,7 +1255,7 @@ function genButton(disabled: boolean, big = false): React.CSSProperties {
     padding: big ? "0 24px" : "0 18px",
     border: "none",
     borderRadius: 12,
-    background: BRAND,
+    background: BRAND_FILL,
     color: WHITE,
     fontFamily: SANS,
     fontSize: big ? 15.5 : 15,

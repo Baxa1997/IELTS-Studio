@@ -13,6 +13,7 @@ import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
 import {
   BRAND,
   BRAND_DEEP,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_MID,
   BRAND_SOFT as TINT,
@@ -220,7 +221,7 @@ const primaryBtn: React.CSSProperties = {
   padding: "0 20px",
   border: "none",
   borderRadius: 12,
-  background: BRAND,
+  background: BRAND_FILL,
   color: WHITE,
   fontFamily: "inherit",
   fontSize: 14.5,
@@ -1683,7 +1684,7 @@ export function SpeakingClient({
                   style={{
                     height: "100%",
                     width: `${Math.min(100, level * 700)}%`,
-                    background: BRAND,
+                    background: BRAND_FILL,
                     borderRadius: 999,
                     transition: "width .12s linear",
                   }}

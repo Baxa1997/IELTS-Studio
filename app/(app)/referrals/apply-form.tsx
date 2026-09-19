@@ -2,7 +2,17 @@
 
 import { useActionState } from "react";
 
-import { BRAND, FIELD_LINE, INK, MUTED, SANS, SLATE_GREEN, WELL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  FIELD_LINE,
+  INK,
+  MUTED,
+  SANS,
+  SLATE_GREEN,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /** The design's field well — a shade off white, so an input reads as an input. */
 
@@ -87,7 +97,7 @@ export function ApplyForm() {
           disabled={pending}
           style={{
             border: 0,
-            background: BRAND,
+            background: BRAND_FILL,
             color: WHITE,
             fontFamily: SANS,
             fontWeight: 700,

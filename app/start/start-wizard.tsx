@@ -26,7 +26,20 @@ import { pitchDifficulty, SELF_REPORT_BANDS } from "@/lib/plan/constants";
 import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { savePlanForCurrentUser, stashOnboarding } from "./actions";
-import { BRAND, BRAND_PALE as TINT_BORDER, BRAND_SOFT as TINT, PANEL, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE, SLATE_LINE as LINE, SLATE_MUTED as FAINT, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  BRAND_PALE as TINT_BORDER,
+  BRAND_SOFT as TINT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_LINE as LINE,
+  SLATE_MUTED as FAINT,
+  SLATE_STRONG,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -453,7 +466,7 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
         {thinking ? (
           <div className="coach-note" style={{ display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", background: PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: "11px 14px" }}>
             {[0, 0.18, 0.36].map((d) => (
-              <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND, animation: `coach-bounce 1s ${d}s infinite` }} />
+              <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND_FILL, animation: `coach-bounce 1s ${d}s infinite` }} />
             ))}
           </div>
         ) : null}
@@ -463,7 +476,7 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
       <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 8, fontFamily: SANS, fontSize: 11.5, color: FAINT }}>
         <span style={{ display: "inline-flex", gap: 3 }}>
           {[0, 1, 2, 3].map((i) => (
-            <span key={i} style={{ width: 3, height: 11, borderRadius: 2, background: BRAND, opacity: 0.35, animation: `coach-eq 1.1s ${i * 0.12}s infinite` }} />
+            <span key={i} style={{ width: 3, height: 11, borderRadius: 2, background: BRAND_FILL, opacity: 0.35, animation: `coach-eq 1.1s ${i * 0.12}s infinite` }} />
           ))}
         </span>
         Calibrated &amp; conservative · your 7 is a real 7
@@ -501,7 +514,7 @@ function Badge({ live }: { live: boolean }) {
 function Radio({ selected }: { selected: boolean }) {
   return (
     <span style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${selected ? BRAND : "#CFCFD8"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {selected ? <span style={{ width: 10, height: 10, borderRadius: "50%", background: BRAND }} /> : null}
+      {selected ? <span style={{ width: 10, height: 10, borderRadius: "50%", background: BRAND_FILL }} /> : null}
     </span>
   );
 }
@@ -538,7 +551,7 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
 
 function PrimaryButton({ children, onClick, disabled, style }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; style?: React.CSSProperties }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} style={{ width: "100%", height: 54, border: "none", borderRadius: 13, background: BRAND, color: WHITE, fontFamily: SANS, fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: "0 14px 28px -16px rgba(125,1,50,.9)", ...style }}>
+    <button type="button" onClick={onClick} disabled={disabled} style={{ width: "100%", height: 54, border: "none", borderRadius: 13, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: "0 14px 28px -16px rgba(125,1,50,.9)", ...style }}>
       {children}
     </button>
   );

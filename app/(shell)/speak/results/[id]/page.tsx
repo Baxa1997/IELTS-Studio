@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { BRAND, PANEL, SANS, SERIF, SLATE_BODY, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  PANEL,
+  SANS,
+  SERIF,
+  SLATE_BODY,
+  SLATE_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -94,7 +103,7 @@ export default async function SpeakResultPage({ params }: PageProps) {
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: WHITE,
-                background: BRAND,
+                background: BRAND_FILL,
                 borderRadius: 999,
                 padding: "8px 16px",
                 textDecoration: "none",

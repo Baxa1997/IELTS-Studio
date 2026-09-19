@@ -12,6 +12,7 @@ import { ANN_STYLE, matchRanges, type Annotation } from "./annotations";
 import { FigureView } from "./figure";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
   PANEL,
@@ -113,7 +114,7 @@ interface ModelSample {
 
 const DEFAULT_DISCLAIMER = "AI-estimated bands — not affiliated with or endorsed by IELTS®.";
 
-const reviseStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: BRAND, color: WHITE, fontFamily: "inherit", fontSize: 14, fontWeight: 700, textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" };
+const reviseStyle: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: BRAND_FILL, color: WHITE, fontFamily: "inherit", fontSize: 14, fontWeight: 700, textDecoration: "none", cursor: "pointer", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" };
 
 export function EssayFeedback({
   taskType,
@@ -368,7 +369,7 @@ function SamplesView({
       return (
         <div style={{ padding: "8px 2px" }}>
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answer just now.</p>
-          <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: BRAND, color: WHITE, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+          <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: BRAND_FILL, color: WHITE, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
             Try again
           </button>
         </div>
@@ -387,7 +388,7 @@ function SamplesView({
     return (
       <div style={{ padding: "8px 2px" }}>
         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6, color: RED }}>Couldn&rsquo;t write the model answer just now.</p>
-        <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: BRAND, color: WHITE, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+        <button type="button" onClick={onRetry} style={{ marginTop: 12, height: 36, padding: "0 16px", border: "none", borderRadius: 9, background: BRAND_FILL, color: WHITE, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
           Try again
         </button>
       </div>

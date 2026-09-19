@@ -25,10 +25,11 @@ import { BandCard } from "./band-card";
 import { DashboardCoach } from "./dashboard-coach-lazy";
 import {
   BRAND,
-  BRAND_DARKEST,
-  BRAND_MID,
   BRAND_SOFT as TINT,
   CANVAS as SURF,
+  HERO_A,
+  HERO_B,
+  HERO_C,
   PANEL,
   SLATE_AMBER,
   SLATE_AMBER_BG,
@@ -150,7 +151,7 @@ function Header({ name, plan, days }: { name: string | null; plan: StudyPlan; da
 function NextTask({ rec }: { rec: Recommendation }) {
   const [chipA, chipB] = chipsFor(rec.href);
   return (
-    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: `linear-gradient(120deg,${BRAND_DARKEST} 0%,${BRAND} 62%,${BRAND_MID} 100%)`, borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: `linear-gradient(120deg,${HERO_A} 0%,${HERO_B} 62%,${HERO_C} 100%)`, borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
       <div aria-hidden style={{ position: "absolute", top: -90, right: -40, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)" }} />
       <div style={{ position: "relative", minWidth: 0, flex: "1 1 380px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".11em", textTransform: "uppercase", color: "rgba(255,255,255,.72)" }}>
