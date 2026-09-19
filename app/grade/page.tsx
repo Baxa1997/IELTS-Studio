@@ -23,7 +23,7 @@ import {
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const SOFT_LINE = "#EFECE0";
+const SOFT_LINE = WARM_LINE_SOFT;
 
 // ---- SEO -------------------------------------------------------------------
 

@@ -5,9 +5,11 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  BRAND,
   BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
+  ON_INK,
   PANEL,
   SANS,
   SERIF,
@@ -454,7 +456,7 @@ export function WritingStudio({
           </button>
           <div className="lp-hide-sm" style={{ width: 1, height: 24, background: theme.line }} />
           <div className="lp-hide-sm" style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: INK, color: WHITE, fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flexShrink: 0 }}>{taskNo}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: INK, color: ON_INK, fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flexShrink: 0 }}>{taskNo}</span>
             {practiceNo != null ? (<span style={{ fontSize: 14, fontWeight: 700, color: INK, flexShrink: 0 }}>Practice test {practiceNo}</span>) : null}
             <span style={{ fontSize: 14, fontWeight: 500, color: SLATE_STRONG }}>{taskKindLabel}</span>
             {prompt.topic_family && prompt.topic_family !== "custom" ? (<><span style={{ color: "#C7C3B4" }}>·</span><span style={{ fontSize: 14, color: SLATE_BODY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prompt.topic_family}</span></>) : null}

@@ -7,7 +7,7 @@ import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/components/admin/u
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { loadAccountUsage, setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
-import { CONSOLE_CANVAS, PANEL, SLATE_AMBER, WHITE } from "@/lib/theme/tokens";
+import { CONSOLE_CANVAS, PANEL, SLATE_AMBER, WELL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Plan and limits for one account, as the design draws it.
@@ -307,7 +307,7 @@ export function ManageModal({
 
           <div
             style={{
-              background: "#F7F6F2",
+              background: WELL,
               borderRadius: 10,
               padding: "12px 14px",
               fontSize: 12.5,

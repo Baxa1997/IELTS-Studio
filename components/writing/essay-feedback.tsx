@@ -15,9 +15,12 @@ import {
   BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
+  ON_INK,
   PANEL,
+  RED,
   SLATE_BODY,
   SLATE_BODY as MUTED,
+  SLATE_GREEN,
   SLATE_GREEN_BG,
   SLATE_GREEN_LINE,
   SLATE_INK,
@@ -46,7 +49,6 @@ import {
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 const EMERALD = "#1F9D5E";
-const RED = "#C5503C";
 
 export interface CriterionScore {
   band: number;
@@ -208,7 +210,7 @@ export function EssayFeedback({
           </Link>
           <div style={{ width: 1, height: 24, background: SLATE_LINE }} />
           <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: SLATE_INK, color: WHITE, fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flex: "none" }}>{TASK_PILL[taskType] ?? "WRITING"}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: SLATE_INK, color: ON_INK, fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flex: "none" }}>{TASK_PILL[taskType] ?? "WRITING"}</span>
             <span style={{ fontSize: 15, fontWeight: 700, color: INK, flex: "none" }}>Essay feedback</span>
             {topicFamily ? (
               <>
@@ -255,7 +257,7 @@ export function EssayFeedback({
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
               <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
-                Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{bandWithFixes!.toFixed(1)}</strong> with the fixes
+                Up to <strong style={{ fontWeight: 800, color: SLATE_GREEN }}>{bandWithFixes!.toFixed(1)}</strong> with the fixes
               </span>
             </div>
           ) : null}
@@ -321,7 +323,7 @@ export function EssayFeedback({
         {/* RIGHT: detail panel */}
         <aside className="lp-fb-aside" style={{ width: 480, flex: "none", background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <div className="lp-fb-noprint" style={{ flex: "none", padding: "14px 16px", borderBottom: `1px solid ${WELL_LINE}` }}>
-            <div style={{ display: "flex", gap: 4, background: "#F1EFE4", borderRadius: 11, padding: 4 }}>
+            <div style={{ display: "flex", gap: 4, background: WELL, borderRadius: 11, padding: 4 }}>
               <button type="button" onClick={() => setTab("bands")} style={tabStyle(tab === "bands")}>Bands</button>
               <button type="button" onClick={() => setTab("issues")} style={tabStyle(tab === "issues")}>Fixes · {ranges.length}</button>
               <button type="button" onClick={() => setTab("insights")} style={tabStyle(tab === "insights")}>Insights</button>
@@ -462,12 +464,12 @@ function BandsView({
   return (
     <div>
       {blocker ? (
-        <div style={{ background: "#FCEEEA", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
+        <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
             {lift ? (
-              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: SLATE_GREEN, background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
             ) : null}
           </div>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: SLATE_STRONG }}>
@@ -541,7 +543,7 @@ function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRange
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, flexWrap: "wrap" }}>
                   <span style={{ color: SLATE_MUTED, textDecoration: "line-through" }}>{r.ann.text.trim()}</span>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                  <span style={{ fontWeight: 700, color: "#1A7A48", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
+                  <span style={{ fontWeight: 700, color: SLATE_GREEN, background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
                 </div>
               ) : null}
             </div>

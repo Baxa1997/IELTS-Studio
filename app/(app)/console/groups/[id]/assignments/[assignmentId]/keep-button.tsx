@@ -3,11 +3,9 @@
 import { useActionState, useState } from "react";
 
 import { saveToLibrary, type LibraryState } from "../../../../practice/library-actions";
-import { INK, PANEL, WARM_LINE as RULE, WHITE } from "@/lib/theme/tokens";
+import { GREEN, INK, ON_INK, PANEL, RED, WARM_LINE as RULE, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const GREEN = "#166C4C";
-const RED = "#C24539";
 
 /**
  * "Keep this" — §9's way onto the shelf.
@@ -110,7 +108,7 @@ export function KeepButton({
           style={{
             border: "none",
             background: INK,
-            color: WHITE,
+            color: ON_INK,
             borderRadius: 8,
             padding: "6px 14px",
             fontFamily: SANS,

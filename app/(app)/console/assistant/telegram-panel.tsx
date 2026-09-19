@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { connectMyTelegram, disconnectMyTelegram, type StaffLinkState } from "./telegram-actions";
+import { RED_DEEP } from "@/lib/theme/tokens";
 
 /**
  * Putting the assistant on your phone.
@@ -100,7 +101,7 @@ export function TelegramStaffPanel({
         ) : null}
       </div>
       {state.error ? (
-        <p style={{ margin: 0, fontSize: 12.5, color: "#a13a2c" }}>{state.error}</p>
+        <p style={{ margin: 0, fontSize: 12.5, color: RED_DEEP }}>{state.error}</p>
       ) : null}
     </div>
   );

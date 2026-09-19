@@ -25,7 +25,7 @@ import { MenuIcon } from "@/components/admin/menu-icons";
 import { OverflowMenu } from "@/components/admin/menu";
 import { loadCenters, type CenterRow } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
-import { BODY, PANEL } from "@/lib/theme/tokens";
+import { BODY, PANEL, WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -221,7 +221,7 @@ export default async function CentersPage({
                 borderRadius: 8,
                 padding: "8px 11px",
                 fontSize: 12.5,
-                background: "#FAFAF8",
+                background: WELL,
                 fontFamily: "inherit",
                 color: INK,
               }}

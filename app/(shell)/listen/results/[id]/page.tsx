@@ -10,6 +10,7 @@ import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../trap-
 import {
   BRAND,
   BRAND_SOFT as TINT,
+  ON_INK,
   PANEL,
   SLATE_BODY as MUTED,
   SLATE_GREEN_BG as GOOD_BG,
@@ -292,7 +293,7 @@ export default async function ListeningResultPage({ params }: PageProps) {
               alignItems: "center",
               gap: 8,
               background: INK,
-              color: WHITE,
+              color: ON_INK,
               padding: "10px 18px",
               borderRadius: 999,
               fontSize: 14.5,

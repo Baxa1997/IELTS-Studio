@@ -25,7 +25,7 @@ import {
    it straddled the rail's edge and had to be legible against both the dark rail
    and the light page; the toggle now sits inside the brand row on a white rail,
    so it takes the rail's own greys instead. */
-import { PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
+import { BRAND, PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
 
 import { SidebarNav } from "./sidebar-nav";
 

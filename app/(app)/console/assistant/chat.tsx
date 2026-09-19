@@ -14,18 +14,32 @@ import { runProposal, type RunState } from "./actions";
 import { liveProposalTurn } from "./live-proposal";
 import { TelegramStaffPanel } from "./telegram-panel";
 import { newThread } from "./thread-actions";
-import { INDIGO_INK, INDIGO_STUDIO as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_FILL,
+  INDIGO_INK,
+  INDIGO_STUDIO as INDIGO,
+  ON_INDIGO,
+  PANEL,
+  RED_DEEP,
+  RULE,
+  SLATE_BODY,
+  SLATE_FIELD,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
-const INK = "#16203a";
-const BODY = "#2a3350";
-const MUTED = "#545c70";
-const FAINT = "#6f7788";
-const DIM = "#8b91a0";
-const LINE = "#dfdfe8";
-const RULE = "#eeeef4";
-const FIELD = "#e2e2ea";
-const WASH = "#f6f6fa";
-const TINT = "#fafaff";
+const INK = SLATE_INK;
+const BODY = SLATE_BODY;
+const MUTED = SLATE_MUTED;
+const DIM = SLATE_MUTED;
+const LINE = SLATE_LINE;
+const FIELD = SLATE_FIELD;
+const WASH = WELL;
+const TINT = WELL;
 const SERIF = "var(--font-serif4), Georgia, serif";
 
 export interface ProposalField {
@@ -584,7 +598,7 @@ export function AssistantChat({
 
             <div
               className="cn-assistant-messages"
-              style={{ overflow: "auto", padding: "20px 20px 12px", background: "#fbfbfd" }}
+              style={{ overflow: "auto", padding: "20px 20px 12px", background: WELL }}
             >
               <div
                 style={{
@@ -637,7 +651,7 @@ export function AssistantChat({
             style={{ ...card, flex: "none", padding: "12px 14px" }}
           >
             {error ? (
-              <p style={{ margin: "0 0 9px", fontSize: 13, color: "#a13a2c" }}>{error}</p>
+              <p style={{ margin: "0 0 9px", fontSize: 13, color: RED_DEEP }}>{error}</p>
             ) : null}
             {attached ? (
               <div
@@ -747,7 +761,7 @@ export function AssistantChat({
                   padding: "11px 14px",
                   borderRadius: 10,
                   border: `1px solid ${FIELD}`,
-                  background: "#fbfbfd",
+                  background: WELL,
                   fontSize: 15,
                   color: INK,
                   outline: "none",
@@ -760,9 +774,9 @@ export function AssistantChat({
                   flex: "none",
                   padding: "11px 22px",
                   borderRadius: 10,
-                  background: INDIGO,
+                  background: INDIGO_FILL,
                   border: 0,
-                  color: WHITE,
+                  color: ON_INDIGO,
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: busy ? "default" : "pointer",
@@ -827,7 +841,7 @@ function Bubble({
             maxWidth: "76%",
             padding: "12px 16px",
             borderRadius: "14px 14px 4px 14px",
-            background: "#eeecff",
+            background: WELL,
             border: "1px solid #ddd9fb",
             fontSize: 15,
             lineHeight: 1.5,
@@ -1096,8 +1110,8 @@ function ProposalCard({
           style={{
             padding: "3px 9px",
             borderRadius: 999,
-            background: INDIGO,
-            color: WHITE,
+            background: INDIGO_FILL,
+            color: ON_INDIGO,
             fontSize: 10,
             fontWeight: 700,
             letterSpacing: ".06em",
@@ -1134,7 +1148,7 @@ function ProposalCard({
                   padding: "9px 12px",
                   borderRadius: 10,
                   border: `1px solid ${FIELD}`,
-                  background: "#fbfbfd",
+                  background: WELL,
                   fontSize: 14,
                   color: INK,
                   outline: "none",
@@ -1155,7 +1169,7 @@ function ProposalCard({
                   padding: "9px 12px",
                   borderRadius: 10,
                   border: `1px solid ${FIELD}`,
-                  background: "#fbfbfd",
+                  background: WELL,
                   fontSize: 14,
                   color: INK,
                   outline: "none",
@@ -1170,7 +1184,7 @@ function ProposalCard({
       <div
         style={{
           padding: "12px 14px",
-          background: "#fbfbfd",
+          background: WELL,
           borderTop: `1px solid ${RULE}`,
           display: "flex",
           alignItems: "center",
@@ -1183,7 +1197,7 @@ function ProposalCard({
           {roster ? ` · ${roster.length} students from the attached file` : ""}
         </span>
         {state.error ? (
-          <span style={{ fontSize: 12.5, color: "#a13a2c", flexBasis: "100%" }}>{state.error}</span>
+          <span style={{ fontSize: 12.5, color: RED_DEEP, flexBasis: "100%" }}>{state.error}</span>
         ) : null}
         <button
           type="button"
@@ -1210,9 +1224,9 @@ function ProposalCard({
             flex: "none",
             padding: "9px 17px",
             borderRadius: 10,
-            background: INDIGO,
+            background: INDIGO_FILL,
             border: 0,
-            color: WHITE,
+            color: ON_INDIGO,
             fontSize: 13,
             fontWeight: 700,
             cursor: pending ? "default" : "pointer",

@@ -9,8 +9,10 @@ import {
   FAINT,
   GREEN,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
   INK,
   MUTED,
+  ON_INDIGO,
   PANEL,
   WARM_LINE,
   WARM_LINE_DEEP,
@@ -486,8 +488,8 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
           onClick={onClose}
           style={{
             flex: 1,
-            background: INDIGO,
-            color: WHITE,
+            background: INDIGO_FILL,
+            color: ON_INDIGO,
             border: 0,
             borderRadius: 9,
             padding: 11,

@@ -13,7 +13,7 @@ import {
 
 import { type ActionState, deleteAccount, saveAccount, transferBetweenAccounts } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { FAINT, MUTED, PANEL, RED, WARM_LINE, WHITE } from "@/lib/theme/tokens";
+import { FAINT, MUTED, ON_RED, PANEL, RED, RED_FILL, WARM_LINE, WHITE } from "@/lib/theme/tokens";
 
 /**
  * A kassa is a float held by a named person. That is the whole reason the form
@@ -190,10 +190,10 @@ function DeleteDeskButton({ id, name }: { id: string; name: string }) {
             type="submit"
             disabled={pending}
             style={{
-              background: RED,
+              background: RED_FILL,
               border: 0,
               borderRadius: 8,
-              color: WHITE,
+              color: ON_RED,
               padding: "7px 13px",
               fontFamily: "inherit",
               fontSize: 12.5,

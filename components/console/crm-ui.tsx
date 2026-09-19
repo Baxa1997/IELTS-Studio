@@ -62,11 +62,15 @@ import {
   FAINT,
   FIELD_LINE,
   GREEN,
+  GREEN_FILL,
   HAIR,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
   INK,
   LINE,
   MUTED,
+  ON_GREEN,
+  ON_INDIGO,
   PANEL,
   RED,
   RED_DEEP,
@@ -1071,8 +1075,8 @@ const btnBase: React.CSSProperties = {
 export function buttonStyle(
   variant: "primary" | "green" | "ghost" = "primary",
 ): React.CSSProperties {
-  if (variant === "primary") return { ...btnBase, background: INDIGO, color: WHITE, border: 0 };
-  if (variant === "green") return { ...btnBase, background: GREEN, color: WHITE, border: 0 };
+  if (variant === "primary") return { ...btnBase, background: INDIGO_FILL, color: ON_INDIGO, border: 0 };
+  if (variant === "green") return { ...btnBase, background: GREEN_FILL, color: ON_GREEN, border: 0 };
   return {
     ...btnBase,
     background: PANEL,

@@ -225,7 +225,7 @@ export function solidButton(size: "md" | "lg" = "lg"): React.CSSProperties {
   return {
     border: 0,
     cursor: "pointer",
-    background: BRAND,
+    background: BRAND_FILL,
     color: WHITE,
     fontFamily: SANS,
     fontWeight: 700,

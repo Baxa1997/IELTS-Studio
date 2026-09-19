@@ -9,7 +9,23 @@ import { Modal } from "@/components/ui";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { MarkLeftBody, MoveBody, RemoveBody } from "./move-or-remove";
-import { INDIGO_STUDIO as INDIGO, PANEL, SLATE_AMBER_BG, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INDIGO_FILL,
+  INDIGO_SOFT,
+  INDIGO_STUDIO as INDIGO,
+  ON_INDIGO,
+  PANEL,
+  RULE,
+  SLATE_AMBER,
+  SLATE_AMBER_BG,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The group, as one table.
@@ -32,12 +48,9 @@ import { INDIGO_STUDIO as INDIGO, PANEL, SLATE_AMBER_BG, WHITE } from "@/lib/the
  * a full-width strip under a single row, which a shared column grid can't do.
  */
 
-const INK = "#16203a";
-const MUTED = "#5f6878";
-const FAINT = "#6f7788";
-const LINE = "#f2f0e6";
-const RULE = "#edebe1";
-const GREEN = "#1f6b45";
+const INK = SLATE_INK;
+const MUTED = SLATE_MUTED;
+const LINE = SLATE_LINE;
 const AMBER = "#9a5b16";
 const RED = "#a13a2c";
 
@@ -555,7 +568,7 @@ function ResetPasswordForm({
           border: "1px solid #EFD9A8",
           background: SLATE_AMBER_BG,
           fontSize: 12.5,
-          color: AMBER,
+          color: SLATE_AMBER,
           lineHeight: 1.5,
         }}
       >
@@ -567,7 +580,7 @@ function ResetPasswordForm({
         <span style={{ fontSize: 12.5, color: MUTED }}>
           Login <span style={{ color: FAINT }}>(unchanged)</span>
         </span>
-        <code style={{ ...credStyle, background: "#F7F6F2" }}>{student.login ?? "—"}</code>
+        <code style={{ ...credStyle, background: WELL }}>{student.login ?? "—"}</code>
       </label>
 
       <label style={{ display: "grid", gap: 5 }}>
@@ -608,8 +621,8 @@ function ResetPasswordForm({
           padding: "0 16px",
           borderRadius: 9,
           border: "none",
-          background: INDIGO,
-          color: WHITE,
+          background: INDIGO_FILL,
+          color: ON_INDIGO,
           fontSize: 13.5,
           fontWeight: 600,
           fontFamily: "inherit",
@@ -710,14 +723,14 @@ export function RosterToolbar({
           display: "inline-flex",
           alignItems: "center",
           gap: 7,
-          background: INDIGO,
+          background: INDIGO_FILL,
           border: 0,
           borderRadius: 9,
           padding: "8px 14px",
           fontFamily: "inherit",
           fontSize: 13.5,
           fontWeight: 600,
-          color: WHITE,
+          color: ON_INDIGO,
           cursor: "pointer",
         }}
       >
@@ -878,7 +891,7 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
         height: 30,
         flexShrink: 0,
         borderRadius: "50%",
-        background: "#EDEBFB",
+        background: INDIGO_SOFT,
         color: INDIGO,
         fontSize: 11.5,
         fontWeight: 600,

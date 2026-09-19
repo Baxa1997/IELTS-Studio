@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { reviewReferral, type ReviewState } from "@/app/admin/actions";
 import { INK, LINE, MUTED, SANS, TONE } from "@/components/admin/ui";
 import type { ReferralAccount } from "@/lib/referrals/types";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, WELL } from "@/lib/theme/tokens";
 
 const initial: ReviewState = {};
 
@@ -69,7 +69,7 @@ export function DecisionBar({ account, defaultPercent }: { account: ReferralAcco
                   fontFamily: SANS,
                   fontSize: 13,
                   color: INK,
-                  background: "#FBFAF9",
+                  background: WELL,
                   textAlign: "center",
                 }}
               />

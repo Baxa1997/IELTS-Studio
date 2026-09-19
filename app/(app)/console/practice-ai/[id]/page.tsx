@@ -28,7 +28,7 @@ import { GiveToStudents } from "./give-to-students";
 import { PrintableWorksheet } from "./printable";
 import { LessonStaffBar } from "./staff-bar";
 import { WorksheetButton } from "./worksheet";
-import { PANEL } from "@/lib/theme/tokens";
+import { ON_INK, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -195,7 +195,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
               style={{
                 borderRadius: 24,
                 background: INK,
-                color: "#f3f1ec",
+                color: ON_INK,
                 padding: "20px 20px 18px",
                 boxShadow: "0 20px 44px -28px rgba(20,35,46,.7)",
               }}

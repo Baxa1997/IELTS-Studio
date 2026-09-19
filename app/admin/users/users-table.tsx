@@ -20,7 +20,7 @@ import {
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { ManageModal, type ManageTarget } from "./manage-modal";
-import { BODY, PANEL } from "@/lib/theme/tokens";
+import { BODY, PANEL, WELL } from "@/lib/theme/tokens";
 
 /**
  * The users table, filtered in the browser.
@@ -171,7 +171,7 @@ export function UsersTable({
           onChange={(e) => reset(setQuery)(e.target.value)}
           placeholder="Name, email or login…"
           aria-label="Search users"
-          style={{ ...field, flex: 1, minWidth: 200, maxWidth: 280, background: "#FAFAF8" }}
+          style={{ ...field, flex: 1, minWidth: 200, maxWidth: 280, background: WELL }}
         />
         <select value={role} onChange={(e) => reset(setRole)(e.target.value)} aria-label="Role" style={field}>
           <option value="all">Any role</option>

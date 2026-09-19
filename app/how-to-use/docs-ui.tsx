@@ -55,7 +55,7 @@ function Pill({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        background: "#f4f5f7",
+        background: WELL,
         color: MUTED,
         borderRadius: RADIUS.pill,
         padding: "3px 9px",

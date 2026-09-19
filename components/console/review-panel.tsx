@@ -7,9 +7,11 @@ import { WRITING_CRITERIA, type AttemptKind } from "@/lib/console/attempts";
 import {
   FAINT,
   GREEN,
+  GREEN_FILL,
   INDIGO_CONSOLE as INDIGO,
   INK,
   MUTED,
+  ON_GREEN,
   PANEL,
   RED_DEEP,
   WARM_LINE as LINE,
@@ -297,8 +299,8 @@ export function ReviewPanel({
               type="submit"
               disabled={pending}
               style={{
-                background: GREEN,
-                color: WHITE,
+                background: GREEN_FILL,
+                color: ON_GREEN,
                 border: 0,
                 borderRadius: 8,
                 padding: "9px 16px",

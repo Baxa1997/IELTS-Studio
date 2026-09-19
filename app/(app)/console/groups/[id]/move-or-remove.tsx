@@ -5,13 +5,12 @@ import { useActionState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { moveMember, removeMember, setStudentStatus, type GroupFormState } from "../actions";
+import { FAINT, RULE, SLATE_BODY, SLATE_INK, WELL } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#16203a";
-const BODY = "#545c70";
-const FAINT = "#6f7788";
+const INK = SLATE_INK;
+const BODY = SLATE_BODY;
 const RED = "#a13a2c";
-const RULE = "#e2e0d6";
 
 /**
  * The three ways a student leaves a group, each as the body of its own modal.
@@ -226,7 +225,7 @@ const field: React.CSSProperties = {
   padding: "10px 12px",
   border: `1px solid ${RULE}`,
   borderRadius: 12,
-  background: "#fdfdfb",
+  background: WELL,
   fontFamily: SANS,
   fontSize: 14,
   fontWeight: 400,

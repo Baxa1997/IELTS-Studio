@@ -46,6 +46,7 @@ import {
   BODY,
   CONSOLE_CANVAS,
   FAINT as TK_FAINT,
+  INDIGO_SOFT,
   PANEL,
   RED_DEEP,
   WARM_LINE,
@@ -496,7 +497,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 style={{
                   border: 0,
                   borderLeft: `1px solid ${HAIRLINE}`,
-                  background: "#FAF9F6",
+                  background: INDIGO_SOFT,
                   padding: "0 13px",
                   fontFamily: SANS,
                   fontSize: 12.5,
@@ -516,7 +517,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               style={{
                 padding: "11px 14px",
                 marginBottom: 14,
-                background: "#FBEAE8",
+                background: "var(--tk-tint-red-bg)",
                 border: "1px solid #F0D5D1",
                 borderRadius: 11,
                 fontFamily: SANS,
@@ -539,7 +540,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
               style={{
                 padding: "11px 14px",
                 marginBottom: 14,
-                background: "#FBEAE8",
+                background: "var(--tk-tint-red-bg)",
                 border: "1px solid #F0D5D1",
                 borderRadius: 11,
                 fontFamily: SANS,

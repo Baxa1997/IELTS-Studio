@@ -5,11 +5,17 @@ import { useActionState, useState } from "react";
 import type { LibraryItem } from "@/lib/console/practice-library";
 
 import { archiveLibraryItem, type LibraryState } from "./library-actions";
-import { INDIGO, INK, MUTED as FAINT, PANEL, WARM_LINE as RULE } from "@/lib/theme/tokens";
+import {
+  GREEN,
+  INDIGO,
+  INK,
+  MUTED as FAINT,
+  PANEL,
+  RED,
+  WARM_LINE as RULE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const GREEN = "#166C4C";
-const RED = "#C24539";
 
 /**
  * §9's practice library, on the Practice page where it belongs.

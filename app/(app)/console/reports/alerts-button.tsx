@@ -10,6 +10,7 @@ import {
   FAINT,
   GREEN,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_SOFT,
   INK,
   MUTED,
   PANEL,
@@ -200,7 +201,7 @@ export function ReportAlerts({
                     letterSpacing: ".04em",
                     textTransform: "uppercase",
                     color: INDIGO,
-                    background: "#F7F7FD",
+                    background: INDIGO_SOFT,
                   }}
                 >
                   <FiInbox size={12} style={{ marginRight: 6, verticalAlign: -2 }} aria-hidden />
@@ -213,7 +214,7 @@ export function ReportAlerts({
                   key={s.studentId}
                   href={s.href}
                   onClick={() => setOpen(false)}
-                  style={{ ...itemStyle, borderTop: "none", background: "#F7F7FD" }}
+                  style={{ ...itemStyle, borderTop: "none", background: INDIGO_SOFT }}
                 >
                   <span style={{ ...dotStyle, background: INDIGO, marginTop: 5 }} />
                   <span style={{ flex: 1, minWidth: 0 }}>
@@ -235,7 +236,7 @@ export function ReportAlerts({
                   style={{
                     ...itemStyle,
                     borderTop: "none",
-                    background: "#F7F7FD",
+                    background: INDIGO_SOFT,
                     paddingTop: 6,
                     paddingBottom: 12,
                   }}

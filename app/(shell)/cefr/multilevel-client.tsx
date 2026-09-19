@@ -36,6 +36,7 @@ import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
 import {
   BRAND,
   BRAND as D_ACCENT,
+  BRAND_FILL as D_ACCENT_FILL,
   BRAND_DEEP,
   BRAND_DEEP as D_ATEXT,
   BRAND_LINE,
@@ -2352,7 +2353,7 @@ function CefrCoach({
               borderRadius: 8,
               border: "none",
               cursor: sending || !input.trim() ? "default" : "pointer",
-              background: D_ACCENT,
+              background: D_ACCENT_FILL,
               color: WHITE,
               display: "flex",
               alignItems: "center",
@@ -2371,7 +2372,7 @@ function CefrCoach({
 function dsSubmitBtn(busy: boolean): React.CSSProperties {
   return {
     padding: "11px 22px",
-    background: D_ACCENT,
+    background: D_ACCENT_FILL,
     color: WHITE,
     border: "none",
     borderRadius: 8,
@@ -5119,7 +5120,7 @@ function Alert({ children }: { children: React.ReactNode }) {
         fontFamily: SANS,
         fontSize: 13,
         color: BAD,
-        background: "#FEF2F2",
+        background: "var(--tk-tint-red-bg)",
         border: "1px solid #FECACA",
         borderRadius: 10,
         padding: "10px 12px",

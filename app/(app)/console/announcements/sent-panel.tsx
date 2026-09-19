@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FiCheckCircle, FiExternalLink, FiSend } from "react-icons/fi";
-import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, INK, MUTED, PANEL } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INDIGO_SOFT,
+  INK,
+  MUTED,
+  PANEL,
+  SLATE_LINE,
+} from "@/lib/theme/tokens";
 
 /**
  * The right-hand column: what you sent, and how Telegram gets connected.
@@ -15,7 +24,7 @@ import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, INK, MUTED, PANEL } from "@/lib
  */
 
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
-const LINE = "#EFEDE7";
+const LINE = SLATE_LINE;
 const TELEGRAM = "#229ED9";
 
 const AUDIENCE_LABEL: Record<string, string> = {
@@ -113,7 +122,7 @@ function SentList({ rows }: { rows: SentRow[] }) {
                 fontSize: 11,
                 fontWeight: 600,
                 color: INDIGO,
-                background: "#EDEBFB",
+                background: INDIGO_SOFT,
                 borderRadius: 20,
                 padding: "2px 8px",
               }}

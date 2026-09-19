@@ -1405,7 +1405,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 className="lc-btn lc-success"
                 style={{
                   background: "var(--color-success)",
-                  color: WHITE,
+                  color: "var(--color-on-success)",
                   border: "none",
                   borderRadius: "var(--radius-lg)",
                   padding: "14px 24px",

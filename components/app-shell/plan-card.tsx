@@ -7,7 +7,7 @@ import { Crown, Layers, type LucideIcon, Mic, SquarePen } from "lucide-react";
 
 import { Modal } from "@/components/ui/interactive";
 import type { Quota, UsageSummary } from "@/lib/quota";
-import { SANS, WHITE } from "@/lib/theme/tokens";
+import { SANS, SLATE_INK, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The learner's PLAN, pinned to the foot of the sidebar rail — as a BUTTON.
@@ -30,12 +30,12 @@ import { SANS, WHITE } from "@/lib/theme/tokens";
 
 /** The rail's single hue — the Base44 reference's orange — on the crown only. */
 const ACCENT = "#d2571f";
-const INK = "#16150f";
+const INK = SLATE_INK;
 /** The rail's usual secondary grey (#8b8883) is 3.5:1 on white — too faint for
  *  a 12px line somebody is meant to read. This is 5.3:1. Mirrored in
  *  globals.css for the dialog's settings link. */
 const SUB = "#6f6b64";
-const LINE = "#e7e4dc";
+const LINE = SLATE_LINE;
 const RED = "#b3261e";
 
 type AllowanceKey = "grade" | "generate" | "speaking";

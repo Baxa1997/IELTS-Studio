@@ -2,7 +2,17 @@
 
 import { useActionState } from "react";
 
-import { FAINT, GREEN, INK, MUTED, PANEL, WARM_HAIR, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  GREEN_FILL,
+  INK,
+  MUTED,
+  ON_GREEN,
+  PANEL,
+  WARM_HAIR,
+  WHITE,
+} from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { deleteHoliday, saveHoliday, type ActionState } from "../center-actions";
@@ -93,8 +103,8 @@ export function Holidays({ holidays }: { holidays: Holiday[] }) {
           disabled={adding}
           className="cn-btn cn-btn--green"
           style={{
-            background: GREEN,
-            color: WHITE,
+            background: GREEN_FILL,
+            color: ON_GREEN,
             border: 0,
             borderRadius: 8,
             padding: "8px 14px",

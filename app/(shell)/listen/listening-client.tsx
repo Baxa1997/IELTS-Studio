@@ -81,6 +81,7 @@ import {
   BRAND_FILL,
   BRAND_LIGHT,
   CANVAS,
+  ON_INK,
   PANEL,
   SLATE_BODY,
   SLATE_INK,
@@ -2069,7 +2070,7 @@ function RunnerFooter({
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              color: WHITE,
+              color: ON_INK,
             }}
           >
             <svg

@@ -6,6 +6,7 @@ import {
   BRAND_LINE,
   BRAND_SOFT,
   PANEL,
+  RED,
   SLATE_BODY,
   SLATE_INK as INK,
   SLATE_LINE,
@@ -30,7 +31,6 @@ import {
 
 const SANS = "var(--font-manrope), system-ui, sans-serif";
 const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
-const RED = "#C5503C";
 const EMERALD = "#1F8A5B";
 
 const GRADE_MS = 12_000;

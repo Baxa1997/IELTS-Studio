@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { ON_INK, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Confirmation before abandoning a live speaking session.
@@ -103,7 +103,7 @@ export function ConfirmQuit({
             style={{
               width: "100%",
               background: INK,
-              color: WHITE,
+              color: ON_INK,
               border: "none",
               borderRadius: 12,
               padding: "14px 18px",

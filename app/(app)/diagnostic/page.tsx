@@ -12,6 +12,7 @@ import {
   SLATE_INK as INK,
   SLATE_LINE,
   SLATE_STRONG as MUTED,
+  WELL,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -201,7 +202,7 @@ function DiagnosticStep({
         <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}>{blurb}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 11 }}>
           {chips.map((c, i) => (
-            <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: MUTED, background: "#F7F6EE", border: "1px solid #ECEADC", borderRadius: 8, padding: "5px 10px" }}>
+            <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: MUTED, background: WELL, border: "1px solid #ECEADC", borderRadius: 8, padding: "5px 10px" }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 {i === 0 ? (
                   <>

@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { FAINT, INDIGO_CONSOLE as INDIGO, INK, MUTED, WARM_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
+  INK,
+  MUTED,
+  ON_INDIGO,
+  WARM_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Pick the months, download the sheet.
@@ -83,8 +92,8 @@ export function MonthsExport({
               fontSize: 13,
               fontWeight: 600,
               border: "none",
-              background: INDIGO,
-              color: WHITE,
+              background: INDIGO_FILL,
+              color: ON_INDIGO,
               textDecoration: "none",
             }}
           >

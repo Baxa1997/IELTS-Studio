@@ -3,7 +3,20 @@
 import { useActionState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
-import { INDIGO, PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO,
+  INDIGO_FILL,
+  ON_INDIGO,
+  PANEL,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WARM_GREEN,
+  WARM_RED,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The two pieces every practice hub shares for setting content to a group: the
@@ -17,10 +30,9 @@ import { INDIGO, PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const FAINT = "#8A8FA0";
-const LINE = "#ECEAF2";
+const INK = SLATE_INK;
+const MUTED = SLATE_MUTED;
+const LINE = SLATE_LINE;
 
 const field: React.CSSProperties = {
   width: "100%",
@@ -133,8 +145,8 @@ export function AttachForm({
           disabled={pending}
           style={{
             flex: 1,
-            background: INDIGO,
-            color: WHITE,
+            background: INDIGO_FILL,
+            color: ON_INDIGO,
             border: 0,
             borderRadius: 10,
             padding: 11,
@@ -221,7 +233,7 @@ export function PracticeModal({
             aria-label="Close"
             style={{
               marginLeft: "auto",
-              background: "#F6F5FB",
+              background: WELL,
               border: `1px solid ${LINE}`,
               borderRadius: 9,
               width: 30,

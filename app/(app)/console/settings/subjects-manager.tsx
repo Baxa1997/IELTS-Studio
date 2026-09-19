@@ -14,8 +14,10 @@ import {
 import {
   FAINT,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
   INK,
   MUTED,
+  ON_INDIGO,
   PANEL,
   RED_DEEP,
   WARM_LINE as LINE,
@@ -97,8 +99,8 @@ export function SubjectsManager({ subjects }: { subjects: SubjectItem[] }) {
           style={{
             border: 0,
             borderRadius: 8,
-            background: INDIGO,
-            color: WHITE,
+            background: INDIGO_FILL,
+            color: ON_INDIGO,
             padding: "9px 14px",
             fontFamily: "inherit",
             fontSize: 13,

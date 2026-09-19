@@ -4,11 +4,24 @@ import { useActionState, useState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { FAB_CLEARANCE, INDIGO, PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
+import {
+  FAB_CLEARANCE,
+  INDIGO,
+  INDIGO_FILL,
+  ON_INDIGO,
+  ON_INK,
+  PANEL,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WARM_GREEN,
+  WARM_RED,
+  WHITE,
+} from "@/lib/theme/tokens";
 
-const INK = "#1A2138";
-const MUTED = "#5A6076";
-const LINE = "#ECEAF2";
+const INK = SLATE_INK;
+const MUTED = SLATE_MUTED;
+const LINE = SLATE_LINE;
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 
 /**
@@ -138,8 +151,8 @@ export function AssignToClassPanel({
               type="submit"
               disabled={pending}
               style={{
-                background: INDIGO,
-                color: WHITE,
+                background: INDIGO_FILL,
+                color: ON_INDIGO,
                 border: "none",
                 borderRadius: 10,
                 padding: "9px 14px",
@@ -170,7 +183,7 @@ export function AssignToClassPanel({
           onClick={() => setOpen(true)}
           style={{
             background: INK,
-            color: WHITE,
+            color: ON_INK,
             border: "none",
             borderRadius: 999,
             padding: "10px 16px",

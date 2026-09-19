@@ -10,8 +10,10 @@ import {
   CONSOLE_CANVAS,
   FAINT,
   GREEN,
+  GREEN_FILL,
   INK,
   MUTED,
+  ON_GREEN,
   RED_DEEP as RED,
   SOFT,
   WARM_HAIR,
@@ -136,8 +138,8 @@ export function RegisterForm({
             disabled={pending || locked || students.length === 0}
             className="cn-btn cn-btn--green"
             style={{
-              background: GREEN,
-              color: WHITE,
+              background: GREEN_FILL,
+              color: ON_GREEN,
               border: 0,
               borderRadius: 8,
               padding: "8px 14px",

@@ -10,12 +10,15 @@ import {
   CONSOLE_CANVAS,
   FAINT,
   GREEN,
+  GREEN_FILL,
   INK,
   MUTED,
+  ON_GREEN,
   PANEL,
   RED_DEEP as RED,
   WARM_LINE,
   WARM_LINE_DEEP,
+  WELL,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -159,7 +162,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
 
           <div
             style={{
-              background: "#F7F6F2",
+              background: WELL,
               borderRadius: 10,
               padding: "12px 14px",
               fontSize: 12.5,
@@ -186,8 +189,8 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
               className="cn-btn cn-btn--green"
               style={{
                 flex: 1,
-                background: GREEN,
-                color: WHITE,
+                background: GREEN_FILL,
+                color: ON_GREEN,
                 border: 0,
                 borderRadius: 8,
                 padding: 11,

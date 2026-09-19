@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  ON_INK,
+  PANEL,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * What a server error looks like when it reaches a person.
@@ -20,10 +29,9 @@ import { PANEL, WHITE } from "@/lib/theme/tokens";
  * or try again, since a good share of server errors are transient.
  */
 
-const INK = "#15171C";
-const MUTED = "#5C616C";
-const FAINT = "#8B909B";
-const LINE = "#E7E5DF";
+const INK = SLATE_INK;
+const MUTED = SLATE_MUTED;
+const LINE = SLATE_LINE;
 
 export default function AppError({
   error,
@@ -84,7 +92,7 @@ export default function AppError({
               border: 0,
               borderRadius: 10,
               background: INK,
-              color: WHITE,
+              color: ON_INK,
               padding: "10px 18px",
               fontFamily: "inherit",
               fontSize: 14,
@@ -115,7 +123,7 @@ export default function AppError({
             Error code{" "}
             <code
               style={{
-                background: "#F4F2ED",
+                background: WELL,
                 borderRadius: 6,
                 padding: "2px 7px",
                 fontSize: 12,

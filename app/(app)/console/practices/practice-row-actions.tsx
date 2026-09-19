@@ -3,10 +3,10 @@
 import { useActionState } from "react";
 
 import { archivePractice, restorePractice, type PracticeFormState } from "./actions";
-import { PANEL, WARM_RED } from "@/lib/theme/tokens";
+import { PANEL, SLATE_LINE, SLATE_MUTED, WARM_RED } from "@/lib/theme/tokens";
 
-const MUTED = "#5A6076";
-const LINE = "#ECEAF2";
+const MUTED = SLATE_MUTED;
+const LINE = SLATE_LINE;
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 
 const empty: PracticeFormState = {};

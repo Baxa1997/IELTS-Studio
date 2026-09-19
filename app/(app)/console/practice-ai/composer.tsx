@@ -20,7 +20,7 @@ import {
   TROUGH,
   TROUGH_DEEP,
 } from "@/lib/lessons/theme";
-import { PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
+import { PANEL, RED_DEEP, SLATE_BODY, WHITE } from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `lessons` namespace. */
 const callEngine = engineClient("lessons");
@@ -696,7 +696,7 @@ export function Composer() {
   );
 }
 
-const BODY_INK = "#3d5560";
+const BODY_INK = SLATE_BODY;
 
 /**
  * A brief being typed by nobody.

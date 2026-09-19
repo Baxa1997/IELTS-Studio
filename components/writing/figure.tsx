@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import type { AxisFigure, Figure, PieFigure, TableFigure } from "@/lib/writing/figure";
 import {
+  ON_INK,
   PANEL,
   SLATE_BODY as MUTED,
   SLATE_INK as INK,
@@ -166,7 +167,7 @@ function useHoverTooltip() {
         transform: "translate(-50%, calc(-100% - 12px))",
         pointerEvents: "none",
         background: INK,
-        color: WHITE,
+        color: ON_INK,
         borderRadius: 8,
         padding: "6px 9px",
         fontSize: 12,

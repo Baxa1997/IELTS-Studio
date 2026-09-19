@@ -34,7 +34,7 @@ import type {
   LessonContent,
   OpenExercise,
 } from "@/lib/lessons/types";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { ON_INK, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Doing a lesson: read it, answer it, hand it in, see what you got wrong.
@@ -1168,7 +1168,7 @@ function ScoreCard({
       style={{
         borderRadius: 28,
         background: INK,
-        color: "#f3f1ec",
+        color: ON_INK,
         padding: "24px 28px",
         marginBottom: 22,
         display: "flex",

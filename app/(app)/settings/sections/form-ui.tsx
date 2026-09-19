@@ -1,6 +1,14 @@
 /** The learner settings forms' shared field, label, button and message styles. */
 
-import { BRAND, GREEN, PANEL, SLATE_INK as INK, WARM_LINE_SOFT, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  GREEN,
+  PANEL,
+  RED_DEEP,
+  SLATE_INK as INK,
+  WARM_LINE_SOFT,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 
 export const labelStyle: React.CSSProperties = { fontSize: 13.5, fontWeight: 600, color: INK };
@@ -38,7 +46,7 @@ export function buttonStyle(
 export function Message({ state }: { state: { error?: string; ok?: string } }) {
   if (state.error) {
     return (
-      <p role="alert" style={{ ...box, color: "#A13A2C", background: "#FBEFEC" }}>
+      <p role="alert" style={{ ...box, color: RED_DEEP, background: "#FBEFEC" }}>
         {state.error}
       </p>
     );

@@ -9,8 +9,10 @@ import { useActionFeedback } from "@/components/console/toast";
 import {
   FAINT,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
   INK,
   MUTED,
+  ON_INDIGO,
   PANEL,
   RED_DEEP,
   WARM_LINE_DEEP,
@@ -311,8 +313,8 @@ export function AnnouncementComposer({
           className="cn-btn cn-btn--primary"
           style={{
             flex: 1,
-            background: INDIGO,
-            color: WHITE,
+            background: INDIGO_FILL,
+            color: ON_INDIGO,
             border: 0,
             borderRadius: 8,
             padding: 10,

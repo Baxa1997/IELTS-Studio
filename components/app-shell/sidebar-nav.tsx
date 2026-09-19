@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n";
-import { SANS, WHITE } from "@/lib/theme/tokens";
+import { SANS, WELL, WHITE } from "@/lib/theme/tokens";
 import {
   Activity,
   Award,
@@ -767,7 +767,7 @@ export function SidebarNav({
                               fontSize: 10,
                               letterSpacing: ".05em",
                               color: RAIL_MUTED,
-                              background: "#eceae3",
+                              background: WELL,
                               padding: "2px 7px",
                               borderRadius: 6,
                             }}

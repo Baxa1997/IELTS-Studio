@@ -1,7 +1,7 @@
 import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getT } from "@/lib/i18n/server";
-import { FAINT, INK, SANS } from "@/lib/theme/tokens";
+import { FAINT, INK, SANS, WELL } from "@/lib/theme/tokens";
 
 /**
  * Theme and interface language.

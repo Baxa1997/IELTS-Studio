@@ -1,5 +1,5 @@
 import { FAINT, INK, LINE, MUTED, SANS } from "@/components/console/page-ui";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { ON_INK, PANEL, WELL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Table furniture for the platform console.
@@ -31,7 +31,7 @@ export function FilterBar({ children }: { children: React.ReactNode }) {
           fontFamily: SANS,
           fontWeight: 600,
           fontSize: 13.5,
-          color: WHITE,
+          color: ON_INK,
           background: INK,
           border: "none",
           borderRadius: 9,
@@ -184,7 +184,7 @@ export function TH({
         letterSpacing: ".05em",
         textTransform: "uppercase",
         color: FAINT,
-        background: "#FBFBFD",
+        background: WELL,
         borderBottom: `1px solid ${LINE}`,
         padding: "10px 14px",
       }}

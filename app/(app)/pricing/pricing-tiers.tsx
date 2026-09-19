@@ -7,7 +7,7 @@ import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import type { UsageSummary } from "@/lib/quota";
 import {
   BRAND,
-  BRAND as VIOLET,
+  BRAND_FILL as VIOLET,
   BRAND_LINE,
   BRAND_SOFT,
   PANEL,

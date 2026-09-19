@@ -35,7 +35,7 @@ import { daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
 
 import { OrgReviewRow } from "./org-review-row";
-import { WARM_WELL, WHITE } from "@/lib/theme/tokens";
+import { INDIGO_FILL, ON_INDIGO, WARM_WELL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -121,8 +121,8 @@ export default async function AdminPage() {
                 display: "flex",
                 alignItems: "center",
                 gap: 7,
-                background: INDIGO,
-                color: WHITE,
+                background: INDIGO_FILL,
+                color: ON_INDIGO,
                 borderRadius: 9,
                 padding: "10px 15px",
                 fontSize: 13.5,

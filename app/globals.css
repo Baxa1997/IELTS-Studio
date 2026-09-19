@@ -225,6 +225,31 @@
    * orange bright enough to read as the brand is too bright to put 14px white
    * on: #e2631f gives 3.48:1. In LIGHT these are byte-identical to the
    * BRAND_DARKEST / BRAND / BRAND_MID they replaced, so nothing moves. */
+  /* ── FILLS AND THE INK THAT GOES ON THEM ────────────────────────────────
+   * Every one of these is a PAIR. A fill token alone is a trap: `background:
+   * GREEN` with `color: WHITE` reads fine in light (5.42:1) and fails in dark
+   * (2.33:1), because GREEN lightens to stay legible as TEXT on a dark page and
+   * white stops clearing it. Pairing them makes the two move together.
+   *
+   * ⚠️ IN DARK THE FILLS GO BRIGHT AND THE INK GOES DARK. That is the opposite
+   * of the light column, and it is deliberate: a status button dark enough to
+   * carry white on a dark page disappears into the page. A bright fill with
+   * near-black ink both pops and clears 6:1.
+   *
+   * `ON_INK` is the same idea for the neutral chip — `background: INK` inverts
+   * to near-white in dark, so its label cannot stay white. */
+  --tk-on-ink: #ffffff;
+  --tk-green-fill: #16794c;
+  --tk-on-green: #ffffff;
+  --tk-red-fill: #c2453a;
+  --tk-on-red: #ffffff;
+  /* AMBER carries white at only 3.63:1 even in light — a pre-existing call the
+     tokens module records as "large text only". Kept, not silently changed. */
+  --tk-amber-fill: #b8791f;
+  --tk-on-amber: #ffffff;
+  --tk-indigo-fill: #3b43b5;
+  --tk-on-indigo: #ffffff;
+
   --tk-hero-a: #2c0013;
   --tk-hero-b: #7d0132;
   --tk-hero-c: #9b1044;
@@ -234,10 +259,10 @@
   --tk-indigo-deep: #2f3699;
   --tk-indigo-soft: #ecebfb;
   --tk-indigo-line: #e1dff7;
-  --tk-indigo-console: #4340cb;
-  --tk-indigo-shell: #4338ca;
-  --tk-indigo-studio: #4f46e5;
-  --tk-indigo-ink: #3730a3;
+  --tk-indigo-console: #9aa0f2;
+  --tk-indigo-shell: #9a96f2;
+  --tk-indigo-studio: #a49df5;
+  --tk-indigo-ink: #b3aef7;
 
   /* status */
   --tk-green: #16794c;
@@ -532,9 +557,19 @@
   --tk-brand-pale: #4a2416;
   --tk-brand-soft: #2a1610;
   --tk-brand-line: #4a2718;
-  --tk-brand-wash: #33190f;
+  --tk-brand-wash: #2a1409; /* BRAND clears 4.58:1 on it */
   /* Deep orange, kept dark enough that white body copy clears 4.5:1 on the
      lightest stop (5.59:1) instead of the 3.48:1 the brand ramp would give. */
+  --tk-on-ink: #16161f;
+  --tk-green-fill: #3fbf85;
+  --tk-on-green: #08150f;
+  --tk-red-fill: #e87b70;
+  --tk-on-red: #2a0c08;
+  --tk-amber-fill: #e0a84a;
+  --tk-on-amber: #241703;
+  --tk-indigo-fill: #7c84e8;
+  --tk-on-indigo: #0f1030;
+
   --tk-hero-a: #1b0b04;
   --tk-hero-b: #8f3413;
   --tk-hero-c: #b2451b;
@@ -875,7 +910,7 @@
   --sh-toggle-ink: #b9b6c4;
   --sh-fullbleed: #0c0c12;
   --sh-content-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.9);
-  --sh-alert: #e0574c;
+  --sh-alert: #b3352b; /* 6.07:1 with white */
   /* Inverted rather than kept: the pastel disc that is quiet on warm paper is
      the brightest object on screen once the rail goes dark. */
   --sh-avatar-bg: #2b2547;

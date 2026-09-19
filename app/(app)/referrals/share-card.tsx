@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, Send } from "lucide-react";
 
-import { BRAND_DARK, MONO, PANEL, SANS, WHITE } from "@/lib/theme/tokens";
+import { BRAND, BRAND_DARK, MONO, PANEL, SANS, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The link and the code, with the only interaction this page has.
@@ -81,7 +81,7 @@ export function ShareCard({ url, code }: { url: string; code: string }) {
           alignItems: "center",
           gap: 8,
           background: PANEL,
-          color: BRAND_DARK,
+          color: BRAND,
           borderRadius: 999,
           padding: "12px 22px",
           fontFamily: SANS,

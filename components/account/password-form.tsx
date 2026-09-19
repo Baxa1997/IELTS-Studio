@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { changePassword, type PasswordState } from "@/app/(app)/account-actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/account/password";
-import { FIELD_LINE, GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
+import { FIELD_LINE, GREEN, INK, MUTED, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Change (or, for a Google-only account, set) your own password.
@@ -65,7 +65,7 @@ export function PasswordForm({
       </Field>
 
       {state.error ? (
-        <p role="alert" style={{ ...messageStyle, color: "#a13a2c", background: "#fbefec" }}>
+        <p role="alert" style={{ ...messageStyle, color: RED_DEEP, background: "#fbefec" }}>
           {state.error}
         </p>
       ) : null}

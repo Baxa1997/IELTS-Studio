@@ -6,12 +6,15 @@ import { saveCenterProfile, type ActionState } from "../center-actions";
 import {
   FAINT,
   GREEN,
+  GREEN_FILL,
   INK,
   MUTED,
+  ON_GREEN,
   PANEL,
   RED_DEEP,
   SOFT,
   WARM_LINE_DEEP,
+  WELL,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -31,7 +34,7 @@ const field: React.CSSProperties = {
   color: INK,
   background: PANEL,
 };
-const readOnly: React.CSSProperties = { ...field, background: "#F7F6F2", color: SOFT };
+const readOnly: React.CSSProperties = { ...field, background: WELL, color: SOFT };
 
 /**
  * The center's own profile. Only the name is editable, and that is a database
@@ -100,8 +103,8 @@ export function CenterProfileForm({
         disabled={pending}
         className="cn-btn cn-btn--green"
         style={{
-          background: GREEN,
-          color: WHITE,
+          background: GREEN_FILL,
+          color: ON_GREEN,
           border: 0,
           borderRadius: 8,
           padding: "10px 15px",

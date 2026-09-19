@@ -16,6 +16,7 @@ import {
   PANEL,
   RED_DEEP,
   WARM_LINE,
+  WELL,
 } from "@/lib/theme/tokens";
 
 /**
@@ -119,7 +120,7 @@ export function TelegramPanel({
                 padding: "8px 13px",
                 fontFamily: "inherit",
                 fontSize: 12.5,
-                color: "#A13A2C",
+                color: RED_DEEP,
                 cursor: unlinking ? "wait" : "pointer",
               }}
             >
@@ -184,7 +185,7 @@ export function TelegramPanel({
               padding: "9px 13px",
               fontFamily: "inherit",
               fontSize: 12.5,
-              color: "#A13A2C",
+              color: RED_DEEP,
               cursor: "pointer",
             }}
           >
@@ -233,7 +234,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
   return (
     <div
       style={{
-        background: "#F7F6F2",
+        background: WELL,
         border: `1px solid ${WARM_LINE}`,
         borderRadius: 11,
         padding: 14,

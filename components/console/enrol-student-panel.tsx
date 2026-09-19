@@ -9,13 +9,16 @@ import {
   AMBER,
   FAINT,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
   INK,
   MUTED,
+  ON_INDIGO,
   PANEL,
   RED_DEEP,
   SOFT,
   WARM_LINE,
   WARM_LINE_DEEP,
+  WELL,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -222,7 +225,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
 
           <div
             style={{
-              background: "#F7F6F2",
+              background: WELL,
               borderRadius: 10,
               padding: "12px 14px",
               fontSize: 12.5,
@@ -250,8 +253,8 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
               className="cn-btn cn-btn--primary"
               style={{
                 flex: 1,
-                background: INDIGO,
-                color: WHITE,
+                background: INDIGO_FILL,
+                color: ON_INDIGO,
                 border: 0,
                 borderRadius: 8,
                 padding: 11,

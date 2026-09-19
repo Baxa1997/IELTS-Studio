@@ -143,6 +143,12 @@ const LUCIDA_CSS = `
   --sp-glass-3: #110E14;
   --sp-warm-tint: #FFF6F0;
   --sp-info-tint: #EEF4FF;
+  /* Ink for the things these colours FILL. Same rule as the app palette: a fill
+     and the text on it move in opposite directions between themes, so they are
+     paired. --sp-on-ink is the label on an --sp-ink chip, which inverts. */
+  --sp-on-ink: #FFFFFF;
+  --color-on-success: #FFFFFF;
+  --color-on-amber: #FFFFFF;
 
   font-family: var(--font-body);
   color: var(--color-neutral-1000);
@@ -257,6 +263,9 @@ const LUCIDA_CSS = `
   --sp-glass-3: #201b29;
   --sp-warm-tint: #2e1f16;
   --sp-info-tint: #16203a;
+  --sp-on-ink: #171320;
+  --color-on-success: #08150f;
+  --color-on-amber: #2a1409;
 
   --btn-primary-bg: #c2471b;
   --btn-primary-hover: #d85d1f;

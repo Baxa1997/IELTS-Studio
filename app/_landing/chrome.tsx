@@ -1,7 +1,16 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand/logo";
-import { INDIGO, PANEL, SLATE_MUTED, WARM_RULE, WHITE } from "@/lib/theme/tokens";
+import {
+  INDIGO,
+  INDIGO_FILL,
+  ON_INDIGO,
+  PANEL,
+  SLATE_INK,
+  SLATE_MUTED,
+  WARM_RULE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 // Shared landing chrome: the brand tokens, the floating island nav, and the
 // dark site footer — used by the marketing front door (app/page.tsx) and the
@@ -13,8 +22,8 @@ export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
 export const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
 export { INDIGO };
-export const INK = "#1A1C33";
-export const MUTED = "#565a72";
+export const INK = SLATE_INK;
+export const MUTED = SLATE_MUTED;
 
 export const SHELL: React.CSSProperties = {
   maxWidth: 1480,
@@ -26,8 +35,8 @@ export const BTN_PRIMARY: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 10,
-  background: INDIGO,
-  color: WHITE,
+  background: INDIGO_FILL,
+  color: ON_INDIGO,
   fontFamily: SANS,
   fontWeight: 600,
   fontSize: 16,

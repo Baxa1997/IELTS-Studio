@@ -17,8 +17,11 @@ import {
   BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
+  FAINT,
   PANEL,
+  RED,
   SLATE_BODY as MUTED,
+  SLATE_GREEN,
   SLATE_GREEN_BG,
   SLATE_GREEN_LINE,
   SLATE_INK as INK,
@@ -37,9 +40,8 @@ type Status = "idle" | "grading" | "done" | "error";
 // ---- Brand tokens (same palette as the internal essay-feedback page) ---------
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const RED = "#C5503C";
 const EMERALD = "#1F9D5E";
-const SOFT_LINE = "#EFECE0";
+const SOFT_LINE = WARM_LINE_SOFT;
 
 const ACCEPT = "image/png,image/jpeg,image/webp,application/pdf";
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
@@ -193,7 +195,7 @@ export function PublicGrader() {
             <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: SLATE_MUTED, textTransform: "uppercase" }}>
               Question
             </span>
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: "#B0AEA0", background: SOFT, border: `1px solid ${SOFT_LINE}`, padding: "1px 8px", borderRadius: 999 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: FAINT, background: SOFT, border: `1px solid ${SOFT_LINE}`, padding: "1px 8px", borderRadius: 999 }}>
               optional
             </span>
           </div>
@@ -422,7 +424,7 @@ function Result({
           <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 19V5M5 12l7-7 7 7" /></svg>
             <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
-              Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{teaser.bandWithFixes.toFixed(1)}</strong> with the fixes
+              Up to <strong style={{ fontWeight: 800, color: SLATE_GREEN }}>{teaser.bandWithFixes.toFixed(1)}</strong> with the fixes
             </span>
           </div>
         ) : null}
@@ -450,12 +452,12 @@ function Result({
 
       {/* ---- "Fix this first" blocker card (mirrors the internal BandsView) ---- */}
       <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: "18px 18px 16px" }}>
-        <div style={{ background: "#FCEEEA", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
+        <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
             {lift ? (
-              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: SLATE_GREEN, background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
             ) : null}
           </div>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: SLATE_STRONG }}>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
+import { INDIGO_FILL, ON_INDIGO, PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Branded page furniture for the organization console.
@@ -378,8 +378,8 @@ export function PrimaryLink({ href, children }: { href: string; children: React.
         display: "inline-flex",
         alignItems: "center",
         gap: 7,
-        background: INDIGO,
-        color: WHITE,
+        background: INDIGO_FILL,
+        color: ON_INDIGO,
         borderRadius: 11,
         padding: "9px 15px",
         fontFamily: SANS,

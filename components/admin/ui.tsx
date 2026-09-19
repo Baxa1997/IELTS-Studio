@@ -2,6 +2,7 @@ import type React from "react";
 import {
   AMBER,
   CONSOLE_CANVAS as TK_CONSOLE_CANVAS,
+  FAINT as TK_FAINT,
   GREEN,
   INDIGO_CONSOLE as INDIGO,
   INK as TK_INK,
@@ -9,8 +10,18 @@ import {
   PANEL,
   RED,
   RED_DEEP,
+  RULE as TK_RULE,
+  SLATE_BODY,
+  SLATE_LINE,
   WARM_WELL as TK_WARM_WELL,
 } from "@/lib/theme/tokens";
+
+/* ⚠️ RE-EXPORTED, NOT RE-DECLARED. Six /admin pages import FAINT and RULE from
+   this module, so the bindings have to survive — but their values are the
+   shared tokens now, and `export const FAINT = FAINT;` would be a
+   self-reference. Hence the aliased import above. */
+export const FAINT = TK_FAINT;
+export const RULE = TK_RULE;
 
 /**
  * The platform console's visual kit.
@@ -30,13 +41,11 @@ import {
  */
 
 export const INK = TK_INK;
-export const BODY = "#2A2D34";
+export const BODY = SLATE_BODY;
 export const MUTED = TK_MUTED;
 export const SOFT = "#7C7A93";
-export const FAINT = "#93919F";
-export const LINE = "#E7E5DF";
+export const LINE = SLATE_LINE;
 /** The two lighter rules: card-internal divider, then row divider. */
-export const RULE = "#F0EEE9";
 export const ROW_RULE = TK_WARM_WELL;
 export { INDIGO };
 export const NAVY = "#14133A";

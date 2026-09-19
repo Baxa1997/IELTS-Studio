@@ -33,7 +33,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TransactionForm } from "../transaction-form";
 import { GenerateInvoicesForm, GroupFeeForm } from "./invoice-forms";
 import { DownloadLink } from "@/components/console/file-links";
-import { PANEL, WARM_LINE, WARM_LINE_DEEP } from "@/lib/theme/tokens";
+import { PANEL, WARM_LINE, WARM_LINE_DEEP, WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -206,7 +206,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
                 padding: "7px 9px",
                 fontFamily: SANS,
                 fontSize: 13,
-                background: "#FAFAF8",
+                background: WELL,
                 color: INK,
               }}
             >
@@ -225,7 +225,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
                 padding: "7px 9px",
                 fontFamily: SANS,
                 fontSize: 13,
-                background: "#FAFAF8",
+                background: WELL,
                 color: INK,
               }}
             >

@@ -265,6 +265,41 @@ export const AMBER = "var(--tk-amber)"; // needs attention            3.5:1 (lar
 export const RED = "var(--tk-red)"; // wrong / overdue            4.6:1
 export const RED_DEEP = "var(--tk-red-deep)"; // the same red as body text  5.9:1
 
+/* ── FILLS, AND THE INK THAT GOES ON THEM ───────────────────────────────────
+ *
+ * ⚠️ NEVER PUT `WHITE` ON A STATUS COLOUR. `background: GREEN` + `color: WHITE`
+ * is 5.42:1 in light and 2.33:1 in dark, because GREEN lightens in dark to stay
+ * legible as TEXT and white stops clearing it. The colour a thing is WRITTEN in
+ * and the colour it is FILLED with are different jobs and they move in opposite
+ * directions between themes — so each fill carries its own ink.
+ *
+ * In dark the fills go BRIGHT and the inks go DARK, inverting the light column
+ * on purpose: a status button dark enough to carry white on a dark page
+ * disappears into it.
+ *
+ *   background: GREEN_FILL  +  color: ON_GREEN
+ *   background: RED_FILL    +  color: ON_RED
+ *   background: AMBER_FILL  +  color: ON_AMBER
+ *   background: BRAND_FILL  +  color: WHITE      (BRAND_FILL is dark in both)
+ *   background: INK         +  color: ON_INK
+ *
+ * Use the bare GREEN / RED / AMBER / BRAND for TEXT, borders and icons.
+ */
+
+/** Ink for a chip filled with `INK` — which inverts to near-white in dark, so
+ *  its label cannot be a literal white. */
+export const ON_INK = "var(--tk-on-ink)";
+export const GREEN_FILL = "var(--tk-green-fill)";
+export const ON_GREEN = "var(--tk-on-green)";
+export const RED_FILL = "var(--tk-red-fill)";
+export const ON_RED = "var(--tk-on-red)";
+export const AMBER_FILL = "var(--tk-amber-fill)";
+export const ON_AMBER = "var(--tk-on-amber)";
+/** Staff console. Same pairing rule — INDIGO lightens in dark, so white stops
+ *  clearing it (2.76:1) and the ink has to go dark instead. */
+export const INDIGO_FILL = "var(--tk-indigo-fill)";
+export const ON_INDIGO = "var(--tk-on-indigo)";
+
 /** Tinted backgrounds paired with the ink that reads on them. Never pair a tint
  *  with anything but its own `fg` — the pairs are what carry the contrast. */
 export const TINT = {

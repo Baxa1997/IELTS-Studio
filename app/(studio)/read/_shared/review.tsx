@@ -156,7 +156,7 @@ function FindInPassage({ sentence, body }: { sentence: string; body: string }) {
       {open ? (
         <p style={{ marginTop: 12, padding: "15px 18px", background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 11, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.7, color: SLATE_STRONG }}>
           {before}
-          <mark style={{ background: "#FEF3C7", color: INK, borderRadius: 3, padding: "1px 3px" }}>{body.slice(idx, idx + trimmed.length)}</mark>
+          <mark style={{ background: "var(--tk-tint-amber-bg)", color: INK, borderRadius: 3, padding: "1px 3px" }}>{body.slice(idx, idx + trimmed.length)}</mark>
           {after}
         </p>
       ) : null}

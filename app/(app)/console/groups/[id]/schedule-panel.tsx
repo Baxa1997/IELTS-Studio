@@ -7,7 +7,18 @@ import { describeDays } from "@/lib/console/timetable-days";
 import { type GroupFormState, setGroupSchedule } from "../actions";
 import { type RoomChoice, ScheduleFields } from "../schedule-fields";
 import { useActionFeedback } from "@/components/console/toast";
-import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
+  INK,
+  MUTED,
+  ON_INDIGO,
+  PANEL,
+  SLATE_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Change when an existing group meets.
@@ -24,7 +35,7 @@ import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, INK, MUTED, PANEL, WHITE } from
  * id and its `effective_from`, so changing a time does not restart the term.
  */
 
-const LINE = "#EAE8E1";
+const LINE = SLATE_LINE;
 const RED = "#A13A2C";
 
 export interface ScheduleSeries {
@@ -186,8 +197,8 @@ function ScheduleForm({
             padding: "0 14px",
             borderRadius: 8,
             border: "none",
-            background: INDIGO,
-            color: WHITE,
+            background: INDIGO_FILL,
+            color: ON_INDIGO,
             fontSize: 12.5,
             fontWeight: 600,
             fontFamily: "inherit",

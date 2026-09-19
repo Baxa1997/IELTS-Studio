@@ -36,7 +36,17 @@ import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 import { DeskForm, TransferForm } from "./desk-forms";
 import { TransactionForm } from "./transaction-form";
 import { DownloadLink } from "@/components/console/file-links";
-import { CONSOLE_CANVAS, RED as TK_RED, WARM_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  CONSOLE_CANVAS,
+  INDIGO_FILL,
+  ON_INDIGO,
+  ON_RED,
+  RED as TK_RED,
+  RED_FILL,
+  WARM_LINE,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -370,7 +380,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                   border: `1px solid ${HAIR}`,
                   borderRadius: 11,
                   padding: "11px 13px",
-                  background: "#FAFAF8",
+                  background: WELL,
                 }}
               >
                 <div style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED }}>{b.name}</div>
@@ -572,9 +582,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                       title={`Record an expense — ${desk.name}`}
                       note="Rent, salaries, supplies — anything leaving this desk."
                       triggerStyle={{
-                        background: TK_RED,
+                        background: RED_FILL,
                         border: 0,
-                        color: WHITE,
+                        color: ON_RED,
                         padding: "6px 13px",
                         fontSize: 12.5,
                         borderRadius: 8,
@@ -801,9 +811,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               type="submit"
               className="cn-btn cn-btn--primary"
               style={{
-                background: INDIGO,
+                background: INDIGO_FILL,
                 border: 0,
-                color: WHITE,
+                color: ON_INDIGO,
                 borderRadius: 8,
                 padding: "8px 15px",
                 fontFamily: SANS,
@@ -831,7 +841,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               flexWrap: "wrap",
               padding: "11px 18px",
               borderBottom: `1px solid ${HAIR}`,
-              background: "#FAFAF8",
+              background: WELL,
             }}
           >
             <span style={{ fontFamily: SANS, fontSize: 13, color: GREEN, fontWeight: 600 }}>

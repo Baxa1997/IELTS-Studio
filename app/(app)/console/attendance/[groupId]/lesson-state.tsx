@@ -11,7 +11,7 @@ import {
   unlockRegister,
   type ActionState,
 } from "../../center-actions";
-import { INK, MUTED, RED_DEEP as RED, WHITE } from "@/lib/theme/tokens";
+import { INK, MUTED, ON_RED, RED_DEEP as RED, RED_FILL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The two things that can be true of a lesson besides "it happened": it was
@@ -168,8 +168,8 @@ export function CancelLesson({ groupId, heldOn }: { groupId: string; heldOn: str
         type="submit"
         disabled={pending}
         style={{
-          background: RED,
-          color: WHITE,
+          background: RED_FILL,
+          color: ON_RED,
           border: 0,
           borderRadius: 8,
           padding: "7px 12px",

@@ -10,10 +10,14 @@ import { type ActionState, saveAlertSettings } from "../center-actions";
 import {
   FAINT,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_FILL,
   INK,
   MUTED,
+  ON_INDIGO,
   PANEL,
+  SLATE_AMBER,
   SLATE_AMBER_BG,
+  SLATE_LINE,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -31,8 +35,8 @@ import {
  * could actually reach before it is switched on.
  */
 
-const LINE = "#EAE8E1";
-const AMBER = "#9A6B00";
+const LINE = SLATE_LINE;
+const AMBER = SLATE_AMBER;
 
 const CHANNELS: { key: AlertChannel; label: string; icon: React.ReactNode; note: string }[] = [
   {
@@ -235,8 +239,8 @@ export function AlertSettingsForm({ settings }: { settings: AlertSettings }) {
           height: 36,
           borderRadius: 9,
           border: "none",
-          background: INDIGO,
-          color: WHITE,
+          background: INDIGO_FILL,
+          color: ON_INDIGO,
           fontSize: 13.5,
           fontWeight: 600,
           fontFamily: "inherit",

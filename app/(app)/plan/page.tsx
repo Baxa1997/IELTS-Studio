@@ -11,6 +11,7 @@ import { daysUntil, levelCheckDue } from "@/lib/plan/types";
 import { startLevelCheck } from "./actions";
 import { PlanBandCard } from "./plan-band-card";
 import {
+  AMBER,
   BRAND,
   BRAND_FILL,
   PANEL,
@@ -27,7 +28,6 @@ export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const AMBER = "#B9791A";
 
 const CRITERION_TIP: Record<string, string> = {
   TR: "answer every part of the prompt and state a clear position — that lifts Task Response fastest.",
@@ -185,7 +185,7 @@ function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | 
     return (
       <div style={{ marginBottom: 16, borderRadius: 16, background: "#FFF8EE", border: "1px solid #F6E0B8", padding: "16px 20px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ width: 38, height: 38, borderRadius: 11, background: "#FFF3E0", border: "1px solid #F6E0B8", color: AMBER, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+          <span style={{ width: 38, height: 38, borderRadius: 11, background: "var(--tk-tint-amber-bg)", border: "1px solid #F6E0B8", color: AMBER, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M12 8v4l3 2" />
@@ -197,7 +197,7 @@ function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | 
           </div>
         </div>
         <form action={startLevelCheck}>
-          <button type="submit" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #EBCF9E", background: "#FFF3E0", color: AMBER, fontFamily: SANS, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
+          <button type="submit" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #EBCF9E", background: "var(--tk-tint-amber-bg)", color: AMBER, fontFamily: SANS, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
             Re-check my level →
           </button>
         </form>
@@ -298,7 +298,7 @@ function FocusCard({ weakest }: { weakest: WeakCriterion | null }) {
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {["Task 2 essay", "AI analysis", "Band boost"].map((t) => (
-                <span key={t} style={{ background: "#FFF3E0", border: "1px solid #F6E0B8", borderRadius: 999, padding: "5px 12px", fontFamily: SANS, fontSize: 12, fontWeight: 700, color: AMBER }}>
+                <span key={t} style={{ background: "var(--tk-tint-amber-bg)", border: "1px solid #F6E0B8", borderRadius: 999, padding: "5px 12px", fontFamily: SANS, fontSize: 12, fontWeight: 700, color: AMBER }}>
                   {t}
                 </span>
               ))}

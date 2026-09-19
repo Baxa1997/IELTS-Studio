@@ -16,6 +16,7 @@ import {
   RED,
   RED_DEEP,
   WARM_LINE,
+  WELL,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -190,7 +191,7 @@ export function TimetableGrid({
             style={{
               display: "grid",
               gridTemplateColumns: columns,
-              background: "#FAFAF8",
+              background: WELL,
               borderBottom: `1px solid ${HAIR}`,
             }}
           >
@@ -520,7 +521,7 @@ export function TimetableGrid({
                 style={{
                   margin: "0 0 14px",
                   padding: "9px 11px",
-                  background: "#FBEAE8",
+                  background: "var(--tk-tint-red-bg)",
                   borderRadius: 9,
                   fontSize: 12.5,
                   color: RED_DEEP,

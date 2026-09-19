@@ -6,6 +6,7 @@ import {
   BODY,
   GREEN,
   INDIGO_CONSOLE as INDIGO,
+  INDIGO_SOFT,
   INK,
   PANEL,
   WARM_LINE as HAIRLINE,
@@ -152,7 +153,7 @@ export function DateStrip({
           style={{
             border: 0,
             borderLeft: `1px solid ${HAIRLINE}`,
-            background: "#FAF9F6",
+            background: INDIGO_SOFT,
             padding: "0 13px",
             fontFamily: SANS,
             fontSize: 12.5,
