@@ -27,28 +27,8 @@ import { BRAND, BRAND_TINT, LINE, MUTED, PANEL, RADIUS, SANS, STRONG, WHITE } fr
  * for their language scans for the word they use for it, not for its English
  * name, which they may not read.
  */
-/** Two rings and a rotation — no dependency, no image, and it inherits the
- *  brand colour from the row it sits in. */
-function Spinner() {
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        width: 11,
-        height: 11,
-        border: "2px solid currentColor",
-        borderTopColor: "transparent",
-        borderRadius: "50%",
-        // `lp-spin` is already in globals.css — one rotation keyframe for the app.
-        animation: "lp-spin .6s linear infinite",
-        verticalAlign: "-1px",
-      }}
-    />
-  );
-}
-
 export function LangPicker({ compact = false }: { compact?: boolean }) {
-  const { locale, setLocale, t, pending, prefetchLocales } = useLocale();
+  const { locale, setLocale, t, prefetchLocales } = useLocale();
   const [open, setOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -188,11 +168,11 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
                 }}
               >
                 <span>{LOCALE_NAMES[code]}</span>
-                {/* The tick moves the moment you click, because the chrome has
-                    already changed language by then — the spinner is the part
-                    still travelling: the server-rendered half of the page. */}
+                {/* Just a tick. Progress is NOT reported here: the menu closes
+                    on the click, and while the switch travels the page-wide
+                    loader in `LocaleProvider` is what is on screen. */}
                 <span style={{ fontSize: 12, fontWeight: 700, color: BRAND }} aria-hidden>
-                  {on ? pending ? <Spinner /> : "✓" : ""}
+                  {on ? "✓" : ""}
                 </span>
               </button>
             );

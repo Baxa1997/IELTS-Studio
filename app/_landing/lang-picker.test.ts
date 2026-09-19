@@ -13,7 +13,11 @@ import { describe, expect, it } from "vitest";
  *   1. nothing moved when you chose. On a route whose language is in the URL,
  *      a click only STARTED a navigation: the tick stayed where it was and the
  *      page stayed in the old language until the server answered. That reads as
- *      a dead control, and a dead control gets clicked again;
+ *      a dead control, and a dead control gets clicked again. The first fix for
+ *      this — change the chrome immediately and let the page catch up — was
+ *      REJECTED after use: it made one click produce two visible changes, and
+ *      put a page in two languages on screen in between. A loader over the
+ *      whole page and one change at the end is what replaced it;
  *   2. the tab locked up while it answered. `router.refresh()` re-runs every
  *      server component on the route — Supabase round trips included — and
  *      outside a transition React treats that as urgent work;
@@ -64,19 +68,28 @@ describe("the language picker", () => {
 });
 
 describe("changing the language", () => {
-  it("applies the choice locally before the server answers", () => {
-    /* The regression this exists for: on a pinned route the URL owns the
-       language, so without a local claim the interface could not change at all
-       until the navigation landed. */
-    expect(provider).toMatch(/setChosen\(\{ value: l, against: pin \}\)/);
-    expect(provider).toMatch(/const locale = claimed \?\? pin \?\? fromCookie/);
+  it("does NOT apply the choice until the server half has arrived", () => {
+    /* ⚠️ THE REGRESSION IS THE OPTIMISTIC SWITCH, NOT ITS ABSENCE. Applying the
+       choice on click was tried, shipped and taken back out: the header flipped
+       at once and the page under it stayed in the old language for as long as
+       the server took, which is two changes for one click with a
+       half-translated page in between. Precedence is the URL, then the cookie —
+       and nothing local in front of either. */
+    expect(provider).toMatch(/const locale = pin \?\? fromCookie/);
+    expect(provider, "a local claim is back in the precedence chain").not.toMatch(
+      /const locale = \w+ \?\? pin \?\? fromCookie/,
+    );
   });
 
-  it("expires that claim by derivation, not by a second render", () => {
-    expect(provider).toMatch(/chosen\.against === pin/);
-    expect(provider, "resetting from an effect costs an extra render pass").not.toMatch(
-      /useEffect\(\s*\(\)\s*=>\s*\{\s*setChosen\(null\)/,
+  it("publishes the new locale only once the transition has landed", () => {
+    /* The store is what every client component reads, and a store update is
+       urgent by definition — React cannot defer it into the transition. So it
+       is written when the transition STOPS pending, which is the one moment
+       both halves are ready. */
+    expect(provider).toMatch(
+      /if \(pending \|\| switchingTo === null \|\| cached === switchingTo\)/,
     );
+    expect(provider).toMatch(/cached = switchingTo;[\s\S]{0,120}listeners/);
   });
 
   it("does the server half in a transition", () => {
@@ -84,7 +97,17 @@ describe("changing the language", () => {
     expect(provider).toMatch(/startTransition\(\(\) => \{[\s\S]{0,200}router\.(push|refresh)/);
   });
 
-  it("tells the chrome that the server half is still in flight", () => {
-    expect(provider).toMatch(/pending,\s*prefetchLocales/);
+  it("covers the whole page while it travels", () => {
+    // Not a spinner in the menu — the menu is shut by then. The loader is the
+    // provider's, so every surface with a provider gets it for free.
+    expect(provider).toContain("LanguageSwitchOverlay");
+    expect(provider).toMatch(/position: "fixed"/);
+    expect(provider).toMatch(/inset: 0/);
+    expect(provider).toMatch(/\{pending \? <LanguageSwitchOverlay/);
+  });
+
+  it("puts that loader above the dialogs it can be opened from", () => {
+    const z = /zIndex: (\d+)/.exec(provider.slice(provider.indexOf("LanguageSwitchOverlay")));
+    expect(Number(z?.[1] ?? 0)).toBeGreaterThan(1000);
   });
 });

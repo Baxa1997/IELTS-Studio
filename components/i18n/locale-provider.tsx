@@ -12,7 +12,8 @@ import {
   useTransition,
 } from "react";
 
-import { translator, type Translate } from "@/lib/i18n";
+import { translate, translator, type Translate } from "@/lib/i18n";
+import { SANS } from "@/lib/theme/tokens";
 import {
   DEFAULT_LOCALE,
   HTML_LANG,
@@ -27,9 +28,9 @@ interface LocaleCtx {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: Translate;
-  /** True while the server half of a switch is still in flight. The chrome has
-   *  already changed language by then — this is for saying so, not for hiding
-   *  anything. */
+  /** True while a switch is in flight. NOTHING has changed language yet when
+   *  this is true — the whole point is that the change lands in one go — so it
+   *  is what the full-page loader is driven from. */
   pending: boolean;
   /** Warm the URLs the picker can send you to. Called when the menu OPENS, so
    *  the navigation that follows a click is usually already downloaded. */
@@ -134,34 +135,45 @@ export function LocaleProvider({
   const [pending, startTransition] = useTransition();
 
   /**
-   * What the visitor just picked, before the server has caught up.
+   * The language a switch is currently travelling towards, or null.
    *
-   * ⚠️ THIS IS WHAT MAKES THE CONTROL FEEL LIKE A SWITCH RATHER THAN A FORM.
-   * On a pinned route the language comes from the URL, so until this existed
-   * the ONLY thing a click did was start a navigation: the tick did not move,
-   * no label changed, and on a slow connection the picker looked broken for a
-   * second or two — which reads as a click that did not register, and gets
-   * clicked again. Now the choice wins locally the instant it is made, every
-   * client component re-renders in the new language immediately, and the
-   * navigation catches the server-rendered half up behind it.
+   * ⚠️ IT IS DELIBERATELY NOT APPLIED WHILE IT IS IN FLIGHT. An earlier version
+   * did apply it immediately, on the reasoning that instant feedback beats
+   * none — and it was worse to use, not better: the header, the buttons and the
+   * nav flipped at once and then the page under them sat in the old language
+   * until the server answered. Two visible changes for one click, the second
+   * one late, and the half-translated page in between is what the eye lands on.
    *
-   * It clears itself when `pin` changes, i.e. when the new route has landed and
-   * the URL says what this says. Starting at `null` keeps the hydration markup
-   * identical to the server's.
+   * So the change is held until BOTH halves are ready and lands as one. What
+   * covers the gap is `LanguageSwitchOverlay` below — a loader over the whole
+   * page, which is honest about what is happening and has nothing half-done in
+   * it. The cookie is written immediately either way, because the server render
+   * this kicks off has to read the new value.
    */
-  const [chosen, setChosen] = useState<{ value: Locale; against: Locale | undefined } | null>(null);
+  const [switchingTo, setSwitchingTo] = useState<Locale | null>(null);
 
-  /* It expires by DERIVATION rather than by being reset. The choice remembers
-     which `pin` it was made against, so the moment the navigation lands and the
-     route pins the new language, `against` no longer matches and the choice
-     stops applying on its own. Resetting it from an effect instead would mean a
-     second render pass after every switch, and a frame where the URL and the
-     chrome disagree in the other direction. */
-  const claimed = chosen && chosen.against === pin ? chosen.value : null;
+  // The URL beats the cookie; nothing beats either until it has fully arrived.
+  const locale = pin ?? fromCookie;
 
-  // Hooks run unconditionally; precedence is decided afterwards. A deliberate
-  // choice beats the URL, which beats the cookie.
-  const locale = claimed ?? pin ?? fromCookie;
+  /**
+   * The other half of the switch: publish the new locale once the server's half
+   * has arrived.
+   *
+   * This runs when the transition stops pending, which is React telling us the
+   * new server render has committed. Writing the store here rather than in the
+   * click is what makes the page change in ONE step — and it is an external
+   * store being synchronised with React's state, which is what an effect is
+   * for. There is no `setState` in it, so no extra render pass either: the
+   * re-render comes from the store notification itself.
+   */
+  useEffect(() => {
+    // `cached` is the guard as well as the target: once it holds the chosen
+    // language this has nothing left to do, so there is no flag to clear and no
+    // `setState` here to cost a second render.
+    if (pending || switchingTo === null || cached === switchingTo) return;
+    cached = switchingTo;
+    for (const listener of listeners) listener();
+  }, [pending, switchingTo]);
 
   // Keep <html lang> honest: it is what a screen reader switches voice on, and
   // what the browser picks hyphenation and spell-check from, so it has to move
@@ -172,14 +184,23 @@ export function LocaleProvider({
 
   const setLocale = useCallback(
     (l: Locale) => {
-      cached = l;
+      if (l === locale) return;
+
       // A plain cookie write rather than a server action: the value has to be
       // readable by the NEXT server render and it authorises nothing. SameSite=Lax
       // so it survives arriving back in the app from an emailed link.
       document.cookie =
         `${LOCALE_COOKIE}=${l}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax` +
         (location.protocol === "https:" ? "; secure" : "");
-      for (const listener of listeners) listener();
+
+      /* ⚠️ THE MODULE CACHE IS NOT TOUCHED YET, AND THAT IS THE WHOLE TRICK.
+         `cached` is what every client component reads through
+         `useSyncExternalStore`, and a store update is URGENT by definition —
+         React will not let a transition defer it. Writing it here would flip
+         the chrome this frame and leave the server-rendered half behind, which
+         is exactly the two-step we are removing. It is written when the
+         transition finishes instead, so both halves change together. */
+      setSwitchingTo(l);
 
       /* ⚠️ THE NOTIFY ABOVE ONLY REACHES CLIENT COMPONENTS, AND MOST OF THIS UI
          IS NOT ONE. Every string a server component rendered was chosen from
@@ -198,8 +219,6 @@ export function LocaleProvider({
          chosen language's URL; everywhere else the cookie is the only signal
          and a refresh is the right move. Keeping the language in the URL is
          also what makes it linkable and shareable. */
-      setChosen({ value: l, against: pin });
-
       /* IN A TRANSITION, so the click is never what waits. `router.refresh()`
          re-runs every server component on the route — on an app page that means
          the Supabase round trips behind it, which are not fast from here — and
@@ -213,7 +232,7 @@ export function LocaleProvider({
         else router.refresh();
       });
     },
-    [router, pathname, pin],
+    [router, pathname, locale],
   );
 
   /** Warm every language's URL for the page we are on. Cheap when the target is
@@ -231,7 +250,83 @@ export function LocaleProvider({
     [locale, setLocale, pending, prefetchLocales],
   );
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={value}>
+      {children}
+      {pending ? <LanguageSwitchOverlay locale={switchingTo ?? locale} /> : null}
+    </Ctx.Provider>
+  );
+}
+
+/**
+ * A loader over the whole page while the language changes.
+ *
+ * ⚠️ IT COVERS EVERYTHING ON PURPOSE. The alternative — letting the interface
+ * change in pieces as they become ready — was tried and is worse: the chrome
+ * flips instantly, the page under it stays in the old language for as long as
+ * the server takes, and what the reader looks at in between is a page in two
+ * languages. One loader and one change is both faster to understand and
+ * easier to trust, even though it is not one millisecond faster to finish.
+ *
+ * It is rendered by the PROVIDER, so every surface that has one gets it without
+ * a single page having to remember. `--tk-scrim` is the same veil the app's
+ * modals dim behind, so it is already right in both themes.
+ *
+ * The label is in the language being switched TO. It is the first thing that
+ * language says, and by the time anyone reads it that is the language the page
+ * is about to be in.
+ */
+function LanguageSwitchOverlay({ locale }: { locale: Locale }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        /* Above the shell's mobile scrim and every dialog in the app: a switch
+           started from a menu inside a modal still has to cover the modal. */
+        zIndex: 9999,
+        background: "var(--tk-scrim)",
+        backdropFilter: "blur(2px)",
+        WebkitBackdropFilter: "blur(2px)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+        /* It swallows clicks while it is up, which is the point: a second click
+           on the picker underneath would queue a second navigation. */
+        cursor: "wait",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 30,
+          height: 30,
+          border: "3px solid rgba(255,255,255,0.35)",
+          borderTopColor: "#fff",
+          borderRadius: "50%",
+          animation: "lp-spin .7s linear infinite",
+        }}
+      />
+      <span
+        style={{
+          fontFamily: SANS,
+          fontSize: 14.5,
+          fontWeight: 600,
+          letterSpacing: "0.01em",
+          /* White on the scrim, which is dark in both themes — the same reason
+             the footer needs no dark variant. */
+          color: "#fff",
+        }}
+      >
+        {translate(locale, "language.switching")}
+      </span>
+    </div>
+  );
 }
 
 /**

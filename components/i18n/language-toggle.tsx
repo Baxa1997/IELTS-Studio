@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, LoaderCircle } from "lucide-react";
+import { Check } from "lucide-react";
 
 import { LOCALE_NAMES, LOCALE_SHORT, LOCALES, type Locale } from "@/lib/i18n/locales";
 import { BRAND, BRAND_SOFT, FAINT, LINE, MUTED, PANEL, SANS } from "@/lib/theme/tokens";
@@ -22,7 +22,7 @@ import { useLocale } from "./locale-provider";
  * very first frame.
  */
 export function LanguageToggle() {
-  const { locale, setLocale, t, pending, prefetchLocales } = useLocale();
+  const { locale, setLocale, t, prefetchLocales } = useLocale();
 
   return (
     <div
@@ -85,21 +85,9 @@ export function LanguageToggle() {
               </span>
               {LOCALE_NAMES[code]}
             </span>
-            {/* The tick lands immediately — the chrome switches the moment you
-                choose. The spinner is only the server-rendered half of the page
-                catching up behind it. */}
-            {on ? (
-              pending ? (
-                <LoaderCircle
-                  size={16}
-                  strokeWidth={2.2}
-                  aria-hidden
-                  style={{ animation: "lp-spin .6s linear infinite" }}
-                />
-              ) : (
-                <Check size={16} strokeWidth={2.2} aria-hidden />
-              )
-            ) : null}
+            {/* No progress indicator here either — `LocaleProvider` puts a
+                loader over the page for as long as the switch takes. */}
+            {on ? <Check size={16} strokeWidth={2.2} aria-hidden /> : null}
           </button>
         );
       })}

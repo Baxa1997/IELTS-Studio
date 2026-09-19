@@ -508,6 +508,7 @@ export const en = {
   "b9.sub":
     "The band a Cambridge-trained examiner would award — and the exact path there from wherever you are starting.",
   "hd.withFixes": "7.0 with fixes",
+  "language.switching": "Switching language…",
 } as const;
 
 /** The key set every locale must satisfy. */

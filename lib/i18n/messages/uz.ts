@@ -497,4 +497,5 @@ export const uz: Messages = {
   "b9.sub":
     "Cambridge tayyorlagan imtihon oluvchi qoʻyadigan band — va qayerdan boshlagan boʻlsangiz ham, unga olib boradigan aniq yoʻl.",
   "hd.withFixes": "Tuzatishlar bilan 7.0",
+  "language.switching": "Til almashtirilmoqda…",
 };
