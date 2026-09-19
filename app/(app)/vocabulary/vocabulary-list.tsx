@@ -35,7 +35,11 @@ export interface VocabItem {
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
 
-const card: React.CSSProperties = { background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16 };
+const card: React.CSSProperties = {
+  background: PANEL,
+  border: `1px solid ${LINE}`,
+  borderRadius: 16,
+};
 
 // ---- Spaced repetition (Leitner boxes, stored in localStorage) ---------------
 // No server round-trip: each word carries a box 0..4; a correct answer moves it
@@ -97,13 +101,25 @@ function speak(word: string, accent: "UK" | "US") {
 }
 
 const MODE_META: Record<Mode, { label: string; hint: string }> = {
-  recognition: { label: "Recognition", hint: "See the word — recall the meaning. Best for Reading and Listening." },
-  recall: { label: "Recall", hint: "See the meaning — recall the word. Best for Writing and Speaking." },
+  recognition: {
+    label: "Recognition",
+    hint: "See the word — recall the meaning. Best for Reading and Listening.",
+  },
+  recall: {
+    label: "Recall",
+    hint: "See the meaning — recall the word. Best for Writing and Speaking.",
+  },
   mixed: { label: "Mixed", hint: "Both directions, shuffled." },
 };
 
 function sourceLabel(source: string): string {
-  const map: Record<string, string> = { reading: "Reading", writing: "Writing", listening: "Listening", speaking: "Speaking", manual: "Manual" };
+  const map: Record<string, string> = {
+    reading: "Reading",
+    writing: "Writing",
+    listening: "Listening",
+    speaking: "Speaking",
+    manual: "Manual",
+  };
   return map[source] ?? source.charAt(0).toUpperCase() + source.slice(1);
 }
 
@@ -173,8 +189,30 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
       <style>{VOCAB_CSS}</style>
 
       {/* Header */}
-      <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>Word bank</div>
-      <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(24px,2.6vw,32px)", lineHeight: 1.08, letterSpacing: "-.015em", margin: "6px 0 0" }}>Vocabulary</h1>
+      <div
+        style={{
+          fontFamily: SANS,
+          fontWeight: 700,
+          fontSize: 11,
+          letterSpacing: ".09em",
+          textTransform: "uppercase",
+          color: FAINT,
+        }}
+      >
+        Word bank
+      </div>
+      <h1
+        style={{
+          fontFamily: SERIF,
+          fontWeight: 600,
+          fontSize: "clamp(24px,2.6vw,32px)",
+          lineHeight: 1.08,
+          letterSpacing: "-.015em",
+          margin: "6px 0 0",
+        }}
+      >
+        Vocabulary
+      </h1>
       <p style={{ fontSize: 15, color: MUTED, margin: "6px 0 0" }}>
         Words you save while practicing — reviewed with spaced repetition so they stick.
       </p>
@@ -182,26 +220,78 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
       {items.length === 0 ? (
         <div style={{ ...card, marginTop: 20, padding: "34px 26px", textAlign: "center" }}>
           <p style={{ fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: 0, fontFamily: SANS }}>
-            No saved words yet. While you practice <strong style={{ color: INK }}>Reading</strong>, select any word in the
-            passage to see its translation and tap <strong style={{ color: INK }}>Add to vocabulary</strong> — they collect here.
+            No saved words yet. While you practice <strong style={{ color: INK }}>Reading</strong>,
+            select any word in the passage to see its translation and tap{" "}
+            <strong style={{ color: INK }}>Add to vocabulary</strong> — they collect here.
           </p>
         </div>
       ) : (
         <>
           {/* Spaced-repetition hero */}
-          <div style={{ ...card, marginTop: 20, padding: "20px 22px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "18px 26px" }}>
+          <div
+            style={{
+              ...card,
+              marginTop: 20,
+              padding: "20px 22px",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "18px 26px",
+            }}
+          >
             <div style={{ flex: "1 1 420px", minWidth: 260 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <span style={{ flex: "none", width: 34, height: 34, borderRadius: 10, background: TINT, color: BRAND, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span
+                  style={{
+                    flex: "none",
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    background: TINT,
+                    color: BRAND,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <GraduationCap size={18} strokeWidth={2} />
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 16.5 }}>Spaced repetition</span>
               </div>
-              <p style={{ fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "9px 0 0", maxWidth: 560 }}>
-                The app tracks what you know. Words you miss come back sooner; words you remember wait longer before they show again.
+              <p
+                style={{
+                  fontSize: 13.5,
+                  lineHeight: 1.55,
+                  color: MUTED,
+                  margin: "9px 0 0",
+                  maxWidth: 560,
+                }}
+              >
+                The app tracks what you know. Words you miss come back sooner; words you remember
+                wait longer before they show again.
               </p>
-              <div style={{ fontWeight: 700, fontSize: 10.5, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT, margin: "14px 0 0" }}>Review mode</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginTop: 8 }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 10.5,
+                  letterSpacing: ".09em",
+                  textTransform: "uppercase",
+                  color: FAINT,
+                  margin: "14px 0 0",
+                }}
+              >
+                Review mode
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  flexWrap: "wrap",
+                  marginTop: 8,
+                }}
+              >
                 {(Object.keys(MODE_META) as Mode[]).map((m) => {
                   const on = mode === m;
                   return (
@@ -210,23 +300,66 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
                       type="button"
                       onClick={() => setMode(m)}
                       aria-pressed={on}
-                      style={{ padding: "7px 14px", borderRadius: 9, fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? TINT_BORDER : LINE}`, background: on ? TINT : PANEL, color: on ? BRAND : MUTED }}
+                      style={{
+                        padding: "7px 14px",
+                        borderRadius: 9,
+                        fontFamily: SANS,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        border: `1px solid ${on ? TINT_BORDER : LINE}`,
+                        background: on ? TINT : PANEL,
+                        color: on ? BRAND : MUTED,
+                      }}
                     >
                       {MODE_META[m].label}
                     </button>
                   );
                 })}
               </div>
-              <p style={{ fontSize: 12.5, color: FAINT, margin: "9px 0 0" }}>{MODE_META[mode].hint}</p>
+              <p style={{ fontSize: 12.5, color: FAINT, margin: "9px 0 0" }}>
+                {MODE_META[mode].hint}
+              </p>
             </div>
-            <div style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+            <div
+              style={{
+                flex: "none",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: 8,
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setReviewing(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: BRAND_FILL,
+                  color: WHITE,
+                  fontFamily: SANS,
+                  fontWeight: 600,
+                  fontSize: 14.5,
+                  padding: "12px 20px",
+                  borderRadius: 11,
+                  border: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)",
+                }}
               >
                 Start review
-                <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 999, padding: "2px 9px", fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                <span
+                  style={{
+                    background: "rgba(255,255,255,.22)",
+                    borderRadius: 999,
+                    padding: "2px 9px",
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
                   {due.length > 0 ? due.length : items.length}
                 </span>
               </button>
@@ -237,28 +370,71 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
           </div>
 
           {/* Count + search + filters */}
-          <p style={{ fontSize: 13, color: MUTED, margin: "20px 0 0", fontVariantNumeric: "tabular-nums" }}>
+          <p
+            style={{
+              fontSize: 13,
+              color: MUTED,
+              margin: "20px 0 0",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             Total cards: <strong style={{ color: INK }}>{items.length}</strong>
           </p>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search words…"
-            style={{ width: "100%", maxWidth: 640, marginTop: 10, padding: "11px 14px", border: `1px solid ${LINE}`, borderRadius: 11, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK, outline: "none" }}
+            style={{
+              width: "100%",
+              maxWidth: 640,
+              marginTop: 10,
+              padding: "11px 14px",
+              border: `1px solid ${LINE}`,
+              borderRadius: 11,
+              background: PANEL,
+              fontFamily: SANS,
+              fontSize: 14,
+              color: INK,
+              outline: "none",
+            }}
           />
           {sources.length > 1 ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginTop: 12 }}>
-              <FilterChip active={source === "all"} onClick={() => setSource("all")}>All sources</FilterChip>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                flexWrap: "wrap",
+                marginTop: 12,
+              }}
+            >
+              <FilterChip active={source === "all"} onClick={() => setSource("all")}>
+                All sources
+              </FilterChip>
               {sources.map((s) => (
-                <FilterChip key={s} active={source === s} onClick={() => setSource(s)}>{sourceLabel(s)}</FilterChip>
+                <FilterChip key={s} active={source === s} onClick={() => setSource(s)}>
+                  {sourceLabel(s)}
+                </FilterChip>
               ))}
             </div>
           ) : null}
           {languages.length > 1 ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginTop: 8 }}>
-              <FilterChip active={lang === "all"} onClick={() => setLang("all")}>All languages</FilterChip>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                flexWrap: "wrap",
+                marginTop: 8,
+              }}
+            >
+              <FilterChip active={lang === "all"} onClick={() => setLang("all")}>
+                All languages
+              </FilterChip>
               {languages.map((l) => (
-                <FilterChip key={l} active={lang === l} onClick={() => setLang(l)}>{l}</FilterChip>
+                <FilterChip key={l} active={lang === l} onClick={() => setLang(l)}>
+                  {l}
+                </FilterChip>
               ))}
             </div>
           ) : null}
@@ -266,21 +442,66 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
           {/* Word cards */}
           <div className="vb-grid" style={{ marginTop: 16 }}>
             {visible.map((item) => (
-              <article key={item.id} className="vb-card" style={{ ...card, borderRadius: 14, padding: "15px 16px", position: "relative" }}>
+              <article
+                key={item.id}
+                className="vb-card"
+                style={{ ...card, borderRadius: 14, padding: "15px 16px", position: "relative" }}
+              >
                 <button
                   type="button"
                   onClick={() => void remove(item.id)}
                   disabled={busy === item.id}
                   aria-label={`Remove ${item.word}`}
                   className="vb-del"
-                  style={{ position: "absolute", top: 10, right: 10, border: "none", background: "transparent", color: FAINT, cursor: "pointer", padding: 5, borderRadius: 7, opacity: busy === item.id ? 0.4 : undefined }}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    border: "none",
+                    background: "transparent",
+                    color: FAINT,
+                    cursor: "pointer",
+                    padding: 5,
+                    borderRadius: 7,
+                    opacity: busy === item.id ? 0.4 : undefined,
+                  }}
                 >
                   <Trash2 size={15} />
                 </button>
 
-                <div style={{ display: "flex", alignItems: "center", gap: 8, paddingRight: 26, minWidth: 0 }}>
-                  <h3 style={{ fontWeight: 700, fontSize: 16.5, margin: 0, overflowWrap: "break-word", minWidth: 0 }}>{item.word}</h3>
-                  <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: FAINT, background: CANVAS, borderRadius: 999, padding: "2.5px 8px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    paddingRight: 26,
+                    minWidth: 0,
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 16.5,
+                      margin: 0,
+                      overflowWrap: "break-word",
+                      minWidth: 0,
+                    }}
+                  >
+                    {item.word}
+                  </h3>
+                  <span
+                    style={{
+                      flex: "none",
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      letterSpacing: ".04em",
+                      textTransform: "uppercase",
+                      color: FAINT,
+                      background: CANVAS,
+                      borderRadius: 999,
+                      padding: "2.5px 8px",
+                    }}
+                  >
                     {item.language}
                   </span>
                 </div>
@@ -290,8 +511,25 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
                   <SpeakBtn accent="US" word={item.word} />
                 </div>
 
-                <p style={{ fontSize: 15, fontWeight: 600, color: BRAND, margin: "9px 0 0", overflowWrap: "break-word" }}>{item.translation || "—"}</p>
-                {item.definition ? <p className="vb-def" style={{ fontSize: 13, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}>{item.definition}</p> : null}
+                <p
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: BRAND,
+                    margin: "9px 0 0",
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {item.translation || "—"}
+                </p>
+                {item.definition ? (
+                  <p
+                    className="vb-def"
+                    style={{ fontSize: 13, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}
+                  >
+                    {item.definition}
+                  </p>
+                ) : null}
                 <p style={{ fontSize: 11, color: FAINT, margin: "10px 0 0" }}>
                   {sourceLabel(item.source)} · {fmtDate(item.created_at)}
                 </p>
@@ -300,24 +538,48 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
           </div>
 
           {visible.length === 0 ? (
-            <p style={{ padding: "28px 0", textAlign: "center", fontSize: 14, color: FAINT }}>No words match this filter.</p>
+            <p style={{ padding: "28px 0", textAlign: "center", fontSize: 14, color: FAINT }}>
+              No words match this filter.
+            </p>
           ) : null}
         </>
       )}
 
       {reviewing ? (
-        <ReviewOverlay pool={due.length > 0 ? due : items} mode={mode} onClose={() => setReviewing(false)} />
+        <ReviewOverlay
+          pool={due.length > 0 ? due : items}
+          mode={mode}
+          onClose={() => setReviewing(false)}
+        />
       ) : null}
     </div>
   );
 }
 
-function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      style={{ padding: "6px 13px", borderRadius: 999, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? TINT_BORDER : LINE}`, background: active ? TINT : PANEL, color: active ? BRAND : MUTED }}
+      style={{
+        padding: "6px 13px",
+        borderRadius: 999,
+        fontFamily: SANS,
+        fontSize: 12.5,
+        fontWeight: 600,
+        cursor: "pointer",
+        border: `1px solid ${active ? TINT_BORDER : LINE}`,
+        background: active ? TINT : PANEL,
+        color: active ? BRAND : MUTED,
+      }}
     >
       {children}
     </button>
@@ -330,7 +592,21 @@ function SpeakBtn({ accent, word }: { accent: "UK" | "US"; word: string }) {
       type="button"
       onClick={() => speak(word, accent)}
       aria-label={`Pronounce ${word} (${accent})`}
-      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 8, border: `1px solid ${LINE}`, background: PANEL, color: MUTED, fontFamily: SANS, fontSize: 11.5, fontWeight: 700, letterSpacing: ".03em", cursor: "pointer" }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "4px 10px",
+        borderRadius: 8,
+        border: `1px solid ${LINE}`,
+        background: PANEL,
+        color: MUTED,
+        fontFamily: SANS,
+        fontSize: 11.5,
+        fontWeight: 700,
+        letterSpacing: ".03em",
+        cursor: "pointer",
+      }}
     >
       {accent} <Volume2 size={12} />
     </button>
@@ -345,7 +621,14 @@ function buildQueue(pool: VocabItem[], mode: Mode): QueueCard[] {
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.map((item) => ({
     item,
-    front: mode === "mixed" ? (Math.random() < 0.5 ? "word" : "meaning") : mode === "recognition" ? "word" : "meaning",
+    front:
+      mode === "mixed"
+        ? Math.random() < 0.5
+          ? "word"
+          : "meaning"
+        : mode === "recognition"
+          ? "word"
+          : "meaning",
   }));
 }
 
@@ -354,7 +637,15 @@ function buildQueue(pool: VocabItem[], mode: Mode): QueueCard[] {
  * (longer wait); "Again" drops it to box 0, schedules it back in ~10 minutes,
  * and requeues it once at the end of this session.
  */
-function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode; onClose: () => void }) {
+function ReviewOverlay({
+  pool,
+  mode,
+  onClose,
+}: {
+  pool: VocabItem[];
+  mode: Mode;
+  onClose: () => void;
+}) {
   const [queue, setQueue] = useState<QueueCard[]>(() => buildQueue(pool, mode));
   const [idx, setIdx] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -403,14 +694,61 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
       aria-modal="true"
       aria-label="Vocabulary review"
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(26,33,56,.5)", backdropFilter: "blur(2px)" }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        background: "rgba(26,33,56,.5)",
+        backdropFilter: "blur(2px)",
+      }}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(480px, 100%)", background: PANEL, borderRadius: 18, padding: "20px 22px 22px", boxShadow: "0 30px 70px -24px rgba(26,33,56,.6)", fontFamily: SANS, color: INK }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <span style={{ fontSize: 12.5, fontWeight: 700, color: FAINT, fontVariantNumeric: "tabular-nums" }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "min(480px, 100%)",
+          background: PANEL,
+          borderRadius: 18,
+          padding: "20px 22px 22px",
+          boxShadow: "0 30px 70px -24px rgba(26,33,56,.6)",
+          fontFamily: SANS,
+          color: INK,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12.5,
+              fontWeight: 700,
+              color: FAINT,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
             {done ? "Session complete" : `${Math.min(idx + 1, total)} / ${total}`}
           </span>
-          <button type="button" onClick={onClose} aria-label="Close review" style={{ border: "none", background: "transparent", color: FAINT, cursor: "pointer", padding: 5, borderRadius: 7 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close review"
+            style={{
+              border: "none",
+              background: "transparent",
+              color: FAINT,
+              cursor: "pointer",
+              padding: 5,
+              borderRadius: 7,
+            }}
+          >
             <X size={17} />
           </button>
         </div>
@@ -422,36 +760,131 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
               <strong style={{ color: EMERALD }}>{good}</strong> remembered ·{" "}
               <strong style={{ color: SLATE_RED }}>{again}</strong> to see again soon
             </p>
-            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                marginTop: 20,
+                padding: "11px 24px",
+                borderRadius: 11,
+                border: "none",
+                background: BRAND_FILL,
+                color: WHITE,
+                fontFamily: SANS,
+                fontWeight: 600,
+                fontSize: 14.5,
+                cursor: "pointer",
+              }}
+            >
               Done
             </button>
           </div>
         ) : cur ? (
           <>
-            <div style={{ marginTop: 16, border: `1px solid ${LINE}`, borderRadius: 14, background: BRAND_SOFT, padding: "30px 22px", textAlign: "center", minHeight: 168, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <div
+              style={{
+                marginTop: 16,
+                border: `1px solid ${LINE}`,
+                borderRadius: 14,
+                background: BRAND_SOFT,
+                padding: "30px 22px",
+                textAlign: "center",
+                minHeight: 168,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
               {showWord ? (
                 <>
-                  <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 32, lineHeight: 1.1, overflowWrap: "anywhere" }}>{cur.item.word}</div>
+                  <div
+                    style={{
+                      fontFamily: SERIF,
+                      fontWeight: 600,
+                      fontSize: 32,
+                      lineHeight: 1.1,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {cur.item.word}
+                  </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <SpeakBtn accent="UK" word={cur.item.word} />
                     <SpeakBtn accent="US" word={cur.item.word} />
                   </div>
                   {revealed ? (
                     <div style={{ marginTop: 4 }}>
-                      <div style={{ fontSize: 17, fontWeight: 600, color: BRAND }}>{cur.item.translation || "—"}</div>
-                      {cur.item.definition ? <p style={{ fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "7px 0 0" }}>{cur.item.definition}</p> : null}
-                      {cur.item.example ? <p style={{ fontSize: 12.5, fontStyle: "italic", color: FAINT, margin: "7px 0 0" }}>“{cur.item.example}”</p> : null}
+                      <div style={{ fontSize: 17, fontWeight: 600, color: BRAND }}>
+                        {cur.item.translation || "—"}
+                      </div>
+                      {cur.item.definition ? (
+                        <p
+                          style={{
+                            fontSize: 13.5,
+                            lineHeight: 1.55,
+                            color: MUTED,
+                            margin: "7px 0 0",
+                          }}
+                        >
+                          {cur.item.definition}
+                        </p>
+                      ) : null}
+                      {cur.item.example ? (
+                        <p
+                          style={{
+                            fontSize: 12.5,
+                            fontStyle: "italic",
+                            color: FAINT,
+                            margin: "7px 0 0",
+                          }}
+                        >
+                          “{cur.item.example}”
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: 17, fontWeight: 600, color: BRAND, overflowWrap: "anywhere" }}>{cur.item.translation || cur.item.definition || "—"}</div>
-                  {cur.item.definition && cur.item.translation ? <p style={{ fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: 0 }}>{cur.item.definition}</p> : null}
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 600,
+                      color: BRAND,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {cur.item.translation || cur.item.definition || "—"}
+                  </div>
+                  {cur.item.definition && cur.item.translation ? (
+                    <p style={{ fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: 0 }}>
+                      {cur.item.definition}
+                    </p>
+                  ) : null}
                   {revealed ? (
                     <div style={{ marginTop: 4 }}>
-                      <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 30, lineHeight: 1.1, overflowWrap: "anywhere" }}>{cur.item.word}</div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8 }}>
+                      <div
+                        style={{
+                          fontFamily: SERIF,
+                          fontWeight: 600,
+                          fontSize: 30,
+                          lineHeight: 1.1,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {cur.item.word}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          marginTop: 8,
+                        }}
+                      >
                         <SpeakBtn accent="UK" word={cur.item.word} />
                         <SpeakBtn accent="US" word={cur.item.word} />
                       </div>
@@ -463,15 +896,61 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
 
             {revealed ? (
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: `1.5px solid ${SLATE_AMBER_LINE}`, background: "var(--tk-slate-red-bg)", color: SLATE_RED, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button
+                  type="button"
+                  onClick={() => grade(false)}
+                  style={{
+                    flex: 1,
+                    padding: "12px 10px",
+                    borderRadius: 11,
+                    border: `1.5px solid ${SLATE_AMBER_LINE}`,
+                    background: "var(--tk-slate-red-bg)",
+                    color: SLATE_RED,
+                    fontFamily: SANS,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: "pointer",
+                  }}
+                >
                   Again
                 </button>
-                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button
+                  type="button"
+                  onClick={() => grade(true)}
+                  style={{
+                    flex: 1,
+                    padding: "12px 10px",
+                    borderRadius: 11,
+                    border: "none",
+                    background: BRAND_FILL,
+                    color: WHITE,
+                    fontFamily: SANS,
+                    fontWeight: 700,
+                    fontSize: 14,
+                    cursor: "pointer",
+                  }}
+                >
                   Got it
                 </button>
               </div>
             ) : (
-              <button type="button" onClick={() => setRevealed(true)} style={{ width: "100%", marginTop: 16, padding: "12px 10px", borderRadius: 11, border: `1.5px solid ${TINT_BORDER}`, background: TINT, color: BRAND, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              <button
+                type="button"
+                onClick={() => setRevealed(true)}
+                style={{
+                  width: "100%",
+                  marginTop: 16,
+                  padding: "12px 10px",
+                  borderRadius: 11,
+                  border: `1.5px solid ${TINT_BORDER}`,
+                  background: TINT,
+                  color: BRAND,
+                  fontFamily: SANS,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
                 Show answer
               </button>
             )}
@@ -485,13 +964,15 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
 // ---- helpers -----------------------------------------------------------------
 
 function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(
+    new Date(iso),
+  );
 }
 
 const VOCAB_CSS = `
 .vb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .vb-card .vb-del { opacity: 0; transition: opacity .15s ease, color .15s ease; }
 .vb-card:hover .vb-del, .vb-card .vb-del:focus-visible { opacity: 1; }
-.vb-card .vb-del:hover { color: #c0392b; }
+.vb-card .vb-del:hover { color: var(--tk-slate-red); }
 .vb-def { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 `;

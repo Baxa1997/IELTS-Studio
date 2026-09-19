@@ -272,7 +272,9 @@ const LUCIDA_CSS = `
   --btn-primary-active: #e97338;
 }
 
-.lucida ::selection { background: rgba(132,86,239,0.20); }
+/* The selection tint follows the brand. It was a fixed violet — a leftover from
+   the palette before this surface went burgundy, and the only violet left on it. */
+.lucida ::selection { background: color-mix(in oklab, var(--tk-brand) 20%, transparent); }
 
 /* interactive states the mock expressed as style-hover / style-active */
 .lc-btn { transition: background 160ms ease, opacity 160ms ease, transform 120ms ease; }
@@ -302,7 +304,7 @@ const LUCIDA_CSS = `
 /* mock result: the band circle beside the verdict */
 .lc-result-grid { display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 32px; align-items: center; }
 .lc-row { transition: background 160ms ease; }
-.lc-row:hover { background: #F7F4F2; }
+.lc-row:hover { background: var(--sp-surface-2); }
 
 /* --- full-bleed pages ---
    The app shell hands every page a scrolling surface of indefinite height, so a

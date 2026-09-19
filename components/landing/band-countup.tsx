@@ -17,6 +17,11 @@ import { useEffect, useRef, useState } from "react";
  * the timing, the particle geometry and the reduced-motion behaviour are all
  * exactly as they were.
  *
+ * ⚠️ ITS COLOURS ARE TOKENS, NOT THE BURGUNDY THIS PARAGRAPH NAMES. Every value
+ * below was frozen at the light palette, so when dark mode arrived the biggest
+ * element on the landing page — a 148px numeral in #121317 — went invisible on a
+ * #121317-ish card. Light is byte-identical; dark follows the brand.
+ *
  * Client component: the count + burst need timers. It SSRs a static "9" so there
  * is no hydration mismatch and no-JS visitors still see the band. Reduced-motion
  * pins it to a static 9 with no animation.
@@ -37,6 +42,17 @@ const PARTICLES = Array.from({ length: 12 }, (_, i) => {
     size: i % 3 === 0 ? 9 : 6,
   };
 });
+
+/**
+ * ⚠️ `cx`, NOT A TEMPLATE LITERAL. This was
+ * `` `bcu-wrap${boom ? " bcu-boom" : ""}` `` and `prettier --write` ate the
+ * leading space, welding the two into `bcu-wrapbcu-boom` — the boom animation
+ * simply stops happening and nothing errors. Joining a filtered list has no
+ * separator for a formatter to eat.
+ */
+function cx(...parts: (string | false | undefined)[]): string {
+  return parts.filter(Boolean).join(" ");
+}
 
 export function BandCountUp() {
   const [val, setVal] = useState<number>(9);
@@ -103,7 +119,12 @@ export function BandCountUp() {
   const label = val >= 9 ? "9" : val.toFixed(1);
 
   return (
-    <div ref={ref} role="img" aria-label="Overall band 9" className={`bcu-wrap${boom ? " bcu-boom" : ""}`}>
+    <div
+      ref={ref}
+      role="img"
+      aria-label="Overall band 9"
+      className={cx("bcu-wrap", boom && "bcu-boom")}
+    >
       <style>{BCU_CSS}</style>
       <span aria-hidden className="bcu-burst">
         <span className="bcu-ring" />
@@ -117,7 +138,10 @@ export function BandCountUp() {
                 "--y": `${p.y}px`,
                 width: p.size,
                 height: p.size,
-                background: p.gold ? "#E6B84A" : "#A32B57",
+                /* Gold stays gold — a celebration colour, like the tassel on
+                   the mortarboard above it — and the other half takes the brand,
+                   which re-anchors to orange in dark. */
+                background: p.gold ? "#E6B84A" : "var(--mk-brand)",
               } as React.CSSProperties
             }
           />
@@ -136,20 +160,25 @@ const BCU_CSS = `
   position:relative;z-index:2;
   font-family:var(--font-sora),system-ui,sans-serif;font-weight:700;
   font-size:clamp(112px,13vw,148px);line-height:.95;letter-spacing:-.05em;
-  color:#121317;font-variant-numeric:tabular-nums;
+  /* ⚠️ THE HERO NUMBER WAS #121317 — near-black, on a card that goes near-black.
+     The single most visible thing on the landing page disappeared in dark mode.
+     It is the marketing ink token now: byte-identical in light, near-white in
+     dark. The glow around it follows the brand rather than a frozen burgundy,
+     so it is orange in dark like everything else. */
+  color:var(--mk-ink);font-variant-numeric:tabular-nums;
   animation:bcu-idle 3.6s ease-in-out infinite;
 }
 .bcu-boom .bcu-num{animation:bcu-pop .72s cubic-bezier(.2,.9,.2,1.2)}
-@keyframes bcu-idle{0%,100%{text-shadow:0 0 0 rgba(125,1,50,0)}50%{text-shadow:0 0 40px rgba(125,1,50,.20)}}
+@keyframes bcu-idle{0%,100%{text-shadow:0 0 0 transparent}50%{text-shadow:0 0 40px color-mix(in oklab,var(--mk-brand) 20%,transparent)}}
 @keyframes bcu-pop{
-  0%{transform:scale(1);text-shadow:0 0 30px rgba(125,1,50,.28);color:#121317}
-  34%{transform:scale(1.17);text-shadow:0 0 64px rgba(125,1,50,.50);color:#7d0132}
-  100%{transform:scale(1);text-shadow:0 0 36px rgba(125,1,50,.22);color:#121317}
+  0%{transform:scale(1);text-shadow:0 0 30px color-mix(in oklab,var(--mk-brand) 28%,transparent);color:var(--mk-ink)}
+  34%{transform:scale(1.17);text-shadow:0 0 64px color-mix(in oklab,var(--mk-brand) 50%,transparent);color:var(--mk-brand)}
+  100%{transform:scale(1);text-shadow:0 0 36px color-mix(in oklab,var(--mk-brand) 22%,transparent);color:var(--mk-ink)}
 }
 .bcu-burst{position:absolute;left:50%;top:50%;width:0;height:0;z-index:1;pointer-events:none}
 .bcu-ring{
   position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;
-  border-radius:50%;border:3px solid rgba(125,1,50,.45);opacity:0;transform:scale(.4)
+  border-radius:50%;border:3px solid color-mix(in oklab,var(--mk-brand) 45%,transparent);opacity:0;transform:scale(.4)
 }
 .bcu-boom .bcu-ring{animation:bcu-ring .78s ease-out}
 @keyframes bcu-ring{0%{opacity:.7;transform:scale(.4);border-width:3px}100%{opacity:0;transform:scale(2);border-width:.5px}}

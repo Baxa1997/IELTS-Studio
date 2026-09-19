@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -70,6 +71,66 @@ function rules(): { selector: string; body: string }[] {
   }
   return out;
 }
+
+/* ── the OTHER stylesheets: the ones that live in a template literal ────────
+ *
+ * ⚠️ THIS IS THE BLIND SPOT THAT SHIPPED THREE BUGS. A rule written as
+ * `const X_CSS = \`…\`` inside a component is invisible to every guard in this
+ * suite: the token scans read style OBJECTS, and the scan above reads
+ * globals.css. Nothing read these. What hid in them:
+ *
+ *   .lp-island        rgba(255,255,255,.92)  a white pill on a near-black page,
+ *                                            with near-white ink on it
+ *   .bcu-num          #121317                the 148px band number on the hero,
+ *                                            near-black on a near-black card —
+ *                                            the largest element on the site
+ *   .lc-row:hover     #F7F4F2                a white flash on a dark row
+ *
+ * Shadows are out of scope here for the same reason as above. So is the site
+ * footer, which is a deliberately dark band in both themes and whose white
+ * hover is therefore correct — the one standing exception, and it is named
+ * rather than pattern-matched so a second one cannot creep in beside it.
+ */
+const CSS_BLOCK = /const\s+[A-Za-z_0-9]*CSS\s*=\s*`([\s\S]*?)`;/g;
+/** The footer's ground does not follow the theme, so its inks must not either. */
+const CSS_EXEMPT = new Set(["app/_landing/site-footer.tsx"]);
+
+describe("stylesheets written as template literals", () => {
+  const blocks: { file: string; body: string }[] = [];
+  const files = execFileSync("git", ["ls-files", "app", "components"], {
+    cwd: ROOT,
+    encoding: "utf8",
+  })
+    .split("\n")
+    .filter((f) => /\.tsx?$/.test(f) && !CSS_EXEMPT.has(f));
+  for (const file of files) {
+    const src = readFileSync(join(ROOT, file), "utf8");
+    for (const m of src.matchAll(CSS_BLOCK)) {
+      blocks.push({ file, body: m[1].replace(/\/\*[\s\S]*?\*\//g, "") });
+    }
+  }
+
+  it("finds the blocks it is meant to be watching", () => {
+    expect(blocks.length).toBeGreaterThan(5);
+  });
+
+  it("never name a colour a theme cannot change", () => {
+    const offenders: string[] = [];
+    for (const { file, body } of blocks) {
+      for (const d of body.matchAll(COLOUR_PROP)) {
+        /* A `--x: #hex` in here is a PALETTE ENTRY, not a painted surface — the
+           Speaking scale is 155 of them, declared in a template literal because
+           it is scoped to `.lucida`, with its own `.dark .lucida` column right
+           below. Those are the definitions this guard exists to make everything
+           else use, so flagging them inverts the rule. globals.css covers the
+           custom-property side for the shell. */
+        if (d[1].startsWith("--")) continue;
+        if (LITERAL.test(d[2])) offenders.push(`${file}  { ${d[1]}: ${d[2].trim()} }`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
 
 describe("the shell's stylesheet", () => {
   const found = rules();
