@@ -4,7 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
 import { EMERALD, BRAND, INK, MUTED, SANS } from "./tokens";
-import { BRAND_FILL, BRAND_LINE, PANEL, SLATE_LINE, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND_FILL,
+  BRAND_LINE,
+  PANEL,
+  SLATE_LINE,
+  SLATE_RED,
+  SLATE_STRONG,
+  WARM_LINE_MID,
+  WELL_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * In-practice word lookup. The learner selects a word/short phrase inside the
@@ -280,7 +290,7 @@ export function WordLookup({
           onKeyDown={(e) => { if (e.key === "Enter") void translate(sel.word, sel.sentence, language); }}
           placeholder="Language…"
           aria-label="Translate to language"
-          style={{ flex: 1, minWidth: 0, padding: "7px 10px", border: "1px solid #DAD8C9", borderRadius: 9, fontFamily: SANS, fontSize: 13, color: INK, background: PANEL }}
+          style={{ flex: 1, minWidth: 0, padding: "7px 10px", border: `1px solid ${WARM_LINE_MID}`, borderRadius: 9, fontFamily: SANS, fontSize: 13, color: INK, background: PANEL }}
         />
         <datalist id="vocab-langs">
           {COMMON_LANGUAGES.map((l) => (
@@ -300,11 +310,11 @@ export function WordLookup({
       {/* Result */}
       <div style={{ padding: "0 14px 12px" }}>
         {error ? (
-          <p style={{ fontSize: 12.5, color: "#c2410c", margin: 0 }}>{error}</p>
+          <p style={{ fontSize: 12.5, color: SLATE_RED, margin: 0 }}>{error}</p>
         ) : loading && !result ? (
           <p style={{ fontSize: 12.5, color: MUTED, margin: 0 }}>Translating…</p>
         ) : result ? (
-          <div style={{ borderTop: "1px solid #F0EEE3", paddingTop: 10 }}>
+          <div style={{ borderTop: `1px solid ${WELL_LINE}`, paddingTop: 10 }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: BRAND, lineHeight: 1.25, wordBreak: "break-word" }}>{result.translation}</div>
             {result.definition ? <p style={{ fontSize: 13, color: SLATE_STRONG, margin: "6px 0 0", lineHeight: 1.5 }}>{result.definition}</p> : null}
             {result.example ? <p style={{ fontSize: 12.5, color: MUTED, fontStyle: "italic", margin: "6px 0 0", lineHeight: 1.5 }}>“{result.example}”</p> : null}

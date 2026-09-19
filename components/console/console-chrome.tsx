@@ -14,8 +14,12 @@ import {
   MUTED,
   ON_INDIGO,
   PANEL,
+  SLATE_GREEN_BG,
+  SLATE_GREEN_LINE,
   WARM_LINE,
   WARM_LINE_DEEP,
+  WARM_WELL,
+  WELL_LINE,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -256,14 +260,14 @@ export function ConsoleChrome({
                was white too and became a seam the moment the surface went
                cream. One token, defined in globals.css. */
             background: "var(--lp-surface)",
-            borderBottom: "1px solid #f0eee8",
+            borderBottom: `1px solid ${WELL_LINE}`,
             padding: "14px 22px",
             display: "flex",
             alignItems: "center",
             gap: 12,
           }}
         >
-          <div style={{ fontSize: 14, color: "#6b7178" }}>{crumb ?? "Center"}</div>
+          <div style={{ fontSize: 14, color: MUTED }}>{crumb ?? "Center"}</div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
             {/* ON EVERY PAGE, because the moment you need it is the moment you do
               not know which page would have answered you. It navigates rather
@@ -280,13 +284,13 @@ export function ConsoleChrome({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 7,
-                background: "#f6f6f3",
+                background: WARM_WELL,
                 border: 0,
                 borderRadius: 8,
                 padding: "7px 12px",
                 fontSize: 13.5,
                 fontWeight: 500,
-                color: "#16232b",
+                color: INK,
                 textDecoration: "none",
                 whiteSpace: "nowrap",
               }}
@@ -300,13 +304,13 @@ export function ConsoleChrome({
                 display: "flex",
                 alignItems: "center",
                 gap: 7,
-                background: "#f6f6f3",
+                background: WARM_WELL,
                 border: 0,
                 borderRadius: 8,
                 padding: "7px 12px",
                 fontSize: 13.5,
                 fontWeight: 500,
-                color: "#16232b",
+                color: INK,
                 whiteSpace: "nowrap",
               }}
             >
@@ -446,8 +450,8 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
         <>
           <div
             style={{
-              background: "#EAF4EE",
-              border: "1px solid #CFE6D9",
+              background: SLATE_GREEN_BG,
+              border: `1px solid ${SLATE_GREEN_LINE}`,
               borderRadius: 12,
               padding: "14px 16px",
             }}

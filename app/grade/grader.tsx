@@ -20,6 +20,7 @@ import {
   FAINT,
   PANEL,
   RED,
+  SLATE_AMBER_LINE,
   SLATE_BODY as MUTED,
   SLATE_GREEN,
   SLATE_GREEN_BG,
@@ -28,6 +29,7 @@ import {
   SLATE_LINE,
   SLATE_LINE as LINE,
   SLATE_MUTED,
+  SLATE_RED_BG,
   SLATE_STRONG,
   WARM_AMBER as AMBER,
   WARM_LINE_SOFT,
@@ -423,7 +425,7 @@ function Result({
         {showLift ? (
           <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 19V5M5 12l7-7 7 7" /></svg>
-            <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
+            <span style={{ fontSize: 13.5, color: SLATE_GREEN, fontWeight: 600 }}>
               Up to <strong style={{ fontWeight: 800, color: SLATE_GREEN }}>{teaser.bandWithFixes.toFixed(1)}</strong> with the fixes
             </span>
           </div>
@@ -452,7 +454,7 @@ function Result({
 
       {/* ---- "Fix this first" blocker card (mirrors the internal BandsView) ---- */}
       <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: "18px 18px 16px" }}>
-        <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
+        <div style={{ background: "var(--tk-tint-red-bg)", border: `1px solid ${SLATE_AMBER_LINE}`, borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
@@ -469,10 +471,10 @@ function Result({
         {teaser.criteria.map((c) => {
           const isBlocker = teaser.blocker.criterion === c.key;
           const badge = isBlocker
-            ? { label: "Capping", text: RED, bg: "#FCEEEA" }
+            ? { label: "Capping", text: RED, bg: SLATE_RED_BG }
             : c.band >= 6
-              ? { label: c.band >= 7 ? "Strong" : "Solid", text: "#2C7A52", bg: SLATE_GREEN_BG }
-              : { label: "Developing", text: AMBER, bg: "#F6EAD0" };
+              ? { label: c.band >= 7 ? "Strong" : "Solid", text: SLATE_GREEN, bg: SLATE_GREEN_BG }
+              : { label: "Developing", text: AMBER, bg: SLATE_RED_BG };
           return (
             <div key={c.key} style={{ background: PANEL, border: `1px solid ${isBlocker ? "#F3CFC6" : "#EAE6D8"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11, gap: 8 }}>

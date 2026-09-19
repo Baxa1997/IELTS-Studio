@@ -23,6 +23,7 @@ import {
   WHITE,
   solidButton,
 } from "./design";
+import { BRAND_LINE, RED_DEEP, SLATE_RED_BG } from "@/lib/theme/tokens";
 
 /**
  * "Are you an education center? — Register here", plus the dialog behind it.
@@ -263,9 +264,9 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
               style={{
                 margin: "16px 0 0",
                 fontSize: 14,
-                color: "#a4222a",
-                background: "#fdeceb",
-                border: "1px solid #f5cfcd",
+                color: RED_DEEP,
+                background: SLATE_RED_BG,
+                border: `1px solid ${BRAND_LINE}`,
                 borderRadius: 12,
                 padding: "11px 14px",
               }}

@@ -16,7 +16,10 @@ import {
   SLATE_BODY,
   SLATE_GREEN,
   SLATE_GREEN as EMERALD,
+  SLATE_GREEN_BG,
   SLATE_MUTED,
+  SLATE_RED,
+  SLATE_RED_BG,
   SLATE_STRONG,
   WHITE,
 } from "@/lib/theme/tokens";
@@ -483,7 +486,7 @@ export function WritingStudio({
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
             <div style={{ padding: "18px 20px 16px", borderBottom: `1px solid ${theme.softLine}` }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 13 }}>
-                <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: "#9A9684" }}>THE TASK</span>
+                <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: SLATE_MUTED }}>THE TASK</span>
                 {prompt.category && CATEGORY_LABEL[prompt.category] ? (
                   <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 11px", borderRadius: 7, background: theme.accentSoft, color: BRAND, fontFamily: SANS, fontSize: 12.5, fontWeight: 700 }}>{CATEGORY_LABEL[prompt.category]}</span>
                 ) : null}
@@ -491,7 +494,7 @@ export function WritingStudio({
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {promptParts.map((p, i) =>
                   p.kind === "meta" ? (
-                    <p key={i} style={{ margin: 0, fontFamily: SANS, fontSize: 12.5, lineHeight: 1.45, fontWeight: 600, color: "#9A9684" }}>{p.text}</p>
+                    <p key={i} style={{ margin: 0, fontFamily: SANS, fontSize: 12.5, lineHeight: 1.45, fontWeight: 600, color: SLATE_MUTED }}>{p.text}</p>
                   ) : p.kind === "question" ? (
                     <p key={i} style={{ margin: 0, fontFamily: SERIF, fontSize: 14.5, fontStyle: "italic", lineHeight: 1.4, color: SLATE_BODY }}>{p.text}</p>
                   ) : (
@@ -511,7 +514,7 @@ export function WritingStudio({
                 {requirementList
                   .map((c) => (
                     <div key={c} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.soft, border: `1px solid ${theme.softLine}`, borderRadius: 10 }}>
-                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: "#E5F3EA", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: SLATE_GREEN_BG, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
                       <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>{c}</span>
                     </div>
                   ))}
@@ -637,7 +640,7 @@ export function WritingStudio({
           )}
         </span>
         <span style={{ fontFamily: SANS, fontSize: 13, color: SLATE_BODY }}>
-          {message ? <span style={{ color: "#c2410c" }}>{message}</span> : unchangedSinceGrade ? "Edit your response, then resubmit to see if it worked." : <><strong style={{ color: INK, fontWeight: 700 }}>Ready to grade.</strong> The AI marks every mistake and gives a band per criterion — Task, Coherence, Vocabulary, Grammar.</>}
+          {message ? <span style={{ color: SLATE_RED }}>{message}</span> : unchangedSinceGrade ? "Edit your response, then resubmit to see if it worked." : <><strong style={{ color: INK, fontWeight: 700 }}>Ready to grade.</strong> The AI marks every mistake and gives a band per criterion — Task, Coherence, Vocabulary, Grammar.</>}
         </span>
       </footer>
     </div>
@@ -726,14 +729,14 @@ function TutorPanel({
 function AutosavePill({ state }: { state: "idle" | "saving" | "saved" | "error" }) {
   if (state === "error") {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: "#FBE9DD" }}>
-        <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: "#c2410c" }}>Save failed</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: SLATE_RED_BG }}>
+        <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: SLATE_RED }}>Save failed</span>
       </span>
     );
   }
   const label = state === "saving" ? "Saving…" : state === "saved" ? "Saved" : "Autosaving";
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: "#E5F3EA" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: SLATE_GREEN_BG }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: EMERALD }} />
       <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: SLATE_GREEN }}>{label}</span>
     </span>

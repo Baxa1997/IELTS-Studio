@@ -7,6 +7,7 @@ import { describeDays } from "@/lib/console/timetable-days";
 
 import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
 import {
+  BRAND_SOFT,
   CONSOLE_CANVAS,
   FAINT,
   INDIGO_CONSOLE,
@@ -15,8 +16,10 @@ import {
   PANEL,
   RED,
   RED_DEEP,
+  SLATE_AMBER,
   WARM_LINE,
   WELL,
+  WELL_LINE,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -39,7 +42,7 @@ import {
  * replaces.
  */
 
-const HAIR = "#EFEDE8";
+const HAIR = WELL_LINE;
 const BAND_H = 34;
 
 export interface GridRoom {
@@ -553,10 +556,10 @@ export function TimetableGrid({
                 style={{
                   margin: "0 0 14px",
                   padding: "9px 11px",
-                  background: "#FDF9F1",
+                  background: BRAND_SOFT,
                   borderRadius: 9,
                   fontSize: 12.5,
-                  color: "#8A6420",
+                  color: SLATE_AMBER,
                   lineHeight: 1.5,
                 }}
               >

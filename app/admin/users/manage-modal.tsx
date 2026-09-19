@@ -7,7 +7,17 @@ import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/components/admin/u
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { loadAccountUsage, setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
-import { CONSOLE_CANVAS, PANEL, SLATE_AMBER, WELL, WHITE } from "@/lib/theme/tokens";
+import {
+  CONSOLE_CANVAS,
+  INDIGO,
+  INDIGO_SOFT,
+  PANEL,
+  SLATE_AMBER,
+  SLATE_LINE,
+  SOFT,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Plan and limits for one account, as the design draws it.
@@ -158,8 +168,8 @@ export function ManageModal({
               width: 40,
               height: 40,
               borderRadius: "50%",
-              background: "#DEDDF6",
-              color: "#3B38B0",
+              background: INDIGO_SOFT,
+              color: INDIGO,
               fontSize: 13,
               fontWeight: 600,
               display: "grid",
@@ -176,7 +186,7 @@ export function ManageModal({
             <div
               style={{
                 fontSize: 12.5,
-                color: "#7C7A93",
+                color: SOFT,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -259,8 +269,8 @@ export function ManageModal({
                     fontSize: 12.5,
                     fontWeight: 500,
                     cursor: "pointer",
-                    border: `1px solid ${on ? TONE.indigo.ink : "#E4E2DC"}`,
-                    background: on ? TONE.indigo.tint : "#fff",
+                    border: `1px solid ${on ? TONE.indigo.ink : SLATE_LINE}`,
+                    background: on ? TONE.indigo.tint : PANEL,
                     color: on ? TONE.indigo.ink : INK,
                   }}
                 >

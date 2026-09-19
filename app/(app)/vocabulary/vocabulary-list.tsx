@@ -10,6 +10,7 @@ import {
   BRAND_SOFT as TINT,
   CANVAS,
   PANEL,
+  SLATE_AMBER_LINE,
   SLATE_BODY as MUTED,
   SLATE_GREEN as EMERALD,
   SLATE_INK as INK,
@@ -209,7 +210,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
                       type="button"
                       onClick={() => setMode(m)}
                       aria-pressed={on}
-                      style={{ padding: "7px 14px", borderRadius: 9, fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? TINT_BORDER : LINE}`, background: on ? TINT : "#fff", color: on ? BRAND : MUTED }}
+                      style={{ padding: "7px 14px", borderRadius: 9, fontFamily: SANS, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? TINT_BORDER : LINE}`, background: on ? TINT : PANEL, color: on ? BRAND : MUTED }}
                     >
                       {MODE_META[m].label}
                     </button>
@@ -316,7 +317,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
     <button
       type="button"
       onClick={onClick}
-      style={{ padding: "6px 13px", borderRadius: 999, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? TINT_BORDER : LINE}`, background: active ? TINT : "#fff", color: active ? BRAND : MUTED }}
+      style={{ padding: "6px 13px", borderRadius: 999, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? TINT_BORDER : LINE}`, background: active ? TINT : PANEL, color: active ? BRAND : MUTED }}
     >
       {children}
     </button>
@@ -462,7 +463,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
 
             {revealed ? (
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "1.5px solid #F0C8C0", background: "var(--tk-slate-red-bg)", color: SLATE_RED, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: `1.5px solid ${SLATE_AMBER_LINE}`, background: "var(--tk-slate-red-bg)", color: SLATE_RED, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Again
                 </button>
                 <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>

@@ -7,7 +7,18 @@ import { Crown, Layers, type LucideIcon, Mic, SquarePen } from "lucide-react";
 
 import { Modal } from "@/components/ui/interactive";
 import type { Quota, UsageSummary } from "@/lib/quota";
-import { SANS, SLATE_INK, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  MUTED,
+  SANS,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_RED_BG,
+  SLATE_STRONG,
+  WARM_EDGE,
+  WARM_RED,
+  WARM_WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The learner's PLAN, pinned to the foot of the sidebar rail — as a BUTTON.
@@ -34,9 +45,9 @@ const INK = SLATE_INK;
 /** The rail's usual secondary grey (#8b8883) is 3.5:1 on white — too faint for
  *  a 12px line somebody is meant to read. This is 5.3:1. Mirrored in
  *  globals.css for the dialog's settings link. */
-const SUB = "#6f6b64";
+const SUB = MUTED;
 const LINE = SLATE_LINE;
-const RED = "#b3261e";
+const RED = WARM_RED;
 
 type AllowanceKey = "grade" | "generate" | "speaking";
 
@@ -272,6 +283,8 @@ function PlanDialog({
                 // The logo tile's #B8421E: white on it is 5.47:1, where the rail's
                 // lighter orange only reaches 4.1:1. Its hover is a `filter` in
                 // globals.css, which an inline background does not block.
+                /* The logomark's own colour — a brand MARK, not a surface, so
+                   it stays put in both themes (white on it is 5.47:1). */
                 background: "#b8421e",
                 color: WHITE,
                 fontFamily: SANS,
@@ -352,9 +365,9 @@ function AllowanceRow({
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 10,
-          background: "#f7f5ee",
-          border: "1px solid #ece9e1",
-          color: "#3f3d39",
+          background: WARM_WELL,
+          border: `1px solid ${WARM_EDGE}`,
+          color: SLATE_STRONG,
         }}
       >
         <Icon size={17} strokeWidth={1.9} />
@@ -392,7 +405,7 @@ function AllowanceRow({
               height: 5,
               marginTop: 9,
               borderRadius: 999,
-              background: spent ? "#f5dedb" : "#eceae2",
+              background: spent ? SLATE_RED_BG : WARM_WELL,
               overflow: "hidden",
             }}
           >
@@ -401,7 +414,9 @@ function AllowanceRow({
                 width: `${Math.round((left / limit) * 100)}%`,
                 height: "100%",
                 borderRadius: 999,
-                background: "#4a463d",
+                /* The FILLED part of the meter. It has to invert with the
+                   track behind it, or the bar reads as empty in one theme. */
+                background: SLATE_STRONG,
               }}
             />
           </div>

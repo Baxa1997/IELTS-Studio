@@ -24,9 +24,11 @@ import {
   BRAND_FILL,
   BRAND_SOFT,
   PANEL,
+  SLATE_AMBER_BG,
   SLATE_BODY,
   SLATE_LINE,
   SLATE_MUTED,
+  SLATE_RED_BG,
   SLATE_STRONG,
   WELL_LINE,
   WHITE,
@@ -484,7 +486,7 @@ export function ReadingRunner({
             style={{
               flex: "none",
               padding: "8px 20px",
-              background: "#FDECEC",
+              background: SLATE_RED_BG,
               borderBottom: "1px solid #F3B4B4",
             }}
           >
@@ -786,8 +788,8 @@ function ConfirmFinishModal({
             width: 46,
             height: 46,
             borderRadius: 13,
-            background: "#FEF3E2",
-            color: "#C77C09",
+            background: SLATE_AMBER_BG,
+            color: AMBER,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -932,7 +934,7 @@ function ResultsView({
       </section>
 
       {disclaimer ? (
-        <p style={{ fontFamily: SANS, fontSize: 12, color: "#9a998c", margin: 0 }}>{disclaimer}</p>
+        <p style={{ fontFamily: SANS, fontSize: 12, color: SLATE_MUTED, margin: 0 }}>{disclaimer}</p>
       ) : null}
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>

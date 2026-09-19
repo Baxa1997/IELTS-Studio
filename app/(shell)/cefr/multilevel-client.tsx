@@ -36,9 +36,9 @@ import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
 import {
   BRAND,
   BRAND as D_ACCENT,
-  BRAND_FILL as D_ACCENT_FILL,
   BRAND_DEEP,
   BRAND_DEEP as D_ATEXT,
+  BRAND_FILL as D_ACCENT_FILL,
   BRAND_LINE,
   BRAND_LINE as D_ABORDER2,
   BRAND_PALE as TINT_BORDER,
@@ -56,6 +56,7 @@ import {
   SLATE_LINE,
   SLATE_MUTED,
   SLATE_MUTED as FAINT,
+  SLATE_RED,
   SLATE_STRONG,
   WARM_GREEN as GOOD,
   WARM_RED as BAD,
@@ -3705,14 +3706,14 @@ function TaskStudio({
           }}
         >
           {message ? (
-            <X size={12} style={{ color: "#c2410c" }} />
+            <X size={12} style={{ color: SLATE_RED }} />
           ) : (
             <Check size={12} style={{ color: GOOD }} />
           )}
         </span>
         <span style={{ fontFamily: JAKARTA, fontSize: 13, color: W_MUTED }}>
           {message ? (
-            <span style={{ color: "#c2410c" }}>{message}</span>
+            <span style={{ color: SLATE_RED }}>{message}</span>
           ) : showResult ? (
             "Marked. Revise your answer and re-grade, or ask the coach to explain the feedback."
           ) : (
@@ -5121,7 +5122,7 @@ function Alert({ children }: { children: React.ReactNode }) {
         fontSize: 13,
         color: BAD,
         background: "var(--tk-tint-red-bg)",
-        border: "1px solid #FECACA",
+        border: `1px solid ${BRAND_LINE}`,
         borderRadius: 10,
         padding: "10px 12px",
         margin: "14px 0 0",

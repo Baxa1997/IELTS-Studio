@@ -20,7 +20,7 @@ import {
   TROUGH,
   TROUGH_DEEP,
 } from "@/lib/lessons/theme";
-import { PANEL, RED_DEEP, SLATE_BODY, WHITE } from "@/lib/theme/tokens";
+import { PANEL, RED_DEEP, SLATE_BODY, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `lessons` namespace. */
 const callEngine = engineClient("lessons");
@@ -676,7 +676,7 @@ export function Composer() {
                   padding: "13px 22px",
                   borderRadius: 999,
                   border: 0,
-                  background: mine ? INK : "#fff",
+                  background: mine ? INK : WHITE,
                   color: mine ? PAPER : INK,
                   fontSize: 15,
                   fontWeight: 500,
@@ -1050,7 +1050,7 @@ function SpecRow({
           fontWeight: 700,
           letterSpacing: ".06em",
           textTransform: "uppercase",
-          color: "#7b8891",
+          color: SLATE_MUTED,
           paddingTop: 9,
         }}
       >
@@ -1409,7 +1409,7 @@ function SpecChip({
         fontWeight: on ? 700 : 500,
         fontFamily: "inherit",
         cursor: "pointer",
-        background: on ? INK : "#fff",
+        background: on ? INK : WHITE,
         color: on ? PAPER : BODY_INK,
         boxShadow: on ? "none" : "inset 0 0 0 1px #e4e0d6",
       }}

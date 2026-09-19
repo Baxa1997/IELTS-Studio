@@ -122,10 +122,13 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
               x2={W - PAD}
               y1={yOf(g)}
               y2={yOf(g)}
-              stroke="var(--tk-slate-line)"
+              /* ⚠️ `style`, NOT the `stroke` ATTRIBUTE. A CSS custom property is
+                 not valid in an SVG presentation attribute — it does not
+                 resolve and the line renders BLACK, with no error anywhere. */
+              style={{ stroke: "var(--tk-slate-line)" }}
               strokeDasharray="3 4"
             />
-            <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" fill="var(--hb-dim-line)" textAnchor="start">
+            <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" style={{ fill: "var(--hb-dim-line)" }} textAnchor="start">
               {g}
             </text>
           </g>

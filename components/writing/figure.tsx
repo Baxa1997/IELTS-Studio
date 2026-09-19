@@ -12,6 +12,7 @@ import {
   SLATE_INK as INK,
   SLATE_LINE,
   SLATE_STRONG,
+  WARM_EDGE,
   WARM_LINE_SOFT,
   WELL,
   WHITE,
@@ -390,7 +391,7 @@ function TableFigureView({ figure }: { figure: TableFigure }) {
     padding: "8px 11px",
     fontSize: 13,
     textAlign: "left",
-    borderBottom: "1px solid #EEEAE0",
+    borderBottom: `1px solid ${WARM_EDGE}`,
     color: INK,
   };
   return (

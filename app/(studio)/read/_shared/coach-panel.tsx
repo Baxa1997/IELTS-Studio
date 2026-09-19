@@ -6,7 +6,16 @@ import { MessageCircle, Send, X } from "lucide-react";
 import { Typewriter } from "@/components/typewriter";
 
 import { BRAND, INK, MUTED, SANS } from "./tokens";
-import { BRAND_FILL, FAB_CLEARANCE, PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND_FILL,
+  FAB_CLEARANCE,
+  PANEL,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WARM_EDGE,
+  WARM_LINE_MID,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 interface ChatMessage {
   role: "student" | "assistant";
@@ -152,7 +161,7 @@ export function CoachPanel({
         overflow: "hidden",
       }}
     >
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "12px 14px", borderBottom: "1px solid #EEECDF" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "12px 14px", borderBottom: `1px solid ${WARM_EDGE}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#9B1044,#7D0132)", color: WHITE, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <MessageCircle size={15} />
@@ -220,8 +229,8 @@ export function CoachPanel({
         ) : null}
       </div>
 
-      <div style={{ borderTop: "1px solid #EEECDF", padding: 10 }}>
-        <p style={{ fontFamily: SANS, fontSize: 11, color: "#9a998c", margin: "0 0 8px" }}>{hint}</p>
+      <div style={{ borderTop: `1px solid ${WARM_EDGE}`, padding: 10 }}>
+        <p style={{ fontFamily: SANS, fontSize: 11, color: SLATE_MUTED, margin: "0 0 8px" }}>{hint}</p>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={input}
@@ -229,7 +238,7 @@ export function CoachPanel({
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
             placeholder="Ask the coach…"
             className="lp-input"
-            style={{ flex: 1, padding: "9px 11px", border: "1px solid #DAD8C9", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 13.5, color: INK }}
+            style={{ flex: 1, padding: "9px 11px", border: `1px solid ${WARM_LINE_MID}`, borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 13.5, color: INK }}
           />
           <button type="button" onClick={() => void send()} disabled={sending || !input.trim()} aria-label="Send" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, borderRadius: 10, border: "none", cursor: sending || !input.trim() ? "default" : "pointer", background: BRAND_FILL, color: WHITE, opacity: sending || !input.trim() ? 0.5 : 1 }}>
             <Send size={16} />
