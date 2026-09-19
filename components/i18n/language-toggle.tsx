@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, LoaderCircle } from "lucide-react";
 
 import { LOCALE_NAMES, LOCALE_SHORT, LOCALES, type Locale } from "@/lib/i18n/locales";
 import { BRAND, BRAND_SOFT, FAINT, LINE, MUTED, PANEL, SANS } from "@/lib/theme/tokens";
@@ -22,12 +22,12 @@ import { useLocale } from "./locale-provider";
  * very first frame.
  */
 export function LanguageToggle() {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t, pending, prefetchLocales } = useLocale();
 
   return (
     <div
       role="radiogroup"
-      aria-label="Language"
+      aria-label={t("language.label")}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -48,6 +48,7 @@ export function LanguageToggle() {
             role="radio"
             aria-checked={on}
             onClick={() => setLocale(code)}
+            onPointerEnter={prefetchLocales}
             style={{
               display: "flex",
               alignItems: "center",
@@ -64,6 +65,9 @@ export function LanguageToggle() {
               fontWeight: on ? 700 : 500,
               background: on ? BRAND_SOFT : "transparent",
               color: on ? BRAND : MUTED,
+              // No 300ms double-tap wait: that delay is long enough for a
+              // scroll to begin and swallow the tap.
+              touchAction: "manipulation",
             }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
@@ -81,7 +85,21 @@ export function LanguageToggle() {
               </span>
               {LOCALE_NAMES[code]}
             </span>
-            {on ? <Check size={16} strokeWidth={2.2} aria-hidden /> : null}
+            {/* The tick lands immediately — the chrome switches the moment you
+                choose. The spinner is only the server-rendered half of the page
+                catching up behind it. */}
+            {on ? (
+              pending ? (
+                <LoaderCircle
+                  size={16}
+                  strokeWidth={2.2}
+                  aria-hidden
+                  style={{ animation: "lp-spin .6s linear infinite" }}
+                />
+              ) : (
+                <Check size={16} strokeWidth={2.2} aria-hidden />
+              )
+            ) : null}
           </button>
         );
       })}

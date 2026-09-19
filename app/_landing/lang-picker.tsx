@@ -27,35 +27,86 @@ import { BRAND, BRAND_TINT, LINE, MUTED, PANEL, RADIUS, SANS, STRONG, WHITE } fr
  * for their language scans for the word they use for it, not for its English
  * name, which they may not read.
  */
+/** Two rings and a rotation — no dependency, no image, and it inherits the
+ *  brand colour from the row it sits in. */
+function Spinner() {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        width: 11,
+        height: 11,
+        border: "2px solid currentColor",
+        borderTopColor: "transparent",
+        borderRadius: "50%",
+        // `lp-spin` is already in globals.css — one rotation keyframe for the app.
+        animation: "lp-spin .6s linear infinite",
+        verticalAlign: "-1px",
+      }}
+    />
+  );
+}
+
 export function LangPicker({ compact = false }: { compact?: boolean }) {
-  const { locale, setLocale } = useLocale();
+  const { locale, setLocale, t, pending, prefetchLocales } = useLocale();
   const [open, setOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
   // Click-away and Escape. The canvas only draws the open state; a menu that
   // can be opened and not dismissed is worse than one that was never built.
+  //
+  // ⚠️ `pointerdown`, NOT `mousedown`. A finger on a phone and a pen on a
+  // tablet both raise pointer events; mouse events are a COMPATIBILITY layer
+  // the browser may synthesise late, may coalesce, or may skip entirely once
+  // something upstream has called `preventDefault`. Listening on the compat
+  // layer is how a menu ends up dismissing on some taps and not others.
   useEffect(() => {
     if (!open) return;
-    const away = (e: MouseEvent) => {
+    const away = (e: PointerEvent) => {
       if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
     };
     const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    document.addEventListener("mousedown", away);
+    document.addEventListener("pointerdown", away);
     document.addEventListener("keydown", esc);
     return () => {
-      document.removeEventListener("mousedown", away);
+      document.removeEventListener("pointerdown", away);
       document.removeEventListener("keydown", esc);
     };
   }, [open]);
+
+  /**
+   * Open upwards when there is no room below, and warm the destinations.
+   *
+   * ⚠️ THE MENU USED TO BE PINNED 48px BELOW THE BUTTON AND COULD LAND OFF THE
+   * SCREEN. In the mobile drawer the picker sits at the BOTTOM of a panel that
+   * also locks body scrolling, so a menu opening downwards there is partly
+   * below the fold with no way to scroll to it: the rows you can see are
+   * clickable, the ones you cannot are not, and which is which depends on the
+   * phone. Measuring once per open costs nothing and there is no third case —
+   * either it fits below or it goes above.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const el = box.current;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      // 3 rows at ~45px plus the menu's own padding, with a little margin.
+      const NEEDED = 172;
+      setDropUp(window.innerHeight - r.bottom < NEEDED && r.top > NEEDED);
+    }
+    prefetchLocales();
+  }, [open, prefetchLocales]);
 
   return (
     <div style={{ position: "relative" }} ref={box}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onPointerEnter={prefetchLocales}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Change language"
+        aria-label={t("language.change")}
         style={{
           display: "flex",
           alignItems: "center",
@@ -71,6 +122,10 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
           color: STRONG,
           letterSpacing: compact ? undefined : "0.04em",
           whiteSpace: "nowrap",
+          /* Opts out of the browser's wait-and-see for a double-tap. Without it
+             a tap is held back ~300ms on some mobile browsers, which is long
+             enough for a scroll to start and the tap to be dropped instead. */
+          touchAction: "manipulation",
         }}
       >
         <span style={{ fontSize: 14 }} aria-hidden>
@@ -87,7 +142,7 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
           role="menu"
           style={{
             position: "absolute",
-            top: compact ? 48 : 52,
+            ...(dropUp ? { bottom: "calc(100% + 6px)" } : { top: "calc(100% + 6px)" }),
             right: 0,
             background: PANEL,
             border: `1px solid ${LINE}`,
@@ -129,10 +184,16 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
                   background: on ? BRAND_TINT : "transparent",
                   color: on ? BRAND : STRONG,
                   fontWeight: on ? 700 : 500,
+                  touchAction: "manipulation",
                 }}
               >
                 <span>{LOCALE_NAMES[code]}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: BRAND }}>{on ? "✓" : ""}</span>
+                {/* The tick moves the moment you click, because the chrome has
+                    already changed language by then — the spinner is the part
+                    still travelling: the server-rendered half of the page. */}
+                <span style={{ fontSize: 12, fontWeight: 700, color: BRAND }} aria-hidden>
+                  {on ? pending ? <Spinner /> : "✓" : ""}
+                </span>
               </button>
             );
           })}

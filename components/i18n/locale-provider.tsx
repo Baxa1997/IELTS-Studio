@@ -7,7 +7,9 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
+  useTransition,
 } from "react";
 
 import { translator, type Translate } from "@/lib/i18n";
@@ -25,6 +27,13 @@ interface LocaleCtx {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: Translate;
+  /** True while the server half of a switch is still in flight. The chrome has
+   *  already changed language by then — this is for saying so, not for hiding
+   *  anything. */
+  pending: boolean;
+  /** Warm the URLs the picker can send you to. Called when the menu OPENS, so
+   *  the navigation that follows a click is usually already downloaded. */
+  prefetchLocales: () => void;
 }
 
 const Ctx = createContext<LocaleCtx | null>(null);
@@ -120,10 +129,39 @@ export function LocaleProvider({
   // Must be referentially stable per `initial`, or the hook re-reads endlessly.
   const serverSnapshot = useCallback(() => pin ?? initial ?? DEFAULT_LOCALE, [pin, initial]);
   const fromCookie = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
-  // Hooks run unconditionally; the pin wins afterwards.
-  const locale = pin ?? fromCookie;
   const router = useRouter();
   const pathname = usePathname();
+  const [pending, startTransition] = useTransition();
+
+  /**
+   * What the visitor just picked, before the server has caught up.
+   *
+   * ⚠️ THIS IS WHAT MAKES THE CONTROL FEEL LIKE A SWITCH RATHER THAN A FORM.
+   * On a pinned route the language comes from the URL, so until this existed
+   * the ONLY thing a click did was start a navigation: the tick did not move,
+   * no label changed, and on a slow connection the picker looked broken for a
+   * second or two — which reads as a click that did not register, and gets
+   * clicked again. Now the choice wins locally the instant it is made, every
+   * client component re-renders in the new language immediately, and the
+   * navigation catches the server-rendered half up behind it.
+   *
+   * It clears itself when `pin` changes, i.e. when the new route has landed and
+   * the URL says what this says. Starting at `null` keeps the hydration markup
+   * identical to the server's.
+   */
+  const [chosen, setChosen] = useState<{ value: Locale; against: Locale | undefined } | null>(null);
+
+  /* It expires by DERIVATION rather than by being reset. The choice remembers
+     which `pin` it was made against, so the moment the navigation lands and the
+     route pins the new language, `against` no longer matches and the choice
+     stops applying on its own. Resetting it from an effect instead would mean a
+     second render pass after every switch, and a frame where the URL and the
+     chrome disagree in the other direction. */
+  const claimed = chosen && chosen.against === pin ? chosen.value : null;
+
+  // Hooks run unconditionally; precedence is decided afterwards. A deliberate
+  // choice beats the URL, which beats the cookie.
+  const locale = claimed ?? pin ?? fromCookie;
 
   // Keep <html lang> honest: it is what a screen reader switches voice on, and
   // what the browser picks hyphenation and spell-check from, so it has to move
@@ -160,16 +198,37 @@ export function LocaleProvider({
          chosen language's URL; everywhere else the cookie is the only signal
          and a refresh is the right move. Keeping the language in the URL is
          also what makes it linkable and shareable. */
+      setChosen({ value: l, against: pin });
+
+      /* IN A TRANSITION, so the click is never what waits. `router.refresh()`
+         re-runs every server component on the route — on an app page that means
+         the Supabase round trips behind it, which are not fast from here — and
+         a push to another language's landing page is a full document's worth of
+         work. Outside a transition React treats both as urgent and the tab sits
+         there unresponsive until they finish; inside one the interface stays
+         live and `pending` says what is happening. */
       const target = localisedPath(pathname, l);
-      if (target !== pathname) router.push(target);
-      else router.refresh();
+      startTransition(() => {
+        if (target !== pathname) router.push(target);
+        else router.refresh();
+      });
     },
-    [router, pathname],
+    [router, pathname, pin],
   );
 
+  /** Warm every language's URL for the page we are on. Cheap when the target is
+   *  the current path (Next dedupes), and it is what turns the click that
+   *  follows into a cache hit instead of a cold render. */
+  const prefetchLocales = useCallback(() => {
+    for (const l of LOCALES) {
+      const target = localisedPath(pathname, l);
+      if (target !== pathname) router.prefetch(target);
+    }
+  }, [router, pathname]);
+
   const value = useMemo<LocaleCtx>(
-    () => ({ locale, setLocale, t: translator(locale) }),
-    [locale, setLocale],
+    () => ({ locale, setLocale, t: translator(locale), pending, prefetchLocales }),
+    [locale, setLocale, pending, prefetchLocales],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -185,7 +244,13 @@ export function LocaleProvider({
 export function useLocale(): LocaleCtx {
   const v = useContext(Ctx);
   const fallback = useMemo<LocaleCtx>(
-    () => ({ locale: DEFAULT_LOCALE, setLocale: () => {}, t: translator(DEFAULT_LOCALE) }),
+    () => ({
+      locale: DEFAULT_LOCALE,
+      setLocale: () => {},
+      t: translator(DEFAULT_LOCALE),
+      pending: false,
+      prefetchLocales: () => {},
+    }),
     [],
   );
   return v ?? fallback;
