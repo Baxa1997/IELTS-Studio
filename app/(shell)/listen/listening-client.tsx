@@ -948,7 +948,10 @@ function ListenCard({
   return (
     <PracticeCard
       tone={it.locked || loading || disabled ? null : state === "done" ? "done" : "brand"}
-      style={{ opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1 }}
+      surface={it.locked ? "locked" : state === "done" ? "done" : "open"}
+      // No opacity on a locked card: it faded the topic and the level, which is
+      // the material that sells the plan. The PRO pill states the gate instead.
+      style={{ opacity: disabled && !loading ? 0.7 : 1 }}
     >
       <CardHead
         seq={it.seq}
@@ -957,21 +960,28 @@ function ListenCard({
           // Absent rather than guessed if the engine did not say.
           ...(it.accent ? [{ label: it.accent.toUpperCase() }] : []),
         ]}
+        // Shown in every state now. It used to be the "target" status pill, so
+        // it vanished as soon as the learner paused or finished the practice.
+        level={`LEVEL ${it.difficulty}`}
+        dim={state === "done"}
         pill={
-          state === "live" ? (
+          it.locked ? (
+            <StatusPill tone="locked" icon={<Lock size={9} strokeWidth={2.6} />}>
+              Pro
+            </StatusPill>
+          ) : state === "live" ? (
             <StatusPill tone="progress">Paused</StatusPill>
           ) : done ? (
             <StatusPill tone="band" icon={<Check size={9} strokeWidth={3} />}>
               {it.best_score}/{maxScore}
             </StatusPill>
-          ) : (
-            <StatusPill tone="target">Level {it.difficulty}</StatusPill>
-          )
+          ) : null
         }
       />
       <CardBody
         title={title}
         subtitle={subtitle}
+        dim={state === "done"}
         progress={live ? sectionProgress(live, sections) : undefined}
       />
       {tags?.length ? <CardTags tags={tags} /> : null}
@@ -1099,7 +1109,7 @@ function OpenAction({
   if (locked) {
     return (
       <CardAction onClick={onOpen} icon={<Lock size={13} />}>
-        Unlock
+        Unlock with Pro
       </CardAction>
     );
   }

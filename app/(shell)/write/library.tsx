@@ -1290,9 +1290,14 @@ function PromptCard({
   // An unfinished draft outranks a past mark: it is the thing left open.
   const state = draft ? "draft" : mark ? "marked" : p.generated ? "fresh" : "target";
 
+  const finished = state === "marked";
   return (
     <PracticeCard
-      tone={busy ? null : state === "marked" ? "ink" : "brand"}
+      // "done" rather than "ink": Reading and Listening already tint a finished
+      // card green, and the same state wearing two looks across the hubs was an
+      // accident of them being built apart.
+      tone={busy ? null : finished ? "done" : "brand"}
+      surface={finished ? "done" : "open"}
       style={{ opacity: busy ? 0.7 : 1 }}
     >
       <CardHead
@@ -1300,7 +1305,8 @@ function PromptCard({
         seqTone="ink"
         icon={<PenLine size={12} strokeWidth={2} />}
         label={["WRITING", taskLabel(p.task_type), topic].filter(Boolean).join(" · ").toUpperCase()}
-        pill={<PromptPill state={state} mark={mark} difficulty={p.difficulty} />}
+        dim={finished}
+        pill={<PromptPill state={state} mark={mark} difficulty={p.difficulty} done={done} />}
       />
 
       {/* `full` only where there is something to reveal: a fresh prompt's own
@@ -1324,18 +1330,26 @@ function PromptCard({
             Attach
           </CardAction>
         ) : null}
+        {/* ⚠️ ON A MARKED PROMPT, FEEDBACK IS THE PRIMARY AND REWRITE IS NOT —
+            and the revision loop is the point of this product, so reading the
+            marking before rewriting is the order we want anyway. The primary is
+            also last, so the order swaps with the emphasis. */}
         {mark && !draft ? (
-          <CardAction kind="secondary" href={`/activities/essay/${mark.essayId}`}>
-            Feedback
+          <>
+            <CardAction kind="secondary" onClick={onOpen} disabled={busy}>
+              Rewrite
+            </CardAction>
+            <CardAction href={`/activities/essay/${mark.essayId}`}>Feedback</CardAction>
+          </>
+        ) : (
+          <CardAction
+            onClick={onOpen}
+            disabled={busy}
+            icon={<ArrowRight size={14} strokeWidth={2.4} />}
+          >
+            {draft ? "Continue" : done ? "Retake" : "Start"}
           </CardAction>
-        ) : null}
-        <CardAction
-          onClick={onOpen}
-          disabled={busy}
-          icon={<ArrowRight size={14} strokeWidth={2.4} />}
-        >
-          {draft ? "Continue" : mark ? "Rewrite" : done ? "Retake" : "Start"}
-        </CardAction>
+        )}
       </CardFoot>
     </PracticeCard>
   );
@@ -1346,10 +1360,13 @@ function PromptPill({
   state,
   mark,
   difficulty,
+  done,
 }: {
   state: "draft" | "marked" | "fresh" | "target";
   mark?: PromptMark;
   difficulty: number | null;
+  /** Attempted at some point, per the `practised` list. */
+  done?: boolean;
 }) {
   if (state === "draft") return <StatusPill tone="progress">Draft</StatusPill>;
   if (state === "marked" && mark) {
@@ -1363,6 +1380,17 @@ function PromptPill({
     return (
       <StatusPill tone="new" icon={<Sparkles size={9} strokeWidth={2.2} />}>
         New
+      </StatusPill>
+    );
+  }
+  /* ⚠️ ATTEMPTED, BUT WITH NO MARK AND NO DRAFT BEHIND IT. It happens when the
+     grading failed or the essay was deleted, and the card used to render
+     identically to one never touched — only the button label changed. The
+     "Practised" filter could therefore list cards that looked unpractised. */
+  if (done) {
+    return (
+      <StatusPill tone="target" icon={<Check size={9} strokeWidth={3} />}>
+        Practised
       </StatusPill>
     );
   }

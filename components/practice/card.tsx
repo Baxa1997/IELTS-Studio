@@ -57,21 +57,49 @@ const RULE = "rgba(28,27,46,.07)";
  *  a clone already in flight), which is how the card says "not right now". */
 export type CardTone = "brand" | "done" | "ink" | null;
 
+/** What the card is, as far as its surface is concerned.
+ *  `done` = finished; `locked` = behind the paywall. */
+export type CardSurface = "open" | "done" | "locked";
+
+/* ⚠️ background IS THE ONE PAINT ALLOWED INLINE HERE, and only because no
+   `.pc-card` hover rule touches it — the three tone hovers change border-color
+   and box-shadow ONLY. Setting either of those inline would kill the lift at
+   any specificity, which is the trap this file's header warns about and
+   ./card.test.ts holds the line on (including an assertion that no hover rule
+   ever starts setting background, which would make this exception unsafe). */
+const SURFACE: Record<CardSurface, string | undefined> = {
+  open: undefined,
+  // Finished work steps back so it stops competing with what is still to do.
+  done: "#FAFAFB",
+  /* Locked is TINTED, NOT DIMMED. It used to be the whole card at 66% opacity,
+     which faded the topic, the level and the question count — precisely the
+     material that would make someone want to pay — and made the card read as
+     broken rather than gated. The gate is stated by the PRO pill instead. */
+  locked: "#FDFBFC",
+};
+
 /**
  * The card surface. Everything visual comes from `.pc-card` in globals.css;
- * `tone` only chooses the hover, and `style` is for the dynamic leftovers.
+ * `tone` only chooses the hover, `surface` says what the card is, and `style`
+ * is for the dynamic leftovers.
  */
 export function PracticeCard({
   tone = "brand",
+  surface = "open",
   style,
   children,
 }: {
   tone?: CardTone;
+  surface?: CardSurface;
   style?: CSSProperties;
   children: ReactNode;
 }) {
   return (
-    <div className="pc-card" data-tone={tone ?? undefined} style={{ fontFamily: SANS, ...style }}>
+    <div
+      className="pc-card"
+      data-tone={tone ?? undefined}
+      style={{ fontFamily: SANS, background: SURFACE[surface], ...style }}
+    >
       {children}
     </div>
   );
@@ -80,51 +108,93 @@ export function PracticeCard({
 // ---- Head ------------------------------------------------------------------
 
 /**
- * The top row: the sequence tile and the skill on the left, the status pill
- * hard right.
+ * The top row: the sequence tile, the skill, the level it is pitched at, and
+ * whatever else qualifies it on the left; the STATE pill hard right.
  *
- * Whichever way the skill arrives, it comes out as the same raised SkillPill —
- * `label` is the eyebrow form ("READING · ACADEMIC", pill + tail), `chips` is
+ * ⚠️ THE LEVEL LIVES HERE NOW, NOT IN THE STATUS PILL. It used to be the pill's
+ * "target" state — which meant it showed only while the card had no other state
+ * to report, and vanished the moment the learner paused or finished one. The
+ * level is a fact about the content and never changes; the pill is about the
+ * learner and always does. Splitting them lets both be true at once, which is
+ * what the owner asked for.
+ *
+ * Either way of naming the skill ends up in the same raised SkillPill: `label`
+ * is the eyebrow form ("READING · ACADEMIC", pill + tail) and `chips` is
  * Listening's ("LISTENING" + "BRITISH", pill + flat chip). Pass one or the
- * other, not both.
+ * other, not both. Order is always skill, level, details, tail — the tail is
+ * the least useful and is the first thing an ellipsis eats.
  */
 export function CardHead({
   seq,
   seqTone = "brand",
   icon,
   label,
+  level,
   chips,
   pill,
+  dim = false,
 }: {
   /** 1-based; rendered zero-padded, as the canvas does ("01"). */
   seq: number;
   /** "ink" is Writing's dark tile; Reading and Listening use the brand tint. */
   seqTone?: "brand" | "ink";
-  /** Goes inside the skill pill, so it is drawn white on the skill's colour. */
+  /** Goes inside the skill pill, so it is drawn in the skill's colour. */
   icon?: ReactNode;
   label?: string;
+  /** What the content is pitched at — "BAND 6", "LEVEL 3". Shown in every
+   *  state, which is the whole point of it not being the status pill. */
+  level?: string | null;
   /** The chip carrying an icon is the skill and becomes the raised pill. */
   chips?: { icon?: ReactNode; label: string }[];
   pill?: ReactNode;
+  /** A finished card steps back — see PracticeCard's `surface`. */
+  dim?: boolean;
 }) {
+  const skillChip = chips?.find((c) => c.icon);
+  const cut = label ? label.indexOf(" · ") : -1;
+  const skill = label ? (cut === -1 ? label : label.slice(0, cut)) : skillChip?.label;
+  const tail = label && cut !== -1 ? label.slice(cut + 3) : "";
+  const details = chips?.filter((c) => !c.icon).map((c) => c.label) ?? [];
+
   return (
     <div style={rowBetween}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <SeqTile seq={seq} tone={seqTone} />
-        {label ? <CardEyebrow icon={icon} label={label} /> : null}
-        {chips?.map((c) =>
-          /* The skill chip is the one carrying an icon; it takes the raised
-             pill. Whatever follows it — Listening's accent — stays flat, so the
-             pair reads as heading and detail rather than two of a kind. */
-          c.icon ? (
-            <SkillPill key={c.label} icon={c.icon} skill={c.label} />
-          ) : (
-            <MonoChip key={c.label}>{c.label}</MonoChip>
-          ),
-        )}
+        <SeqTile seq={seq} tone={seqTone} dim={dim} />
+        {skill ? <SkillPill icon={icon ?? skillChip?.icon} skill={skill} dim={dim} /> : null}
+        {level ? <MonoChip>{level}</MonoChip> : null}
+        {details.map((d) => (
+          <MonoChip key={d}>{d}</MonoChip>
+        ))}
+        {tail ? <EyebrowTail full={label!} text={tail} /> : null}
       </div>
       {pill ?? null}
     </div>
+  );
+}
+
+/** What qualifies the skill — "ACADEMIC", "TASK 1 GT · HOUSING". Plain text on
+ *  the card, so it keeps the colour that passes on white (#4A505C is 7.7:1),
+ *  and it is the one part of the head allowed to ellipsise. */
+function EyebrowTail({ full, text }: { full: string; text: string }) {
+  return (
+    <span
+      // The qualifiers are the first thing an ellipsis eats on a narrow card,
+      // so the full label stays reachable on hover.
+      title={full}
+      style={{
+        fontFamily: MONO,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: ".07em",
+        color: MUTED,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
+      {text}
+    </span>
   );
 }
 
@@ -209,7 +279,17 @@ const SKILL_FALLBACK = SKILL_TONE.READING;
  * explicitly to drop it, and on a card that already has a 1px edge of its own a
  * second ring 9px inside it reads as a mistake.
  */
-export function SkillPill({ icon, skill }: { icon?: ReactNode; skill: string }) {
+export function SkillPill({
+  icon,
+  skill,
+  dim = false,
+}: {
+  icon?: ReactNode;
+  skill: string;
+  /** A finished card steps back, and the skill steps back with it — the band is
+   *  what should be loudest there, not which hub you are already looking at. */
+  dim?: boolean;
+}) {
   const t = SKILL_TONE[skill.trim().toUpperCase()] ?? SKILL_FALLBACK;
   return (
     <span
@@ -218,6 +298,7 @@ export function SkillPill({ icon, skill }: { icon?: ReactNode; skill: string }) 
         alignItems: "center",
         gap: 5,
         flex: "0 0 auto",
+        opacity: dim ? 0.72 : 1,
         height: 23,
         padding: icon ? "0 11px 0 9px" : "0 11px",
         borderRadius: 9999,
@@ -240,57 +321,24 @@ export function SkillPill({ icon, skill }: { icon?: ReactNode; skill: string }) 
   );
 }
 
-/**
- * The skill pill plus whatever qualifies it — "WRITING" + "TASK 1 GT · HOUSING".
- *
- * Callers all build the label as `[SKILL, …qualifiers].join(" · ")`, so the
- * split is on the first separator. The separator itself goes with it: the pill
- * is its own boundary, and a middot floating beside it just looks orphaned.
- *
- * The tail keeps the canvas's idiom — mono, caps, tracking — at the size and
- * colour that pass on white (#4A505C is 7.7:1), because it is still plain text
- * on the card.
- */
-function CardEyebrow({ icon, label }: { icon?: ReactNode; label: string }) {
-  const cut = label.indexOf(" · ");
-  const lead = cut === -1 ? label : label.slice(0, cut);
-  const tail = cut === -1 ? "" : label.slice(cut + 3);
-  return (
-    <>
-      <SkillPill icon={icon} skill={lead} />
-      {tail ? (
-        <span
-          // The qualifiers are the first thing an ellipsis eats on a narrow
-          // card, so the full label stays reachable on hover.
-          title={label}
-          style={{
-            fontFamily: MONO,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: ".07em",
-            color: MUTED,
-            minWidth: 0,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {tail}
-        </span>
-      ) : null}
-    </>
-  );
-}
-
 /** The canvas's numbered tile — serif, because a number is the one place a
  *  display face earns its keep on a card this small. */
-export function SeqTile({ seq, tone = "brand" }: { seq: number; tone?: "brand" | "ink" }) {
+export function SeqTile({
+  seq,
+  tone = "brand",
+  dim = false,
+}: {
+  seq: number;
+  tone?: "brand" | "ink";
+  dim?: boolean;
+}) {
   const ink = tone === "ink";
   return (
     <span
       aria-hidden
       style={{
         flex: "0 0 auto",
+        opacity: dim ? 0.72 : 1,
         width: 28,
         height: 28,
         borderRadius: 8,
@@ -345,8 +393,10 @@ export function MonoChip({ children }: { children: ReactNode }) {
 
 // ---- Status pill -----------------------------------------------------------
 
-/** The four states the canvas draws, in its own order of loudness. */
-export type PillTone = "new" | "band" | "progress" | "target";
+/** The states the pill reports. `target` is what the canvas drew for content
+ *  nobody had opened yet; `locked` is the paywall, which the canvas had no
+ *  notion of. Note that NONE of these is the level any more — see CardHead. */
+export type PillTone = "new" | "band" | "progress" | "target" | "locked";
 
 const PILL: Record<PillTone, { bg: string; border: string; fg: string }> = {
   // Brand — "we just made this for you".
@@ -355,8 +405,12 @@ const PILL: Record<PillTone, { bg: string; border: string; fg: string }> = {
   band: { bg: "linear-gradient(180deg,#F2FBF6 0%,#DCF0E6 100%)", border: "#C3E0CD", fg: EMERALD },
   // Amber — started, not finished.
   progress: { bg: "linear-gradient(180deg,#FDF9EF 0%,#F6EAD2 100%)", border: "#E8D6AE", fg: AMBER },
-  // Neutral — what the content is PITCHED at, not what anyone scored.
+  // Neutral — a card with nothing to report yet.
   target: { bg: "linear-gradient(180deg,#FAFAFB 0%,#F1F1F5 100%)", border: "#E2E0EE", fg: DIM },
+  /* Brand, and deliberately as loud as an earned band: the gate is the one
+     thing about a locked card the learner has to see, and it takes the slot the
+     state would have used because that is where the eye already goes. */
+  locked: { bg: "linear-gradient(180deg,#FDF4F7 0%,#F6D9E4 100%)", border: "#EBBACD", fg: BRAND },
 };
 
 /**
@@ -418,6 +472,7 @@ export function CardBody({
   subtitle,
   titleLines = 1,
   progress,
+  dim = false,
 }: {
   title: string;
   subtitle?: string | null;
@@ -425,6 +480,8 @@ export function CardBody({
   titleLines?: 1 | 2;
   /** An unfinished attempt. Replaces the subtitle with the canvas's progress row. */
   progress?: { pct: number; label: string };
+  /** A finished card's title recedes so the band pill is what carries it. */
+  dim?: boolean;
 }) {
   return (
     <div style={{ minWidth: 0 }}>
@@ -433,7 +490,7 @@ export function CardBody({
         style={{
           fontSize: 16,
           fontWeight: 700,
-          color: INK,
+          color: dim ? MUTED : INK,
           letterSpacing: "-.01em",
           marginBottom: progress ? 7 : 4,
           ...clampLines(titleLines, 1.3),

@@ -463,16 +463,22 @@ function TestTile({
   // A resumable run outranks a past result: the thing the learner left open is
   // more urgent than the thing they finished.
   const state = live ? "live" : graded ? "graded" : createdAt ? "fresh" : "target";
+  const finished = state === "graded";
   return (
     <PracticeCard
-      tone={locked || loading ? null : state === "graded" ? "done" : "brand"}
-      style={{ opacity: locked ? 0.66 : loading ? 0.7 : 1 }}
+      tone={locked || loading ? null : finished ? "done" : "brand"}
+      surface={locked ? "locked" : finished ? "done" : "open"}
+      // No opacity on a locked card any more: it faded the very content that
+      // makes the plan worth buying. The PRO pill states the gate instead.
+      style={{ opacity: loading ? 0.7 : 1 }}
     >
       <CardHead
         seq={seq}
         icon={<BookOpen size={12} strokeWidth={1.9} />}
         label="READING · ACADEMIC"
-        pill={<TilePill state={state} graded={graded} targetBand={targetBand} />}
+        level={bandLabel(targetBand)}
+        dim={finished}
+        pill={<TilePill state={state} graded={graded} locked={locked} />}
       />
       {/* Two lines for the title: it is the three passages' topics as a list
           (lib/reading/titles.ts), which one line cuts after the first topic at
@@ -482,6 +488,7 @@ function TestTile({
         titleLines={2}
         subtitle={subtitle || "3 passages · 40 questions"}
         progress={live ? testProgress(live) : undefined}
+        dim={finished}
       />
       <CardFoot meta={testMeta({ state, graded, live, createdAt })}>
         {attach ? (
@@ -494,18 +501,30 @@ function TestTile({
             Attach
           </CardAction>
         ) : null}
+        {/* ⚠️ ON A FINISHED CARD, REVIEW IS THE PRIMARY AND RETAKE IS NOT.
+            Reading the feedback is what a learner does with work they have
+            already done; sitting it again is the rarer choice. The primary is
+            also last, so the order swaps with the emphasis. */}
         {graded && !live ? (
-          <CardAction kind="secondary" href={`/activities/reading/${graded.attemptId}`}>
-            Review
-          </CardAction>
-        ) : null}
-        <OpenAction
-          href={href}
-          onStart={onStart}
-          loading={loading}
-          locked={locked}
-          label={live ? "Resume" : graded ? "Retake" : "Start"}
-        />
+          <>
+            <OpenAction
+              href={href}
+              onStart={onStart}
+              loading={loading}
+              kind="secondary"
+              label="Retake"
+            />
+            <CardAction href={`/activities/reading/${graded.attemptId}`}>Review</CardAction>
+          </>
+        ) : (
+          <OpenAction
+            href={href}
+            onStart={onStart}
+            loading={loading}
+            locked={locked}
+            label={live ? "Resume" : "Start"}
+          />
+        )}
       </CardFoot>
     </PracticeCard>
   );
@@ -530,16 +549,20 @@ function PassageTile({
 }) {
   const { graded, live, locked } = p;
   const state = live ? "live" : graded ? "graded" : href ? "fresh" : "target";
+  const finished = state === "graded";
   return (
     <PracticeCard
-      tone={locked || loading ? null : state === "graded" ? "done" : "brand"}
-      style={{ opacity: locked ? 0.66 : loading ? 0.7 : 1 }}
+      tone={locked || loading ? null : finished ? "done" : "brand"}
+      surface={locked ? "locked" : finished ? "done" : "open"}
+      style={{ opacity: loading ? 0.7 : 1 }}
     >
       <CardHead
         seq={seq}
         icon={<FileText size={12} strokeWidth={1.9} />}
         label="READING · PASSAGE"
-        pill={<TilePill state={state} graded={graded} targetBand={p.difficulty} />}
+        level={bandLabel(p.difficulty)}
+        dim={finished}
+        pill={<TilePill state={state} graded={graded} locked={locked} />}
       />
       {/* Passage titles are written long ("How the deep ocean floor was
           mapped"); they belong on the card in full, not ellipsised. */}
@@ -548,6 +571,7 @@ function PassageTile({
         titleLines={2}
         // Same lowercase-fragment field the test title is composed from.
         subtitle={p.topic ? titleCase(p.topic) : "Academic Reading"}
+        dim={finished}
         progress={
           live
             ? {
@@ -586,17 +610,25 @@ function PassageTile({
           </CardAction>
         ) : null}
         {graded && !live ? (
-          <CardAction kind="secondary" href={`/activities/reading/${graded.attemptId}`}>
-            Review
-          </CardAction>
-        ) : null}
-        <OpenAction
-          href={href}
-          onStart={onStart}
-          loading={loading}
-          locked={locked}
-          label={live ? "Resume" : graded ? "Retake" : "Start"}
-        />
+          <>
+            <OpenAction
+              href={href}
+              onStart={onStart}
+              loading={loading}
+              kind="secondary"
+              label="Retake"
+            />
+            <CardAction href={`/activities/reading/${graded.attemptId}`}>Review</CardAction>
+          </>
+        ) : (
+          <OpenAction
+            href={href}
+            onStart={onStart}
+            loading={loading}
+            locked={locked}
+            label={live ? "Resume" : "Start"}
+          />
+        )}
       </CardFoot>
     </PracticeCard>
   );
@@ -609,25 +641,30 @@ function OpenAction({
   onStart,
   loading,
   locked,
+  kind = "primary",
   label,
 }: {
   href?: string;
   onStart?: () => void;
   loading?: boolean;
   locked?: boolean;
+  /** "secondary" is a finished card's Retake, which yields the primary slot to
+   *  Review. */
+  kind?: "primary" | "secondary";
   label: string;
 }) {
-  const arrow = <ArrowRight size={14} strokeWidth={2.4} />;
+  // The arrow marks the action that moves you on; a secondary Retake is not it.
+  const arrow = kind === "primary" ? <ArrowRight size={14} strokeWidth={2.4} /> : undefined;
   if (locked) {
     return (
       <CardAction onClick={onStart ?? (() => {})} icon={<Lock size={13} />}>
-        Unlock
+        Unlock with Pro
       </CardAction>
     );
   }
   if (href) {
     return (
-      <CardAction href={href} icon={arrow}>
+      <CardAction href={href} kind={kind} icon={arrow}>
         {label}
       </CardAction>
     );
@@ -636,6 +673,7 @@ function OpenAction({
     <CardAction
       onClick={onStart ?? (() => {})}
       disabled={loading}
+      kind={kind}
       icon={loading ? <Loader2 className="animate-spin" size={14} /> : arrow}
     >
       {loading ? "Opening…" : label}
@@ -647,12 +685,21 @@ function OpenAction({
 function TilePill({
   state,
   graded,
-  targetBand,
+  locked,
 }: {
   state: "graded" | "live" | "fresh" | "target";
   graded?: Graded | null;
-  targetBand: number | null;
+  locked?: boolean;
 }) {
+  /* The gate outranks every state: a locked card cannot be started, so what it
+     scored or how far in it got is not the thing to say about it. */
+  if (locked) {
+    return (
+      <StatusPill tone="locked" icon={<Lock size={9} strokeWidth={2.6} />}>
+        Pro
+      </StatusPill>
+    );
+  }
   if (state === "live") return <StatusPill tone="progress">Paused</StatusPill>;
   if (state === "graded" && graded) {
     return (
@@ -668,11 +715,15 @@ function TilePill({
       </StatusPill>
     );
   }
-  return targetBand != null ? (
-    <StatusPill tone="target">Band {targetBand}</StatusPill>
-  ) : (
-    <StatusPill tone="target">Mixed</StatusPill>
-  );
+  /* Nothing. The level used to live here, which meant it disappeared the moment
+     the card had any state to report; it is a permanent chip in the head now. */
+  return null;
+}
+
+/** The level chip's text. "Mixed" is honest for a test assembled from passages
+ *  pitched at different bands — it is not a missing value. */
+function bandLabel(band: number | null): string {
+  return band != null ? `BAND ${band}` : "MIXED";
 }
 
 /** A full test is three passages, so the bar tracks passages and the label says

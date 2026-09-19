@@ -197,14 +197,29 @@ describe("the card keeps the hover the stylesheet gives it", () => {
     expect(declaration(body, "border")).toBe("1px solid rgba(28, 27, 46, 0.09)");
   });
 
-  it("sets no inline background or border on the card element itself", () => {
+  it("sets no inline border or shadow on the card element itself", () => {
     /* The card's own JSX: `className="pc-card"` and the style object beside it.
-       Anything that paints a fill or an edge there cancels the hover. */
+       Anything painted there that a :hover rule also sets cancels that hover. */
     const at = card.indexOf('className="pc-card"');
     expect(at, "the card element moved").toBeGreaterThan(-1);
     const element = card.slice(at, card.indexOf(">", at));
-    for (const prop of ["background", "border", "borderColor", "boxShadow"]) {
+    for (const prop of ["border", "borderColor", "boxShadow"]) {
       expect(element.includes(`${prop}:`), `${prop} is inline on .pc-card`).toBe(false);
+    }
+  });
+
+  it("changes only border-color and box-shadow on hover, never background", () => {
+    /* ⚠️ THIS IS WHAT MAKES THE INLINE `background` SAFE. The card paints its
+       finished and locked surfaces inline, which is only legitimate while no
+       hover rule touches background — the instant one does, every one of those
+       cards goes dead under the pointer and nothing else would say so. If this
+       fails, the fix is to move the surfaces into CSS, not to delete this. */
+    for (const tone of ["brand", "done", "ink"]) {
+      const body = ruleBody(`.pc-card[data-tone="${tone}"]:hover`);
+      expect(
+        declaration(body, "background"),
+        `${tone}:hover sets background, which the inline surface would now beat`,
+      ).toBeNull();
     }
   });
 
@@ -332,11 +347,14 @@ describe("the status pill", () => {
     expect(card).toContain("inset 0 1px 0 rgba(255,255,255,.9)");
   });
 
-  it("offers exactly the four states the canvas draws", () => {
+  it("offers the canvas's four states plus the gate", () => {
+    /* `locked` is not on the canvas — it had no notion of a paywall — and it is
+       the only tone the card adds. Every one of these is about the LEARNER or
+       their access; the level is not among them by design (see CardHead). */
     const m = /export type PillTone =([^;]+);/.exec(card);
     expect(m).not.toBeNull();
     const tones = [...m![1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]);
-    expect(tones.sort()).toEqual(["band", "new", "progress", "target"]);
+    expect(tones.sort()).toEqual(["band", "locked", "new", "progress", "target"]);
   });
 });
 
@@ -450,7 +468,7 @@ describe("the skill pill can actually be read", () => {
     /* The tail is still plain text on the card — "TASK 1 GT · HOUSING" — so the
        contrast rule applies to it as it did to the whole eyebrow. DIM (#8B919D)
        is the 3:1 grey this was; MUTED (#4A505C) is 7.7:1. */
-    const tail = styleCarrying(fnBody("CardEyebrow"), "letterSpacing");
+    const tail = styleCarrying(fnBody("EyebrowTail"), "letterSpacing");
     expect(styleProp(tail, "color")).toBe("MUTED");
     expect(Number(/fontSize: (\d+)/.exec(tail)?.[1])).toBeGreaterThanOrEqual(11);
   });
@@ -458,7 +476,7 @@ describe("the skill pill can actually be read", () => {
   it("keeps Listening's detail chip in step with that tail", () => {
     // A card shows one or the other depending on the hub, and the two hubs are
     // one click apart, so a size or weight that drifts between them is visible.
-    const tail = styleCarrying(fnBody("CardEyebrow"), "letterSpacing");
+    const tail = styleCarrying(fnBody("EyebrowTail"), "letterSpacing");
     const chip = styleCarrying(fnBody("MonoChip"), "letterSpacing");
     expect(/fontSize: (\d+)/.exec(chip)?.[1]).toBe(/fontSize: (\d+)/.exec(tail)?.[1]);
     expect(/fontWeight: (\d+)/.exec(chip)?.[1]).toBe(/fontWeight: (\d+)/.exec(tail)?.[1]);
@@ -527,13 +545,136 @@ describe("the skill pill can actually be read", () => {
     }
   });
 
-  it("raises the skill and leaves the detail flat", () => {
+  it("raises the skill and leaves every other chip flat", () => {
     /* Both of Listening's facts as raised pills would say the accent matters as
        much as the skill does. The icon is what marks the skill chip. */
     const head = fnBody("CardHead");
-    expect(head).toContain("c.icon ? (");
+    expect(head).toContain("chips?.find((c) => c.icon)");
+    expect(head).toContain("chips?.filter((c) => !c.icon)");
     expect(head).toContain("<SkillPill");
     expect(head).toContain("<MonoChip");
-    expect(fnBody("MonoChip"), "the detail chip is raised too").not.toContain("linear-gradient");
+    expect(fnBody("MonoChip"), "a detail chip is raised too").not.toContain("linear-gradient");
+  });
+
+  it("puts the level before the tail, since the tail is what gets cut", () => {
+    // Head order is skill, level, details, tail — and only the tail ellipsises.
+    const head = fnBody("CardHead");
+    const at = (needle: string) => head.indexOf(needle);
+    expect(at("<SkillPill")).toBeLessThan(at("{level ?"));
+    expect(at("{level ?")).toBeLessThan(at("<EyebrowTail"));
+    expect(fnBody("EyebrowTail")).toContain("textOverflow");
+  });
+});
+
+// ---- 8. The two states the owner asked to be designed ----------------------
+
+/** A hub's source, comments stripped, for asserting decisions that live there
+ *  rather than in the kit. */
+function hubSource(rel: string): string {
+  return readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n]*/g, "");
+}
+
+const READ = hubSource("../../app/(shell)/read/read-hub.tsx");
+const WRITE = hubSource("../../app/(shell)/write/library.tsx");
+const LISTEN = hubSource("../../app/(shell)/listen/listening-client.tsx");
+
+describe("a locked card is gated, not dimmed", () => {
+  it("never fades the whole card", () => {
+    /* ⚠️ THE EXACT REGRESSION. `opacity: locked ? 0.66 : 1` on the card fades
+       the topic, the level and the question count — the material that makes the
+       plan worth buying — and fades the border and shadow with them, so the card
+       reads as broken rather than gated. Use the `locked` SURFACE instead. */
+    for (const [hub, src] of [
+      ["read", READ],
+      ["listen", LISTEN],
+    ] as const) {
+      expect(
+        /opacity:[^,}]*locked/.test(src),
+        `${hub} dims a locked card again — use surface="locked"`,
+      ).toBe(false);
+    }
+  });
+
+  it("states the gate where the eye looks for state", () => {
+    for (const [hub, src] of [
+      ["read", READ],
+      ["listen", LISTEN],
+    ] as const) {
+      expect(src, `${hub} has no PRO pill`).toContain('tone="locked"');
+      expect(src, `${hub} does not name what unlocks it`).toContain("Unlock with Pro");
+    }
+  });
+
+  it("puts the gate ahead of every other state", () => {
+    // A locked card cannot be started, so what it scored is not the thing to
+    // say about it — the locked branch has to come first.
+    /* ⚠️ Match the BRANCH, not the identifier. `locked` also appears in the
+       parameter list, which sits before every branch — so searching for the bare
+       word made this pass no matter where the check actually ran. */
+    const pill = READ.slice(READ.indexOf("function TilePill"));
+    const gate = pill.indexOf("if (locked)");
+    const paused = pill.indexOf('if (state === "live")');
+    expect(gate, "TilePill has no locked branch").toBeGreaterThan(-1);
+    expect(paused, "TilePill has no live branch").toBeGreaterThan(-1);
+    expect(gate, "a paused locked card reports Paused, not the gate").toBeLessThan(paused);
+  });
+});
+
+describe("a finished card steps back and leads with the band", () => {
+  it("uses the done surface on all three hubs", () => {
+    for (const [hub, src] of [
+      ["read", READ],
+      ["write", WRITE],
+      ["listen", LISTEN],
+    ] as const) {
+      expect(src, `${hub} does not step a finished card back`).toContain('"done" : "open"');
+    }
+  });
+
+  it("makes reading the feedback the primary action, not sitting it again", () => {
+    /* ⚠️ THE DECISION, AND IT INVERTS WHAT WAS THERE. Retake/Rewrite was the
+       filled primary and Review/Feedback the quiet secondary, which is backwards
+       for work already done — and for Writing it is backwards for the product
+       too, since the revision loop is the whole moat. The primary is LAST in the
+       footer, so the order swaps with the emphasis. */
+    for (const [hub, src, quiet, loud] of [
+      ["read", READ, "Retake", "Review"],
+      ["write", WRITE, "Rewrite", "Feedback"],
+    ] as const) {
+      const foot = src.slice(src.indexOf("<CardFoot"));
+      const quietAt = foot.indexOf(quiet);
+      const loudAt = foot.indexOf(loud);
+      expect(quietAt, `${hub}: no ${quiet} action`).toBeGreaterThan(-1);
+      expect(loudAt, `${hub}: no ${loud} action`).toBeGreaterThan(-1);
+      expect(loudAt, `${hub}: ${loud} is not the last (primary) action`).toBeGreaterThan(quietAt);
+      // And the one that yields is explicitly the secondary.
+      const between = foot.slice(quietAt - 200, quietAt);
+      expect(between, `${hub}: ${quiet} is not marked secondary`).toContain('kind="secondary"');
+    }
+  });
+});
+
+describe("the level is a fact about the content, so it never disappears", () => {
+  it("reaches the head of both hubs that have one", () => {
+    expect(READ, "reading passes no level").toContain("level={bandLabel(");
+    expect(LISTEN, "listening passes no level").toContain("level={`LEVEL ");
+  });
+
+  it("is no longer the status pill's target state", () => {
+    /* ⚠️ WHY THIS WAS ASKED FOR. As a status pill the level showed only while
+       the card had nothing else to report, so it vanished the moment the learner
+       paused or finished — which is exactly when they are choosing what to do
+       next. Neither hub may put it back there. */
+    for (const [hub, src] of [
+      ["read", READ],
+      ["listen", LISTEN],
+    ] as const) {
+      expect(
+        /tone="target">\s*(Band|Level)\s*\{/.test(src),
+        `${hub} put the level back in the status pill`,
+      ).toBe(false);
+    }
   });
 });
