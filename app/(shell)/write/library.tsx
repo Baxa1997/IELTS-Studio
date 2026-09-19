@@ -929,11 +929,20 @@ export function WritingLibrary({
               </p>
             </div>
           ) : (
+            /* Three cards to a row, matching the Reading hub. The cap lives in
+               the TRACK SIZE rather than in breakpoints: each track is at least a
+               third of the row, so a fourth can never fit, and once a third would
+               be under 280px the floor wins and auto-fit drops to two, then one.
+               Inline for the same reason as Reading's Grid — a class in
+               globals.css did not reach the running dev server, and expressing the
+               cap this way leaves no media query that an inline style could
+               outrank. 28px is the two 14px gaps; it must match `gap`.
+               `lp-write-grid` is kept only as a hook — it has no rule behind it. */
             <div
               className="lp-write-grid"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(max(280px, (100% - 28px) / 3), 1fr))",
                 gap: 14,
               }}
             >
