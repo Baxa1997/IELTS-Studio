@@ -813,18 +813,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Three cards to a row, dropping to two and then one as the shell narrows.
+ *  The columns come from `.pc-grid-3` in globals.css rather than an inline style,
+ *  because an inline grid-template-columns would outrank its media queries and
+ *  leave the grid stuck at three across on a phone. */
 function Grid({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
-        gap: 14,
-      }}
-    >
-      {children}
-    </div>
-  );
+  return <div className="pc-grid-3">{children}</div>;
 }
 
 function EmptyHint({ children }: { children: React.ReactNode }) {

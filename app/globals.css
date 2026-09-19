@@ -4105,3 +4105,26 @@ section[id] {
     transform: none;
   }
 }
+
+/* Three practice cards to a row (the Reading hub asks for this explicitly).
+   ⚠️ THE COLUMNS LIVE HERE, NOT INLINE. An inline `grid-template-columns` beats
+   these media queries whatever the specificity, so the grid would be stuck at
+   three columns and overflow a phone — the same trap as the card's own hover
+   fill, recorded in components/app-shell/nav-groups.test.ts. */
+.pc-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+/* Two across once three would squeeze the card's header row (sequence tile,
+   eyebrow and status pill all sit on one line). */
+@media (max-width: 1180px) {
+  .pc-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .pc-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
