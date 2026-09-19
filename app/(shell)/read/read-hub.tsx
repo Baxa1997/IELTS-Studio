@@ -478,7 +478,7 @@ function TestTile({
         subtitle={subtitle || "3 passages · 40 questions"}
         progress={live ? testProgress(live) : undefined}
       />
-      <CardFoot meta={testMeta({ state, graded, live, createdAt, targetBand })}>
+      <CardFoot meta={testMeta({ state, graded, live, createdAt })}>
         {attach ? (
           <CardAction
             kind="attach"
@@ -688,13 +688,11 @@ function testMeta({
   graded,
   live,
   createdAt,
-  targetBand,
 }: {
   state: "graded" | "live" | "fresh" | "target";
   graded?: Graded | null;
   live?: Live | null;
   createdAt?: string;
-  targetBand: number | null;
 }): string {
   if (state === "live" && live) {
     return [
@@ -716,9 +714,9 @@ function testMeta({
   if (state === "fresh" && createdAt) {
     return `3 passages · 40 questions · ${shortDate(createdAt)}`;
   }
-  return targetBand != null
-    ? `3 passages · 40 questions · 60 min`
-    : `3 passages · 40 questions · 60 min`;
+  // A library test nobody has opened: what it IS, since there is nothing to report
+  // about it yet. The band it is pitched at is already on the pill.
+  return `${TEST_PASSAGES} passages · ${TEST_QUESTIONS} questions · 60 min`;
 }
 
 /** A full test's shape, which the progress label and meta line both count against. */
