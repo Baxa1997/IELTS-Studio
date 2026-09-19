@@ -6,7 +6,7 @@ import { MessageCircle, Send, X } from "lucide-react";
 import { Typewriter } from "@/components/typewriter";
 
 import { BRAND, INK, MUTED, SANS } from "./tokens";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { FAB_CLEARANCE, PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 interface ChatMessage {
   role: "student" | "assistant";
@@ -106,7 +106,9 @@ export function CoachPanel({
         style={{
           position: "fixed",
           right: 20,
-          bottom: 20,
+          // Clears the fixed theme button in this same corner. The PANEL below
+          // keeps bottom: 20 — a dialog may cover the button.
+          bottom: FAB_CLEARANCE,
           zIndex: 40,
           display: "inline-flex",
           alignItems: "center",
@@ -144,7 +146,7 @@ export function CoachPanel({
         display: "flex",
         flexDirection: "column",
         background: PANEL,
-        border: "1px solid #E6E8EC",
+        border: `1px solid ${SLATE_LINE}`,
         borderRadius: 16,
         boxShadow: "0 24px 60px -24px rgba(26,33,56,.5)",
         overflow: "hidden",

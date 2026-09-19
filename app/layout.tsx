@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { ThemeFab } from "@/components/theme/theme-fab";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
 
@@ -127,7 +128,15 @@ export default function RootLayout({
             so the app itself renders in the right language on the first paint
             and only the cacheable pages settle a tick later. */}
         <ThemeProvider>
-          <LocaleProvider>{children}</LocaleProvider>
+          <LocaleProvider>
+            {children}
+            {/* MOUNTED AT THE ROOT so it is on every surface — the app, the
+                console, /admin, the marketing pages and sign-in. A reader who
+                has chosen dark should not meet a white page the moment they log
+                out, and the switch has to be reachable from wherever that
+                happens. It is `position: fixed`, so it costs no layout. */}
+            <ThemeFab />
+          </LocaleProvider>
         </ThemeProvider>
         <Analytics />
       </body>

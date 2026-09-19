@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
+import { FAB_CLEARANCE, INDIGO, PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
 
 const INK = "#1A2138";
 const MUTED = "#5A6076";
@@ -36,7 +36,8 @@ export function AssignToClassPanel({
       style={{
         position: "fixed",
         right: 18,
-        bottom: 18,
+        // Clears the fixed theme button in this same corner.
+        bottom: FAB_CLEARANCE,
         zIndex: 60,
         fontFamily: SANS,
         maxWidth: "min(340px, calc(100vw - 36px))",
@@ -153,12 +154,12 @@ export function AssignToClassPanel({
           </form>
 
           {state.error ? (
-            <p style={{ marginTop: 8, fontSize: 12.5, color: "#b91c1c" }} role="alert">
+            <p style={{ marginTop: 8, fontSize: 12.5, color: WARM_RED }} role="alert">
               {state.error}
             </p>
           ) : null}
           {state.notice ? (
-            <p style={{ marginTop: 8, fontSize: 12.5, color: "#15803d" }} role="status">
+            <p style={{ marginTop: 8, fontSize: 12.5, color: WARM_GREEN }} role="status">
               {state.notice}
             </p>
           ) : null}

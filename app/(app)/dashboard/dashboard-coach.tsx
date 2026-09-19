@@ -4,12 +4,22 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
-import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_MID,
+  BRAND_SOFT,
+  FAB_CLEARANCE,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_FIELD,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  WELL_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
 
 interface ChatMessage {
   role: "student" | "assistant";
@@ -80,7 +90,9 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
         style={{
           position: "fixed",
           right: 22,
-          bottom: 22,
+          // Clears the fixed theme button, which sits in this same corner on
+          // every page. See FAB_CLEARANCE.
+          bottom: FAB_CLEARANCE,
           zIndex: 50,
           display: "inline-flex",
           alignItems: "center",
@@ -89,7 +101,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
           borderRadius: 999,
           border: "none",
           cursor: "pointer",
-          background: "linear-gradient(135deg,#9B1044,#7D0132)",
+          background: `linear-gradient(135deg,${BRAND_MID},${BRAND})`,
           color: WHITE,
           fontFamily: SANS,
           fontWeight: 700,
@@ -116,7 +128,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
         display: "flex",
         flexDirection: "column",
         background: PANEL,
-        border: "1px solid #E6E8EC",
+        border: `1px solid ${SLATE_LINE}`,
         borderRadius: 18,
         boxShadow: "0 30px 70px -28px rgba(26,33,56,.55)",
         overflow: "hidden",
@@ -130,7 +142,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
           justifyContent: "space-between",
           gap: 8,
           padding: "13px 14px",
-          borderBottom: "1px solid #E6E8EC",
+          borderBottom: `1px solid ${SLATE_LINE}`,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -139,7 +151,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
               width: 30,
               height: 30,
               borderRadius: 9,
-              background: "linear-gradient(135deg,#9B1044,#7D0132)",
+              background: `linear-gradient(135deg,${BRAND_MID},${BRAND})`,
               color: WHITE,
               display: "flex",
               alignItems: "center",
@@ -185,7 +197,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
                     fontWeight: 600,
                     color: BRAND,
                     background: BRAND_SOFT,
-                    border: "1px solid #F0D3DE",
+                    border: `1px solid ${BRAND_LINE}`,
                     borderRadius: 999,
                     padding: "7px 12px",
                     cursor: "pointer",
@@ -211,7 +223,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
                 whiteSpace: "pre-wrap",
                 background: m.role === "student" ? BRAND : BRAND_SOFT,
                 color: m.role === "student" ? "#fff" : "#3B4150",
-                border: m.role === "student" ? "none" : "1px solid #F0D3DE",
+                border: m.role === "student" ? "none" : `1px solid ${BRAND_LINE}`,
               }}
             >
               {m.role === "assistant" ? (
@@ -240,7 +252,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
         ) : null}
       </div>
 
-      <div style={{ borderTop: "1px solid #ECEEF2", padding: 10 }}>
+      <div style={{ borderTop: `1px solid ${WELL_LINE}`, padding: 10 }}>
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={input}
@@ -253,7 +265,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
             }}
             placeholder="Ask your coach…"
             className="lp-input"
-            style={{ flex: 1, padding: "9px 11px", border: "1px solid #DFE2E8", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 13.5, color: INK }}
+            style={{ flex: 1, padding: "9px 11px", border: `1px solid ${SLATE_FIELD}`, borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 13.5, color: INK }}
           />
           <button
             type="button"

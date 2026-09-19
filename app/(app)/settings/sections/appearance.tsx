@@ -11,6 +11,14 @@ import { FAINT, INK, SANS } from "@/lib/theme/tokens";
  * and because a learner hunting for one will look wherever they found the
  * other.
  *
+ * ⚠️ THE THEME CONTROL IS HERE **AS WELL AS** THE FLOATING BUTTON, and that is
+ * not a duplicate. The button in the bottom-right corner flips light↔dark,
+ * which is the thing people actually do; it cannot express "System", because a
+ * one-button control cannot say which of three states it is in. This is where
+ * "follow my device" is chosen. Language has no floating control at all — it is
+ * a set-once preference, so it lives only here (and in the marketing header,
+ * for visitors who have no settings page yet).
+ *
  * Both controls are client components with no form and no action: the theme is
  * a `localStorage` write and the locale a cookie write, both applied
  * immediately. There is nothing to submit, so there is no Save button and no
