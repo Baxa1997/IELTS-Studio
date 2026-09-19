@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { INDIGO } from "@/lib/theme/tokens";
+import { INDIGO, INK, MUTED as FAINT, WARM_LINE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#16162E";
-const FAINT = "#6E6C87";
 
 /**
  * §12's two tabs: Broadcast (what you write) and Automatic (what sends itself).
@@ -37,7 +35,7 @@ export function AnnouncementTabs({
         style={{
           display: "flex",
           gap: 4,
-          borderBottom: "1px solid #C5C4BE",
+          borderBottom: `1px solid ${WARM_LINE}`,
           marginBottom: 14,
           flex: "none",
         }}

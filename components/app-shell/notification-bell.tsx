@@ -5,14 +5,9 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 
 import type { Inbox } from "@/lib/notifications/load";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { BRAND, PANEL, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_MUTED as FAINT, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
-const BRAND = "#7D0132";
 
 function ago(iso: string): string {
   const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));

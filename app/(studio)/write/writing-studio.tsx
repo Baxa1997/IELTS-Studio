@@ -5,11 +5,14 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
+  BRAND_LINE,
   BRAND_SOFT,
   PANEL,
   SANS,
   SERIF,
   SLATE_BODY,
+  SLATE_GREEN,
+  SLATE_GREEN as EMERALD,
   SLATE_MUTED,
   SLATE_STRONG,
   WHITE,
@@ -73,7 +76,6 @@ type Phase = "writing" | "results";
 
 // ---- Brand tokens ----------------------------------------------------------
 
-const EMERALD = "#1C7A4F";
 
 const AUTOSAVE_MS = 1500;
 
@@ -692,7 +694,7 @@ function TutorPanel({
         )}
         {pending ? (
           <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <span style={{ display: "inline-flex", gap: 5, padding: "13px 14px", borderRadius: 12, borderTopLeftRadius: 3, background: BRAND_SOFT, border: "1px solid #F0D3DE" }} aria-label="Coach is writing">
+            <span style={{ display: "inline-flex", gap: 5, padding: "13px 14px", borderRadius: 12, borderTopLeftRadius: 3, background: BRAND_SOFT, border: `1px solid ${BRAND_LINE}` }} aria-label="Coach is writing">
               {[0, 1, 2].map((i) => (
                 <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: SLATE_MUTED, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
               ))}
@@ -730,7 +732,7 @@ function AutosavePill({ state }: { state: "idle" | "saving" | "saved" | "error" 
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: "#E5F3EA" }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: EMERALD }} />
-      <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: "#1C7A4F" }}>{label}</span>
+      <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: SLATE_GREEN }}>{label}</span>
     </span>
   );
 }
@@ -739,7 +741,7 @@ function Bubble({ msg, onReveal, onDone, accent }: { msg: TutorMsg; onReveal?: (
   const isUser = msg.role === "user";
   return (
     <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
-      <div style={{ maxWidth: "85%", padding: "11px 14px", borderRadius: 12, fontFamily: SANS, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: isUser ? accent : BRAND_SOFT, color: isUser ? "#fff" : "#3B4150", border: isUser ? "none" : "1px solid #FDF4F7", borderTopRightRadius: isUser ? 3 : 12, borderTopLeftRadius: isUser ? 12 : 3 }}>
+      <div style={{ maxWidth: "85%", padding: "11px 14px", borderRadius: 12, fontFamily: SANS, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: isUser ? accent : BRAND_SOFT, color: isUser ? "#fff" : "#3B4150", border: isUser ? "none" : `1px solid ${BRAND_SOFT}`, borderTopRightRadius: isUser ? 3 : 12, borderTopLeftRadius: isUser ? 12 : 3 }}>
         {isUser ? msg.content : <Typewriter text={msg.content} animate={!!msg.animate} onReveal={onReveal} onDone={onDone} caretColor="#8B919D" />}
       </div>
     </div>

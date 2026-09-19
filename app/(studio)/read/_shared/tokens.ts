@@ -1,5 +1,14 @@
 import type { CSSProperties } from "react";
-import { PANEL, WHITE, withAlpha } from "@/lib/theme/tokens";
+import {
+  BRAND as TK_BRAND,
+  BRAND_DEEP,
+  PANEL,
+  SLATE_BODY,
+  SLATE_INK,
+  SLATE_LINE,
+  WHITE,
+  withAlpha,
+} from "@/lib/theme/tokens";
 
 /** Brand tokens + shared button styles for the reading experience. Imported by
  *  both the single-passage runner and the full-test runner.
@@ -8,17 +17,17 @@ import { PANEL, WHITE, withAlpha } from "@/lib/theme/tokens";
  *  and why the learner app and the staff console are now two different brands. */
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const BRAND = "#7D0132";
-export const BRAND_DARK = "#5C0125";
-export const INK = "#121317";
-export const MUTED = "#4A505C";
+export const BRAND = TK_BRAND;
+export const BRAND_DARK = BRAND_DEEP;
+export const INK = SLATE_INK;
+export const MUTED = SLATE_BODY;
 export const EMERALD = "#2f8f5b";
 export const RED = "#c2410c";
 export const AMBER = "#F59E0B";
 
 export const cardStyle: CSSProperties = {
   background: PANEL,
-  border: "1px solid #E6E8EC",
+  border: `1px solid ${SLATE_LINE}`,
   borderRadius: 14,
 };
 

@@ -4,7 +4,14 @@ import type React from "react";
 import { useState } from "react";
 
 import { ANN_ORDER, ANN_STYLE, matchRanges, type AnnRange, type Annotation } from "./annotations";
-import { PANEL, SLATE_STRONG, WELL } from "@/lib/theme/tokens";
+import {
+  PANEL,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_STRONG,
+  SLATE_STRONG as MUTED,
+  WELL,
+} from "@/lib/theme/tokens";
 
 /**
  * The marked-up essay (Option A brand) — shared by the writing studio's Results
@@ -19,10 +26,8 @@ import { PANEL, SLATE_STRONG, WELL } from "@/lib/theme/tokens";
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#121317";
-const MUTED = "#3B4150";
 
-const cardStyle: React.CSSProperties = { background: PANEL, border: "1px solid #E6E8EC", borderRadius: 16 };
+const cardStyle: React.CSSProperties = { background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16 };
 
 export function AnnotatedEssay({
   essayText,

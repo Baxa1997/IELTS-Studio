@@ -27,6 +27,7 @@ import {
   SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
+  WELL_LINE,
   WHITE,
   withAlpha,
 } from "@/lib/theme/tokens";
@@ -310,7 +311,7 @@ export function ReadingRunner({
             flexWrap: "wrap",
             padding: "10px 20px",
             flex: "none",
-            borderBottom: "1px solid #E6E8EC",
+            borderBottom: `1px solid ${SLATE_LINE}`,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -393,7 +394,7 @@ export function ReadingRunner({
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                border: "1.5px solid #E6E8EC",
+                border: `1.5px solid ${SLATE_LINE}`,
                 background: PANEL,
                 color: MUTED,
                 display: "inline-flex",
@@ -444,7 +445,7 @@ export function ReadingRunner({
               style={{
                 padding: "6px 12px",
                 borderRadius: 10,
-                border: "1.5px solid #E6E8EC",
+                border: `1.5px solid ${SLATE_LINE}`,
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: INK,
@@ -503,7 +504,7 @@ export function ReadingRunner({
               overflow: "auto",
               padding: "32px clamp(20px,4vw,52px) 60px",
               minHeight: 0,
-              borderRight: "1px solid #ECEEF2",
+              borderRight: `1px solid ${WELL_LINE}`,
               cursor:
                 hl.tool && hl.tool !== "eraser"
                   ? "text"
@@ -611,7 +612,7 @@ export function ReadingRunner({
           className="rd-qnav"
           style={{
             flex: "none",
-            borderTop: "1px solid #ECEEF2",
+            borderTop: `1px solid ${WELL_LINE}`,
             background: PANEL,
             padding: "11px 24px",
             display: "flex",
@@ -645,7 +646,7 @@ export function ReadingRunner({
                       height: 8,
                       borderRadius: 999,
                       background: AMBER,
-                      border: "1.5px solid #fff",
+                      border: `1.5px solid ${PANEL}`,
                     }}
                   />
                 ) : null}
@@ -690,7 +691,7 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     width: 28,
     height: 28,
     borderRadius: 8,
-    border: "1.5px solid #E6E8EC",
+    border: `1.5px solid ${SLATE_LINE}`,
     background: PANEL,
     color: disabled ? "#C9CDD4" : "#4A505C",
     fontWeight: 700,
@@ -812,7 +813,7 @@ function ConfirmFinishModal({
             style={{
               padding: "10px 18px",
               borderRadius: 11,
-              border: "1.5px solid #E6E8EC",
+              border: `1.5px solid ${SLATE_LINE}`,
               background: PANEL,
               color: SLATE_STRONG,
               fontFamily: SANS,

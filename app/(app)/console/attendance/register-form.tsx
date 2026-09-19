@@ -4,7 +4,21 @@ import { useActionState, useState } from "react";
 
 import { saveRegister, type ActionState } from "../center-actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { BODY, FAINT, MUTED, SOFT, WHITE } from "@/lib/theme/tokens";
+import {
+  AMBER,
+  BODY,
+  CONSOLE_CANVAS,
+  FAINT,
+  GREEN,
+  INK,
+  MUTED,
+  RED_DEEP as RED,
+  SOFT,
+  WARM_HAIR,
+  WARM_LINE,
+  WARM_LINE_MID,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The register itself: one row per student, three states, saved in a single
@@ -13,10 +27,6 @@ import { BODY, FAINT, MUTED, SOFT, WHITE } from "@/lib/theme/tokens";
  * abandoned without leaving rows behind.
  */
 
-const GREEN = "#16794C";
-const AMBER = "#B8791F";
-const RED = "#A63A30";
-const INK = "#16162E";
 
 type Status = "present" | "late" | "absent" | "excused";
 
@@ -93,7 +103,7 @@ export function RegisterForm({
           gap: 12,
           flexWrap: "wrap",
           padding: "16px 18px",
-          borderBottom: "1px solid #D4D3CE",
+          borderBottom: `1px solid ${WARM_LINE_MID}`,
         }}
       >
         <div style={{ fontSize: 12.5, color: SOFT }}>
@@ -109,8 +119,8 @@ export function RegisterForm({
             }
             className="cn-btn cn-btn--ghost"
             style={{
-              background: "#F4F3EF",
-              border: "1px solid #C5C4BE",
+              background: CONSOLE_CANVAS,
+              border: `1px solid ${WARM_LINE}`,
               borderRadius: 8,
               padding: "8px 12px",
               fontFamily: "inherit",
@@ -160,7 +170,7 @@ export function RegisterForm({
               alignItems: "center",
               gap: 14,
               padding: "11px 18px",
-              borderBottom: "1px solid #DEDEDA",
+              borderBottom: `1px solid ${WARM_HAIR}`,
               flexWrap: "wrap",
             }}
           >
@@ -208,7 +218,7 @@ export function RegisterForm({
                       fontWeight: 500,
                       cursor: locked ? "default" : "pointer",
                       whiteSpace: "nowrap",
-                      border: `1px solid ${on ? o.ink : "#C5C4BE"}`,
+                      border: `1px solid ${on ? o.ink : WARM_LINE}`,
                       background: on ? o.bg : "#fff",
                       color: on ? o.ink : MUTED,
                     }}

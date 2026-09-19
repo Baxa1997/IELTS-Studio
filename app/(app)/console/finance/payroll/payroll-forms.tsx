@@ -19,7 +19,7 @@ import {
   setPayrollStatus,
 } from "../actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { FAINT, INK, PANEL, RED_DEEP } from "@/lib/theme/tokens";
+import { FAINT, INK, PANEL, RED_DEEP, WARM_LINE } from "@/lib/theme/tokens";
 
 /** Compute (or recompute) the month. */
 export function RunPayrollForm({
@@ -70,7 +70,7 @@ export function PayrollStatusForm({
         className="cn-btn cn-btn--ghost"
         style={{
           background: PANEL,
-          border: "1px solid #C5C4BE",
+          border: `1px solid ${WARM_LINE}`,
           borderRadius: 9,
           padding: "8px 15px",
           fontFamily: "inherit",

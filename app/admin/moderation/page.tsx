@@ -21,6 +21,7 @@ import {
 import { loadConductFlags } from "@/lib/admin/moderation";
 import { calendarAgo, within } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
+import { WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -116,7 +117,7 @@ export default async function ModerationPage() {
                 alignItems: "flex-start",
                 gap: 14,
                 padding: "14px 18px",
-                borderBottom: "1px solid #F5F4F0",
+                borderBottom: `1px solid ${WARM_WELL}`,
               }}
             >
               <Glyph tone={isRepeat ? "red" : "amber"} size={34} round>

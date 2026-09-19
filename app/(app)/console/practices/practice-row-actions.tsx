@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 
 import { archivePractice, restorePractice, type PracticeFormState } from "./actions";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, WARM_RED } from "@/lib/theme/tokens";
 
 const MUTED = "#5A6076";
 const LINE = "#ECEAF2";
@@ -30,7 +30,7 @@ export function PracticeRowActions({
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "none" }}>
       {error ? (
-        <span style={{ fontFamily: SANS, fontSize: 11.5, color: "#b91c1c" }} role="alert">
+        <span style={{ fontFamily: SANS, fontSize: 11.5, color: WARM_RED }} role="alert">
           {error}
         </span>
       ) : null}

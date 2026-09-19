@@ -2,7 +2,21 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { GraduationCap, Trash2, Volume2, X } from "lucide-react";
-import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE as TINT_BORDER,
+  BRAND_SOFT,
+  BRAND_SOFT as TINT,
+  CANVAS,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN as EMERALD,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_MUTED as FAINT,
+  SLATE_RED,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 export interface VocabItem {
   id: string;
@@ -18,14 +32,6 @@ export interface VocabItem {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
-const TINT = "#FDF4F7";
-const TINT_BORDER = "#F0D3DE";
-const EMERALD = "#1C7A4F";
 
 const card: React.CSSProperties = { background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16 };
 
@@ -272,7 +278,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
 
                 <div style={{ display: "flex", alignItems: "center", gap: 8, paddingRight: 26, minWidth: 0 }}>
                   <h3 style={{ fontWeight: 700, fontSize: 16.5, margin: 0, overflowWrap: "break-word", minWidth: 0 }}>{item.word}</h3>
-                  <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: FAINT, background: "#F6F7F9", borderRadius: 999, padding: "2.5px 8px" }}>
+                  <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: FAINT, background: CANVAS, borderRadius: 999, padding: "2.5px 8px" }}>
                     {item.language}
                   </span>
                 </div>
@@ -412,7 +418,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
             <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 26 }}>Nice work</div>
             <p style={{ fontSize: 14, color: MUTED, margin: "10px 0 0", lineHeight: 1.55 }}>
               <strong style={{ color: EMERALD }}>{good}</strong> remembered ·{" "}
-              <strong style={{ color: "#c0392b" }}>{again}</strong> to see again soon
+              <strong style={{ color: SLATE_RED }}>{again}</strong> to see again soon
             </p>
             <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
               Done
@@ -455,7 +461,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
 
             {revealed ? (
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "1.5px solid #F0C8C0", background: "#FDF3F1", color: "#c0392b", fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "1.5px solid #F0C8C0", background: "#FDF3F1", color: SLATE_RED, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Again
                 </button>
                 <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>

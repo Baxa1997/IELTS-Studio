@@ -7,7 +7,15 @@ import { useActionFeedback } from "@/components/console/toast";
 import { type AlertChannel, type AlertSettings } from "@/lib/console/alerts";
 
 import { type ActionState, saveAlertSettings } from "../center-actions";
-import { INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  SLATE_AMBER_BG,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Who gets told when a student misses a lesson.
@@ -23,9 +31,6 @@ import { INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
  * could actually reach before it is switched on.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 const LINE = "#EAE8E1";
 const AMBER = "#9A6B00";
 
@@ -298,7 +303,7 @@ const warn: React.CSSProperties = {
   margin: "8px 0 0",
   padding: "8px 10px",
   borderRadius: 8,
-  background: "#FDF6E7",
+  background: SLATE_AMBER_BG,
   border: "1px solid #EFD9A8",
   fontSize: 11.5,
   color: AMBER,

@@ -10,7 +10,7 @@ import {
   type GroupFormState,
   type InviteFormState,
 } from "./groups/actions";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, WARM_RED } from "@/lib/theme/tokens";
 
 export interface PendingInvite {
   id: string;
@@ -141,7 +141,7 @@ function InviteRow({ invite, first }: { invite: PendingInvite; first: boolean })
       ) : null}
 
       {error ? (
-        <p style={{ marginTop: 6, fontSize: 12.5, color: "#b91c1c" }} role="alert">
+        <p style={{ marginTop: 6, fontSize: 12.5, color: WARM_RED }} role="alert">
           {error}
         </p>
       ) : null}

@@ -35,7 +35,7 @@ import { daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
 
 import { OrgReviewRow } from "./org-review-row";
-import { WHITE } from "@/lib/theme/tokens";
+import { WARM_WELL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -174,7 +174,7 @@ export default async function AdminPage() {
               alignItems: "center",
               gap: 14,
               padding: "14px 18px",
-              borderBottom: "1px solid #F5F4F0",
+              borderBottom: `1px solid ${WARM_WELL}`,
             }}
           >
             <Glyph tone="red" size={34}>
@@ -461,7 +461,7 @@ export default async function AdminPage() {
                 alignItems: "center",
                 gap: 12,
                 padding: "13px 18px",
-                borderBottom: "1px solid #F5F4F0",
+                borderBottom: `1px solid ${WARM_WELL}`,
                 textDecoration: "none",
                 color: INK,
               }}

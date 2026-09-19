@@ -4,13 +4,20 @@ import { useState, useTransition } from "react";
 
 import { setTargetBand } from "@/app/(app)/dashboard/actions";
 import { MAX_TARGET_BAND, MIN_TARGET_BAND, SKILL_LABELS, type SkillEstimateView } from "@/lib/estimates/compute";
-import { BRAND_SOFT, PANEL, SLATE_LINE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_SOFT,
+  PANEL,
+  SLATE_FIELD,
+  SLATE_GREEN,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_MUTED as MUTED,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#8B919D";
 
 const TARGET_OPTIONS: number[] = [];
 for (let b = MIN_TARGET_BAND; b <= MAX_TARGET_BAND; b += 0.5) TARGET_OPTIONS.push(b);
@@ -46,7 +53,7 @@ export function BandCard({ estimate }: { estimate: SkillEstimateView }) {
   const delta = measured && base != null ? Math.round((currentBand - base) * 10) / 10 : 0;
 
   return (
-    <div style={{ background: PANEL, border: "1px solid #E6E8EC", borderRadius: 16, padding: 20 }}>
+    <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ width: 32, height: 32, borderRadius: 9, background: BRAND_SOFT, color: BRAND, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -61,7 +68,7 @@ export function BandCard({ estimate }: { estimate: SkillEstimateView }) {
             disabled={pending}
             onChange={(e) => onTargetChange(Number(e.target.value))}
             aria-label={`${SKILL_LABELS[skill]} target band`}
-            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: BRAND_SOFT, border: "1px solid #F0D3DE", padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
+            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: BRAND_SOFT, border: `1px solid ${BRAND_LINE}`, padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
           >
             {TARGET_OPTIONS.map((b) => (
               <option key={b} value={b}>
@@ -73,14 +80,14 @@ export function BandCard({ estimate }: { estimate: SkillEstimateView }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: 12 }}>
-        <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 34, lineHeight: 1, color: measured ? BRAND : "#DFE2E8", fontVariantNumeric: "tabular-nums" }}>
+        <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 34, lineHeight: 1, color: measured ? BRAND : SLATE_FIELD, fontVariantNumeric: "tabular-nums" }}>
           {measured ? currentBand.toFixed(1) : "—"}
         </span>
         <span style={{ fontFamily: SANS, fontWeight: 500, fontSize: 14, color: MUTED, paddingBottom: 6 }}>→ target {target.toFixed(1)}</span>
       </div>
 
       <div style={{ height: 7, background: SLATE_LINE, borderRadius: 999, overflow: "hidden", marginTop: 12 }} aria-hidden>
-        <div style={{ width: `${Math.round(fill * 100)}%`, height: "100%", background: measured ? BRAND : "#DFE2E8", borderRadius: 999 }} />
+        <div style={{ width: `${Math.round(fill * 100)}%`, height: "100%", background: measured ? BRAND : SLATE_FIELD, borderRadius: 999 }} />
       </div>
 
       <div style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: MUTED, marginTop: 10 }}>
@@ -89,7 +96,7 @@ export function BandCard({ estimate }: { estimate: SkillEstimateView }) {
         ) : (
           <>
             From {base?.toFixed(1)} baseline
-            {delta > 0 ? <span style={{ color: "#1C7A4F" }}> · +{delta.toFixed(1)}</span> : null}
+            {delta > 0 ? <span style={{ color: SLATE_GREEN }}> · +{delta.toFixed(1)}</span> : null}
             {` · ${sampleCount} ${sampleCount === 1 ? "submission" : "submissions"}`}
           </>
         )}

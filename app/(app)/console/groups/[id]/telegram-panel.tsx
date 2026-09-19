@@ -7,7 +7,16 @@ import { FiCheckCircle, FiExternalLink, FiUsers } from "react-icons/fi";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { startTelegramLink, unlinkTelegram, type ActionState } from "../../center-actions";
-import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE,
+} from "@/lib/theme/tokens";
 
 /**
  * Connect this group to its Telegram group — in one tap.
@@ -29,10 +38,6 @@ import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP } from "@/lib/theme/tokens";
  * in, or for an admin reading this on a laptop with no Telegram installed.
  */
 
-const GREEN = "#16794C";
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 const TELEGRAM = "#229ED9";
 
 export function TelegramPanel({
@@ -91,7 +96,7 @@ export function TelegramPanel({
             onClick={() => setChanging(true)}
             style={{
               background: PANEL,
-              border: "1px solid #C5C4BE",
+              border: `1px solid ${WARM_LINE}`,
               borderRadius: 8,
               padding: "8px 13px",
               fontFamily: "inherit",
@@ -229,7 +234,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
     <div
       style={{
         background: "#F7F6F2",
-        border: "1px solid #C5C4BE",
+        border: `1px solid ${WARM_LINE}`,
         borderRadius: 11,
         padding: 14,
       }}
@@ -281,7 +286,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
               fontSize: 15,
               color: INDIGO,
               background: PANEL,
-              border: "1px solid #C5C4BE",
+              border: `1px solid ${WARM_LINE}`,
               borderRadius: 8,
               padding: "9px 11px",
               margin: "9px 0 0",

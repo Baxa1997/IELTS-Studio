@@ -1,8 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  AlertTriangle, ArrowRight, BookOpen, CalendarClock, Flame, Headphones,
-  Mic, PenLine, Sparkles, TrendingDown, TrendingUp,
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  CalendarClock,
+  Flame,
+  Headphones,
+  Mic,
+  PenLine,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 
 import { requireOrgUser } from "@/lib/auth";
@@ -14,19 +23,33 @@ import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
 import { BandCard } from "./band-card";
 import { DashboardCoach } from "./dashboard-coach-lazy";
-import { PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_DARKEST,
+  BRAND_MID,
+  BRAND_SOFT as TINT,
+  CANVAS as SURF,
+  PANEL,
+  SLATE_AMBER,
+  SLATE_AMBER_BG,
+  SLATE_AMBER_LINE,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN,
+  SLATE_GREEN as EMERALD,
+  SLATE_GREEN_BG,
+  SLATE_GREEN_LINE,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_LINE as LINE,
+  SLATE_MUTED as FAINT,
+  SLATE_RED,
+  SLATE_RED_BG,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
-const SURF = "#F6F7F9";
-const TINT = "#FDF4F7";
-const EMERALD = "#1C7A4F";
-const AMBER = "#B9791A";
+const AMBER = SLATE_AMBER;
 
 const card: React.CSSProperties = { background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: 18 };
 
@@ -67,11 +90,11 @@ export default async function DashboardPage({
       <style>{DASH_CSS}</style>
 
       {billing === "success" ? (
-        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: "#1C7A4F", background: "#EAF6F0", border: "1px solid #CFE7DB", borderRadius: 10, padding: "10px 14px" }}>
+        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: SLATE_GREEN, background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 10, padding: "10px 14px" }}>
           Payment received — your Pro plan is activating now. Enjoy the extra practice!
         </p>
       ) : billing === "cancel" ? (
-        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, color: "#8A5B12", background: "#FDF6E7", border: "1px solid #F0E1BE", borderRadius: 10, padding: "10px 14px" }}>
+        <p style={{ margin: "0 0 14px", fontFamily: SANS, fontSize: 13.5, color: SLATE_AMBER, background: SLATE_AMBER_BG, border: `1px solid ${SLATE_AMBER_LINE}`, borderRadius: 10, padding: "10px 14px" }}>
           Checkout cancelled — you&apos;re still on the free plan.
         </p>
       ) : null}
@@ -127,7 +150,7 @@ function Header({ name, plan, days }: { name: string | null; plan: StudyPlan; da
 function NextTask({ rec }: { rec: Recommendation }) {
   const [chipA, chipB] = chipsFor(rec.href);
   return (
-    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(120deg,#2C0013 0%,#7D0132 62%,#9B1044 100%)", borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
+    <div className="dash-next" style={{ position: "relative", overflow: "hidden", background: `linear-gradient(120deg,${BRAND_DARKEST} 0%,${BRAND} 62%,${BRAND_MID} 100%)`, borderRadius: 18, padding: "24px 26px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
       <div aria-hidden style={{ position: "absolute", top: -90, right: -40, width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 62%)" }} />
       <div style={{ position: "relative", minWidth: 0, flex: "1 1 380px" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".11em", textTransform: "uppercase", color: "rgba(255,255,255,.72)" }}>
@@ -268,8 +291,8 @@ function SkillGlyph({ skill }: { skill: Skill }) {
 function DeltaBadge({ value }: { value: number | null }) {
   const badge: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 4, fontFamily: SANS, fontWeight: 600, fontSize: 12, padding: "3px 9px", borderRadius: 999 };
   if (value == null) return <span style={{ ...badge, color: FAINT, background: SURF }}>baseline</span>;
-  if (value > 0) return <span style={{ ...badge, color: EMERALD, background: "#EAF6F0" }}><TrendingUp size={12} /> {value.toFixed(1)}</span>;
-  if (value < 0) return <span style={{ ...badge, color: "#c0392b", background: "#FBEAE7" }}><TrendingDown size={12} /> {Math.abs(value).toFixed(1)}</span>;
+  if (value > 0) return <span style={{ ...badge, color: EMERALD, background: SLATE_GREEN_BG }}><TrendingUp size={12} /> {value.toFixed(1)}</span>;
+  if (value < 0) return <span style={{ ...badge, color: SLATE_RED, background: SLATE_RED_BG }}><TrendingDown size={12} /> {Math.abs(value).toFixed(1)}</span>;
   return null;
 }
 
@@ -309,7 +332,7 @@ function weekDots(streakDays: number): { label: string; today: boolean; filled: 
 const DASH_CSS = `
 .dash-grid { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(0,1fr); gap: 16px; align-items: start; }
 .dash-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.dash-focus:hover { background: #F6F7F9; }
+.dash-focus:hover { background: var(--tk-learner-canvas); }
 @media (max-width: 1040px) { .dash-grid { grid-template-columns: 1fr; } }
 @media (max-width: 560px) {
   .dash-2 { grid-template-columns: 1fr; }

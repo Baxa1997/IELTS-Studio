@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand/logo";
-import { INDIGO, PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
+import { INDIGO, PANEL, SLATE_MUTED, WARM_RULE, WHITE } from "@/lib/theme/tokens";
 
 // Shared landing chrome: the brand tokens, the floating island nav, and the
 // dark site footer — used by the marketing front door (app/page.tsx) and the
@@ -92,7 +92,7 @@ export function SiteNav({ home }: { home: string | null }) {
           padding: "11px 14px 11px 22px",
           borderRadius: 18,
           background: PANEL,
-          border: "1px solid #E5E2D2",
+          border: `1px solid ${WARM_RULE}`,
           // Solid, lifted "island" — a crisp top highlight, a tight contact
           // shadow, and a broad ambient one so it reads as a real floating object.
           boxShadow:

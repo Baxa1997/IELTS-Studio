@@ -10,11 +10,13 @@ import {
   BRAND,
   BRAND_LINE,
   BRAND_SOFT,
+  CANVAS,
   SLATE_INK,
   SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
   WELL,
+  WELL_LINE,
   withAlpha,
 } from "@/lib/theme/tokens";
 
@@ -54,11 +56,11 @@ export const IELTS_STUDIO_THEME: StudioTheme = {
   ink: SLATE_INK,
   body: SLATE_STRONG,
   muted: SLATE_MUTED,
-  canvas: "#F6F7F9",
+  canvas: CANVAS,
   panel: "#fff",
   line: SLATE_LINE,
   soft: WELL,
-  softLine: "#ECEEF2",
+  softLine: WELL_LINE,
 };
 
 /** A slightly stronger tint of an accent colour, for the generate-surface gradient.

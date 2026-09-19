@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Plus, X } from "lucide-react";
 
 import { EMERALD, BRAND, INK, MUTED, SANS } from "./tokens";
-import { BRAND_LINE, PANEL, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import { BRAND_LINE, PANEL, SLATE_LINE, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
 
 /**
  * In-practice word lookup. The learner selects a word/short phrase inside the
@@ -251,7 +251,7 @@ export function WordLookup({
         width: W,
         zIndex: 50,
         background: PANEL,
-        border: "1px solid #E6E8EC",
+        border: `1px solid ${SLATE_LINE}`,
         borderRadius: 14,
         boxShadow: "0 24px 60px -22px rgba(26,33,56,.55)",
         fontFamily: SANS,

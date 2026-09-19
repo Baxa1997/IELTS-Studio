@@ -7,18 +7,23 @@
  */
 
 import { bandColor } from "@/lib/ui/band";
-import { BRAND_LINE, PANEL, SLATE_MUTED, SLATE_STRONG } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_SOFT as TINT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN_BG as GOOD_BG,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WARM_AMBER as AMBER,
+  WARM_GREEN as GOOD,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const BRAND = "#7D0132";
-const TINT = "#FDF4F7";
-const LINE = "#E6E8EC";
-const GOOD = "#15803d";
-const GOOD_BG = "#EAF6F0";
-const AMBER = "#B5852A";
 
 export interface SpeakCriterion {
   band: number;

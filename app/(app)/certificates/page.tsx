@@ -2,16 +2,12 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { BRAND, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_MUTED as FAINT } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
 
 const dateFmt = (s: string) =>
   new Date(`${s}T00:00:00Z`).toLocaleDateString("en-GB", {

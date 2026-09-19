@@ -4,11 +4,8 @@ import { getSubscription } from "@/lib/billing/service";
 import { getUsageSummary, type Quota } from "@/lib/quota";
 
 import { Panel } from "./frame";
-import { WHITE } from "@/lib/theme/tokens";
+import { BRAND, SLATE_BODY as MUTED, SLATE_INK as INK, WHITE } from "@/lib/theme/tokens";
 
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
 
 const STATUS: Record<string, string> = {
   trialing: "Free trial",

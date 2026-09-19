@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import { FAINT, GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INK, MUTED, PANEL, WARM_HAIR, WHITE } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { deleteHoliday, saveHoliday, type ActionState } from "../center-actions";
@@ -116,7 +116,7 @@ export function Holidays({ holidays }: { holidays: Holiday[] }) {
             alignItems: "center",
             gap: 12,
             padding: "11px 18px",
-            borderTop: "1px solid #DEDEDA",
+            borderTop: `1px solid ${WARM_HAIR}`,
             fontFamily: "inherit",
             fontSize: 12.5,
             opacity: h.endsOn < today ? 0.6 : 1,

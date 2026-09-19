@@ -7,16 +7,16 @@ import { FiSend } from "react-icons/fi";
 import { sendAnnouncement, type ActionState } from "../center-actions";
 import { useActionFeedback } from "@/components/console/toast";
 import {
-  FAINT as TK_FAINT,
+  FAINT,
   INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
   PANEL,
   RED_DEEP,
+  WARM_LINE_DEEP,
   WHITE,
 } from "@/lib/theme/tokens";
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -26,7 +26,7 @@ const label: React.CSSProperties = {
 };
 const field: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #CFCABC",
+  border: `1px solid ${WARM_LINE_DEEP}`,
   borderRadius: 8,
   padding: "9px 11px",
   fontFamily: "inherit",
@@ -326,7 +326,7 @@ export function AnnouncementComposer({
           {pending ? "Sending…" : "Send now"}
         </button>
       </div>
-      <div style={{ fontSize: 11.5, color: TK_FAINT, marginTop: 10, lineHeight: 1.55 }}>
+      <div style={{ fontSize: 11.5, color: FAINT, marginTop: 10, lineHeight: 1.55 }}>
         Reaches {reach} {reach === 1 ? "person" : "people"} in the app. A center student may have no
         address that can receive mail, so the bell is the one channel that reaches everybody.
       </div>

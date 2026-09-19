@@ -10,13 +10,9 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { BRAND, PANEL, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const MUTED = "#4A505C";
-const LINE = "#E6E8EC";
-const BRAND = "#7D0132";
-const INK = "#121317";
 const GOOD = "#1A7A48"; // the "stronger version" rail, matching the report
 
 export interface LBTurn {

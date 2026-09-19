@@ -26,7 +26,7 @@ import {
   Stack,
   Tag,
 } from "./crm-ui";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, WARM_HAIR, WARM_LINE, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 const SKILL_LABEL = {
   writing: "Writing",
@@ -229,7 +229,7 @@ export function StudentReportView({
                 fontSize: 11.5,
                 color: FAINT,
                 marginTop: 12,
-                borderTop: "1px solid #D4D3CE",
+                borderTop: `1px solid ${WARM_LINE_MID}`,
                 paddingTop: 10,
                 lineHeight: 1.55,
               }}
@@ -330,7 +330,7 @@ export function StudentReportView({
                   justifyContent: "space-between",
                   gap: 12,
                   padding: "9px 0",
-                  borderBottom: "1px solid #DEDEDA",
+                  borderBottom: `1px solid ${WARM_HAIR}`,
                   fontFamily: SANS,
                   fontSize: 12.5,
                 }}
@@ -412,7 +412,7 @@ function ExportPdfLink({ studentId }: { studentId: string }) {
         textDecoration: "none",
         background: PANEL,
         color: INK,
-        border: "1px solid #C5C4BE",
+        border: `1px solid ${WARM_LINE}`,
       }}
     >
       Export report (PDF)

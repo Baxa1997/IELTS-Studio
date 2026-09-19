@@ -4,10 +4,9 @@ import { useState } from "react";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 import { planTier } from "@/lib/billing/plans";
-import { SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
+import { BRAND, BRAND_LINE, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const BRAND = "#7D0132";
 
 /** True when an API/engine error message is the monthly quota running out (the
  *  engine 429 says "quota is used up"; the grade route's client copy says
@@ -132,7 +131,7 @@ export function UpgradeNotice({ message }: { message: string }) {
         fontFamily: SANS,
         margin: "16px 0 0",
         background: "linear-gradient(120deg,#FDF4F7,#FDF4F7)",
-        border: "1px solid #F0D3DE",
+        border: `1px solid ${BRAND_LINE}`,
         borderRadius: 14,
         padding: "16px 18px",
         display: "flex",

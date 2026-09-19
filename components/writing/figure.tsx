@@ -5,7 +5,16 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import type { AxisFigure, Figure, PieFigure, TableFigure } from "@/lib/writing/figure";
-import { PANEL, SLATE_STRONG, WELL, WHITE } from "@/lib/theme/tokens";
+import {
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_STRONG,
+  WARM_LINE_SOFT,
+  WELL,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Renders an Academic Task 1 figure (chart/graph/table) from structured data.
@@ -18,8 +27,6 @@ import { PANEL, SLATE_STRONG, WELL, WHITE } from "@/lib/theme/tokens";
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
 const GRID = "#ECE9DD";
 const AXIS = "#C7C3B4";
 
@@ -67,7 +74,7 @@ export function FigureView({ figure, expandable = true }: { figure: Figure; expa
             }}
             title="View full screen"
             aria-label="View figure full screen"
-            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", border: "1px solid #E2DED0", background: PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
+            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", border: `1px solid ${WARM_LINE_SOFT}`, background: PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A505C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
@@ -106,7 +113,7 @@ function FigureModal({ figure, onClose }: { figure: Figure; onClose: () => void 
         role="dialog"
         aria-modal="true"
         aria-label={figure.title}
-        style={{ background: PANEL, borderRadius: 16, border: "1px solid #E6E8EC", padding: "22px 26px 28px", width: "min(960px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "0 30px 80px -30px rgba(20,24,40,.55)" }}
+        style={{ background: PANEL, borderRadius: 16, border: `1px solid ${SLATE_LINE}`, padding: "22px 26px 28px", width: "min(960px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "0 30px 80px -30px rgba(20,24,40,.55)" }}
       >
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, marginBottom: 18 }}>
           <h3 style={{ margin: 0, fontFamily: SANS, fontSize: 18, fontWeight: 700, color: INK, lineHeight: 1.35 }}>
@@ -117,7 +124,7 @@ function FigureModal({ figure, onClose }: { figure: Figure; onClose: () => void 
             type="button"
             onClick={onClose}
             aria-label="Close"
-            style={{ flexShrink: 0, width: 34, height: 34, border: "1px solid #E2DED0", background: WELL, borderRadius: 9, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SLATE_STRONG }}
+            style={{ flexShrink: 0, width: 34, height: 34, border: `1px solid ${WARM_LINE_SOFT}`, background: WELL, borderRadius: 9, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SLATE_STRONG }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>

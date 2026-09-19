@@ -34,6 +34,7 @@ import {
   SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
+  WELL_LINE,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -390,7 +391,7 @@ export function ReadingTestRunner({
             flexWrap: "wrap",
             padding: "10px 20px",
             flex: "none",
-            borderBottom: "1px solid #E6E8EC",
+            borderBottom: `1px solid ${SLATE_LINE}`,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
@@ -473,7 +474,7 @@ export function ReadingTestRunner({
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                border: "1.5px solid #E6E8EC",
+                border: `1.5px solid ${SLATE_LINE}`,
                 background: PANEL,
                 color: MUTED,
                 display: "inline-flex",
@@ -524,7 +525,7 @@ export function ReadingTestRunner({
               style={{
                 padding: "6px 12px",
                 borderRadius: 10,
-                border: "1.5px solid #E6E8EC",
+                border: `1.5px solid ${SLATE_LINE}`,
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: INK,
@@ -582,7 +583,7 @@ export function ReadingTestRunner({
               overflow: "auto",
               padding: "32px clamp(20px,4vw,52px) 60px",
               minHeight: 0,
-              borderRight: "1px solid #ECEEF2",
+              borderRight: `1px solid ${WELL_LINE}`,
               cursor:
                 hl.tool && hl.tool !== "eraser"
                   ? "text"
@@ -692,7 +693,7 @@ export function ReadingTestRunner({
           className="rd-qnav"
           style={{
             flex: "none",
-            borderTop: "1px solid #ECEEF2",
+            borderTop: `1px solid ${WELL_LINE}`,
             background: PANEL,
             padding: "11px 24px",
             display: "flex",
@@ -766,7 +767,7 @@ export function ReadingTestRunner({
                                 height: 8,
                                 borderRadius: 999,
                                 background: AMBER,
-                                border: "1.5px solid #fff",
+                                border: `1.5px solid ${PANEL}`,
                               }}
                             />
                           ) : null}
@@ -816,7 +817,7 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     width: 28,
     height: 28,
     borderRadius: 8,
-    border: "1.5px solid #E6E8EC",
+    border: `1.5px solid ${SLATE_LINE}`,
     background: PANEL,
     color: disabled ? "#C9CDD4" : "#4A505C",
     fontWeight: 700,
@@ -939,7 +940,7 @@ function ConfirmFinishModal({
             style={{
               padding: "10px 18px",
               borderRadius: 11,
-              border: "1.5px solid #E6E8EC",
+              border: `1.5px solid ${SLATE_LINE}`,
               background: PANEL,
               color: SLATE_STRONG,
               fontFamily: SANS,
@@ -1040,7 +1041,7 @@ function TestResultsView({
           zIndex: 20,
           background: "rgba(251,251,253,.88)",
           backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #ECEEF2",
+          borderBottom: `1px solid ${WELL_LINE}`,
         }}
       >
         <div
@@ -1082,7 +1083,7 @@ function TestResultsView({
               style={{
                 padding: "9px 18px",
                 borderRadius: 10,
-                border: "1.5px solid #E6E8EC",
+                border: `1.5px solid ${SLATE_LINE}`,
                 background: PANEL,
                 color: SLATE_STRONG,
                 fontWeight: 600,
@@ -1193,7 +1194,7 @@ function TestResultsView({
                 <span style={{ color: BRAND }}>{result.percent.toFixed(0)}%</span>
               </div>
               <div
-                style={{ height: 10, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}
+                style={{ height: 10, borderRadius: 999, background: WELL_LINE, overflow: "hidden" }}
               >
                 <div
                   style={{
@@ -1230,7 +1231,7 @@ function TestResultsView({
               <div
                 key={p.order}
                 style={{
-                  border: "1px solid #ECEEF2",
+                  border: `1px solid ${WELL_LINE}`,
                   borderRadius: 16,
                   padding: "18px 20px",
                   background: PANEL,
@@ -1259,7 +1260,7 @@ function TestResultsView({
                   style={{
                     height: 7,
                     borderRadius: 999,
-                    background: "#ECEEF2",
+                    background: WELL_LINE,
                     overflow: "hidden",
                   }}
                 >
@@ -1387,7 +1388,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
       style={{
         flex: 1,
         minWidth: 120,
-        border: "1px solid #ECEEF2",
+        border: `1px solid ${WELL_LINE}`,
         borderRadius: 13,
         padding: "13px 16px",
         background: PANEL,

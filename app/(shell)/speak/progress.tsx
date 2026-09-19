@@ -8,13 +8,16 @@
  */
 
 import { bandColor } from "@/lib/ui/band";
-import { PANEL, SLATE_LINE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_LINE,
+  SLATE_LINE as LINE,
+  WARM_AMBER as AMBER,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const MUTED = "#4A505C";
-const LINE = "#E6E8EC";
-const BRAND = "#7D0132";
-const AMBER = "#B5852A";
 
 export interface SpeakProgressItem {
   t: string;

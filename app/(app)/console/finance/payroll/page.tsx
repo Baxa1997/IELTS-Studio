@@ -41,6 +41,7 @@ import {
   RunPayrollForm,
 } from "./payroll-forms";
 import { DownloadLink } from "@/components/console/file-links";
+import { WARM_LINE, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -390,7 +391,7 @@ function Payslip({ lines, money }: { lines: PayrollLine[]; money: (m: number) =>
   }
 
   return (
-    <div style={{ border: "1px solid #D4D3CE", borderRadius: 10, overflow: "hidden" }}>
+    <div style={{ border: `1px solid ${WARM_LINE_MID}`, borderRadius: 10, overflow: "hidden" }}>
       {lines.map((line, i) => {
         const measured =
           line.basisUnit === "money"
@@ -458,7 +459,7 @@ function AdjustmentLine({ item, money }: { item: PayrollItemRow; money: (m: numb
         gap: 12,
         padding: "9px 14px",
         marginTop: 8,
-        border: "1px dashed #C5C4BE",
+        border: `1px dashed ${WARM_LINE}`,
         borderRadius: 10,
         fontFamily: SANS,
         fontSize: 12.5,

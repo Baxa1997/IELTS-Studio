@@ -7,7 +7,7 @@ import { describeDays } from "@/lib/console/timetable-days";
 import { type GroupFormState, setGroupSchedule } from "../actions";
 import { type RoomChoice, ScheduleFields } from "../schedule-fields";
 import { useActionFeedback } from "@/components/console/toast";
-import { GREEN, INDIGO_CONSOLE as INDIGO, INK, PANEL, WHITE } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Change when an existing group meets.
@@ -24,8 +24,6 @@ import { GREEN, INDIGO_CONSOLE as INDIGO, INK, PANEL, WHITE } from "@/lib/theme/
  * id and its `effective_from`, so changing a time does not restart the term.
  */
 
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 const LINE = "#EAE8E1";
 const RED = "#A13A2C";
 

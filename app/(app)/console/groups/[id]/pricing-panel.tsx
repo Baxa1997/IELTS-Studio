@@ -6,7 +6,16 @@ import { formatMoney, parseMoney } from "@/lib/finance/money";
 
 import { type ActionState, setGroupPricing } from "../../finance/actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO_CONSOLE, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE,
+  INK,
+  MUTED,
+  PANEL,
+  WARM_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The two prices of this group, edited in place on the group itself.
@@ -18,17 +27,13 @@ import { INDIGO_CONSOLE, PANEL, WHITE } from "@/lib/theme/tokens";
  * they are pricing several groups in a row.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 const RED = "#B3261E";
-const GREEN = "#16794C";
 
 const field: React.CSSProperties = {
   width: "100%",
   height: 34,
   borderRadius: 8,
-  border: "1px solid #C5C4BE",
+  border: `1px solid ${WARM_LINE}`,
   background: PANEL,
   padding: "0 10px",
   fontSize: 13.5,

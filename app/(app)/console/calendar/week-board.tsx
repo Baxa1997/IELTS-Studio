@@ -8,7 +8,7 @@ import { toMinutes } from "@/lib/console/timetable-days";
 
 import { type GroupOption, type RoomOption } from "./calendar-forms";
 import { type GridRoom, TimetableGrid } from "./timetable-grid";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE as INDIGO, INK } from "@/lib/theme/tokens";
 
 /**
  * The day tabs and the grid, as one client-side view.
@@ -28,8 +28,6 @@ import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
  */
 
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
-const FAINT = "#777581";
-const INK = "#16162E";
 
 export interface DayTab {
   index: number;

@@ -8,11 +8,14 @@ import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading
 import { INK, SANS } from "./tokens";
 import {
   BRAND,
+  BRAND_LINE,
   PANEL,
   SLATE_BODY,
   SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
+  WARM_GREEN,
+  WELL_LINE,
 } from "@/lib/theme/tokens";
 
 export type { GradedItem };
@@ -26,9 +29,9 @@ export function perfColor(pct: number): string {
 }
 
 const STATUS = {
-  correct: { border: "#16A34A", bg: "#F6FBF7", ring: "#E4F0E8", pillBg: "#E6F5EB", pillTxt: "#15803D", icon: "✓", label: "Correct" },
+  correct: { border: "#16A34A", bg: "#F6FBF7", ring: "#E4F0E8", pillBg: "#E6F5EB", pillTxt: WARM_GREEN, icon: "✓", label: "Correct" },
   incorrect: { border: "#DC2626", bg: "#FDF5F3", ring: "#F4DAD2", pillBg: "#FCE4E0", pillTxt: "#C2410C", icon: "✕", label: "Incorrect" },
-  skipped: { border: SLATE_MUTED, bg: "#ECEEF2", ring: SLATE_LINE, pillBg: SLATE_LINE, pillTxt: SLATE_BODY, icon: "–", label: "Skipped" },
+  skipped: { border: SLATE_MUTED, bg: WELL_LINE, ring: SLATE_LINE, pillBg: SLATE_LINE, pillTxt: SLATE_BODY, icon: "–", label: "Skipped" },
 } as const;
 
 export type ReviewStatus = keyof typeof STATUS;
@@ -46,7 +49,7 @@ export function WeakTypes({ breakdown }: { breakdown: TypeBreakdown }) {
   if (rows.length === 0) return null;
 
   return (
-    <section style={{ border: "1px solid #ECEEF2", borderRadius: 16, padding: "22px 24px", background: PANEL }}>
+    <section style={{ border: `1px solid ${WELL_LINE}`, borderRadius: 16, padding: "22px 24px", background: PANEL }}>
       <p style={{ fontFamily: SANS, fontWeight: 700, fontSize: 12, letterSpacing: ".08em", textTransform: "uppercase", color: SLATE_MUTED, margin: "0 0 18px" }}>Performance by question type</p>
       <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 40px" }}>
         {rows.map((r) => {
@@ -57,7 +60,7 @@ export function WeakTypes({ breakdown }: { breakdown: TypeBreakdown }) {
                 <span style={{ fontFamily: SANS, fontSize: 14.5, fontWeight: 600, color: SLATE_STRONG }}>{READING_QUESTION_LABELS[r.type]}</span>
                 <span style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 700, color: c, fontVariantNumeric: "tabular-nums" }}>{r.correct}/{r.attempted}</span>
               </div>
-              <div style={{ height: 7, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}>
+              <div style={{ height: 7, borderRadius: 999, background: WELL_LINE, overflow: "hidden" }}>
                 <div style={{ height: "100%", borderRadius: 999, background: c, width: `${r.pct}%` }} />
               </div>
             </div>
@@ -78,7 +81,7 @@ export function ReviewItem({ item, passageBody, flagged }: { item: GradedItem; p
 
   const yourAnswerStyle: React.CSSProperties =
     status === "correct"
-      ? { color: "#15803D", fontWeight: 700 }
+      ? { color: WARM_GREEN, fontWeight: 700 }
       : status === "incorrect"
         ? { color: "#DC2626", fontWeight: 700, textDecoration: "line-through" }
         : { color: SLATE_MUTED, fontWeight: 600, textDecoration: "line-through" };
@@ -98,16 +101,16 @@ export function ReviewItem({ item, passageBody, flagged }: { item: GradedItem; p
       </div>
 
       <div style={{ marginBottom: 12 }}>
-        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 7, background: "#ECEEF2", color: SLATE_BODY, fontFamily: SANS, fontSize: 13, fontWeight: 600 }}>{READING_QUESTION_LABELS[item.question_type]}</span>
+        <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 7, background: WELL_LINE, color: SLATE_BODY, fontFamily: SANS, fontSize: 13, fontWeight: 600 }}>{READING_QUESTION_LABELS[item.question_type]}</span>
       </div>
 
       <div style={{ display: "flex", gap: 26, flexWrap: "wrap", fontFamily: SANS, fontSize: 15, marginBottom: 14 }}>
         <span style={{ color: SLATE_BODY }}>Your answer: <span style={yourAnswerStyle}>{shownStudent}</span></span>
-        <span style={{ color: SLATE_BODY }}>Correct: <span style={{ color: "#15803D", fontWeight: 700 }}>{display(item.correct_answer)}</span></span>
+        <span style={{ color: SLATE_BODY }}>Correct: <span style={{ color: WARM_GREEN, fontWeight: 700 }}>{display(item.correct_answer)}</span></span>
       </div>
 
       {item.supporting_sentence?.trim() ? (
-        <blockquote style={{ borderLeft: "3px solid #F0D3DE", padding: "2px 0 2px 15px", margin: "0 0 13px", fontStyle: "italic", color: SLATE_BODY, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.55 }}>
+        <blockquote style={{ borderLeft: `3px solid ${BRAND_LINE}`, padding: "2px 0 2px 15px", margin: "0 0 13px", fontStyle: "italic", color: SLATE_BODY, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.55 }}>
           “{item.supporting_sentence.trim()}”
         </blockquote>
       ) : isNotGiven ? (
@@ -151,7 +154,7 @@ function FindInPassage({ sentence, body }: { sentence: string; body: string }) {
         {open ? "Hide passage ▴" : "Find it in the passage ▾"}
       </button>
       {open ? (
-        <p style={{ marginTop: 12, padding: "15px 18px", background: PANEL, border: "1px solid #E6E8EC", borderRadius: 11, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.7, color: SLATE_STRONG }}>
+        <p style={{ marginTop: 12, padding: "15px 18px", background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 11, fontFamily: SANS, fontSize: 14.5, lineHeight: 1.7, color: SLATE_STRONG }}>
           {before}
           <mark style={{ background: "#FEF3C7", color: INK, borderRadius: 3, padding: "1px 3px" }}>{body.slice(idx, idx + trimmed.length)}</mark>
           {after}

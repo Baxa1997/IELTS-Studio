@@ -28,7 +28,14 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { BRAND_SOFT } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_SOFT,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN as EMERALD,
+  SLATE_INK as INK,
+  SLATE_MUTED as DIM,
+} from "@/lib/theme/tokens";
 
 /* Conditional class names are joined by code, never by string content: a
  * template literal like `${on ? " pc-x" : ""}` loses its leading space to
@@ -44,11 +51,6 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 /** Small-caps labels and running numbers. Loaded by app/(shell)/layout.tsx. */
 const MONO = "var(--font-mono-data), ui-monospace, SFMono-Regular, monospace";
 
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const DIM = "#8B919D";
-const EMERALD = "#1C7A4F";
 const AMBER = "#9A5B12";
 const RULE = "rgba(28,27,46,.07)";
 

@@ -6,7 +6,18 @@ import { type Slot } from "@/lib/console/timetable";
 import { describeDays } from "@/lib/console/timetable-days";
 
 import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
-import { INDIGO_CONSOLE, MUTED, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
+import {
+  CONSOLE_CANVAS,
+  FAINT,
+  INDIGO_CONSOLE,
+  INK,
+  MUTED,
+  PANEL,
+  RED,
+  RED_DEEP,
+  WARM_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The timetable grid: rooms across, half-hour bands down.
@@ -27,8 +38,6 @@ import { INDIGO_CONSOLE, MUTED, PANEL, RED_DEEP, WHITE } from "@/lib/theme/token
  * replaces.
  */
 
-const INK = "#16162E";
-const FAINT = "#777581";
 const HAIR = "#EFEDE8";
 const BAND_H = 34;
 
@@ -331,7 +340,7 @@ export function TimetableGrid({
                         background: tint,
                         color: WHITE,
                         border: clashed ? "2px solid #FFD2CD" : "none",
-                        outline: clashed ? "2px solid #C2453A" : "none",
+                        outline: clashed ? `2px solid ${RED}` : "none",
                         borderRadius: 10,
                         padding: "6px 9px",
                         margin: "2px 0",
@@ -490,8 +499,8 @@ export function TimetableGrid({
                 aria-label="Close"
                 style={{
                   marginLeft: "auto",
-                  background: "#F4F3EF",
-                  border: "1px solid #C5C4BE",
+                  background: CONSOLE_CANVAS,
+                  border: `1px solid ${WARM_LINE}`,
                   borderRadius: 8,
                   width: 30,
                   height: 30,

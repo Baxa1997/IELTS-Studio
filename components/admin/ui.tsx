@@ -1,5 +1,16 @@
 import type React from "react";
-import { AMBER, GREEN, INDIGO_CONSOLE as INDIGO, PANEL, RED, RED_DEEP } from "@/lib/theme/tokens";
+import {
+  AMBER,
+  CONSOLE_CANVAS as TK_CONSOLE_CANVAS,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK as TK_INK,
+  MUTED as TK_MUTED,
+  PANEL,
+  RED,
+  RED_DEEP,
+  WARM_WELL as TK_WARM_WELL,
+} from "@/lib/theme/tokens";
 
 /**
  * The platform console's visual kit.
@@ -18,18 +29,18 @@ import { AMBER, GREEN, INDIGO_CONSOLE as INDIGO, PANEL, RED, RED_DEEP } from "@/
  * these from its own client component.
  */
 
-export const INK = "#16162E";
+export const INK = TK_INK;
 export const BODY = "#2A2D34";
-export const MUTED = "#6E6C87";
+export const MUTED = TK_MUTED;
 export const SOFT = "#7C7A93";
 export const FAINT = "#93919F";
 export const LINE = "#E7E5DF";
 /** The two lighter rules: card-internal divider, then row divider. */
 export const RULE = "#F0EEE9";
-export const ROW_RULE = "#F5F4F0";
+export const ROW_RULE = TK_WARM_WELL;
 export { INDIGO };
 export const NAVY = "#14133A";
-export const CREAM = "#F4F3EF";
+export const CREAM = TK_CONSOLE_CANVAS;
 export const HEAD_BG = "#FAFAF8";
 
 /** The design's own two faces, loaded for this route group in the admin layout.

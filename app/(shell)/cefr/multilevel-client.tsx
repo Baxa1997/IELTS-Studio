@@ -34,13 +34,30 @@ import { Timer } from "@/components/exam/timer";
 import { engineClient } from "@/lib/engine/client";
 import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
 import {
+  BRAND,
+  BRAND as D_ACCENT,
   BRAND_DEEP,
+  BRAND_DEEP as D_ATEXT,
   BRAND_LINE,
+  BRAND_LINE as D_ABORDER2,
+  BRAND_PALE as TINT_BORDER,
   BRAND_SOFT,
+  BRAND_SOFT as D_ATINT2,
+  BRAND_SOFT as TINT,
+  BRAND_SOFT as W_SOFT,
+  BRAND_WASH as D_ATINT,
+  CANVAS,
   FIELD_LINE,
+  LINE as D_LINE,
   PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE,
   SLATE_MUTED,
+  SLATE_MUTED as FAINT,
   SLATE_STRONG,
+  WARM_GREEN as GOOD,
+  WARM_RED as BAD,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -58,27 +75,13 @@ const callEngine = engineClient("multilevel");
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const TINT = "#FDF4F7";
-const TINT_BORDER = "#E3A7BD";
-const GOOD = "#15803d";
-const BAD = "#b91c1c";
 
 // ---- "Reading B" design tokens (Claude Design project) ---------------------
 const JAKARTA = "'Plus Jakarta Sans', var(--font-hanken), system-ui, sans-serif";
 const PLEX = "'IBM Plex Serif', var(--font-newsreader), Georgia, serif";
 const D_DARK = "#0f172a"; // header
-const D_ACCENT = "#7D0132"; // accent
-const D_ATEXT = "#5C0125"; // input text
-const D_ATINT = "#F8E8EE"; // chips / badges
-const D_ATINT2 = "#FDF4F7"; // gap + instruction fill
 const D_ABORDER = "#CC5C82"; // gap underline
-const D_ABORDER2 = "#F0D3DE"; // instruction border
 const D_PAGE = "#f8fafc"; // canvas
-const D_LINE = "#e2e8f0"; // hairlines
 const D_SLATE = "#64748b";
 const D_SLATE2 = "#94a3b8";
 const D_SLATE3 = "#334155";
@@ -464,8 +467,8 @@ function Hub({
         style={{
           display: "flex",
           gap: 6,
-          background: "#F6F7F9",
-          border: "1px solid #E6E8EC",
+          background: CANVAS,
+          border: `1px solid ${SLATE_LINE}`,
           borderRadius: 14,
           padding: 5,
           marginTop: 22,
@@ -2966,7 +2969,6 @@ function Part5Questions({
 // runner as one product. It talks to the engine (callEngine) instead of the
 // IELTS essays API, and handles a multi-task paper with an in-header switcher.
 const W_ACCENT = D_ACCENT; // 7c3aed
-const W_SOFT = "#FDF4F7"; // violet-50 surface
 const W_SOFT2 = D_ATINT2; // faf5ff
 const W_LINE = D_LINE; // e2e8f0
 const W_SOFTLINE = "#eef1f5"; // faint inner divider

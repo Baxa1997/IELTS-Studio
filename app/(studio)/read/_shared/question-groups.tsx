@@ -10,11 +10,17 @@ import {
 
 import { GapSelectSentence, GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { BRAND, INK, MUTED, SANS } from "./tokens";
-import { BRAND_SOFT, PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND_PALE as QUESTION_BORDER,
+  BRAND_SOFT,
+  CANVAS,
+  PANEL,
+  SLATE_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /** Indigo-tinted border for the boxes that stay boxed (flow-chart gap stages);
  *  ordinary questions render as flat rows with an indigo number, no card. */
-const QUESTION_BORDER = "#E3A7BD";
 
 const ENDING_LETTERS = "ABCDEFGHIJ".split("");
 
@@ -81,7 +87,7 @@ export function QuestionGroups({
         return (
           <section key={gi} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             {/* Cambridge instruction header — a quiet grey box, like the exam paper */}
-            <div style={{ background: "#F6F7F9", border: "1px solid #E6E8EC", borderRadius: 12, padding: "13px 16px" }}>
+            <div style={{ background: CANVAS, border: `1px solid ${SLATE_LINE}`, borderRadius: 12, padding: "13px 16px" }}>
               <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 14.5, color: INK, margin: 0, fontVariantNumeric: "tabular-nums" }}>{range}</p>
               <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: MUTED, margin: "4px 0 0" }}>
                 {instruction}
@@ -89,7 +95,7 @@ export function QuestionGroups({
             </div>
 
             {letteredBank ? (
-              <div style={{ border: "1px solid #E6E8EC", borderRadius: 12, background: BRAND_SOFT, padding: "14px 18px" }}>
+              <div style={{ border: `1px solid ${SLATE_LINE}`, borderRadius: 12, background: BRAND_SOFT, padding: "14px 18px" }}>
                 {bankTitle ? (
                   <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 13.5, color: INK, margin: "0 0 9px" }}>{bankTitle}</p>
                 ) : null}
@@ -379,7 +385,7 @@ function NoteBlock({
   const title = group.find((q) => q.note_meta?.title?.trim())?.note_meta?.title?.trim() || null;
 
   return (
-    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: PANEL, padding: "18px 20px" }}>
+    <div style={{ border: `1px solid ${SLATE_LINE}`, borderRadius: 14, background: PANEL, padding: "18px 20px" }}>
       {title ? (
         <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 12px" }}>{title}</h3>
       ) : null}
@@ -531,7 +537,7 @@ function FlowChartBlock({
   }
 
   return (
-    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: PANEL, padding: "18px 20px" }}>
+    <div style={{ border: `1px solid ${SLATE_LINE}`, borderRadius: 14, background: PANEL, padding: "18px 20px" }}>
       {title ? (
         <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 14px", textAlign: "center" }}>{title}</h3>
       ) : null}
@@ -552,7 +558,7 @@ function FlowChartBlock({
 /** A gap-less flow-chart stage (a lead-in or fixed step). */
 function FlowStage({ text }: { text: string }) {
   return (
-    <div style={{ width: "100%", maxWidth: FLOW_BOX_MAX, border: "1.5px solid #E6E8EC", borderRadius: 12, background: BRAND_SOFT, padding: "12px 16px", textAlign: "center", fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: INK }}>
+    <div style={{ width: "100%", maxWidth: FLOW_BOX_MAX, border: `1.5px solid ${SLATE_LINE}`, borderRadius: 12, background: BRAND_SOFT, padding: "12px 16px", textAlign: "center", fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: INK }}>
       {text}
     </div>
   );

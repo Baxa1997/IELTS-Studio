@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { BODY, INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
+import {
+  BODY,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  PANEL,
+  WARM_LINE as HAIRLINE,
+} from "@/lib/theme/tokens";
 
 /**
  * The day being marked.
@@ -13,9 +20,6 @@ import { BODY, INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
  */
 
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
-const HAIRLINE = "#C5C4BE";
-const INK = "#16162E";
-const GREEN = "#16794C";
 
 const shift = (date: string, days: number) => {
   const d = new Date(`${date}T00:00:00Z`);

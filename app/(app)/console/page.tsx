@@ -36,7 +36,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { NeedsAttention } from "./needs-attention";
 import { PendingInvites, type PendingInvite } from "./pending-invites";
-import { WHITE } from "@/lib/theme/tokens";
+import { WARM_LINE, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -554,7 +554,7 @@ function Tick({ done }: { done: boolean }) {
         width: 20,
         height: 20,
         borderRadius: 999,
-        border: `1.5px solid ${done ? INDIGO : "#C5C4BE"}`,
+        border: `1.5px solid ${done ? INDIGO : WARM_LINE}`,
         background: done ? INDIGO : "#fff",
         display: "inline-flex",
         alignItems: "center",

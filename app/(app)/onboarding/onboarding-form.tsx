@@ -7,13 +7,18 @@ import { SELF_REPORT_BANDS, TARGET_BANDS } from "@/lib/plan/constants";
 import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { saveOnboarding } from "./actions";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  WARM_LINE_SOFT,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
 
 interface Props {
   mode: "create" | "edit";
@@ -82,7 +87,7 @@ export function OnboardingForm({ mode, initial }: Props) {
 
   return (
     <div style={{ maxWidth: 540, fontFamily: SANS }}>
-      <div style={{ background: PANEL, border: "1px solid #E6E8EC", borderRadius: 16, padding: "26px 28px" }}>
+      <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: "26px 28px" }}>
         <Field label="Your current level" hint="Roughly where are you now? Pick your last IELTS band, or your best guess — the diagnostic will sharpen it.">
           <select value={self} onChange={(e) => setSelf(e.target.value)} style={selectStyle}>
             <option value="">Not sure yet</option>
@@ -150,7 +155,7 @@ const selectStyle: React.CSSProperties = {
   width: "100%",
   height: 46,
   padding: "0 14px",
-  border: "1px solid #E2DED0",
+  border: `1px solid ${WARM_LINE_SOFT}`,
   borderRadius: 11,
   background: PANEL,
   fontFamily: SANS,

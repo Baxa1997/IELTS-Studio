@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { BRAND, PANEL, SANS, SERIF, SLATE_BODY, WHITE } from "@/lib/theme/tokens";
+import { BRAND, PANEL, SANS, SERIF, SLATE_BODY, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -175,7 +175,7 @@ function RevisionStrip({
     <section
       style={{
         background: PANEL,
-        border: "1px solid #E6E8EC",
+        border: `1px solid ${SLATE_LINE}`,
         borderRadius: 16,
         padding: "15px 18px",
         marginBottom: 14,

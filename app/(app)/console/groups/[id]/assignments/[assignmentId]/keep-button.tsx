@@ -3,13 +3,11 @@
 import { useActionState, useState } from "react";
 
 import { saveToLibrary, type LibraryState } from "../../../../practice/library-actions";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { INK, PANEL, WARM_LINE as RULE, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#16162E";
 const GREEN = "#166C4C";
 const RED = "#C24539";
-const RULE = "#C5C4BE";
 
 /**
  * "Keep this" — §9's way onto the shelf.

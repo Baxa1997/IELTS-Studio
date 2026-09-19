@@ -3,7 +3,17 @@
 import { useActionState } from "react";
 
 import { saveCenterProfile, type ActionState } from "../center-actions";
-import { FAINT, GREEN, INK, MUTED, PANEL, RED_DEEP, SOFT, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  SOFT,
+  WARM_LINE_DEEP,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -13,7 +23,7 @@ const label: React.CSSProperties = {
 };
 const field: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #CFCABC",
+  border: `1px solid ${WARM_LINE_DEEP}`,
   borderRadius: 8,
   padding: "9px 11px",
   fontFamily: "inherit",

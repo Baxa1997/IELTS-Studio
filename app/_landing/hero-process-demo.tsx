@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import {
   BRAND as INDIGO,
+  BRAND_LINE,
   BRAND_SOFT,
   PANEL,
   SLATE_BODY,
+  SLATE_INK as INK,
   SLATE_LINE,
   SLATE_MUTED,
+  WARM_AMBER as GOLD,
 } from "@/lib/theme/tokens";
 
 /**
@@ -27,8 +30,6 @@ import {
 
 const SANS = "var(--font-manrope), system-ui, sans-serif";
 const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
-const INK = "#121317";
-const GOLD = "#B5852A";
 const RED = "#C5503C";
 const EMERALD = "#1F8A5B";
 
@@ -258,7 +259,7 @@ function GenScene() {
                 fontWeight: 600,
                 color: INDIGO,
                 background: BRAND_SOFT,
-                border: "1px solid #f0d3de",
+                border: `1px solid ${BRAND_LINE}`,
                 borderRadius: 999,
                 padding: "5px 11px",
               }}
@@ -343,7 +344,7 @@ function GenScene() {
                 fontWeight: 600,
                 color: SLATE_BODY,
                 background: PANEL,
-                border: "1px solid #e6e8ec",
+                border: `1px solid ${SLATE_LINE}`,
                 borderRadius: 999,
                 padding: "5px 11px",
               }}

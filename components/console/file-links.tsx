@@ -1,5 +1,5 @@
 import { FaFileCsv, FaFileExcel, FaFilePdf } from "react-icons/fa6";
-import { INK, PANEL } from "@/lib/theme/tokens";
+import { INK, PANEL, WARM_LINE } from "@/lib/theme/tokens";
 
 /**
  * Download links that look like the file they produce.
@@ -53,7 +53,7 @@ export function DownloadLink({
         alignItems: "center",
         gap: 6,
         borderRadius: 9,
-        border: "1px solid #C5C4BE",
+        border: `1px solid ${WARM_LINE}`,
         background: PANEL,
         padding: "7px 12px",
         fontFamily: "inherit",

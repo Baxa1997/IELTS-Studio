@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-import type { RawProposal } from "@/lib/console/assistant";
+import type {
+  RawProposal,
+} from "@/lib/console/assistant";
 
 import { generate } from "@/lib/ai";
 import { requireOrgUser } from "@/lib/auth";

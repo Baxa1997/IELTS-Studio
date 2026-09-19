@@ -3,18 +3,21 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { PANEL } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_SOFT as TINT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  WARM_GREEN as GOOD,
+  WARM_RED as BAD,
+} from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const BRAND = "#7D0132";
-const TINT = "#FDF4F7";
-const GOOD = "#15803d";
-const BAD = "#b91c1c";
 
 type AttemptRow = {
   id: string;
@@ -89,7 +92,7 @@ export default async function ListeningResultsPage() {
           <div
             style={{
               background: PANEL,
-              border: "1px solid #E6E8EC",
+              border: `1px solid ${SLATE_LINE}`,
               borderRadius: 16,
               padding: "36px 28px",
               textAlign: "center",
@@ -115,7 +118,7 @@ export default async function ListeningResultsPage() {
                     alignItems: "center",
                     gap: 16,
                     background: PANEL,
-                    border: "1px solid #E6E8EC",
+                    border: `1px solid ${SLATE_LINE}`,
                     borderRadius: 14,
                     padding: "16px 20px",
                     textDecoration: "none",

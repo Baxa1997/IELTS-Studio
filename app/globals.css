@@ -276,6 +276,49 @@
   --tk-slate-muted: #8b919d;
   --tk-slate-line: #e6e8ec;
   --tk-well: #fbfbfc;
+  /* Status pills on the learner dashboard, drawn in the marketing palette's
+     greens and ambers rather than the `--tk-` status ramp. Same reasoning as
+     the slate neutrals above: named so they can follow the theme, not because
+     a second status palette is wanted. Each `-bg` is paired with its ink. */
+  --tk-slate-green: #1c7a4f;
+  --tk-slate-green-bg: #eaf6f0;
+  --tk-slate-green-line: #cfe7db;
+  --tk-slate-amber: #8a5b12;
+  --tk-slate-amber-bg: #fdf6e7;
+  --tk-slate-amber-line: #f0e1be;
+  --tk-slate-red: #c0392b;
+  --tk-slate-red-bg: #fbeae7;
+  /* Empty meter track / disabled field edge. */
+  --tk-slate-field: #dfe2e8;
+
+  /* ── the WARM ramp ──────────────────────────────────────────────────────
+   * Eight near-identical warm greys, used as borders and wells across the
+   * staff console. They predate the cool `LINE`/`RULE`/`HAIR` ramp and were
+   * never migrated onto it, so ~130 console declarations still draw from them.
+   *
+   * ⚠️ NAMING EIGHT GREYS IS NOT AN ENDORSEMENT OF EIGHT GREYS. The tokens
+   * module's own header complains that "eight different inks, nine muteds"
+   * accumulated one screen at a time and that nobody chose them; this is that
+   * list. They are named for the same reason the slate neutrals are: so the
+   * console can follow the theme now, without also repainting ~130 declarations
+   * in the same change. In DARK they collapse onto three values, because the
+   * distinctions were never visible — which is the evidence that folding them
+   * in light mode would be safe too, when someone has time to look.
+   *
+   * Use LINE / RULE / HAIR on anything new. */
+  --tk-warm-line: #c5c4be;
+  --tk-warm-line-soft: #e2ded0;
+  --tk-warm-line-mid: #d4d3ce;
+  --tk-warm-line-deep: #cfcabc;
+  --tk-warm-hair: #dededa;
+  --tk-warm-edge: #e7e3e0;
+  --tk-warm-rule: #e5e2d2;
+  --tk-warm-well: #f5f4f0;
+
+  /* A third status set, same story. */
+  --tk-warm-red: #b91c1c;
+  --tk-warm-green: #15803d;
+  --tk-warm-amber: #b5852a;
 }
 
 /*
@@ -361,6 +404,34 @@
   --tk-slate-muted: #a3a1b5;
   --tk-slate-line: #2e2e3d;
   --tk-well: #1b1b25;
+  /* Tints invert from pale-on-white to deep-on-dark; their inks lighten to stay
+     legible against them. Pairs, as always — never cross them. */
+  --tk-slate-green: #3fbf85;
+  --tk-slate-green-bg: #122a1f;
+  --tk-slate-green-line: #1e4534;
+  --tk-slate-amber: #e0a84a;
+  --tk-slate-amber-bg: #2e2314;
+  --tk-slate-amber-line: #4a3a1c;
+  --tk-slate-red: #e87b70;
+  --tk-slate-red-bg: #2e1715;
+  --tk-slate-field: #33333f;
+
+  /* The warm ramp, collapsed onto three weights — see the light block. The
+     eight light values encode distinctions nothing on screen actually shows;
+     reproducing all eight here would preserve drift that has no reason to
+     exist in a theme nobody has rendered yet. */
+  --tk-warm-line: #32323b;
+  --tk-warm-line-soft: #2b2b34;
+  --tk-warm-line-mid: #32323b;
+  --tk-warm-line-deep: #32323b;
+  --tk-warm-hair: #2b2b34;
+  --tk-warm-edge: #2b2b34;
+  --tk-warm-rule: #2b2b34;
+  --tk-warm-well: #1a1a21;
+
+  --tk-warm-red: #e87b70;
+  --tk-warm-green: #3fbf85;
+  --tk-warm-amber: #e0a84a;
 }
 
 /* ── THE MARKETING PALETTE (`--mk-*`) ──────────────────────────────────────
@@ -439,6 +510,98 @@
 
   --mk-green: #3fbf85;
   --mk-green-tint: #122a1f;
+}
+
+/* ── THE SHELL PALETTE (`--sh-*`) ──────────────────────────────────────────
+ *
+ * The rail and the two grounds it sits between. A THIRD palette, and it has to
+ * be, because it is not built from the same greys as either of the others: the
+ * shell is WARM PAPER (#f1efe9 canvas, #fdfcf8 content, warm-grey rail inks)
+ * chosen against the Base44 reference, while `--tk-` is violet-leaning and
+ * `--mk-` is slate. Folding the three together would repaint the rail, which is
+ * a design decision nobody has taken.
+ *
+ * ⚠️ THIS IS THE PALETTE WHOSE ABSENCE MADE DARK MODE LOOK BROKEN. Everything
+ * the `--tk-` tokens reach went dark on the first pass; the shell did not,
+ * because these values were plain constants in `components/app-shell/shell.tsx`
+ * and `sidebar-nav.tsx`. The result was the worst of both: dark cards floating
+ * on a cream page, and headings drawn in the DARK theme's near-white ink on
+ * that same cream — invisible. A half-converted theme is worse than no theme,
+ * and the page ground is the half that decides which one you have.
+ *
+ * The rail's "you are here" tint is the brand ORANGE (#dc5426), not the
+ * burgundy the rest of the product uses — that is deliberate and predates this,
+ * so the dark column keeps the hue and only re-anchors its lightness.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --sh-ink: #16232b;
+  --sh-canvas: #f1efe9;
+  --sh-rail-bg: #ffffff;
+  --sh-rail-border: #e7e4dc;
+  --sh-rail-shadow: 0 4px 14px -10px rgba(28, 25, 15, 0.18);
+  --sh-rail-ink: #16150f;
+  --sh-rail-faint: #8b8883;
+  --sh-rail-text: #3f3d39;
+  --sh-rail-muted: #8b8883;
+  --sh-rail-hover: #f0eeea;
+  --sh-rail-press: #e0dccc;
+  --sh-rail-active-bg: #fbeae5;
+  --sh-rail-active-ink: #b23f14;
+  --sh-accent: #0b6b40;
+  --sh-toggle-ink: #4a463d;
+  --sh-fullbleed: #f4f3ef;
+  --sh-content-shadow: 0 4px 14px -10px rgba(22, 35, 43, 0.25);
+  --sh-alert: #b3261e;
+  /* The profile disc. Pastel with dark initials, because on warm paper a
+     saturated disc is the loudest thing in the rail and the signed-in name is
+     not supposed to be. */
+  --sh-avatar-bg: #ece7f8;
+  --sh-avatar-ink: #4a3f8f;
+  /* The collapsed rail's hover tooltip. Already dark in light mode — a tooltip
+     is a floating label, not a surface, so it stays inverted relative to the
+     rail in BOTH themes rather than following it. */
+  --sh-tooltip-bg: #1a2138;
+  --sh-tooltip-ink: #ffffff;
+  /* Sign out is the one destructive row in the profile menu. */
+  --sh-danger-wash: #fbeceb;
+}
+
+.dark {
+  /* The canvas is the DARKEST thing on screen and the rail sits above it, so
+     the light mode's ordering (rail lighter than canvas) is preserved rather
+     than inverted — the rail should still read as a panel laid on the ground. */
+  /* The content ground. Declared in `:root` far above (the console's sticky top
+     bar has to paint the same value and cannot import it), so ONLY its dark
+     override belongs here. */
+  --lp-surface: #101016;
+
+  --sh-ink: #e8e9ee;
+  --sh-canvas: #08080d;
+  --sh-rail-bg: #121218;
+  --sh-rail-border: #272730;
+  --sh-rail-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.8);
+  --sh-rail-ink: #ededf2;
+  --sh-rail-faint: #94929d;
+  --sh-rail-text: #c9c7d2;
+  --sh-rail-muted: #94929d;
+  --sh-rail-hover: #1c1c23;
+  --sh-rail-press: #24242d;
+  --sh-rail-active-bg: #3a1a10;
+  --sh-rail-active-ink: #f08a5d;
+  --sh-accent: #4ec08a;
+  --sh-toggle-ink: #b9b6c4;
+  --sh-fullbleed: #0c0c12;
+  --sh-content-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.9);
+  --sh-alert: #e0574c;
+  /* Inverted rather than kept: the pastel disc that is quiet on warm paper is
+     the brightest object on screen once the rail goes dark. */
+  --sh-avatar-bg: #2b2547;
+  --sh-avatar-ink: #c3b9f0;
+  /* Lighter than the dark rail, so the tooltip still lifts off it. Inverting it
+     to a light chip instead would make it the brightest object on the screen. */
+  --sh-tooltip-bg: #34344a;
+  --sh-tooltip-ink: #f2f2f7;
+  --sh-danger-wash: #3a1a1a;
 }
 
 @layer base {
@@ -1190,7 +1353,7 @@
      indent reads as containment rather than as a stray left margin. */
   margin-left: 21px;
   padding-left: 10px;
-  border-left: 1px solid #e7e4dc;
+  border-left: 1px solid var(--sh-rail-border);
   transition:
     margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.28s cubic-bezier(0.33, 1, 0.68, 1),
@@ -1354,8 +1517,8 @@
      (RAIL_ACTIVE_BG / RAIL_ACTIVE_INK in sidebar-nav.tsx) — one "you are here"
      colour at every rail width. */
   .lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip {
-    background: #fbeae5 !important;
-    color: #b23f14 !important;
+    background: var(--sh-rail-active-bg) !important;
+    color: var(--sh-rail-active-ink) !important;
   }
   /* A count has nowhere to go in a 36px tile, so it goes; a badge becomes the
      dot on the corner of the chip, ringed in the RAIL'S OWN WHITE so it reads as
@@ -1598,9 +1761,9 @@
     overflow-y: auto;
     margin: 0 !important;
     padding: 6px !important;
-    border: 1px solid #e7e4dc;
+    border: 1px solid var(--sh-rail-border);
     border-radius: 12px;
-    background: #fff;
+    background: var(--sh-rail-bg);
     box-shadow: 0 18px 40px -18px rgba(28, 25, 15, 0.35);
     align-items: stretch !important;
     gap: 2px !important;
@@ -1612,7 +1775,7 @@
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #8b8883;
+    color: var(--sh-rail-muted);
     padding: 5px 9px 6px;
   }
   /* ── rows inside the card are FULL rows again ────────────────────────────
@@ -1648,7 +1811,7 @@
      strip uses — that tile exists because a 36px glyph has no label to put a
      pill behind, and in the card it does. */
   .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link--active {
-    background: #fbeae5 !important;
+    background: var(--sh-rail-active-bg) !important;
   }
   .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-link--active .lp-sb-chip {
     background: transparent !important;
@@ -1681,7 +1844,7 @@
      In the bare strip THE ROW IS THE CHIP, so the fill goes on the chip. */
   .lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-link:hover .lp-sb-chip,
   .lp-shell-sidebar--collapsed .lp-sb-grouprow:hover .lp-sb-chip {
-    background: #f0eeea;
+    background: var(--sh-rail-hover);
   }
   /* The AI rows' tiles keep their colour under the pointer. Same specificity as
      the grey rule above and written after it, so it wins without !important —
@@ -1702,7 +1865,7 @@
   .lp-shell-sidebar--collapsed
     .lp-sb-sub:not(.lp-sb-sub--flat)
     .lp-sb-link:not(.lp-sb-link--active):hover {
-    background: #f0eeea !important;
+    background: var(--sh-rail-hover) !important;
   }
 
   /* ⚠️ THE CENTRING RULE FOR .lp-sb-link IS EARLIER IN THIS FILE, not here.
@@ -1734,8 +1897,8 @@
     top: 50%;
     transform: translateY(-50%);
     white-space: nowrap;
-    background: #1a2138;
-    color: #fff;
+    background: var(--sh-tooltip-bg);
+    color: var(--sh-tooltip-ink);
     font-family: var(--font-hanken), system-ui, sans-serif;
     font-size: 12.5px;
     font-weight: 600;
@@ -1753,7 +1916,7 @@
     top: 50%;
     transform: translateY(-50%);
     border: 6px solid transparent;
-    border-right-color: #1a2138;
+    border-right-color: var(--sh-tooltip-bg);
     z-index: 60;
     pointer-events: none;
   }
@@ -2629,7 +2792,7 @@
   width: 10px;
 }
 .lp-shell-main::-webkit-scrollbar-thumb {
-  background: #e0dccc;
+  background: var(--sh-rail-press);
   border-radius: 6px;
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -2645,7 +2808,7 @@
   /* Divider weight from the shared ramp (HAIR), not the old warm #f0eee8 — it
      sits a few pixels from the rail's own edge, so two different greys there
      read as a mistake. */
-  border-bottom: 1px solid #eae7df;
+  border-bottom: 1px solid var(--sh-rail-border);
   transition:
     margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
     padding 0.28s cubic-bezier(0.33, 1, 0.68, 1);
@@ -2701,7 +2864,7 @@
      because the rail is a known white and an alpha that reads correctly there
      goes muddy the moment anything sits behind it — the flyout card and the
      account menu both reuse this. */
-  background: #f0eeea;
+  background: var(--sh-rail-hover);
 }
 /* The active row already carries a white fill inline, and an inline background
    beats this rule — so hovering the current item correctly does nothing. */
@@ -2718,7 +2881,7 @@
   background: transparent;
 }
 .lp-sb-profile-btn:hover {
-  background: #f0eeea;
+  background: var(--sh-rail-hover);
 }
 /* Account-menu rows — a warm grey wash on the white menu card. It was a soft red
    tuned for a dark menu; on white that reads as an error state on every row. */
@@ -2731,11 +2894,11 @@
   background: none;
 }
 .lp-menu-item:hover {
-  background: #f0eeea;
+  background: var(--sh-rail-hover);
 }
 /* Sign out is the one destructive row, so it alone keeps a red wash. */
 .lp-menu-item--danger:hover {
-  background: #fbeceb;
+  background: var(--sh-danger-wash);
 }
 
 /* ── the plan button at the foot of the rail (plan-card.tsx) ─────────────────

@@ -6,10 +6,14 @@ import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 import type { UsageSummary } from "@/lib/quota";
 import {
+  BRAND,
+  BRAND as VIOLET,
+  BRAND_LINE,
   BRAND_SOFT,
   PANEL,
   SLATE_BODY,
   SLATE_INK,
+  SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
   WHITE,
@@ -17,8 +21,6 @@ import {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const VIOLET = "#7D0132";
 
 /** Start checkout for any paid plan (Stripe via /api/billing/checkout). */
 function useCheckout() {
@@ -106,7 +108,7 @@ export function PricingTiers({
                 flexDirection: "column",
                 gap: 14,
                 background: PANEL,
-                border: isCurrent ? `2px solid ${VIOLET}` : "1px solid #E6E8EC",
+                border: isCurrent ? `2px solid ${VIOLET}` : `1px solid ${SLATE_LINE}`,
                 borderRadius: 16,
                 padding: "22px 20px",
                 boxShadow: highlight
@@ -142,7 +144,7 @@ export function PricingTiers({
                     letterSpacing: ".06em",
                     color: BRAND,
                     background: BRAND_SOFT,
-                    border: "1px solid #F0D3DE",
+                    border: `1px solid ${BRAND_LINE}`,
                     borderRadius: 999,
                     padding: "3px 10px",
                   }}
@@ -223,7 +225,7 @@ export function PricingTiers({
                     textAlign: "center",
                     padding: "11px 0",
                     borderRadius: 11,
-                    border: "1px dashed #E6E8EC",
+                    border: `1px dashed ${SLATE_LINE}`,
                     color: SLATE_MUTED,
                     fontSize: 13.5,
                     fontWeight: 600,

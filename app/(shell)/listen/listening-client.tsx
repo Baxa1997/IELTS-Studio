@@ -78,9 +78,11 @@ import type {
 } from "./types";
 import {
   BRAND as TK_BRAND,
+  CANVAS,
   PANEL,
   SLATE_BODY,
   SLATE_INK,
+  SLATE_LINE,
   SLATE_MUTED,
   WHITE,
 } from "@/lib/theme/tokens";
@@ -419,7 +421,7 @@ function FreshPractice({
       <div
         style={{
           background: PANEL,
-          border: "1px solid #E6E8EC",
+          border: `1px solid ${SLATE_LINE}`,
           borderRadius: 16,
           padding: 18,
           display: "flex",
@@ -454,7 +456,7 @@ function FreshPractice({
             onClick={onStart}
             style={{
               background: PANEL,
-              border: "1px solid #E6E8EC",
+              border: `1px solid ${SLATE_LINE}`,
               borderRadius: 10,
               padding: "10px 16px",
               fontFamily: SANS,
@@ -660,8 +662,8 @@ function Hub({
         style={{
           display: "flex",
           gap: 6,
-          background: "#F6F7F9",
-          border: "1px solid #E6E8EC",
+          background: CANVAS,
+          border: `1px solid ${SLATE_LINE}`,
           borderRadius: 14,
           padding: 5,
           marginTop: 22,

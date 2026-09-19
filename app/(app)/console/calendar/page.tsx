@@ -42,7 +42,15 @@ import { SlotForm } from "./calendar-forms";
 import { RoomsManager } from "./rooms-manager";
 import { type GridRoom } from "./timetable-grid";
 import { WeekBoard } from "./week-board";
-import { BODY, FAINT as TK_FAINT, PANEL, RED_DEEP } from "@/lib/theme/tokens";
+import {
+  BODY,
+  CONSOLE_CANVAS,
+  FAINT as TK_FAINT,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE,
+  WARM_LINE as HAIRLINE,
+} from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -688,8 +696,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                         fontFamily: SANS,
                         fontSize: 12,
                         color: slot.clashesWith.length > 0 ? "#A63A30" : MUTED,
-                        background: "#F4F3EF",
-                        border: "1px solid #C5C4BE",
+                        background: CONSOLE_CANVAS,
+                        border: `1px solid ${WARM_LINE}`,
                         borderRadius: 8,
                         padding: "5px 10px",
                       }}
@@ -722,7 +730,6 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
   );
 }
 
-const HAIRLINE = "#C5C4BE";
 
 const weekBtn: React.CSSProperties = {
   display: "inline-flex",
@@ -758,7 +765,7 @@ function toggle(on: boolean): React.CSSProperties {
     fontFamily: SANS,
     fontSize: 12.5,
     textDecoration: "none",
-    border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+    border: `1px solid ${on ? INDIGO : WARM_LINE}`,
     background: on ? INDIGO : "#fff",
     color: on ? "#fff" : "#4C4A63",
   };

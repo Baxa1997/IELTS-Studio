@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL, WARM_HAIR, WARM_LINE } from "@/lib/theme/tokens";
 import { SANS, TINT, type Tone } from "@/components/console/crm-ui";
 import { useActionFeedback } from "@/components/console/toast";
 import { type Alert, type Severity } from "@/lib/console/alert-catalogue";
@@ -58,7 +58,7 @@ export function NeedsAttention({
               alignItems: "center",
               gap: 12,
               padding: "12px 18px",
-              borderBottom: "1px solid #DEDEDA",
+              borderBottom: `1px solid ${WARM_HAIR}`,
             }}
           >
             <span
@@ -145,7 +145,7 @@ export function NeedsAttention({
                 fontWeight: 600,
                 color: INDIGO_CONSOLE,
                 textDecoration: "none",
-                border: "1px solid #C5C4BE",
+                border: `1px solid ${WARM_LINE}`,
                 borderRadius: 8,
                 padding: "6px 11px",
                 background: PANEL,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Branded page furniture for the organization console.
@@ -326,9 +326,9 @@ export function Pill({
 }) {
   const palette = {
     neutral: { bg: "#F2F1F7", fg: MUTED },
-    good: { bg: "#E7F7EE", fg: "#15803d" },
+    good: { bg: "#E7F7EE", fg: WARM_GREEN },
     warn: { bg: "#FDF3E3", fg: "#B9791A" },
-    bad: { bg: "#FDECEC", fg: "#b91c1c" },
+    bad: { bg: "#FDECEC", fg: WARM_RED },
     indigo: { bg: TINT, fg: INDIGO },
   }[tone];
   return (

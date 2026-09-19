@@ -12,21 +12,32 @@ import {
 } from "@/lib/public-grader/prompts";
 import type { PublicTeaser } from "@/lib/public-grader/teaser";
 import { bandColor } from "@/lib/ui/band";
-import { BRAND_SOFT, PANEL, SLATE_MUTED, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_SOFT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN_BG,
+  SLATE_GREEN_LINE,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_LINE as LINE,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WARM_AMBER as AMBER,
+  WARM_LINE_SOFT,
+  WELL as SOFT,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 type Status = "idle" | "grading" | "done" | "error";
 
 // ---- Brand tokens (same palette as the internal essay-feedback page) ---------
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
 const RED = "#C5503C";
-const AMBER = "#B5852A";
 const EMERALD = "#1F9D5E";
-const LINE = "#E6E8EC";
-const SOFT = "#FBFBFC";
 const SOFT_LINE = "#EFECE0";
 
 const ACCEPT = "image/png,image/jpeg,image/webp,application/pdf";
@@ -192,7 +203,7 @@ export function PublicGrader() {
             placeholder="Paste the Task 2 question you wrote about — or leave this blank to grade your writing on its own."
             aria-label="The question you wrote about (optional)"
             className="focus:outline-none focus:ring-2 focus:ring-[#7D0132]/20 focus:border-[#7D0132]"
-            style={{ display: "block", width: "100%", resize: "vertical", borderRadius: 10, border: "1px solid #E6E8EC", background: SOFT, padding: "10px 13px", fontFamily: SERIF, fontSize: 15, lineHeight: 1.55, color: SLATE_STRONG }}
+            style={{ display: "block", width: "100%", resize: "vertical", borderRadius: 10, border: `1px solid ${SLATE_LINE}`, background: SOFT, padding: "10px 13px", fontFamily: SERIF, fontSize: 15, lineHeight: 1.55, color: SLATE_STRONG }}
           />
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 7, marginTop: 10 }}>
             <span style={{ fontSize: 12.5, color: SLATE_MUTED, marginRight: 2 }}>Need one? Try a sample:</span>
@@ -201,7 +212,7 @@ export function PublicGrader() {
                 key={p.id}
                 type="button"
                 onClick={() => setQuestion(p.prompt)}
-                style={{ height: 28, padding: "0 12px", borderRadius: 999, fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, cursor: "pointer", border: "1px solid #E2DED0", background: PANEL, color: SLATE_STRONG }}
+                style={{ height: 28, padding: "0 12px", borderRadius: 999, fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, cursor: "pointer", border: `1px solid ${WARM_LINE_SOFT}`, background: PANEL, color: SLATE_STRONG }}
               >
                 {p.title}
               </button>
@@ -236,11 +247,11 @@ export function PublicGrader() {
             type="button"
             disabled={reading || status === "grading"}
             onClick={() => fileRef.current?.click()}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 42, padding: "0 15px", borderRadius: 10, border: "1px solid #E2DED0", background: PANEL, color: SLATE_STRONG, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: reading ? "default" : "pointer", opacity: reading ? 0.6 : 1 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 42, padding: "0 15px", borderRadius: 10, border: `1px solid ${WARM_LINE_SOFT}`, background: PANEL, color: SLATE_STRONG, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: reading ? "default" : "pointer", opacity: reading ? 0.6 : 1 }}
           >
             {reading ? (
               <>
-                <span className="animate-spin" style={{ width: 14, height: 14, borderRadius: "50%", border: "2.5px solid #F0D3DE", borderTopColor: BRAND, display: "inline-block" }} aria-hidden />
+                <span className="animate-spin" style={{ width: 14, height: 14, borderRadius: "50%", border: `2.5px solid ${BRAND_LINE}`, borderTopColor: BRAND, display: "inline-block" }} aria-hidden />
                 Reading your file…
               </>
             ) : (
@@ -349,7 +360,7 @@ function SignupWall({ onClose }: { onClose: () => void }) {
           <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, borderRadius: 12, background: BRAND, color: WHITE, fontSize: 15.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
             Create a free account
           </Link>
-          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, borderRadius: 12, background: PANEL, border: "1px solid #F0D3DE", color: BRAND, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
+          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 46, borderRadius: 12, background: PANEL, border: `1px solid ${BRAND_LINE}`, color: BRAND, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
             I already have an account
           </Link>
         </div>
@@ -381,7 +392,7 @@ function Result({
         <button
           type="button"
           onClick={onAgain}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 42, padding: "0 18px", borderRadius: 11, border: "1px solid #E2DED0", background: PANEL, color: SLATE_STRONG, fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 42, padding: "0 18px", borderRadius: 11, border: `1px solid ${WARM_LINE_SOFT}`, background: PANEL, color: SLATE_STRONG, fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8M3 4v4h4" /></svg>
           Grade another essay
@@ -407,7 +418,7 @@ function Result({
           </div>
         </div>
         {showLift ? (
-          <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: "#EAF6F0", border: "1px solid #CFE7DB", borderRadius: 11 }}>
+          <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 19V5M5 12l7-7 7 7" /></svg>
             <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
               Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{teaser.bandWithFixes.toFixed(1)}</strong> with the fixes
@@ -443,7 +454,7 @@ function Result({
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
             {lift ? (
-              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: "#EAF6F0", border: "1px solid #CFE7DB", padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
             ) : null}
           </div>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: SLATE_STRONG }}>
@@ -457,7 +468,7 @@ function Result({
           const badge = isBlocker
             ? { label: "Capping", text: RED, bg: "#FCEEEA" }
             : c.band >= 6
-              ? { label: c.band >= 7 ? "Strong" : "Solid", text: "#2C7A52", bg: "#EAF6F0" }
+              ? { label: c.band >= 7 ? "Strong" : "Solid", text: "#2C7A52", bg: SLATE_GREEN_BG }
               : { label: "Developing", text: AMBER, bg: "#F6EAD0" };
           return (
             <div key={c.key} style={{ background: PANEL, border: `1px solid ${isBlocker ? "#F3CFC6" : "#EAE6D8"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
@@ -490,7 +501,7 @@ function Result({
       </div>
 
       {/* ---- Conversion — the deeper coaching loop stays behind sign-up ---- */}
-      <div style={{ background: BRAND_SOFT, border: "1px solid #F0D3DE", borderRadius: 16, padding: "18px 20px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, justifyContent: "space-between" }}>
+      <div style={{ background: BRAND_SOFT, border: `1px solid ${BRAND_LINE}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, justifyContent: "space-between" }}>
         <div style={{ minWidth: 240, flex: "1 1 320px" }}>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: INK }}>Go deeper — free account</p>
           <p style={{ margin: "5px 0 0", fontSize: 13.5, lineHeight: 1.55, color: SLATE_STRONG }}>
@@ -502,7 +513,7 @@ function Result({
           <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: BRAND, color: WHITE, fontSize: 14.5, fontWeight: 700, textDecoration: "none", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
             Create a free account
           </Link>
-          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: PANEL, border: "1px solid #F0D3DE", color: BRAND, fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>
+          <Link href="/sign-in" style={{ display: "inline-flex", alignItems: "center", height: 44, padding: "0 22px", borderRadius: 11, background: PANEL, border: `1px solid ${BRAND_LINE}`, color: BRAND, fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>
             Sign in
           </Link>
         </div>

@@ -2,10 +2,9 @@
 
 import { useActionState } from "react";
 
-import { BRAND, FIELD_LINE, INK, MUTED, SANS, WHITE } from "@/lib/theme/tokens";
+import { BRAND, FIELD_LINE, INK, MUTED, SANS, SLATE_GREEN, WELL, WHITE } from "@/lib/theme/tokens";
 
 /** The design's field well — a shade off white, so an input reads as an input. */
-const WELL = "#FBFBFC";
 
 import { submitApplication, type ApplyState } from "./actions";
 
@@ -112,7 +111,7 @@ export function ApplyForm() {
         </p>
       ) : null}
       {state.notice ? (
-        <p role="status" style={{ margin: 0, fontFamily: SANS, fontSize: 13.5, color: "#1C7A4F" }}>
+        <p role="status" style={{ margin: 0, fontFamily: SANS, fontSize: 13.5, color: SLATE_GREEN }}>
           {state.notice}
         </p>
       ) : null}

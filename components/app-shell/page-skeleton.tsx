@@ -1,5 +1,12 @@
 
-import { PANEL } from "@/lib/theme/tokens";
+import {
+  BRAND_LINE,
+  PANEL,
+  SLATE_LINE,
+  WARM_HAIR,
+  WARM_LINE,
+  WARM_LINE_MID,
+} from "@/lib/theme/tokens";
 /**
  * Instant content skeletons shown inside the app shell while a dynamic page renders
  * on the server. Each variant deliberately mirrors the shape of the page it stands
@@ -32,8 +39,8 @@ export function Card({ children, accent }: { children: React.ReactNode; accent?:
     <div
       style={{
         background: PANEL,
-        border: "1px solid #E6E8EC",
-        borderLeft: accent ? "3px solid #F0D3DE" : "1px solid #E6E8EC",
+        border: `1px solid ${SLATE_LINE}`,
+        borderLeft: accent ? `3px solid ${BRAND_LINE}` : `1px solid ${SLATE_LINE}`,
         borderRadius: 16,
         padding: 20,
       }}
@@ -97,7 +104,7 @@ export function PageSkeleton() {
         style={{
           marginTop: 18,
           background: PANEL,
-          border: "1px solid #E6E8EC",
+          border: `1px solid ${SLATE_LINE}`,
           borderRadius: 16,
           padding: "22px 24px",
         }}
@@ -212,7 +219,7 @@ export function ConsoleSkeleton({ kpis = 4, rows = 7 }: { kpis?: number; rows?: 
             key={i}
             style={{
               background: PANEL,
-              border: "1px solid #C5C4BE",
+              border: `1px solid ${WARM_LINE}`,
               borderRadius: 12,
               padding: "16px 18px",
             }}
@@ -226,13 +233,13 @@ export function ConsoleSkeleton({ kpis = 4, rows = 7 }: { kpis?: number; rows?: 
       <div
         style={{
           background: PANEL,
-          border: "1px solid #C5C4BE",
+          border: `1px solid ${WARM_LINE}`,
           borderRadius: 12,
           marginTop: 18,
           overflow: "hidden",
         }}
       >
-        <div style={{ padding: "14px 18px", borderBottom: "1px solid #D4D3CE" }}>
+        <div style={{ padding: "14px 18px", borderBottom: `1px solid ${WARM_LINE_MID}` }}>
           <Block w={150} h={14} r={7} />
         </div>
         {Array.from({ length: rows }).map((_, i) => (
@@ -243,7 +250,7 @@ export function ConsoleSkeleton({ kpis = 4, rows = 7 }: { kpis?: number; rows?: 
               alignItems: "center",
               gap: 14,
               padding: "13px 18px",
-              borderBottom: i === rows - 1 ? "none" : "1px solid #DEDEDA",
+              borderBottom: i === rows - 1 ? "none" : `1px solid ${WARM_HAIR}`,
             }}
           >
             <Block w={28} h={28} r={999} />
@@ -273,7 +280,7 @@ export function LauncherSkeleton({ narrow = false }: { narrow?: boolean }) {
         style={{
           marginTop: 20,
           background: PANEL,
-          border: "1px solid #E6E8EC",
+          border: `1px solid ${SLATE_LINE}`,
           borderRadius: 16,
           padding: "26px 26px",
         }}

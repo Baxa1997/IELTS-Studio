@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { INDIGO_CONSOLE as INDIGO, WHITE } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE as INDIGO, INK, MUTED, WARM_LINE, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Pick the months, download the sheet.
@@ -16,9 +16,6 @@ import { INDIGO_CONSOLE as INDIGO, WHITE } from "@/lib/theme/tokens";
  * client-side navigation to it would try to render a spreadsheet as a page.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 export function MonthsExport({
   months,
@@ -60,7 +57,7 @@ export function MonthsExport({
                 padding: "5px 12px",
                 fontSize: 12.5,
                 fontWeight: on ? 600 : 500,
-                border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+                border: `1px solid ${on ? INDIGO : WARM_LINE}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : hasRun ? INK : FAINT,
                 cursor: "pointer",

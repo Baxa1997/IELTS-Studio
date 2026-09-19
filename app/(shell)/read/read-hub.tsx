@@ -34,13 +34,18 @@ import { titleCase } from "@/lib/reading/titles";
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
-import { BRAND_SOFT, SLATE_MUTED } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_SOFT,
+  CANVAS,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
 
 /** A finished attempt, reduced to what the card's graded state draws. */
 export interface Graded {
@@ -264,8 +269,8 @@ export function ReadingHub({
         style={{
           display: "flex",
           gap: 6,
-          background: "#F6F7F9",
-          border: "1px solid #E6E8EC",
+          background: CANVAS,
+          border: `1px solid ${SLATE_LINE}`,
           borderRadius: 14,
           padding: 5,
           marginTop: 18,

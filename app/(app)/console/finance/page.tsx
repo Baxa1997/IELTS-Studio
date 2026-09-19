@@ -36,7 +36,7 @@ import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 import { DeskForm, TransferForm } from "./desk-forms";
 import { TransactionForm } from "./transaction-form";
 import { DownloadLink } from "@/components/console/file-links";
-import { RED as TK_RED, WHITE } from "@/lib/theme/tokens";
+import { CONSOLE_CANVAS, RED as TK_RED, WARM_LINE, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -1013,7 +1013,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                   ...chip,
                   padding: "7px 11px",
                   cursor: "pointer",
-                  border: "1px solid #C5C4BE",
+                  border: `1px solid ${WARM_LINE}`,
                 }}
               >
                 Set
@@ -1083,8 +1083,8 @@ const COLS =
 const LEDGER_MIN_WIDTH = 820;
 
 const chip: React.CSSProperties = {
-  background: "#F4F3EF",
-  border: "1px solid #C5C4BE",
+  background: CONSOLE_CANVAS,
+  border: `1px solid ${WARM_LINE}`,
   borderRadius: 7,
   padding: "6px 11px",
   fontFamily: SANS,

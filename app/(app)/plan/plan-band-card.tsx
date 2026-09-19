@@ -10,15 +10,21 @@ import {
   SKILL_LABELS,
   type SkillEstimateView,
 } from "@/lib/estimates/compute";
-import { BRAND, BRAND_LINE, BRAND_SOFT, PANEL } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_SOFT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_LINE as TRACK,
+  SLATE_MUTED as FAINT,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
-const TRACK = "#E6E8EC";
 
 const TARGET_OPTIONS: number[] = [];
 for (let b = MIN_TARGET_BAND; b <= MAX_TARGET_BAND; b += 0.5) TARGET_OPTIONS.push(b);
@@ -89,7 +95,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
             disabled={pending}
             onChange={(e) => onTargetChange(Number(e.target.value))}
             aria-label={`${SKILL_LABELS[skill]} target band`}
-            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: BRAND_SOFT, border: "1px solid #F0D3DE", padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
+            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: BRAND_SOFT, border: `1px solid ${BRAND_LINE}`, padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
           >
             {TARGET_OPTIONS.map((b) => (
               <option key={b} value={b}>
@@ -118,7 +124,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
               </div>
               <div style={{ fontFamily: SANS, fontSize: 13, color: MUTED }}>
                 From {base?.toFixed(1)} baseline
-                {delta > 0 ? <span style={{ color: "#1C7A4F" }}> · +{delta.toFixed(1)}</span> : null}
+                {delta > 0 ? <span style={{ color: SLATE_GREEN }}> · +{delta.toFixed(1)}</span> : null}
                 {` · ${sampleCount} ${sampleCount === 1 ? "submission" : "submissions"}`}
               </div>
             </>

@@ -18,12 +18,18 @@ import { DAY_PRESETS, orderedWeekdays } from "@/lib/console/timetable-days";
 
 import { type ActionState, deleteSlot, saveSlot } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { BODY, FAINT, INDIGO_CONSOLE as INDIGO, RED_DEEP } from "@/lib/theme/tokens";
+import {
+  BODY,
+  FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  MUTED,
+  RED_DEEP,
+  WARM_LINE,
+} from "@/lib/theme/tokens";
 
 /** Common lesson lengths, so the end time fills itself in. */
 const DURATIONS = [45, 60, 90, 120];
 
-const MUTED = "#6E6C87";
 
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
@@ -197,7 +203,7 @@ export function SlotForm({
                   title={preset.note}
                   className="cn-chip"
                   style={{
-                    border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+                    border: `1px solid ${on ? INDIGO : WARM_LINE}`,
                     background: on ? "#F2F1FB" : "#F4F3EF",
                     color: on ? INDIGO : BODY,
                     borderRadius: 20,
@@ -227,7 +233,7 @@ export function SlotForm({
                     width: 42,
                     height: 34,
                     borderRadius: 9,
-                    border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+                    border: `1px solid ${on ? INDIGO : WARM_LINE}`,
                     background: on ? INDIGO : "#fff",
                     color: on ? "#fff" : "#4C4A63",
                     fontFamily: "inherit",
@@ -283,7 +289,7 @@ export function SlotForm({
               onClick={() => setEndsAt(addMinutes(startsAt, length))}
               className="cn-chip"
               style={{
-                border: `1px solid ${minutes === length ? INDIGO : "#C5C4BE"}`,
+                border: `1px solid ${minutes === length ? INDIGO : WARM_LINE}`,
                 background: minutes === length ? "#F2F1FB" : "#F4F3EF",
                 color: minutes === length ? INDIGO : BODY,
                 borderRadius: 20,

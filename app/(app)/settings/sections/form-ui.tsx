@@ -1,16 +1,14 @@
 /** The learner settings forms' shared field, label, button and message styles. */
 
-import { GREEN, PANEL, WHITE } from "@/lib/theme/tokens";
+import { BRAND, GREEN, PANEL, SLATE_INK as INK, WARM_LINE_SOFT, WHITE } from "@/lib/theme/tokens";
 
-const BRAND = "#7D0132";
-const INK = "#121317";
 
 export const labelStyle: React.CSSProperties = { fontSize: 13.5, fontWeight: 600, color: INK };
 
 export const fieldStyle: React.CSSProperties = {
   height: 44,
   padding: "0 12px",
-  border: "1px solid #E2DED0",
+  border: `1px solid ${WARM_LINE_SOFT}`,
   borderRadius: 11,
   background: PANEL,
   font: "inherit",

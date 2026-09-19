@@ -4,7 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  CONSOLE_CANVAS as CANVAS,
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  WARM_LINE,
+  WARM_LINE_DEEP,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The console's page chrome, from the "Center Admin CRM" design: a sticky
@@ -20,8 +31,6 @@ import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, MUTED, PANEL, WHITE } from "@/l
  * nodes, so they stay server-rendered.
  */
 
-const INK = "#16162E";
-const CANVAS = "#F4F3EF";
 
 /**
  * Breadcrumb text per route, as "Section · Page".
@@ -125,7 +134,7 @@ export function PanelButton({
         whiteSpace: "nowrap",
         cursor: "pointer",
         flex: "none",
-        border: primary ? 0 : "1px solid #C5C4BE",
+        border: primary ? 0 : `1px solid ${WARM_LINE}`,
         background: primary ? INDIGO : "#fff",
         color: primary ? "#fff" : INK,
       }}
@@ -459,7 +468,7 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
             style={{
               flex: 1,
               background: PANEL,
-              border: "1px solid #CFCABC",
+              border: `1px solid ${WARM_LINE_DEEP}`,
               borderRadius: 9,
               padding: 11,
               fontFamily: "inherit",
@@ -665,7 +674,7 @@ function PanelHead({
         style={{
           marginLeft: "auto",
           background: CANVAS,
-          border: "1px solid #C5C4BE",
+          border: `1px solid ${WARM_LINE}`,
           borderRadius: 8,
           width: 30,
           height: 30,

@@ -11,6 +11,7 @@ import {
   Tag,
 } from "@/components/console/crm-ui";
 import { createClient } from "@/lib/supabase/server";
+import { WARM_HAIR } from "@/lib/theme/tokens";
 
 const when = (iso: string) => {
   const d = new Date(iso);
@@ -126,7 +127,7 @@ export async function RolesSection() {
       <Card flush>
         <CardHead title="Roles" divided note="fixed by the permission model, not configurable" />
         {ROLES.map((r) => (
-          <div key={r.name} style={{ padding: "14px 18px", borderBottom: "1px solid #DEDEDA" }}>
+          <div key={r.name} style={{ padding: "14px 18px", borderBottom: `1px solid ${WARM_HAIR}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: INK }}>
                 {r.name}
@@ -163,7 +164,7 @@ export async function RolesSection() {
               display: "flex",
               gap: 12,
               padding: "11px 18px",
-              borderBottom: "1px solid #DEDEDA",
+              borderBottom: `1px solid ${WARM_HAIR}`,
               fontFamily: SANS,
               fontSize: 12.5,
             }}

@@ -25,6 +25,7 @@ import { serverEnv } from "@/lib/env";
 import { getGenerationQuota, getGradingQuota } from "@/lib/quota";
 
 import { UpgradeButtons } from "./upgrade-buttons";
+import { WARM_LINE, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 const STATUS: Record<string, { label: string; tone: Tone }> = {
   trialing: { label: "Trial", tone: "indigo" },
@@ -178,7 +179,7 @@ export async function BillingSection({ profile }: { profile: Profile }) {
                 lineHeight: 1.55,
                 color: SOFT,
                 margin: 0,
-                borderTop: "1px solid #D4D3CE",
+                borderTop: `1px solid ${WARM_LINE_MID}`,
                 paddingTop: 12,
               }}
             >
@@ -265,7 +266,7 @@ function PlanCard({
       style={{
         display: "flex",
         flexDirection: "column",
-        border: `1px solid ${isCurrent ? INDIGO : "#C5C4BE"}`,
+        border: `1px solid ${isCurrent ? INDIGO : WARM_LINE}`,
         background: isCurrent ? "#FBFBFF" : "#fff",
         borderRadius: 12,
         padding: 16,

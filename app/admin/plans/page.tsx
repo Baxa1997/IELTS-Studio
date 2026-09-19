@@ -23,7 +23,7 @@ import {
 import { loadRevenue } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS } from "@/lib/billing/plans";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, SLATE_AMBER, WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +111,7 @@ export default async function PlansPage() {
                 padding: "8px 13px",
                 fontSize: 12.5,
                 fontWeight: 500,
-                color: "#8A5B12",
+                color: SLATE_AMBER,
                 textDecoration: "none",
                 whiteSpace: "nowrap",
               }}
@@ -281,7 +281,7 @@ export default async function PlansPage() {
         <Card>
           <CardHead title="Conversion" note="How far accounts get from signing up to paying." />
           {revenue.funnel.map((f) => (
-            <div key={f.stage} style={{ padding: "12px 18px", borderBottom: "1px solid #F5F4F0" }}>
+            <div key={f.stage} style={{ padding: "12px 18px", borderBottom: `1px solid ${WARM_WELL}` }}>
               <div style={{ display: "flex", alignItems: "baseline", marginBottom: 6 }}>
                 <span style={{ fontSize: 12.5, color: INK }}>{f.stage}</span>
                 <span style={{ marginLeft: "auto", fontSize: 12.5, fontWeight: 600, color: INK }}>

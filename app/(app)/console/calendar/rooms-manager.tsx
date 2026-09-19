@@ -3,7 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
-import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL, RED_DEEP } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_CONSOLE,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE,
+  WARM_LINE_MID,
+} from "@/lib/theme/tokens";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteRoom, saveRoom } from "./actions";
@@ -82,7 +91,7 @@ export function RoomsManager({
       />
 
       {rooms.length > 0 ? (
-        <div style={{ marginTop: 24, borderTop: "1px solid #D4D3CE", paddingTop: 16 }}>
+        <div style={{ marginTop: 24, borderTop: `1px solid ${WARM_LINE_MID}`, paddingTop: 16 }}>
           <div
             style={{
               fontSize: 11,
@@ -134,7 +143,7 @@ function RoomEditor({
           alignItems: "center",
           gap: 10,
           padding: "10px 12px",
-          border: "1px solid #C5C4BE",
+          border: `1px solid ${WARM_LINE}`,
           borderRadius: 10,
           background: room.active ? "#fff" : "#FAFAF8",
         }}
@@ -184,7 +193,7 @@ function RoomEditor({
       action={formAction}
       key={state.ok ?? "form"}
       style={{
-        border: "1px solid #C5C4BE",
+        border: `1px solid ${WARM_LINE}`,
         borderRadius: 10,
         padding: "12px 13px",
         background: PANEL,
@@ -260,7 +269,7 @@ function RoomEditor({
               height: 22,
               borderRadius: 6,
               background: c,
-              border: color === c ? "2px solid #16162E" : "1px solid rgba(0,0,0,.1)",
+              border: color === c ? `2px solid ${INK}` : "1px solid rgba(0,0,0,.1)",
               cursor: "pointer",
             }}
           />

@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { MarkLeftBody, MoveBody, RemoveBody } from "./move-or-remove";
-import { INDIGO_STUDIO as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
+import { INDIGO_STUDIO as INDIGO, PANEL, SLATE_AMBER_BG, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The group, as one table.
@@ -553,7 +553,7 @@ function ResetPasswordForm({
           padding: "10px 12px",
           borderRadius: 9,
           border: "1px solid #EFD9A8",
-          background: "#FDF6E7",
+          background: SLATE_AMBER_BG,
           fontSize: 12.5,
           color: AMBER,
           lineHeight: 1.5,

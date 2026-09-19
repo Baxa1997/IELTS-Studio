@@ -4,14 +4,18 @@ import { redirect } from "next/navigation";
 import { BandCard } from "@/app/(app)/dashboard/band-card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  PANEL,
+  SLATE_GREEN as EMERALD,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  SLATE_STRONG as MUTED,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#3B4150";
-const EMERALD = "#1C7A4F";
 
 export const dynamic = "force-dynamic";
 
@@ -159,7 +163,7 @@ function DiagnosticStep({
         alignItems: "center",
         gap: 18,
         background: PANEL,
-        border: "1px solid #E6E8EC",
+        border: `1px solid ${SLATE_LINE}`,
         borderRadius: 16,
         padding: 20,
       }}

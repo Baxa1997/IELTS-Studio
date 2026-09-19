@@ -4,7 +4,18 @@ import { useRef, useState } from "react";
 
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
-import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_SOFT,
+  BRAND_SOFT as TINT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  WARM_RED as RED,
+  WELL_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Coach chat (C0) on a graded mock report. The browser calls the engine
@@ -16,12 +27,6 @@ import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const BRAND = "#7D0132";
-const TINT = "#FDF4F7";
-const LINE = "#E6E8EC";
-const RED = "#b91c1c";
 
 interface Msg {
   role: "user" | "coach";
@@ -133,7 +138,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
               style={{
                 justifySelf: m.role === "user" ? "end" : "start",
                 maxWidth: "88%",
-                background: m.role === "user" ? BRAND : "#ECEEF2",
+                background: m.role === "user" ? BRAND : WELL_LINE,
                 color: m.role === "user" ? "#fff" : INK,
                 border: m.role === "user" ? "none" : `1px solid ${LINE}`,
                 borderRadius: 12,

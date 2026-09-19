@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import { FAINT, GREEN, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INK, MUTED, WARM_LINE } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 import {
   MEMBER_STATUSES,
@@ -94,7 +94,7 @@ export function StudentStatusCell({
               style={{
                 background: s === status ? TINT[s].bg : "#fff",
                 color: s === status ? TINT[s].fg : INK,
-                border: `1px solid ${s === status ? TINT[s].fg : "#C5C4BE"}`,
+                border: `1px solid ${s === status ? TINT[s].fg : WARM_LINE}`,
                 borderRadius: 7,
                 padding: "4px 8px",
                 fontFamily: "inherit",

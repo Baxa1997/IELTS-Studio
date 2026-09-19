@@ -11,7 +11,16 @@ import {
   setSubjectActive,
   type SubjectState,
 } from "./subject-actions";
-import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE as LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The center's subject list.
@@ -21,10 +30,6 @@ import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/to
  * list for the same reason: both answer "how is this center set up".
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
-const LINE = "#C5C4BE";
 
 /** A small fixed palette. Free-form hex in the column, chosen from here in the
  *  UI — so chips stay distinguishable instead of six shades of one blue. */
@@ -79,7 +84,7 @@ export function SubjectsManager({ subjects }: { subjects: SubjectItem[] }) {
                 height: 22,
                 borderRadius: "50%",
                 background: c,
-                border: color === c ? "2px solid #16162E" : "2px solid transparent",
+                border: color === c ? `2px solid ${INK}` : "2px solid transparent",
                 cursor: "pointer",
                 padding: 0,
               }}

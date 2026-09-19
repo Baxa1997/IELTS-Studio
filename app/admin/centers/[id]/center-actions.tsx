@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import { TONE } from "@/components/admin/ui";
 
 import { setAccountSuspended, type ReviewState } from "../../actions";
-import { INK, PANEL, WHITE } from "@/lib/theme/tokens";
+import { CONSOLE_CANVAS, INK, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Suspend a centre, or bring it back.
@@ -115,7 +115,7 @@ export function CenterActions({
           type="button"
           onClick={() => setArmed(false)}
           style={{
-            background: "#F4F3EF",
+            background: CONSOLE_CANVAS,
             border: "1px solid #E4E2DC",
             borderRadius: 9,
             padding: "10px 14px",

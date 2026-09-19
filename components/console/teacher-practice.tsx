@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
-import { INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
+import { INDIGO, PANEL, WARM_GREEN, WARM_RED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The two pieces every practice hub shares for setting content to a group: the
@@ -121,10 +121,10 @@ export function AttachForm({
       </div>
 
       {state.error ? (
-        <p style={{ fontSize: 13, color: "#b91c1c", margin: 0 }}>{state.error}</p>
+        <p style={{ fontSize: 13, color: WARM_RED, margin: 0 }}>{state.error}</p>
       ) : null}
       {state.notice ? (
-        <p style={{ fontSize: 13, color: "#15803d", margin: 0 }}>{state.notice}</p>
+        <p style={{ fontSize: 13, color: WARM_GREEN, margin: 0 }}>{state.notice}</p>
       ) : null}
 
       <div style={{ display: "flex", gap: 8 }}>

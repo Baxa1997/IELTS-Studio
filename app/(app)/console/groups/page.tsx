@@ -26,7 +26,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadGroups, type GroupStatus } from "@/lib/console/groups";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
-import { INDIGO_CONSOLE, PANEL } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE, PANEL, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -360,7 +360,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: 8,
-          borderTop: "1px solid #D4D3CE",
+          borderTop: `1px solid ${WARM_LINE_MID}`,
           paddingTop: 12,
         }}
       >

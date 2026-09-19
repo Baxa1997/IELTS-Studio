@@ -17,16 +17,25 @@
  * one file because that is where the constants happened to be.
  */
 
-import { BRAND as TK_BRAND, BRAND_DEEP, BRAND_LINE, BRAND_SOFT } from "@/lib/theme/tokens";
+import {
+  BRAND as TK_BRAND,
+  BRAND_DEEP,
+  BRAND_LINE,
+  BRAND_SOFT,
+  SLATE_BODY,
+  SLATE_INK,
+  WARM_GREEN as TK_WARM_GREEN,
+  WARM_RED as TK_WARM_RED,
+} from "@/lib/theme/tokens";
 
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
-export const BRAND = "#7D0132";
-export const INK = "#121317";
-export const MUTED = "#4A505C";
-export const TINT = "#FDF4F7";
-export const GOOD = "#15803d";
-export const BAD = "#b91c1c";
+export const BRAND = TK_BRAND;
+export const INK = SLATE_INK;
+export const MUTED = SLATE_BODY;
+export const TINT = BRAND_SOFT;
+export const GOOD = TK_WARM_GREEN;
+export const BAD = TK_WARM_RED;
 
 /* ---- Runner design tokens (IELTS Listening handoff) -------------------------
  * The in-test screen is a flat, full-bleed light exam surface in DM Sans

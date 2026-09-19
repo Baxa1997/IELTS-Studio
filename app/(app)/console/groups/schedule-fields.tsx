@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { DAY_PRESETS, describeDays, orderedWeekdays } from "@/lib/console/timetable-days";
-import { INDIGO_CONSOLE as INDIGO, INK, PANEL } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE as INDIGO, INK, MUTED, PANEL, WARM_LINE } from "@/lib/theme/tokens";
 
 /**
  * When the group meets — the same control on the create form and on an
@@ -22,8 +22,6 @@ import { INDIGO_CONSOLE as INDIGO, INK, PANEL } from "@/lib/theme/tokens";
  * "Odd days" just ticks Mon, Wed and Fri.
  */
 
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 export interface RoomChoice {
   id: string;
@@ -91,7 +89,7 @@ export function ScheduleFields({
                 padding: "4px 10px",
                 fontSize: 11.5,
                 fontFamily: "inherit",
-                border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+                border: `1px solid ${on ? INDIGO : WARM_LINE}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : MUTED,
                 cursor: "pointer",
@@ -120,7 +118,7 @@ export function ScheduleFields({
                 fontSize: 12,
                 fontWeight: on ? 600 : 500,
                 fontFamily: "inherit",
-                border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+                border: `1px solid ${on ? INDIGO : WARM_LINE}`,
                 background: on ? INDIGO : "#fff",
                 color: on ? "#fff" : MUTED,
                 cursor: "pointer",
@@ -186,7 +184,7 @@ export function ScheduleFields({
 const timeField: React.CSSProperties = {
   height: 34,
   borderRadius: 8,
-  border: "1px solid #C5C4BE",
+  border: `1px solid ${WARM_LINE}`,
   background: PANEL,
   padding: "0 9px",
   fontSize: 13.5,

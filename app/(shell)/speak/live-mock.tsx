@@ -13,7 +13,7 @@ import { ConfirmQuit } from "./confirm-quit";
 // The tutor gets a person; an examiner should feel impersonal.
 import { LucidaScope, PERSONAS, personaById, WaveBars, mmss, type Persona } from "./lucida";
 import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { PANEL, WARM_EDGE as LINE2, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Full mock (Parts 1–3) — the LIVE examiner. A bidirectional WebSocket to the
@@ -449,7 +449,6 @@ export function LiveMock({
   const INK = "#1A1520";
   const MUTED2 = "#5C5460";
   const FAINT = "#8C7F8A";
-  const LINE2 = "#E7E3E0";
   const DIV = "#EFEBE9";
   const cardStyle: React.CSSProperties = {
     background: PANEL,

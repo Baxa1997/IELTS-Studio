@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { BODY, INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
+import {
+  BODY,
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  WARM_LINE as LINE,
+} from "@/lib/theme/tokens";
 
 /**
  * Which month you are paying — year included.
@@ -20,11 +29,6 @@ import { BODY, INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
  */
 
 const SANS = "var(--font-sans3), ui-sans-serif, system-ui, sans-serif";
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
-const LINE = "#C5C4BE";
-const GREEN = "#16794C";
 const AMBER = "#9A6B00";
 
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

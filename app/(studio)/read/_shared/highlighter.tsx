@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, Highlighter } from "lucide-react";
 
 import { BRAND, MUTED, SANS } from "./tokens";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, SLATE_LINE as LINE } from "@/lib/theme/tokens";
 
 /**
  * Shared exam-surface reading tools — a real-test text highlighter (marker pens)
@@ -133,7 +133,6 @@ export function useHighlighter(containerRef: React.RefObject<HTMLElement | null>
 export function MarkerToolbar({ tool, setTool, onClear, marks }: {
   tool: MarkTool; setTool: (t: MarkTool) => void; onClear: () => void; marks: number;
 }) {
-  const LINE = "#E6E8EC";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 7, paddingLeft: 14, borderLeft: `1px solid ${LINE}` }}>
       <Highlighter size={15} style={{ color: MUTED, flexShrink: 0 }} />

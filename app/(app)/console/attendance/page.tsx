@@ -34,7 +34,7 @@ import { centerNow, registersToMark, type DayLesson } from "@/lib/console/schedu
 
 import { AlertSettingsForm } from "./alert-settings-form";
 import { DateStrip } from "./date-strip";
-import { PANEL } from "@/lib/theme/tokens";
+import { PANEL, WARM_LINE, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -189,7 +189,7 @@ function LessonCard({ lesson, date }: { lesson: DayLesson; date: string }) {
   const cancelled = lesson.cancelledReason != null;
   // Scheduled-and-unmarked is the only state that needs chasing, so it is the
   // only one that gets a coloured edge. Everything else stays quiet.
-  const accent = cancelled ? "#C5C4BE" : done ? GREEN : lesson.scheduled ? AMBER : "#C5C4BE";
+  const accent = cancelled ? "#C5C4BE" : done ? GREEN : lesson.scheduled ? AMBER : WARM_LINE;
 
   return (
     <Link
@@ -264,7 +264,7 @@ function LessonCard({ lesson, date }: { lesson: DayLesson; date: string }) {
         style={{
           marginTop: 12,
           paddingTop: 10,
-          borderTop: "1px solid #D4D3CE",
+          borderTop: `1px solid ${WARM_LINE_MID}`,
           display: "flex",
           alignItems: "center",
           gap: 7,

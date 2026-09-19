@@ -10,20 +10,23 @@ import { daysUntil, levelCheckDue } from "@/lib/plan/types";
 
 import { startLevelCheck } from "./actions";
 import { PlanBandCard } from "./plan-band-card";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN as EMERALD,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_LINE as TRACK,
+  SLATE_MUTED as FAINT,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
-const EMERALD = "#1C7A4F";
 const AMBER = "#B9791A";
-const TRACK = "#E6E8EC";
 
 const CRITERION_TIP: Record<string, string> = {
   TR: "answer every part of the prompt and state a clear position — that lifts Task Response fastest.",

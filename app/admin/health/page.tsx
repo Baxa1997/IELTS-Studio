@@ -21,6 +21,7 @@ import {
 import { ago, loadAuditLog, phraseAction } from "@/lib/admin/audit";
 import { humanMs, loadHealth, type LatencyRow } from "@/lib/admin/health";
 import { requireSuperAdmin } from "@/lib/auth";
+import { WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -151,7 +152,7 @@ export default async function HealthPage() {
                   alignItems: "center",
                   gap: 14,
                   padding: "13px 18px",
-                  borderBottom: "1px solid #F5F4F0",
+                  borderBottom: `1px solid ${WARM_WELL}`,
                 }}
               >
                 <div style={{ width: 74, flexShrink: 0, fontSize: 13, color: INK }}>{row.label}</div>
@@ -201,7 +202,7 @@ export default async function HealthPage() {
                   alignItems: "center",
                   gap: 12,
                   padding: "13px 18px",
-                  borderBottom: "1px solid #F5F4F0",
+                  borderBottom: `1px solid ${WARM_WELL}`,
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: INK, ...clip }}>
@@ -232,7 +233,7 @@ export default async function HealthPage() {
               display: "flex",
               gap: 12,
               padding: "11px 18px",
-              borderBottom: "1px solid #F5F4F0",
+              borderBottom: `1px solid ${WARM_WELL}`,
               fontSize: 12.5,
               alignItems: "baseline",
             }}

@@ -26,11 +26,21 @@ import { LegalFooter } from "@/components/legal-footer";
 import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
 import { saveDraft } from "@/app/(studio)/write/actions";
 import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_PALE,
   BRAND_SOFT,
   PANEL,
   SLATE_BODY,
+  SLATE_BODY as MUTED,
+  SLATE_FIELD,
+  SLATE_GREEN as EMERALD,
+  SLATE_INK as INK,
+  SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
+  WARM_LINE_SOFT,
+  WARM_RED,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -40,10 +50,6 @@ export type { LibraryPrompt };
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const EMERALD = "#1C7A4F";
 
 const cardStyle: React.CSSProperties = {
   position: "relative",
@@ -425,7 +431,7 @@ export function WritingLibrary({
             gap: 7,
             height: 42,
             padding: "0 16px",
-            border: "1px solid #E2DED0",
+            border: `1px solid ${WARM_LINE_SOFT}`,
             background: PANEL,
             borderRadius: 11,
             fontFamily: SANS,
@@ -621,7 +627,7 @@ export function WritingLibrary({
                         fontWeight: 700,
                         color: BRAND,
                         background: BRAND_SOFT,
-                        border: "1px solid #F0D3DE",
+                        border: `1px solid ${BRAND_LINE}`,
                         borderRadius: 999,
                         padding: "3px 10px",
                       }}
@@ -730,7 +736,7 @@ export function WritingLibrary({
                   padding: "7px 12px",
                   borderRadius: 999,
                   cursor: "pointer",
-                  border: customTask === o.k ? `1px solid ${BRAND}` : "1px solid #E2DED0",
+                  border: customTask === o.k ? `1px solid ${BRAND}` : `1px solid ${WARM_LINE_SOFT}`,
                   background: customTask === o.k ? "#FDF4F7" : "#fff",
                   color: customTask === o.k ? BRAND : INK,
                 }}
@@ -749,7 +755,7 @@ export function WritingLibrary({
               minHeight: 130,
               resize: "vertical",
               padding: "12px 14px",
-              border: "1px solid #E2DED0",
+              border: `1px solid ${WARM_LINE_SOFT}`,
               borderRadius: 12,
               background: PANEL,
               fontFamily: SANS,
@@ -831,7 +837,7 @@ export function WritingLibrary({
                   height: 44,
                   padding: "0 14px",
                   background: PANEL,
-                  border: "1px solid #E2DED0",
+                  border: `1px solid ${WARM_LINE_SOFT}`,
                   borderRadius: 11,
                 }}
               >
@@ -888,7 +894,7 @@ export function WritingLibrary({
                         cursor: "pointer",
                         color: on ? BRAND : SLATE_BODY,
                         background: on ? "#FDF4F7" : "#fff",
-                        border: on ? "1px solid #E3A7BD" : "1px solid #E2DED0",
+                        border: on ? `1px solid ${BRAND_PALE}` : `1px solid ${WARM_LINE_SOFT}`,
                       }}
                     >
                       {label}
@@ -909,7 +915,7 @@ export function WritingLibrary({
                     cursor: "pointer",
                     color: bandFilter != null ? BRAND : SLATE_BODY,
                     background: bandFilter != null ? "#FDF4F7" : "#fff",
-                    border: bandFilter != null ? "1px solid #E3A7BD" : "1px solid #E2DED0",
+                    border: bandFilter != null ? `1px solid ${BRAND_PALE}` : `1px solid ${WARM_LINE_SOFT}`,
                   }}
                 >
                   <option value="">Any band</option>
@@ -1043,7 +1049,7 @@ export function WritingLibrary({
             </div>
 
             {message ? (
-              <p style={{ fontSize: 13, color: "#b91c1c", margin: 0 }}>{message}</p>
+              <p style={{ fontSize: 13, color: WARM_RED, margin: 0 }}>{message}</p>
             ) : null}
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -1072,7 +1078,7 @@ export function WritingLibrary({
                 onClick={() => setSetupOpen(false)}
                 style={{
                   background: PANEL,
-                  border: "1px solid #E6E8EC",
+                  border: `1px solid ${SLATE_LINE}`,
                   borderRadius: 10,
                   padding: "11px 16px",
                   fontFamily: SANS,
@@ -1110,7 +1116,7 @@ const iconChip: React.CSSProperties = {
   borderRadius: 11,
   background: BRAND_SOFT,
   color: BRAND,
-  border: "1px solid #F0D3DE",
+  border: `1px solid ${BRAND_LINE}`,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -1129,7 +1135,7 @@ const fieldArea: React.CSSProperties = {
   width: "100%",
   resize: "vertical",
   padding: "14px 16px",
-  border: "1px solid #E2DED0",
+  border: `1px solid ${WARM_LINE_SOFT}`,
   borderRadius: 12,
   background: PANEL,
   fontFamily: SANS,
@@ -1146,7 +1152,7 @@ function ownPill(on: boolean): React.CSSProperties {
     padding: "7px 13px",
     borderRadius: 999,
     cursor: "pointer",
-    border: on ? `1px solid ${BRAND}` : "1px solid #E2DED0",
+    border: on ? `1px solid ${BRAND}` : `1px solid ${WARM_LINE_SOFT}`,
     background: on ? "#FDF4F7" : "#fff",
     color: on ? BRAND : INK,
   };
@@ -1461,7 +1467,7 @@ const genLabel: React.CSSProperties = {
 };
 const genField: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #DFE2E8",
+  border: `1px solid ${SLATE_FIELD}`,
   borderRadius: 9,
   padding: "10px 11px",
   fontFamily: SANS,

@@ -5,7 +5,16 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { setTeacherSubjects, type SubjectState } from "../settings/subject-actions";
-import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE as LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Which subjects this teacher can be given.
@@ -19,10 +28,6 @@ import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/to
  * on that reading: an unset teacher stays available for every group.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
-const LINE = "#C5C4BE";
 
 export interface SubjectChoice {
   id: string;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { LucidaScope } from "../../lucida";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { PANEL, WARM_EDGE, WHITE } from "@/lib/theme/tokens";
 
 /**
  * A mock that will never have a band.
@@ -123,7 +123,7 @@ export function UngradedMock({ state }: { state: string }) {
               style={{
                 padding: "14px 24px",
                 borderRadius: 12,
-                border: "1px solid #E7E3E0",
+                border: `1px solid ${WARM_EDGE}`,
                 color: "#5C5460",
                 fontSize: 15,
                 fontWeight: 600,

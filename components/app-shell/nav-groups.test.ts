@@ -26,6 +26,18 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+/* The rail's hover and "you are here" fills.
+ *
+ * These were the literals `#f0eeea` and `#fbeae5` until dark mode; they are
+ * tokens now, and in LIGHT mode they still resolve to exactly those values —
+ * nothing on screen moved. What these tests guard was never the hex anyway. It
+ * is that the declaration is present at all, and that it keeps its
+ * `!important`: the collapsed rail's rules outrank the ordinary hover, so a
+ * missing re-statement leaves the strip dead under the pointer rather than
+ * subtly off-colour. */
+const HOVER = "var(--sh-rail-hover)";
+const ACTIVE = "var(--sh-rail-active-bg)";
+
 /** DECLARATIONS ONLY — globals.css quotes the values it replaced in its own
  *  comments, and a naive search finds its own obituary (see brand-row.test.ts). */
 const css = readFileSync(
@@ -422,7 +434,7 @@ describe("rows keep the hover the stylesheet gives them", () => {
     const strip = ruleBody(
       ".lp-shell-sidebar--collapsed .lp-sb-sub--flat .lp-sb-link:hover .lp-sb-chip,\n  .lp-shell-sidebar--collapsed .lp-sb-grouprow:hover .lp-sb-chip",
     );
-    expect(declaration(strip, "background")).toBe("#f0eeea");
+    expect(declaration(strip, "background")).toBe(HOVER);
   });
 
   it("hovers the rows inside the flyout card, where they are full rows again", () => {
@@ -430,7 +442,7 @@ describe("rows keep the hover the stylesheet gives them", () => {
       ".lp-shell-sidebar--collapsed\n    .lp-sb-sub:not(.lp-sb-sub--flat)\n    .lp-sb-link:not(.lp-sb-link--active):hover",
     );
     // `!important` of its own, or the strip's transparent wins.
-    expect(declaration(card, "background")).toBe("#f0eeea !important");
+    expect(declaration(card, "background")).toBe(`${HOVER} !important`);
   });
 
   it("leaves the current row alone under the pointer, at every rail width", () => {
@@ -443,7 +455,7 @@ describe("rows keep the hover the stylesheet gives them", () => {
     const activeTile = ruleBody(".lp-shell-sidebar--collapsed .lp-sb-link--active .lp-sb-chip");
     // The brand-orange tint (owner, 2026-09-13). What this guards is the
     // `!important`: without it the grey chip hover would replace the active tile.
-    expect(declaration(activeTile, "background")).toBe("#fbeae5 !important");
+    expect(declaration(activeTile, "background")).toBe(`${ACTIVE} !important`);
   });
 
   it("fills the whole row on hover, not a near-invisible wash", () => {
@@ -453,7 +465,7 @@ describe("rows keep the hover the stylesheet gives them", () => {
       ".lp-menu-item:hover",
       ".lp-sb-profile-btn:hover",
     ]) {
-      expect(declaration(ruleBody(selector), "background"), selector).toBe("#f0eeea");
+      expect(declaration(ruleBody(selector), "background"), selector).toBe(HOVER);
     }
   });
 });

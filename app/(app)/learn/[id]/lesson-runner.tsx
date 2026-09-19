@@ -19,7 +19,6 @@ import {
   READING,
   RULE,
   SANS,
-
   SOFT,
   STAGE_META,
   TROUGH,

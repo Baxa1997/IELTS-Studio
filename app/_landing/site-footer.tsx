@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 
-import { BRAND, DISPLAY, SANS, WHITE } from "./design";
+import { BRAND, DISPLAY, INK as GROUND, MUTED as HEADING, SANS, WHITE } from "./design";
 
 /**
  * The dark site footer.
@@ -106,8 +106,6 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
 
 /* ── palette, on dark ──────────────────────────────────────────────────────── */
 
-const GROUND = "#121317"; // the design's ink, used here as a ground
-const HEADING = "#8b919d";
 const LINK = "rgba(255,255,255,0.78)";
 const QUIET = "rgba(255,255,255,0.62)";
 const HAIRLINE = "rgba(255,255,255,0.10)";

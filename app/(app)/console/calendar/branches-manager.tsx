@@ -3,7 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
-import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL, RED_DEEP } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INDIGO_CONSOLE,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE,
+  WARM_LINE_MID,
+} from "@/lib/theme/tokens";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteBranch, saveBranch } from "./actions";
@@ -57,7 +66,7 @@ export function BranchesManager({ branches }: { branches: BranchRow[] }) {
       <BranchEditor key={`new-${branches.length}`} />
 
       {branches.length > 0 ? (
-        <div style={{ marginTop: 24, borderTop: "1px solid #D4D3CE", paddingTop: 16 }}>
+        <div style={{ marginTop: 24, borderTop: `1px solid ${WARM_LINE_MID}`, paddingTop: 16 }}>
           <div
             style={{
               fontSize: 11,
@@ -93,7 +102,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
           alignItems: "center",
           gap: 10,
           padding: "10px 12px",
-          border: "1px solid #C5C4BE",
+          border: `1px solid ${WARM_LINE}`,
           borderRadius: 10,
           background: branch.active ? "#fff" : "#FAFAF8",
         }}
@@ -131,7 +140,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
       action={formAction}
       key={state.ok ?? "form"}
       style={{
-        border: "1px solid #C5C4BE",
+        border: `1px solid ${WARM_LINE}`,
         borderRadius: 10,
         padding: "12px 13px",
         background: PANEL,

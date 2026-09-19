@@ -4,13 +4,12 @@ import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
 
 import { OnboardingForm } from "./onboarding-form";
+import { SLATE_BODY as MUTED, SLATE_INK as INK } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
 
 /**
  * Onboarding — the self-report step. New learners land here (the dashboard/library

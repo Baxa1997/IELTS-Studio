@@ -15,6 +15,7 @@
  * geometric letterforms, with rounded fallbacks if it hasn't loaded yet.
  */
 import { Poppins } from "next/font/google";
+import { SLATE_INK as NAVY, WHITE } from "@/lib/theme/tokens";
 
 const engprogress = Poppins({
   subsets: ["latin"],
@@ -23,9 +24,7 @@ const engprogress = Poppins({
   display: "swap",
 });
 
-const NAVY = "#121317"; // wordmark + tagline ink
 const MARK = "#B8421E"; // the square behind the "P" (and a centre's initials)
-const WHITE = "#FFFFFF"; // the reversed-out "P"
 const CREAM = "#F4EEE1"; // on-dark ink variant
 
 export function EngProgressLogo({

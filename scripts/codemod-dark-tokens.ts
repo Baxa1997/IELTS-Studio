@@ -186,6 +186,28 @@ interface FileChange {
  * catches the import clash but not the local-const one, so neither can be
  * relied on to notice.
  */
+/**
+ * Names already imported FROM THE PALETTE ITSELF.
+ *
+ * These are the one case `boundNames` must not treat as a collision: a file
+ * that already imports `SLATE_LINE` from the tokens module and needs
+ * `SLATE_LINE` again does not need `SLATE_LINE as TK_SLATE_LINE` — it needs the
+ * binding it already has. Aliasing there produces two names for one value and
+ * makes the diff look like a colour changed when nothing did.
+ */
+function palletteBound(src: string, palette: PaletteId): Set<string> {
+  const spec =
+    palette === "@/lib/theme/tokens" ? palette : "(?:@/app/_landing/design|\\./design)";
+  const m = src.match(new RegExp(`import \\{([^}]*)\\} from "(?:${spec})";`));
+  if (!m) return new Set();
+  return new Set(
+    m[1]
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => p && !p.includes(" as ")),
+  );
+}
+
 function boundNames(src: string): Set<string> {
   const names = new Set<string>();
   for (const m of src.matchAll(/^(?:export )?const ([A-Z_0-9]+)\s*[:=]/gm)) names.add(m[1]);
@@ -214,11 +236,17 @@ function plan(): { changes: FileChange[]; skipped: Map<string, number> } {
     const table = tables.get(palette)!;
 
     const taken = boundNames(src);
+    const own = palletteBound(src, palette);
     const alias = new Map<string, string>();
     /** The local name to use for `token` in this file — aliased if it collides. */
     const localFor = (token: string): string => {
       const existing = alias.get(token);
       if (existing) return existing;
+      // Already imported from this very palette: reuse it, do not alias.
+      if (own.has(token)) {
+        alias.set(token, token);
+        return token;
+      }
       // `TK_` rather than a number suffix: the reader needs to see AT THE CALL
       // SITE that this one came from the palette and the bare name beside it did
       // not, because the two are different colours.
@@ -319,6 +347,158 @@ function withImports(src: string, palette: PaletteId, pairs: [string, string][])
   return lines.join("\n");
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * PASS 2 — the private `const INK = "#121317";` blocks.
+ *
+ * Pass 1 above rewrites colours written INLINE in a style object. It walks past
+ * the other half of the problem entirely: ~80 screens open with their own block
+ * of colour constants and then refer to those by name, so the file contains one
+ * literal and forty uses of it. `app/(app)/dashboard/page.tsx` has nine such
+ * constants and not one inline hex — pass 1 changed nothing in it, and the
+ * dashboard stayed light while every card around it went dark.
+ *
+ * THE LOCAL NAME IS KEPT, exactly as `scripts/codemod-tokens.ts` keeps it:
+ * `const INK = "#121317"` becomes an import of `SLATE_INK as INK`, not a rename
+ * of forty call sites. That is the difference between a diff a reviewer can
+ * check and one they cannot.
+ *
+ * WHITE IS DECIDED BY THE CONSTANT'S NAME, because a declaration has no
+ * property to read a role from — and white is the one value whose role changes
+ * what it becomes (`PANEL` inverts, `WHITE` does not). A name that says surface
+ * takes PANEL, a name that says ink takes WHITE, and anything ambiguous is left
+ * alone and reported rather than guessed at.
+ */
+const SURFACE_NAMED = /^(PANEL|CARD|SURFACE|BG|BACKGROUND|WELL|PAPER|SHEET|FILL|TILE)/;
+const INK_NAMED = /^(WHITE|INK|FG|TEXT|FOREGROUND|ON_)/;
+
+const DECL_LINE =
+  /^([ \t]*)(export )?const ([A-Z][A-Z_0-9]*)\s*=\s*"(#[0-9a-fA-F]{3,8})";[ \t]*(\/\/[^\n]*)?\n/gm;
+
+interface DeclChange {
+  file: string;
+  palette: PaletteId;
+  /** `[token, localName]` for the import. */
+  added: [string, string][];
+  count: number;
+  next: string;
+}
+
+function planDecls(): { changes: DeclChange[]; skipped: Map<string, number> } {
+  const tables = tokensByValue();
+  const changes: DeclChange[] = [];
+  const skipped = new Map<string, number>();
+
+  for (const file of sourceFiles()) {
+    const src = readFileSync(join(ROOT, file), "utf8");
+    const palette = paletteFor(file, src);
+    if (!palette) continue;
+    const table = tables.get(palette)!;
+
+    const added: [string, string][] = [];
+    let count = 0;
+
+    const next = src.replace(
+      DECL_LINE,
+      (whole, indent: string, exported: string | undefined, local: string, hex: string) => {
+        const pair = table.get(expand(hex));
+        if (!pair) {
+          skipped.set(expand(hex), (skipped.get(expand(hex)) ?? 0) + 1);
+          return whole;
+        }
+        let token: string;
+        if (pair.surface === pair.ink) token = pair.surface;
+        else if (SURFACE_NAMED.test(local)) token = pair.surface;
+        else if (INK_NAMED.test(local)) token = pair.ink;
+        else {
+          // White, under a name that says nothing about its role. Guessing here
+          // either leaves a white card on a dark page or turns the ink on a
+          // burgundy button dark. Neither is worth a guess.
+          skipped.set(expand(hex), (skipped.get(expand(hex)) ?? 0) + 1);
+          return whole;
+        }
+        count++;
+        if (exported) {
+          // Something else imports this name, so the binding has to survive as
+          // an export rather than becoming an import.
+          //
+          // ⚠️ THE IMPORT IS ALWAYS ALIASED HERE, even when the names already
+          // differ. When they MATCH — a file exporting its own `BRAND` whose
+          // value is the token `BRAND` — the obvious emission is
+          // `export const BRAND = BRAND;`, which is a self-reference: the
+          // import and the export collide and TypeScript reports the constant
+          // as implicitly `any`, referenced in its own initialiser. Aliasing
+          // unconditionally costs one indirection and removes the whole class.
+          const alias = `TK_${token}`;
+          added.push([token, alias]);
+          return `${indent}export const ${local} = ${alias};\n`;
+        }
+        added.push([token, local]);
+        return "";
+      },
+    );
+
+    if (count > 0) changes.push({ file, palette, added, count, next });
+  }
+  return { changes, skipped };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * PASS 3 — the hex inside a shorthand border.
+ *
+ * `border: "1px solid #E6E8EC"` is the third shape, and passes 1 and 2 both
+ * walk past it: the value is not a bare colour literal, it is a string with a
+ * colour inside it. There are 343 of them, and a card whose FILL follows the
+ * theme while its BORDER does not is arguably worse-looking than one that never
+ * converted at all — a pale hairline stays drawn around a dark card.
+ *
+ * The string becomes a template literal, so the token is interpolated rather
+ * than concatenated: `` `1px solid ${LINE}` ``. That is safe where appending
+ * alpha was not, because the token is substituted whole and CSS resolves the
+ * `var()` in place.
+ *
+ * Border colour is always a SURFACE role, so white maps to PANEL here with no
+ * name-guessing needed.
+ */
+const BORDER_STR = /"((?:[0-9.]+px|thin|medium|thick) (?:solid|dashed|dotted) )(#[0-9a-fA-F]{3,8})"/g;
+
+function planBorders(): { changes: FileChange[]; skipped: Map<string, number> } {
+  const tables = tokensByValue();
+  const changes: FileChange[] = [];
+  const skipped = new Map<string, number>();
+
+  for (const file of sourceFiles()) {
+    const src = readFileSync(join(ROOT, file), "utf8");
+    const palette = paletteFor(file, src);
+    if (!palette) continue;
+    const table = tables.get(palette)!;
+    const taken = boundNames(src);
+    const own = palletteBound(src, palette);
+    const alias = new Map<string, string>();
+    const added = new Map<string, string>();
+    let count = 0;
+
+    const next = src.replace(BORDER_STR, (whole, prefix: string, hex: string) => {
+      const pair = table.get(expand(hex));
+      if (!pair) {
+        skipped.set(expand(hex), (skipped.get(expand(hex)) ?? 0) + 1);
+        return whole;
+      }
+      const token = pair.surface;
+      let local = alias.get(token);
+      if (!local) {
+        local = own.has(token) || !taken.has(token) ? token : `TK_${token}`;
+        alias.set(token, local);
+      }
+      added.set(token, local);
+      count++;
+      return "`" + prefix + "${" + local + "}`";
+    });
+
+    if (count > 0) changes.push({ file, palette, added: [...added], count, next });
+  }
+  return { changes, skipped };
+}
+
 function main() {
   const write = process.argv.includes("--write");
   const verify = process.argv.includes("--verify");
@@ -368,6 +548,17 @@ function main() {
   console.log(`${left.reduce((n, [, c]) => n + c, 0)} literals left (no token holds that value):`);
   for (const [hex, n] of left.slice(0, 12)) console.log(`  ${hex}  ×${n}`);
 
+  const decls = planDecls();
+  const dTotal = decls.changes.reduce((n, c) => n + c.count, 0);
+  console.log(`\n${dTotal} private colour constants in ${decls.changes.length} files`);
+  for (const c of decls.changes.sort((a, b) => b.count - a.count).slice(0, 10)) {
+    console.log(`  ${String(c.count).padStart(4)}  ${c.file}`);
+  }
+
+  const borderPlan = planBorders();
+  const bPlanned = borderPlan.changes.reduce((n, c) => n + c.count, 0);
+  console.log(`${bPlanned} shorthand borders in ${borderPlan.changes.length} files`);
+
   if (!write) {
     console.log("\n(report only — pass --write to apply)");
     return;
@@ -375,7 +566,27 @@ function main() {
   for (const c of changes) {
     writeFileSync(join(ROOT, c.file), withImports(c.next, c.palette, c.added), "utf8");
   }
-  console.log(`\nwrote ${changes.length} files`);
+  console.log(`\nwrote ${changes.length} files (inline literals)`);
+
+  // ⚠️ RE-PLANNED, not reused: pass 1 has just rewritten these files on disk, so
+  // the plan computed before it ran is stale — its `next` strings would undo
+  // pass 1's edits. Re-reading also lets the import merge see the bindings pass
+  // 1 added rather than fighting them.
+  const after = planDecls();
+  for (const c of after.changes) {
+    writeFileSync(join(ROOT, c.file), withImports(c.next, c.palette, c.added), "utf8");
+  }
+  const afterTotal = after.changes.reduce((n, c) => n + c.count, 0);
+  console.log(`wrote ${after.changes.length} files (${afterTotal} private colour constants)`);
+
+  // Re-planned again for the same reason pass 2 was: the files on disk have
+  // moved under us twice now.
+  const borders = planBorders();
+  for (const c of borders.changes) {
+    writeFileSync(join(ROOT, c.file), withImports(c.next, c.palette, c.added), "utf8");
+  }
+  const bTotal = borders.changes.reduce((n, c) => n + c.count, 0);
+  console.log(`wrote ${borders.changes.length} files (${bTotal} shorthand borders)`);
 }
 
 main();

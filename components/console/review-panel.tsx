@@ -4,7 +4,17 @@ import { useActionState, useState } from "react";
 
 import { reviewAttempt, type ReviewState } from "@/app/(app)/console/marking-actions";
 import { WRITING_CRITERIA, type AttemptKind } from "@/lib/console/attempts";
-import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  WARM_LINE as LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The footer of an attempt report: what the AI said, what the centre says, and
@@ -21,11 +31,6 @@ import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/to
  * indistinguishable from a mistake.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
-const LINE = "#C5C4BE";
-const GREEN = "#16794C";
 const AMBER = "#8A5A12";
 
 const BANDS = Array.from({ length: 19 }, (_, i) => i / 2); // 0.0 … 9.0

@@ -3,8 +3,19 @@
 import Link from "next/link";
 import { Fragment, useRef, useState } from "react";
 import {
-  ArrowLeft, BookOpen, CalendarDays, Check, Gauge, GraduationCap, Headphones,
-  Layers, Mic, PenLine, ShieldCheck, Sparkles, Target,
+  ArrowLeft,
+  BookOpen,
+  CalendarDays,
+  Check,
+  Gauge,
+  GraduationCap,
+  Headphones,
+  Layers,
+  Mic,
+  PenLine,
+  ShieldCheck,
+  Sparkles,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,17 +26,10 @@ import { pitchDifficulty, SELF_REPORT_BANDS } from "@/lib/plan/constants";
 import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { savePlanForCurrentUser, stashOnboarding } from "./actions";
-import { PANEL, SLATE_LINE, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import { BRAND, BRAND_PALE as TINT_BORDER, BRAND_SOFT as TINT, PANEL, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE, SLATE_LINE as LINE, SLATE_MUTED as FAINT, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
-const TINT = "#FDF4F7";
-const TINT_BORDER = "#E3A7BD";
 
 const STEPS = ["Get started", "Your goal", "Your level", "Create account"] as const;
 

@@ -6,16 +6,22 @@ import { getSession, roleHome } from "@/lib/auth";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 
 import { PublicGrader } from "./grader";
-import { PANEL, SLATE_BODY, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  PANEL,
+  SLATE_BODY,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_STRONG,
+  WARM_LINE_SOFT,
+  WELL as SOFT,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const LINE = "#E6E8EC";
-const SOFT = "#FBFBFC";
 const SOFT_LINE = "#EFECE0";
 
 // ---- SEO -------------------------------------------------------------------
@@ -177,7 +183,7 @@ export default async function PublicGradePage() {
         </Link>
         <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {session ? (
-            <Link href={roleHome(session.role)} style={{ ...navBtn, border: "1px solid #E2DED0", background: SOFT, color: SLATE_STRONG }}>
+            <Link href={roleHome(session.role)} style={{ ...navBtn, border: `1px solid ${WARM_LINE_SOFT}`, background: SOFT, color: SLATE_STRONG }}>
               Open your dashboard
             </Link>
           ) : (

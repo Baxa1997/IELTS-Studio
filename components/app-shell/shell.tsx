@@ -30,12 +30,14 @@ import { PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
 import { SidebarNav } from "./sidebar-nav";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#16232b";
-const BORDER = "#e6e4dc";
+const INK = "var(--sh-ink)";
+/** Same value as `RAIL_BORDER`; declared separately only because it is used
+ *  above that constant. */
+const BORDER = "var(--sh-rail-border)";
 /** The ground both cards float on. Warmer than the old #F6F7F9 — the design's
  *  own paper, and the thing that makes two white cards read as cards rather
  *  than as one continuous surface with a line drawn down it. */
-const CANVAS = "#f1efe9";
+const CANVAS = "var(--sh-canvas)";
 /* The content card. CREAM, not white — the rail took the white (see RAIL_BG),
    and two white surfaces separated by a 10px gutter read as one surface with a
    line drawn down it.
@@ -75,24 +77,24 @@ const SURFACE = "var(--lp-surface)";
 
    The relationship is now inverted from the Base44 reference (warm rail, white
    page) and that is deliberate: the owner asked for it this way round. */
-const RAIL_BG = "#fff";
+const RAIL_BG = "var(--sh-rail-bg)";
 /** The rail's own edge and its internal hairlines — one warm grey, matched to
  *  the paper rather than to the cool ramp the content cards use. Two different
  *  greys a few pixels apart read as a mistake. */
-const RAIL_BORDER = "#e7e4dc";
-const RAIL_SHADOW = "0 4px 14px -10px rgba(28,25,15,.18)";
+const RAIL_BORDER = "var(--sh-rail-border)";
+const RAIL_SHADOW = "var(--sh-rail-shadow)";
 /** Rail ink. `RAIL_INK` is a label you read; `RAIL_FAINT` is the line under a
  *  name that you don't. Both are DARK-on-light now. */
-const RAIL_INK = "#16150f";
-const RAIL_FAINT = "#8b8883";
+const RAIL_INK = "var(--sh-rail-ink)";
+const RAIL_FAINT = "var(--sh-rail-faint)";
 /** The role line under the centre/product name. Plain green text, not a pill:
  *  a filled chip beside the name competes with the nav's own active pill for
  *  "this is the highlighted thing". */
-const ACCENT = "#0b6b40";
+const ACCENT = "var(--sh-accent)";
 /** The collapse toggle's chevron — the rail's own ink, because the rail has no
  *  accent colour any more and a lone indigo chevron would be the only hue on
  *  the surface. */
-const TOGGLE_INK = "#4a463d";
+const TOGGLE_INK = "var(--sh-toggle-ink)";
 /** The logomark's tile: the brand's solid #B8421E with a white letter (5.47:1),
  *  the same as every other place the mark appears. Kept as named props so the
  *  rail's tile can still be tuned without touching the shared mark. */
@@ -575,10 +577,10 @@ export function AppShell({
               // the console's page as a panel beside the rail, not as a
               // full-bleed ground. Set here rather than in CSS so it doesn't
               // depend on `:has()` reaching a descendant.
-              background: fullBleed ? "#F4F3EF" : SURFACE,
+              background: fullBleed ? "var(--sh-fullbleed)" : SURFACE,
               borderRadius: fullBleed ? 0 : 14,
-              border: fullBleed ? "none" : "1px solid #e6e4dc",
-              boxShadow: fullBleed ? "none" : "0 4px 14px -10px rgba(22,35,43,.25)",
+              border: fullBleed ? "none" : `1px solid ${RAIL_BORDER}`,
+              boxShadow: fullBleed ? "none" : "var(--sh-content-shadow)",
             }}
           >
             {quotaBar}
@@ -773,7 +775,7 @@ function ProfileMenu({
                   padding: "0 6px",
                   height: 20,
                   borderRadius: 10,
-                  background: "#b3261e",
+                  background: "var(--sh-alert)",
                   color: WHITE,
                   fontSize: 11.5,
                   fontWeight: 700,
@@ -1023,8 +1025,8 @@ function Avatar({ name, size }: { name: string; size: number }) {
         // text because it sat on a near-black strip; on warm paper a saturated
         // disc is the loudest thing in the rail, which the signed-in name is not
         // supposed to be.
-        background: "#ece7f8",
-        color: "#4a3f8f",
+        background: "var(--sh-avatar-bg)",
+        color: "var(--sh-avatar-ink)",
         fontSize: Math.round(size * 0.36),
         fontWeight: 700,
         display: "flex",

@@ -10,7 +10,22 @@ import { WORKLET_SRC } from "./audio";
 import { LucidaScope } from "./lucida";
 import { type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
-import { BRAND_DEEP, BRAND_LINE, BRAND_MID, PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_DEEP,
+  BRAND_LINE,
+  BRAND_MID,
+  BRAND_SOFT as TINT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_INK as INK,
+  SLATE_LINE as LINE,
+  SLATE_MUTED,
+  WARM_EDGE,
+  WARM_GREEN,
+  WARM_RED as RED,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The Speaking hub — two ways to practise and one place to review.
@@ -29,12 +44,6 @@ import { BRAND_DEEP, BRAND_LINE, BRAND_MID, PANEL, SLATE_MUTED, WHITE } from "@/
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const BRAND = "#7D0132";
-const TINT = "#FDF4F7";
-const LINE = "#E6E8EC";
-const RED = "#b91c1c";
 
 type Tab = "mock" | "tutor" | "progress";
 // Mock test leads, per the design: the exam is the promise, the tutor is one
@@ -521,7 +530,7 @@ export function SpeakingClient({
     const aTint = "rgba(26,21,32,0.08)";
     const bandChip = (b: number) =>
       b >= 6
-        ? { bg: "#EAF7EE", fg: "#15803D" }
+        ? { bg: "#EAF7EE", fg: WARM_GREEN }
         : b >= 5
           ? { bg: "#FEF6E7", fg: "#B45309" }
           : { bg: "#F5F2F0", fg: "#5C5460" };
@@ -537,7 +546,7 @@ export function SpeakingClient({
     // the tab track) carry a tint.
     const card: React.CSSProperties = {
       background: PANEL,
-      border: "1px solid #E7E3E0",
+      border: `1px solid ${WARM_EDGE}`,
       borderRadius: 18,
       padding: 22,
     };
@@ -547,7 +556,7 @@ export function SpeakingClient({
       gap: 10,
       padding: "10px 16px",
       background: PANEL,
-      border: "1px solid #E7E3E0",
+      border: `1px solid ${WARM_EDGE}`,
       borderRadius: 999,
       whiteSpace: "nowrap",
     };
@@ -718,7 +727,7 @@ export function SpeakingClient({
                         padding: "5px 10px",
                         borderRadius: 999,
                         background: "#F5F2F0",
-                        border: "1px solid #E7E3E0",
+                        border: `1px solid ${WARM_EDGE}`,
                         color: "#5C5460",
                         whiteSpace: "nowrap",
                       }}
@@ -755,7 +764,7 @@ export function SpeakingClient({
                   <div
                     style={{
                       marginTop: 22,
-                      border: "1px solid #E7E3E0",
+                      border: `1px solid ${WARM_EDGE}`,
                       borderRadius: 14,
                       overflow: "hidden",
                     }}
@@ -791,7 +800,7 @@ export function SpeakingClient({
                           alignItems: "center",
                           padding: "15px 18px",
                           background: "#FAF9F8",
-                          borderTop: i ? "1px solid #E7E3E0" : "none",
+                          borderTop: i ? `1px solid ${WARM_EDGE}` : "none",
                         }}
                       >
                         <span
@@ -1152,7 +1161,7 @@ export function SpeakingClient({
                           appearance: "none",
                           cursor: "pointer",
                           fontFamily: "inherit",
-                          border: `1px solid ${on ? p.accent : "#E7E3E0"}`,
+                          border: `1px solid ${on ? p.accent : WARM_EDGE}`,
                           background: "#FAF9F8",
                           borderRadius: 12,
                           padding: "14px 16px",

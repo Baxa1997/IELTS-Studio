@@ -4,7 +4,7 @@ import { useActionState } from "react";
 
 import { changePassword, type PasswordState } from "@/app/(app)/account-actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/account/password";
-import { GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
+import { FIELD_LINE, GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Change (or, for a Google-only account, set) your own password.
@@ -121,7 +121,7 @@ function Field({
 const inputStyle: React.CSSProperties = {
   height: 42,
   padding: "0 12px",
-  border: "1px solid #cbd5e1",
+  border: `1px solid ${FIELD_LINE}`,
   borderRadius: 10,
   background: PANEL,
   font: "inherit",

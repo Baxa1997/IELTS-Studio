@@ -7,7 +7,7 @@ import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/components/admin/u
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { loadAccountUsage, setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import { CONSOLE_CANVAS, PANEL, SLATE_AMBER, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Plan and limits for one account, as the design draws it.
@@ -192,7 +192,7 @@ export function ManageModal({
             aria-label="Close"
             style={{
               marginLeft: "auto",
-              background: "#F4F3EF",
+              background: CONSOLE_CANVAS,
               border: `1px solid #E4E2DC`,
               borderRadius: 8,
               width: 32,
@@ -223,7 +223,7 @@ export function ManageModal({
                 borderRadius: 10,
                 padding: "11px 13px",
                 fontSize: 12.5,
-                color: "#8A5B12",
+                color: SLATE_AMBER,
                 lineHeight: 1.5,
                 marginBottom: 16,
               }}
@@ -374,7 +374,7 @@ export function ManageModal({
               onClick={onClose}
               style={{
                 marginLeft: "auto",
-                background: "#F4F3EF",
+                background: CONSOLE_CANVAS,
                 border: `1px solid #E4E2DC`,
                 borderRadius: 9,
                 padding: "10px 16px",

@@ -4,7 +4,13 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
 import type { DemoTab } from "./demo-content";
-import { BRAND as INDIGO, PANEL, SLATE_BODY } from "@/lib/theme/tokens";
+import {
+  BRAND as INDIGO,
+  PANEL,
+  SLATE_BODY,
+  SLATE_INK as INK,
+  WARM_RULE,
+} from "@/lib/theme/tokens";
 
 const DeferredDemoScreen = dynamic(
   () => import("./demo-screens").then((mod) => mod.DemoScreen),
@@ -22,7 +28,6 @@ const DeferredDemoScreen = dynamic(
 
 const SANS = "var(--font-manrope), system-ui, sans-serif";
 const SERIF = "var(--font-sora), system-ui, sans-serif";
-const INK = "#121317";
 
 export function DemoTabs({
   tabs,
@@ -93,7 +98,7 @@ export function DemoTabs({
             padding: 6,
             borderRadius: 16,
             background: PANEL,
-            border: "1px solid #E5E2D2",
+            border: `1px solid ${WARM_RULE}`,
             boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 8px 24px -16px rgba(18,19,23,.3)",
           }}
         >
@@ -168,7 +173,7 @@ function DemoScreenPlaceholder() {
       style={{
         minHeight: 420,
         borderRadius: 18,
-        border: "1px solid #E5E2D2",
+        border: `1px solid ${WARM_RULE}`,
         background: "linear-gradient(110deg,#faf9f4 8%,#fff 18%,#faf9f4 33%)",
         backgroundSize: "200% 100%",
         animation: "lp-demo-shimmer 1.6s linear infinite",

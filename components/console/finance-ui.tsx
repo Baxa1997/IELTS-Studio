@@ -1,7 +1,19 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { FAINT, INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  CONSOLE_CANVAS as CANVAS,
+  FAINT,
+  GREEN,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP as RED,
+  WARM_LINE,
+  WARM_LINE_DEEP,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The client-side furniture the finance pages need: a slide-over that opens
@@ -14,15 +26,10 @@ import { FAINT, INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/token
  * Same geometry, same escape/backdrop behaviour, no new chrome props.
  */
 
-const GREEN = "#16794C";
-const RED = "#A63A30";
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const CANVAS = "#F4F3EF";
 
 export const fieldStyle: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #CFCABC",
+  border: `1px solid ${WARM_LINE_DEEP}`,
   borderRadius: 8,
   padding: "9px 11px",
   fontFamily: "inherit",
@@ -189,7 +196,7 @@ export function Drawer({
       ? {
           background: PANEL,
           color: INK,
-          border: "1px solid #C5C4BE",
+          border: `1px solid ${WARM_LINE}`,
           fontWeight: 500,
         }
       : {
@@ -282,7 +289,7 @@ export function Drawer({
                 style={{
                   marginLeft: "auto",
                   background: CANVAS,
-                  border: "1px solid #C5C4BE",
+                  border: `1px solid ${WARM_LINE}`,
                   borderRadius: 8,
                   width: 30,
                   height: 30,

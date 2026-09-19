@@ -125,6 +125,46 @@ export const SLATE_LINE = "var(--tk-slate-line)";
 /** A softer inner fill — wells, read-only blocks. Matches `LEARNER.well`. */
 export const WELL = "var(--tk-well)";
 
+/** The learner/studio page ground, as a standalone token. `LEARNER.canvas` is
+ *  the same value; this exists so a screen that wants only the ground does not
+ *  have to import the whole `Surface`. */
+export const CANVAS = "var(--tk-learner-canvas)";
+/** Border for `WELL`. Matches `LEARNER.wellLine`. */
+export const WELL_LINE = "var(--tk-learner-well-line)";
+
+/* The dashboard's status pills, in the marketing palette's greens and ambers.
+ * Drift, recorded — see the note on the slate neutrals above. Each `_BG` is
+ * paired with its ink and the pairs must not be crossed. */
+export const SLATE_GREEN = "var(--tk-slate-green)";
+export const SLATE_GREEN_BG = "var(--tk-slate-green-bg)";
+export const SLATE_GREEN_LINE = "var(--tk-slate-green-line)";
+export const SLATE_AMBER = "var(--tk-slate-amber)";
+export const SLATE_AMBER_BG = "var(--tk-slate-amber-bg)";
+export const SLATE_AMBER_LINE = "var(--tk-slate-amber-line)";
+export const SLATE_RED = "var(--tk-slate-red)";
+export const SLATE_RED_BG = "var(--tk-slate-red-bg)";
+/** Empty meter track / disabled field edge. */
+export const SLATE_FIELD = "var(--tk-slate-field)";
+
+/** The staff console's page ground, as a standalone token (`CONSOLE.canvas`). */
+export const CONSOLE_CANVAS = "var(--tk-console-canvas)";
+
+/* ── the warm ramp ──────────────────────────────────────────────────────────
+ * The console's pre-cool-ramp borders and wells. Drift, recorded so the console
+ * can follow the theme — NOT a palette to design in. Eight greys nobody chose.
+ * Reach for LINE / RULE / HAIR instead; see the long note in globals.css. */
+export const WARM_LINE = "var(--tk-warm-line)";
+export const WARM_LINE_SOFT = "var(--tk-warm-line-soft)";
+export const WARM_LINE_MID = "var(--tk-warm-line-mid)";
+export const WARM_LINE_DEEP = "var(--tk-warm-line-deep)";
+export const WARM_HAIR = "var(--tk-warm-hair)";
+export const WARM_EDGE = "var(--tk-warm-edge)";
+export const WARM_RULE = "var(--tk-warm-rule)";
+export const WARM_WELL = "var(--tk-warm-well)";
+export const WARM_RED = "var(--tk-warm-red)";
+export const WARM_GREEN = "var(--tk-warm-green)";
+export const WARM_AMBER = "var(--tk-warm-amber)";
+
 /** The fill of a card, a panel, a menu — anything that sits ON the canvas.
  *  White in light mode, near-black in dark. See the note on `WHITE`. */
 export const PANEL = "var(--tk-panel)";
@@ -288,6 +328,26 @@ export const CONSOLE: Surface = {
  *  without another 95-file hunt. The serif is applied per-block (passages,
  *  prompts), not as the studio's body face. */
 export const STUDIO: Surface = { ...LEARNER };
+
+/* ── the floating theme button's footprint ───────────────────────────────── */
+
+/**
+ * Vertical room the fixed dark-mode button occupies in the bottom-right corner
+ * (44px button + its 22px gutter + a 14px gap).
+ *
+ * ⚠️ EVERY OTHER BOTTOM-RIGHT LAUNCHER HAS TO CLEAR IT. The theme button is
+ * mounted at the ROOT, so it is on every page, and three other controls pin
+ * themselves to the same corner: the dashboard study coach, the reading coach,
+ * and the console's assign-to-class panel. Each sets `bottom: FAB_CLEARANCE`
+ * rather than its own number, so there is one place to change if the button
+ * ever resizes — and so a new floating control has something to find.
+ *
+ * Their open PANELS deliberately do not clear it: a dialog is allowed to cover
+ * the button, and the button's z-index (25) is chosen to sit under every one of
+ * them, and under the shell's mobile scrim (30), while still floating above
+ * ordinary page content (≤21).
+ */
+export const FAB_CLEARANCE = 80;
 
 /* ── shared style fragments ────────────────────────────────────────────────── */
 /*

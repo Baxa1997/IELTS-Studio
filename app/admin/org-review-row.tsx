@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Glyph, INK, Pill, SOFT, TONE, clip } from "@/components/admin/ui";
 
 import { reviewOrganization, type ReviewState } from "./actions";
+import { WARM_WELL } from "@/lib/theme/tokens";
 
 const initialState: ReviewState = {};
 
@@ -38,7 +39,7 @@ export function OrgReviewRow({
         alignItems: "center",
         gap: 14,
         padding: "14px 18px",
-        borderBottom: "1px solid #F5F4F0",
+        borderBottom: `1px solid ${WARM_WELL}`,
         flexWrap: "wrap",
       }}
     >

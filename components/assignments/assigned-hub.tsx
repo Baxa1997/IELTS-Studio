@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { LegalFooter } from "@/components/legal-footer";
 import type { StudentAssignment } from "@/lib/assignments/student";
-import { BRAND_SOFT } from "@/lib/theme/tokens";
+import { BRAND, BRAND_SOFT, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_MUTED as FAINT } from "@/lib/theme/tokens";
 
 /**
  * What a CENTER student sees in place of a practice hub.
@@ -18,11 +18,6 @@ import { BRAND_SOFT } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const FAINT = "#8B919D";
-const LINE = "#E6E8EC";
 
 const SKILL_COPY: Record<string, { title: string; blurb: string; empty: string }> = {
   writing: {

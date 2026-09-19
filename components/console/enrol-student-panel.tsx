@@ -5,7 +5,19 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
 import { useConsolePanels } from "@/components/console/console-chrome";
 import { useActionFeedback } from "@/components/console/toast";
-import { AMBER, INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, SOFT, WHITE } from "@/lib/theme/tokens";
+import {
+  AMBER,
+  FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  SOFT,
+  WARM_LINE,
+  WARM_LINE_DEEP,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * The design's "Enrol a student" slide-over: one form that creates the account
@@ -17,9 +29,6 @@ import { AMBER, INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, SOFT, WHITE } from "@
  * that the caller manages it.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -29,7 +38,7 @@ const label: React.CSSProperties = {
 };
 const field: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #CFCABC",
+  border: `1px solid ${WARM_LINE_DEEP}`,
   borderRadius: 8,
   padding: "10px 11px",
   fontFamily: "inherit",
@@ -183,7 +192,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
                       padding: "11px 12px",
                       fontFamily: "inherit",
                       cursor: "pointer",
-                      border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
+                      border: `1px solid ${on ? INDIGO : WARM_LINE}`,
                       background: on ? "#F5F5FC" : "#fff",
                     }}
                   >

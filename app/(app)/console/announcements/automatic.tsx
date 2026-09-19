@@ -13,14 +13,11 @@ import {
 } from "@/lib/console/auto-messages";
 
 import { saveAutoMessage, type ActionState } from "../center-actions";
-import { INDIGO, PANEL } from "@/lib/theme/tokens";
+import { INDIGO, INK, MUTED as FAINT, PANEL, WARM_LINE as RULE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const INK = "#16162E";
-const FAINT = "#6E6C87";
 const GREEN = "#166C4C";
 const RED = "#C24539";
-const RULE = "#C5C4BE";
 
 /**
  * §12's Automatic tab: six messages, each on/off with editable wording.

@@ -11,7 +11,7 @@ import {
   unlockRegister,
   type ActionState,
 } from "../../center-actions";
-import { WHITE } from "@/lib/theme/tokens";
+import { INK, MUTED, RED_DEEP as RED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The two things that can be true of a lesson besides "it happened": it was
@@ -23,9 +23,6 @@ import { WHITE } from "@/lib/theme/tokens";
  * page is how a center ends up with a month of unmarked registers instead.
  */
 
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const RED = "#A63A30";
 
 const banner = (tint: string, edge: string, ink: string): React.CSSProperties => ({
   display: "flex",

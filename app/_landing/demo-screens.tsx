@@ -8,18 +8,35 @@ import {
   BRAND,
   BRAND as INDIGO,
   BRAND_LINE,
+  BRAND_LINE as ACC_LINE,
+  BRAND_LINE as V_BORDER,
   BRAND_SOFT,
+  BRAND_SOFT as ACC_SOFT,
+  BRAND_SOFT as V_BG,
+  CANVAS,
   INDIGO_SOFT,
   PANEL,
   SLATE_BODY,
+  SLATE_BODY as MUTED,
   SLATE_INK,
+  SLATE_INK as INK,
   SLATE_LINE,
+  SLATE_LINE as LINE,
   SLATE_MUTED,
+  SLATE_MUTED as FAINT,
   SLATE_STRONG,
+  WARM_AMBER as AMBER,
+  WARM_EDGE as SP_LINE,
+  WARM_LINE_SOFT,
+  WARM_RULE,
   WELL,
+  WELL as SOFT,
+  WELL_LINE as SOFTLINE,
   WHITE,
 } from "@/lib/theme/tokens";
-import { withAlpha } from "@/lib/theme/tokens";
+import {
+  withAlpha,
+} from "@/lib/theme/tokens";
 
 /**
  * Live, coded replicas of the real product screens — rendered with the SAME
@@ -62,27 +79,15 @@ function bandColor(band: number) {
   if (c.label !== "Competent") return c;
   return { ...c, fg: INDIGO, bg: BRAND_SOFT };
 }
-const INK = "#121317";
-const MUTED = "#4a505c";
-const FAINT = "#8b919d";
 const EMERALD = "#2f8f5b";
 const RED = "#C5503C";
-const AMBER = "#B5852A";
 
 // cream studio palette
-const CANVAS = "#f6f7f9";
-const LINE = "#e6e8ec";
-const SOFT = "#fbfbfc";
-const SOFTLINE = "#eceef2";
-const ACC_SOFT = "#fdf4f7";
-const ACC_LINE = "#f0d3de";
 
 // listening accent palette — the real runner's violet, mapped onto the
 // burgundy scale so the mock screens match the page they sit on
 const V = "#9c1442";
-const V_BG = "#fdf4f7";
 const V_SOFT = "#fef7fa";
-const V_BORDER = "#f0d3de";
 
 const useIso = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -129,7 +134,7 @@ export function Frame({ children }: { children: React.ReactNode }) {
     <div
       style={{
         borderRadius: 18,
-        border: "1px solid #E5E2D2",
+        border: `1px solid ${WARM_RULE}`,
         background: PANEL,
         overflow: "hidden",
         boxShadow:
@@ -246,7 +251,7 @@ function WritingFeedbackScreen() {
       {/* header */}
       <div style={{ height: 60, flex: "none", background: PANEL, borderBottom: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: "1px solid #E2DED0", background: SOFT, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${WARM_LINE_SOFT}`, background: SOFT, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             Activities
           </span>
@@ -257,7 +262,7 @@ function WritingFeedbackScreen() {
           <span style={{ fontSize: 14, color: SLATE_MUTED }}>Living alone</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: "1px solid #E2DED0", background: SOFT, borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: SLATE_STRONG }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: `1px solid ${WARM_LINE_SOFT}`, background: SOFT, borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: SLATE_STRONG }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b4150" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
             Export PDF
           </span>
@@ -478,11 +483,11 @@ function WritingStudioScreen() {
           </div>
           <div style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ alignSelf: "flex-end", maxWidth: "85%", padding: "9px 12px", borderRadius: 12, background: INDIGO, color: WHITE, fontSize: 13.5, lineHeight: 1.5 }}>Any better linking words for my second paragraph?</div>
-            <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "9px 12px", borderRadius: 12, background: BRAND_SOFT, border: "1px solid #fdf4f7", color: "#3a2830", fontSize: 13.5, lineHeight: 1.55 }}>Try opening with <em>“The most compelling argument is…”</em>, then signpost the next idea with <em>“Beyond this,”</em> or <em>“A further benefit is that…”</em>. Vary them — repeating “also” caps Coherence.</div>
+            <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "9px 12px", borderRadius: 12, background: BRAND_SOFT, border: `1px solid ${BRAND_SOFT}`, color: "#3a2830", fontSize: 13.5, lineHeight: 1.55 }}>Try opening with <em>“The most compelling argument is…”</em>, then signpost the next idea with <em>“Beyond this,”</em> or <em>“A further benefit is that…”</em>. Vary them — repeating “also” caps Coherence.</div>
           </div>
           <div style={{ padding: 10, borderTop: `1px solid ${SOFTLINE}` }}>
             <div style={{ display: "flex", gap: 8 }}>
-              <span style={{ flex: 1, padding: "9px 11px", border: "1px solid #f0d3de", borderRadius: 10, fontSize: 13.5, color: SLATE_MUTED }}>Ask your coach…</span>
+              <span style={{ flex: 1, padding: "9px 11px", border: `1px solid ${BRAND_LINE}`, borderRadius: 10, fontSize: 13.5, color: SLATE_MUTED }}>Ask your coach…</span>
               <span style={{ width: 40, borderRadius: 10, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
               </span>
@@ -516,7 +521,7 @@ function ReadingScreen() {
             <span style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #f4e9ee", background: PANEL, color: SLATE_BODY, fontWeight: 700, fontSize: 12.5, display: "flex", alignItems: "center", justifyContent: "center" }}>A−</span>
             <span style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #f4e9ee", background: PANEL, color: SLATE_BODY, fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>A+</span>
           </div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: BRAND_SOFT, border: "1px solid #f0d3de" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: BRAND_SOFT, border: `1px solid ${BRAND_LINE}` }}>
             <span style={{ fontSize: 13, color: INDIGO }}>◷</span>
             <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, color: INDIGO }}>18:24</span>
           </span>
@@ -688,13 +693,13 @@ function CoachScreen() {
         <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 30, color: INK, margin: "6px 0 0" }}>Welcome back, Aziz</div>
         <div style={{ display: "flex", gap: 16, marginTop: 24 }}>
           {[["Reading", "6.5", INDIGO], ["Writing", "6.0", INDIGO]].map(([s, b, c]) => (
-            <div key={s} style={{ flex: 1, background: PANEL, border: "1px solid #e6e8ec", borderRadius: 16, padding: 20 }}>
+            <div key={s} style={{ flex: 1, background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 20 }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: INK }}>{s}</span>
               <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 34, color: c as string, marginTop: 12 }}>{b}</div>
               <div style={{ height: 7, background: BRAND_LINE, borderRadius: 999, marginTop: 12, overflow: "hidden" }}><div style={{ width: "70%", height: "100%", background: c as string }} /></div>
             </div>
           ))}
-          <div style={{ flex: 1, background: PANEL, border: "1px solid #e6e8ec", borderRadius: 16, padding: 20 }}>
+          <div style={{ flex: 1, background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 20 }}>
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>This week</span>
             <div style={{ display: "flex", gap: 6, marginTop: 14 }}>{Array.from({ length: 7 }, (_, i) => <span key={i} style={{ flex: 1, height: 28, borderRadius: 8, background: i < 5 ? INDIGO : WELL, border: `1.5px solid ${i < 5 ? INDIGO : SLATE_LINE}` }} />)}</div>
           </div>
@@ -715,18 +720,18 @@ function CoachScreen() {
         </div>
         <div style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ alignSelf: "flex-end", maxWidth: "85%", padding: "9px 12px", borderRadius: 12, background: INDIGO, color: WHITE, fontSize: 13.5, lineHeight: 1.5 }}>What should I practise next?</div>
-          <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "10px 12px", borderRadius: 12, background: BRAND_SOFT, border: "1px solid #fdf4f7", color: "#3a2830", fontSize: 13.5, lineHeight: 1.6 }}>
+          <div style={{ alignSelf: "flex-start", maxWidth: "88%", padding: "10px 12px", borderRadius: 12, background: BRAND_SOFT, border: `1px solid ${BRAND_SOFT}`, color: "#3a2830", fontSize: 13.5, lineHeight: 1.6 }}>
             Your Reading sits at <strong>6.5</strong> and Writing at <strong>6.0</strong>, so Writing is the gap to your 7.0 target. This week I&rsquo;d do <strong>two Task 2 essays</strong> focused on Task Response — that&rsquo;s your weakest criterion across your last 3 submissions. Want me to pick the prompts?
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 2 }}>
             {["Plan my week", "How do I reach my target?"].map((s) => (
-              <span key={s} style={{ fontSize: 12.5, fontWeight: 600, color: INDIGO, background: INDIGO_SOFT, border: "1px solid #f0d3de", borderRadius: 999, padding: "7px 12px" }}>{s}</span>
+              <span key={s} style={{ fontSize: 12.5, fontWeight: 600, color: INDIGO, background: INDIGO_SOFT, border: `1px solid ${BRAND_LINE}`, borderRadius: 999, padding: "7px 12px" }}>{s}</span>
             ))}
           </div>
         </div>
         <div style={{ padding: 10, borderTop: "1px solid #EFEDF8" }}>
           <div style={{ display: "flex", gap: 8 }}>
-            <span style={{ flex: 1, padding: "9px 11px", border: "1px solid #f0d3de", borderRadius: 10, fontSize: 13.5, color: SLATE_MUTED }}>Ask your coach…</span>
+            <span style={{ flex: 1, padding: "9px 11px", border: `1px solid ${BRAND_LINE}`, borderRadius: 10, fontSize: 13.5, color: SLATE_MUTED }}>Ask your coach…</span>
             <span style={{ width: 40, borderRadius: 10, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
             </span>
@@ -744,7 +749,7 @@ function CoachScreen() {
 function BandMini({ skill, cur, target, base, delta }: { skill: string; cur: number; target: number; base: number; delta: number }) {
   const fill = Math.max(0.08, Math.min(1, (cur - base) / (target - base)));
   return (
-    <div style={{ background: PANEL, border: "1px solid #e6e8ec", borderRadius: 16, padding: 20 }}>
+    <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ width: 32, height: 32, borderRadius: 9, background: "#EBECFA", color: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -752,7 +757,7 @@ function BandMini({ skill, cur, target, base, delta }: { skill: string; cur: num
           </span>
           <span style={{ fontWeight: 700, fontSize: 16, color: INK }}>{skill}</span>
         </div>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500, fontSize: 13, color: FAINT }}>target <span style={{ fontWeight: 700, fontSize: 14, color: INK, background: "#F4F4FB", border: "1px solid #f0d3de", padding: "4px 10px", borderRadius: 8 }}>{target.toFixed(1)}</span></span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500, fontSize: 13, color: FAINT }}>target <span style={{ fontWeight: 700, fontSize: 14, color: INK, background: "#F4F4FB", border: `1px solid ${BRAND_LINE}`, padding: "4px 10px", borderRadius: 8 }}>{target.toFixed(1)}</span></span>
       </div>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 10, marginTop: 12 }}>
         <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 34, lineHeight: 1, color: INDIGO, fontVariantNumeric: "tabular-nums" }}>{cur.toFixed(1)}</span>
@@ -798,13 +803,13 @@ function ProgressScreen() {
           {/* recent results */}
           <div>
             <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 20, color: INK, marginBottom: 12 }}>Recent results</div>
-            <div style={{ background: PANEL, border: "1px solid #e6e8ec", borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, overflow: "hidden" }}>
               {[
                 { d: "Jul 6", s: "Writing", band: "6.0", delta: "+0.5", up: true },
                 { d: "Jul 4", s: "Reading", band: "6.5", delta: "baseline", up: null },
                 { d: "Jul 1", s: "Reading", band: "6.0", delta: "+0.5", up: true },
               ].map((h, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "72px 1fr auto", alignItems: "center", gap: 14, padding: "13px 18px", borderTop: i === 0 ? "none" : "1px solid #e6e8ec" }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "72px 1fr auto", alignItems: "center", gap: 14, padding: "13px 18px", borderTop: i === 0 ? "none" : `1px solid ${SLATE_LINE}` }}>
                   <span style={{ fontWeight: 500, fontSize: 13.5, color: FAINT }}>{h.d}</span>
                   <span style={{ fontWeight: 600, fontSize: 15, color: INK }}>{h.s}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -819,7 +824,7 @@ function ProgressScreen() {
 
         {/* right rail */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ background: PANEL, border: "1px solid #e6e8ec", borderRadius: 16, padding: 18 }}>
+          <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>This week</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: AMBER }}><Flame c={AMBER} s={17} /><span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 20, color: INK }}>5</span></span>
@@ -842,7 +847,7 @@ function ProgressScreen() {
             <p style={{ fontSize: 12.5, color: MUTED, margin: "10px 0 0" }}>2 more to go — keep the streak alive.</p>
           </div>
 
-          <div style={{ background: PANEL, border: "1px solid #e6e8ec", borderRadius: 16, padding: 18 }}>
+          <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={AMBER} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>Focus areas</span>
@@ -872,7 +877,6 @@ function ProgressScreen() {
 function SpeakingScreen() {
   const SP_INK = "#1A1520";
   const SP_FAINT = "#8C7F8A";
-  const SP_LINE = "#E7E3E0";
   const SP_ORB = "radial-gradient(circle at 32% 28%, rgba(60,52,72,0.85) 0%, #2C2535 46%, #1A1520 100%)";
   const parts: { n: number; label: string }[] = [
     { n: 1, label: "Interview" },

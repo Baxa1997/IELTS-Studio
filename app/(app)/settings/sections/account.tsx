@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 
 import { Panel } from "./frame";
 import { ProfileForm } from "./profile-form";
+import { BRAND } from "@/lib/theme/tokens";
 
-const BRAND = "#7D0132";
 
 /** Name, phone and the sign-in email; then the password. */
 export async function LearnerAccountSection({ profileId }: { profileId: string }) {

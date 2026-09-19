@@ -11,14 +11,23 @@ import { bandColor } from "@/lib/ui/band";
 import { ANN_STYLE, matchRanges, type Annotation } from "./annotations";
 import { FigureView } from "./figure";
 import {
+  BRAND,
+  BRAND_LINE,
   BRAND_SOFT,
   PANEL,
   SLATE_BODY,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN_BG,
+  SLATE_GREEN_LINE,
   SLATE_INK,
+  SLATE_INK as INK,
   SLATE_LINE,
   SLATE_MUTED,
   SLATE_STRONG,
+  WARM_AMBER as AMBER,
+  WARM_LINE_SOFT,
   WELL,
+  WELL_LINE,
   WHITE,
 } from "@/lib/theme/tokens";
 
@@ -35,12 +44,8 @@ import {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BRAND = "#7D0132";
-const INK = "#121317";
-const MUTED = "#4A505C";
 const EMERALD = "#1F9D5E";
 const RED = "#C5503C";
-const AMBER = "#B5852A";
 
 export interface CriterionScore {
   band: number;
@@ -190,12 +195,12 @@ export function EssayFeedback({
       {/* header */}
       <header
         className="lp-fb-noprint"
-        style={{ height: 60, flex: "none", background: PANEL, borderBottom: "1px solid #E6E8EC", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}
+        style={{ height: 60, flex: "none", background: PANEL, borderBottom: `1px solid ${SLATE_LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <Link
             href={backHref}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: "1px solid #E2DED0", background: WELL, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG, textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${WARM_LINE_SOFT}`, background: WELL, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG, textDecoration: "none" }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             {backLabel}
@@ -216,7 +221,7 @@ export function EssayFeedback({
           <button
             type="button"
             onClick={() => window.print()}
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: "1px solid #E2DED0", background: WELL, borderRadius: 10, fontFamily: "inherit", fontSize: 13.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: `1px solid ${WARM_LINE_SOFT}`, background: WELL, borderRadius: 10, fontFamily: "inherit", fontSize: 13.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
             Export PDF
@@ -236,7 +241,7 @@ export function EssayFeedback({
       </header>
 
       {/* score summary strip */}
-      <div style={{ flex: "none", background: PANEL, borderBottom: "1px solid #E6E8EC", padding: "16px 22px", display: "flex", alignItems: "center", gap: 26 }} className="lp-fb-strip">
+      <div style={{ flex: "none", background: PANEL, borderBottom: `1px solid ${SLATE_LINE}`, padding: "16px 22px", display: "flex", alignItems: "center", gap: 26 }} className="lp-fb-strip">
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 16, paddingRight: 26, borderRight: "1px solid #EEE9DA" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 62, fontWeight: 800, lineHeight: 0.82, color: bandColor(overallBand).fg, fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em" }}>{overallBand.toFixed(1)}</span>
@@ -246,7 +251,7 @@ export function EssayFeedback({
             </div>
           </div>
           {showLift ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: "#EAF6F0", border: "1px solid #CFE7DB", borderRadius: 11 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
               <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
                 Up to <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{bandWithFixes!.toFixed(1)}</strong> with the fixes
@@ -281,8 +286,8 @@ export function EssayFeedback({
       {/* workspace */}
       <div className="lp-fb-workspace" style={{ flex: 1, minHeight: 0, display: "flex", gap: 16, padding: 16 }}>
         {/* LEFT: marked-up essay */}
-        <main className="lp-fb-main" style={{ flex: 1, minWidth: 0, background: PANEL, border: "1px solid #E6E8EC", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ flex: "none", padding: "15px 24px", borderBottom: "1px solid #ECEEF2", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <main className="lp-fb-main" style={{ flex: 1, minWidth: 0, background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ flex: "none", padding: "15px 24px", borderBottom: `1px solid ${WELL_LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: INK }}>Your essay, marked up</h2>
               {ranges.length ? <span style={{ fontSize: 13, color: SLATE_MUTED }}>tap a highlight for the fix</span> : null}
@@ -313,8 +318,8 @@ export function EssayFeedback({
         </main>
 
         {/* RIGHT: detail panel */}
-        <aside className="lp-fb-aside" style={{ width: 480, flex: "none", background: PANEL, border: "1px solid #E6E8EC", borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div className="lp-fb-noprint" style={{ flex: "none", padding: "14px 16px", borderBottom: "1px solid #ECEEF2" }}>
+        <aside className="lp-fb-aside" style={{ width: 480, flex: "none", background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div className="lp-fb-noprint" style={{ flex: "none", padding: "14px 16px", borderBottom: `1px solid ${WELL_LINE}` }}>
             <div style={{ display: "flex", gap: 4, background: "#F1EFE4", borderRadius: 11, padding: 4 }}>
               <button type="button" onClick={() => setTab("bands")} style={tabStyle(tab === "bands")}>Bands</button>
               <button type="button" onClick={() => setTab("issues")} style={tabStyle(tab === "issues")}>Fixes · {ranges.length}</button>
@@ -396,16 +401,16 @@ function SamplesView({
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: MUTED }}>
         A model answer for this exact task — read it for the <strong style={{ color: INK }}>moves</strong> (how it&rsquo;s structured, how ideas are linked, the phrasing), then write your own. Don&rsquo;t copy it.
       </p>
-      <div style={{ border: "1px solid #E6E8EC", borderRadius: 13, overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: BRAND_SOFT, borderBottom: "1px solid #F0D3DE" }}>
+      <div style={{ border: `1px solid ${SLATE_LINE}`, borderRadius: 13, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: BRAND_SOFT, borderBottom: `1px solid ${BRAND_LINE}` }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
             <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>{sample.title || "Model answer"}</span>
           </span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: BRAND, background: PANEL, border: "1px solid #F0D3DE", padding: "3px 9px", borderRadius: 999, fontVariantNumeric: "tabular-nums" }}>{wordCount} words</span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: BRAND, background: PANEL, border: `1px solid ${BRAND_LINE}`, padding: "3px 9px", borderRadius: 999, fontVariantNumeric: "tabular-nums" }}>{wordCount} words</span>
         </div>
         {sample.highlights && sample.highlights.length ? (
-          <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: "1px solid #ECEEF2" }}>
+          <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: `1px solid ${WELL_LINE}` }}>
             {sample.highlights.map((h, j) => (
               <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: SLATE_STRONG }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>
@@ -461,7 +466,7 @@ function BandsView({
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
             {lift ? (
-              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: "#EAF6F0", border: "1px solid #CFE7DB", padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1A7A48", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
             ) : null}
           </div>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: SLATE_STRONG }}>
@@ -477,9 +482,9 @@ function BandsView({
         const badge = isBlocker
           ? { label: "Capping", text: RED, bg: "#FCEEEA" }
           : c.band >= 7
-            ? { label: "Strong", text: "#2C7A52", bg: "#EAF6F0" }
+            ? { label: "Strong", text: "#2C7A52", bg: SLATE_GREEN_BG }
             : c.band >= 6
-              ? { label: "Solid", text: "#2C7A52", bg: "#EAF6F0" }
+              ? { label: "Solid", text: "#2C7A52", bg: SLATE_GREEN_BG }
               : { label: "Developing", text: AMBER, bg: "#F6EAD0" };
         return (
           <div key={key} style={{ background: PANEL, border: `1px solid ${isBlocker ? "#F3CFC6" : "#EAE6D8"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
@@ -535,7 +540,7 @@ function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRange
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, flexWrap: "wrap" }}>
                   <span style={{ color: SLATE_MUTED, textDecoration: "line-through" }}>{r.ann.text.trim()}</span>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                  <span style={{ fontWeight: 700, color: "#1A7A48", background: "#EAF6F0", border: "1px solid #CFE7DB", padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
+                  <span style={{ fontWeight: 700, color: "#1A7A48", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
                 </div>
               ) : null}
             </div>

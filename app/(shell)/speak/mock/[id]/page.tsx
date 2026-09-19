@@ -12,7 +12,7 @@ import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
 import { AwaitingGrade } from "./awaiting-grade";
 import { UngradedMock } from "./ungraded";
-import { PANEL, SLATE_STRONG } from "@/lib/theme/tokens";
+import { BRAND, PANEL, SLATE_BODY as MUTED, SLATE_LINE as LINE, SLATE_STRONG } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +22,6 @@ interface PageProps {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const MUTED = "#4A505C";
-const LINE = "#E6E8EC";
-const BRAND = "#7D0132";
 
 interface Turn {
   role: "examiner" | "candidate";

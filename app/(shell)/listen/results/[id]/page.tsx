@@ -7,7 +7,19 @@ import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 
 import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../trap-explain";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_SOFT as TINT,
+  PANEL,
+  SLATE_BODY as MUTED,
+  SLATE_GREEN_BG as GOOD_BG,
+  SLATE_INK as INK,
+  SLATE_LINE,
+  WARM_GREEN as GOOD,
+  WARM_RED as BAD,
+  WELL_LINE,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -17,17 +29,10 @@ interface PageProps {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const INK = "#121317";
-const MUTED = "#4A505C";
-const BRAND = "#7D0132";
-const TINT = "#FDF4F7";
-const GOOD = "#15803d";
-const GOOD_BG = "#EAF6F0";
-const BAD = "#b91c1c";
 const BAD_BG = "#FDECEC";
 const CARD: React.CSSProperties = {
   background: PANEL,
-  border: "1px solid #E6E8EC",
+  border: `1px solid ${SLATE_LINE}`,
   borderRadius: 16,
   padding: "20px 22px",
 };
@@ -54,7 +59,7 @@ function QuestionRow({ r }: { r: StoredQResult }) {
         gap: 14,
         alignItems: "flex-start",
         padding: "12px 0",
-        borderBottom: "1px solid #ECEEF2",
+        borderBottom: `1px solid ${WELL_LINE}`,
       }}
     >
       <span
@@ -213,8 +218,8 @@ export default async function ListeningResultPage({ params }: PageProps) {
               style={{
                 padding: "6px 12px",
                 borderRadius: 9,
-                background: "#ECEEF2",
-                border: "1px solid #E6E8EC",
+                background: WELL_LINE,
+                border: `1px solid ${SLATE_LINE}`,
                 fontSize: 13.5,
                 fontWeight: 700,
                 color: p.max_score > 0 && p.score / p.max_score >= 0.7 ? GOOD : MUTED,

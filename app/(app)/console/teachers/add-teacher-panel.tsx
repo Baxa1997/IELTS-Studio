@@ -6,7 +6,18 @@ import { useConsolePanels } from "@/components/console/console-chrome";
 
 import { addTeacherAccount, type AddStudentState } from "../groups/actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { PANEL, WHITE } from "@/lib/theme/tokens";
+import {
+  CONSOLE_CANVAS,
+  FAINT,
+  GREEN,
+  INK,
+  MUTED,
+  PANEL,
+  RED_DEEP as RED,
+  WARM_LINE,
+  WARM_LINE_DEEP,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /**
  * Create a teacher account on the spot — name, login, password. Email is
@@ -20,11 +31,6 @@ import { PANEL, WHITE } from "@/lib/theme/tokens";
  * a mess, and every field is full-width inside its column.
  */
 
-const GREEN = "#16794C";
-const RED = "#A63A30";
-const INK = "#16162E";
-const MUTED = "#6E6C87";
-const FAINT = "#777581";
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
@@ -34,7 +40,7 @@ const labelStyle: React.CSSProperties = {
 };
 const fieldStyle: React.CSSProperties = {
   width: "100%",
-  border: "1px solid #CFCABC",
+  border: `1px solid ${WARM_LINE_DEEP}`,
   borderRadius: 8,
   padding: "10px 11px",
   fontFamily: "inherit",
@@ -199,8 +205,8 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
                 type="button"
                 onClick={onDone}
                 style={{
-                  background: "#F4F3EF",
-                  border: "1px solid #C5C4BE",
+                  background: CONSOLE_CANVAS,
+                  border: `1px solid ${WARM_LINE}`,
                   borderRadius: 8,
                   padding: "11px 16px",
                   fontFamily: "inherit",

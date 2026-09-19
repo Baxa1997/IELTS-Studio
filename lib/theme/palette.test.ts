@@ -30,6 +30,7 @@ describe("the runtime palette", () => {
   for (const [label, prefix] of [
     ["--tk-", "--tk-"],
     ["--mk-", "--mk-"],
+    ["--sh-", "--sh-"],
   ] as const) {
     it(`defines every ${label} token in BOTH light and dark`, () => {
       // A token declared only in `:root` keeps its LIGHT value on a dark page.
