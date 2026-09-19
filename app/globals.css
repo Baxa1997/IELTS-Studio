@@ -3968,3 +3968,140 @@ section[id] {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   PRACTICE CARDS — the shared card for the Reading / Writing / Listening hubs.
+   Built from the "Practice Cards" design canvas: its geometry, anatomy and
+   states, recoloured onto this app's own palette (brand #7d0132 + the cool
+   greys the rest of the hub already uses) rather than the canvas's warm paper.
+
+   ⚠️ THE SURFACE LIVES HERE, NOT INLINE. Background and border are set in this
+   stylesheet, next to the :hover that must not be cancelled — an inline
+   `background` or `border` beats a stylesheet hover whatever its specificity,
+   which is the trap recorded at length in components/app-shell/nav-groups.test.ts
+   and re-guarded in components/practice/card.test.ts. Anything genuinely dynamic
+   (a locked card's opacity, a progress bar's width) is still inline; the resting
+   fill of a hovering element never is.
+   ========================================================================== */
+
+.pc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid rgba(28, 27, 46, 0.09);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(28, 27, 46, 0.04);
+  color: #121317;
+  text-align: left;
+  text-decoration: none;
+  transition:
+    border-color 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The lift, tinted by what the card is. `data-tone` carries the state so one
+   rule set serves all three hubs. A card that cannot be acted on (locked past
+   the free shelf, or mid-clone) does not lift — the tone is dropped instead. */
+.pc-card[data-tone]:hover {
+  transform: translateY(-2px);
+}
+.pc-card[data-tone="brand"]:hover {
+  border-color: #e8c4d2;
+  box-shadow: 0 10px 24px rgba(125, 1, 50, 0.1);
+}
+.pc-card[data-tone="done"]:hover {
+  border-color: #cfe7db;
+  box-shadow: 0 10px 24px rgba(28, 122, 79, 0.1);
+}
+.pc-card[data-tone="ink"]:hover {
+  border-color: #cbccd6;
+  box-shadow: 0 10px 24px rgba(18, 19, 23, 0.12);
+}
+
+/* ---- The footer's two pill actions -------------------------------------- */
+/* Both are real controls, so both keep their fill in CSS. */
+
+.pc-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pc-act:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.pc-act:disabled {
+  cursor: default;
+}
+
+.pc-act--primary {
+  padding: 0 16px;
+  border: 0;
+  background: #7d0132;
+  color: #fff;
+}
+.pc-act--primary:hover:not(:disabled) {
+  background: #64012a;
+}
+.pc-act--primary:disabled {
+  background: #cc5c82;
+}
+
+.pc-act--secondary {
+  padding: 0 13px;
+  border: 1px solid #dfe2e8;
+  background: #fff;
+  color: #121317;
+}
+.pc-act--secondary:hover:not(:disabled) {
+  background: #f6f7f9;
+}
+.pc-act--secondary:disabled {
+  color: #8b919d;
+}
+
+/* A teacher's third control. Outline like the secondary, but brand-inked so
+   "set this as homework" never reads as the same button as "open it". */
+.pc-act--attach {
+  padding: 0 13px;
+  border: 1px solid #e3a7bd;
+  background: #fdf4f7;
+  color: #7d0132;
+}
+.pc-act--attach:hover:not(:disabled) {
+  background: #fbe9ef;
+}
+.pc-act--attach:disabled {
+  border-color: #e6e8ec;
+  background: #fff;
+  color: #8b919d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-card,
+  .pc-act {
+    transition: none;
+  }
+  .pc-card[data-tone]:hover {
+    transform: none;
+  }
+  .pc-act:active:not(:disabled) {
+    transform: none;
+  }
+}

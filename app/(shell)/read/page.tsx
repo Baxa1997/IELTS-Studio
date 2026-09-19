@@ -3,12 +3,20 @@ import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
+import { composeTestSubtitle, composeTestTitle } from "@/lib/reading/titles";
 import type { ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getLibraryQuota } from "@/lib/quota";
 
-import { ReadingHub, type LibraryTest, type PassageCard, type TestCard } from "./read-hub";
+import {
+  ReadingHub,
+  type Graded,
+  type LibraryTest,
+  type Live,
+  type PassageCard,
+  type TestCard,
+} from "./read-hub";
 
 export const dynamic = "force-dynamic";
 
@@ -101,13 +109,23 @@ export default async function ReadingHubPage() {
         .is("library_key", null)
         .order("created_at", { ascending: false })
         .limit(9),
-      // Which of the learner's OWN tests/passages they've already practised (a graded
-      // attempt exists) — so the hub can badge them "Practised" instead of "new".
+      /* ⭐ EVERY ATTEMPT THIS LEARNER HAS, finished or still open. The redesigned
+         card reports a real result (band, score, how long it took, when) and an
+         unfinished run, so a bare "has a graded attempt" boolean is no longer
+         enough. Newest first, so the first row seen for an id is the one to show. */
       supabase
         .from("reading_attempts")
-        .select("test_id, passage_id")
+        /* ⚠️ ONE STRING LITERAL, NEVER A CONCATENATION. supabase-js parses the
+           select list at the TYPE level, and it can only do that for a literal —
+           splitting this across a `+` makes the row type collapse to
+           GenericStringError and every field access below fails to compile. */
+        .select(
+          "id, test_id, passage_id, status, band, correct_count, total_questions, duration_seconds, submitted_at, cursor_index, seconds_left, answered_count",
+        )
         .eq("student_id", profile.id)
-        .eq("status", "graded"),
+        .in("status", ["graded", "in_progress"])
+        .order("submitted_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false }),
     ]);
 
   /* ⭐ THE FREE SHELF. Which library items this learner may still open, worked
@@ -116,47 +134,128 @@ export default async function ReadingHubPage() {
      shop window, not the till. Already-opened items are never locked, however
      far over the limit the org is: the copy is theirs already. */
   const libraryQuota = await getLibraryQuota(profile.organization_id);
+
+  /* ⚠️ A LIBRARY CARD REPORTS THE STATE OF THE LEARNER'S COPY, NOT THE LIBRARY ROW.
+     Starting a library item clones it into the learner's org with library_key set
+     to the library id; every attempt then hangs off the CLONE. So the library
+     card has to be told which clone is its own before it can show a band or a
+     paused run — the library row itself never has an attempt against it.
+     This is also the query the free shelf needs, so it runs unconditionally now
+     (it used to be skipped on a paid plan, where openedKeys went unused). */
+  const [cloneTestsRes, clonePassagesRes] = await Promise.all([
+    supabase.from("reading_tests").select("id, library_key").not("library_key", "is", null),
+    supabase.from("reading_passages").select("id, library_key").not("library_key", "is", null),
+  ]);
   const openedKeys = new Set<string>();
-  if (libraryQuota.limit !== null) {
-    const [t, pg] = await Promise.all([
-      supabase.from("reading_tests").select("library_key").not("library_key", "is", null),
-      supabase.from("reading_passages").select("library_key").not("library_key", "is", null),
-    ]);
-    for (const row of [...(t.data ?? []), ...(pg.data ?? [])]) {
-      const key = (row as { library_key: string | null }).library_key;
-      if (key) openedKeys.add(key);
-    }
+  const cloneIdByKey = new Map<string, string>();
+  for (const row of [...(cloneTestsRes.data ?? []), ...(clonePassagesRes.data ?? [])]) {
+    const { id, library_key: key } = row as { id: string; library_key: string | null };
+    if (!key) continue;
+    openedKeys.add(key);
+    // Newest clone wins if a learner somehow holds two copies of one library id.
+    cloneIdByKey.set(key, id);
   }
   const isLocked = (libraryId: string) =>
     libraryQuota.limit !== null && libraryQuota.exceeded && !openedKeys.has(libraryId);
 
-  const practisedTests = new Set<string>();
-  const practisedPassages = new Set<string>();
+  /* The attempt rows, reduced to what a card draws. Newest first out of the
+     query, so `setDefault` keeps the FIRST row it sees for each id and later
+     (older) ones are ignored. Graded and in-progress are tracked separately: a
+     test can legitimately be both — finished once, and open again right now. */
+  const gradedByTest = new Map<string, Graded>();
+  const gradedByPassage = new Map<string, Graded>();
+  const liveByTest = new Map<string, Live>();
+  const liveByPassage = new Map<string, Live>();
   for (const a of attemptsRes.data ?? []) {
-    if (a.test_id) practisedTests.add(a.test_id as string);
-    if (a.passage_id) practisedPassages.add(a.passage_id as string);
+    const testId = a.test_id as string | null;
+    const passageId = a.passage_id as string | null;
+    if (a.status === "graded") {
+      const g: Graded = {
+        attemptId: a.id as string,
+        band: (a.band as number | null) ?? null,
+        correct: (a.correct_count as number | null) ?? 0,
+        total: (a.total_questions as number | null) ?? 0,
+        durationSeconds: (a.duration_seconds as number | null) ?? null,
+        at: (a.submitted_at as string | null) ?? null,
+      };
+      if (testId && !gradedByTest.has(testId)) gradedByTest.set(testId, g);
+      if (passageId && !gradedByPassage.has(passageId)) gradedByPassage.set(passageId, g);
+    } else {
+      const l: Live = {
+        cursorIndex: (a.cursor_index as number | null) ?? null,
+        secondsLeft: (a.seconds_left as number | null) ?? null,
+        answered: (a.answered_count as number | null) ?? 0,
+      };
+      if (testId && !liveByTest.has(testId)) liveByTest.set(testId, l);
+      if (passageId && !liveByPassage.has(passageId)) liveByPassage.set(passageId, l);
+    }
   }
+  /** A card's own id if it owns one, else the id of the learner's clone of it. */
+  const stateId = (id: string) => cloneIdByKey.get(id) ?? id;
 
   const reading = estimates.bySkill.reading;
   const levelBand = reading.currentBand ?? reading.targetBand ?? null;
   const levelMeasured = reading.currentBand != null;
 
-  const libraryTests: LibraryTest[] = (libTestsRes.data ?? []).map((t) => ({
-    id: t.id as string,
-    targetBand: (t.target_band as number | null) ?? null,
-    locked: isLocked(t.id as string),
-  }));
+  /* ⭐ WHAT EACH TEST IS ABOUT. The card now names the test and lists its
+     passages instead of reading "Practice test N", which needs the passages of
+     every test on the page — one query for both shelves. Service-role, because
+     a library test's passages live in the library org. */
+  const testIds = [
+    ...(libTestsRes.data ?? []).map((t) => t.id as string),
+    ...(ownTestsRes.data ?? []).map((t) => t.id as string),
+  ];
+  const partsByTest = new Map<string, { title: string; topic: string | null }[]>();
+  if (testIds.length) {
+    const { data: parts } = await admin
+      .from("reading_passages")
+      .select("test_id, title, topic, order_in_test")
+      .in("test_id", testIds)
+      .order("order_in_test", { ascending: true });
+    for (const p of parts ?? []) {
+      const tid = p.test_id as string;
+      const list = partsByTest.get(tid) ?? [];
+      list.push({ title: (p.title as string) ?? "", topic: (p.topic as string | null) ?? null });
+      partsByTest.set(tid, list);
+    }
+  }
+  /** Title + subtitle for one test, composed from its passages. */
+  const nameOf = (testId: string) => {
+    const parts = partsByTest.get(testId) ?? [];
+    return {
+      title: composeTestTitle(parts.map((p) => p.topic ?? p.title)),
+      subtitle: composeTestSubtitle(parts.map((p) => p.title)),
+    };
+  };
+
+  const libraryTests: LibraryTest[] = (libTestsRes.data ?? []).map((t) => {
+    const id = t.id as string;
+    const key = stateId(id);
+    return {
+      id,
+      targetBand: (t.target_band as number | null) ?? null,
+      locked: isLocked(id),
+      ...nameOf(id),
+      graded: gradedByTest.get(key) ?? null,
+      live: liveByTest.get(key) ?? null,
+    };
+  });
 
   // Number generated tests "Reading test 1, 2, …" in the order they were created.
   // The list arrives newest-first, so the newest gets the highest number (= total).
   const totalOwnTests = ownTestsRes.count ?? ownTestsRes.data?.length ?? 0;
-  const ownTests: TestCard[] = (ownTestsRes.data ?? []).map((t, i) => ({
-    id: t.id as string,
-    targetBand: (t.target_band as number | null) ?? null,
-    createdAt: t.created_at as string,
-    seq: totalOwnTests - i,
-    practised: practisedTests.has(t.id as string),
-  }));
+  const ownTests: TestCard[] = (ownTestsRes.data ?? []).map((t, i) => {
+    const id = t.id as string;
+    return {
+      id,
+      targetBand: (t.target_band as number | null) ?? null,
+      createdAt: t.created_at as string,
+      seq: totalOwnTests - i,
+      ...nameOf(id),
+      graded: gradedByTest.get(id) ?? null,
+      live: liveByTest.get(id) ?? null,
+    };
+  });
 
   // Question count + distinct types per passage (answer-key table is teacher/admin-
   // read, so go through the service-role client; ids are unique across orgs).
@@ -191,11 +290,20 @@ export default async function ReadingHubPage() {
   const libraryPassages = (libPassagesRes.data ?? [])
     .map(toPassageCard)
     .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS)
-    .map((c) => ({ ...c, locked: isLocked(c.id) }));
+    .map((c) => ({
+      ...c,
+      locked: isLocked(c.id),
+      graded: gradedByPassage.get(stateId(c.id)) ?? null,
+      live: liveByPassage.get(stateId(c.id)) ?? null,
+    }));
   const ownPassages = (ownPassagesRes.data ?? [])
     .map(toPassageCard)
     .filter((c) => c.questionCount >= MIN_PRACTICE_QUESTIONS)
-    .map((c) => ({ ...c, practised: practisedPassages.has(c.id) }));
+    .map((c) => ({
+      ...c,
+      graded: gradedByPassage.get(c.id) ?? null,
+      live: liveByPassage.get(c.id) ?? null,
+    }));
 
   // The shell (sidebar + header) is owned by the (shell) layout; this page only
   // paints its own full-bleed surface inside it.

@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
 import { PlanCard } from "@/components/app-shell/plan-card";
@@ -11,11 +11,16 @@ import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
 
-// The two families every shell page actually renders. The surface-specific ones
+// The families every shell page actually renders. The surface-specific ones
 // moved to the segment that uses them — DM Sans to ./listen/layout.tsx, and
-// Bricolage/Jakarta/JetBrains to ./speak/layout.tsx. Loading all six here meant
-// a Reading or Writing page downloaded sixteen weights it never drew a glyph
-// with; the runners themselves are unchanged.
+// Bricolage/Jakarta to ./speak/layout.tsx. Loading all six here meant a Reading
+// or Writing page downloaded sixteen weights it never drew a glyph with; the
+// runners themselves are unchanged.
+//
+// JetBrains Mono came back here (speak/layout.tsx keeps its own copy — separate
+// layout trees, and next/font dedupes the files at build time) because the
+// redesigned practice card draws its small-caps eyebrow in it on all three
+// hubs. Two weights only, which is what the card uses.
 const hanken = Hanken_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -26,6 +31,12 @@ const newsreader = Newsreader({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-newsreader",
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono-data",
   display: "swap",
 });
 
@@ -73,7 +84,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   const collapsed = cookieStore.get("sb_collapsed")?.value === "1";
 
   return (
-    <div className={`${hanken.variable} ${newsreader.variable} lp-root`}>
+    <div className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} lp-root`}>
       <AppShell
         role={profile.role}
         homeworkOnly={isHomeworkOnlyStudent(profile)}
