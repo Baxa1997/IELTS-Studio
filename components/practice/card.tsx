@@ -32,6 +32,7 @@ import {
   BRAND,
   BRAND_FILL,
   BRAND_SOFT,
+  PANEL,
   SLATE_BODY as MUTED,
   SLATE_GREEN as EMERALD,
   SLATE_INK as INK,
@@ -318,7 +319,12 @@ export function SeqTile({
         borderRadius: 8,
         background: ink ? INK : BRAND_SOFT,
         border: `1px solid ${ink ? INK : "rgba(125,1,50,.12)"}`,
-        color: ink ? "#fff" : BRAND,
+        /* ⚠️ `PANEL`, NOT WHITE. The `ink` tile is the INVERTED one — a dark
+           chip with light type — and `INK` already flips to near-white in dark,
+           so the tile inverts correctly on its own. The label did not: it was
+           literal white, which on the now-light tile is white on white. PANEL
+           is the card's own surface, so it is whatever INK is not. */
+        color: ink ? PANEL : BRAND,
         fontFamily: SERIF,
         fontSize: 15,
         fontWeight: 600,

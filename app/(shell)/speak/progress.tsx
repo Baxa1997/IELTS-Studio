@@ -96,7 +96,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
         </span>
         {delta !== 0 ? (
           <span
-            style={{ fontSize: 12.5, fontWeight: 700, color: delta > 0 ? "#15803D" : "#C2410C" }}
+            style={{ fontSize: 12.5, fontWeight: 700, color: delta > 0 ? "var(--tk-warm-green)" : "var(--rp-err)" }}
           >
             {delta > 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(1)} vs previous
           </span>
@@ -122,10 +122,10 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
               x2={W - PAD}
               y1={yOf(g)}
               y2={yOf(g)}
-              stroke="#E6E8EC"
+              stroke="var(--tk-slate-line)"
               strokeDasharray="3 4"
             />
-            <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" fill="#C9CDD4" textAnchor="start">
+            <text x={W - PAD + 1} y={yOf(g) + 3} fontSize="8.5" fill="var(--hb-dim-line)" textAnchor="start">
               {g}
             </text>
           </g>
@@ -190,7 +190,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
                       width: `${Math.round((Math.min(9, avg) / 9) * 100)}%`,
                       height: "100%",
                       borderRadius: 3,
-                      background: isWeak ? "#D9A23C" : BRAND,
+                      background: isWeak ? "var(--rp-gold)" : BRAND,
                     }}
                   />
                 </div>

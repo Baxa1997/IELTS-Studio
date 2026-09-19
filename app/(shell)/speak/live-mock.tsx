@@ -445,11 +445,11 @@ export function LiveMock({
   // ---- render (Speaking.dc.html) ---------------------------------------------
   // The exam's palette is the INK, not the violet: violet is the tutor's, and
   // the two must never be mistaken for each other mid-session.
-  const A = "#1A1520";
-  const INK = "#1A1520";
-  const MUTED2 = "#5C5460";
-  const FAINT = "#8C7F8A";
-  const DIV = "#EFEBE9";
+  const A = "var(--sp-ink)";
+  const INK = "var(--sp-ink)";
+  const MUTED2 = "var(--sp-body)";
+  const FAINT = "var(--sp-muted)";
+  const DIV = "var(--sp-line)";
   const cardStyle: React.CSSProperties = {
     background: PANEL,
     border: `1px solid ${LINE2}`,
@@ -457,7 +457,7 @@ export function LiveMock({
   };
   const RING = "rgba(26,21,32,0.22)";
   const ORB =
-    "radial-gradient(circle at 32% 28%, rgba(60,52,72,0.85) 0%, #2C2535 46%, #1A1520 100%)";
+    "radial-gradient(circle at 32% 28%, rgba(60,52,72,0.85) 0%, var(--sp-glass) 46%, var(--sp-ink) 100%)";
 
   const quotaHit = error ? /quota|upgrade|plan|Standard|Pro/i.test(error) : false;
   const persona = personaById(examiner);
@@ -613,7 +613,7 @@ export function LiveMock({
                             fontWeight: 600,
                             padding: "4px 10px",
                             borderRadius: 999,
-                            background: "#F5F2F0",
+                            background: "var(--sp-surface-2)",
                             color: MUTED2,
                           }}
                         >
@@ -656,7 +656,7 @@ export function LiveMock({
                           whiteSpace: "nowrap",
                           fontFamily: "inherit",
                           border: `1px solid ${on ? A : LINE2}`,
-                          background: on ? "rgba(26,21,32,0.06)" : "#FFFFFF",
+                          background: on ? "rgba(26,21,32,0.06)" : "var(--sp-rail)",
                           color: on ? A : MUTED2,
                         }}
                       >
@@ -706,7 +706,7 @@ export function LiveMock({
                     marginTop: 16,
                     padding: 14,
                     borderRadius: 12,
-                    background: "#F7F5F4",
+                    background: "var(--sp-rail-2)",
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
@@ -757,7 +757,7 @@ export function LiveMock({
                           style={{
                             width: 3,
                             height: "100%",
-                            background: "#22C55E",
+                            background: "var(--sp-live)",
                             borderRadius: 2,
                             transformOrigin: "bottom",
                             animation: `lcWaveBar 900ms ease-in-out ${d}ms infinite`,
@@ -766,7 +766,7 @@ export function LiveMock({
                       ))}
                     </div>
                   </div>
-                  <span style={{ fontSize: 11, color: "#22C55E", fontWeight: 600 }}>Ready</span>
+                  <span style={{ fontSize: 11, color: "var(--sp-live)", fontWeight: 600 }}>Ready</span>
                 </div>
 
                 <button
@@ -807,7 +807,7 @@ export function LiveMock({
                     style={{
                       margin: "12px 0 0",
                       fontSize: 13,
-                      color: "#DC2626",
+                      color: "var(--color-error)",
                       textAlign: "center",
                     }}
                   >
@@ -946,8 +946,8 @@ export function LiveMock({
                     marginTop: 18,
                     padding: "14px 16px",
                     borderRadius: 12,
-                    background: "#FDF4F4",
-                    border: "1px solid #F0D2D2",
+                    background: "var(--rp-err-bg)",
+                    border: "1px solid var(--rp-err-line)",
                   }}
                 >
                   <div
@@ -956,7 +956,7 @@ export function LiveMock({
                       fontWeight: 800,
                       letterSpacing: ".06em",
                       textTransform: "uppercase",
-                      color: "#8A2C2C",
+                      color: "var(--rp-err-deep)",
                     }}
                   >
                     Exam conditions
@@ -974,7 +974,7 @@ export function LiveMock({
                           gap: 8,
                           fontSize: 13.5,
                           lineHeight: 1.55,
-                          color: "#8A2C2C",
+                          color: "var(--rp-err-deep)",
                         }}
                       >
                         <span
@@ -1261,7 +1261,7 @@ export function LiveMock({
                       style={{
                         padding: "15px 24px",
                         borderRadius: 12,
-                        background: "#DA7756",
+                        background: "var(--color-amber-500)",
                         color: WHITE,
                         fontSize: 15,
                         fontWeight: 600,
@@ -1336,7 +1336,7 @@ export function LiveMock({
         zIndex: 70,
         display: "flex",
         flexDirection: "column",
-        background: "#FCFBFA",
+        background: "var(--sp-rail)",
       }}
     >
       {/* ── top bar ── */}
@@ -1408,8 +1408,8 @@ export function LiveMock({
             gap: 8,
             padding: "8px 18px",
             borderRadius: "var(--radius-pill)",
-            background: "#F4F1EF",
-            color: "#1A1520",
+            background: "var(--sp-stage)",
+            color: "var(--sp-ink)",
             fontSize: "var(--text-sm)",
             fontWeight: 600,
             whiteSpace: "nowrap",
@@ -1421,7 +1421,7 @@ export function LiveMock({
               width: 7,
               height: 7,
               borderRadius: "50%",
-              background: "#1A1520",
+              background: "var(--sp-ink)",
               animation: "lcDotPulse 1.4s ease-in-out infinite",
             }}
           />
@@ -1457,12 +1457,12 @@ export function LiveMock({
         </span>
       </div>
       {/* whole-test progress line (16-min cap) */}
-      <div aria-hidden style={{ flex: "none", height: 3, background: "#EFEBE8" }}>
+      <div aria-hidden style={{ flex: "none", height: 3, background: "var(--sp-edge)" }}>
         <div
           style={{
             height: "100%",
             width: `${Math.min(100, Math.max(1.5, (elapsed / 960) * 100))}%`,
-            background: "#1A1520",
+            background: "var(--sp-ink)",
             transition: "width 1s linear",
           }}
         />
@@ -1644,15 +1644,15 @@ export function LiveMock({
                 marginTop: 16,
                 padding: "8px 18px",
                 borderRadius: "var(--radius-pill)",
-                background: inPrep ? "var(--color-warning-bg)" : "#F4F1EF",
-                border: `1px solid ${inPrep ? "rgba(217,119,6,0.3)" : "#E7E3E0"}`,
+                background: inPrep ? "var(--color-warning-bg)" : "var(--sp-stage)",
+                border: `1px solid ${inPrep ? "rgba(217,119,6,0.3)" : "var(--sp-edge-3)"}`,
               }}
             >
               <span
                 style={{
                   ...kicker,
                   fontSize: "var(--text-2xs)",
-                  color: inPrep ? "var(--color-warning)" : "#1A1520",
+                  color: inPrep ? "var(--color-warning)" : "var(--sp-ink)",
                 }}
               >
                 {inPrep ? "Prep time" : "Speaking"}
@@ -1662,7 +1662,7 @@ export function LiveMock({
                   fontFamily: "var(--font-mono)",
                   fontSize: "var(--text-xl)",
                   fontWeight: 600,
-                  color: inPrep ? "var(--color-warning)" : "#1A1520",
+                  color: inPrep ? "var(--color-warning)" : "var(--sp-ink)",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
@@ -1840,7 +1840,7 @@ export function LiveMock({
                 borderRadius: "50%",
                 alignItems: "center",
                 justifyContent: "center",
-                background: userActive ? "#1A1520" : "#EFEBE8",
+                background: userActive ? "var(--sp-ink)" : "var(--sp-edge)",
                 color: userActive ? "#FFFFFF" : "var(--color-neutral-600)",
                 // ring always tracks the mic so a too-quiet voice still shows life
                 boxShadow:
@@ -1864,7 +1864,7 @@ export function LiveMock({
                 <path d="M5 11a7 7 0 0 0 14 0M12 18v3.5" />
               </svg>
             </span>
-            <WaveBars color="#8C7F8A" active={userActive} height={24} />
+            <WaveBars color="var(--sp-muted)" active={userActive} height={24} />
           </div>
           <div
             style={{

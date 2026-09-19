@@ -97,9 +97,170 @@ const LUCIDA_CSS = `
   --btn-primary-active: var(--color-primary-700);
   --btn-primary-text: #FFFFFF;
 
+  /* --- the hub's own neutrals -------------------------------------------
+   * speaking-client.tsx was written against near-duplicates of the scale above
+   * rather than the scale itself -- eleven greys that sit a channel or two off
+   * a step it already had. They are named here, at their EXACT existing values,
+   * so the hub can follow the theme without anyone having to re-approve a
+   * screenful of light-mode colour in the same change.
+   *
+   * They are drift, recorded. On anything new use --color-neutral-*. */
+  --sp-ink: #1A1520;
+  --sp-body: #5C5460;
+  --sp-muted: #8C7F8A;
+  --sp-faint: #A89AA4;
+  --sp-surface: #FAF9F8;
+  --sp-surface-2: #F5F2F0;
+  --sp-well: #F2EEEC;
+  --sp-tab-on: #FBF8F7;
+  --sp-line: #EFEBE9;
+  --sp-line-2: #EFEAE7;
+  --sp-chip: #EFEDE3;
+  --sp-ok-bg: #EAF7EE;
+  --sp-live: #22C55E;
+  --sp-warn-bg: #FEF6E7;
+  --sp-warn-fg: #B45309;
+  --sp-bad-bg: #FDF3F3;
+  --sp-bad-line: #F3C6C6;
+  --sp-accent-2: #9B1044;
+  --sp-disabled: #CC5C82;
+  /* The live session's own surfaces (live-mock, tutor-room, confirm-quit) —
+     the same story as the hub's greys: near-duplicates of the scale above,
+     named at their exact values so the session can follow the theme. */
+  --sp-stage: #F4F1EF;
+  --sp-stage-2: #F7F2EF;
+  --sp-rail: #FCFBFA;
+  --sp-rail-2: #F7F5F4;
+  --sp-panel: #F6F3F1;
+  --sp-panel-2: #F5F0EE;
+  --sp-edge: #EFEBE8;
+  --sp-edge-2: #EAE1DC;
+  --sp-edge-3: #E7E3E0;
+  --sp-edge-4: #E6DCD7;
+  --sp-edge-5: #F1ECE9;
+  --sp-glass: #2C2535;
+  --sp-glass-2: #19151E;
+  --sp-glass-3: #110E14;
+  --sp-warm-tint: #FFF6F0;
+  --sp-info-tint: #EEF4FF;
+
   font-family: var(--font-body);
   color: var(--color-neutral-1000);
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * ── LUCIDA IN THE DARK ──────────────────────────────────────────────────────
+ *
+ * The neutral scale is SEMANTIC — 0 is the lightest surface, 1000 is the ink —
+ * so dark mode does not recolour it, it REVERSES it: 0 becomes the darkest
+ * surface and 1000 the lightest ink, with every step in between mirrored. That
+ * is why this is a straight re-listing rather than a handful of overrides:
+ * every step changes, and a partial inversion leaves ink and surface on the
+ * same side of the scale, which is exactly how you get grey-on-grey.
+ *
+ * ⚠️ THE MOCK WAS AUTHORED DARK IN THE FIRST PLACE. The header above records
+ * that its shadows were 'softened for the light surface'; here they go back to
+ * real black, because a 6%-black shadow on a near-black card is invisible and
+ * the elevation that separates a stage from its rail disappears with it.
+ *
+ * The primary scale follows the app's dark brand onto ORANGE (see the note on
+ * --tk-brand in globals.css). It keeps Lucida's own step shape: 500 is the
+ * resting brand, 600/700 are the hover/active steps — which on a dark ground
+ * get LIGHTER, not darker.
+ */
+.dark .lucida {
+  --color-neutral-0:    #171320;
+  --color-neutral-50:   #1e1a28;
+  --color-neutral-100:  #262130;
+  --color-neutral-200:  #2f2a3a;
+  --color-neutral-300:  #413a4c;
+  --color-neutral-400:  #6b6277;
+  --color-neutral-500:  #8d8499;
+  --color-neutral-600:  #a9a1b4;
+  --color-neutral-700:  #c3bcc9;
+  --color-neutral-800:  #d8d2df;
+  --color-neutral-900:  #e8e4ee;
+  --color-neutral-1000: #f4f1f8;
+
+  --color-primary-50:  #2a1610;
+  --color-primary-100: #33190f;
+  --color-primary-200: #4a2718;
+  --color-primary-300: #4a2416;
+  --color-primary-400: #ee8552;
+  --color-primary-500: #d85d1f;
+  --color-primary-600: #e97338;
+  --color-primary-700: #f0906a;
+  --color-primary-800: #2a1208;
+  --color-primary-900: #1b0b04;
+
+  /* Terracotta lifts a little so it still separates from the primary orange
+     now that the primary IS orange. */
+  --color-amber-400: #f4a385;
+  --color-amber-500: #e08a68;
+  --color-amber-600: #f0a98e;
+
+  --color-success: #3fbf85;
+  --color-error: #e87b70;
+  --color-warning: #e0a84a;
+  --color-info: #6b9bf0;
+  /* The semantic washes are re-stated rather than left to inherit: they are
+     10% tints of the semantic colours, and those all moved above — an inherited
+     wash would be a tint of the LIGHT theme's green sitting under the dark
+     theme's green text. */
+  --color-success-bg: rgba(63,191,133,0.14);
+  --color-error-bg:   rgba(232,123,112,0.14);
+  --color-warning-bg: rgba(224,168,74,0.14);
+  --color-info-bg:    rgba(107,155,240,0.14);
+
+  --shadow-1: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-2: 0 6px 24px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.4);
+  --shadow-3: 0 24px 64px rgba(0,0,0,0.7);
+  --shadow-glow: 0 0 24px rgba(216,93,31,0.35);
+
+  /* The button keeps WHITE text, so its fill has to be the darker of the two
+     brand oranges — the same split --tk-brand-fill makes app-wide. */
+  --sp-ink: #f2eff5;
+  --sp-body: #c3bcc9;
+  --sp-muted: #9d94a3;
+  --sp-faint: #8c8494;
+  --sp-surface: #1c1822;
+  --sp-surface-2: #232029;
+  --sp-well: #201c27;
+  --sp-tab-on: #2a2633;
+  --sp-line: #2c2834;
+  --sp-line-2: #2c2834;
+  --sp-chip: #2a2620;
+  --sp-ok-bg: #122a1f;
+  --sp-live: #3fbf85;
+  --sp-warn-bg: #2e2314;
+  --sp-warn-fg: #e0a84a;
+  --sp-bad-bg: #2e1715;
+  --sp-bad-line: #4a2320;
+  --sp-accent-2: #e2631f;
+  --sp-disabled: #6b3520;
+  --sp-stage: #1e1a26;
+  --sp-stage-2: #221d2b;
+  --sp-rail: #1a1622;
+  --sp-rail-2: #201c29;
+  --sp-panel: #201c28;
+  --sp-panel-2: #242030;
+  --sp-edge: #2c2834;
+  --sp-edge-2: #332d3c;
+  --sp-edge-3: #2f2a38;
+  --sp-edge-4: #3a3141;
+  --sp-edge-5: #272232;
+  /* Already dark in light mode — these are the session's glass overlays, so
+     they go LIGHTER here rather than inverting, or they vanish into the page. */
+  --sp-glass: #3a3348;
+  --sp-glass-2: #2a2435;
+  --sp-glass-3: #201b29;
+  --sp-warm-tint: #2e1f16;
+  --sp-info-tint: #16203a;
+
+  --btn-primary-bg: #c2471b;
+  --btn-primary-hover: #d85d1f;
+  --btn-primary-active: #e97338;
 }
 
 .lucida ::selection { background: rgba(132,86,239,0.20); }

@@ -455,6 +455,22 @@
   --gl-neutral-bg: #f0efea;
   --gl-neutral-ink: #5c616b;
   --gl-neutral-line: #e6e4dc;
+
+  /* The speaking REPORT and progress strip. Kept in the app-wide palette, not
+     Lucida's, because the report renders in two places: inside the Speaking hub
+     (which is scoped `.lucida`) and on its own /speak/results page, which is
+     not — a `--sp-*` token would resolve in one and not the other. */
+  --rp-err: #c2410c;
+  --rp-err-deep: #8a2c2c;
+  --rp-err-bg: #fdf4f4;
+  --rp-err-line: #f0d2d2;
+  --rp-warm-bg: #fceeea;
+  --rp-warm-line: #f3dad3;
+  --rp-warm-line-2: #f3cfc6;
+  --rp-gold: #d9a23c;
+  --rp-ok: #2c7a52;
+  --rp-ok-deep: #1a7a48;
+  --rp-ok-line: #cfe7da;
 }
 
 /*
@@ -675,6 +691,18 @@
   --gl-neutral-bg: #21212a;
   --gl-neutral-ink: #a0a3ac;
   --gl-neutral-line: #2e2e38;
+
+  --rp-err: #f08a6a;
+  --rp-err-deep: #e87b70;
+  --rp-err-bg: #2e1715;
+  --rp-err-line: #4a2320;
+  --rp-warm-bg: #2e1c16;
+  --rp-warm-line: #4a2b22;
+  --rp-warm-line-2: #4a2b22;
+  --rp-gold: #e0a84a;
+  --rp-ok: #3fbf85;
+  --rp-ok-deep: #4ad195;
+  --rp-ok-line: #1e4534;
 }
 
 /* ── THE MARKETING PALETTE (`--mk-*`) ──────────────────────────────────────
@@ -4304,11 +4332,57 @@ section[id] {
    and a short final row leaves the rule hanging.
    ══════════════════════════════════════════════════════════════════════════ */
 .pg-root {
+  /* ⚠️ SCOPED TO `.pg-root`, NOT `:root`, so the dark overrides live in a
+     `.dark .pg-root` block below rather than in the theme's own `.dark` — a
+     `:root`-level override would lose to these on specificity. Both blocks
+     must carry every name. */
   --pg-line: #e9e7e1;
   --pg-ink: #16150f;
   --pg-muted: #83807a;
+  --pg-surface: #ffffff;
+  --pg-line-strong: #c9c6bd;
+  --pg-focus-ring: rgba(28, 25, 15, 0.05);
+  /* The filter pills. `active` is the inverted one — dark chip, light text. */
+  --pg-chip-bg: #eceae5;
+  --pg-chip-ink: #3f3d39;
+  --pg-chip-hover: #e3e0d9;
+  --pg-active-bg: #16150f;
+  --pg-active-ink: #ffffff;
+  --pg-wash: rgba(28, 25, 15, 0.028);
+  --pg-veil: rgba(255, 255, 255, 0.66);
   font-family: var(--font-hanken), system-ui, sans-serif;
   color: var(--pg-ink);
+}
+
+/*
+ * The Activities grid in dark.
+ *
+ * ⚠️ `--pg-line` IS A REAL SURFACE HERE, NOT A BORDER COLOUR. The grid draws
+ * its rules by letting its own BACKGROUND show through 1px gaps between cells
+ * (see the note above `.pg-root`), so this value paints the whole area behind
+ * the cards — pick it as if it were a border and the entire grid glows.
+ *
+ * Scoped to `.dark .pg-root` rather than the theme's `.dark` block because the
+ * light values are declared on `.pg-root`, and a `:root`-level override would
+ * lose to them on specificity.
+ */
+.dark .pg-root {
+  --pg-line: #2b2b34;
+  --pg-ink: #ededf2;
+  --pg-muted: #9a989f;
+  --pg-surface: #16161f;
+  --pg-line-strong: #3a3a45;
+  --pg-focus-ring: rgba(255, 255, 255, 0.12);
+  --pg-chip-bg: #22222b;
+  --pg-chip-ink: #c9c7d2;
+  --pg-chip-hover: #2c2c37;
+  /* Inverted BACK: the selected chip is the one that contrasts with the page,
+     so on a dark page it is the light one. Leaving this dark makes "All" read
+     as the disabled chip and every unselected one as the choice. */
+  --pg-active-bg: #ededf2;
+  --pg-active-ink: #16161f;
+  --pg-wash: rgba(255, 255, 255, 0.04);
+  --pg-veil: rgba(22, 22, 31, 0.66);
 }
 .pg-head {
   margin-bottom: 22px;
@@ -4345,12 +4419,12 @@ section[id] {
   padding: 0 16px;
   border: 1px solid var(--pg-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--pg-surface);
   color: var(--pg-muted);
 }
 .pg-search:focus-within {
-  border-color: #c9c6bd;
-  box-shadow: 0 0 0 3px rgba(28, 25, 15, 0.05);
+  border-color: var(--pg-line-strong);
+  box-shadow: 0 0 0 3px var(--pg-focus-ring);
 }
 .pg-search input {
   flex: 1;
@@ -4376,7 +4450,7 @@ section[id] {
   padding: 0 14px;
   border: 1px solid var(--pg-line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--pg-surface);
   cursor: pointer;
 }
 .pg-select select {
@@ -4411,8 +4485,8 @@ section[id] {
   cursor: pointer;
   padding: 9px 17px;
   border-radius: 999px;
-  background: #eceae5;
-  color: #3f3d39;
+  background: var(--pg-chip-bg);
+  color: var(--pg-chip-ink);
   font: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -4421,7 +4495,7 @@ section[id] {
     color 0.15s ease;
 }
 .pg-chip:hover {
-  background: #e3e0d9;
+  background: var(--pg-chip-hover);
 }
 /* "All" is not one of the named filters, it is the absence of one — the
    reference fences it off with a hairline rather than letting it read as the
@@ -4437,8 +4511,8 @@ section[id] {
    impossible to miss — a tinted chip among tinted chips is not. */
 .pg-chip--on,
 .pg-chip--on:hover {
-  background: #16150f;
-  color: #fff;
+  background: var(--pg-active-bg);
+  color: var(--pg-active-ink);
 }
 
 /* ── the grid ────────────────────────────────────────────────────────────
@@ -4528,7 +4602,7 @@ section[id] {
   transition: background 0.15s ease;
 }
 .pg-card:hover {
-  background: rgba(28, 25, 15, 0.028);
+  background: var(--pg-wash);
 }
 /* A practice with no report yet. It still says what happened; it just is not a
    door, so it must not light up like one. */
@@ -4569,7 +4643,7 @@ section[id] {
   padding: 3px 9px;
   border: 1px solid;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.66);
+  background: var(--pg-veil);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4599,8 +4673,8 @@ section[id] {
   margin-left: auto;
   padding: 5px 11px;
   border-radius: 8px;
-  background: #eceae5;
-  color: #3f3d39;
+  background: var(--pg-chip-bg);
+  color: var(--pg-chip-ink);
   font-size: 12.5px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -4646,8 +4720,8 @@ section[id] {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #16150f;
-  color: #fff;
+  background: var(--pg-active-bg);
+  color: var(--pg-active-ink);
   transition: transform 0.15s ease;
 }
 .pg-card:hover .pg-go {

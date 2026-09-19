@@ -212,7 +212,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
           type="submit"
           disabled={busy || !input.trim()}
           style={{
-            background: busy || !input.trim() ? "#E3A7BD" : BRAND,
+            background: busy || !input.trim() ? "var(--color-primary-300)" : BRAND,
             color: WHITE,
             border: "none",
             borderRadius: 10,

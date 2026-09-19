@@ -143,11 +143,11 @@ export function SpeakingReport({
       {partial.length ? (
         <div
           style={{
-            border: "1px solid #F0D2D2",
-            background: "#FDF4F4",
+            border: "1px solid var(--rp-err-line)",
+            background: "var(--rp-err-bg)",
             borderRadius: 14,
             padding: "16px 18px",
-            color: "#8A2C2C",
+            color: "var(--rp-err-deep)",
           }}
         >
           <div
@@ -193,11 +193,11 @@ export function SpeakingReport({
       {result.conduct ? (
         <div
           style={{
-            border: "1px solid #F0D2D2",
-            background: "#FDF4F4",
+            border: "1px solid var(--rp-err-line)",
+            background: "var(--rp-err-bg)",
             borderRadius: 14,
             padding: "16px 18px",
-            color: "#8A2C2C",
+            color: "var(--rp-err-deep)",
           }}
         >
           <div
@@ -291,7 +291,7 @@ export function SpeakingReport({
               gap: 8,
               padding: "7px 13px",
               background: GOOD_BG,
-              border: "1px solid #cfe7da",
+              border: "1px solid var(--rp-ok-line)",
               borderRadius: 11,
             }}
           >
@@ -308,9 +308,9 @@ export function SpeakingReport({
             >
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>
-            <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
+            <span style={{ fontSize: 13.5, color: "var(--rp-ok)", fontWeight: 600 }}>
               Up to{" "}
-              <strong style={{ fontWeight: 800, color: "#1A7A48" }}>{fixes.toFixed(1)}</strong> with
+              <strong style={{ fontWeight: 800, color: "var(--rp-ok-deep)" }}>{fixes.toFixed(1)}</strong> with
               the fixes
             </span>
           </div>
@@ -328,7 +328,7 @@ export function SpeakingReport({
             const c = result.criteria[k];
             const isBlocker = result.score_blocker?.criterion === k;
             const isBeta = k === "P" && pBeta;
-            const color = isBlocker ? "#C2410C" : c.band >= 6 ? "#3B4150" : AMBER;
+            const color = isBlocker ? "var(--rp-err)" : c.band >= 6 ? "var(--tk-slate-strong)" : AMBER;
             const tag = isBeta
               ? "Beta — not counted"
               : isBlocker
@@ -341,16 +341,16 @@ export function SpeakingReport({
             const tagColor = isBeta
               ? AMBER
               : isBlocker
-                ? "#C2410C"
+                ? "var(--rp-err)"
                 : c.band >= 6
-                  ? "#8B919D"
+                  ? "var(--tk-slate-muted)"
                   : AMBER;
             return (
               <div
                 key={k}
                 style={{
-                  background: isBlocker ? "#FCEEEA" : "#ECEEF2",
-                  border: `1px solid ${isBlocker ? "#F3CFC6" : LINE}`,
+                  background: isBlocker ? "var(--rp-warm-bg)" : "var(--tk-learner-well-line)",
+                  border: `1px solid ${isBlocker ? "var(--rp-warm-line-2)" : LINE}`,
                   borderRadius: 12,
                   padding: "10px 12px",
                   minWidth: 0,
@@ -393,7 +393,7 @@ export function SpeakingReport({
                     marginTop: 8,
                     height: 5,
                     borderRadius: 3,
-                    background: isBlocker ? "#F3DAD3" : "#E6E8EC",
+                    background: isBlocker ? "var(--rp-warm-line)" : "var(--tk-slate-line)",
                     overflow: "hidden",
                   }}
                 >
@@ -402,7 +402,7 @@ export function SpeakingReport({
                       width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`,
                       height: "100%",
                       borderRadius: 3,
-                      background: isBlocker ? "#C2410C" : BRAND,
+                      background: isBlocker ? "var(--rp-err)" : BRAND,
                       opacity: isBeta ? 0.45 : 1,
                     }}
                   />

@@ -17,9 +17,9 @@ import { PANEL, WHITE } from "@/lib/theme/tokens";
 // reads as a different product.
 const SANS = "var(--font-jakarta), system-ui, sans-serif";
 const DISPLAY = "var(--font-bricolage), Georgia, serif";
-const INK = "#1A1520";
-const MUTED = "#5C5460";
-const RED = "#DC2626";
+const INK = "var(--sp-ink)";
+const MUTED = "var(--sp-body)";
+const RED = "var(--color-error)";
 
 export function ConfirmQuit({
   open,
@@ -122,7 +122,7 @@ export function ConfirmQuit({
               width: "100%",
               background: PANEL,
               color: RED,
-              border: "1px solid #F0D2D2",
+              border: "1px solid var(--rp-err-line)",
               borderRadius: 12,
               padding: "14px 18px",
               fontSize: 15,

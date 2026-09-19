@@ -12,29 +12,45 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOT = process.cwd();
-const css = readFileSync(join(ROOT, "app/globals.css"), "utf8");
-
-/** The `:root` block that declares a given prefix, and the `.dark` one. */
-function block(open: RegExp): string {
-  const at = css.search(open);
-  expect(at, `no block matching ${open}`).toBeGreaterThan(-1);
-  const from = css.indexOf("{", at);
-  return css.slice(from, css.indexOf("\n}", from));
-}
+/**
+ * Every stylesheet that declares palette tokens.
+ *
+ * ⚠️ NOT ALL OF THEM ARE .css FILES. The Speaking surface's "Lucida" scale is a
+ * template literal inside `app/(shell)/speak/lucida.tsx`, scoped under
+ * `.lucida` so its warm-violet palette cannot leak into the rest of the app —
+ * and it is a palette like any other, with exactly the same way of going wrong.
+ * Reading only globals.css would leave the largest scoped palette in the
+ * codebase unguarded.
+ */
+const css =
+  readFileSync(join(ROOT, "app/globals.css"), "utf8") +
+  "\n" +
+  readFileSync(join(ROOT, "app/(shell)/speak/lucida.tsx"), "utf8");
 
 /**
- * Token names declared in `text`, EXCLUDING pure aliases.
+ * Every declaration of `prefix`, split by theme.
  *
- * A token whose value is itself a `var(...)` — `--pc-surface: var(--tk-panel)` —
- * needs no dark override: it inherits whatever the token it points at resolves
- * to. Requiring one would be wrong, and writing one would silently break the
- * link it exists to express.
+ * ⚠️ KEYED ON THE SELECTOR CONTAINING `.dark`, NOT ON IT BEING `:root`/`.dark`.
+ * Scoped palettes declare their light values on their own root — `.pg-root`,
+ * `.lucida` — and their dark ones on `.dark .pg-root` / `.dark .lucida`,
+ * because a `:root`-level override would lose to them on specificity. A test
+ * that only looked at `:root {` and `.dark {` would silently pass those two by,
+ * which is how the Activities grid and the whole Speaking surface stayed light
+ * while every token-driven screen around them went dark.
  */
-function names(text: string, prefix: string): string[] {
-  return [...text.matchAll(new RegExp(`^\\s*(${prefix}[a-z0-9-]+):\\s*([^;]+);`, "gm"))]
-    .filter((m) => !/^var\(/.test(m[2].trim()))
-    .map((m) => m[1]);
+function declared(prefix: string, theme: "light" | "dark"): Set<string> {
+  const out = new Set<string>();
+  for (const b of css.matchAll(/(^|\n)([.:][^{}\n]*?)\s*\{([^{}]*)\}/g)) {
+    const selector = b[2].trim();
+    if (selector.includes(".dark") !== (theme === "dark")) continue;
+    for (const m of b[3].matchAll(new RegExp(`^\\s*(${prefix}[a-z0-9-]+):\\s*([^;]+);`, "gm"))) {
+      // A pure alias inherits whatever it points at and needs no override.
+      if (!/^var\(/.test(m[2].trim())) out.add(m[1]);
+    }
+  }
+  return out;
 }
+
 
 
 /** `--var: #hex` for one theme, from every matching block. */
@@ -73,19 +89,23 @@ describe("the runtime palette", () => {
     ["--mk-", "--mk-"],
     ["--sh-", "--sh-"],
     ["--pc-", "--pc-"],
+    ["--pg-", "--pg-"],
+    ["--sp-", "--sp-"],
+    ["--rp-", "--rp-"],
+    ["--color-", "--color-"],
   ] as const) {
     it(`defines every ${label} token in BOTH light and dark`, () => {
-      // A token declared only in `:root` keeps its LIGHT value on a dark page.
+      // A token declared only in light keeps its LIGHT value on a dark page.
       // That is how you get black text on a black card, and it looks like a
       // missing style rather than a missing line in a CSS block.
-      const light = new Set(names(block(new RegExp(`:root \\{[^}]*\\${prefix}`)), prefix));
-      const dark = new Set(names(block(new RegExp(`\\.dark \\{[^}]*\\${prefix}`)), prefix));
+      const light = declared(prefix, "light");
+      const dark = declared(prefix, "dark");
 
       expect(light.size, `no ${label} tokens found at all`).toBeGreaterThan(5);
-      expect([...light].filter((n) => !dark.has(n))).toEqual([]);
+      expect([...light].filter((n) => !dark.has(n)), `${label}: no dark value`).toEqual([]);
       // And nothing may exist ONLY in dark: that renders as an invalid value in
       // light mode, which the browser drops without a word.
-      expect([...dark].filter((n) => !light.has(n))).toEqual([]);
+      expect([...dark].filter((n) => !light.has(n)), `${label}: no light value`).toEqual([]);
     });
   }
 

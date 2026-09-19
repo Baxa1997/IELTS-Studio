@@ -142,7 +142,7 @@ const PURPOSES: Purpose[] = [
     room: "Role-play",
     length: "10 min",
     theme: "flow",
-    accent: "#DA7756",
+    accent: "var(--color-amber-500)",
     defaultMode: "chat",
     focus: "Fixed phrases that get things done, said at normal speed without translating first.",
     tags: ["Useful phrases", "Politeness", "Speed"],
@@ -179,7 +179,7 @@ const PURPOSES: Purpose[] = [
     room: "Interview room",
     length: "20 min",
     theme: "interview",
-    accent: "#3B82F6",
+    accent: "var(--color-info)",
     defaultMode: "chat",
     focus:
       "Real interview questions for your actual job, answered in clear English and in STAR order.",
@@ -192,7 +192,7 @@ const PURPOSES: Purpose[] = [
     room: "Coached exam",
     length: "20 min",
     theme: "flow",
-    accent: "#22C55E",
+    accent: "var(--sp-live)",
     defaultMode: "part1",
     focus: "Answers long enough for Part 1, a full two minutes in Part 2, and reasons in Part 3.",
     tags: ["Part 2 timing", "Reasons", "Band-7 phrasing"],
@@ -204,7 +204,7 @@ const PURPOSES: Purpose[] = [
     room: "Café",
     length: "10 min",
     theme: "flow",
-    accent: "#F09070",
+    accent: "var(--color-amber-400)",
     defaultMode: "chat",
     focus: "Sounding relaxed: contractions, short reactions, and following a fast topic change.",
     tags: ["Contractions", "Reactions", "Small talk"],
@@ -229,23 +229,23 @@ function roomTheme(p: Purpose) {
   const dark = p.theme === "stage";
   return {
     dark,
-    accent: dark ? "#CC5C82" : p.accent,
+    accent: dark ? "var(--sp-disabled)" : p.accent,
     bg: dark
-      ? "radial-gradient(900px 600px at 50% -10%, #2C2535 0%, #19151E 55%, #110E14 100%)"
+      ? "radial-gradient(900px 600px at 50% -10%, var(--sp-glass) 0%, var(--sp-glass-2) 55%, var(--sp-glass-3) 100%)"
       : p.theme === "interview"
-        ? "radial-gradient(900px 560px at 78% -12%, #EEF4FF 0%, #F6F3F1 60%, #EFEAE7 100%)"
-        : "radial-gradient(820px 520px at 18% -10%, #FFF6F0 0%, #FBF8F7 55%, #F1ECE9 100%)",
-    ink: dark ? "#F5F0EE" : "#1A1520",
-    ink2: dark ? "#A89AA4" : "#8C7F8A",
-    line: dark ? "rgba(245,240,238,0.16)" : "#E6DCD7",
+        ? "radial-gradient(900px 560px at 78% -12%, var(--sp-info-tint) 0%, var(--sp-panel) 60%, var(--sp-line-2) 100%)"
+        : "radial-gradient(820px 520px at 18% -10%, var(--sp-warm-tint) 0%, var(--sp-tab-on) 55%, var(--sp-edge-5) 100%)",
+    ink: dark ? "var(--sp-panel-2)" : "var(--sp-ink)",
+    ink2: dark ? "var(--sp-faint)" : "var(--sp-muted)",
+    line: dark ? "rgba(245,240,238,0.16)" : "var(--sp-edge-4)",
     card: dark ? "rgba(245,240,238,0.06)" : "rgba(255,253,252,0.86)",
     chipBg: dark ? "rgba(148,104,245,0.20)" : `${p.accent}1F`,
-    tint: dark ? "rgba(245,240,238,0.05)" : "#F7F2EF",
-    track: dark ? "rgba(245,240,238,0.14)" : "#EAE1DC",
+    tint: dark ? "rgba(245,240,238,0.05)" : "var(--sp-stage-2)",
+    track: dark ? "rgba(245,240,238,0.14)" : "var(--sp-edge-2)",
     shadow: dark ? "rgba(0,0,0,0.55)" : "rgba(26,21,32,0.18)",
     glow: `${p.accent}55`,
-    blobA: `${dark ? "#5C0125" : p.accent}4D`,
-    blobB: "#DA775633",
+    blobA: `${dark ? "var(--color-primary-600)" : p.accent}4D`,
+    blobB: "var(--color-amber-500)33",
   };
 }
 
@@ -733,7 +733,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
     // reads as a bug, and it made its own title unreadable (dark ink on the
     // dark stage gradient). The purpose shows up here only in the accent.
     return (
-      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "var(--sp-ink)" }}>
         <div
           style={{
             flex: 1,
@@ -2357,7 +2357,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 background: holding ? th.accent : "transparent",
                 color: holding
                   ? th.dark
-                    ? "#17131C"
+                    ? "var(--color-neutral-1000)"
                     : "#FFFFFF"
                   : speaking || thinking
                     ? th.ink2
@@ -2440,7 +2440,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 placeItems: "center",
                 border: "none",
                 cursor: "pointer",
-                color: th.dark ? "#17131C" : "#FFFFFF",
+                color: th.dark ? "var(--color-neutral-1000)" : "#FFFFFF",
                 background: th.accent,
                 fontFamily: "inherit",
                 boxShadow:
@@ -2493,7 +2493,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                color: "#EF4444",
+                color: "var(--color-error)",
                 whiteSpace: "nowrap",
               }}
             >

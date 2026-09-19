@@ -291,7 +291,7 @@ const HUB_PURPOSES = [
     mark: "E",
     room: "Role-play",
     length: "10 min",
-    accent: "#DA7756",
+    accent: "var(--color-amber-500)",
   },
   {
     id: "presWork",
@@ -315,7 +315,7 @@ const HUB_PURPOSES = [
     mark: "I",
     room: "Interview room",
     length: "20 min",
-    accent: "#3B82F6",
+    accent: "var(--color-info)",
   },
   {
     id: "ielts",
@@ -323,7 +323,7 @@ const HUB_PURPOSES = [
     mark: "B",
     room: "Coached exam",
     length: "20 min",
-    accent: "#22C55E",
+    accent: "var(--sp-live)",
   },
   {
     id: "friends",
@@ -331,7 +331,7 @@ const HUB_PURPOSES = [
     mark: "F",
     room: "Café",
     length: "10 min",
-    accent: "#F09070",
+    accent: "var(--color-amber-400)",
   },
 ];
 
@@ -527,20 +527,20 @@ export function SpeakingClient({
   if (!legacyPart2) {
     // The design's mock accent is the ink, not the violet — the violet is
     // reserved for the BETA badge and links, so the exam reads as serious.
-    const A = "#1A1520";
+    const A = "var(--sp-ink)";
     const aTint = "rgba(26,21,32,0.08)";
     const bandChip = (b: number) =>
       b >= 6
-        ? { bg: "#EAF7EE", fg: WARM_GREEN }
+        ? { bg: "var(--sp-ok-bg)", fg: WARM_GREEN }
         : b >= 5
-          ? { bg: "#FEF6E7", fg: "#B45309" }
-          : { bg: "#F5F2F0", fg: "#5C5460" };
+          ? { bg: "var(--sp-warn-bg)", fg: "var(--sp-warn-fg)" }
+          : { bg: "var(--sp-surface-2)", fg: "var(--sp-body)" };
     const kicker: React.CSSProperties = {
       fontFamily: "var(--font-mono)",
       fontSize: 11,
       fontWeight: 600,
       letterSpacing: "0.1em",
-      color: "#8C7F8A",
+      color: "var(--sp-muted)",
     };
     // On a WHITE page a cream card is invisible, so the surfaces are white and
     // the separation comes from the border; only recessed things (table rows,
@@ -577,7 +577,7 @@ export function SpeakingClient({
       new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
     return (
-      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "var(--sp-ink)" }}>
         {/* Fills the window instead of growing past it: the header and tabs are
             fixed, and only the active panel scrolls — and then only when it
             genuinely does not fit. */}
@@ -620,7 +620,7 @@ export function SpeakingClient({
                     margin: "10px 0 0",
                     fontSize: 15,
                     lineHeight: 1.6,
-                    color: "#5C5460",
+                    color: "var(--sp-body)",
                     maxWidth: 600,
                   }}
                 >
@@ -631,7 +631,7 @@ export function SpeakingClient({
                 {allowance ? (
                   <div style={chip}>
                     {unlimited ? (
-                      <span style={{ fontSize: 12, color: "#5C5460" }}>Unlimited mocks</span>
+                      <span style={{ fontSize: 12, color: "var(--sp-body)" }}>Unlimited mocks</span>
                     ) : (
                       <>
                         <span
@@ -639,13 +639,13 @@ export function SpeakingClient({
                             fontFamily: "var(--font-mono)",
                             fontSize: 12,
                             fontWeight: 600,
-                            color: "#1A1520",
+                            color: "var(--sp-ink)",
                             fontVariantNumeric: "tabular-nums",
                           }}
                         >
                           {mocksLeft} / {allowance.limit}
                         </span>
-                        <span style={{ fontSize: 12, color: "#8C7F8A" }}>
+                        <span style={{ fontSize: 12, color: "var(--sp-muted)" }}>
                           mocks left this month
                         </span>
                       </>
@@ -655,9 +655,9 @@ export function SpeakingClient({
                 <div style={chip}>
                   <span
                     aria-hidden
-                    style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E" }}
+                    style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--sp-live)" }}
                   />
-                  <span style={{ fontSize: 12, color: "#5C5460" }}>Microphone ready</span>
+                  <span style={{ fontSize: 12, color: "var(--sp-body)" }}>Microphone ready</span>
                 </div>
               </div>
             </div>
@@ -669,7 +669,7 @@ export function SpeakingClient({
                 display: "inline-flex",
                 padding: 4,
                 gap: 4,
-                background: "#F2EEEC",
+                background: "var(--sp-well)",
                 borderRadius: 999,
               }}
             >
@@ -690,8 +690,8 @@ export function SpeakingClient({
                       fontSize: 14,
                       fontWeight: 600,
                       whiteSpace: "nowrap",
-                      background: on ? "#FBF8F7" : "transparent",
-                      color: on ? "#1A1520" : "#5C5460",
+                      background: on ? "var(--sp-tab-on)" : "transparent",
+                      color: on ? "var(--sp-ink)" : "var(--sp-body)",
                       boxShadow: on ? "0 1px 3px rgba(26,21,32,0.12)" : "none",
                     }}
                   >
@@ -727,9 +727,9 @@ export function SpeakingClient({
                         fontSize: 11,
                         padding: "5px 10px",
                         borderRadius: 999,
-                        background: "#F5F2F0",
+                        background: "var(--sp-surface-2)",
                         border: `1px solid ${WARM_EDGE}`,
-                        color: "#5C5460",
+                        color: "var(--sp-body)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -753,7 +753,7 @@ export function SpeakingClient({
                       margin: "10px 0 0",
                       fontSize: 15,
                       lineHeight: 1.6,
-                      color: "#5C5460",
+                      color: "var(--sp-body)",
                       maxWidth: 560,
                     }}
                   >
@@ -800,7 +800,7 @@ export function SpeakingClient({
                           gap: 16,
                           alignItems: "center",
                           padding: "15px 18px",
-                          background: "#FAF9F8",
+                          background: "var(--sp-surface)",
                           borderTop: i ? `1px solid ${WARM_EDGE}` : "none",
                         }}
                       >
@@ -821,13 +821,13 @@ export function SpeakingClient({
                         </span>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
-                          <div style={{ marginTop: 2, fontSize: 13, color: "#8C7F8A" }}>{desc}</div>
+                          <div style={{ marginTop: 2, fontSize: 13, color: "var(--sp-muted)" }}>{desc}</div>
                         </div>
                         <span
                           style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: 12,
-                            color: "#5C5460",
+                            color: "var(--sp-body)",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -856,7 +856,7 @@ export function SpeakingClient({
                             alignItems: "center",
                             gap: 7,
                             fontSize: 12,
-                            color: "#5C5460",
+                            color: "var(--sp-body)",
                           }}
                         >
                           <span
@@ -865,7 +865,7 @@ export function SpeakingClient({
                               width: 5,
                               height: 5,
                               borderRadius: "50%",
-                              background: "#DA7756",
+                              background: "var(--color-amber-500)",
                             }}
                           />
                           {t}
@@ -900,7 +900,7 @@ export function SpeakingClient({
                           fontSize: 12,
                           fontWeight: 700,
                           letterSpacing: "0.08em",
-                          color: "#8C7F8A",
+                          color: "var(--sp-muted)",
                         }}
                       >
                         THIS MONTH
@@ -918,7 +918,7 @@ export function SpeakingClient({
                         >
                           {allowance.used}
                         </span>
-                        <span style={{ fontSize: 14, color: "#8C7F8A" }}>
+                        <span style={{ fontSize: 14, color: "var(--sp-muted)" }}>
                           {unlimited ? "mocks this month" : `of ${allowance.limit} mocks used`}
                         </span>
                       </div>
@@ -928,7 +928,7 @@ export function SpeakingClient({
                             marginTop: 14,
                             height: 6,
                             borderRadius: 999,
-                            background: "#EFEAE7",
+                            background: "var(--sp-line-2)",
                             overflow: "hidden",
                           }}
                         >
@@ -943,7 +943,7 @@ export function SpeakingClient({
                         </div>
                       )}
                       <div
-                        style={{ marginTop: unlimited ? 12 : 10, fontSize: 12, color: "#8C7F8A" }}
+                        style={{ marginTop: unlimited ? 12 : 10, fontSize: 12, color: "var(--sp-muted)" }}
                       >
                         {unlimited
                           ? "Your account has no mock limit. Tutor lessons are unlimited too."
@@ -965,7 +965,7 @@ export function SpeakingClient({
                           fontSize: 12,
                           fontWeight: 700,
                           letterSpacing: "0.08em",
-                          color: "#8C7F8A",
+                          color: "var(--sp-muted)",
                         }}
                       >
                         RECENT MOCKS
@@ -1004,7 +1004,7 @@ export function SpeakingClient({
                                   gap: 12,
                                   alignItems: "center",
                                   padding: "13px 8px",
-                                  borderBottom: "1px solid #EFEBE9",
+                                  borderBottom: "1px solid var(--sp-line)",
                                   borderRadius: 8,
                                   textDecoration: "none",
                                   color: "inherit",
@@ -1015,7 +1015,7 @@ export function SpeakingClient({
                                     {dayMonth(m.t)}
                                   </div>
                                   {m.who ? (
-                                    <div style={{ marginTop: 2, fontSize: 12, color: "#8C7F8A" }}>
+                                    <div style={{ marginTop: 2, fontSize: 12, color: "var(--sp-muted)" }}>
                                       with {m.who}
                                     </div>
                                   ) : null}
@@ -1033,7 +1033,7 @@ export function SpeakingClient({
                                 >
                                   {m.band.toFixed(1)}
                                 </span>
-                                <span aria-hidden style={{ color: "#A89AA4", fontSize: 14 }}>
+                                <span aria-hidden style={{ color: "var(--sp-faint)", fontSize: 14 }}>
                                   →
                                 </span>
                               </Link>
@@ -1050,7 +1050,7 @@ export function SpeakingClient({
                               fontSize: 13,
                             }}
                           >
-                            <span style={{ color: "#8C7F8A" }}>Best band so far</span>
+                            <span style={{ color: "var(--sp-muted)" }}>Best band so far</span>
                             <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                               {bestBand.toFixed(1)}
                             </span>
@@ -1063,7 +1063,7 @@ export function SpeakingClient({
                           margin: "12px 0 0",
                           fontSize: 13,
                           lineHeight: 1.6,
-                          color: "#8C7F8A",
+                          color: "var(--sp-muted)",
                         }}
                       >
                         No mocks yet. Your first band appears here the moment one is graded.
@@ -1095,7 +1095,7 @@ export function SpeakingClient({
                   }}
                 >
                   <div>
-                    <span style={{ ...kicker, color: "#C0603E" }}>LIVE LESSON · NEVER SCORED</span>
+                    <span style={{ ...kicker, color: "var(--color-amber-600)" }}>LIVE LESSON · NEVER SCORED</span>
                     <h2
                       style={{
                         margin: "10px 0 0",
@@ -1113,7 +1113,7 @@ export function SpeakingClient({
                         margin: "8px 0 0",
                         fontSize: 15,
                         lineHeight: 1.6,
-                        color: "#5C5460",
+                        color: "var(--sp-body)",
                         maxWidth: 560,
                       }}
                     >
@@ -1127,7 +1127,7 @@ export function SpeakingClient({
                     style={{
                       padding: "14px 26px",
                       borderRadius: 12,
-                      background: "#DA7756",
+                      background: "var(--color-amber-500)",
                       color: WHITE,
                       fontSize: 15,
                       fontWeight: 600,
@@ -1163,7 +1163,7 @@ export function SpeakingClient({
                           cursor: "pointer",
                           fontFamily: "inherit",
                           border: `1px solid ${on ? p.accent : WARM_EDGE}`,
-                          background: "#FAF9F8",
+                          background: "var(--sp-surface)",
                           borderRadius: 12,
                           padding: "14px 16px",
                           display: "flex",
@@ -1184,8 +1184,8 @@ export function SpeakingClient({
                             fontFamily: "var(--font-display)",
                             fontSize: 13,
                             fontWeight: 700,
-                            background: on ? `${p.accent}1F` : "#F5F2F0",
-                            color: on ? p.accent : "#8C7F8A",
+                            background: on ? `${p.accent}1F` : "var(--sp-surface-2)",
+                            color: on ? p.accent : "var(--sp-muted)",
                           }}
                         >
                           {p.mark}
@@ -1208,7 +1208,7 @@ export function SpeakingClient({
                               display: "block",
                               marginTop: 2,
                               fontSize: 11,
-                              color: "#A89AA4",
+                              color: "var(--sp-faint)",
                             }}
                           >
                             {p.room} · {p.length}
@@ -1223,7 +1223,7 @@ export function SpeakingClient({
                   style={{
                     marginTop: 22,
                     paddingTop: 20,
-                    borderTop: "1px solid #EFEBE9",
+                    borderTop: "1px solid var(--sp-line)",
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
                     gap: 20,
@@ -1242,7 +1242,7 @@ export function SpeakingClient({
                     <div key={title}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{title}</div>
                       <div
-                        style={{ marginTop: 4, fontSize: 13, color: "#8C7F8A", lineHeight: 1.5 }}
+                        style={{ marginTop: 4, fontSize: 13, color: "var(--sp-muted)", lineHeight: 1.5 }}
                       >
                         {blurb}
                       </div>
@@ -1261,7 +1261,7 @@ export function SpeakingClient({
                       fontSize: 12,
                       fontWeight: 700,
                       letterSpacing: "0.08em",
-                      color: "#8C7F8A",
+                      color: "var(--sp-muted)",
                     }}
                   >
                     BAND TREND · LAST SIX MOCKS
@@ -1294,7 +1294,7 @@ export function SpeakingClient({
                               fontFamily: "var(--font-mono)",
                               fontSize: 12,
                               fontWeight: 600,
-                              color: "#5C5460",
+                              color: "var(--sp-body)",
                             }}
                           >
                             {g.band.toFixed(1)}
@@ -1305,10 +1305,10 @@ export function SpeakingClient({
                               borderRadius: "8px 8px 0 0",
                               height: `${Math.max(8, (g.band / 9) * 100)}%`,
                               background:
-                                g.band >= 6.5 ? "#9B1044" : g.band >= 5.5 ? "#CC5C82" : "#E3A7BD",
+                                g.band >= 6.5 ? "var(--sp-accent-2)" : g.band >= 5.5 ? "var(--sp-disabled)" : "var(--color-primary-300)",
                             }}
                           />
-                          <span style={{ fontSize: 11, color: "#A89AA4", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: 11, color: "var(--sp-faint)", whiteSpace: "nowrap" }}>
                             {dayMonth(g.t)}
                           </span>
                         </div>
@@ -1320,7 +1320,7 @@ export function SpeakingClient({
                         margin: "16px 0 0",
                         fontSize: 14,
                         lineHeight: 1.6,
-                        color: "#8C7F8A",
+                        color: "var(--sp-muted)",
                       }}
                     >
                       Nothing graded yet. Sit a mock and your band trend starts here.
@@ -1335,7 +1335,7 @@ export function SpeakingClient({
                         fontSize: 12,
                         fontWeight: 700,
                         letterSpacing: "0.08em",
-                        color: "#8C7F8A",
+                        color: "var(--sp-muted)",
                       }}
                     >
                       BY CRITERION
@@ -1353,7 +1353,7 @@ export function SpeakingClient({
                             }}
                           >
                             <span style={{ fontWeight: 600 }}>{r.label}</span>
-                            <span style={{ fontFamily: "var(--font-mono)", color: "#5C5460" }}>
+                            <span style={{ fontFamily: "var(--font-mono)", color: "var(--sp-body)" }}>
                               {r.v == null ? "—" : r.v.toFixed(1)}
                             </span>
                           </div>
@@ -1362,7 +1362,7 @@ export function SpeakingClient({
                               marginTop: 8,
                               height: 6,
                               borderRadius: 999,
-                              background: "#EFEAE7",
+                              background: "var(--sp-line-2)",
                               overflow: "hidden",
                             }}
                           >
@@ -1386,7 +1386,7 @@ export function SpeakingClient({
                         fontSize: 12,
                         fontWeight: 700,
                         letterSpacing: "0.08em",
-                        color: "#8C7F8A",
+                        color: "var(--sp-muted)",
                       }}
                     >
                       RECURRING FIXES
@@ -1401,7 +1401,7 @@ export function SpeakingClient({
                         margin: "12px 0 0",
                         fontSize: 13,
                         lineHeight: 1.6,
-                        color: "#8C7F8A",
+                        color: "var(--sp-muted)",
                       }}
                     >
                       Coming soon — the patterns that keep costing you marks across mocks, counted.
@@ -1453,8 +1453,8 @@ export function SpeakingClient({
         <div
           style={{
             ...card,
-            borderColor: "#F3C6C6",
-            background: "#FDF3F3",
+            borderColor: "var(--sp-bad-line)",
+            background: "var(--sp-bad-bg)",
             color: RED,
             marginTop: 16,
             fontSize: 14,
@@ -1487,7 +1487,7 @@ export function SpeakingClient({
                 borderRadius: "50%",
                 border: "none",
                 cursor: "pointer",
-                background: `radial-gradient(circle at 35% 30%, #7D0132, ${BRAND})`,
+                background: `radial-gradient(circle at 35% 30%, var(--color-primary-500), ${BRAND})`,
                 boxShadow: "0 18px 40px -14px rgba(125,1,50,.55)",
                 display: "inline-flex",
                 alignItems: "center",
@@ -1674,7 +1674,7 @@ export function SpeakingClient({
                 style={{
                   height: 8,
                   borderRadius: 999,
-                  background: "#EFEDE3",
+                  background: "var(--sp-chip)",
                   overflow: "hidden",
                   maxWidth: 340,
                   margin: "10px auto 0",

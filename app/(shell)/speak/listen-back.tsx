@@ -21,7 +21,7 @@ import {
 } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const GOOD = "#1A7A48"; // the "stronger version" rail, matching the report
+const GOOD = "var(--rp-ok-deep)"; // the "stronger version" rail, matching the report
 
 export interface LBTurn {
   role: "examiner" | "candidate";
@@ -264,7 +264,7 @@ export function ListenBack({
                   border: "none",
                   cursor: audioUrl ? "pointer" : "default",
                   padding: "7px 12px",
-                  background: isActive ? "#FDF4F7" : "transparent",
+                  background: isActive ? "var(--color-primary-50)" : "transparent",
                   borderLeft: `3px solid ${isActive ? BRAND : "transparent"}`,
                 }}
               >
