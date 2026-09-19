@@ -108,6 +108,9 @@ export type RenderView = PartView & {
   audio: Segment[];
   kind?: "test";
   parts?: PartView[]; // full test: all four parts' questions
+  /** Saved answers + position, when the learner is resuming. Present only when an
+   *  in_progress attempt exists — see the engine's render_library. */
+  resume?: LiveRun & { answers?: Record<string, string> };
 };
 
 export type QResult = {
@@ -153,6 +156,18 @@ export type LibraryItem = {
   unlocked: boolean;
   locked: boolean;
   best_score: number | null;
+  /** An unfinished run, if the learner has one open. Summary only — the answers
+   *  arrive with the render view, for the one practice actually being opened. */
+  live?: LiveRun | null;
+};
+
+/** Where a learner had got to in a practice they did not finish. */
+export type LiveRun = {
+  /** 0-based part/section index within a full test. Null for a single practice. */
+  part_index?: number | null;
+  /** How far into the whole recording they had played. */
+  elapsed_seconds?: number | null;
+  answered?: number | null;
 };
 export type Catalogue = {
   items: LibraryItem[];

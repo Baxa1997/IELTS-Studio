@@ -62,6 +62,7 @@ import type {
   GroupType,
   GroupView,
   LibraryItem,
+  LiveRun,
   MapView,
   MatchingView,
   McqView,
@@ -868,6 +869,7 @@ function TestCard({
       subtitle="4 parts · 40 questions · band score"
       maxScore={40}
       questions={40}
+      sections={4}
       loading={loading}
       disabled={disabled}
       onOpen={onOpen}
@@ -897,6 +899,7 @@ function QuickCard({
       subtitle={it.topic || "Listening practice"}
       maxScore={10}
       questions={10}
+      sections={1}
       tags={typeTagsFor(it.part, it.variant, it.layout)}
       loading={loading}
       disabled={disabled}
@@ -916,6 +919,7 @@ function ListenCard({
   subtitle,
   maxScore,
   questions,
+  sections,
   tags,
   loading,
   disabled,
@@ -927,6 +931,9 @@ function ListenCard({
   subtitle: string;
   maxScore: number;
   questions: number;
+  /** How many sections the recording has — 4 for a full test, 1 for a quick
+   *  practice. Drives the canvas's "Section 2 of 4" on a paused card. */
+  sections: number;
   tags?: string[];
   loading: boolean;
   disabled: boolean;
@@ -935,9 +942,12 @@ function ListenCard({
 }) {
   const done = it.best_score != null;
   const length = clock(it.duration_seconds);
+  // An unfinished run outranks a past score: the thing left open is the urgent one.
+  const live = it.live ?? null;
+  const state = live ? "live" : done ? "done" : "fresh";
   return (
     <PracticeCard
-      tone={it.locked || loading || disabled ? null : done ? "done" : "brand"}
+      tone={it.locked || loading || disabled ? null : state === "done" ? "done" : "brand"}
       style={{ opacity: it.locked ? 0.66 : disabled && !loading ? 0.7 : 1 }}
     >
       <CardHead
@@ -948,7 +958,9 @@ function ListenCard({
           ...(it.accent ? [{ label: it.accent.toUpperCase() }] : []),
         ]}
         pill={
-          done ? (
+          state === "live" ? (
+            <StatusPill tone="progress">Paused</StatusPill>
+          ) : done ? (
             <StatusPill tone="band" icon={<Check size={9} strokeWidth={3} />}>
               {it.best_score}/{maxScore}
             </StatusPill>
@@ -957,14 +969,20 @@ function ListenCard({
           )
         }
       />
-      <CardBody title={title} subtitle={subtitle} />
+      <CardBody
+        title={title}
+        subtitle={subtitle}
+        progress={live ? sectionProgress(live, sections) : undefined}
+      />
       {tags?.length ? <CardTags tags={tags} /> : null}
       <CardFoot
-        lead={done ? undefined : <Waveform />}
+        lead={state === "fresh" ? <Waveform /> : undefined}
         meta={
-          done
-            ? `${it.best_score} of ${maxScore} correct${length ? ` · ${length}` : ""}`
-            : [length, `${questions} questions`].filter(Boolean).join(" · ")
+          live
+            ? playedMeta(live, it.duration_seconds)
+            : done
+              ? `${it.best_score} of ${maxScore} correct${length ? ` · ${length}` : ""}`
+              : [length, `${questions} questions`].filter(Boolean).join(" · ")
         }
       >
         {attach ? (
@@ -981,11 +999,33 @@ function ListenCard({
           onOpen={onOpen}
           loading={loading}
           locked={it.locked}
-          label={done ? "Retake" : "Start"}
+          label={state === "live" ? "Resume" : done ? "Retake" : "Start"}
         />
       </CardFoot>
     </PracticeCard>
   );
+}
+
+/** The canvas's "Section 2 of 4" for a full test. A quick practice is one
+ *  recording, so it reports answers instead — there is no section to be on. */
+function sectionProgress(live: LiveRun, sections: number): { pct: number; label: string } {
+  const answered = live.answered ?? 0;
+  if (sections > 1 && live.part_index != null) {
+    // part_index is 0-based on the wire; the label is 1-based.
+    const at = Math.min(live.part_index + 1, sections);
+    return { pct: (at / sections) * 100, label: `Section ${at} of ${sections}` };
+  }
+  return { pct: Math.min(100, answered * 10), label: `${answered} answered` };
+}
+
+/** "11:38 of 30:12 played" — how far in they were when they stopped. Falls back
+ *  to the answer count when the engine could not measure the recording. */
+function playedMeta(live: LiveRun, total: number | null | undefined): string {
+  const at = clock(live.elapsed_seconds);
+  const whole = clock(total);
+  if (at && whole) return `${at} of ${whole} played`;
+  if (at) return `${at} played`;
+  return `${live.answered ?? 0} answered`;
 }
 
 /** One of the learner's own AI-generated practices ("My practice N"). */
@@ -1192,6 +1232,15 @@ function partQuestionNums(p: PartView): number[] {
 /** Everything a question panel needs to render + drive the runner's shared
  *  state (answers, review results, focus highlight, per-question flags). */
 
+/** How many separate audio streams a practice has — 4 for a full test, 1 for a
+ *  single recording. Needed before `splitAudioByPart` has run, to clamp a resumed
+ *  section index in a state initialiser. */
+function audioPartCount(view: RenderView): number {
+  const parts = new Set<number>();
+  for (const seg of view.audio ?? []) parts.add(seg.part ?? 1);
+  return Math.max(1, parts.size);
+}
+
 function Runner({
   view,
   source,
@@ -1201,7 +1250,20 @@ function Runner({
   source: Source;
   onExit: () => void;
 }) {
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  /* ⭐ RESUMING. `view.resume` is present only when the engine found an
+     in_progress attempt for this practice (render_library attaches it). The
+     answers come back keyed by question number as strings on the wire, so they
+     are re-keyed to numbers here — the panels index by number. */
+  const [answers, setAnswers] = useState<Record<number, string>>(() => {
+    const saved = view.resume?.answers;
+    if (!saved) return {};
+    const out: Record<number, string> = {};
+    for (const [k, v] of Object.entries(saved)) {
+      const n = Number(k);
+      if (Number.isInteger(n) && typeof v === "string") out[n] = v;
+    }
+    return out;
+  });
   const [flags, setFlags] = useState<Set<number>>(() => new Set());
   const [grade, setGrade] = useState<Grade | null>(null);
   const [grading, setGrading] = useState(false);
@@ -1217,7 +1279,16 @@ function Runner({
   // segments and plays them from the top (its intro announces the questions),
   // exactly like the separate per-part recordings of a real test.
   const audioParts = useMemo(() => splitAudioByPart(view.audio), [view.audio]);
-  const [apIdx, setApIdx] = useState(0);
+  /* A resumed run reopens on the SECTION the learner was in, and that section's
+     audio plays from its top — which is exactly what switching tabs already does,
+     because each part's intro announces its own questions. Deliberately not a
+     seek to the saved offset mid-clip: the exam rule is that a recording plays
+     once, and dropping the learner into the middle of a sentence would be worse
+     practice than re-hearing the part they were on. */
+  const [apIdx, setApIdx] = useState(() => {
+    const at = view.resume?.part_index;
+    return at != null ? Math.min(Math.max(at, 0), Math.max(0, audioPartCount(view) - 1)) : 0;
+  });
   const pendingAutoStart = useRef(false);
 
   // A finished part flows straight into the next one (pre-grade). The player
@@ -1286,15 +1357,78 @@ function Runner({
     if (el && c) c.scrollTo({ top: el.offsetTop - 16, behavior: "smooth" });
   }, []);
 
+  /* ⭐ AUTOSAVE, so closing the tab no longer loses the run.
+     Reads the playback position from the player's TICK STORE, which is a ref and
+     not React state — that is the whole reason the position lives outside state
+     (see useSegmentPlayer), and reading it here costs no re-render of the exam
+     surface. Saving stops for good once the practice is graded: the engine clears
+     the in_progress row as part of storing the attempt, and a late save would
+     resurrect it and leave a marked practice showing "Paused". */
+  // Set in an effect, not during render: Date.now() in a render body is impure
+  // (react-hooks/purity), and it is how both reading runners do it too.
+  const startedAtRef = useRef(0);
+  useEffect(() => void (startedAtRef.current = Date.now()), []);
+  const savingOffRef = useRef(false);
+  const answersRef = useRef(answers);
+  useEffect(() => void (answersRef.current = answers), [answers]);
+  const apIdxRef = useRef(apIdx);
+  useEffect(() => void (apIdxRef.current = apIdx), [apIdx]);
+
+  const saveProgress = useCallback(() => {
+    if (savingOffRef.current || source !== "library") return;
+    const body: Record<string, string> = {};
+    for (const [k, v] of Object.entries(answersRef.current)) body[k] = v;
+    void callEngine("library/progress", {
+      library_id: view.id,
+      answers: body,
+      part_index: apIdxRef.current,
+      elapsed_seconds: startedAtRef.current
+        ? Math.round((Date.now() - startedAtRef.current) / 1000)
+        : 0,
+    }).catch(() => {
+      // Best-effort by design — the engine swallows its own failures too, and an
+      // autosave must never interrupt a practice in progress.
+    });
+  }, [source, view.id]);
+
+  useEffect(() => {
+    if (grade) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") saveProgress();
+    }, 15_000);
+    const onHide = () => {
+      if (document.visibilityState === "hidden") saveProgress();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", saveProgress);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", saveProgress);
+      // Leaving the runner is still leaving mid-practice.
+      saveProgress();
+    };
+  }, [grade, saveProgress]);
+
   const submit = useCallback(async () => {
     setGrading(true);
     setError(null);
+    // The engine deletes the in_progress row while storing the attempt; anything
+    // saved after that would recreate it.
+    savingOffRef.current = true;
     try {
       const body: Record<string, string> = {};
       for (const [k, v] of Object.entries(answers)) body[k] = v;
+      const durationSeconds = startedAtRef.current
+        ? Math.round((Date.now() - startedAtRef.current) / 1000)
+        : 0;
       const graded =
         source === "library"
-          ? await callEngine<Grade>("library/grade", { library_id: view.id, answers: body })
+          ? await callEngine<Grade>("library/grade", {
+              library_id: view.id,
+              answers: body,
+              duration_seconds: durationSeconds,
+            })
           : await callEngine<Grade>("grade", { item_id: view.id, answers: body });
       setGrade(graded);
       if (graded.attempt_id) {
@@ -1313,6 +1447,9 @@ function Runner({
   }, [answers, view.id, source]);
 
   const practiceAgain = useCallback(() => {
+    // A fresh run: the clock restarts and autosave is armed again.
+    startedAtRef.current = Date.now();
+    savingOffRef.current = false;
     setAnswers({});
     setFlags(new Set());
     setGrade(null);
