@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import { signUp, type AuthFormState } from "@/app/(auth)/actions";
 import { createClient } from "@/lib/supabase/client";
 
@@ -40,6 +42,7 @@ import { BRAND_LINE, RED_DEEP, SLATE_RED_BG } from "@/lib/theme/tokens";
 const initial: AuthFormState = {};
 
 export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const [state, formAction, pending] = useActionState(signUp, initial);
   const [googlePending, setGooglePending] = useState(false);
   const first = useRef<HTMLInputElement>(null);
@@ -91,7 +94,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Create your account"
+      aria-label={t("su.title")}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -137,16 +140,16 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
                 color: INK,
               }}
             >
-              Create your account
+              {t("su.title")}
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.55, color: BODY, margin: "8px 0 0" }}>
-              Free to start — no card required.
+              {t("su.sub")}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("su.close")}
             style={{
               flex: "none",
               background: "transparent",
@@ -187,7 +190,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           <span style={{ fontFamily: DISPLAY, fontWeight: 700, color: BRAND }} aria-hidden>
             G
           </span>
-          {googlePending ? "Opening Google…" : "Sign up with Google"}
+          {googlePending ? t("su.googleWait") : t("su.google")}
         </button>
 
         <div
@@ -203,13 +206,13 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           }}
         >
           <span style={{ flex: 1, height: 1, background: LINE }} />
-          OR
+          {t("su.or")}
           <span style={{ flex: 1, height: 1, background: LINE }} />
         </div>
 
         <form action={formAction}>
           <label htmlFor="su_name" style={label}>
-            Full name
+            {t("su.name")}
           </label>
           <input
             ref={first}
@@ -221,12 +224,13 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           />
 
           <label htmlFor="su_phone" style={{ ...label, marginTop: 14 }}>
-            Phone <span style={{ fontWeight: 500, color: MUTED }}>(optional)</span>
+            {t("su.phone")}{" "}
+            <span style={{ fontWeight: 500, color: MUTED }}>{t("su.optional")}</span>
           </label>
           <input id="su_phone" name="phone" type="tel" autoComplete="tel" style={field} />
 
           <label htmlFor="su_email" style={{ ...label, marginTop: 14 }}>
-            Email
+            {t("su.email")}
           </label>
           <input
             id="su_email"
@@ -238,7 +242,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           />
 
           <label htmlFor="su_password" style={{ ...label, marginTop: 14 }}>
-            Password
+            {t("su.password")}
           </label>
           <input
             id="su_password"
@@ -247,7 +251,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
             minLength={8}
             autoComplete="new-password"
             required
-            placeholder="At least 8 characters"
+            placeholder={t("su.passwordHint")}
             style={field}
           />
 
@@ -259,7 +263,8 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
               and they are the ones the programme is for. Optional, and silent
               when wrong: a bad code must not block somebody signing up. */}
           <label htmlFor="su_ref" style={{ ...label, marginTop: 14 }}>
-            Referral code <span style={{ fontWeight: 500, color: MUTED }}>(optional)</span>
+            {t("su.referral")}{" "}
+            <span style={{ fontWeight: 500, color: MUTED }}>{t("su.optional")}</span>
           </label>
           <input
             id="su_ref"
@@ -267,7 +272,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
             autoComplete="off"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="If someone invited you"
+            placeholder={t("su.referralHint")}
             style={field}
           />
 
@@ -319,20 +324,24 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
               cursor: pending ? "wait" : "pointer",
             }}
           >
-            {pending ? "Creating…" : "Create account"}
+            {pending ? t("su.submitting") : t("su.submit")}
           </button>
         </form>
 
         <p style={{ fontSize: 12.5, lineHeight: 1.55, color: MUTED, margin: "14px 0 0" }}>
-          By creating an account you agree to our{" "}
+          {/* Three pieces, not one sentence with two links glued into it:
+              Uzbek puts the verb at the END, so the copy needs somewhere to go
+              after the second link. In English and Russian `su.legalPost` is
+              just the full stop. */}
+          {t("su.legalPre")}{" "}
           <a href="/terms" style={{ color: BRAND }}>
-            Terms of Service
+            {t("su.terms")}
           </a>{" "}
-          and{" "}
+          {t("su.legalMid")}{" "}
           <a href="/privacy" style={{ color: BRAND }}>
-            Privacy Policy
+            {t("su.privacy")}
           </a>
-          .
+          {t("su.legalPost")}
         </p>
       </div>
     </div>

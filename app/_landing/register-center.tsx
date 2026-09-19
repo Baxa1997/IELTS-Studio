@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import { signUpOrganization, type AuthFormState } from "@/app/(auth)/actions";
 
 import {
@@ -47,6 +49,7 @@ import { BRAND_LINE, RED_DEEP, SLATE_RED_BG } from "@/lib/theme/tokens";
 const initial: AuthFormState = {};
 
 export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const [state, formAction, pending] = useActionState(signUpOrganization, initial);
   const first = useRef<HTMLInputElement>(null);
 
@@ -88,7 +91,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Register your education center"
+      aria-label={t("rc.title")}
       onClick={onClose}
       style={{
         position: "fixed",
@@ -134,17 +137,16 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
                 color: INK,
               }}
             >
-              Register your center
+              {t("rc.title")}
             </h2>
             <p style={{ fontSize: 15, lineHeight: 1.55, color: BODY, margin: "8px 0 0" }}>
-              We review each application by hand. Once it is approved you can invite teachers and
-              issue student logins.
+              {t("rc.sub")}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("rc.close")}
             style={{
               flex: "none",
               background: "transparent",
@@ -171,16 +173,15 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
               }}
             >
               <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 18, color: INK }}>
-                Application received
+                {t("rc.received")}
               </div>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
-                We review every center by hand and email you as soon as yours is approved — usually
-                within a working day.
+                {t("rc.receivedNote")}
               </p>
               {state.signInWith ? (
                 <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
-                  Your login is <strong style={{ color: BRAND }}>{state.signInWith}</strong> — sign
-                  in with that and the password you just chose, not with your email.
+                  {t("rc.loginPre")} <strong style={{ color: BRAND }}>{state.signInWith}</strong>{" "}
+                  {t("rc.loginPost")}
                 </p>
               ) : null}
               {state.notice ? (
@@ -206,13 +207,13 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
                 cursor: "pointer",
               }}
             >
-              Done
+              {t("rc.done")}
             </button>
           </div>
         ) : (
           <form action={formAction} style={{ marginTop: 22 }}>
             <label htmlFor="org_name" style={label}>
-              Official organization name
+              {t("rc.orgName")}
             </label>
             <input
               ref={first}
@@ -224,7 +225,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
             />
 
             <label htmlFor="org_email" style={{ ...label, marginTop: 16 }}>
-              Contact email
+              {t("rc.contactEmail")}
             </label>
             <input
               id="org_email"
@@ -237,15 +238,13 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
             />
 
             <label htmlFor="org_login" style={{ ...label, marginTop: 16 }}>
-              Login for the center
+              {t("rc.login")}
             </label>
             <input id="org_login" name="login" required placeholder="brightfuture" style={field} />
-            <p style={{ fontSize: 12.5, color: GREY, margin: "6px 0 0" }}>
-              3–32 characters: letters, digits, and . _ - in the middle.
-            </p>
+            <p style={{ fontSize: 12.5, color: GREY, margin: "6px 0 0" }}>{t("rc.loginHint")}</p>
 
             <label htmlFor="org_password" style={{ ...label, marginTop: 16 }}>
-              Password
+              {t("rc.password")}
             </label>
             <input
               id="org_password"
@@ -254,7 +253,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
               required
               minLength={8}
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder={t("rc.passwordHint")}
               style={field}
             />
 
@@ -306,7 +305,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
                 cursor: pending ? "wait" : "pointer",
               }}
             >
-              {pending ? "Submitting…" : "Submit application"}
+              {pending ? t("rc.submitting") : t("rc.submit")}
             </button>
           </form>
         )}
@@ -317,6 +316,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
 
 /** The full-width band used on the centre guide. */
 export function RegisterCenterBand() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -345,11 +345,10 @@ export function RegisterCenterBand() {
               color: INK,
             }}
           >
-            Are you an education center?
+            {t("rc.promptTitle")}
           </h2>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
-            Register here and we will issue logins for your teachers and students. Applications are
-            reviewed by hand, and we confirm by email.
+            {t("rc.promptBody")}
           </p>
         </div>
         <button
@@ -358,7 +357,7 @@ export function RegisterCenterBand() {
           className="lp-solid"
           style={{ ...solidButton(), whiteSpace: "nowrap" }}
         >
-          Register here
+          {t("rc.promptCta")}
         </button>
       </div>
       <RegisterCenterDialog open={open} onClose={() => setOpen(false)} />
@@ -368,6 +367,7 @@ export function RegisterCenterBand() {
 
 /** The compact card used on sign-in, where vertical space is scarce. */
 export function RegisterCenterCard() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -384,11 +384,9 @@ export function RegisterCenterCard() {
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: INK }}>
-            Are you an education center?
-          </div>
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: INK }}>{t("rc.promptTitle")}</div>
           <div style={{ fontSize: 13.5, color: GREY, lineHeight: 1.45, marginTop: 2 }}>
-            We&apos;ll issue logins for your students and teachers.
+            {t("rc.promptShort")}
           </div>
         </div>
         <button
@@ -409,7 +407,7 @@ export function RegisterCenterCard() {
             cursor: "pointer",
           }}
         >
-          Register here
+          {t("rc.promptCta")}
         </button>
       </div>
       <RegisterCenterDialog open={open} onClose={() => setOpen(false)} />

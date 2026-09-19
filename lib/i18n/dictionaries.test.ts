@@ -39,6 +39,11 @@ const SAME_ON_PURPOSE: Record<string, string> = {
   "write.acadT1": "IELTS module name, used in English in UZ/RU classrooms",
   "write.acadT2": "IELTS module name, used in English in UZ/RU classrooms",
   "write.gt": "IELTS module name, used in English in UZ/RU classrooms",
+  "su.email": "Uzbek uses the English word for an email address",
+  /* The tail of "By creating an account you agree to our X and Y." Uzbek puts
+     the verb last, so the sentence needs a piece AFTER the second link and this
+     key exists for it; in English and Russian that piece is the full stop. */
+  "su.legalPost": "sentence tail — punctuation only outside Uzbek",
 };
 
 const PLACEHOLDER = /\{(\w+)\}/g;

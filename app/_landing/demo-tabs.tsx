@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import type { DemoTab } from "./demo-content";
 import {
   BRAND as INDIGO,
@@ -36,6 +38,7 @@ export function DemoTabs({
   /** On /demo the active tab mirrors the URL hash (deep-linkable, e.g. /demo#reading). */
   hashSync?: boolean;
 }) {
+  const t = useT();
   const [active, setActive] = useState(0);
   const demoRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -88,7 +91,7 @@ export function DemoTabs({
       <div style={{ display: "flex", justifyContent: "center" }}>
         <div
           role="tablist"
-          aria-label="Product demo screens"
+          aria-label={t("demo.screens")}
           style={{
             display: "flex",
             gap: 4,
@@ -101,9 +104,9 @@ export function DemoTabs({
             boxShadow: "var(--mk-island-shadow)",
           }}
         >
-          {tabs.map((t, i) => (
+          {tabs.map((d, i) => (
             <button
-              key={t.slug}
+              key={d.slug}
               type="button"
               role="tab"
               aria-selected={i === active}
@@ -123,7 +126,7 @@ export function DemoTabs({
                 transition: "background .15s, color .15s",
               }}
             >
-              {t.label}
+              {t(d.label)}
             </button>
           ))}
         </div>
@@ -145,7 +148,7 @@ export function DemoTabs({
             margin: 0,
           }}
         >
-          {tab.title}
+          {t(tab.title)}
         </h3>
         <p
           style={{
@@ -157,7 +160,7 @@ export function DemoTabs({
             margin: "10px 0 0",
           }}
         >
-          {tab.blurb}
+          {t(tab.blurb)}
         </p>
       </div>
     </div>
@@ -165,10 +168,12 @@ export function DemoTabs({
 }
 
 function DemoScreenPlaceholder() {
+  const t = useT();
+
   return (
     <div
       aria-busy="true"
-      aria-label="Loading product demo"
+      aria-label={t("demo.loading")}
       style={{
         minHeight: 420,
         borderRadius: 18,

@@ -7,25 +7,22 @@ import {
   BRAND_FILL_DEEP,
   BRAND_TINT,
   DISPLAY,
-  eyebrow,
   FIELD,
-  ghostButton,
   INK,
   ISLAND,
   LINE,
   PANEL,
-  RULE,
   SANS,
-  solidButton,
-  STRONG,
-  WELL,
   WHITE,
 } from "./design";
 import { SiteNav } from "./site-nav";
 
 // The dark footer lives in its own module and is re-exported here so every
-// existing importer of `SiteFooter` keeps working unchanged.
+// existing importer of `SiteFooter` keeps working unchanged. The centres band
+// moved out for a different reason — it had to become a client component to
+// read the locale — and is re-exported on the same principle.
 export { SiteFooter } from "./site-footer";
+export { CentersBand } from "./centers-band";
 import { FOOTER_CSS } from "./site-footer";
 
 /**
@@ -109,104 +106,6 @@ export function SiteHeader() {
         <SiteNav />
       </div>
     </header>
-  );
-}
-
-/** The "For education centers" band that sits above the footer on every page
- *  that shows the chrome. */
-export function CentersBand() {
-  return (
-    <section style={{ borderTop: `1px solid ${RULE}`, background: WELL, padding: "52px 28px" }}>
-      <div
-        style={{
-          maxWidth: 1240,
-          margin: "0 auto",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 32,
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <div style={{ ...eyebrow(true), color: BRAND }}>For education centers</div>
-          <h3
-            style={{
-              fontFamily: DISPLAY,
-              fontWeight: 700,
-              fontSize: 30,
-              letterSpacing: "-0.03em",
-              margin: "12px 0 0",
-              textWrap: "pretty",
-              color: INK,
-            }}
-          >
-            Run AI-graded IELTS &amp; CEFR practice for every group you teach
-          </h3>
-          <p
-            style={{
-              fontSize: 16,
-              lineHeight: 1.6,
-              color: BODY,
-              maxWidth: 620,
-              margin: "12px 0 0",
-            }}
-          >
-            Center licences include student logins, teacher accounts, group assignments and band
-            reporting. Talk to us about a pilot for your center.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 24,
-              marginTop: 18,
-              fontSize: 15,
-              color: STRONG,
-            }}
-          >
-            <span>
-              ✉{" "}
-              <a href="mailto:centers@engprogress.com" style={{ fontWeight: 700, color: BRAND }}>
-                centers@engprogress.com
-              </a>
-            </span>
-            <span>
-              ✆{" "}
-              <a href="tel:+998712000000" style={{ fontWeight: 700, color: BRAND }}>
-                +998 71 200 00 00
-              </a>
-            </span>
-          </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <Link
-            href="/contact"
-            className="lp-solid"
-            style={{
-              ...solidButton(),
-              padding: "17px 32px",
-              textAlign: "center",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Contact us
-          </Link>
-          <Link
-            href="/how-to-use/education-centers"
-            className="lp-ghost"
-            style={{
-              ...ghostButton(),
-              padding: "17px 32px",
-              textAlign: "center",
-              display: "block",
-            }}
-          >
-            Center guide
-          </Link>
-        </div>
-      </div>
-    </section>
   );
 }
 

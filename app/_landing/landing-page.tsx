@@ -420,9 +420,9 @@ function Hero({ t }: { t: Translate }) {
         <div style={{ ...eyebrow(), marginTop: 26 }}>{t("lp.noCard")}</div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 24 }}>
-          {["Writing", "Reading", "Listening", "Speaking"].map((s) => (
+          {SKILL_CHIPS.map((key) => (
             <span
-              key={s}
+              key={key}
               style={{
                 border: `1px solid ${LINE}`,
                 borderRadius: RADIUS.pill,
@@ -433,13 +433,13 @@ function Hero({ t }: { t: Translate }) {
                 whiteSpace: "nowrap",
               }}
             >
-              {s}
+              {t(key)}
             </span>
           ))}
         </div>
       </div>
 
-      <Band9Card />
+      <Band9Card t={t} />
     </section>
   );
 }
@@ -477,52 +477,49 @@ function Stats({ t }: { t: Translate }) {
   );
 }
 
+/** The four skill chips under the hero. Same keys the sidebar and the skill
+ *  cards use — a learner should not meet three different words for "Reading". */
+const SKILL_CHIPS: MessageKey[] = ["nav.writing", "nav.reading", "nav.listening", "nav.speaking"];
+
 /* ── platform ──────────────────────────────────────────────────────────────── */
 
-const SKILLS = [
+/* KEYS, NOT COPY. The skill NAME reuses the nav key the rest of the app already
+   translates — one word, one translation, rather than a second "Writing" that
+   can drift from the sidebar's. The bodies are marketing copy and get their
+   own. What stays English either way is the exam vocabulary inside them (Task 1,
+   TR/CC/LR/GRA, Part 2): those are the names on the real paper. */
+const SKILLS: { nameKey: MessageKey; icon: string; bodyKey: MessageKey; href: string }[] = [
   {
-    name: "Writing",
+    nameKey: "nav.writing",
     icon: "✎",
-    body: "Task 1 and Task 2, graded per criterion (TR, CC, LR, GRA) with quoted evidence — and a revision loop that re-grades the same essay across drafts.",
+    bodyKey: "lp.skillWritingBody",
     href: "/ielts-writing-practice",
   },
   {
-    name: "Reading",
+    nameKey: "nav.reading",
     icon: "▤",
-    body: "Original passages and every real question type, auto-graded, each answer explained — including why the trap worked on you.",
+    bodyKey: "lp.skillReadingBody",
     href: "/ielts-reading-practice",
   },
   {
-    name: "Listening",
+    nameKey: "nav.listening",
     icon: "◷",
-    body: "Full four-part tests with original multi-voice audio, Cambridge-style question groups, transcripts and per-answer explanations.",
+    bodyKey: "lp.skillListeningBody",
     href: "/ielts-listening-practice",
   },
   {
-    name: "Speaking",
+    nameKey: "nav.speaking",
     icon: "✦",
-    body: "A three-part live mock with an AI examiner, Part-2 cue-card practice, and a tutor that reacts and teaches while you talk.",
+    bodyKey: "lp.skillSpeakingBody",
     href: "/ielts-speaking-practice",
   },
 ];
 
-const COACHES = [
-  {
-    name: "Writing tutor",
-    body: "Ask it mid-essay: what to put in this paragraph, the exact phrasing, why a sentence is not landing. It shows the move on a different topic rather than writing yours.",
-  },
-  {
-    name: "Reading tutor",
-    body: "Mid-passage, it tells you where to look and which words to compare — but never whether Q7 is True. Full explanations unlock the moment you submit.",
-  },
-  {
-    name: "Speaking tutor",
-    body: "Talk and it reacts, corrects and teaches on every turn — and switches to Uzbek when you do.",
-  },
-  {
-    name: "Study coach",
-    body: "The plan, not the task: what to practise next, and how to spend the weeks you have left before the test.",
-  },
+const COACHES: { nameKey: MessageKey; bodyKey: MessageKey }[] = [
+  { nameKey: "lp.coachWriting", bodyKey: "lp.coachWritingBody" },
+  { nameKey: "lp.coachReading", bodyKey: "lp.coachReadingBody" },
+  { nameKey: "lp.coachSpeaking", bodyKey: "lp.coachSpeakingBody" },
+  { nameKey: "lp.coachStudy", bodyKey: "lp.coachStudyBody" },
 ];
 
 function Platform({ t }: { t: Translate }) {
@@ -545,7 +542,7 @@ function Platform({ t }: { t: Translate }) {
       >
         {SKILLS.map((s) => (
           <Link
-            key={s.name}
+            key={s.href}
             href={s.href}
             className="lp-card"
             style={{ ...cardStyle(), color: INK }}
@@ -568,11 +565,11 @@ function Platform({ t }: { t: Translate }) {
                 {s.icon}
               </span>
               <h3 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 21, margin: 0 }}>
-                {s.name}
+                {t(s.nameKey)}
               </h3>
             </div>
             <p style={{ fontSize: 16, lineHeight: 1.6, color: BODY, margin: "18px 0 0" }}>
-              {s.body}
+              {t(s.bodyKey)}
             </p>
           </Link>
         ))}
@@ -668,7 +665,7 @@ function Coaching({ t }: { t: Translate }) {
       >
         {COACHES.map((c) => (
           <div
-            key={c.name}
+            key={c.nameKey}
             style={{
               background: WELL,
               border: `1px solid ${LINE}`,
@@ -677,10 +674,10 @@ function Coaching({ t }: { t: Translate }) {
             }}
           >
             <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16.5, color: INK }}>
-              {c.name}
+              {t(c.nameKey)}
             </div>
             <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "8px 0 0" }}>
-              {c.body}
+              {t(c.bodyKey)}
             </p>
           </div>
         ))}
@@ -689,12 +686,44 @@ function Coaching({ t }: { t: Translate }) {
   );
 }
 
-const PLAN_CTA: Record<OrgPlan, string> = {
-  trial: "Start free",
-  starter: "Choose Standard",
-  pro: "Choose Pro",
-  enterprise: "Choose Enterprise",
+const PLAN_CTA: Record<OrgPlan, MessageKey> = {
+  trial: "price.ctaTrial",
+  starter: "price.ctaStarter",
+  pro: "price.ctaPro",
+  enterprise: "price.ctaEnterprise",
 };
+
+/**
+ * The feature lists, per plan, as keys.
+ *
+ * ⚠️ THE COPY STILL LIVES IN `lib/billing/plans.ts` AND THIS MUST MATCH IT. That
+ * module is the single definition the quota code, the checkout and the billing
+ * screens all read, and it is not the place for four languages — but a price
+ * card whose features are the only English left on a translated page is exactly
+ * the half-done switch this pass exists to fix. So the English there stays
+ * canonical and this maps it, one key per line, IN THE SAME ORDER. Add a
+ * feature there and it renders in English here until a key joins it, which is
+ * the visible-failure side of the trade.
+ */
+const PLAN_FEATURES: Record<OrgPlan, MessageKey[]> = {
+  trial: ["price.trial1", "price.trial2", "price.trial3"],
+  starter: [
+    "price.starter1",
+    "price.starter2",
+    "price.starter3",
+    "price.starter4",
+    "price.starter5",
+  ],
+  pro: ["price.pro1", "price.pro2", "price.pro3", "price.pro4", "price.pro5"],
+  enterprise: ["price.ent1", "price.ent2", "price.ent3"],
+};
+
+/** The plan NAMES stay in English — `Standard`, `Pro` and `Enterprise` are what
+ *  the invoice, the Stripe dashboard and the support conversation call them, and
+ *  a plan whose name changes with the interface language is a plan nobody can
+ *  ask about. `Free` is the exception: it is a common word rather than a billed
+ *  product, and it appears where a price should be. */
+const PLAN_NAME: Partial<Record<OrgPlan, MessageKey>> = { trial: "price.freeName" };
 
 function Pricing({ t }: { t: Translate }) {
   return (
@@ -710,7 +739,10 @@ function Pricing({ t }: { t: Translate }) {
         }}
       >
         {PLAN_ORDER.map((id) => {
-          const t = planTier(id);
+          /* `tier`, not `t` — this used to shadow the translate function for the
+             whole card body, which is why nothing inside it could be
+             translated without renaming first. */
+          const tier = planTier(id);
           const popular = id === "pro";
           return (
             <div
@@ -725,7 +757,7 @@ function Pricing({ t }: { t: Translate }) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <h3 style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 21, margin: 0 }}>
-                  {t.name}
+                  {PLAN_NAME[id] ? t(PLAN_NAME[id]) : tier.name}
                 </h3>
                 {popular ? (
                   <span
@@ -739,7 +771,7 @@ function Pricing({ t }: { t: Translate }) {
                       letterSpacing: "0.08em",
                     }}
                   >
-                    POPULAR
+                    {t("price.popular")}
                   </span>
                 ) : null}
               </div>
@@ -752,10 +784,16 @@ function Pricing({ t }: { t: Translate }) {
                   margin: "14px 0 0",
                 }}
               >
-                {t.price === null ? "—" : t.price === 0 ? "Free" : `$${t.price}`}
-                {t.price ? (
+                {tier.price === null
+                  ? "—"
+                  : tier.price === 0
+                    ? t("price.freePrice")
+                    : `$${tier.price}`}
+                {tier.price ? (
                   <span style={{ fontSize: 15, fontWeight: 600, color: MUTED, fontFamily: SANS }}>
-                    {t.months && t.months > 1 ? ` / ${t.months} months` : " / month"}
+                    {tier.months && tier.months > 1
+                      ? t("price.perMonths", { n: tier.months })
+                      : t("price.perMonth")}
                   </span>
                 ) : null}
               </div>
@@ -770,12 +808,12 @@ function Pricing({ t }: { t: Translate }) {
                   flex: 1,
                 }}
               >
-                {t.features.map((f) => (
+                {PLAN_FEATURES[id].map((f) => (
                   <li key={f} style={{ display: "flex", gap: 10, fontSize: 15, color: STRONG }}>
                     <span aria-hidden style={{ color: BRAND, fontWeight: 700 }}>
                       →
                     </span>
-                    {f}
+                    {t(f)}
                   </li>
                 ))}
               </ul>
@@ -790,7 +828,7 @@ function Pricing({ t }: { t: Translate }) {
                   padding: "15px 24px",
                 }}
               >
-                {PLAN_CTA[id]}
+                {t(PLAN_CTA[id])}
               </Link>
             </div>
           );

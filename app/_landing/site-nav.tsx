@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 
 import { BODY, BRAND, BRAND_FILL, INK, LINE, RADIUS, SANS, WHITE } from "./design";
@@ -30,15 +32,21 @@ import { LangPicker } from "./lang-picker";
  */
 
 /** `/pricing` is behind auth and 307s a logged-out visitor, so the header points
- *  at the anchor on the landing page instead — the fix the SEO pass made. */
-const NAV = [
-  { label: "Platform", href: "/#platform" },
-  { label: "Pricing", href: "/#pricing" },
-  { label: "How to use", href: "/how-to-use" },
-  { label: "For centers", href: "/how-to-use/education-centers" },
+ *  at the anchor on the landing page instead — the fix the SEO pass made.
+ *
+ *  KEYS, NOT COPY. The header dresses six routes and is the first thing anyone
+ *  reads; leaving it in English while the page under it switched was the whole
+ *  complaint. The hrefs stay as they are — a localised landing page is still
+ *  `/#pricing`, because the anchor is on whichever language of `/` you are on. */
+const NAV: { key: MessageKey; href: string }[] = [
+  { key: "mk.navPlatform", href: "/#platform" },
+  { key: "mk.navPricing", href: "/#pricing" },
+  { key: "mk.navHowTo", href: "/how-to-use" },
+  { key: "mk.navCenters", href: "/how-to-use/education-centers" },
 ];
 
 export function SiteNav() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
 
@@ -87,15 +95,15 @@ export function SiteNav() {
      admin to /admin before that line is reached. The hop through `/start` was
      resolving a role that the destination already resolves. */
   const action = signedIn
-    ? { href: "/dashboard", label: "Dashboard" }
-    : { href: "/sign-in", label: "Start learning" };
+    ? { href: "/dashboard", label: t("mk.navDashboard") }
+    : { href: "/sign-in", label: t("mk.navStart") };
 
   return (
     <>
-      <nav className="lp-nav" aria-label="Primary">
+      <nav className="lp-nav" aria-label={t("mk.navPrimary")}>
         {NAV.map((n) => (
           <Link key={n.href} href={n.href} className="lp-navlink">
-            {n.label}
+            {t(n.key)}
           </Link>
         ))}
       </nav>
@@ -114,7 +122,7 @@ export function SiteNav() {
           className="lp-burger"
           aria-expanded={open}
           aria-controls="lp-mobile-menu"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={open ? t("mk.navCloseMenu") : t("mk.navOpenMenu")}
           onClick={() => setOpen((v) => !v)}
         >
           <span aria-hidden style={{ fontSize: 18, lineHeight: 1 }}>
@@ -141,7 +149,7 @@ export function SiteNav() {
                 textDecoration: "none",
               }}
             >
-              {n.label}
+              {t(n.key)}
             </Link>
           ))}
 

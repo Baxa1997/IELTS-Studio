@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
+
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n";
 
 import { BRAND, BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "./design";
 
@@ -18,6 +23,15 @@ import { BRAND, BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from
  * check against — a public route with no link here ships with no route into it.
  *
  * ONE slot is still deliberately empty rather than invented — see LEGAL_ENTITY.
+ *
+ * ⚠️ A CLIENT COMPONENT, and only so it can be translated. It dresses every
+ * marketing route, all of which are STATIC — a server component there cannot
+ * read the locale cookie without making the page dynamic, which is the one
+ * thing those pages must not become. The locale arrives through the provider
+ * instead. Nothing here needs the browser otherwise.
+ *
+ * The email, the phone number and `engprogress.com` are not translated. They
+ * are addresses, and an address in three spellings is three wrong addresses.
  */
 
 /* ── contact, as supplied by the owner ─────────────────────────────────────── */
@@ -62,47 +76,47 @@ const LEGAL_ENTITY: string | null = null;
 
 /* ── the columns ───────────────────────────────────────────────────────────── */
 
-const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
+const COLUMNS: { heading: MessageKey; links: { label: MessageKey; href: string }[] }[] = [
   {
-    heading: "Practice",
+    heading: "mk.footPractice",
     links: [
       // Trimmed to two on the owner's instruction: the four per-skill pages all
       // sit behind /ielts-practice, and CEFR now points at its tab in the guide
       // rather than at a second marketing page. The tab hash is read by
       // `DocsTabs`, so this link opens CEFR directly instead of Overview.
-      { label: "IELTS practice", href: "/ielts-practice" },
-      { label: "CEFR practice", href: "/how-to-use#cefr-multilevel" },
+      { label: "mk.footIelts", href: "/ielts-practice" },
+      { label: "mk.footCefr", href: "/how-to-use#cefr-multilevel" },
     ],
   },
   {
-    heading: "Platform",
+    heading: "mk.footPlatform",
     links: [
-      { label: "How to use", href: "/how-to-use" },
-      { label: "Guide for centers", href: "/how-to-use/education-centers" },
-      { label: "Cambridge-style practice", href: "/how-to-use#cambridge-style" },
-      { label: "Free essay grader", href: "/grade" },
-      { label: "Live demo", href: "/demo" },
-      { label: "Pricing", href: "/#pricing" },
+      { label: "mk.footHowTo", href: "/how-to-use" },
+      { label: "mk.footCenterGuide", href: "/how-to-use/education-centers" },
+      { label: "mk.footCambridge", href: "/how-to-use#cambridge-style" },
+      { label: "mk.footGrader", href: "/grade" },
+      { label: "mk.footDemo", href: "/demo" },
+      { label: "mk.footPricing", href: "/#pricing" },
     ],
   },
   {
-    heading: "Company",
+    heading: "mk.footCompany",
     links: [
       // The two competitor comparisons and the Cambridge marketing page were
       // deleted, not just unlinked — the Cambridge content moved into the guide.
-      { label: "For education centers", href: "/for-education-centers" },
-      { label: "Contact", href: "/contact" },
+      { label: "mk.footForCenters", href: "/for-education-centers" },
+      { label: "mk.footContact", href: "/contact" },
     ],
   },
   {
-    heading: "Account & legal",
+    heading: "mk.footLegal",
     links: [
-      { label: "Sign in", href: "/sign-in" },
+      { label: "mk.footSignIn", href: "/sign-in" },
       // Account creation is a dialog on /sign-in now — there is no /sign-up
       // page. (/start is dead too: it redirects unconditionally to /sign-in.)
-      { label: "Create an account", href: "/sign-in" },
-      { label: "Privacy policy", href: "/privacy" },
-      { label: "Terms of use", href: "/terms" },
+      { label: "mk.footCreate", href: "/sign-in" },
+      { label: "mk.footPrivacy", href: "/privacy" },
+      { label: "mk.footTerms", href: "/terms" },
     ],
   },
 ];
@@ -126,6 +140,8 @@ const DISC = "rgba(255,255,255,0.16)";
 const HEADING = "rgba(255,255,255,0.55)";
 
 export function SiteFooter() {
+  const t = useT();
+
   const socials = SOCIALS.filter((s) => s.href);
 
   return (
@@ -191,7 +207,7 @@ export function SiteFooter() {
                 maxWidth: 330,
               }}
             >
-              AI-graded IELTS and CEFR practice for learners and education centers.
+              {t("mk.footTagline")}
             </p>
 
             {/* Contact, in the brand column rather than buried in a link list —
@@ -261,7 +277,7 @@ export function SiteFooter() {
 
           {/* link columns */}
           {COLUMNS.map((col) => (
-            <nav key={col.heading} aria-label={col.heading}>
+            <nav key={col.heading} aria-label={t(col.heading)}>
               <div
                 style={{
                   fontFamily: SANS,
@@ -272,7 +288,7 @@ export function SiteFooter() {
                   color: HEADING,
                 }}
               >
-                {col.heading}
+                {t(col.heading)}
               </div>
               <ul
                 style={{
@@ -296,7 +312,7 @@ export function SiteFooter() {
                         textDecoration: "none",
                       }}
                     >
-                      {l.label}
+                      {t(l.label)}
                     </Link>
                   </li>
                 ))}
@@ -318,7 +334,7 @@ export function SiteFooter() {
               textAlign: "center",
             }}
           >
-            Built in Tashkent · engprogress.com
+            {t("mk.footBuilt")}
           </div>
           <div
             style={{
@@ -329,7 +345,7 @@ export function SiteFooter() {
               marginTop: 16,
             }}
           >
-            © 2026 EngProgress. All rights reserved.
+            {t("mk.footRights")}
           </div>
           {LEGAL_ENTITY ? (
             <div
@@ -355,8 +371,7 @@ export function SiteFooter() {
               maxWidth: 720,
             }}
           >
-            Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge
-            Assessment English. All practice content is original and AI-generated.
+            {t("mk.footDisclaimer")}
           </div>
         </div>
       </div>

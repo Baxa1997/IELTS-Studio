@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import { PANEL, WARM_RULE, WELL } from "@/lib/theme/tokens";
 
 const ReportShowcase = dynamic(() => import("./demo-screens").then((mod) => mod.ReportShowcase), {
@@ -37,10 +39,12 @@ export function DeferredReportShowcase() {
 }
 
 function ReportPlaceholder() {
+  const t = useT();
+
   return (
     <div
       aria-busy="true"
-      aria-label="Loading reports"
+      aria-label={t("demo.loadingReports")}
       style={{
         minHeight: 260,
         marginTop: 28,

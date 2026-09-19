@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+import { useT } from "@/components/i18n/locale-provider";
 import {
   BRAND as INDIGO,
   BRAND_LINE,
@@ -87,6 +89,8 @@ function Mark({
 }
 
 function GradeScene() {
+  const t = useT();
+
   return (
     <div className="hpd-grid">
       {/* left — the essay being scanned */}
@@ -101,7 +105,7 @@ function GradeScene() {
             marginBottom: 10,
           }}
         >
-          Your essay · Task 2
+          {t("hd.yourEssay")}
         </div>
         <div
           style={{
@@ -150,7 +154,7 @@ function GradeScene() {
             marginBottom: 10,
           }}
         >
-          Criterion bands
+          {t("hd.criterionBands")}
         </div>
         {[
           { label: "Task Response", band: "6.5", pct: 72, color: INDIGO, d: 3.9 },
@@ -212,8 +216,10 @@ function GradeScene() {
           }}
         >
           <span style={{ fontSize: 14 }}>
-            <strong style={{ color: INK, fontWeight: 700 }}>Overall 6.0.</strong>{" "}
-            <span style={{ color: SLATE_BODY }}>Lexical range caps it — the fixes are named.</span>
+            <strong style={{ color: INK, fontWeight: 700 }}>
+              {t("hd.overall", { band: "6.0" })}
+            </strong>{" "}
+            <span style={{ color: SLATE_BODY }}>{t("hd.overallNote")}</span>
           </span>
           <span
             style={{
@@ -227,7 +233,7 @@ function GradeScene() {
               whiteSpace: "nowrap",
             }}
           >
-            7.0 with fixes
+            {t("hd.withFixes")}
           </span>
         </div>
       </div>
@@ -236,6 +242,8 @@ function GradeScene() {
 }
 
 function GenScene() {
+  const t = useT();
+
   return (
     <div className="hpd-grid">
       {/* left — the passage assembling */}
@@ -250,7 +258,7 @@ function GenScene() {
             marginBottom: 10,
           }}
         >
-          Reading passage · generated now
+          {t("hd.readingPassage")}
         </div>
         <div
           className="hpd-in"
@@ -314,7 +322,7 @@ function GenScene() {
             marginBottom: 10,
           }}
         >
-          Listening · multi-voice audio
+          {t("hd.listeningAudio")}
         </div>
         <div
           className="hpd-in"
@@ -376,14 +384,14 @@ function GenScene() {
           <span
             style={{ fontFamily: MONO, fontSize: 11, color: SLATE_MUTED, whiteSpace: "nowrap" }}
           >
-            Part 2 · map
+            {t("hd.part2Map")}
           </span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 14 }}>
-          {["4 parts · 40 questions", "Band scored", "Trap explanations"].map((t, i) => (
+          {(["hd.chipParts", "hd.chipBand", "hd.chipTraps"] as const).map((key, i) => (
             <span
-              key={t}
+              key={key}
               className="hpd-pop"
               style={{
                 animationDelay: `${3.4 + i * 0.35}s`,
@@ -396,16 +404,14 @@ function GenScene() {
                 padding: "5px 11px",
               }}
             >
-              {t}
+              {t(key)}
             </span>
           ))}
         </div>
 
         <div className="hpd-in" style={{ animationDelay: "4.7s", marginTop: 14, fontSize: 14 }}>
-          <strong style={{ color: INK, fontWeight: 700 }}>Fresh for every session.</strong>{" "}
-          <span style={{ color: SLATE_BODY }}>
-            Never a recycled test, never an answer you remember.
-          </span>
+          <strong style={{ color: INK, fontWeight: 700 }}>{t("hd.fresh")}</strong>{" "}
+          <span style={{ color: SLATE_BODY }}>{t("hd.freshNote")}</span>
         </div>
       </div>
     </div>
@@ -413,6 +419,8 @@ function GenScene() {
 }
 
 export function HeroProcessDemo() {
+  const t = useT();
+
   const [scene, setScene] = useState<Scene>("grade");
   const [cycle, setCycle] = useState(0);
 
@@ -481,10 +489,10 @@ export function HeroProcessDemo() {
             </svg>
           </span>
           <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>
-            {scene === "grade" ? "AI Examiner" : "Practice generator"}
+            {scene === "grade" ? t("hd.examiner") : t("hd.generator")}
           </span>
           <span style={{ fontSize: 14, color: SLATE_MUTED }}>
-            {scene === "grade" ? "grading a Task 2 essay" : "composing a Cambridge-style test"}
+            {scene === "grade" ? t("hd.examinerDoing") : t("hd.generatorDoing")}
           </span>
           <span style={{ display: "inline-flex", gap: 4, marginLeft: 2, alignItems: "center" }}>
             {[0, 0.2, 0.4].map((d) => (
@@ -504,8 +512,8 @@ export function HeroProcessDemo() {
         <div style={{ display: "flex", gap: 6 }}>
           {(
             [
-              ["grade", "Grading"],
-              ["gen", "Generating"],
+              ["grade", "hd.tabGrading"],
+              ["gen", "hd.tabGenerating"],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -525,7 +533,7 @@ export function HeroProcessDemo() {
                 cursor: "pointer",
               }}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>

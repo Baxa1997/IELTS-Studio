@@ -307,6 +307,207 @@ export const en = {
   "lp.metaDesc":
     "Practise all four IELTS skills and CEFR with original, AI-generated tasks at your level, then get a calibrated band and the exact fixes that raise it.",
   "lp.metaAlt": "EngProgress IELTS practice dashboard and AI feedback",
+
+  /* ── marketing header ─────────────────────────────────────────────────── */
+  "mk.navPlatform": "Platform",
+  "mk.navPricing": "Pricing",
+  "mk.navHowTo": "How to use",
+  "mk.navCenters": "For centers",
+  "mk.navPrimary": "Primary",
+  "mk.navDashboard": "Dashboard",
+  "mk.navStart": "Start learning",
+  "mk.navOpenMenu": "Open menu",
+  "mk.navCloseMenu": "Close menu",
+
+  /* ── the education-centers band above the footer ──────────────────────── */
+  "mk.bandEyebrow": "For education centers",
+  "mk.bandTitle": "Run AI-graded IELTS & CEFR practice for every group you teach",
+  "mk.bandBody":
+    "Center licences include student logins, teacher accounts, group assignments and band reporting. Talk to us about a pilot for your center.",
+  "mk.bandContact": "Contact us",
+  "mk.bandGuide": "Center guide",
+
+  /* ── site footer ──────────────────────────────────────────────────────── */
+  "mk.footTagline": "AI-graded IELTS and CEFR practice for learners and education centers.",
+  "mk.footPractice": "Practice",
+  "mk.footPlatform": "Platform",
+  "mk.footCompany": "Company",
+  "mk.footLegal": "Account & legal",
+  "mk.footIelts": "IELTS practice",
+  "mk.footCefr": "CEFR practice",
+  "mk.footHowTo": "How to use",
+  "mk.footCenterGuide": "Guide for centers",
+  "mk.footCambridge": "Cambridge-style practice",
+  "mk.footGrader": "Free essay grader",
+  "mk.footDemo": "Live demo",
+  "mk.footPricing": "Pricing",
+  "mk.footForCenters": "For education centers",
+  "mk.footContact": "Contact",
+  "mk.footSignIn": "Sign in",
+  "mk.footCreate": "Create an account",
+  "mk.footPrivacy": "Privacy policy",
+  "mk.footTerms": "Terms of use",
+  "mk.footBuilt": "Built in Tashkent · engprogress.com",
+  "mk.footRights": "© 2026 EngProgress. All rights reserved.",
+  "mk.footDisclaimer":
+    "Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English. All practice content is original and AI-generated.",
+
+  /* ── pricing cards ────────────────────────────────────────────────────── */
+  "price.popular": "POPULAR",
+  "price.freeName": "Free",
+  "price.freePrice": "Free",
+  "price.perMonth": " / month",
+  "price.perMonths": " / {n} months",
+  "price.ctaTrial": "Start free",
+  "price.ctaStarter": "Choose Standard",
+  "price.ctaPro": "Choose Pro",
+  "price.ctaEnterprise": "Choose Enterprise",
+  "price.trial1": "Calibrated, conservative AI grading",
+  "price.trial2": "IELTS + CEFR practice, generated fresh",
+  "price.trial3": "5 gradings · 5 practice sets / month",
+  "price.starter1": "Everything in Free",
+  "price.starter2": "25 gradings / month",
+  "price.starter3": "25 practice sets / month",
+  "price.starter4": "2 live speaking mock tests / month",
+  "price.starter5": "Full mock reading tests",
+  "price.pro1": "Everything in Standard",
+  "price.pro2": "Unlimited gradings",
+  "price.pro3": "Unlimited practice sets",
+  "price.pro4": "8 live speaking mock tests / month",
+  "price.pro5": "Priority grading queue",
+  "price.ent1": "Everything in Pro, for 3 months",
+  "price.ent2": "One payment — $29.99 per quarter",
+  "price.ent3": "Best value: under $10 / month",
+
+  /* ── the four skills, and the tutors ──────────────────────────────────── */
+  "lp.skillWritingBody":
+    "Task 1 and Task 2, graded per criterion (TR, CC, LR, GRA) with quoted evidence — and a revision loop that re-grades the same essay across drafts.",
+  "lp.skillReadingBody":
+    "Original passages and every real question type, auto-graded, each answer explained — including why the trap worked on you.",
+  "lp.skillListeningBody":
+    "Full four-part tests with original multi-voice audio, Cambridge-style question groups, transcripts and per-answer explanations.",
+  "lp.skillSpeakingBody":
+    "A three-part live mock with an AI examiner, Part-2 cue-card practice, and a tutor that reacts and teaches while you talk.",
+  "lp.coachWriting": "Writing tutor",
+  "lp.coachWritingBody":
+    "Ask it mid-essay: what to put in this paragraph, the exact phrasing, why a sentence is not landing. It shows the move on a different topic rather than writing yours.",
+  "lp.coachReading": "Reading tutor",
+  "lp.coachReadingBody":
+    "Mid-passage, it tells you where to look and which words to compare — but never whether Q7 is True. Full explanations unlock the moment you submit.",
+  "lp.coachSpeaking": "Speaking tutor",
+  "lp.coachSpeakingBody":
+    "Talk and it reacts, corrects and teaches on every turn — and switches to Uzbek when you do.",
+  "lp.coachStudy": "Study coach",
+  "lp.coachStudyBody":
+    "The plan, not the task: what to practise next, and how to spend the weeks you have left before the test.",
+  /* ── hero demo (the animated banner) ──────────────────────────────────── */
+  "hd.yourEssay": "Your essay · Task 2",
+  "hd.criterionBands": "Criterion bands",
+  "hd.overall": "Overall {band}.",
+  "hd.overallNote": "Lexical range caps it — the fixes are named.",
+  "hd.readingPassage": "Reading passage · generated now",
+  "hd.listeningAudio": "Listening · multi-voice audio",
+  "hd.part2Map": "Part 2 · map",
+  "hd.chipParts": "4 parts · 40 questions",
+  "hd.chipBand": "Band scored",
+  "hd.chipTraps": "Trap explanations",
+  "hd.fresh": "Fresh for every session.",
+  "hd.freshNote": "Never a recycled test, never an answer you remember.",
+  "hd.examiner": "AI Examiner",
+  "hd.generator": "Practice generator",
+  "hd.examinerDoing": "grading a Task 2 essay",
+  "hd.generatorDoing": "composing a Cambridge-style test",
+  "hd.tabGrading": "Grading",
+  "hd.tabGenerating": "Generating",
+
+  /* ── the band-9 card in the hero ──────────────────────────────────────── */
+  "b9.achievable": "Band 9 achievable",
+  "b9.result": "Examiner Result",
+  "b9.verified": "Verified · calibrated",
+  "b9.overallBand": "OVERALL BAND",
+  /* ── the sign-up dialog ───────────────────────────────────────────────── */
+  "su.title": "Create your account",
+  "su.sub": "Free to start — no card required.",
+  "su.close": "Close",
+  "su.google": "Sign up with Google",
+  "su.googleWait": "Opening Google…",
+  "su.or": "OR",
+  "su.name": "Full name",
+  "su.phone": "Phone",
+  "su.optional": "(optional)",
+  "su.email": "Email",
+  "su.password": "Password",
+  "su.passwordHint": "At least 8 characters",
+  "su.referral": "Referral code",
+  "su.referralHint": "If someone invited you",
+  "su.submit": "Create account",
+  "su.submitting": "Creating…",
+  "su.legalPre": "By creating an account you agree to our",
+  "su.terms": "Terms of Service",
+  "su.legalMid": "and",
+  "su.privacy": "Privacy Policy",
+  "su.legalPost": ".",
+
+  /* ── the centre application ───────────────────────────────────────────── */
+  "rc.promptTitle": "Are you an education center?",
+  "rc.promptBody":
+    "Register here and we will issue logins for your teachers and students. Applications are reviewed by hand, and we confirm by email.",
+  "rc.promptShort": "We'll issue logins for your students and teachers.",
+  "rc.promptCta": "Register here",
+  "rc.title": "Register your center",
+  "rc.sub":
+    "We review each application by hand. Once it is approved you can invite teachers and issue student logins.",
+  "rc.close": "Close",
+  "rc.received": "Application received",
+  "rc.receivedNote":
+    "We review every center by hand and email you as soon as yours is approved — usually within a working day.",
+  "rc.loginPre": "Your login is",
+  "rc.loginPost": "— sign in with that and the password you just chose, not with your email.",
+  "rc.done": "Done",
+  "rc.orgName": "Official organization name",
+  "rc.contactEmail": "Contact email",
+  "rc.login": "Login for the center",
+  "rc.loginHint": "3–32 characters: letters, digits, and . _ - in the middle.",
+  "rc.password": "Password",
+  "rc.passwordHint": "At least 8 characters",
+  "rc.submit": "Submit application",
+  "rc.submitting": "Submitting…",
+  /* ── demo strip (screen-reader labels) ────────────────────────────────── */
+  "demo.screens": "Product demo screens",
+  "demo.loading": "Loading product demo",
+  "demo.loadingReports": "Loading reports",
+  /* ── the demo strip's tabs ────────────────────────────────────────────── */
+  "dt.wfLabel": "Writing feedback",
+  "dt.wfTitle": "Examiner-style Writing feedback",
+  "dt.wfBlurb":
+    "Every essay is graded criterion by criterion — Task Response, Coherence, Lexis, Grammar — with evidence quoted from your own sentences, what caps each band, and the exact fix.",
+  "dt.wsLabel": "Writing studio",
+  "dt.wsTitle": "A real exam writing room",
+  "dt.wsBlurb":
+    "Task 1 and Task 2 prompts generated fresh every time, an exam timer, autosave, and resubmission — revise the same essay and watch the band move.",
+  "dt.rdLabel": "Reading test",
+  "dt.rdTitle": "Cambridge-style Reading, generated fresh",
+  "dt.rdBlurb":
+    "Full passages in the authentic layout with every real question type. After grading, every wrong answer explains why the trap worked.",
+  "dt.lsLabel": "Listening test",
+  "dt.lsTitle": "Full Listening tests with original audio",
+  "dt.lsBlurb":
+    "Multi-voice recordings across six difficulty levels — full four-section tests or quick practices, with transcripts and per-answer explanations.",
+  "dt.spLabel": "Speaking mock",
+  "dt.spTitle": "A full 3-part mock with a live examiner",
+  "dt.spBlurb":
+    "Talk to an AI examiner through all three parts — interview, the cue-card long turn with prep time, then the discussion. Scored on the four official criteria, with your own words quoted back.",
+  "dt.coLabel": "Study coach",
+  "dt.coTitle": "A coach that knows your history",
+  "dt.coBlurb":
+    "The study coach reads your past attempts — every band, every weak criterion — and tells you what to practice next and why.",
+  "dt.pgLabel": "Progress & stats",
+  "dt.pgTitle": "Your band, tracked honestly",
+  "dt.pgBlurb":
+    "Current band versus target, your weakest criterion, and progress over time — a conservative estimate you can trust on exam day.",
+  "b9.sub":
+    "The band a Cambridge-trained examiner would award — and the exact path there from wherever you are starting.",
+  "hd.withFixes": "7.0 with fixes",
 } as const;
 
 /** The key set every locale must satisfy. */

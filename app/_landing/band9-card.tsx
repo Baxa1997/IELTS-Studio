@@ -1,4 +1,5 @@
 import { BandCountUp } from "@/components/landing/band-countup";
+import type { Translate } from "@/lib/i18n";
 
 import {
   BODY,
@@ -17,7 +18,7 @@ import {
   WHITE,
 } from "./design";
 
-export function Band9Card() {
+export function Band9Card({ t }: { t: Translate }) {
   return (
     <div style={{ position: "relative" }}>
       <div
@@ -41,7 +42,7 @@ export function Band9Card() {
         }}
       >
         <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: GREEN }} />
-        Band 9 achievable
+        {t("b9.achievable")}
       </div>
 
       <div
@@ -73,9 +74,9 @@ export function Band9Card() {
           </div>
           <div>
             <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, color: INK }}>
-              Examiner Result
+              {t("b9.result")}
             </div>
-            <div style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>Verified · calibrated</div>
+            <div style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>{t("b9.verified")}</div>
           </div>
           <span
             style={{
@@ -105,7 +106,7 @@ export function Band9Card() {
               marginTop: 10,
             }}
           >
-            OVERALL BAND
+            {t("b9.overallBand")}
           </div>
           <BandCountUp />
           <div
@@ -118,8 +119,7 @@ export function Band9Card() {
               textWrap: "pretty",
             }}
           >
-            The band a Cambridge-trained examiner would award — and the exact path there from
-            wherever you are starting.
+            {t("b9.sub")}
           </div>
         </div>
 
@@ -133,9 +133,12 @@ export function Band9Card() {
             marginTop: 14,
           }}
         >
-          {["Writing 9", "Reading 9", "CEFR C2"].map((t) => (
+          {/* Skill name + the band, built from the same keys the nav uses rather
+              than three more strings to translate. CEFR keeps its own name: it
+              is the framework's, in every language. */}
+          {[`${t("nav.writing")} 9`, `${t("nav.reading")} 9`, "CEFR C2"].map((chip) => (
             <span
-              key={t}
+              key={chip}
               style={{
                 background: BRAND_TINT,
                 color: BRAND,
@@ -147,7 +150,7 @@ export function Band9Card() {
                 fontFamily: SANS,
               }}
             >
-              {t}
+              {chip}
             </span>
           ))}
         </div>

@@ -294,4 +294,207 @@ export const uz: Messages = {
   "lp.metaDesc":
     "Toʻrtala IELTS koʻnikmasi va CEFR ni darajangizga mos original AI topshiriqlari bilan mashq qiling, soʻng kalibrlangan band va uni koʻtaradigan aniq tuzatishlarni oling.",
   "lp.metaAlt": "EngProgress IELTS mashq paneli va AI fikr-mulohazasi",
+
+  /* ── marketing header ─────────────────────────────────────────────────── */
+  "mk.navPlatform": "Platforma",
+  "mk.navPricing": "Narxlar",
+  "mk.navHowTo": "Qanday ishlatiladi",
+  "mk.navCenters": "Markazlar uchun",
+  "mk.navPrimary": "Asosiy",
+  "mk.navDashboard": "Boshqaruv paneli",
+  "mk.navStart": "Oʻrganishni boshlash",
+  "mk.navOpenMenu": "Menyuni ochish",
+  "mk.navCloseMenu": "Menyuni yopish",
+
+  /* ── the education-centers band above the footer ──────────────────────── */
+  "mk.bandEyebrow": "Taʼlim markazlari uchun",
+  "mk.bandTitle":
+    "Oʻzingiz dars beradigan har bir guruh uchun AI baholaydigan IELTS va CEFR mashqlari",
+  "mk.bandBody":
+    "Markaz litsenziyasiga oʻquvchi loginlari, oʻqituvchi hisoblari, guruh vazifalari va band boʻyicha hisobotlar kiradi. Markazingiz uchun sinov haqida biz bilan bogʻlaning.",
+  "mk.bandContact": "Biz bilan bogʻlanish",
+  "mk.bandGuide": "Markaz qoʻllanmasi",
+
+  /* ── site footer ──────────────────────────────────────────────────────── */
+  "mk.footTagline":
+    "Oʻquvchilar va taʼlim markazlari uchun AI baholaydigan IELTS va CEFR mashqlari.",
+  "mk.footPractice": "Mashqlar",
+  "mk.footPlatform": "Platforma",
+  "mk.footCompany": "Kompaniya",
+  "mk.footLegal": "Hisob va huquqiy maʼlumot",
+  "mk.footIelts": "IELTS mashqlari",
+  "mk.footCefr": "CEFR mashqlari",
+  "mk.footHowTo": "Qanday ishlatiladi",
+  "mk.footCenterGuide": "Markazlar uchun qoʻllanma",
+  "mk.footCambridge": "Cambridge uslubidagi mashqlar",
+  "mk.footGrader": "Bepul esse baholovchi",
+  "mk.footDemo": "Jonli demo",
+  "mk.footPricing": "Narxlar",
+  "mk.footForCenters": "Taʼlim markazlari uchun",
+  "mk.footContact": "Aloqa",
+  "mk.footSignIn": "Kirish",
+  "mk.footCreate": "Hisob yaratish",
+  "mk.footPrivacy": "Maxfiylik siyosati",
+  "mk.footTerms": "Foydalanish shartlari",
+  "mk.footBuilt": "Toshkentda yaratilgan · engprogress.com",
+  "mk.footRights": "© 2026 EngProgress. Barcha huquqlar himoyalangan.",
+  "mk.footDisclaimer":
+    "IELTS®, British Council, IDP yoki Cambridge Assessment English bilan aloqador emas va ular tomonidan tasdiqlanmagan. Barcha mashq materiallari original va AI tomonidan yaratilgan.",
+
+  /* ── pricing cards ────────────────────────────────────────────────────── */
+  "price.popular": "OMMABOP",
+  "price.freeName": "Bepul",
+  "price.freePrice": "Bepul",
+  "price.perMonth": " / oyiga",
+  "price.perMonths": " / {n} oyga",
+  "price.ctaTrial": "Bepul boshlash",
+  "price.ctaStarter": "Standard ni tanlash",
+  "price.ctaPro": "Pro ni tanlash",
+  "price.ctaEnterprise": "Enterprise ni tanlash",
+  "price.trial1": "Kalibrlangan, ehtiyotkor AI baholash",
+  "price.trial2": "IELTS va CEFR mashqlari — har safar yangidan yaratiladi",
+  "price.trial3": "Oyiga 5 ta baholash · 5 ta mashq toʻplami",
+  "price.starter1": "Bepul tarifdagi hamma narsa",
+  "price.starter2": "Oyiga 25 ta baholash",
+  "price.starter3": "Oyiga 25 ta mashq toʻplami",
+  "price.starter4": "Oyiga 2 ta jonli speaking mock test",
+  "price.starter5": "Toʻliq mock reading testlari",
+  "price.pro1": "Standard tarifdagi hamma narsa",
+  "price.pro2": "Cheksiz baholash",
+  "price.pro3": "Cheksiz mashq toʻplamlari",
+  "price.pro4": "Oyiga 8 ta jonli speaking mock test",
+  "price.pro5": "Navbatsiz, birinchi boʻlib baholash",
+  "price.ent1": "Pro tarifdagi hamma narsa, 3 oy davomida",
+  "price.ent2": "Bitta toʻlov — chorakiga $29.99",
+  "price.ent3": "Eng foydalisi: oyiga $10 dan arzon",
+
+  /* ── the four skills, and the tutors ──────────────────────────────────── */
+  "lp.skillWritingBody":
+    "Task 1 va Task 2 har bir mezon (TR, CC, LR, GRA) boʻyicha, matningizdan keltirilgan dalillar bilan baholanadi — va bitta essening qayta yozilgan variantlarini qayta baholaydigan tahrir sikli.",
+  "lp.skillReadingBody":
+    "Original matnlar va barcha haqiqiy savol turlari, avtomatik baholanadi, har bir javob izohlanadi — qaysi tuzoq nega ishlagani ham.",
+  "lp.skillListeningBody":
+    "Original koʻp ovozli audio bilan toʻliq toʻrt qismli testlar, Cambridge uslubidagi savol guruhlari, transkriptlar va har bir javob uchun izoh.",
+  "lp.skillSpeakingBody":
+    "AI imtihon oluvchi bilan uch qismli jonli mock, Part-2 cue-card mashqi va siz gapirayotganda javob qaytarib, oʻrgatadigan tutor.",
+  "lp.coachWriting": "Yozish tutori",
+  "lp.coachWritingBody":
+    "Esse yozayotib soʻrang: bu paragrafga nima yozish kerak, aniq qanday ifodalash, nega bu gap taʼsir qilmayapti. U sizning esseyingizni yozib bermaydi — oʻsha usulni boshqa mavzuda koʻrsatadi.",
+  "lp.coachReading": "Oʻqish tutori",
+  "lp.coachReadingBody":
+    "Matn oʻrtasida qayerga qarash va qaysi soʻzlarni solishtirish kerakligini aytadi — lekin Q7 True ekanini hech qachon aytmaydi. Toʻliq izohlar siz topshirgan zahoti ochiladi.",
+  "lp.coachSpeaking": "Gapirish tutori",
+  "lp.coachSpeakingBody":
+    "Gapiring — u har bir javobingizga munosabat bildiradi, xatoni tuzatadi va oʻrgatadi; siz oʻzbekchaga oʻtsangiz, u ham oʻtadi.",
+  "lp.coachStudy": "Oʻquv murabbiyi",
+  "lp.coachStudyBody":
+    "Vazifa emas, reja: keyin nimani mashq qilish kerak va imtihongacha qolgan haftalarni qanday taqsimlash kerak.",
+  /* ── hero demo (the animated banner) ──────────────────────────────────── */
+  "hd.yourEssay": "Sizning esseyingiz · Task 2",
+  "hd.criterionBands": "Mezonlar boʻyicha band",
+  "hd.overall": "Umumiy {band}.",
+  "hd.overallNote": "Lugʻat boyligi cheklab turibdi — tuzatishlar aniq koʻrsatilgan.",
+  "hd.readingPassage": "Oʻqish matni · hozir yaratildi",
+  "hd.listeningAudio": "Tinglash · koʻp ovozli audio",
+  "hd.part2Map": "2-qism · xarita",
+  "hd.chipParts": "4 qism · 40 savol",
+  "hd.chipBand": "Band qoʻyiladi",
+  "hd.chipTraps": "Tuzoqlar izohi",
+  "hd.fresh": "Har safar yangi.",
+  "hd.freshNote": "Qayta ishlatilgan test ham, siz eslab qolgan javob ham yoʻq.",
+  "hd.examiner": "AI imtihon oluvchi",
+  "hd.generator": "Mashq generatori",
+  "hd.examinerDoing": "Task 2 essesini baholamoqda",
+  "hd.generatorDoing": "Cambridge uslubidagi test tuzmoqda",
+  "hd.tabGrading": "Baholash",
+  "hd.tabGenerating": "Yaratish",
+
+  /* ── the band-9 card in the hero ──────────────────────────────────────── */
+  "b9.achievable": "Band 9 ga erishish mumkin",
+  "b9.result": "Imtihon oluvchi natijasi",
+  "b9.verified": "Tekshirilgan · kalibrlangan",
+  "b9.overallBand": "UMUMIY BAND",
+  /* ── the sign-up dialog ───────────────────────────────────────────────── */
+  "su.title": "Hisob yarating",
+  "su.sub": "Boshlash bepul — karta kerak emas.",
+  "su.close": "Yopish",
+  "su.google": "Google orqali roʻyxatdan oʻtish",
+  "su.googleWait": "Google ochilmoqda…",
+  "su.or": "YOKI",
+  "su.name": "Toʻliq ism",
+  "su.phone": "Telefon",
+  "su.optional": "(ixtiyoriy)",
+  "su.email": "Email",
+  "su.password": "Parol",
+  "su.passwordHint": "Kamida 8 ta belgi",
+  "su.referral": "Taklif kodi",
+  "su.referralHint": "Sizni kimdir taklif qilgan boʻlsa",
+  "su.submit": "Hisob yaratish",
+  "su.submitting": "Yaratilmoqda…",
+  "su.legalPre": "Hisob yaratish orqali siz",
+  "su.terms": "Foydalanish shartlari",
+  "su.legalMid": "va",
+  "su.privacy": "Maxfiylik siyosati",
+  "su.legalPost": "ga rozilik bildirasiz.",
+
+  /* ── the centre application ───────────────────────────────────────────── */
+  "rc.promptTitle": "Siz taʼlim markazimisiz?",
+  "rc.promptBody":
+    "Shu yerda roʻyxatdan oʻting — oʻqituvchi va oʻquvchilaringiz uchun loginlar beramiz. Arizalar qoʻlda koʻrib chiqiladi, natijani email orqali tasdiqlaymiz.",
+  "rc.promptShort": "Oʻquvchi va oʻqituvchilaringiz uchun loginlar beramiz.",
+  "rc.promptCta": "Roʻyxatdan oʻtish",
+  "rc.title": "Markazingizni roʻyxatdan oʻtkazing",
+  "rc.sub":
+    "Har bir arizani qoʻlda koʻrib chiqamiz. Tasdiqlangach, oʻqituvchilarni taklif qilib, oʻquvchilarga login berishingiz mumkin.",
+  "rc.close": "Yopish",
+  "rc.received": "Ariza qabul qilindi",
+  "rc.receivedNote":
+    "Har bir markazni qoʻlda koʻrib chiqamiz va tasdiqlangan zahoti emailingizga xabar yuboramiz — odatda bir ish kuni ichida.",
+  "rc.loginPre": "Sizning loginingiz —",
+  "rc.loginPost": "— email bilan emas, shu login va hozir tanlagan parolingiz bilan kiring.",
+  "rc.done": "Tayyor",
+  "rc.orgName": "Tashkilotning rasmiy nomi",
+  "rc.contactEmail": "Aloqa uchun email",
+  "rc.login": "Markaz uchun login",
+  "rc.loginHint": "3–32 ta belgi: harflar, raqamlar va oʻrtasida . _ - belgilari.",
+  "rc.password": "Parol",
+  "rc.passwordHint": "Kamida 8 ta belgi",
+  "rc.submit": "Arizani yuborish",
+  "rc.submitting": "Yuborilmoqda…",
+  /* ── demo strip (screen-reader labels) ────────────────────────────────── */
+  "demo.screens": "Mahsulot demo ekranlari",
+  "demo.loading": "Mahsulot demosi yuklanmoqda",
+  "demo.loadingReports": "Hisobotlar yuklanmoqda",
+  /* ── the demo strip's tabs ────────────────────────────────────────────── */
+  "dt.wfLabel": "Yozish boʻyicha fikr",
+  "dt.wfTitle": "Imtihon oluvchi uslubidagi Writing tahlili",
+  "dt.wfBlurb":
+    "Har bir esse mezon boʻyicha baholanadi — Task Response, Coherence, Lexis, Grammar — oʻz gaplaringizdan keltirilgan dalillar, har bir bandni nima cheklab turgani va aniq tuzatish bilan.",
+  "dt.wsLabel": "Yozish studiyasi",
+  "dt.wsTitle": "Haqiqiy imtihon yozuv xonasi",
+  "dt.wsBlurb":
+    "Har safar yangidan yaratiladigan Task 1 va Task 2 topshiriqlari, imtihon taymeri, avtosaqlash va qayta topshirish — bitta esseni qayta ishlang va band qanday oʻzgarishini koʻring.",
+  "dt.rdLabel": "Oʻqish testi",
+  "dt.rdTitle": "Cambridge uslubidagi Reading, yangidan yaratiladi",
+  "dt.rdBlurb":
+    "Haqiqiy tartibdagi toʻliq matnlar va barcha real savol turlari. Baholangach, har bir notoʻgʻri javob tuzoq nega ishlaganini tushuntiradi.",
+  "dt.lsLabel": "Tinglash testi",
+  "dt.lsTitle": "Original audio bilan toʻliq Listening testlari",
+  "dt.lsBlurb":
+    "Olti daraja boʻyicha koʻp ovozli yozuvlar — toʻliq toʻrt boʻlimli testlar yoki tezkor mashqlar, transkript va har bir javob izohi bilan.",
+  "dt.spLabel": "Speaking mock testi",
+  "dt.spTitle": "Jonli imtihon oluvchi bilan toʻliq 3 qismli mock",
+  "dt.spBlurb":
+    "AI imtihon oluvchi bilan uchala qismda gaplashing — suhbat, tayyorgarlik vaqti bilan cue-card monologi, soʻng muhokama. Toʻrtta rasmiy mezon boʻyicha baholanadi va oʻz soʻzlaringiz keltiriladi.",
+  "dt.coLabel": "Oʻquv murabbiyi",
+  "dt.coTitle": "Tarixingizni biladigan murabbiy",
+  "dt.coBlurb":
+    "Oʻquv murabbiyi oldingi urinishlaringizni oʻqiydi — har bir band, har bir zaif mezon — va keyin nimani mashq qilish kerakligini va nega kerakligini aytadi.",
+  "dt.pgLabel": "Progress va statistika",
+  "dt.pgTitle": "Bandingiz, halol kuzatiladi",
+  "dt.pgBlurb":
+    "Joriy band va maqsad, eng zaif mezoningiz va vaqt boʻyicha oʻsish — imtihon kunida ishonsa boʻladigan ehtiyotkor baho.",
+  "b9.sub":
+    "Cambridge tayyorlagan imtihon oluvchi qoʻyadigan band — va qayerdan boshlagan boʻlsangiz ham, unga olib boradigan aniq yoʻl.",
+  "hd.withFixes": "Tuzatishlar bilan 7.0",
 };
