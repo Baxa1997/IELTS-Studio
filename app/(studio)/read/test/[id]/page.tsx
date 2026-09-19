@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 import type { DeliveredQuestion } from "../../_shared/question-inputs";
-import { ReadingTestRunner, type TestPassage } from "./test-runner";
+import { ReadingTestRunner, type ResumeState, type TestPassage } from "./test-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +49,13 @@ export default async function ReadingTestPage({ params, searchParams }: PageProp
   const admin = createAdminClient();
   const { data: questions } = await admin
     .from("reading_questions")
-    .select("id, question_type, order_index, prompt, options, word_limit, section, note_meta, passage_id") // answer-free
-    .in("passage_id", passages.map((p) => p.id as string))
+    .select(
+      "id, question_type, order_index, prompt, options, word_limit, section, note_meta, passage_id",
+    ) // answer-free
+    .in(
+      "passage_id",
+      passages.map((p) => p.id as string),
+    )
     .eq("organization_id", profile.organization_id)
     .order("order_index", { ascending: true });
 
@@ -78,7 +83,9 @@ export default async function ReadingTestPage({ params, searchParams }: PageProp
       title: (p.title as string) ?? "",
       body: (p.body as string) ?? "",
       topic: (p.topic as string | null) ?? null,
-      questions: (byPassage.get(p.id as string) ?? []).sort((a, b) => a.order_index - b.order_index),
+      questions: (byPassage.get(p.id as string) ?? []).sort(
+        (a, b) => a.order_index - b.order_index,
+      ),
     }))
     .filter((p) => p.questions.length > 0);
 
@@ -88,10 +95,39 @@ export default async function ReadingTestPage({ params, searchParams }: PageProp
   // strategy help is pitched to the right level — context only, never a band.
   const learnerContext = await buildCoachLearnerContext(profile.id, "reading");
 
+  /* ⭐ AN UNFINISHED RUN, if this learner left one open. Written by
+     /api/reading/test/[id]/progress and cleared by ./submit, so at most one exists
+     (a partial unique index enforces it). Resuming restores the answers, the
+     passage and the remaining time — without the clock, a resumed test would hand
+     back the hour it had already spent.
+     Best-effort: a learner who cannot resume should still be able to sit the test,
+     so a failure here starts a fresh run rather than blocking the page. */
+  let resume: ResumeState | null = null;
+  const { data: live } = await supabase
+    .from("reading_attempts")
+    .select("answers, cursor_index, seconds_left")
+    .eq("student_id", profile.id)
+    .eq("test_id", id)
+    .eq("status", "in_progress")
+    .maybeSingle();
+  if (live) {
+    resume = {
+      answers: (live.answers as Record<string, string> | null) ?? {},
+      cursorIndex: (live.cursor_index as number | null) ?? null,
+      secondsLeft: (live.seconds_left as number | null) ?? null,
+    };
+  }
+
   // Full-screen, no sidebar — the focused exam experience.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
-      <ReadingTestRunner testId={id} passages={testPassages} learnerContext={learnerContext} practiceNo={practiceNo} />
+      <ReadingTestRunner
+        testId={id}
+        passages={testPassages}
+        learnerContext={learnerContext}
+        practiceNo={practiceNo}
+        resume={resume}
+      />
       <AssignToClass kind="reading" contentId={id} />
     </div>
   );

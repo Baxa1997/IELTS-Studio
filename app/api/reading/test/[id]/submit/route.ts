@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { recomputeSkillEstimate } from "@/lib/estimates/service";
 import { notifyGradedToTeachers } from "@/lib/notifications/send";
 import { gradeReadingTest, type GradableQuestion } from "@/lib/reading/grade";
+import { clearReadingProgress } from "@/lib/reading/progress";
 import { READING_DISCLAIMER } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -128,6 +129,18 @@ export async function POST(req: Request, ctx: RouteContext): Promise<Response> {
   if (insErr) {
     console.error("[reading/test/submit] failed to store attempt:", testId, insErr.message);
     return fail(500, "store_failed");
+  }
+
+  /* ⚠️ CLEAR THE UNFINISHED RUN, OR THE TEST LOOKS PAUSED FOREVER.
+     ./progress saves an in_progress row while the learner works. The hub card
+     prefers an open run over a past result — the thing you left open matters more
+     than the thing you finished — so a stale in_progress row would keep a marked
+     test showing "Paused · Resume" and hide the band it just earned.
+     Best-effort: the grading is already stored, and failing the request here would
+     tell the learner their submission failed when it did not. */
+  const cleared = await clearReadingProgress(admin, { testId }, studentId);
+  if (!cleared.ok) {
+    console.error("[reading/test/submit] stale in-progress row left behind:", testId);
   }
 
   // Roll the student's reading band estimate forward (best-effort).

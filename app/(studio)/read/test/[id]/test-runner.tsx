@@ -6,17 +6,25 @@ import { AlertTriangle, Highlighter as HighlighterIcon, Maximize2, Minimize2 } f
 
 import type { GradedItem } from "@/lib/reading/grade";
 import { formatClock } from "@/components/exam/timer";
-import {
-  READING_QUESTION_LABELS,
-  READING_TEST_DURATION_SECONDS,
-} from "@/lib/reading/constants";
+import { READING_QUESTION_LABELS, READING_TEST_DURATION_SECONDS } from "@/lib/reading/constants";
 import { bandColor } from "@/lib/ui/band";
 
 import { CoachPanel } from "../../_shared/coach-panel";
-import { HIGHLIGHT_CSS, MarkerToolbar, useFullscreen, useHighlighter } from "../../_shared/highlighter";
+import {
+  HIGHLIGHT_CSS,
+  MarkerToolbar,
+  useFullscreen,
+  useHighlighter,
+} from "../../_shared/highlighter";
 import { QuestionGroups } from "../../_shared/question-groups";
 import { Timer, type DeliveredQuestion } from "../../_shared/question-inputs";
-import { perfColor, ReviewItem, statusOf, WeakTypes, type TypeBreakdown } from "../../_shared/review";
+import {
+  perfColor,
+  ReviewItem,
+  statusOf,
+  WeakTypes,
+  type TypeBreakdown,
+} from "../../_shared/review";
 import { AMBER, BRAND, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens";
 import { WordLookup } from "../../_shared/word-lookup";
 
@@ -49,10 +57,37 @@ const OPTION_LETTERS = "ABCDEFGH".split("");
 
 // ---- Runner ----------------------------------------------------------------
 
-export function ReadingTestRunner({ testId, passages, learnerContext = "", practiceNo = null }: { testId: string; passages: TestPassage[]; learnerContext?: string; practiceNo?: number | null }) {
+/** An unfinished run this learner left open, loaded by the page. */
+export interface ResumeState {
+  answers: Record<string, string>;
+  /** 1-based passage the learner was on. */
+  cursorIndex: number | null;
+  secondsLeft: number | null;
+}
+
+export function ReadingTestRunner({
+  testId,
+  passages,
+  learnerContext = "",
+  practiceNo = null,
+  resume = null,
+}: {
+  testId: string;
+  passages: TestPassage[];
+  learnerContext?: string;
+  practiceNo?: number | null;
+  resume?: ResumeState | null;
+}) {
   const [phase, setPhase] = useState<Phase>("reading");
-  const [active, setActive] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Resumed where the learner left off. `cursorIndex` is 1-based on the wire and
+  // clamped here, so a saved cursor pointing past a test that has since lost a
+  // passage lands on the last one rather than rendering nothing.
+  const [active, setActive] = useState(() =>
+    resume?.cursorIndex != null
+      ? Math.min(Math.max(resume.cursorIndex - 1, 0), passages.length - 1)
+      : 0,
+  );
+  const [answers, setAnswers] = useState<Record<string, string>>(() => resume?.answers ?? {});
   const [flags, setFlags] = useState<Record<string, boolean>>({});
   const [fontScale, setFontScale] = useState(1);
   const [cur, setCur] = useState(1);
@@ -75,17 +110,97 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
   useEffect(() => void (startRef.current = Date.now()), []);
   useEffect(() => void (answersRef.current = answers), [answers]);
 
+  /* ⭐ THE COUNTDOWN A RESUMED TEST GETS.
+     A resumed run must not hand back the time already spent, so the clock starts
+     from what was saved rather than the full hour. `Timer` fixes its deadline at
+     MOUNT from this value and ignores later changes, which is exactly right here:
+     the number is known before the first render and must never move afterwards. */
+  const budget =
+    resume?.secondsLeft != null
+      ? Math.min(Math.max(resume.secondsLeft, 0), READING_TEST_DURATION_SECONDS)
+      : READING_TEST_DURATION_SECONDS;
+
+  /* ⭐ AUTOSAVE, so closing the tab no longer loses the run.
+     What `seconds_left` has to mean is "at the moment of this save", and that is
+     derived from the wall clock against the budget — NOT read out of the Timer's
+     render prop, which would mean writing a ref during render. `startRef` is set
+     on mount, so budget − elapsed is the same number the Timer is showing. */
+  const activeRef = useRef(active);
+  useEffect(() => void (activeRef.current = active), [active]);
+  // Stops autosaving for good once the run is submitted, abandoned, or claimed by
+  // another tab (the route answers 409 on the partial unique index).
+  const savingOffRef = useRef(false);
+  const saveProgress = useCallback(
+    (opts?: { keepalive?: boolean }) => {
+      if (savingOffRef.current || submittingRef.current) return;
+      const elapsed = startRef.current ? (Date.now() - startRef.current) / 1000 : 0;
+      const payload = JSON.stringify({
+        answers: answersRef.current,
+        cursorIndex: activeRef.current + 1,
+        secondsLeft: Math.max(0, Math.round(budget - elapsed)),
+      });
+      void fetch(`/api/reading/test/${testId}/progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        // The unload path has to survive the page going away.
+        keepalive: opts?.keepalive ?? false,
+      })
+        .then((res) => {
+          // 409 = another tab owns this run. Two tabs racing to save would make
+          // the resumed state whichever one wrote last, so this one steps back.
+          if (res.status === 409) savingOffRef.current = true;
+        })
+        .catch(() => {
+          // An autosave is best-effort; a dropped one is retried by the next tick.
+        });
+    },
+    [budget, testId],
+  );
+
+  /* Every 15s while the tab is visible, plus a flush when it is hidden or closed.
+     Not on every keystroke: a 40-question test would make that hundreds of writes,
+     and the periodic save plus the unload flush loses at most a few seconds' work.
+     `visibilitychange` is the one that actually fires on mobile, where `pagehide`
+     and `beforeunload` are unreliable — all three are wired for that reason. */
+  useEffect(() => {
+    if (phase !== "reading") return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") saveProgress();
+    }, 15_000);
+    const flush = () => saveProgress({ keepalive: true });
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
+      // Leaving the runner by navigation is still leaving mid-test.
+      flush();
+    };
+  }, [phase, saveProgress]);
+
   // Global question numbering 1..N across the 3 passages, in passage order.
   const flat = useMemo(() => {
     const out: { passageIndex: number; q: DeliveredQuestion; n: number }[] = [];
     let n = 1;
-    passages.forEach((p, pi) => p.questions.forEach((q) => out.push({ passageIndex: pi, q, n: n++ })));
+    passages.forEach((p, pi) =>
+      p.questions.forEach((q) => out.push({ passageIndex: pi, q, n: n++ })),
+    );
     return out;
   }, [passages]);
   const total = flat.length;
   const numberById = useMemo(() => new Map(flat.map((f) => [f.q.id, f.n])), [flat]);
 
-  const answeredCount = useMemo(() => flat.reduce((a, f) => a + (answers[f.q.id]?.trim() ? 1 : 0), 0), [flat, answers]);
+  const answeredCount = useMemo(
+    () => flat.reduce((a, f) => a + (answers[f.q.id]?.trim() ? 1 : 0), 0),
+    [flat, answers],
+  );
 
   const setAnswer = useCallback(
     (id: string, value: string) => {
@@ -142,6 +257,10 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
   const submit = useCallback(async () => {
     if (submittingRef.current) return;
     submittingRef.current = true;
+    // No further autosaves: ./submit deletes the in_progress row as part of
+    // grading, and a save landing after that would resurrect it — leaving a
+    // freshly marked test showing "Paused" on the hub.
+    savingOffRef.current = true;
     setSubmitting(true);
     setMessage(null);
     const durationSeconds = Math.round((Date.now() - startRef.current) / 1000);
@@ -152,7 +271,11 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers: answersRef.current, durationSeconds }),
       });
-      const body = (await res.json().catch(() => ({}))) as { result?: TestResult; disclaimer?: string; error?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        result?: TestResult;
+        disclaimer?: string;
+        error?: string;
+      };
       if (res.ok && body.result) {
         setResult(body.result);
         setDisclaimer(body.disclaimer ?? null);
@@ -175,17 +298,33 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
 
   const finish = useCallback(() => {
     if (submittingRef.current) return;
-    if (total - answeredCount > 0) setConfirmOpen(true); // confirm via the in-app modal
+    if (total - answeredCount > 0)
+      setConfirmOpen(true); // confirm via the in-app modal
     else void submit();
   }, [answeredCount, submit, total]);
 
   // ---- Results phase -------------------------------------------------------
   if (phase === "results" && result) {
-    const joinedBodies = passages.map((p) => `${p.title}\n${p.body}`).join("\n\n").slice(0, 7500);
+    const joinedBodies = passages
+      .map((p) => `${p.title}\n${p.body}`)
+      .join("\n\n")
+      .slice(0, 7500);
     return (
       <>
-        <TestResultsView result={result} disclaimer={disclaimer} passages={passages} flags={flags} usedSeconds={usedSeconds} testId={testId} />
-        <CoachPanel passageTitle="Full test review" passageBody={joinedBodies} phase="results" learnerContext={learnerContext} />
+        <TestResultsView
+          result={result}
+          disclaimer={disclaimer}
+          passages={passages}
+          flags={flags}
+          usedSeconds={usedSeconds}
+          testId={testId}
+        />
+        <CoachPanel
+          passageTitle="Full test review"
+          passageBody={joinedBodies}
+          phase="results"
+          learnerContext={learnerContext}
+        />
       </>
     );
   }
@@ -203,86 +342,331 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
   const coachQuestions = passage.questions
     .map((q) => {
       const n = numberById.get(q.id);
-      const opts = q.options?.length ? `\n   Options: ${q.options.map((o, i) => `${OPTION_LETTERS[i] ?? i + 1}. ${o}`).join("; ")}` : "";
+      const opts = q.options?.length
+        ? `\n   Options: ${q.options.map((o, i) => `${OPTION_LETTERS[i] ?? i + 1}. ${o}`).join("; ")}`
+        : "";
       return `Q${n} [${READING_QUESTION_LABELS[q.question_type]}]: ${q.prompt}${opts}`;
     })
     .join("\n");
   const focused = partFlat.find((f) => f.n === cur);
-  const coachCurrent = focused ? `Q${focused.n} [${READING_QUESTION_LABELS[focused.q.question_type]}]: ${focused.q.prompt}` : "";
+  const coachCurrent = focused
+    ? `Q${focused.n} [${READING_QUESTION_LABELS[focused.q.question_type]}]: ${focused.q.prompt}`
+    : "";
 
   return (
     <div ref={rootRef}>
       <style>{HIGHLIGHT_CSS}</style>
       {/* Pinned to the viewport so only the passage/question panes scroll — the page
           itself never does (the results phase below is a normal scrolling view). */}
-      <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#fff", fontFamily: SANS, color: INK, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          background: "#fff",
+          fontFamily: SANS,
+          color: INK,
+          overflow: "hidden",
+        }}
+      >
         {/* One flat header row: exit · title | text size · pens · fullscreen · timer · progress · finish */}
-        <div className="rd-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px 18px", flexWrap: "wrap", padding: "10px 20px", flex: "none", borderBottom: "1px solid #E6E8EC" }}>
+        <div
+          className="rd-topbar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px 18px",
+            flexWrap: "wrap",
+            padding: "10px 20px",
+            flex: "none",
+            borderBottom: "1px solid #E6E8EC",
+          }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-            <Link href="/read" aria-label="Exit test" className="rd-exit" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", margin: "-7px 0 -7px -10px", borderRadius: 9, color: "#4A505C", fontSize: 14.5, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
-              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>‹</span> Exit
+            <Link
+              href="/read"
+              aria-label="Exit test"
+              className="rd-exit"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "7px 10px",
+                margin: "-7px 0 -7px -10px",
+                borderRadius: 9,
+                color: "#4A505C",
+                fontSize: 14.5,
+                fontWeight: 600,
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
+                ‹
+              </span>{" "}
+              Exit
             </Link>
-            <span aria-hidden style={{ width: 1, height: 22, background: "#E6E8EC", flex: "none" }} />
-            <span style={{ fontSize: 14.5, fontWeight: 600, color: INK, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {practiceNo != null ? `Practice test ${practiceNo} · Academic Reading` : "Academic Reading · Full Test"}
+            <span
+              aria-hidden
+              style={{ width: 1, height: 22, background: "#E6E8EC", flex: "none" }}
+            />
+            <span
+              style={{
+                fontSize: 14.5,
+                fontWeight: 600,
+                color: INK,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {practiceNo != null
+                ? `Practice test ${practiceNo} · Academic Reading`
+                : "Academic Reading · Full Test"}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 12.5, color: "#8B919D", fontWeight: 500 }}>Text size</span>
-              <button type="button" onClick={() => stepFont(-0.1)} disabled={fontScale <= MIN_FONT} aria-label="Decrease text size" style={fontBtn(fontScale <= MIN_FONT)}>A−</button>
-              <button type="button" onClick={() => stepFont(0.1)} disabled={fontScale >= MAX_FONT} aria-label="Increase text size" style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 14 }}>A+</button>
+              <button
+                type="button"
+                onClick={() => stepFont(-0.1)}
+                disabled={fontScale <= MIN_FONT}
+                aria-label="Decrease text size"
+                style={fontBtn(fontScale <= MIN_FONT)}
+              >
+                A−
+              </button>
+              <button
+                type="button"
+                onClick={() => stepFont(0.1)}
+                disabled={fontScale >= MAX_FONT}
+                aria-label="Increase text size"
+                style={{ ...fontBtn(fontScale >= MAX_FONT), fontSize: 14 }}
+              >
+                A+
+              </button>
             </div>
-            <MarkerToolbar tool={hl.tool} setTool={hl.setTool} onClear={hl.clearAll} marks={hl.marks} />
-            <button type="button" onClick={fs.toggle} aria-label={fs.isFull ? "Exit full screen" : "Full screen"} title={fs.isFull ? "Exit full screen" : "Full screen"} style={{ width: 28, height: 28, borderRadius: 8, border: "1.5px solid #E6E8EC", background: "#fff", color: MUTED, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "none" }}>
+            <MarkerToolbar
+              tool={hl.tool}
+              setTool={hl.setTool}
+              onClear={hl.clearAll}
+              marks={hl.marks}
+            />
+            <button
+              type="button"
+              onClick={fs.toggle}
+              aria-label={fs.isFull ? "Exit full screen" : "Full screen"}
+              title={fs.isFull ? "Exit full screen" : "Full screen"}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                border: "1.5px solid #E6E8EC",
+                background: "#fff",
+                color: MUTED,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flex: "none",
+              }}
+            >
               {fs.isFull ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
-            <Timer seconds={READING_TEST_DURATION_SECONDS} onExpire={onExpire}>
+            <Timer seconds={budget} onExpire={onExpire}>
               {(text, left) => {
                 const warn = left <= 300;
                 return (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 10, background: warn ? "#FDECEC" : "#FDF4F7", border: `1px solid ${warn ? "#F3B4B4" : "#F0D3DE"}` }} aria-label="time remaining">
-                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : BRAND }}>◷</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15.5, letterSpacing: ".02em", color: warn ? "#B91C1C" : BRAND }}>{text}</span>
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "6px 14px",
+                      borderRadius: 10,
+                      background: warn ? "#FDECEC" : "#FDF4F7",
+                      border: `1px solid ${warn ? "#F3B4B4" : "#F0D3DE"}`,
+                    }}
+                    aria-label="time remaining"
+                  >
+                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : BRAND }}>
+                      ◷
+                    </span>
+                    <span
+                      style={{
+                        fontVariantNumeric: "tabular-nums",
+                        fontWeight: 700,
+                        fontSize: 15.5,
+                        letterSpacing: ".02em",
+                        color: warn ? "#B91C1C" : BRAND,
+                      }}
+                    >
+                      {text}
+                    </span>
                   </span>
                 );
               }}
             </Timer>
-            <span title={`${answeredCount} of ${total} answered`} style={{ padding: "6px 12px", borderRadius: 10, border: "1.5px solid #E6E8EC", fontSize: 13.5, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+            <span
+              title={`${answeredCount} of ${total} answered`}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 10,
+                border: "1.5px solid #E6E8EC",
+                fontSize: 13.5,
+                fontWeight: 700,
+                color: INK,
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+              }}
+            >
               {answeredCount} / {total}
             </span>
-            <button type="button" onClick={finish} disabled={submitting} className="rd-submit" style={{ padding: "9px 18px", borderRadius: 10, border: "none", background: submitting ? "#CC5C82" : BRAND, color: "#fff", fontWeight: 600, fontSize: 14, cursor: submitting ? "default" : "pointer", fontFamily: SANS, boxShadow: "0 4px 14px rgba(125,1,50,.28)" }}>
+            <button
+              type="button"
+              onClick={finish}
+              disabled={submitting}
+              className="rd-submit"
+              style={{
+                padding: "9px 18px",
+                borderRadius: 10,
+                border: "none",
+                background: submitting ? "#CC5C82" : BRAND,
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: submitting ? "default" : "pointer",
+                fontFamily: SANS,
+                boxShadow: "0 4px 14px rgba(125,1,50,.28)",
+              }}
+            >
               {submitting ? "Marking…" : "Finish Test"}
             </button>
           </div>
         </div>
         {message ? (
-          <div style={{ flex: "none", padding: "8px 20px", background: "#FDECEC", borderBottom: "1px solid #F3B4B4" }}>
-            <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">{message}</span>
+          <div
+            style={{
+              flex: "none",
+              padding: "8px 20px",
+              background: "#FDECEC",
+              borderBottom: "1px solid #F3B4B4",
+            }}
+          >
+            <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">
+              {message}
+            </span>
           </div>
         ) : null}
 
         {/* Split: passage | questions */}
         <div className="rd-split" style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <article ref={passageRef} onMouseUp={hl.onMouseUp} className="rd-passage" style={{ flex: 1, overflow: "auto", padding: "32px clamp(20px,4vw,52px) 60px", minHeight: 0, borderRight: "1px solid #ECEEF2", cursor: hl.tool && hl.tool !== "eraser" ? "text" : hl.tool === "eraser" ? "pointer" : undefined }}>
+          <article
+            ref={passageRef}
+            onMouseUp={hl.onMouseUp}
+            className="rd-passage"
+            style={{
+              flex: 1,
+              overflow: "auto",
+              padding: "32px clamp(20px,4vw,52px) 60px",
+              minHeight: 0,
+              borderRight: "1px solid #ECEEF2",
+              cursor:
+                hl.tool && hl.tool !== "eraser"
+                  ? "text"
+                  : hl.tool === "eraser"
+                    ? "pointer"
+                    : undefined,
+            }}
+          >
             <div style={{ maxWidth: 680 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ background: "#FDF4F7", color: BRAND, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage {active + 1}</span>
-                {passage.topic ? <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8B919D" }}>{passage.topic}</span> : null}
+                <span
+                  style={{
+                    background: "#FDF4F7",
+                    color: BRAND,
+                    fontWeight: 700,
+                    fontSize: 12.5,
+                    padding: "5px 12px",
+                    borderRadius: 8,
+                  }}
+                >
+                  Reading Passage {active + 1}
+                </span>
+                {passage.topic ? (
+                  <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8B919D" }}>
+                    {passage.topic}
+                  </span>
+                ) : null}
               </div>
-              <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: "#8B919D", margin: "12px 0 0" }}>
+              <p
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  fontSize: 13,
+                  color: "#8B919D",
+                  margin: "12px 0 0",
+                }}
+              >
                 <HighlighterIcon size={13} aria-hidden style={{ flex: "none" }} />
                 Select a word to see its meaning — or pick a pen above to highlight.
               </p>
-              <p style={{ fontSize: 14, fontStyle: "italic", color: MUTED, margin: "14px 0 0", lineHeight: 1.5 }}>
-                You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions {startN}–{endN}</strong>, which are based on Reading Passage {active + 1} below.
+              <p
+                style={{
+                  fontSize: 14,
+                  fontStyle: "italic",
+                  color: MUTED,
+                  margin: "14px 0 0",
+                  lineHeight: 1.5,
+                }}
+              >
+                You should spend about 20 minutes on{" "}
+                <strong style={{ fontStyle: "normal", color: INK }}>
+                  Questions {startN}–{endN}
+                </strong>
+                , which are based on Reading Passage {active + 1} below.
               </p>
-              <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>{passage.title}</h1>
-              <div style={{ lineHeight: 1.75, color: "#3B4150", fontSize: fontPx, whiteSpace: "pre-wrap" }}>{passage.body}</div>
+              <h1
+                style={{
+                  fontFamily: SERIF,
+                  fontWeight: 700,
+                  fontSize: 29,
+                  letterSpacing: "-.01em",
+                  color: INK,
+                  margin: "10px 0 20px",
+                }}
+              >
+                {passage.title}
+              </h1>
+              <div
+                style={{
+                  lineHeight: 1.75,
+                  color: "#3B4150",
+                  fontSize: fontPx,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {passage.body}
+              </div>
             </div>
           </article>
 
-          <div ref={paneRef} className="rd-questions" style={{ width: "46%", maxWidth: 760, flex: "none", overflow: "auto", padding: "28px clamp(20px,3vw,44px) 90px", minHeight: 0 }}>
+          <div
+            ref={paneRef}
+            className="rd-questions"
+            style={{
+              width: "46%",
+              maxWidth: 760,
+              flex: "none",
+              overflow: "auto",
+              padding: "28px clamp(20px,3vw,44px) 90px",
+              minHeight: 0,
+            }}
+          >
             <QuestionGroups
               questions={passage.questions}
               number={(q) => numberById.get(q.id) ?? q.order_index}
@@ -295,7 +679,20 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
         </div>
 
         {/* Bottom nav: parts + per-part question circles */}
-        <div className="rd-qnav" style={{ flex: "none", borderTop: "1px solid #ECEEF2", background: "#fff", padding: "11px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+        <div
+          className="rd-qnav"
+          style={{
+            flex: "none",
+            borderTop: "1px solid #ECEEF2",
+            background: "#fff",
+            padding: "11px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
           {passages.map((p, pi) => {
             const ans = p.questions.reduce((a, q) => a + (answers[q.id]?.trim() ? 1 : 0), 0);
             const on = pi === active;
@@ -318,8 +715,22 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
                     border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`,
                   }}
                 >
-                  <span style={{ fontWeight: on ? 700 : 600, fontSize: 14.5, color: on ? BRAND : "#3B4150" }}>Part {pi + 1}</span>
-                  {!on ? <span style={{ fontSize: 13, color: "#8B919D", fontVariantNumeric: "tabular-nums" }}>{ans} of {p.questions.length}</span> : null}
+                  <span
+                    style={{
+                      fontWeight: on ? 700 : 600,
+                      fontSize: 14.5,
+                      color: on ? BRAND : "#3B4150",
+                    }}
+                  >
+                    Part {pi + 1}
+                  </span>
+                  {!on ? (
+                    <span
+                      style={{ fontSize: 13, color: "#8B919D", fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {ans} of {p.questions.length}
+                    </span>
+                  ) : null}
                 </button>
                 {on ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
@@ -328,9 +739,28 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
                       const isCur = cur === f.n;
                       const flg = !!flags[f.q.id];
                       return (
-                        <button key={f.q.id} type="button" onClick={() => jumpTo(active, f.q.id)} aria-label={`Question ${f.n}${answered ? " (answered)" : ""}`} style={navCircle(answered, isCur)}>
+                        <button
+                          key={f.q.id}
+                          type="button"
+                          onClick={() => jumpTo(active, f.q.id)}
+                          aria-label={`Question ${f.n}${answered ? " (answered)" : ""}`}
+                          style={navCircle(answered, isCur)}
+                        >
                           {f.n}
-                          {flg ? <span style={{ position: "absolute", top: -3, right: -3, width: 8, height: 8, borderRadius: 999, background: AMBER, border: "1.5px solid #fff" }} /> : null}
+                          {flg ? (
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: -3,
+                                right: -3,
+                                width: 8,
+                                height: 8,
+                                borderRadius: 999,
+                                background: AMBER,
+                                border: "1.5px solid #fff",
+                              }}
+                            />
+                          ) : null}
                         </button>
                       );
                     })}
@@ -353,10 +783,19 @@ export function ReadingTestRunner({ testId, passages, learnerContext = "", pract
         />
       ) : null}
 
-      <CoachPanel passageTitle={passage.title} passageBody={passage.body} questions={coachQuestions} currentQuestion={coachCurrent} phase="reading" learnerContext={learnerContext} />
+      <CoachPanel
+        passageTitle={passage.title}
+        passageBody={passage.body}
+        questions={coachQuestions}
+        currentQuestion={coachCurrent}
+        phase="reading"
+        learnerContext={learnerContext}
+      />
       {/* Word lookup is suppressed while a highlighter pen is active so a drag marks
           text instead of popping the dictionary. */}
-      {hl.tool === null ? <WordLookup getContainer={() => passageRef.current} contextText={passage.body} /> : null}
+      {hl.tool === null ? (
+        <WordLookup getContainer={() => passageRef.current} contextText={passage.body} />
+      ) : null}
     </div>
   );
 }
@@ -395,14 +834,29 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
     fontVariantNumeric: "tabular-nums",
     transition: "all .12s ease",
   };
-  if (current) return { ...base, borderColor: BRAND, background: "#fff", color: BRAND, boxShadow: "0 0 0 3px rgba(125,1,50,.16)" };
+  if (current)
+    return {
+      ...base,
+      borderColor: BRAND,
+      background: "#fff",
+      color: BRAND,
+      boxShadow: "0 0 0 3px rgba(125,1,50,.16)",
+    };
   if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: "#fff" };
   return { ...base, borderColor: "#E6E8EC", background: "#fff", color: "#8B919D" };
 }
 
 // ---- Confirm finish (in-app modal, replaces window.confirm) ----------------
 
-function ConfirmFinishModal({ unanswered, onCancel, onConfirm }: { unanswered: number; onCancel: () => void; onConfirm: () => void }) {
+function ConfirmFinishModal({
+  unanswered,
+  onCancel,
+  onConfirm,
+}: {
+  unanswered: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -418,22 +872,93 @@ function ConfirmFinishModal({ unanswered, onCancel, onConfirm }: { unanswered: n
       aria-modal="true"
       aria-labelledby="finish-title"
       onClick={onCancel}
-      style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(30,27,46,.45)", backdropFilter: "blur(2px)", animation: "lp-fadeup .16s ease both" }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 60,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        background: "rgba(30,27,46,.45)",
+        backdropFilter: "blur(2px)",
+        animation: "lp-fadeup .16s ease both",
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "min(440px, 100%)", background: "#fff", borderRadius: 18, padding: "26px 26px 22px", boxShadow: "0 30px 70px -24px rgba(30,27,46,.6)", fontFamily: SANS, color: INK }}
+        style={{
+          width: "min(440px, 100%)",
+          background: "#fff",
+          borderRadius: 18,
+          padding: "26px 26px 22px",
+          boxShadow: "0 30px 70px -24px rgba(30,27,46,.6)",
+          fontFamily: SANS,
+          color: INK,
+        }}
       >
-        <div style={{ width: 46, height: 46, borderRadius: 13, background: "#FEF3E2", color: "#C77C09", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+        <div
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 13,
+            background: "#FEF3E2",
+            color: "#C77C09",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 14,
+          }}
+        >
           <AlertTriangle size={22} />
         </div>
-        <h2 id="finish-title" style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 21, margin: 0, color: INK }}>Finish the test?</h2>
+        <h2
+          id="finish-title"
+          style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 21, margin: 0, color: INK }}
+        >
+          Finish the test?
+        </h2>
         <p style={{ fontSize: 14.5, lineHeight: 1.6, color: MUTED, margin: "8px 0 0" }}>
-          You have <strong style={{ color: INK, fontWeight: 700 }}>{unanswered}</strong> unanswered question{unanswered === 1 ? "" : "s"}. {unanswered === 1 ? "It" : "They"}&apos;ll be marked wrong, and you can&apos;t change your answers after finishing.
+          You have <strong style={{ color: INK, fontWeight: 700 }}>{unanswered}</strong> unanswered
+          question{unanswered === 1 ? "" : "s"}. {unanswered === 1 ? "It" : "They"}&apos;ll be
+          marked wrong, and you can&apos;t change your answers after finishing.
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
-          <button type="button" onClick={onCancel} style={{ padding: "10px 18px", borderRadius: 11, border: "1.5px solid #E6E8EC", background: "#fff", color: "#3B4150", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>Keep working</button>
-          <button type="button" onClick={onConfirm} style={{ padding: "10px 20px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer", boxShadow: "0 8px 20px -10px rgba(125,1,50,.7)" }}>Finish anyway</button>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 11,
+              border: "1.5px solid #E6E8EC",
+              background: "#fff",
+              color: "#3B4150",
+              fontFamily: SANS,
+              fontWeight: 600,
+              fontSize: 14.5,
+              cursor: "pointer",
+            }}
+          >
+            Keep working
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 11,
+              border: "none",
+              background: BRAND,
+              color: "#fff",
+              fontFamily: SANS,
+              fontWeight: 600,
+              fontSize: 14.5,
+              cursor: "pointer",
+              boxShadow: "0 8px 20px -10px rgba(125,1,50,.7)",
+            }}
+          >
+            Finish anyway
+          </button>
         </div>
       </div>
     </div>
@@ -499,39 +1024,177 @@ function TestResultsView({
   return (
     <div style={{ minHeight: "100dvh", background: "#FDF4F7", fontFamily: SANS, color: INK }}>
       {/* Top bar */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(251,251,253,.88)", backdropFilter: "blur(10px)", borderBottom: "1px solid #ECEEF2" }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 28px" }}>
-          <Link href="/read" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontFamily: SANS, fontSize: 15, fontWeight: 600, color: "#4A505C", textDecoration: "none", padding: "6px 10px", borderRadius: 9, marginLeft: -10 }}>
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          background: "rgba(251,251,253,.88)",
+          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid #ECEEF2",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1080,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "14px 28px",
+          }}
+        >
+          <Link
+            href="/read"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily: SANS,
+              fontSize: 15,
+              fontWeight: 600,
+              color: "#4A505C",
+              textDecoration: "none",
+              padding: "6px 10px",
+              borderRadius: 9,
+              marginLeft: -10,
+            }}
+          >
             <span style={{ fontSize: 17 }}>←</span> Exit
           </Link>
-          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: ".02em", color: "#8B919D" }}>Test review · Academic Reading</div>
+          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: ".02em", color: "#8B919D" }}>
+            Test review · Academic Reading
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button type="button" onClick={() => window.print()} style={{ padding: "9px 18px", borderRadius: 10, border: "1.5px solid #E6E8EC", background: "#fff", color: "#3B4150", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: SANS }}>Export PDF</button>
-            <button type="button" onClick={() => window.location.assign(`/read/test/${testId}`)} style={{ padding: "9px 20px", borderRadius: 10, border: "none", background: BRAND, color: "#fff", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: SANS, boxShadow: "0 3px 10px rgba(125,1,50,.26)" }}>Retake test</button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              style={{
+                padding: "9px 18px",
+                borderRadius: 10,
+                border: "1.5px solid #E6E8EC",
+                background: "#fff",
+                color: "#3B4150",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                fontFamily: SANS,
+              }}
+            >
+              Export PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.assign(`/read/test/${testId}`)}
+              style={{
+                padding: "9px 20px",
+                borderRadius: 10,
+                border: "none",
+                background: BRAND,
+                color: "#fff",
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "pointer",
+                fontFamily: SANS,
+                boxShadow: "0 3px 10px rgba(125,1,50,.26)",
+              }}
+            >
+              Retake test
+            </button>
           </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 1080, margin: "0 auto", padding: "36px 28px 90px" }}>
         {/* Hero */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 34, flexWrap: "wrap", marginBottom: 30 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 34,
+            flexWrap: "wrap",
+            marginBottom: 30,
+          }}
+        >
           <div style={{ flex: "none" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-              <span style={{ fontSize: 84, fontWeight: 800, lineHeight: 0.86, color: bandColor(result.band).fg, letterSpacing: "-.03em", fontVariantNumeric: "tabular-nums" }}>{result.band.toFixed(1)}</span>
-              <span style={{ fontSize: 16, fontWeight: 500, color: "#8B919D" }}>indicative<br />band</span>
+              <span
+                style={{
+                  fontSize: 84,
+                  fontWeight: 800,
+                  lineHeight: 0.86,
+                  color: bandColor(result.band).fg,
+                  letterSpacing: "-.03em",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {result.band.toFixed(1)}
+              </span>
+              <span style={{ fontSize: 16, fontWeight: 500, color: "#8B919D" }}>
+                indicative
+                <br />
+                band
+              </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 14 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: bandColor(result.band).fg, background: bandColor(result.band).bg, padding: "4px 12px", borderRadius: 999 }}>{bandColor(result.band).label}</span>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: bandColor(result.band).fg,
+                  background: bandColor(result.band).bg,
+                  padding: "4px 12px",
+                  borderRadius: 999,
+                }}
+              >
+                {bandColor(result.band).label}
+              </span>
               <span style={{ fontSize: 15, color: "#3B4150", fontWeight: 500 }}>
-                <span style={{ color: INK, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{result.correctCount} / {result.total}</span> correct · {result.percent.toFixed(0)}%
+                <span style={{ color: INK, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                  {result.correctCount} / {result.total}
+                </span>{" "}
+                correct · {result.percent.toFixed(0)}%
               </span>
             </div>
           </div>
 
-          <div style={{ flex: 1, minWidth: 340, display: "flex", flexDirection: "column", gap: 14, paddingTop: 6 }}>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 340,
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              paddingTop: 6,
+            }}
+          >
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600, color: "#8B919D", marginBottom: 7 }}><span>Accuracy</span><span style={{ color: BRAND }}>{result.percent.toFixed(0)}%</span></div>
-              <div style={{ height: 10, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}><div style={{ height: "100%", width: `${result.percent}%`, background: "linear-gradient(90deg,#9B1044,#7D0132)", borderRadius: 999 }} /></div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#8B919D",
+                  marginBottom: 7,
+                }}
+              >
+                <span>Accuracy</span>
+                <span style={{ color: BRAND }}>{result.percent.toFixed(0)}%</span>
+              </div>
+              <div
+                style={{ height: 10, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${result.percent}%`,
+                    background: "linear-gradient(90deg,#9B1044,#7D0132)",
+                    borderRadius: 999,
+                  }}
+                />
+              </div>
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <StatCard label="Time used" value={fmtClock(usedSeconds)} />
@@ -542,17 +1205,73 @@ function TestResultsView({
         </div>
 
         {/* Passage summary */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 18 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 16,
+            marginBottom: 18,
+          }}
+        >
           {result.passages.map((p) => {
             const pct = p.total ? Math.round((p.correctCount / p.total) * 100) : 0;
             const c = perfColor(pct);
             const title = titleByOrder.get(p.order) ?? p.title;
             return (
-              <div key={p.order} style={{ border: "1px solid #ECEEF2", borderRadius: 16, padding: "18px 20px", background: "#fff" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#8B919D" }}>Passage {p.order}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0 12px" }}><span style={{ fontSize: 28, fontWeight: 700 }}>{p.correctCount}</span><span style={{ fontSize: 16, color: "#8B919D", fontWeight: 600 }}>/{p.total}</span></div>
-                <div style={{ height: 7, borderRadius: 999, background: "#ECEEF2", overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 999 }} /></div>
-                {title ? <div style={{ fontSize: 12.5, color: "#8B919D", marginTop: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div> : null}
+              <div
+                key={p.order}
+                style={{
+                  border: "1px solid #ECEEF2",
+                  borderRadius: 16,
+                  padding: "18px 20px",
+                  background: "#fff",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: ".08em",
+                    textTransform: "uppercase",
+                    color: "#8B919D",
+                  }}
+                >
+                  Passage {p.order}
+                </div>
+                <div
+                  style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0 12px" }}
+                >
+                  <span style={{ fontSize: 28, fontWeight: 700 }}>{p.correctCount}</span>
+                  <span style={{ fontSize: 16, color: "#8B919D", fontWeight: 600 }}>
+                    /{p.total}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    height: 7,
+                    borderRadius: 999,
+                    background: "#ECEEF2",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 999 }}
+                  />
+                </div>
+                {title ? (
+                  <div
+                    style={{
+                      fontSize: 12.5,
+                      color: "#8B919D",
+                      marginTop: 9,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {title}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -564,18 +1283,50 @@ function TestResultsView({
         </div>
 
         {/* Filter toolbar */}
-        <div style={{ position: "sticky", top: 62, zIndex: 10, background: "rgba(251,251,253,.92)", backdropFilter: "blur(8px)", padding: "12px 0", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+        <div
+          style={{
+            position: "sticky",
+            top: 62,
+            zIndex: 10,
+            background: "rgba(251,251,253,.92)",
+            backdropFilter: "blur(8px)",
+            padding: "12px 0",
+            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 14,
+            flexWrap: "wrap",
+          }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
             {filterDefs.map((f) => {
               const on = filter === f.key;
               return (
-                <button key={f.key} type="button" onClick={() => setFilter(f.key)} style={{ padding: "8px 16px", borderRadius: 999, fontFamily: SANS, fontSize: 14, fontWeight: 600, cursor: "pointer", border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`, background: on ? BRAND : "#fff", color: on ? "#fff" : "#3B4150" }}>
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFilter(f.key)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 999,
+                    fontFamily: SANS,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`,
+                    background: on ? BRAND : "#fff",
+                    color: on ? "#fff" : "#3B4150",
+                  }}
+                >
                   {f.label} <span style={{ opacity: 0.6, fontWeight: 600 }}>{counts[f.key]}</span>
                 </button>
               );
             })}
           </div>
-          <div style={{ fontSize: 13.5, color: "#8B919D", fontWeight: 500 }}>{showingLabel[filter]}</div>
+          <div style={{ fontSize: 13.5, color: "#8B919D", fontWeight: 500 }}>
+            {showingLabel[filter]}
+          </div>
         </div>
 
         {/* Grouped review */}
@@ -586,7 +1337,18 @@ function TestResultsView({
           const title = titleByOrder.get(p.order) ?? p.title;
           return (
             <section key={p.order} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <h2 style={{ fontFamily: SANS, fontSize: 18, fontWeight: 700, color: INK, margin: "24px 0 0" }}>Passage {p.order}{title ? ` — ${title}` : ""}</h2>
+              <h2
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: INK,
+                  margin: "24px 0 0",
+                }}
+              >
+                Passage {p.order}
+                {title ? ` — ${title}` : ""}
+              </h2>
               {items.map((it) => (
                 <ReviewItem key={it.id} item={it} passageBody={body} flagged={isFlagged(it)} />
               ))}
@@ -595,10 +1357,16 @@ function TestResultsView({
         })}
 
         {visible.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "50px 20px", color: "#8B919D", fontSize: 15 }}>No questions match this filter.</div>
+          <div
+            style={{ textAlign: "center", padding: "50px 20px", color: "#8B919D", fontSize: 15 }}
+          >
+            No questions match this filter.
+          </div>
         ) : null}
 
-        {disclaimer ? <p style={{ fontSize: 12, color: "#8B919D", margin: "28px 0 0" }}>{disclaimer}</p> : null}
+        {disclaimer ? (
+          <p style={{ fontSize: 12, color: "#8B919D", margin: "28px 0 0" }}>{disclaimer}</p>
+        ) : null}
       </div>
     </div>
   );
@@ -606,9 +1374,38 @@ function TestResultsView({
 
 function StatCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div style={{ flex: 1, minWidth: 120, border: "1px solid #ECEEF2", borderRadius: 13, padding: "13px 16px", background: "#fff" }}>
-      <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: ".06em", textTransform: "uppercase", color: "#8B919D" }}>{label}</div>
-      <div style={{ fontSize: 21, fontWeight: 700, marginTop: 3, color: color ?? INK, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+    <div
+      style={{
+        flex: 1,
+        minWidth: 120,
+        border: "1px solid #ECEEF2",
+        borderRadius: 13,
+        padding: "13px 16px",
+        background: "#fff",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          letterSpacing: ".06em",
+          textTransform: "uppercase",
+          color: "#8B919D",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 21,
+          fontWeight: 700,
+          marginTop: 3,
+          color: color ?? INK,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -617,7 +1414,8 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 
 function messageFor(status: number, error?: string): string {
   if (status === 404) return "This test isn't available anymore.";
-  if (status === 422) return error === "no_questions" ? "This test has no questions yet." : "Nothing to mark.";
+  if (status === 422)
+    return error === "no_questions" ? "This test has no questions yet." : "Nothing to mark.";
   if (status === 401) return "Your session expired — please sign in again.";
   if (status === 403) return "Only students can practice reading.";
   return "Couldn't mark your answers. Please try again.";

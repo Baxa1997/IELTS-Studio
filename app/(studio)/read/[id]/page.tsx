@@ -6,7 +6,12 @@ import type { NoteMeta, ReadingModule, ReadingQuestionType } from "@/lib/reading
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { ReadingRunner, type DeliveredQuestion, type RunnerPassage } from "./reading-runner";
+import {
+  ReadingRunner,
+  type DeliveredQuestion,
+  type ResumeState,
+  type RunnerPassage,
+} from "./reading-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -73,10 +78,36 @@ export default async function ReadingRunnerPage({ params, searchParams }: PagePr
   // strategy help is pitched to the right level — context only, never a band.
   const learnerContext = await buildCoachLearnerContext(profile.id, "reading");
 
+  /* ⭐ AN UNFINISHED RUN, if this learner left one open. Written by
+     /api/reading/[id]/progress and cleared by its submit route, so at most one
+     exists (a partial unique index enforces it). Resuming restores the answers and
+     the remaining time — without the clock, a resumed passage would hand back the
+     minutes it had already spent. */
+  let resume: ResumeState | null = null;
+  const { data: live } = await supabase
+    .from("reading_attempts")
+    .select("answers, seconds_left")
+    .eq("student_id", profile.id)
+    .eq("passage_id", id)
+    .eq("status", "in_progress")
+    .maybeSingle();
+  if (live) {
+    resume = {
+      answers: (live.answers as Record<string, string> | null) ?? {},
+      secondsLeft: (live.seconds_left as number | null) ?? null,
+    };
+  }
+
   // Full-screen, no sidebar — a focused single detail page for the actual reading.
   return (
     <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
-      <ReadingRunner passage={runnerPassage} questions={delivered} learnerContext={learnerContext} practiceNo={practiceNo} />
+      <ReadingRunner
+        passage={runnerPassage}
+        questions={delivered}
+        learnerContext={learnerContext}
+        practiceNo={practiceNo}
+        resume={resume}
+      />
     </div>
   );
 }
