@@ -1303,7 +1303,9 @@ function PromptCard({
         pill={<PromptPill state={state} mark={mark} difficulty={p.difficulty} />}
       />
 
-      <CardQuote muted={state === "fresh"}>
+      {/* `full` only where there is something to reveal: a fresh prompt's own
+          text is deliberately sealed until the learner starts it. */}
+      <CardQuote muted={state === "fresh"} full={state === "fresh" ? undefined : p.prompt_text}>
         {state === "fresh"
           ? `Fresh exam-style ${taskLabel(p.task_type).toLowerCase()} prompt${
               topic ? ` on ${topic}` : ""

@@ -108,22 +108,8 @@ export function CardHead({
     <div style={rowBetween}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
         <SeqTile seq={seq} tone={seqTone} />
-        {icon ? <span style={{ display: "flex", flex: "none", color: DIM }}>{icon}</span> : null}
-        {label ? (
-          <span
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: ".1em",
-              color: DIM,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {label}
-          </span>
-        ) : null}
+        {icon ? <span style={{ display: "flex", flex: "none", color: BRAND }}>{icon}</span> : null}
+        {label ? <CardEyebrow label={label} /> : null}
         {chips?.map((c) => (
           <MonoChip key={c.label} icon={c.icon} tone={c.icon ? "brand" : "neutral"}>
             {c.label}
@@ -132,6 +118,49 @@ export function CardHead({
       </div>
       {pill ?? null}
     </div>
+  );
+}
+
+/**
+ * The mono eyebrow — "WRITING · TASK 1 GT · HOUSING".
+ *
+ * ⚠️ THIS IS THE ONE LINE THAT SAYS WHICH SKILL THE CARD IS, so it has to be
+ * readable at a glance, and at the canvas's 10px in #8B919D it was not: that is
+ * about 3:1 against white, under the 4.5:1 AA floor for text this small, and
+ * mono caps at 10px are the hardest thing on the card to resolve. The canvas's
+ * idiom is kept — mono, caps, tracking — and the legibility comes from a point
+ * of size, a heavier weight and a colour that passes (#4A505C is 7.7:1).
+ *
+ * The leading token takes the brand, which does two things: it is the skill
+ * name, so the eye lands on "READING" before the qualifiers after it, and it
+ * matches Listening, whose cards carry the skill as a brand-tinted MonoChip
+ * rather than an eyebrow. Callers all build the label as
+ * `[SKILL, …qualifiers].join(" · ")`, so the split is on the first separator.
+ */
+function CardEyebrow({ label }: { label: string }) {
+  const cut = label.indexOf(" · ");
+  const lead = cut === -1 ? label : label.slice(0, cut);
+  const rest = cut === -1 ? "" : label.slice(cut);
+  return (
+    <span
+      // The qualifiers are the first thing an ellipsis eats on a narrow card,
+      // so the full label stays reachable on hover.
+      title={label}
+      style={{
+        fontFamily: MONO,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: ".07em",
+        color: MUTED,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
+      <span style={{ color: BRAND, fontWeight: 700 }}>{lead}</span>
+      {rest}
+    </span>
   );
 }
 
@@ -188,9 +217,11 @@ export function MonoChip({
         border: `1px solid ${brand ? "rgba(125,1,50,.12)" : "#E7E7EC"}`,
         color: brand ? BRAND : MUTED,
         fontFamily: MONO,
-        fontSize: 10,
-        fontWeight: 500,
-        letterSpacing: ".08em",
+        // Sized and weighted with CardEyebrow — this is Listening's version of
+        // the same line, and the two hubs sit next to each other in the nav.
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: ".07em",
         whiteSpace: "nowrap",
         flex: "0 0 auto",
       }}
@@ -259,32 +290,42 @@ export function StatusPill({
 // ---- Body ------------------------------------------------------------------
 
 /**
- * Title + one line of what is inside. Both clamp to a single line: the canvas
- * relies on every card in a row being exactly the same height, and a two-line
- * title breaks the grid's rhythm immediately.
+ * Title + one line of what is inside.
+ *
+ * ⚠️ `titleLines` EXISTS BECAUSE READING'S TITLE IS A LIST, NOT A NAME.
+ * The canvas draws a short editorial gist here and clamps it to one line, which
+ * is right when the title is "Cities, oceans and memory". Nothing stores such a
+ * gist (see lib/reading/titles.ts), so a reading test is titled by its three
+ * passages' topics — and at three cards to a row that list is cut after the
+ * first topic every single time, which hides the exact thing the owner asked to
+ * reveal. Two lines fit it; the height is RESERVED at both settings so a row of
+ * cards still lines up, which is the reason the canvas clamped in the first
+ * place.
  */
 export function CardBody({
   title,
   subtitle,
+  titleLines = 1,
   progress,
 }: {
   title: string;
   subtitle?: string | null;
+  /** How many lines the title may use. Reading passes 2; see above. */
+  titleLines?: 1 | 2;
   /** An unfinished attempt. Replaces the subtitle with the canvas's progress row. */
   progress?: { pct: number; label: string };
 }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div
+        title={title}
         style={{
           fontSize: 16,
           fontWeight: 700,
           color: INK,
           letterSpacing: "-.01em",
           marginBottom: progress ? 7 : 4,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          ...clampLines(titleLines, 1.3),
         }}
       >
         {title}
@@ -293,6 +334,7 @@ export function CardBody({
         <ProgressRow pct={progress.pct} label={progress.label} />
       ) : subtitle ? (
         <div
+          title={subtitle}
           style={{
             fontSize: 12,
             color: "#6F6E7A",
@@ -306,6 +348,34 @@ export function CardBody({
       ) : null}
     </div>
   );
+}
+
+/**
+ * Clamp to `lines`, and hold that height whether or not the text reaches it.
+ *
+ * One line stays on `white-space: nowrap` + `text-overflow`, which is the plain
+ * path and is what every card but Reading's still takes. Past one line the only
+ * thing that truncates is `-webkit-line-clamp`, which needs the legacy box.
+ *
+ * ⚠️ NEVER PUT PADDING ON WHAT THIS STYLES. `overflow: hidden` clips at the
+ * PADDING box while the clamp stops at the content box, so padding-bottom
+ * renders a slice of the line the clamp just dropped — see CardQuote, where
+ * that bug was live.
+ */
+function clampLines(lines: 1 | 2, lineHeight: number): CSSProperties {
+  if (lines === 1) {
+    return { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  }
+  return {
+    lineHeight,
+    // Reserving the full height is what keeps a row of cards level: a one-line
+    // title next to a two-line one would otherwise shorten its whole card.
+    minHeight: `${lines * lineHeight}em`,
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: lines,
+    overflow: "hidden",
+  };
 }
 
 /** The 4px track + its "where you are" label. */
@@ -340,26 +410,59 @@ export function ProgressRow({ pct, label }: { pct: number; label: string }) {
  * Writing's body: the essay question itself, set in the serif and clamped to
  * two lines. `muted` is the not-yet-revealed variant — a fresh AI prompt whose
  * wording is only settled when the learner starts.
+ *
+ * ⚠️ TWO ELEMENTS, AND THE PADDING IS THE ENTIRE REASON.
+ * This was one padded `-webkit-box`, and it rendered a HALF-HEIGHT THIRD LINE
+ * under the clamped two: `-webkit-line-clamp` stops laying out lines at the
+ * clamp, but `overflow: hidden` clips at the PADDING box, so the 9px of
+ * padding-bottom is 9px of window onto the line that was just dropped. The
+ * card looked torn rather than truncated — a prompt ending in a clean "…" on
+ * line 2 with a sliced line beneath it.
+ *
+ * Padding outside, clamp inside: there is then no padding below the clipped
+ * edge for a dropped line to show through. Guarded in ./card.test.ts, because
+ * folding these back into one element is an obvious-looking simplification and
+ * the bug it brings back is purely visual.
  */
-export function CardQuote({ muted = false, children }: { muted?: boolean; children: ReactNode }) {
+export function CardQuote({
+  muted = false,
+  full,
+  children,
+}: {
+  muted?: boolean;
+  /** The untruncated text, for the hover tooltip — two lines of a Task 1 letter
+   *  is a teaser, and the learner should be able to read the rest without
+   *  starting it. */
+  full?: string;
+  children: ReactNode;
+}) {
   return (
     <div
+      title={full}
       style={{
-        fontFamily: SERIF,
-        fontSize: 16,
-        lineHeight: 1.4,
-        color: muted ? "#6F6E7A" : INK,
         background: "#F8F9FB",
         borderLeft: `2px solid ${muted ? "#E3C9D1" : BRAND}`,
         borderRadius: "0 8px 8px 0",
         padding: "9px 11px",
-        display: "-webkit-box",
-        WebkitBoxOrient: "vertical",
-        WebkitLineClamp: 2,
-        overflow: "hidden",
       }}
     >
-      {children}
+      <div
+        style={{
+          fontFamily: SERIF,
+          fontSize: 16,
+          lineHeight: 1.4,
+          color: muted ? "#6F6E7A" : INK,
+          // Held at two lines either way, so a one-line prompt does not shorten
+          // its card out of step with the row.
+          minHeight: "2.8em",
+          display: "-webkit-box",
+          WebkitBoxOrient: "vertical",
+          WebkitLineClamp: 2,
+          overflow: "hidden",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

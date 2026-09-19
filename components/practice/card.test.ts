@@ -53,6 +53,39 @@ function declaration(body: string, prop: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+/**
+ * One component's source, from its signature to its closing brace.
+ *
+ * The end is a `}` alone on its line — NOT the first `\n}`, which in this file
+ * lands on the closing brace of a destructured parameter's type annotation
+ * (`}: {` … `}) {`) and would cut most components off at their signature.
+ */
+function fnBody(name: string): string {
+  const at = card.indexOf(`function ${name}(`);
+  expect(at, `${name} moved or was renamed`).toBeGreaterThan(-1);
+  const rest = card.slice(at);
+  const end = /\n\}(?:\n|$)/.exec(rest);
+  expect(end, `${name} has no closing brace`).not.toBeNull();
+  return rest.slice(0, end!.index);
+}
+
+/** One property out of a JS style object, which is comma-separated — unlike
+ *  `declaration()` above, which reads semicolon-separated CSS. */
+function styleProp(style: string, prop: string): string | null {
+  const m = new RegExp(`(?:^|[,{\\s])${prop}\\s*:\\s*([^,\\n]+)`).exec(style);
+  return m ? m[1].trim() : null;
+}
+
+/** The innermost `style={{ … }}` that declares `prop` — which is how a two-element
+ *  component is told apart from the one-element version that had the bug. */
+function styleCarrying(fn: string, prop: string): string {
+  const at = fn.indexOf(`${prop}:`);
+  expect(at, `no ${prop} in this component`).toBeGreaterThan(-1);
+  const open = fn.lastIndexOf("style={{", at);
+  expect(open, `${prop} is not inside a style object`).toBeGreaterThan(-1);
+  return fn.slice(open, fn.indexOf("}}", at));
+}
+
 // ---- 1. The surface lives in the stylesheet ---------------------------------
 
 describe("the card keeps the hover the stylesheet gives it", () => {
@@ -203,5 +236,96 @@ describe("the status pill", () => {
     expect(m).not.toBeNull();
     const tones = [...m![1].matchAll(/"([a-z]+)"/g)].map((x) => x[1]);
     expect(tones.sort()).toEqual(["band", "new", "progress", "target"]);
+  });
+});
+
+// ---- 6. Truncation that looks like truncation ------------------------------
+
+/**
+ * ⚠️ PADDING ON A CLAMPED ELEMENT SHOWS THE LINE THE CLAMP DROPPED.
+ *
+ * `-webkit-line-clamp` stops laying out lines at the clamp, but `overflow:
+ * hidden` clips at the PADDING box, not the content box. Put both on one
+ * element and its padding-bottom becomes a window onto the next line: the quote
+ * rendered two clamped lines ending in "…" and then a half-height third line
+ * beneath them, which reads as a broken card rather than a shortened prompt.
+ *
+ * Nothing catches it but the eye — no error, no type failure, no layout
+ * exception, and jsdom does no layout — and folding the two elements back into
+ * one is exactly the kind of tidy-up that looks like an improvement.
+ */
+describe("clamped text is cut at a line, not through one", () => {
+  it("keeps the quote's padding off the element that clamps", () => {
+    const quote = fnBody("CardQuote");
+    const clamped = styleCarrying(quote, "WebkitLineClamp");
+    expect(
+      clamped.includes("padding"),
+      "the quote clamps and pads the same element — its padding-bottom will show " +
+        "the top of the line the clamp dropped",
+    ).toBe(false);
+    // And the padding is still there, on the box around it.
+    expect(quote).toContain('padding: "9px 11px"');
+  });
+
+  it("gives the clamp the box orientation it is inert without", () => {
+    // -webkit-line-clamp does nothing on its own: drop the orient and the text
+    // stops truncating entirely, silently.
+    for (const fn of ["CardQuote", "clampLines"]) {
+      expect(fnBody(fn), `${fn} lost WebkitBoxOrient`).toContain('WebkitBoxOrient: "vertical"');
+    }
+  });
+
+  it("never pads what clampLines styles", () => {
+    // Same trap, one level up: clampLines is spread onto the title.
+    const title = styleCarrying(fnBody("CardBody"), "letterSpacing");
+    expect(title.includes("padding"), "the title pads and clamps the same element").toBe(false);
+  });
+
+  it("reserves the height it clamps to, so a row stays level", () => {
+    /* A clamp alone only sets a ceiling. Without the floor, a one-line title
+       next to a two-line one shortens its whole card and the grid goes ragged —
+       the reason the canvas clamped to one line to begin with. */
+    expect(fnBody("clampLines")).toContain("minHeight:");
+    expect(fnBody("CardQuote")).toContain("minHeight:");
+  });
+
+  it("offers only the line counts it reserves height for", () => {
+    // `titleLines: number` would let a caller ask for 3 and get a clamp with no
+    // matching floor. The union is what keeps the two in step.
+    expect(card).toContain("titleLines?: 1 | 2");
+  });
+});
+
+// ---- 7. The eyebrow is legible ---------------------------------------------
+
+/**
+ * The line that says which skill the card is. At the canvas's 10px in #8B919D
+ * it sat around 3:1 against white — under the 4.5:1 AA floor for small text,
+ * and the owner's report was simply that they could not see it.
+ */
+describe("the skill eyebrow can actually be read", () => {
+  const eyebrow = styleCarrying(fnBody("CardEyebrow"), "letterSpacing");
+
+  it("is at least 11px and semibold", () => {
+    expect(Number(/fontSize: (\d+)/.exec(eyebrow)?.[1])).toBeGreaterThanOrEqual(11);
+    expect(Number(/fontWeight: (\d+)/.exec(eyebrow)?.[1])).toBeGreaterThanOrEqual(600);
+  });
+
+  it("uses a colour that passes against white", () => {
+    /* DIM (#8B919D) is the 3:1 grey this was; MUTED (#4A505C) is 7.7:1. Asserted
+       by name because the constant is what the rest of the kit reaches for. */
+    expect(styleProp(eyebrow, "color")).toBe("MUTED");
+  });
+
+  it("brands the skill token so the eye lands on it", () => {
+    expect(fnBody("CardEyebrow")).toContain("color: BRAND");
+  });
+
+  it("keeps Listening's chip in step with it", () => {
+    // Listening carries the same line as a MonoChip; the two hubs are one click
+    // apart, so a size or weight that drifts between them is visible.
+    const chip = styleCarrying(fnBody("MonoChip"), "letterSpacing");
+    expect(/fontSize: (\d+)/.exec(chip)?.[1]).toBe(/fontSize: (\d+)/.exec(eyebrow)?.[1]);
+    expect(/fontWeight: (\d+)/.exec(chip)?.[1]).toBe(/fontWeight: (\d+)/.exec(eyebrow)?.[1]);
   });
 });

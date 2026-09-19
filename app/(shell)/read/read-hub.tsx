@@ -473,8 +473,12 @@ function TestTile({
         label="READING · ACADEMIC"
         pill={<TilePill state={state} graded={graded} targetBand={targetBand} />}
       />
+      {/* Two lines for the title: it is the three passages' topics as a list
+          (lib/reading/titles.ts), which one line cuts after the first topic at
+          every width this grid produces. */}
       <CardBody
         title={title || `Practice test ${seq}`}
+        titleLines={2}
         subtitle={subtitle || "3 passages · 40 questions"}
         progress={live ? testProgress(live) : undefined}
       />
@@ -536,8 +540,11 @@ function PassageTile({
         label="READING · PASSAGE"
         pill={<TilePill state={state} graded={graded} targetBand={p.difficulty} />}
       />
+      {/* Passage titles are written long ("How the deep ocean floor was
+          mapped"); they belong on the card in full, not ellipsised. */}
       <CardBody
         title={p.title}
+        titleLines={2}
         subtitle={p.topic ?? "Academic Reading"}
         progress={
           live
