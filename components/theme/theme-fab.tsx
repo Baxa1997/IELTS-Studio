@@ -3,7 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 
 import { useT } from "@/components/i18n/locale-provider";
-import { FAB_CLEARANCE, LINE, PANEL, SANS, SLATE_BODY } from "@/lib/theme/tokens";
+import { LINE, PANEL, SANS, SLATE_BODY } from "@/lib/theme/tokens";
 
 import { useTheme } from "./theme-provider";
 
@@ -39,6 +39,8 @@ export function ThemeFab() {
       style={{
         position: "fixed",
         right: 22,
+        // 22 here and 44 tall is what `FAB_CLEARANCE` (80) is derived FROM —
+        // this button defines the corner's budget, the other launchers read it.
         bottom: 22,
         zIndex: 25,
         width: 44,

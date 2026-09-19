@@ -208,35 +208,17 @@ export function CardHead({
  * with the dark sequence tile (`seqTone="ink"`), which is the one place it drew
  * the three hubs differently. Reading keeps the brand.
  *
- * Every base is checked against white in ./card.test.ts, because a fill that
- * drifts light takes the label's legibility with it — which is the bug this
- * pill was built to fix.
+ * ⚠️ THE FILLS ARE GONE — THE INK IS NOW THE WHOLE SIGNAL. Each skill used to
+ * carry a three-stop tint (top/base/foot) and a glow, drawn as a raised chip.
+ * The owner asked for plain text, so colour and weight carry the skill on their
+ * own now. That puts the ink straight onto the card, which is a HARDER ground
+ * than the tint it used to sit on, so ./card.test.ts checks every ink against
+ * all three card surfaces — ordinary, finished and locked — in both themes.
  */
-const SKILL_TONE: Record<
-  string,
-  { top: string; base: string; foot: string; ink: string; glow: string }
-> = {
-  READING: {
-    top: "var(--pc-read-top)",
-    base: "var(--pc-read-base)",
-    foot: "var(--pc-read-foot)",
-    ink: "var(--pc-read-ink)",
-    glow: "var(--pc-read-glow)",
-  },
-  WRITING: {
-    top: "var(--pc-write-top)",
-    base: "var(--pc-write-base)",
-    foot: "var(--pc-write-foot)",
-    ink: "var(--pc-write-ink)",
-    glow: "var(--pc-write-glow)",
-  },
-  LISTENING: {
-    top: "var(--pc-listen-top)",
-    base: "var(--pc-listen-base)",
-    foot: "var(--pc-listen-foot)",
-    ink: "var(--pc-listen-ink)",
-    glow: "var(--pc-listen-glow)",
-  },
+const SKILL_TONE: Record<string, { ink: string }> = {
+  READING: { ink: "var(--pc-read-ink)" },
+  WRITING: { ink: "var(--pc-write-ink)" },
+  LISTENING: { ink: "var(--pc-listen-ink)" },
 };
 
 /** An unrecognised skill falls back to the brand — the look this pill had before
@@ -246,31 +228,26 @@ const SKILL_TONE: Record<
 const SKILL_FALLBACK = SKILL_TONE.READING;
 
 /**
- * THE SKILL PILL — the raised chip that says READING / WRITING / LISTENING,
- * icon included, in that skill's own colour.
+ * THE LEVEL LABEL — flat text saying LEVEL 3 (or the skill, where there is no
+ * level), with the skill's icon and in the skill's own ink.
  *
- * ⚠️ THIS IS THE ONE LINE THAT SAYS WHICH SKILL THE CARD IS, and on white it
- * kept disappearing. It was the canvas's 10px eyebrow in #8B919D — about 3:1
- * against white, under the 4.5:1 AA floor for text this small — then 11px in
- * #4A505C, which passes but still reads as small print. Set on a filled pill
- * the fill does the work the type was being asked to do on its own.
+ * ⚠️ IT IS PLAIN TEXT ON PURPOSE. It was a raised chip: a three-stop gradient,
+ * an inset gloss along the top edge, an outer lift and a letterpress
+ * text-shadow — and every one of those was load-bearing for that look. The
+ * owner's instruction was "simple text, not 3D style", so all four went
+ * together. They come back one declaration at a time if nobody is watching,
+ * which is why ./card.test.ts now asserts the ABSENCE of each.
  *
- * ⚠️ THE FILL IS LIGHT AND THE TEXT IS DARK, which is the owner's call and not
- * a detail. A saturated fill made the pill the second loudest thing on the card
- * after the Start button, so every card looked like it had two primary actions.
- * The tint carries the skill just as well and the ink carries the contrast —
- * never under 7:1 for any of the three, checked in ./card.test.ts against the
- * gradient's DARKEST stop, since that is where dark-on-light is tightest.
+ * ⚠️ THE FILL WAS DOING WORK THE TYPE HAD BEEN FAILING TO DO. The canvas's
+ * original 10px #8B919D eyebrow sat near 3:1 on white — under the AA floor, and
+ * the owner's report was simply that they could not see it. Losing the fill
+ * puts that burden back on the ink alone, so the inks are chosen against the
+ * CARD (and against the muted finished/locked surfaces, which are tighter), not
+ * against a tint. 11px and 700 are part of the same answer and are asserted.
  *
- * The raise is three declarations and every one is load-bearing:
- *   · the gradient gives the top a lit edge and the bottom a shaded one, which
- *     is the whole of the effect — a flat fill reads as a tag, not a button;
- *   · the INSET highlight is the gloss along the top edge;
- *   · the outer shadow lifts it off the card, and is also the only thing
- *     holding the pill's edge now that the fill is close to the card's white.
- * No border — the reference has a pale ring and the owner's instruction was
- * explicitly to drop it, and on a card that already has a 1px edge of its own a
- * second ring 9px inside it reads as a mistake.
+ * The name is historical: it is no longer a pill, but it is exported and has
+ * one call site, and renaming it would churn a file the owner is actively
+ * redesigning for no behavioural gain.
  */
 export function SkillPill({
   icon,
@@ -302,17 +279,9 @@ export function SkillPill({
         gap: 5,
         flex: "0 0 auto",
         opacity: dim ? 0.72 : 1,
-        height: 23,
-        // On the outer span so the whole pill answers the hover, not the glyphs.
+        // On the outer span so the whole label answers the hover, not the glyphs.
         cursor: hint ? "help" : undefined,
-        padding: icon ? "0 11px 0 9px" : "0 11px",
-        borderRadius: 9999,
-        background: `linear-gradient(180deg, ${t.top} 0%, ${t.base} 55%, ${t.foot} 100%)`,
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 1px rgba(0,0,0,.05), 0 1px 3px ${t.glow}`,
         color: t.ink,
-        // Letterpress rather than drop shadow: on a light ground the lift comes
-        // from a white edge BELOW the glyph, not a dark one under it.
-        textShadow: "0 1px 0 rgba(255,255,255,.75)",
         fontFamily: MONO,
         fontSize: 11,
         fontWeight: 700,

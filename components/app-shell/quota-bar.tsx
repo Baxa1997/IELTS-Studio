@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Zap } from "lucide-react";
 
-import { BRAND, BRAND_FILL, SANS, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
+import { BRAND_FILL, SANS, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
 import type { UsageSummary } from "@/lib/quota";
 
 /** Show the warning once any limited counter has this many (or fewer) left. */

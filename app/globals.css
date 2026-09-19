@@ -376,14 +376,13 @@
   --pc-primary-disabled: #cc5c82;
   --pc-attach-hover: #fbe9ef;
 
-  /* The LEVEL chip, one tinted ramp per skill (top → base → foot, plus the ink
-     that reads on it and the glow under it). Hand-tuned against white, and
-     ./card.test.ts checks each base's contrast — so the light column here is
-     byte-for-byte what the component used to hold inline, and only the dark
-     column is new. */
-  --pc-read-top: #fff6f9;
-  --pc-read-base: #fbe3ec;
-  --pc-read-foot: #f2cfdd;
+  /* The LEVEL label's ink, one per skill.
+   *
+   * It used to be a three-stop tinted ramp (top → base → foot) with a glow,
+   * drawn as a raised chip; the owner asked for plain text, so the fills went
+   * and only the inks remain. The contrast target moved with them — the ink
+   * now faces the CARD rather than its own tint, which ./card.test.ts checks
+   * against all three card surfaces in both themes. */
   /* Reading's chip ink. It used to take `BRAND` directly, unlike the other two
      skills, which each carry their own — and in dark that is exactly why it
      failed: #ce4271 on the dark burgundy base is 3.42:1, under the 4.5 floor
@@ -391,17 +390,8 @@
      against pure black is only ~4.4). The ink had to lighten, not the ground.
      Light is byte-for-byte the BRAND it replaced. */
   --pc-read-ink: #7d0132;
-  --pc-read-glow: rgba(125, 1, 50, 0.16);
-  --pc-write-top: #fbfbfd;
-  --pc-write-base: #ebecf2;
-  --pc-write-foot: #dcdee8;
   --pc-write-ink: #242736;
-  --pc-write-glow: rgba(18, 19, 23, 0.14);
-  --pc-listen-top: #f7fafe;
-  --pc-listen-base: #e3ecfb;
-  --pc-listen-foot: #d1dff6;
   --pc-listen-ink: #1d3f8f;
-  --pc-listen-glow: rgba(29, 63, 143, 0.16);
 
   /* The status pill: two gradient stops and a border, per state. */
   --pc-pill-new-a: #fdf4f7;
@@ -625,24 +615,10 @@
   --pc-primary-disabled: #6b3520;
   --pc-attach-hover: #3a1c12;
 
-  /* Tints invert: pale-over-white becomes deep-over-near-black, keeping each
-     skill's hue so a Reading chip still reads as Reading. The inks lighten to
-     stay legible on them — the pairs carry the contrast, as everywhere else. */
-  --pc-read-top: #2a1610;
-  --pc-read-base: #3a1c10;
-  --pc-read-foot: #4a2515;
-  --pc-read-ink: #e97338; /* 5.15:1 on --pc-read-base */
-  --pc-read-glow: rgba(216, 93, 31, 0.22);
-  --pc-write-top: #1c1c24;
-  --pc-write-base: #26262f;
-  --pc-write-foot: #32323b;
+  /* The skill inks, lightened for a dark card. */
+  --pc-read-ink: #e97338; /* 5.97:1 on the card, 5.96 on the locked surface */
   --pc-write-ink: #c9c7d2;
-  --pc-write-glow: rgba(0, 0, 0, 0.5);
-  --pc-listen-top: #141c2c;
-  --pc-listen-base: #1b2740;
-  --pc-listen-foot: #24345a;
   --pc-listen-ink: #8fb0ee;
-  --pc-listen-glow: rgba(60, 110, 220, 0.22);
 
   --pc-pill-new-a: #2a1610;
   --pc-pill-new-b: #3a1c10;

@@ -76,35 +76,7 @@ function styleProp(style: string, prop: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/**
- * A style property whose value has commas of its own — a gradient, a multi-part
- * box-shadow — which styleProp()'s comma delimiter cuts off at the first one.
- * Reads to the next property name at the start of a line instead.
- */
-function styleValue(style: string, prop: string): string {
-  const at = style.indexOf(`${prop}:`);
-  expect(at, `no ${prop} in this style object`).toBeGreaterThan(-1);
-  const rest = style.slice(at + prop.length + 1);
-  const next = /\n\s*[A-Za-z]+:/.exec(rest);
-  return rest.slice(0, next ? next.index : undefined).trim();
-}
 
-/**
- * The comma-separated parts of a shadow, with the colour functions collapsed
- * first so their own commas do not split it.
- *
- * ⚠️ `.filter(Boolean)` IS LOAD-BEARING. The style object's trailing comma
- * yields an empty final part, and an empty string starts with nothing — so
- * "is any layer not inset?" answered yes for a shadow that was entirely inset,
- * and the mutation that drops the outer lift went through undetected.
- */
-function shadowLayers(value: string): string[] {
-  return value
-    .replace(/rgba?\([^)]*\)/g, "«colour»")
-    .split(",")
-    .map((p) => p.trim().replace(/^["'`\s]+|["'`\s,]+$/g, ""))
-    .filter(Boolean);
-}
 
 /**
  * SKILL_TONE, resolved through globals.css — FOR BOTH THEMES.
@@ -124,7 +96,7 @@ function shadowLayers(value: string): string[] {
  * fix it, which is what forced Reading to stop borrowing `BRAND` and take its
  * own `--pc-read-ink`.
  */
-type Tone = { top: string; base: string; foot: string; ink: string };
+type Tone = { ink: string };
 
 /**
  * `--var: #hex` pairs for one theme, gathered from EVERY matching block.
@@ -163,10 +135,8 @@ const SKILL_TONES: Record<string, Tone> = (() => {
   expect(at, "SKILL_TONE moved or was renamed").toBeGreaterThan(-1);
   const block = card.slice(at, card.indexOf("\n};", at));
   const out: Record<string, Tone> = {};
-  for (const m of block.matchAll(
-    /([A-Z]+): \{\s*top: "([^"]+)",\s*base: "([^"]+)",\s*foot: "([^"]+)",\s*ink: "([^"]+)"/g,
-  )) {
-    out[m[1]] = { top: m[2], base: m[3], foot: m[4], ink: m[5] };
+  for (const m of block.matchAll(/([A-Z]+): \{ ink: "([^"]+)" \}/g)) {
+    out[m[1]] = { ink: m[2] };
   }
   expect(Object.keys(out).length, "SKILL_TONE parsed to nothing — its shape changed").toBe(3);
   return out;
@@ -245,32 +215,64 @@ describe("the card keeps the hover the stylesheet gives it", () => {
     expect(declaration(body, "border")).toBe("1px solid var(--pc-border)");
   });
 
+  it.each(["light", "dark"] as const)("keeps no skill in the status colours' arc (%s)", (theme) => {
+    /* ⚠️ A SKILL WEARING GREEN OR AMBER READS AS A RESULT. The status pill sits
+       on the same row and uses green for an earned band and amber for an
+       unfinished run, so a skill in either hue says something about the
+       learner's work rather than about the content. SKILL_TONE's own comment
+       states this rule — it is why Listening is blue and not the obvious teal —
+       and nothing was checking it. */
+    for (const [skill, tone] of Object.entries(SKILL_TONES)) {
+      const h = hue(resolve(tone.ink, theme));
+      expect(h > 70 && h < 170, `${skill} ${theme}: hue ${Math.round(h)}° is in the green arc`).toBe(
+        false,
+      );
+      expect(h >= 35 && h <= 70, `${skill} ${theme}: hue ${Math.round(h)}° is in the amber arc`).toBe(
+        false,
+      );
+    }
+  });
+
+  it("maps every skill label the three hubs actually pass", () => {
+    /* SKILL_FALLBACK's comment says "a test asserts the three hubs' labels all
+       land in the map" — it did not. A hub that renames its label silently
+       falls back to the brand, so Listening would quietly stop being blue and
+       nothing would fail. */
+    const labels = skillsPassedByHubs();
+    expect(labels.length, "no skill labels found in the hubs — the pattern moved").toBeGreaterThan(0);
+    for (const label of labels) {
+      expect(SKILL_TONES[label.toUpperCase()], `${label} has no entry in SKILL_TONE`).toBeTruthy();
+    }
+  });
+
   it.each(["light", "dark"] as const)(
-    "keeps every skill chip's label legible on its own fill (%s)",
+    "keeps every skill label legible on the bare card (%s)",
     (theme) => {
-      /* The pair that has to be legible is INK on BASE — the chip is a filled
-         pill and its label sits on it. 4.5:1 is the AA floor for text this
-         small (10px, uppercase). Reading failed this at 3.42:1 on the first
-         dark palette; see the note on `--pc-read-ink`. */
+      /* ⚠️ THE GROUND MOVED, SO THIS TEST HAD TO. The label used to sit on a
+         filled pill, and the pair that mattered was ink-on-tint. The owner
+         asked for plain text, so there is no tint any more and the ink now
+         faces the CARD — including the two muted surfaces a finished or locked
+         card uses, which are the tightest of the three.
+
+         Losing the fill is exactly what this guards: the fill was doing work
+         the type was previously failing to do alone (the original 10px
+         #8B919D eyebrow sat near 3:1), so the ink has to carry it now. */
+      const surfaces = {
+        card: theme === "light" ? "#ffffff" : resolve("var(--tk-panel)", theme),
+        finished: resolve("var(--pc-surface-done)", theme),
+        locked: resolve("var(--pc-surface-locked)", theme),
+      };
       for (const [skill, tone] of Object.entries(SKILL_TONES)) {
-        const base = resolve(tone.base, theme);
         const ink = resolve(tone.ink, theme);
-        expect(contrast(base, ink), `${skill} ${theme}: ${ink} on ${base}`).toBeGreaterThanOrEqual(
-          4.5,
-        );
+        for (const [name, ground] of Object.entries(surfaces)) {
+          expect(
+            contrast(ground, ink),
+            `${skill} ${theme} on the ${name} surface: ${ink} on ${ground}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
       }
     },
   );
-
-  it.each(["light", "dark"] as const)("ramps each chip top → base → foot (%s)", (theme) => {
-    // The chip is a gradient with a footer rule; if the three ever stop
-    // ordering by lightness it renders as a flat block with a stray line.
-    for (const [skill, tone] of Object.entries(SKILL_TONES)) {
-      const [top, base, foot] = [tone.top, tone.base, tone.foot].map((v) => luminance(resolve(v, theme)));
-      const ordered = theme === "light" ? top > base && base > foot : top < base && base < foot;
-      expect(ordered, `${skill} ${theme}: top/base/foot are not a ramp`).toBe(true);
-    }
-  });
 
   it("sets no inline border or shadow on the card element itself", () => {
     /* The card's own JSX: `className="pc-card"` and the style object beside it.
@@ -518,12 +520,6 @@ describe("the skill pill can actually be read", () => {
 
   it("draws its text in its skill's ink, not a shared one", () => {
     expect(styleProp(pill, "color")).toBe("t.ink");
-    // All three stops come from the skill's tone — a hardcoded stop would leave
-    // one band of the gradient burgundy on every hub.
-    const bg = styleValue(pill, "background");
-    for (const stop of ["t.top", "t.base", "t.foot"]) {
-      expect(bg, `the gradient does not use ${stop}`).toContain(stop);
-    }
   });
 
   it("carries no border", () => {
@@ -533,20 +529,18 @@ describe("the skill pill can actually be read", () => {
     expect(styleProp(pill, "borderColor")).toBeNull();
   });
 
-  it("keeps the three declarations that make it look raised", () => {
-    /* A flat fill reads as a tag. The gradient lights the top edge and shades
-       the bottom, the INSET highlight is the gloss along that top edge, and the
-       outer shadow lifts it off the card — drop any one and it goes flat. */
-    expect(styleValue(pill, "background"), "the gradient went flat").toContain("linear-gradient");
-    const layers = shadowLayers(styleValue(pill, "boxShadow"));
-    expect(
-      layers.some((l) => l.startsWith("inset 0 1px 0")),
-      "no inset highlight along the top edge",
-    ).toBe(true);
-    expect(
-      layers.some((l) => !l.startsWith("inset")),
-      "every shadow layer is inset — nothing lifts the pill off the card",
-    ).toBe(true);
+  it("stays FLAT TEXT — no fill, no raise, no letterpress", () => {
+    /* ⚠️ THIS TEST IS THE EXACT INVERSE OF THE ONE IT REPLACED, on the owner's
+       instruction: "make it simple text, not 3D style". The old version
+       asserted the gradient, the inset gloss and the lift were all present,
+       because each was load-bearing for a raised chip. None of them may come
+       back — and they are the kind of thing that does come back, one
+       declaration at a time, when someone decides the label "needs more
+       presence". Colour and weight are what carry it now. */
+    expect(styleProp(pill, "background"), "the level label grew a fill again").toBeNull();
+    expect(styleProp(pill, "boxShadow"), "the level label is raised again").toBeNull();
+    expect(styleProp(pill, "textShadow"), "the letterpress came back").toBeNull();
+    expect(styleProp(pill, "borderRadius"), "flat text needs no corner radius").toBeNull();
   });
 
   it("keeps the flat detail chip legible in its own right", () => {
@@ -556,9 +550,10 @@ describe("the skill pill can actually be read", () => {
     expect(styleProp(chip, "color")).toBe("MUTED");
   });
 
-  it("raises the skill and leaves every other chip flat", () => {
-    /* Both of Listening's facts as raised pills would say the accent matters as
-       much as the skill does. The icon is what marks the skill chip. */
+  it("tells the skill chip from the detail chips by its icon", () => {
+    /* The icon is what marks the skill chip. It used to be the raise as well;
+       now that the label is flat text, the icon is the only marker — so the
+       split CardHead makes on `c.icon` is the whole mechanism. */
     const head = fnBody("CardHead");
     expect(head).toContain("chips?.find((c) => c.icon)");
     expect(head).toContain("chips?.filter((c) => !c.icon)");
