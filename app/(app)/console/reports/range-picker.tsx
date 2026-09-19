@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
 import { RANGES, type RangeKey } from "@/lib/console/window";
+import { FAINT, INK, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The one control that governs the page.
@@ -24,7 +25,7 @@ export function RangePicker({ value }: { value: RangeKey }) {
 
   return (
     <label style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-      <span style={{ fontSize: 12, color: "#777581" }}>Showing</span>
+      <span style={{ fontSize: 12, color: FAINT }}>Showing</span>
       <select
         aria-label="Date range"
         value={value}
@@ -37,12 +38,12 @@ export function RangePicker({ value }: { value: RangeKey }) {
         style={{
           border: "1px solid #DDD9D0",
           borderRadius: 8,
-          background: "#fff",
+          background: PANEL,
           padding: "7px 10px",
           fontFamily: "inherit",
           fontSize: 12.5,
           fontWeight: 500,
-          color: "#16162E",
+          color: INK,
           cursor: pending ? "wait" : "pointer",
           opacity: pending ? 0.6 : 1,
         }}

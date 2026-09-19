@@ -1,4 +1,5 @@
 import { HERO_SKY, PAPER, SANS } from "@/lib/lessons/theme";
+import { PANEL } from "@/lib/theme/tokens";
 
 /**
  * What Practice AI looks like before the server has answered.
@@ -49,7 +50,7 @@ export default function Loading() {
               key={i}
               style={{
                 borderRadius: 26,
-                background: "#fff",
+                background: PANEL,
                 overflow: "hidden",
                 boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 16px 34px -24px rgba(20,35,46,.35)",
               }}

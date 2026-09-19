@@ -6,6 +6,7 @@ import { markReferralPaid, type ReviewState } from "@/app/admin/actions";
 import { INK, LINE, MUTED, SANS, TONE } from "@/components/admin/ui";
 import { formatMoney } from "@/lib/referrals/types";
 import type { DuePayout } from "@/lib/referrals/admin";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 const initial: ReviewState = {};
 
@@ -77,7 +78,7 @@ export function PayRow({ due }: { due: DuePayout }) {
                 fontFamily: SANS,
                 fontSize: 13,
                 color: INK,
-                background: "#fff",
+                background: PANEL,
               }}
             />
             <button
@@ -86,7 +87,7 @@ export function PayRow({ due }: { due: DuePayout }) {
               style={{
                 border: 0,
                 background: TONE.green.ink,
-                color: "#fff",
+                color: WHITE,
                 borderRadius: 999,
                 padding: "10px 22px",
                 fontFamily: SANS,

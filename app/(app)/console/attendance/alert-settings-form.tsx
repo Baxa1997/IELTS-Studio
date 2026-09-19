@@ -7,7 +7,7 @@ import { useActionFeedback } from "@/components/console/toast";
 import { type AlertChannel, type AlertSettings } from "@/lib/console/alerts";
 
 import { type ActionState, saveAlertSettings } from "../center-actions";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Who gets told when a student misses a lesson.
@@ -231,7 +231,7 @@ export function AlertSettingsForm({ settings }: { settings: AlertSettings }) {
           borderRadius: 9,
           border: "none",
           background: INDIGO,
-          color: "#fff",
+          color: WHITE,
           fontSize: 13.5,
           fontWeight: 600,
           fontFamily: "inherit",
@@ -283,7 +283,7 @@ const field: React.CSSProperties = {
   height: 34,
   borderRadius: 8,
   border: `1px solid ${LINE}`,
-  background: "#fff",
+  background: PANEL,
   padding: "0 10px",
   fontSize: 13.5,
   fontFamily: "inherit",

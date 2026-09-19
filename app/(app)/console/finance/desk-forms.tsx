@@ -13,6 +13,7 @@ import {
 
 import { type ActionState, deleteAccount, saveAccount, transferBetweenAccounts } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { FAINT, MUTED, PANEL, RED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * A kassa is a float held by a named person. That is the whole reason the form
@@ -166,7 +167,7 @@ function DeleteDeskButton({ id, name }: { id: string; name: string }) {
           padding: 0,
           fontFamily: "inherit",
           fontSize: 12.5,
-          color: "#C2453A",
+          color: RED,
           cursor: "pointer",
           textDecoration: "underline",
         }}
@@ -189,10 +190,10 @@ function DeleteDeskButton({ id, name }: { id: string; name: string }) {
             type="submit"
             disabled={pending}
             style={{
-              background: "#C2453A",
+              background: RED,
               border: 0,
               borderRadius: 8,
-              color: "#fff",
+              color: WHITE,
               padding: "7px 13px",
               fontFamily: "inherit",
               fontSize: 12.5,
@@ -208,7 +209,7 @@ function DeleteDeskButton({ id, name }: { id: string; name: string }) {
           type="button"
           onClick={() => setConfirming(false)}
           style={{
-            background: "#fff",
+            background: PANEL,
             border: "1px solid #C5C4BE",
             borderRadius: 8,
             padding: "7px 13px",
@@ -250,7 +251,7 @@ export function TransferForm({
 
   if (accounts.length < 2) {
     return (
-      <p style={{ fontSize: 13, color: "#6E6C87", margin: 0, lineHeight: 1.55 }}>
+      <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.55 }}>
         A transfer needs two desks and there is only one. Add another first.
       </p>
     );
@@ -311,7 +312,7 @@ export function TransferForm({
           <input name="note" placeholder="Bank deposit" style={fieldStyle} />
         </Field>
       </div>
-      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: FAINT, margin: "12px 0 0", lineHeight: 1.55 }}>
         Recorded as two entries — out of one desk, into the other — so the center&apos;s net
         position is unchanged and both balances move.
       </p>

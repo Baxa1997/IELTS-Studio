@@ -20,6 +20,7 @@ import {
   TROUGH,
   TROUGH_DEEP,
 } from "@/lib/lessons/theme";
+import { PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `lessons` namespace. */
 const callEngine = engineClient("lessons");
@@ -418,7 +419,7 @@ export function Composer() {
               padding: "8px 16px 8px 13px",
               borderRadius: 999,
               border: 0,
-              background: "#fff",
+              background: PANEL,
               color: BODY_INK,
               fontFamily: "inherit",
               fontSize: 14,
@@ -453,7 +454,7 @@ export function Composer() {
               gap: 10,
               padding: "6px 16px 6px 6px",
               borderRadius: 999,
-              background: "#fff",
+              background: PANEL,
               boxShadow: "inset 0 0 0 1px #e4e0d6",
               cursor: "pointer",
               fontFamily: "inherit",
@@ -480,7 +481,7 @@ export function Composer() {
                   width: 16,
                   height: 16,
                   borderRadius: "50%",
-                  background: "#fff",
+                  background: PANEL,
                   boxShadow: "0 1px 2px rgba(0,0,0,.18)",
                   transition: "left .18s",
                 }}
@@ -545,7 +546,7 @@ export function Composer() {
                 borderRadius: 999,
                 border: 0,
                 background: EMBER,
-                color: "#fff",
+                color: WHITE,
                 display: "grid",
                 placeItems: "center",
                 opacity: brief.trim() === "" ? 0.55 : 1,
@@ -580,7 +581,7 @@ export function Composer() {
         <p
           style={{
             fontSize: 15,
-            color: "#a63a30",
+            color: RED_DEEP,
             margin: "18px 0 0",
             maxWidth: 640,
             textAlign: "center",
@@ -928,7 +929,7 @@ function Working({ stage, count }: { stage: number; count: number }) {
                   placeItems: "center",
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#fff",
+                  color: WHITE,
                   background: done ? GOOD_INK : active ? EMBER : "#dcd8cf",
                 }}
               >
@@ -1311,7 +1312,7 @@ function ItemCount({
         gap: 2,
         padding: 4,
         borderRadius: 999,
-        background: "#fff",
+        background: PANEL,
         boxShadow: "inset 0 0 0 1px #e4e0d6",
       }}
     >
@@ -1532,7 +1533,7 @@ const emberPill: React.CSSProperties = {
   border: 0,
   borderRadius: 999,
   background: EMBER,
-  color: "#fff",
+  color: WHITE,
   padding: "13px 26px",
   fontFamily: "inherit",
   fontSize: 15,

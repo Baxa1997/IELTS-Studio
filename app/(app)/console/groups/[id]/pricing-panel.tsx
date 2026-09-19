@@ -6,6 +6,7 @@ import { formatMoney, parseMoney } from "@/lib/finance/money";
 
 import { type ActionState, setGroupPricing } from "../../finance/actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { INDIGO_CONSOLE, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The two prices of this group, edited in place on the group itself.
@@ -28,7 +29,7 @@ const field: React.CSSProperties = {
   height: 34,
   borderRadius: 8,
   border: "1px solid #C5C4BE",
-  background: "#fff",
+  background: PANEL,
   padding: "0 10px",
   fontSize: 13.5,
   color: INK,
@@ -124,8 +125,8 @@ export function PricingPanel({
             padding: "0 16px",
             borderRadius: 8,
             border: "none",
-            background: "#4340CB",
-            color: "#fff",
+            background: INDIGO_CONSOLE,
+            color: WHITE,
             fontSize: 13,
             fontWeight: 600,
             cursor: pending ? "default" : "pointer",

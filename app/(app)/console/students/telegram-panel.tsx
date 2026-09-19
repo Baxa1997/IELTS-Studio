@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { createTelegramInvite, type InviteState } from "./telegram-actions";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Getting a student onto Telegram, from the teacher's side.
@@ -101,7 +102,7 @@ export function TelegramInvitePanel({
 }
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: "1px solid #E2E0DA",
   borderRadius: 14,
   padding: "16px 18px",
@@ -126,7 +127,7 @@ const button: React.CSSProperties = {
   borderRadius: 999,
   border: 0,
   background: "#15171C",
-  color: "#fff",
+  color: WHITE,
   fontFamily: "inherit",
   fontSize: 14,
   fontWeight: 600,
@@ -136,7 +137,7 @@ const ghost: React.CSSProperties = {
   padding: "8px 14px",
   borderRadius: 999,
   border: "1px solid #E2E0DA",
-  background: "#fff",
+  background: PANEL,
   fontFamily: "inherit",
   fontSize: 13,
   fontWeight: 600,

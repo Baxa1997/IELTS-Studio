@@ -6,6 +6,7 @@ import { type Slot } from "@/lib/console/timetable";
 import { describeDays } from "@/lib/console/timetable-days";
 
 import { type GroupOption, type RoomOption, SlotForm } from "./calendar-forms";
+import { INDIGO_CONSOLE, MUTED, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The timetable grid: rooms across, half-hour bands down.
@@ -328,7 +329,7 @@ export function TimetableGrid({
                         marginLeft: `calc(${(lane * 100) / total}% + 3px)`,
                         alignSelf: "stretch",
                         background: tint,
-                        color: "#fff",
+                        color: WHITE,
                         border: clashed ? "2px solid #FFD2CD" : "none",
                         outline: clashed ? "2px solid #C2453A" : "none",
                         borderRadius: 10,
@@ -439,7 +440,7 @@ export function TimetableGrid({
               position: "relative",
               width: 460,
               maxWidth: "100vw",
-              background: "#fff",
+              background: PANEL,
               height: "100dvh",
               overflowY: "auto",
               boxShadow: "-20px 0 50px rgba(20,19,58,.2)",
@@ -453,7 +454,7 @@ export function TimetableGrid({
                     fontSize: 11.5,
                     letterSpacing: ".1em",
                     fontWeight: 600,
-                    color: "#4340CB",
+                    color: INDIGO_CONSOLE,
                     textTransform: "uppercase",
                   }}
                 >
@@ -470,7 +471,7 @@ export function TimetableGrid({
                 >
                   {editing.kind === "slot" ? editing.slot.groupName : "Schedule a lesson"}
                 </h2>
-                <p style={{ margin: 0, fontSize: 13, color: "#6E6C87", lineHeight: 1.5 }}>
+                <p style={{ margin: 0, fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
                   {editing.kind === "slot"
                     ? `${describeDays(editing.slot.seriesDays)} ${editing.slot.startsAt}–${editing.slot.endsAt}${
                         editing.slot.roomName ? ` · ${editing.slot.roomName}` : ""
@@ -496,7 +497,7 @@ export function TimetableGrid({
                   height: 30,
                   flex: "none",
                   cursor: "pointer",
-                  color: "#6E6C87",
+                  color: MUTED,
                   fontSize: 15,
                   lineHeight: 1,
                 }}
@@ -513,7 +514,7 @@ export function TimetableGrid({
                   background: "#FBEAE8",
                   borderRadius: 9,
                   fontSize: 12.5,
-                  color: "#A63A30",
+                  color: RED_DEEP,
                   lineHeight: 1.5,
                 }}
               >

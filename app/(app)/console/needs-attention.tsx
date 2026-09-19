@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL } from "@/lib/theme/tokens";
 import { SANS, TINT, type Tone } from "@/components/console/crm-ui";
 import { useActionFeedback } from "@/components/console/toast";
 import { type Alert, type Severity } from "@/lib/console/alert-catalogue";
@@ -143,12 +143,12 @@ export function NeedsAttention({
                 fontFamily: SANS,
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#4340CB",
+                color: INDIGO_CONSOLE,
                 textDecoration: "none",
                 border: "1px solid #C5C4BE",
                 borderRadius: 8,
                 padding: "6px 11px",
-                background: "#fff",
+                background: PANEL,
                 whiteSpace: "nowrap",
               }}
             >

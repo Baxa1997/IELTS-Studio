@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
-import { INDIGO } from "@/lib/theme/tokens";
+import { INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The two pieces every practice hub shares for setting content to a group: the
@@ -30,7 +30,7 @@ const field: React.CSSProperties = {
   fontFamily: SANS,
   fontSize: 13.5,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 const labelStyle: React.CSSProperties = {
   display: "block",
@@ -134,7 +134,7 @@ export function AttachForm({
           style={{
             flex: 1,
             background: INDIGO,
-            color: "#fff",
+            color: WHITE,
             border: 0,
             borderRadius: 10,
             padding: 11,
@@ -151,7 +151,7 @@ export function AttachForm({
           type="button"
           onClick={onDone}
           style={{
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${LINE}`,
             borderRadius: 10,
             padding: "11px 16px",
@@ -204,7 +204,7 @@ export function PracticeModal({
           maxWidth: "100%",
           maxHeight: "90dvh",
           overflowY: "auto",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 18,
           padding: "22px 24px",
           boxShadow: "0 30px 60px rgba(20,19,58,.28)",

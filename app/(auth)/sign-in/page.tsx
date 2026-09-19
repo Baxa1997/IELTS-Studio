@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DESIGN_CSS, Wordmark } from "@/app/_landing/design-chrome";
 import { landingManrope, landingSora } from "@/app/_landing/fonts";
-import { BRAND, CANVAS, DISPLAY, INK, RADIUS, SANS, WHITE } from "@/app/_landing/design";
+import {
+  BRAND,
+  BRAND_PANEL,
+  CANVAS,
+  DISPLAY,
+  INK,
+  RADIUS,
+  SANS,
+  WHITE,
+} from "@/app/_landing/design";
 import { LangPicker } from "@/app/_landing/lang-picker";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 
@@ -85,7 +94,7 @@ export default async function SignInPage({
       <div
         className="lp-auth-panel"
         style={{
-          background: "#43001d",
+          background: BRAND_PANEL,
           backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
           color: WHITE,
           borderRadius: RADIUS.panel,

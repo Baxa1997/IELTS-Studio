@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 
 import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
+import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Coach chat (C0) on a graded mock report. The browser calls the engine
@@ -85,7 +86,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
   return (
     <section
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${LINE}`,
         borderRadius: 14,
         padding: "16px 18px",
@@ -199,7 +200,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
             fontFamily: SANS,
             color: INK,
             outline: "none",
-            background: "#FDF4F7",
+            background: BRAND_SOFT,
           }}
         />
         <button
@@ -207,7 +208,7 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
           disabled={busy || !input.trim()}
           style={{
             background: busy || !input.trim() ? "#E3A7BD" : BRAND,
-            color: "#fff",
+            color: WHITE,
             border: "none",
             borderRadius: 10,
             padding: "10px 18px",

@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BRAND as INDIGO } from "@/lib/theme/tokens";
+import {
+  BRAND as INDIGO,
+  BRAND_SOFT,
+  PANEL,
+  SLATE_BODY,
+  SLATE_LINE,
+  SLATE_MUTED,
+} from "@/lib/theme/tokens";
 
 /**
  * The hero's animated product demo (marketing only) — loops two scenes:
@@ -81,7 +88,7 @@ function GradeScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#8b919d",
+            color: SLATE_MUTED,
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -130,7 +137,7 @@ function GradeScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#8b919d",
+            color: SLATE_MUTED,
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -153,7 +160,7 @@ function GradeScene() {
                 marginBottom: 4,
               }}
             >
-              <span style={{ fontWeight: 600, color: "#4a505c" }}>{c.label}</span>
+              <span style={{ fontWeight: 600, color: SLATE_BODY }}>{c.label}</span>
               <span
                 className="hpd-in"
                 style={{ animationDelay: `${c.d + 0.45}s`, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: c.color }}
@@ -184,7 +191,7 @@ function GradeScene() {
         >
           <span style={{ fontSize: 14 }}>
             <strong style={{ color: INK, fontWeight: 700 }}>Overall 6.0.</strong>{" "}
-            <span style={{ color: "#4a505c" }}>Lexical range caps it — the fixes are named.</span>
+            <span style={{ color: SLATE_BODY }}>Lexical range caps it — the fixes are named.</span>
           </span>
           <span
             style={{
@@ -216,7 +223,7 @@ function GenScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#8b919d",
+            color: SLATE_MUTED,
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -250,7 +257,7 @@ function GenScene() {
                 fontSize: 12,
                 fontWeight: 600,
                 color: INDIGO,
-                background: "#fdf4f7",
+                background: BRAND_SOFT,
                 border: "1px solid #f0d3de",
                 borderRadius: 999,
                 padding: "5px 11px",
@@ -269,7 +276,7 @@ function GenScene() {
             fontFamily: MONO,
             fontSize: 10,
             letterSpacing: ".18em",
-            color: "#8b919d",
+            color: SLATE_MUTED,
             textTransform: "uppercase",
             marginBottom: 10,
           }}
@@ -322,7 +329,7 @@ function GenScene() {
               />
             ))}
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: "#8b919d", whiteSpace: "nowrap" }}>Part 2 · map</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: SLATE_MUTED, whiteSpace: "nowrap" }}>Part 2 · map</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 14 }}>
@@ -334,8 +341,8 @@ function GenScene() {
                 animationDelay: `${3.4 + i * 0.35}s`,
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#4a505c",
-                background: "#fff",
+                color: SLATE_BODY,
+                background: PANEL,
                 border: "1px solid #e6e8ec",
                 borderRadius: 999,
                 padding: "5px 11px",
@@ -348,7 +355,7 @@ function GenScene() {
 
         <div className="hpd-in" style={{ animationDelay: "4.7s", marginTop: 14, fontSize: 14 }}>
           <strong style={{ color: INK, fontWeight: 700 }}>Fresh for every session.</strong>{" "}
-          <span style={{ color: "#4a505c" }}>Never a recycled test, never an answer you remember.</span>
+          <span style={{ color: SLATE_BODY }}>Never a recycled test, never an answer you remember.</span>
         </div>
       </div>
     </div>
@@ -383,7 +390,7 @@ export function HeroProcessDemo() {
       style={{
         maxWidth: 1280,
         margin: "46px auto 0",
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #EAE7DE",
         borderRadius: 22,
         boxShadow: "0 30px 60px -30px rgba(18,19,23,.18)",
@@ -445,7 +452,7 @@ export function HeroProcessDemo() {
                 fontWeight: 700,
                 color: scene === key ? "#fff" : "#4a505c",
                 background: scene === key ? INDIGO : "#F3F1E5",
-                border: "1px solid " + (scene === key ? INDIGO : "#e6e8ec"),
+                border: "1px solid " + (scene === key ? INDIGO : SLATE_LINE),
                 borderRadius: 999,
                 padding: "6px 14px",
                 cursor: "pointer",

@@ -10,6 +10,7 @@ import { checkMicAccess, startMic, VoicePlayer } from "./audio";
 import { ConfirmQuit } from "./confirm-quit";
 import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./lucida";
 import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
+import { BRAND_DEEP, BRAND_MID, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The speaking TUTOR room — a lesson, not an exam.
@@ -129,7 +130,7 @@ const PURPOSES: Purpose[] = [
     room: "Open conversation",
     length: "10–20 min",
     theme: "flow",
-    accent: "#9B1044",
+    accent: BRAND_MID,
     defaultMode: "chat",
     focus: "Range and accuracy in ordinary conversation — fewer basic words, cleaner tenses.",
     tags: ["Vocabulary range", "Tense accuracy", "Natural replies"],
@@ -153,7 +154,7 @@ const PURPOSES: Purpose[] = [
     room: "Stage",
     length: "15–20 min",
     theme: "stage",
-    accent: "#9B1044",
+    accent: BRAND_MID,
     defaultMode: "chat",
     focus: "Structure an audience can follow, steady pace, and language that sounds senior.",
     tags: ["Signposting", "Pacing", "Executive tone"],
@@ -165,7 +166,7 @@ const PURPOSES: Purpose[] = [
     room: "Stage",
     length: "15 min",
     theme: "stage",
-    accent: "#5C0125",
+    accent: BRAND_DEEP,
     defaultMode: "chat",
     focus:
       "Speaking from three points instead of a script, and recovering when you lose your place.",
@@ -732,7 +733,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
     // reads as a bug, and it made its own title unreadable (dark ink on the
     // dark stage gradient). The purpose shows up here only in the accent.
     return (
-      <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
         <div
           style={{
             flex: 1,
@@ -1133,7 +1134,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                   padding: "15px 28px",
                   borderRadius: "var(--radius-lg)",
                   border: "none",
-                  color: "#FFFFFF",
+                  color: WHITE,
                   fontSize: "var(--text-md)",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -1168,7 +1169,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
   // ---- lesson card (Lucida) ----
   if (state === "ended") {
     return (
-      <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF" }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL }}>
         <div
           style={{
             flex: 1,
@@ -1404,7 +1405,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 className="lc-btn lc-success"
                 style={{
                   background: "var(--color-success)",
-                  color: "#FFFFFF",
+                  color: WHITE,
                   border: "none",
                   borderRadius: "var(--radius-lg)",
                   padding: "14px 24px",
@@ -1481,7 +1482,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
         borderRadius: "50%",
         display: "grid",
         placeItems: "center",
-        color: "#FFFFFF",
+        color: WHITE,
         fontFamily: "var(--font-display)",
         fontWeight: 700,
         fontSize: size * 0.29,
@@ -1793,7 +1794,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                       borderRadius: 14,
                       display: "grid",
                       placeItems: "center",
-                      color: "#FFFFFF",
+                      color: WHITE,
                       fontWeight: 700,
                       fontSize: "var(--text-lg)",
                       background: persona.accent,

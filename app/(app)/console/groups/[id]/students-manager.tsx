@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { MarkLeftBody, MoveBody, RemoveBody } from "./move-or-remove";
-import { INDIGO_STUDIO as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_STUDIO as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The group, as one table.
@@ -356,7 +356,7 @@ function ManageMenu({
               right: at.right,
               zIndex: 80,
               minWidth: 230,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE_STRONG}`,
               borderRadius: 14,
               padding: 6,
@@ -609,7 +609,7 @@ function ResetPasswordForm({
           borderRadius: 9,
           border: "none",
           background: INDIGO,
-          color: "#fff",
+          color: WHITE,
           fontSize: 13.5,
           fontWeight: 600,
           fontFamily: "inherit",
@@ -626,7 +626,7 @@ function ResetPasswordForm({
 const credStyle: React.CSSProperties = {
   fontFamily: "ui-monospace, monospace",
   fontSize: 13,
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 6,
   padding: "5px 9px",
@@ -717,7 +717,7 @@ export function RosterToolbar({
           fontFamily: "inherit",
           fontSize: 13.5,
           fontWeight: 600,
-          color: "#fff",
+          color: WHITE,
           cursor: "pointer",
         }}
       >
@@ -742,7 +742,7 @@ export function RosterToolbar({
               right: 0,
               zIndex: 41,
               minWidth: 268,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 11,
               boxShadow: "0 14px 36px rgba(22,22,46,.14)",
@@ -896,7 +896,7 @@ const quietStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 5,
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 7,
   padding: "4px 9px",
@@ -923,7 +923,7 @@ const reportStyle: React.CSSProperties = {
   padding: "7px 12px",
   borderRadius: 999,
   border: `1px solid ${RULE}`,
-  background: "#fff",
+  background: PANEL,
   fontSize: 13,
   fontWeight: 600,
   color: INK,

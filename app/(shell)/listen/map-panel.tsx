@@ -22,6 +22,7 @@ import { Check, X } from "lucide-react";
 import { BAD, RUN } from "./theme";
 import { FlagButton, NumChip } from "./question-ui";
 import type { MapFeature, MapView, QCtx } from "./types";
+import { BRAND } from "@/lib/theme/tokens";
 
 // ---- IELTS-style schematic map rendering -------------------------------------
 
@@ -43,7 +44,7 @@ const MAP = {
   cardEdge: "#111111",
   site: "#ffffff",
   siteEdge: "#111111",
-  accent: "#7D0132",
+  accent: BRAND,
   frame: "#111111",
 };
 

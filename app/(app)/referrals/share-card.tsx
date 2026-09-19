@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, Send } from "lucide-react";
 
-import { BRAND_DARK, MONO, SANS } from "@/lib/theme/tokens";
+import { BRAND_DARK, MONO, PANEL, SANS, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The link and the code, with the only interaction this page has.
@@ -59,7 +59,7 @@ export function ShareCard({ url, code }: { url: string; code: string }) {
           padding: "12px 15px",
           fontFamily: SANS,
           fontSize: 14.5,
-          color: "#fff",
+          color: WHITE,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
@@ -80,7 +80,7 @@ export function ShareCard({ url, code }: { url: string; code: string }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 8,
-          background: "#fff",
+          background: PANEL,
           color: BRAND_DARK,
           borderRadius: 999,
           padding: "12px 22px",
@@ -128,7 +128,7 @@ function Ghost({
         flex: "none",
         background: "rgba(255,255,255,.16)",
         border: "1px solid rgba(255,255,255,.16)",
-        color: "#fff",
+        color: WHITE,
         borderRadius: 12,
         padding: "12px 18px",
         fontFamily: mono ? MONO : SANS,

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { AssignPanel } from "./assign-panel";
 import { V2 } from "./ui";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * "Assign practice" as a centred sheet rather than a card parked at the top of
@@ -61,7 +62,7 @@ export function AssignSheet({
                 borderRadius: 12,
                 background: V2.indigo,
                 border: `1px solid ${V2.indigo}`,
-                color: "#fff",
+                color: WHITE,
                 fontSize: 14,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -70,7 +71,7 @@ export function AssignSheet({
             : {
                 padding: "9px 16px",
                 borderRadius: 12,
-                background: "#fff",
+                background: PANEL,
                 border: `1px solid ${V2.field}`,
                 color: V2.ink,
                 fontSize: 14,
@@ -108,7 +109,7 @@ export function AssignSheet({
             style={{
               margin: "auto",
               width: "min(720px, 100%)",
-              background: "#fff",
+              background: PANEL,
               borderRadius: 22,
               overflow: "hidden",
               boxShadow: "0 30px 70px -30px rgba(20,32,58,.5)",
@@ -142,7 +143,7 @@ export function AssignSheet({
                   height: 32,
                   borderRadius: 999,
                   border: `1px solid ${V2.field}`,
-                  background: "#fff",
+                  background: PANEL,
                   color: V2.muted,
                   cursor: "pointer",
                   lineHeight: 1,

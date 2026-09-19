@@ -17,6 +17,7 @@ import {
   type PassageCard,
   type TestCard,
 } from "./read-hub";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -311,7 +312,7 @@ export default async function ReadingHubPage() {
     <div
       style={{
         minHeight: "100%",
-        background: "#fff",
+        background: PANEL,
       }}
     >
       <ReadingHub

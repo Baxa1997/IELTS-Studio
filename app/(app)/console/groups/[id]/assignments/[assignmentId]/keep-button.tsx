@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { saveToLibrary, type LibraryState } from "../../../../practice/library-actions";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#16162E";
@@ -55,7 +56,7 @@ export function KeepButton({
         onClick={() => setOpen(true)}
         style={{
           border: `1px solid ${RULE}`,
-          background: "#FFF",
+          background: PANEL,
           color: INK,
           borderRadius: 8,
           padding: "6px 13px",
@@ -77,7 +78,7 @@ export function KeepButton({
         border: `1px solid ${RULE}`,
         borderRadius: 10,
         padding: 12,
-        background: "#FFF",
+        background: PANEL,
         display: "flex",
         flexDirection: "column",
         gap: 8,
@@ -111,7 +112,7 @@ export function KeepButton({
           style={{
             border: "none",
             background: INK,
-            color: "#FFF",
+            color: WHITE,
             borderRadius: 8,
             padding: "6px 14px",
             fontFamily: SANS,
@@ -128,7 +129,7 @@ export function KeepButton({
           onClick={() => setOpen(false)}
           style={{
             border: `1px solid ${RED}`,
-            background: "#fff",
+            background: PANEL,
             borderRadius: 8,
             padding: "6px 11px",
             color: RED,

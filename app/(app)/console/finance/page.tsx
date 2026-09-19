@@ -36,6 +36,7 @@ import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 import { DeskForm, TransferForm } from "./desk-forms";
 import { TransactionForm } from "./transaction-form";
 import { DownloadLink } from "@/components/console/file-links";
+import { RED as TK_RED, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -439,7 +440,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                   fontFamily: SANS,
                   fontSize: 19,
                   fontWeight: 600,
-                  color: "#fff",
+                  color: WHITE,
                   letterSpacing: "-.02em",
                   fontVariantNumeric: "tabular-nums",
                 }}
@@ -509,7 +510,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                         fontFamily: SANS,
                         fontSize: 14.5,
                         fontWeight: 600,
-                        color: "#fff",
+                        color: WHITE,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -522,7 +523,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                         fontFamily: SANS,
                         fontSize: 20,
                         fontWeight: 700,
-                        color: "#fff",
+                        color: WHITE,
                         margin: "6px 0 3px",
                         letterSpacing: "-.02em",
                         fontVariantNumeric: "tabular-nums",
@@ -546,7 +547,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                       triggerStyle={{
                         background: "#1B8A5A",
                         border: 0,
-                        color: "#fff",
+                        color: WHITE,
                         padding: "6px 13px",
                         fontSize: 12.5,
                         borderRadius: 8,
@@ -571,9 +572,9 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                       title={`Record an expense — ${desk.name}`}
                       note="Rent, salaries, supplies — anything leaving this desk."
                       triggerStyle={{
-                        background: "#C2453A",
+                        background: TK_RED,
                         border: 0,
-                        color: "#fff",
+                        color: WHITE,
                         padding: "6px 13px",
                         fontSize: 12.5,
                         borderRadius: 8,
@@ -633,7 +634,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
                     triggerStyle={{
                       background: "transparent",
                       border: "1px solid rgba(255,255,255,.3)",
-                      color: "#fff",
+                      color: WHITE,
                       padding: "4px 11px",
                       fontSize: 12,
                       borderRadius: 7,
@@ -802,7 +803,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Sear
               style={{
                 background: INDIGO,
                 border: 0,
-                color: "#fff",
+                color: WHITE,
                 borderRadius: 8,
                 padding: "8px 15px",
                 fontFamily: SANS,

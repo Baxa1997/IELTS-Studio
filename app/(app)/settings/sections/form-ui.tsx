@@ -1,5 +1,7 @@
 /** The learner settings forms' shared field, label, button and message styles. */
 
+import { GREEN, PANEL, WHITE } from "@/lib/theme/tokens";
+
 const BRAND = "#7D0132";
 const INK = "#121317";
 
@@ -10,7 +12,7 @@ export const fieldStyle: React.CSSProperties = {
   padding: "0 12px",
   border: "1px solid #E2DED0",
   borderRadius: 11,
-  background: "#fff",
+  background: PANEL,
   font: "inherit",
   fontSize: 15,
   color: INK,
@@ -26,7 +28,7 @@ export function buttonStyle(
     border: "none",
     borderRadius: 11,
     background: tone === "danger" ? "#A13A2C" : BRAND,
-    color: "#fff",
+    color: WHITE,
     font: "inherit",
     fontSize: 14.5,
     fontWeight: 700,
@@ -45,7 +47,7 @@ export function Message({ state }: { state: { error?: string; ok?: string } }) {
   }
   if (state.ok) {
     return (
-      <p role="status" style={{ ...box, color: "#16794C", background: "#E8F3EC" }}>
+      <p role="status" style={{ ...box, color: GREEN, background: "#E8F3EC" }}>
         {state.ok}
       </p>
     );

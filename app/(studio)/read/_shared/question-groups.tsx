@@ -10,6 +10,7 @@ import {
 
 import { GapSelectSentence, GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { BRAND, INK, MUTED, SANS } from "./tokens";
+import { BRAND_SOFT, PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 /** Indigo-tinted border for the boxes that stay boxed (flow-chart gap stages);
  *  ordinary questions render as flat rows with an indigo number, no card. */
@@ -88,7 +89,7 @@ export function QuestionGroups({
             </div>
 
             {letteredBank ? (
-              <div style={{ border: "1px solid #E6E8EC", borderRadius: 12, background: "#FDF4F7", padding: "14px 18px" }}>
+              <div style={{ border: "1px solid #E6E8EC", borderRadius: 12, background: BRAND_SOFT, padding: "14px 18px" }}>
                 {bankTitle ? (
                   <p style={{ fontFamily: SANS, fontWeight: 800, fontSize: 13.5, color: INK, margin: "0 0 9px" }}>{bankTitle}</p>
                 ) : null}
@@ -315,9 +316,9 @@ function PickTwoPanel({
               type="button"
               onClick={() => toggle(letter)}
               aria-pressed={on}
-              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`, background: on ? "#FDF4F7" : "#fff", fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? BRAND : SLATE_LINE}`, background: on ? "#FDF4F7" : "#fff", fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
             >
-              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? BRAND : "#C9CDD4"}`, background: on ? BRAND : "#fff", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
+              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? BRAND : "#C9CDD4"}`, background: on ? BRAND : "#fff", color: WHITE, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
                 {on ? "✓" : ""}
               </span>
               <strong style={{ width: 16, flex: "none", color: BRAND }}>{letter}</strong>
@@ -378,7 +379,7 @@ function NoteBlock({
   const title = group.find((q) => q.note_meta?.title?.trim())?.note_meta?.title?.trim() || null;
 
   return (
-    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
+    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: PANEL, padding: "18px 20px" }}>
       {title ? (
         <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 12px" }}>{title}</h3>
       ) : null}
@@ -471,7 +472,7 @@ function NoteGapRow({
 /** The small boxed question number that sits inline just before a note's blank. */
 function NumberBadge({ n }: { n: number }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 22, height: 22, padding: "0 5px", margin: "0 5px", borderRadius: 6, border: `1.5px solid ${BRAND}`, background: "#FDF4F7", color: BRAND, fontWeight: 700, fontSize: 12.5, lineHeight: 1, fontVariantNumeric: "tabular-nums", verticalAlign: "middle" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 22, height: 22, padding: "0 5px", margin: "0 5px", borderRadius: 6, border: `1.5px solid ${BRAND}`, background: BRAND_SOFT, color: BRAND, fontWeight: 700, fontSize: 12.5, lineHeight: 1, fontVariantNumeric: "tabular-nums", verticalAlign: "middle" }}>
       {n}
     </span>
   );
@@ -530,7 +531,7 @@ function FlowChartBlock({
   }
 
   return (
-    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: "#fff", padding: "18px 20px" }}>
+    <div style={{ border: "1px solid #E6E8EC", borderRadius: 14, background: PANEL, padding: "18px 20px" }}>
       {title ? (
         <h3 style={{ fontFamily: SANS, fontWeight: 800, fontSize: 16.5, color: INK, margin: "0 0 14px", textAlign: "center" }}>{title}</h3>
       ) : null}
@@ -551,7 +552,7 @@ function FlowChartBlock({
 /** A gap-less flow-chart stage (a lead-in or fixed step). */
 function FlowStage({ text }: { text: string }) {
   return (
-    <div style={{ width: "100%", maxWidth: FLOW_BOX_MAX, border: "1.5px solid #E6E8EC", borderRadius: 12, background: "#FDF4F7", padding: "12px 16px", textAlign: "center", fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: INK }}>
+    <div style={{ width: "100%", maxWidth: FLOW_BOX_MAX, border: "1.5px solid #E6E8EC", borderRadius: 12, background: BRAND_SOFT, padding: "12px 16px", textAlign: "center", fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: INK }}>
       {text}
     </div>
   );
@@ -581,7 +582,7 @@ function FlowGapStage({
     after = q.prompt.slice(match.index + match[0].length);
   }
   return (
-    <div id={`q-${q.id}`} role="group" style={{ position: "relative", width: "100%", maxWidth: FLOW_BOX_MAX, border: `1.5px solid ${QUESTION_BORDER}`, borderRadius: 12, background: "#fff", padding: "14px 16px", textAlign: "center", scrollMarginTop: 80, fontFamily: SANS, fontSize: 15.5, lineHeight: 2, color: INK }}>
+    <div id={`q-${q.id}`} role="group" style={{ position: "relative", width: "100%", maxWidth: FLOW_BOX_MAX, border: `1.5px solid ${QUESTION_BORDER}`, borderRadius: 12, background: PANEL, padding: "14px 16px", textAlign: "center", scrollMarginTop: 80, fontFamily: SANS, fontSize: 15.5, lineHeight: 2, color: INK }}>
       {before}
       <NumberBadge n={n} />
       <InlineBlank value={value} onChange={onChange} label={`Answer for question ${n}`} />

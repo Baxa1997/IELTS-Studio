@@ -19,6 +19,7 @@ import {
   setPayrollStatus,
 } from "../actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { FAINT, INK, PANEL, RED_DEEP } from "@/lib/theme/tokens";
 
 /** Compute (or recompute) the month. */
 export function RunPayrollForm({
@@ -68,19 +69,19 @@ export function PayrollStatusForm({
         disabled={pending}
         className="cn-btn cn-btn--ghost"
         style={{
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #C5C4BE",
           borderRadius: 9,
           padding: "8px 15px",
           fontFamily: "inherit",
           fontSize: 13.5,
-          color: "#16162E",
+          color: INK,
           cursor: pending ? "default" : "pointer",
         }}
       >
         {pending ? "Working…" : label}
       </button>
-      {state.error ? <span style={{ fontSize: 12, color: "#A63A30" }}>{state.error}</span> : null}
+      {state.error ? <span style={{ fontSize: 12, color: RED_DEEP }}>{state.error}</span> : null}
     </form>
   );
 }
@@ -152,7 +153,7 @@ export function PayTeacherForm({
           />
         </Field>
       </div>
-      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: FAINT, margin: "12px 0 0", lineHeight: 1.55 }}>
         This writes one expense in the ledger under Teacher salaries, so {teacherName}&apos;s pay
         shows up in the month&apos;s expenses without being typed twice.
       </p>
@@ -211,7 +212,7 @@ export function AdjustPayslipForm({
           />
         </Field>
       </div>
-      <p style={{ fontSize: 12, color: "#777581", margin: "12px 0 0", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 12, color: FAINT, margin: "12px 0 0", lineHeight: 1.55 }}>
         Adjustments survive a recompute — they are your decision, not the rule&apos;s output.
       </p>
       <div style={{ marginTop: 16 }}>

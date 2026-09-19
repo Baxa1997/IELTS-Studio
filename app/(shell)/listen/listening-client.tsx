@@ -76,6 +76,14 @@ import type {
   Source,
   TableView,
 } from "./types";
+import {
+  BRAND as TK_BRAND,
+  PANEL,
+  SLATE_BODY,
+  SLATE_INK,
+  SLATE_MUTED,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `listening` namespace. */
 const callEngine = engineClient("listening");
@@ -410,7 +418,7 @@ function FreshPractice({
     <div style={{ padding: "20px 24px 0", fontFamily: SANS }}>
       <div
         style={{
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #E6E8EC",
           borderRadius: 16,
           padding: 18,
@@ -435,7 +443,7 @@ function FreshPractice({
           <div style={{ fontSize: 16, fontWeight: 600, color: INK, margin: "4px 0 3px" }}>
             {view.topic || "Listening practice"}
           </div>
-          <div style={{ fontSize: 13, color: "#4A505C" }}>
+          <div style={{ fontSize: 13, color: SLATE_BODY }}>
             {parts}
             {view.difficulty ? ` · Level ${view.difficulty}` : ""}
           </div>
@@ -445,7 +453,7 @@ function FreshPractice({
             type="button"
             onClick={onStart}
             style={{
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #E6E8EC",
               borderRadius: 10,
               padding: "10px 16px",
@@ -465,7 +473,7 @@ function FreshPractice({
             title={canAttach ? undefined : "Create a class first"}
             style={{
               background: BRAND,
-              color: "#fff",
+              color: WHITE,
               border: 0,
               borderRadius: 10,
               padding: "10px 16px",
@@ -485,7 +493,7 @@ function FreshPractice({
             style={{
               background: "none",
               border: 0,
-              color: "#8B919D",
+              color: SLATE_MUTED,
               cursor: "pointer",
               fontSize: 18,
               padding: "0 4px",
@@ -608,7 +616,7 @@ function Hub({
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "#fff",
+              background: PANEL,
               border: "1px solid rgba(28,27,46,.14)",
               color: INK,
               padding: "8px 14px",
@@ -791,7 +799,7 @@ function Hub({
         </>
       )}
 
-      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#8B919D" }}>
+      <p style={{ margin: "32px 0 0", fontSize: 13, color: SLATE_MUTED }}>
         Original audio and questions in the IELTS Listening format — not affiliated with or endorsed
         by IELTS®.
       </p>
@@ -1191,7 +1199,7 @@ function TabButton({
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? BRAND : "#8B919D" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? BRAND : SLATE_MUTED }}>
         {icon}
       </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
@@ -1240,7 +1248,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ marginTop: 18, fontSize: 13.5, color: "#8B919D", fontFamily: SANS }}>{children}</p>
+    <p style={{ marginTop: 18, fontSize: 13.5, color: SLATE_MUTED, fontFamily: SANS }}>{children}</p>
   );
 }
 
@@ -1583,7 +1591,7 @@ function Runner({
           style={{
             flexShrink: 0,
             minHeight: 52,
-            background: "#fff",
+            background: PANEL,
             borderBottom: `1px solid ${RUN.bBar}`,
             display: "flex",
             alignItems: "center",
@@ -1680,7 +1688,7 @@ function Runner({
               display: "flex",
               alignItems: "baseline",
               gap: 5,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${RUN.bPill}`,
               padding: "5px 11px",
               borderRadius: 9,
@@ -1706,7 +1714,7 @@ function Runner({
             minHeight: 0,
             position: "relative",
             overflowY: "auto",
-            background: "#fff",
+            background: PANEL,
             padding: "18px clamp(20px,4vw,40px) 32px",
           }}
         >
@@ -1966,7 +1974,7 @@ function RunnerFooter({
     height: 38,
     background: RUN.v,
     border: "none",
-    color: "#fff",
+    color: WHITE,
     fontFamily: RUN.sans,
     fontSize: 14,
     fontWeight: 600,
@@ -1981,7 +1989,7 @@ function RunnerFooter({
     justifyContent: "center",
     gap: 6,
     height: 38,
-    background: "#fff",
+    background: PANEL,
     border: `1px solid ${RUN.bBar}`,
     color: RUN.t2,
     fontFamily: RUN.sans,
@@ -1997,7 +2005,7 @@ function RunnerFooter({
       style={{
         flexShrink: 0,
         minHeight: 56,
-        background: "#fff",
+        background: PANEL,
         borderTop: `1px solid ${RUN.bBar}`,
         padding: "9px 20px",
         display: "flex",
@@ -2052,12 +2060,12 @@ function RunnerFooter({
               width: 32,
               height: 32,
               borderRadius: 9999,
-              background: "#121317",
+              background: SLATE_INK,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              color: "#fff",
+              color: WHITE,
             }}
           >
             <svg
@@ -2324,7 +2332,7 @@ function CardHeader({
             alignItems: "center",
             gap: 8,
             background: RUN.vSoft,
-            color: "#7D0132",
+            color: TK_BRAND,
             fontSize: 13,
             fontWeight: 600,
             padding: "10px 16px",
@@ -2665,7 +2673,7 @@ function TablePanel({ table, ctx, bare }: { table: TableView; ctx: QCtx; bare?: 
                   style={{
                     ...cell,
                     background: RUN.vSoft,
-                    color: "#7D0132",
+                    color: TK_BRAND,
                     fontWeight: 700,
                     fontSize: 13.5,
                     whiteSpace: "nowrap",
@@ -3083,7 +3091,7 @@ function ChooseTwoPanel({ cluster, ctx }: { cluster: ClusterView; ctx: QCtx }) {
                     borderRadius: 6,
                     border: `1.5px solid ${on || (graded && isCorrect) ? border : "#C9CDD4"}`,
                     background: on && !graded ? RUN.v : "transparent",
-                    color: "#fff",
+                    color: WHITE,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -3253,7 +3261,7 @@ function McqPanel({
                                 width: 8,
                                 height: 8,
                                 borderRadius: "50%",
-                                background: "#fff",
+                                background: PANEL,
                               }}
                             />
                           ) : isCorrect ? (
@@ -3598,7 +3606,7 @@ function ReviewPanel({ grade }: { grade: Grade }) {
   const trapped = grade.results.filter((r) => r.trap && TRAP_EXPLAIN[r.trap]);
   const ratio = grade.score / grade.max_score;
   const card: React.CSSProperties = {
-    background: "#fff",
+    background: PANEL,
     border: `1px solid ${RUN.bCard}`,
     borderRadius: 16,
     padding: "20px 22px",

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { BODY, INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
 
 /**
  * Which month you are paying — year included.
@@ -62,7 +62,7 @@ export function MonthPicker({
             alignItems: "stretch",
             border: `1px solid ${LINE}`,
             borderRadius: 10,
-            background: "#fff",
+            background: PANEL,
             overflow: "hidden",
           }}
         >
@@ -186,6 +186,6 @@ const step: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: "0 10px",
-  color: "#4C4A63",
+  color: BODY,
   textDecoration: "none",
 };

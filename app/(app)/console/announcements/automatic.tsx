@@ -13,6 +13,7 @@ import {
 } from "@/lib/console/auto-messages";
 
 import { saveAutoMessage, type ActionState } from "../center-actions";
+import { INDIGO, PANEL } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#16162E";
@@ -80,7 +81,7 @@ function MessageRow({
         border: `1px solid ${RULE}`,
         borderRadius: 12,
         padding: 14,
-        background: "#FFF",
+        background: PANEL,
         opacity: enabled ? 1 : 0.72,
       }}
     >
@@ -94,7 +95,7 @@ function MessageRow({
             checked={enabled}
             disabled={!canEdit}
             onChange={(e) => setEnabled(e.target.checked)}
-            style={{ width: 16, height: 16, accentColor: "#3B43B5" }}
+            style={{ width: 16, height: 16, accentColor: INDIGO }}
           />
         </label>
 
@@ -186,7 +187,7 @@ function MessageRow({
             disabled={pending || problems.length > 0}
             style={{
               border: `1px solid ${RULE}`,
-              background: "#FFF",
+              background: PANEL,
               color: INK,
               borderRadius: 8,
               padding: "6px 13px",

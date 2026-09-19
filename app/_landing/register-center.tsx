@@ -15,11 +15,12 @@ import {
   INK,
   LINE,
   MUTED,
+  PANEL,
   RADIUS,
   SANS,
-  solidButton,
   WELL,
   WHITE,
+  solidButton,
 } from "./design";
 
 /**
@@ -77,7 +78,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
     borderRadius: RADIUS.field,
     fontFamily: SANS,
     fontSize: 15,
-    background: WHITE,
+    background: PANEL,
     color: INK,
   };
 
@@ -102,7 +103,7 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: WHITE,
+          background: PANEL,
           borderRadius: RADIUS.panel,
           border: `1px solid ${LINE}`,
           boxShadow: "0 40px 90px -30px rgba(18,19,23,0.45)",
@@ -394,7 +395,7 @@ export function RegisterCenterCard() {
           className="lp-ghost"
           style={{
             flex: "none",
-            background: WHITE,
+            background: PANEL,
             border: `1px solid ${FIELD}`,
             borderRadius: RADIUS.pill,
             padding: "10px 18px",

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
+import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const BRAND = "#7D0132";
@@ -89,7 +90,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
           border: "none",
           cursor: "pointer",
           background: "linear-gradient(135deg,#9B1044,#7D0132)",
-          color: "#fff",
+          color: WHITE,
           fontFamily: SANS,
           fontWeight: 700,
           fontSize: 14.5,
@@ -114,7 +115,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
         height: "min(580px, calc(100dvh - 40px))",
         display: "flex",
         flexDirection: "column",
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #E6E8EC",
         borderRadius: 18,
         boxShadow: "0 30px 70px -28px rgba(26,33,56,.55)",
@@ -139,7 +140,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
               height: 30,
               borderRadius: 9,
               background: "linear-gradient(135deg,#9B1044,#7D0132)",
-              color: "#fff",
+              color: WHITE,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -183,7 +184,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
                     fontSize: 12.5,
                     fontWeight: 600,
                     color: BRAND,
-                    background: "#FDF4F7",
+                    background: BRAND_SOFT,
                     border: "1px solid #F0D3DE",
                     borderRadius: 999,
                     padding: "7px 12px",
@@ -208,7 +209,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
                 fontSize: 13.5,
                 lineHeight: 1.55,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? BRAND : "#FDF4F7",
+                background: m.role === "student" ? BRAND : BRAND_SOFT,
                 color: m.role === "student" ? "#fff" : "#3B4150",
                 border: m.role === "student" ? "none" : "1px solid #F0D3DE",
               }}
@@ -252,7 +253,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
             }}
             placeholder="Ask your coach…"
             className="lp-input"
-            style={{ flex: 1, padding: "9px 11px", border: "1px solid #DFE2E8", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 13.5, color: INK }}
+            style={{ flex: 1, padding: "9px 11px", border: "1px solid #DFE2E8", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 13.5, color: INK }}
           />
           <button
             type="button"
@@ -268,7 +269,7 @@ export function DashboardCoach({ context, firstName }: { context: string; firstN
               border: "none",
               cursor: sending || !input.trim() ? "default" : "pointer",
               background: BRAND,
-              color: "#fff",
+              color: WHITE,
               opacity: sending || !input.trim() ? 0.5 : 1,
             }}
           >

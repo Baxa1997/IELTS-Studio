@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 
 import type { Inbox } from "@/lib/notifications/load";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#121317";
@@ -68,7 +69,7 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
               // The design's alert red, matching the rail's own count badges —
               // a light salmon on a white bar reads as decoration, not a count.
               background: "#b3261e",
-              color: "#fff",
+              color: WHITE,
               fontFamily: SANS,
               fontSize: 10.5,
               fontWeight: 800,
@@ -104,7 +105,7 @@ export function NotificationBell({ inbox }: { inbox: Inbox }) {
               right: 0,
               top: "calc(100% + 8px)",
               width: "min(320px, calc(100vw - 32px))",
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 14,
               boxShadow: "0 16px 40px rgba(26,33,56,0.18)",

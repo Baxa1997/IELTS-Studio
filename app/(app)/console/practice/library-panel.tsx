@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import type { LibraryItem } from "@/lib/console/practice-library";
 
 import { archiveLibraryItem, type LibraryState } from "./library-actions";
-import { INDIGO } from "@/lib/theme/tokens";
+import { INDIGO, PANEL } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#16162E";
@@ -116,7 +116,7 @@ function LibraryRow({ item, canEdit }: { item: LibraryItem; canEdit: boolean }) 
         border: `1px solid ${RULE}`,
         borderRadius: 10,
         padding: "10px 12px",
-        background: "#FFF",
+        background: PANEL,
         display: "flex",
         gap: 12,
         alignItems: "flex-start",
@@ -241,7 +241,7 @@ function Select({
         fontFamily: SANS,
         fontSize: 12.5,
         color: value ? INDIGO : INK,
-        background: "#FFF",
+        background: PANEL,
         textTransform: "capitalize",
       }}
     >

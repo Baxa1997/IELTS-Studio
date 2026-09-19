@@ -1,4 +1,5 @@
 import { FaFileCsv, FaFileExcel, FaFilePdf } from "react-icons/fa6";
+import { INK, PANEL } from "@/lib/theme/tokens";
 
 /**
  * Download links that look like the file they produce.
@@ -53,11 +54,11 @@ export function DownloadLink({
         gap: 6,
         borderRadius: 9,
         border: "1px solid #C5C4BE",
-        background: "#fff",
+        background: PANEL,
         padding: "7px 12px",
         fontFamily: "inherit",
         fontSize: 13,
-        color: "#16162E",
+        color: INK,
         textDecoration: "none",
         whiteSpace: "nowrap",
         ...style,

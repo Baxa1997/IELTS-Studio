@@ -9,10 +9,12 @@ import {
   BRAND,
   BRAND_DEEP,
   DISPLAY,
+  FAINT,
   FIELD,
   INK,
   LINE,
   MUTED,
+  PANEL,
   RADIUS,
   SANS,
   WHITE,
@@ -64,7 +66,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
     borderRadius: RADIUS.field,
     fontFamily: SANS,
     fontSize: 16,
-    background: WHITE,
+    background: PANEL,
     color: INK,
   };
 
@@ -214,7 +216,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
         className="lp-ghost"
         style={{
           width: "100%",
-          background: WHITE,
+          background: PANEL,
           border: `1px solid ${FIELD}`,
           borderRadius: RADIUS.field,
           padding: "clamp(12px,2vh,16px)",
@@ -255,7 +257,7 @@ export function DesignSignInForm({ next }: { next?: string | null }) {
 
       <RegisterCenterCard />
 
-      <p style={{ fontSize: 13, color: "#9aa0ac", lineHeight: 1.55, marginTop: "clamp(12px,2vh,24px)" }}>
+      <p style={{ fontSize: 13, color: FAINT, lineHeight: 1.55, marginTop: "clamp(12px,2vh,24px)" }}>
         Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment
         English.
       </p>

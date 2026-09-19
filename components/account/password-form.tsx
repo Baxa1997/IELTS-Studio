@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { changePassword, type PasswordState } from "@/app/(app)/account-actions";
 import { MIN_PASSWORD_LENGTH } from "@/lib/account/password";
+import { GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Change (or, for a Google-only account, set) your own password.
@@ -69,7 +70,7 @@ export function PasswordForm({
         </p>
       ) : null}
       {state.ok ? (
-        <p role="status" style={{ ...messageStyle, color: "#16794c", background: "#e8f3ec" }}>
+        <p role="status" style={{ ...messageStyle, color: GREEN, background: "#e8f3ec" }}>
           {state.ok}
         </p>
       ) : null}
@@ -84,7 +85,7 @@ export function PasswordForm({
             border: "none",
             borderRadius: 10,
             background: accent,
-            color: "#fff",
+            color: WHITE,
             font: "inherit",
             fontSize: 14,
             fontWeight: 600,
@@ -110,9 +111,9 @@ function Field({
 }) {
   return (
     <label style={{ display: "grid", gap: 6 }}>
-      <span style={{ fontSize: 13.5, fontWeight: 600, color: "#16162e" }}>{label}</span>
+      <span style={{ fontSize: 13.5, fontWeight: 600, color: INK }}>{label}</span>
       {children}
-      {hint ? <span style={{ fontSize: 12.5, color: "#6e6c87" }}>{hint}</span> : null}
+      {hint ? <span style={{ fontSize: 12.5, color: MUTED }}>{hint}</span> : null}
     </label>
   );
 }
@@ -122,10 +123,10 @@ const inputStyle: React.CSSProperties = {
   padding: "0 12px",
   border: "1px solid #cbd5e1",
   borderRadius: 10,
-  background: "#fff",
+  background: PANEL,
   font: "inherit",
   fontSize: 14.5,
-  color: "#16162e",
+  color: INK,
 };
 
 const messageStyle: React.CSSProperties = {

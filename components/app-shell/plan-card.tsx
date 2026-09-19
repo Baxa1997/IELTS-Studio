@@ -7,7 +7,7 @@ import { Crown, Layers, type LucideIcon, Mic, SquarePen } from "lucide-react";
 
 import { Modal } from "@/components/ui/interactive";
 import type { Quota, UsageSummary } from "@/lib/quota";
-import { SANS } from "@/lib/theme/tokens";
+import { SANS, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The learner's PLAN, pinned to the foot of the sidebar rail — as a BUTTON.
@@ -273,7 +273,7 @@ function PlanDialog({
                 // lighter orange only reaches 4.1:1. Its hover is a `filter` in
                 // globals.css, which an inline background does not block.
                 background: "#b8421e",
-                color: "#fff",
+                color: WHITE,
                 fontFamily: SANS,
                 fontSize: 14,
                 fontWeight: 600,

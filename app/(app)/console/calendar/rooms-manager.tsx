@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
-import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL, RED_DEEP } from "@/lib/theme/tokens";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteRoom, saveRoom } from "./actions";
@@ -166,7 +166,7 @@ function RoomEditor({
             marginLeft: "auto",
             background: "none",
             border: 0,
-            color: "#4340CB",
+            color: INDIGO_CONSOLE,
             fontFamily: "inherit",
             fontSize: 12.5,
             cursor: "pointer",
@@ -187,7 +187,7 @@ function RoomEditor({
         border: "1px solid #C5C4BE",
         borderRadius: 10,
         padding: "12px 13px",
-        background: "#fff",
+        background: PANEL,
       }}
     >
       {room ? <input type="hidden" name="id" value={room.id} /> : null}
@@ -320,7 +320,7 @@ function DeleteRoomButton({ id, name, lessons }: { id: string; name: string; les
         style={{
           background: "none",
           border: 0,
-          color: "#A63A30",
+          color: RED_DEEP,
           fontFamily: "inherit",
           fontSize: 12.5,
           cursor: "pointer",
@@ -329,7 +329,7 @@ function DeleteRoomButton({ id, name, lessons }: { id: string; name: string; les
         {pending ? "…" : "Delete"}
       </button>
       {state.error ? (
-        <span style={{ fontSize: 11.5, color: "#A63A30" }}> {state.error}</span>
+        <span style={{ fontSize: 11.5, color: RED_DEEP }}> {state.error}</span>
       ) : null}
     </form>
   );

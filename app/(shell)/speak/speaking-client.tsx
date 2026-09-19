@@ -10,6 +10,7 @@ import { WORKLET_SRC } from "./audio";
 import { LucidaScope } from "./lucida";
 import { type SpeakProgressItem } from "./progress";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "./report";
+import { BRAND_DEEP, BRAND_LINE, BRAND_MID, PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The Speaking hub — two ways to practise and one place to review.
@@ -197,7 +198,7 @@ const RESPONSIVE_CSS = `
 `;
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 16,
   padding: "20px 22px",
@@ -211,7 +212,7 @@ const primaryBtn: React.CSSProperties = {
   border: "none",
   borderRadius: 12,
   background: BRAND,
-  color: "#fff",
+  color: WHITE,
   fontFamily: "inherit",
   fontSize: 14.5,
   fontWeight: 700,
@@ -219,7 +220,7 @@ const primaryBtn: React.CSSProperties = {
 };
 const ghostBtn: React.CSSProperties = {
   ...primaryBtn,
-  background: "#fff",
+  background: PANEL,
   color: INK,
   border: `1px solid ${LINE}`,
 };
@@ -272,7 +273,7 @@ const HUB_PURPOSES = [
     mark: "G",
     room: "Open conversation",
     length: "10–20 min",
-    accent: "#9B1044",
+    accent: BRAND_MID,
   },
   {
     id: "everyday",
@@ -288,7 +289,7 @@ const HUB_PURPOSES = [
     mark: "P",
     room: "Stage",
     length: "15–20 min",
-    accent: "#9B1044",
+    accent: BRAND_MID,
   },
   {
     id: "presGeneral",
@@ -296,7 +297,7 @@ const HUB_PURPOSES = [
     mark: "S",
     room: "Stage",
     length: "15 min",
-    accent: "#5C0125",
+    accent: BRAND_DEEP,
   },
   {
     id: "interview",
@@ -535,7 +536,7 @@ export function SpeakingClient({
     // the separation comes from the border; only recessed things (table rows,
     // the tab track) carry a tint.
     const card: React.CSSProperties = {
-      background: "#FFFFFF",
+      background: PANEL,
       border: "1px solid #E7E3E0",
       borderRadius: 18,
       padding: 22,
@@ -545,7 +546,7 @@ export function SpeakingClient({
       alignItems: "center",
       gap: 10,
       padding: "10px 16px",
-      background: "#FFFFFF",
+      background: PANEL,
       border: "1px solid #E7E3E0",
       borderRadius: 999,
       whiteSpace: "nowrap",
@@ -566,7 +567,7 @@ export function SpeakingClient({
       new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
     return (
-      <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
         {/* Fills the window instead of growing past it: the header and tabs are
             fixed, and only the active panel scrolls — and then only when it
             genuinely does not fit. */}
@@ -868,7 +869,7 @@ export function SpeakingClient({
                         padding: "14px 26px",
                         borderRadius: 12,
                         background: A,
-                        color: "#fff",
+                        color: WHITE,
                         fontSize: 15,
                         fontWeight: 600,
                         textDecoration: "none",
@@ -971,7 +972,7 @@ export function SpeakingClient({
                           fontFamily: "inherit",
                           fontSize: 12,
                           fontWeight: 600,
-                          color: "#9B1044",
+                          color: BRAND_MID,
                         }}
                       >
                         All results
@@ -1117,7 +1118,7 @@ export function SpeakingClient({
                       padding: "14px 26px",
                       borderRadius: 12,
                       background: "#DA7756",
-                      color: "#fff",
+                      color: WHITE,
                       fontSize: 15,
                       fontWeight: 600,
                       textDecoration: "none",
@@ -1565,7 +1566,7 @@ export function SpeakingClient({
             </div>
           ) : null}
 
-          <p style={{ margin: "14px 0 0", fontSize: 12, color: "#8B919D" }}>
+          <p style={{ margin: "14px 0 0", fontSize: 12, color: SLATE_MUTED }}>
             Want the full 3-part exam with a live examiner? Switch to <strong>Full mock</strong>{" "}
             above. AI-estimated bands — not affiliated with or endorsed by IELTS®.
           </p>
@@ -1575,7 +1576,7 @@ export function SpeakingClient({
       {/* prep + recording share the cue card */}
       {(phase === "prep" || phase === "recording") && session ? (
         <>
-          <div style={{ ...card, marginTop: 18, background: TINT, borderColor: "#F0D3DE" }}>
+          <div style={{ ...card, marginTop: 18, background: TINT, borderColor: BRAND_LINE }}>
             <div
               style={{
                 fontSize: 11.5,

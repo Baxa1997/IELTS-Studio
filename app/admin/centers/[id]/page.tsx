@@ -33,6 +33,7 @@ import { ago, daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
 
 import { CenterActions } from "./center-actions";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -200,7 +201,7 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
                   display: "flex",
                   alignItems: "center",
                   gap: 7,
-                  background: "#fff",
+                  background: PANEL,
                   border: `1px solid ${TONE.amber.border}`,
                   borderRadius: 8,
                   padding: "8px 13px",

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import { FAINT, INK } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INK, MUTED } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 import {
   MEMBER_STATUSES,
@@ -28,9 +28,9 @@ import { type GroupFormState } from "../groups/actions";
  */
 
 const TINT: Record<MemberStatus, { bg: string; fg: string }> = {
-  active: { bg: "#EAF4EE", fg: "#16794C" },
+  active: { bg: "#EAF4EE", fg: GREEN },
   paused: { bg: "#FDF2E3", fg: "#8A5A12" },
-  left: { bg: "#F1F0EC", fg: "#6E6C87" },
+  left: { bg: "#F1F0EC", fg: MUTED },
 };
 
 export function StudentStatusCell({

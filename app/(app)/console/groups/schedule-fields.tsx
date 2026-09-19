@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { DAY_PRESETS, describeDays, orderedWeekdays } from "@/lib/console/timetable-days";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, INK, PANEL } from "@/lib/theme/tokens";
 
 /**
  * When the group meets — the same control on the create form and on an
@@ -187,11 +187,11 @@ const timeField: React.CSSProperties = {
   height: 34,
   borderRadius: 8,
   border: "1px solid #C5C4BE",
-  background: "#fff",
+  background: PANEL,
   padding: "0 9px",
   fontSize: 13.5,
   fontFamily: "inherit",
-  color: "#16162E",
+  color: INK,
   outline: "none",
   width: "100%",
 };

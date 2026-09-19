@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { remindNonSubmitters, type ActionState } from "../center-actions";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { GREEN, INDIGO_CONSOLE as INDIGO, WHITE } from "@/lib/theme/tokens";
 
 /**
  * "Remind the ones who haven't" — §9's row action.
@@ -44,7 +44,7 @@ export function RemindButton({
           .join(", ")} and ${missing.length - 2} others`;
 
   if (state.ok) {
-    return <span style={{ fontSize: 11.5, color: "#16794C", fontWeight: 600 }}>sent</span>;
+    return <span style={{ fontSize: 11.5, color: GREEN, fontWeight: 600 }}>sent</span>;
   }
 
   if (!open) {
@@ -87,7 +87,7 @@ export function RemindButton({
         disabled={pending}
         style={{
           background: INDIGO,
-          color: "#fff",
+          color: WHITE,
           border: 0,
           borderRadius: 7,
           padding: "4px 9px",

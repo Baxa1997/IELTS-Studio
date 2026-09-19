@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { DeleteForm } from "./delete-form";
 import { Panel } from "./frame";
+import { SLATE_BODY } from "@/lib/theme/tokens";
 
 /** Delete the account, with everything it holds. */
 export async function DeleteAccountSection({ organizationId }: { organizationId: string }) {
@@ -38,7 +39,7 @@ export async function DeleteAccountSection({ organizationId }: { organizationId:
           paddingLeft: 18,
           fontSize: 14,
           lineHeight: 1.7,
-          color: "#4A505C",
+          color: SLATE_BODY,
         }}
       >
         <li>Your essays, reading, listening and speaking practice, and all their feedback</li>

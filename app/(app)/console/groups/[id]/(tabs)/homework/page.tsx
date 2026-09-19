@@ -23,6 +23,7 @@ import {
   card as v2card,
   serifHead,
 } from "../../ui";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -237,7 +238,7 @@ export default async function GroupHomeworkPage({
                 padding: "10px 14px",
                 borderRadius: 12,
                 border: `1px solid ${V2.field}`,
-                background: "#fff",
+                background: PANEL,
                 fontFamily: SANS,
                 fontSize: 14,
                 color: V2.ink,

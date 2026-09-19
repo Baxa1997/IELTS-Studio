@@ -18,7 +18,7 @@ import { DAY_PRESETS, orderedWeekdays } from "@/lib/console/timetable-days";
 
 import { type ActionState, deleteSlot, saveSlot } from "./actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { BODY, FAINT, INDIGO_CONSOLE as INDIGO, RED_DEEP } from "@/lib/theme/tokens";
 
 /** Common lesson lengths, so the end time fills itself in. */
 const DURATIONS = [45, 60, 90, 120];
@@ -199,7 +199,7 @@ export function SlotForm({
                   style={{
                     border: `1px solid ${on ? INDIGO : "#C5C4BE"}`,
                     background: on ? "#F2F1FB" : "#F4F3EF",
-                    color: on ? INDIGO : "#4C4A63",
+                    color: on ? INDIGO : BODY,
                     borderRadius: 20,
                     padding: "5px 12px",
                     fontFamily: "inherit",
@@ -241,7 +241,7 @@ export function SlotForm({
               );
             })}
           </div>
-          <p style={{ fontSize: 11.5, color: "#777581", margin: "7px 0 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11.5, color: FAINT, margin: "7px 0 0", lineHeight: 1.5 }}>
             {perWeek === 0
               ? "Pick at least one day."
               : `${perWeek} lesson${perWeek === 1 ? "" : "s"} a week${
@@ -285,7 +285,7 @@ export function SlotForm({
               style={{
                 border: `1px solid ${minutes === length ? INDIGO : "#C5C4BE"}`,
                 background: minutes === length ? "#F2F1FB" : "#F4F3EF",
-                color: minutes === length ? INDIGO : "#4C4A63",
+                color: minutes === length ? INDIGO : BODY,
                 borderRadius: 20,
                 padding: "5px 12px",
                 fontFamily: "inherit",
@@ -408,7 +408,7 @@ function RemoveLesson({
   const linkStyle: React.CSSProperties = {
     background: "none",
     border: 0,
-    color: "#A63A30",
+    color: RED_DEEP,
     fontFamily: "inherit",
     fontSize: 13,
     cursor: "pointer",
@@ -441,7 +441,7 @@ function RemoveLesson({
         {pending ? "Removing…" : days > 1 ? `Remove all ${days} days` : "Remove"}
       </button>
       {state.error ? (
-        <span style={{ fontSize: 12, color: "#A63A30", fontWeight: 500 }}>{state.error}</span>
+        <span style={{ fontSize: 12, color: RED_DEEP, fontWeight: 500 }}>{state.error}</span>
       ) : null}
     </form>
   );

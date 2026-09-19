@@ -27,6 +27,15 @@ import {
 } from "../../_shared/review";
 import { AMBER, BRAND, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens";
 import { WordLookup } from "../../_shared/word-lookup";
+import {
+  BRAND_SOFT,
+  PANEL,
+  SLATE_BODY,
+  SLATE_LINE,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 // ---- Types -----------------------------------------------------------------
 
@@ -364,7 +373,7 @@ export function ReadingTestRunner({
           inset: 0,
           display: "flex",
           flexDirection: "column",
-          background: "#fff",
+          background: PANEL,
           fontFamily: SANS,
           color: INK,
           overflow: "hidden",
@@ -396,7 +405,7 @@ export function ReadingTestRunner({
                 padding: "7px 10px",
                 margin: "-7px 0 -7px -10px",
                 borderRadius: 9,
-                color: "#4A505C",
+                color: SLATE_BODY,
                 fontSize: 14.5,
                 fontWeight: 600,
                 textDecoration: "none",
@@ -410,7 +419,7 @@ export function ReadingTestRunner({
             </Link>
             <span
               aria-hidden
-              style={{ width: 1, height: 22, background: "#E6E8EC", flex: "none" }}
+              style={{ width: 1, height: 22, background: SLATE_LINE, flex: "none" }}
             />
             <span
               style={{
@@ -429,7 +438,7 @@ export function ReadingTestRunner({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12.5, color: "#8B919D", fontWeight: 500 }}>Text size</span>
+              <span style={{ fontSize: 12.5, color: SLATE_MUTED, fontWeight: 500 }}>Text size</span>
               <button
                 type="button"
                 onClick={() => stepFont(-0.1)}
@@ -465,7 +474,7 @@ export function ReadingTestRunner({
                 height: 28,
                 borderRadius: 8,
                 border: "1.5px solid #E6E8EC",
-                background: "#fff",
+                background: PANEL,
                 color: MUTED,
                 display: "inline-flex",
                 alignItems: "center",
@@ -535,7 +544,7 @@ export function ReadingTestRunner({
                 borderRadius: 10,
                 border: "none",
                 background: submitting ? "#CC5C82" : BRAND,
-                color: "#fff",
+                color: WHITE,
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: submitting ? "default" : "pointer",
@@ -586,7 +595,7 @@ export function ReadingTestRunner({
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span
                   style={{
-                    background: "#FDF4F7",
+                    background: BRAND_SOFT,
                     color: BRAND,
                     fontWeight: 700,
                     fontSize: 12.5,
@@ -597,7 +606,7 @@ export function ReadingTestRunner({
                   Reading Passage {active + 1}
                 </span>
                 {passage.topic ? (
-                  <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8B919D" }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 500, color: SLATE_MUTED }}>
                     {passage.topic}
                   </span>
                 ) : null}
@@ -608,7 +617,7 @@ export function ReadingTestRunner({
                   alignItems: "center",
                   gap: 7,
                   fontSize: 13,
-                  color: "#8B919D",
+                  color: SLATE_MUTED,
                   margin: "12px 0 0",
                 }}
               >
@@ -645,7 +654,7 @@ export function ReadingTestRunner({
               <div
                 style={{
                   lineHeight: 1.75,
-                  color: "#3B4150",
+                  color: SLATE_STRONG,
                   fontSize: fontPx,
                   whiteSpace: "pre-wrap",
                 }}
@@ -684,7 +693,7 @@ export function ReadingTestRunner({
           style={{
             flex: "none",
             borderTop: "1px solid #ECEEF2",
-            background: "#fff",
+            background: PANEL,
             padding: "11px 24px",
             display: "flex",
             alignItems: "center",
@@ -710,23 +719,23 @@ export function ReadingTestRunner({
                     borderRadius: 999,
                     cursor: "pointer",
                     flex: "none",
-                    background: "#fff",
+                    background: PANEL,
                     fontFamily: SANS,
-                    border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`,
+                    border: `1.5px solid ${on ? BRAND : SLATE_LINE}`,
                   }}
                 >
                   <span
                     style={{
                       fontWeight: on ? 700 : 600,
                       fontSize: 14.5,
-                      color: on ? BRAND : "#3B4150",
+                      color: on ? BRAND : SLATE_STRONG,
                     }}
                   >
                     Part {pi + 1}
                   </span>
                   {!on ? (
                     <span
-                      style={{ fontSize: 13, color: "#8B919D", fontVariantNumeric: "tabular-nums" }}
+                      style={{ fontSize: 13, color: SLATE_MUTED, fontVariantNumeric: "tabular-nums" }}
                     >
                       {ans} of {p.questions.length}
                     </span>
@@ -808,7 +817,7 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     height: 28,
     borderRadius: 8,
     border: "1.5px solid #E6E8EC",
-    background: "#fff",
+    background: PANEL,
     color: disabled ? "#C9CDD4" : "#4A505C",
     fontWeight: 700,
     fontSize: 12.5,
@@ -838,12 +847,12 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
     return {
       ...base,
       borderColor: BRAND,
-      background: "#fff",
+      background: PANEL,
       color: BRAND,
       boxShadow: "0 0 0 3px rgba(125,1,50,.16)",
     };
-  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: "#fff" };
-  return { ...base, borderColor: "#E6E8EC", background: "#fff", color: "#8B919D" };
+  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: WHITE };
+  return { ...base, borderColor: SLATE_LINE, background: PANEL, color: SLATE_MUTED };
 }
 
 // ---- Confirm finish (in-app modal, replaces window.confirm) ----------------
@@ -889,7 +898,7 @@ function ConfirmFinishModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "min(440px, 100%)",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 18,
           padding: "26px 26px 22px",
           boxShadow: "0 30px 70px -24px rgba(30,27,46,.6)",
@@ -931,8 +940,8 @@ function ConfirmFinishModal({
               padding: "10px 18px",
               borderRadius: 11,
               border: "1.5px solid #E6E8EC",
-              background: "#fff",
-              color: "#3B4150",
+              background: PANEL,
+              color: SLATE_STRONG,
               fontFamily: SANS,
               fontWeight: 600,
               fontSize: 14.5,
@@ -949,7 +958,7 @@ function ConfirmFinishModal({
               borderRadius: 11,
               border: "none",
               background: BRAND,
-              color: "#fff",
+              color: WHITE,
               fontFamily: SANS,
               fontWeight: 600,
               fontSize: 14.5,
@@ -1022,7 +1031,7 @@ function TestResultsView({
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#FDF4F7", fontFamily: SANS, color: INK }}>
+    <div style={{ minHeight: "100dvh", background: BRAND_SOFT, fontFamily: SANS, color: INK }}>
       {/* Top bar */}
       <div
         style={{
@@ -1054,7 +1063,7 @@ function TestResultsView({
               fontFamily: SANS,
               fontSize: 15,
               fontWeight: 600,
-              color: "#4A505C",
+              color: SLATE_BODY,
               textDecoration: "none",
               padding: "6px 10px",
               borderRadius: 9,
@@ -1063,7 +1072,7 @@ function TestResultsView({
           >
             <span style={{ fontSize: 17 }}>←</span> Exit
           </Link>
-          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: ".02em", color: "#8B919D" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: ".02em", color: SLATE_MUTED }}>
             Test review · Academic Reading
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1074,8 +1083,8 @@ function TestResultsView({
                 padding: "9px 18px",
                 borderRadius: 10,
                 border: "1.5px solid #E6E8EC",
-                background: "#fff",
-                color: "#3B4150",
+                background: PANEL,
+                color: SLATE_STRONG,
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: "pointer",
@@ -1092,7 +1101,7 @@ function TestResultsView({
                 borderRadius: 10,
                 border: "none",
                 background: BRAND,
-                color: "#fff",
+                color: WHITE,
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: "pointer",
@@ -1131,7 +1140,7 @@ function TestResultsView({
               >
                 {result.band.toFixed(1)}
               </span>
-              <span style={{ fontSize: 16, fontWeight: 500, color: "#8B919D" }}>
+              <span style={{ fontSize: 16, fontWeight: 500, color: SLATE_MUTED }}>
                 indicative
                 <br />
                 band
@@ -1150,7 +1159,7 @@ function TestResultsView({
               >
                 {bandColor(result.band).label}
               </span>
-              <span style={{ fontSize: 15, color: "#3B4150", fontWeight: 500 }}>
+              <span style={{ fontSize: 15, color: SLATE_STRONG, fontWeight: 500 }}>
                 <span style={{ color: INK, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                   {result.correctCount} / {result.total}
                 </span>{" "}
@@ -1176,7 +1185,7 @@ function TestResultsView({
                   justifyContent: "space-between",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: "#8B919D",
+                  color: SLATE_MUTED,
                   marginBottom: 7,
                 }}
               >
@@ -1224,7 +1233,7 @@ function TestResultsView({
                   border: "1px solid #ECEEF2",
                   borderRadius: 16,
                   padding: "18px 20px",
-                  background: "#fff",
+                  background: PANEL,
                 }}
               >
                 <div
@@ -1233,7 +1242,7 @@ function TestResultsView({
                     fontWeight: 700,
                     letterSpacing: ".08em",
                     textTransform: "uppercase",
-                    color: "#8B919D",
+                    color: SLATE_MUTED,
                   }}
                 >
                   Passage {p.order}
@@ -1242,7 +1251,7 @@ function TestResultsView({
                   style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "6px 0 12px" }}
                 >
                   <span style={{ fontSize: 28, fontWeight: 700 }}>{p.correctCount}</span>
-                  <span style={{ fontSize: 16, color: "#8B919D", fontWeight: 600 }}>
+                  <span style={{ fontSize: 16, color: SLATE_MUTED, fontWeight: 600 }}>
                     /{p.total}
                   </span>
                 </div>
@@ -1262,7 +1271,7 @@ function TestResultsView({
                   <div
                     style={{
                       fontSize: 12.5,
-                      color: "#8B919D",
+                      color: SLATE_MUTED,
                       marginTop: 9,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -1314,7 +1323,7 @@ function TestResultsView({
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
-                    border: `1.5px solid ${on ? BRAND : "#E6E8EC"}`,
+                    border: `1.5px solid ${on ? BRAND : SLATE_LINE}`,
                     background: on ? BRAND : "#fff",
                     color: on ? "#fff" : "#3B4150",
                   }}
@@ -1324,7 +1333,7 @@ function TestResultsView({
               );
             })}
           </div>
-          <div style={{ fontSize: 13.5, color: "#8B919D", fontWeight: 500 }}>
+          <div style={{ fontSize: 13.5, color: SLATE_MUTED, fontWeight: 500 }}>
             {showingLabel[filter]}
           </div>
         </div>
@@ -1358,14 +1367,14 @@ function TestResultsView({
 
         {visible.length === 0 ? (
           <div
-            style={{ textAlign: "center", padding: "50px 20px", color: "#8B919D", fontSize: 15 }}
+            style={{ textAlign: "center", padding: "50px 20px", color: SLATE_MUTED, fontSize: 15 }}
           >
             No questions match this filter.
           </div>
         ) : null}
 
         {disclaimer ? (
-          <p style={{ fontSize: 12, color: "#8B919D", margin: "28px 0 0" }}>{disclaimer}</p>
+          <p style={{ fontSize: 12, color: SLATE_MUTED, margin: "28px 0 0" }}>{disclaimer}</p>
         ) : null}
       </div>
     </div>
@@ -1381,7 +1390,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
         border: "1px solid #ECEEF2",
         borderRadius: 13,
         padding: "13px 16px",
-        background: "#fff",
+        background: PANEL,
       }}
     >
       <div
@@ -1390,7 +1399,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
           fontWeight: 600,
           letterSpacing: ".06em",
           textTransform: "uppercase",
-          color: "#8B919D",
+          color: SLATE_MUTED,
         }}
       >
         {label}

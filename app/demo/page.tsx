@@ -9,10 +9,12 @@ import { DemoTabs } from "@/app/_landing/demo-tabs";
 import {
   BRAND,
   DISPLAY,
-  ghostButton,
   INK,
+  PANEL,
   SANS,
   SHELL,
+  WHITE,
+  ghostButton,
   solidButton,
 } from "@/app/_landing/design";
 import { PREVIEW_IMAGE } from "@/lib/seo";
@@ -48,7 +50,7 @@ export default function DemoPage() {
   return (
     <div
       className={`${landingSora.variable} ${landingManrope.variable} lp-root`}
-      style={{ background: "#fff", fontFamily: SANS, color: INK, minHeight: "100%" }}
+      style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <SiteHeader />
 
@@ -142,7 +144,7 @@ export default function DemoPage() {
         <div
           style={{
             background: BRAND,
-            color: "#fff",
+            color: WHITE,
             borderRadius: 20,
             padding: "clamp(32px,5vw,48px)",
             textAlign: "center",
@@ -186,7 +188,7 @@ export default function DemoPage() {
           >
             <Link
               href="/sign-in"
-              style={{ ...BTN_GHOST, background: "#fff", border: "none", color: BRAND }}
+              style={{ ...BTN_GHOST, background: PANEL, border: "none", color: BRAND }}
             >
               Create a free account
             </Link>
@@ -196,7 +198,7 @@ export default function DemoPage() {
                 ...BTN_GHOST,
                 background: "transparent",
                 border: "1px solid rgba(255,255,255,.4)",
-                color: "#fff",
+                color: WHITE,
               }}
             >
               Grade an essay first

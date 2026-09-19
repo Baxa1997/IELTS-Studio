@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
 import type { DemoTab } from "./demo-content";
-import { BRAND as INDIGO } from "@/lib/theme/tokens";
+import { BRAND as INDIGO, PANEL, SLATE_BODY } from "@/lib/theme/tokens";
 
 const DeferredDemoScreen = dynamic(
   () => import("./demo-screens").then((mod) => mod.DemoScreen),
@@ -92,7 +92,7 @@ export function DemoTabs({
             overflowX: "auto",
             padding: 6,
             borderRadius: 16,
-            background: "#fff",
+            background: PANEL,
             border: "1px solid #E5E2D2",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 8px 24px -16px rgba(18,19,23,.3)",
           }}
@@ -109,7 +109,7 @@ export function DemoTabs({
                 fontFamily: SANS,
                 fontWeight: 600,
                 fontSize: 14.5,
-                color: i === active ? INDIGO : "#4a505c",
+                color: i === active ? INDIGO : SLATE_BODY,
                 background: i === active ? "#EEF0FF" : "transparent",
                 border: "none",
                 borderRadius: 11,
@@ -149,7 +149,7 @@ export function DemoTabs({
             fontWeight: 400,
             fontSize: 16,
             lineHeight: 1.6,
-            color: "#4a505c",
+            color: SLATE_BODY,
             margin: "10px 0 0",
           }}
         >

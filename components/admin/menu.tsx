@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { INK, RULE, SANS, TONE, type Tone } from "./ui";
+import { BODY, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The "…" overflow menu the design puts beside the primary action on every
@@ -71,13 +72,13 @@ export function OverflowMenu({ items, label = "More actions" }: { items: MenuIte
         style={{
           width: 40,
           height: 40,
-          background: "#fff",
+          background: PANEL,
           border: `1px solid #E0DED8`,
           borderRadius: 9,
           display: "grid",
           placeItems: "center",
           cursor: "pointer",
-          color: "#4C4A63",
+          color: BODY,
           flexShrink: 0,
         }}
       >
@@ -103,7 +104,7 @@ export function OverflowMenu({ items, label = "More actions" }: { items: MenuIte
                   top: rect.bottom + 6,
                   right: Math.max(12, window.innerWidth - rect.right),
                   width: 252,
-                  background: "#fff",
+                  background: PANEL,
                   border: "1px solid #E4E2DC",
                   borderRadius: 12,
                   boxShadow: "0 18px 44px rgba(20,19,58,.16)",

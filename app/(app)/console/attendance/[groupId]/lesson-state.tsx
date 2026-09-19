@@ -11,6 +11,7 @@ import {
   unlockRegister,
   type ActionState,
 } from "../../center-actions";
+import { WHITE } from "@/lib/theme/tokens";
 
 /**
  * The two things that can be true of a lesson besides "it happened": it was
@@ -171,7 +172,7 @@ export function CancelLesson({ groupId, heldOn }: { groupId: string; heldOn: str
         disabled={pending}
         style={{
           background: RED,
-          color: "#fff",
+          color: WHITE,
           border: 0,
           borderRadius: 8,
           padding: "7px 12px",

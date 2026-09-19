@@ -4,6 +4,7 @@ import { getSubscription } from "@/lib/billing/service";
 import { getUsageSummary, type Quota } from "@/lib/quota";
 
 import { Panel } from "./frame";
+import { WHITE } from "@/lib/theme/tokens";
 
 const BRAND = "#7D0132";
 const INK = "#121317";
@@ -47,7 +48,7 @@ export async function LearnerBillingSection({ organizationId }: { organizationId
               padding: "10px 18px",
               borderRadius: 11,
               background: BRAND,
-              color: "#fff",
+              color: WHITE,
               fontSize: 14.5,
               fontWeight: 700,
               textDecoration: "none",

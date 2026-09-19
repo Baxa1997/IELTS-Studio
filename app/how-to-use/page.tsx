@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
 import { landingManrope, landingSora } from "@/app/_landing/fonts";
-import { eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
+import {
+  INK,
+  PANEL,
+  SANS,
+  WHITE,
+  eyebrow,
+} from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
 import {
@@ -371,7 +377,7 @@ export default function HowToUse() {
   return (
     <div
       className={`${landingSora.variable} ${landingManrope.variable}`}
-      style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
+      style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>
       <script

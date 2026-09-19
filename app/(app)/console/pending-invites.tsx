@@ -10,6 +10,7 @@ import {
   type GroupFormState,
   type InviteFormState,
 } from "./groups/actions";
+import { PANEL } from "@/lib/theme/tokens";
 
 export interface PendingInvite {
   id: string;
@@ -165,7 +166,7 @@ function ActionButton({
       disabled={pending}
       style={{
         border: `1px solid ${danger ? "#F0D2D2" : LINE}`,
-        background: "#fff",
+        background: PANEL,
         color: danger ? "#b91c1c" : MUTED,
         borderRadius: 9,
         padding: "5px 11px",

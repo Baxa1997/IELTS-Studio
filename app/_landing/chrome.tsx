@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand/logo";
-import { INDIGO } from "@/lib/theme/tokens";
+import { INDIGO, PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
 
 // Shared landing chrome: the brand tokens, the floating island nav, and the
 // dark site footer — used by the marketing front door (app/page.tsx) and the
@@ -27,7 +27,7 @@ export const BTN_PRIMARY: React.CSSProperties = {
   alignItems: "center",
   gap: 10,
   background: INDIGO,
-  color: "#fff",
+  color: WHITE,
   fontFamily: SANS,
   fontWeight: 600,
   fontSize: 16,
@@ -40,7 +40,7 @@ export const BTN_PRIMARY: React.CSSProperties = {
 export const BTN_GHOST: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  background: "#fff",
+  background: PANEL,
   border: "1px solid #DAD8C9",
   color: INK,
   fontFamily: SANS,
@@ -76,7 +76,7 @@ export function SiteNav({ home }: { home: string | null }) {
         zIndex: 30,
         padding: "16px clamp(14px,4vw,40px) 0",
         pointerEvents: "none",
-        background: "#fff",
+        background: PANEL,
       }}
     >
       <nav
@@ -91,7 +91,7 @@ export function SiteNav({ home }: { home: string | null }) {
           gap: 20,
           padding: "11px 14px 11px 22px",
           borderRadius: 18,
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #E5E2D2",
           // Solid, lifted "island" — a crisp top highlight, a tight contact
           // shadow, and a broad ambient one so it reads as a real floating object.
@@ -293,7 +293,7 @@ export function SiteFooter() {
                   fontSize: 12,
                   letterSpacing: ".12em",
                   textTransform: "uppercase",
-                  color: "#8b919d",
+                  color: SLATE_MUTED,
                 }}
               >
                 {col.head}
@@ -332,7 +332,7 @@ export function SiteFooter() {
           }}
         >
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 14 }}>
-            <span style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: "#8b919d" }}>
+            <span style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: SLATE_MUTED }}>
               © 2026 EngProgress. All rights reserved.
             </span>
             <Link href="/privacy" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
@@ -351,7 +351,7 @@ export function SiteFooter() {
               fontWeight: 400,
               fontSize: 12.5,
               lineHeight: 1.5,
-              color: "#8b919d",
+              color: SLATE_MUTED,
               maxWidth: 620,
               margin: 0,
               textAlign: "right",

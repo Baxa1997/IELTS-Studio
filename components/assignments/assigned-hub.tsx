@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { LegalFooter } from "@/components/legal-footer";
 import type { StudentAssignment } from "@/lib/assignments/student";
+import { BRAND_SOFT } from "@/lib/theme/tokens";
 
 /**
  * What a CENTER student sees in place of a practice hub.
@@ -95,7 +96,7 @@ export function AssignedHub({
               display: "inline-flex",
               alignItems: "center",
               gap: 9,
-              background: "#FDF4F7",
+              background: BRAND_SOFT,
               border: "1px solid rgba(125,1,50,.16)",
               color: BRAND,
               padding: "8px 14px",

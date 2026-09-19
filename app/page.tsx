@@ -12,26 +12,29 @@ import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/
 import {
   BODY,
   BRAND,
+  BRAND_PANEL,
   BRAND_TINT,
   BRAND_TINT_LINE,
-  cardStyle,
   DISPLAY,
   DISPLAY_LG,
   DISPLAY_XL,
-  eyebrow,
-  ghostButton,
+  FAINT,
   INK,
   LEDE,
   LINE,
   MUTED,
+  PANEL,
   RADIUS,
   RULE,
   SANS,
   SHELL,
-  solidButton,
   STRONG,
   WELL,
   WHITE,
+  cardStyle,
+  eyebrow,
+  ghostButton,
+  solidButton,
 } from "@/app/_landing/design";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
 import {
@@ -206,7 +209,7 @@ export default function Home() {
   return (
     <div
       className={`${landingSora.variable} ${landingManrope.variable}`}
-      style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
+      style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>
       <script
@@ -361,7 +364,7 @@ function Stats() {
         style={{
           border: `1px solid ${LINE}`,
           borderRadius: RADIUS.card,
-          background: WHITE,
+          background: PANEL,
           boxShadow: "0 12px 40px rgba(18,19,23,0.04)",
           overflow: "hidden",
           display: "grid",
@@ -764,7 +767,7 @@ function Faq() {
           </div>
         ))}
       </div>
-      <p style={{ fontSize: 13, color: "#9aa0ac", lineHeight: 1.55, margin: "28px 0 0" }}>
+      <p style={{ fontSize: 13, color: FAINT, lineHeight: 1.55, margin: "28px 0 0" }}>
         Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment
         English.
       </p>
@@ -833,7 +836,7 @@ function FinalCta() {
     <section className="lp-below-fold" style={{ ...SHELL, padding: "64px 28px 24px" }}>
       <div
         style={{
-          background: "#43001d",
+          background: BRAND_PANEL,
           backgroundImage: `linear-gradient(155deg,${BRAND} 0%,#5c0125 52%,#2c0013 100%)`,
           color: WHITE,
           borderRadius: RADIUS.panel,
@@ -878,7 +881,7 @@ function FinalCta() {
           <Link
             href="/grade"
             style={{
-              background: WHITE,
+              background: PANEL,
               color: BRAND,
               border: "none",
               borderRadius: RADIUS.pill,

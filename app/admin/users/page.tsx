@@ -23,6 +23,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { UsersTable, type UserRow } from "./users-table";
+import { INDIGO_CONSOLE, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export const dynamic = "force-dynamic";
 const PLAN_COLOR: Record<OrgPlan, string> = {
   trial: "#D8D6D0",
   starter: "#7C79DB",
-  pro: "#4340CB",
+  pro: INDIGO_CONSOLE,
   enterprise: "#E5A85C",
 };
 
@@ -50,7 +51,7 @@ function Tile({
   return (
     <div
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${LINE}`,
         borderRadius: 12,
         padding: "14px 16px",
@@ -198,7 +199,7 @@ export default async function UsersPage({
 
         <section
           style={{
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${LINE}`,
             borderRadius: 12,
             padding: "16px 18px",

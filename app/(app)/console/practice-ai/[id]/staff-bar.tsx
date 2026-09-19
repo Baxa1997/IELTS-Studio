@@ -20,6 +20,7 @@ import {
 
 import { setLessonStatus, type LessonActionState } from "./actions";
 import { ShareModal, type GroupOption } from "./share-modal";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The things only a teacher can do to a lesson: publish it, set it, retire it.
@@ -224,7 +225,7 @@ const ember: React.CSSProperties = {
   borderRadius: 999,
   border: 0,
   background: EMBER,
-  color: "#fff",
+  color: WHITE,
   fontFamily: "inherit",
   fontSize: 14,
   fontWeight: 700,
@@ -237,7 +238,7 @@ const raised: React.CSSProperties = {
   padding: "11px 18px",
   borderRadius: 999,
   border: 0,
-  background: "#fff",
+  background: PANEL,
   color: MUTED,
   fontFamily: "inherit",
   fontSize: 14,

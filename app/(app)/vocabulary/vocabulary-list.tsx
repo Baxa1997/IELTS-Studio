@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { GraduationCap, Trash2, Volume2, X } from "lucide-react";
+import { BRAND_SOFT, PANEL, WHITE } from "@/lib/theme/tokens";
 
 export interface VocabItem {
   id: string;
@@ -26,7 +27,7 @@ const TINT = "#FDF4F7";
 const TINT_BORDER = "#F0D3DE";
 const EMERALD = "#1C7A4F";
 
-const card: React.CSSProperties = { background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16 };
+const card: React.CSSProperties = { background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16 };
 
 // ---- Spaced repetition (Leitner boxes, stored in localStorage) ---------------
 // No server round-trip: each word carries a box 0..4; a correct answer moves it
@@ -214,7 +215,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
               <button
                 type="button"
                 onClick={() => setReviewing(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10, background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "12px 20px", borderRadius: 11, border: "none", cursor: "pointer", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
               >
                 Start review
                 <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 999, padding: "2px 9px", fontSize: 12.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
@@ -235,7 +236,7 @@ export function VocabularyList({ initial }: { initial: VocabItem[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search words…"
-            style={{ width: "100%", maxWidth: 640, marginTop: 10, padding: "11px 14px", border: `1px solid ${LINE}`, borderRadius: 11, background: "#fff", fontFamily: SANS, fontSize: 14, color: INK, outline: "none" }}
+            style={{ width: "100%", maxWidth: 640, marginTop: 10, padding: "11px 14px", border: `1px solid ${LINE}`, borderRadius: 11, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK, outline: "none" }}
           />
           {sources.length > 1 ? (
             <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginTop: 12 }}>
@@ -321,7 +322,7 @@ function SpeakBtn({ accent, word }: { accent: "UK" | "US"; word: string }) {
       type="button"
       onClick={() => speak(word, accent)}
       aria-label={`Pronounce ${word} (${accent})`}
-      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 8, border: `1px solid ${LINE}`, background: "#fff", color: MUTED, fontFamily: SANS, fontSize: 11.5, fontWeight: 700, letterSpacing: ".03em", cursor: "pointer" }}
+      style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 8, border: `1px solid ${LINE}`, background: PANEL, color: MUTED, fontFamily: SANS, fontSize: 11.5, fontWeight: 700, letterSpacing: ".03em", cursor: "pointer" }}
     >
       {accent} <Volume2 size={12} />
     </button>
@@ -396,7 +397,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
       onClick={onClose}
       style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "rgba(26,33,56,.5)", backdropFilter: "blur(2px)" }}
     >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(480px, 100%)", background: "#fff", borderRadius: 18, padding: "20px 22px 22px", boxShadow: "0 30px 70px -24px rgba(26,33,56,.6)", fontFamily: SANS, color: INK }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(480px, 100%)", background: PANEL, borderRadius: 18, padding: "20px 22px 22px", boxShadow: "0 30px 70px -24px rgba(26,33,56,.6)", fontFamily: SANS, color: INK }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <span style={{ fontSize: 12.5, fontWeight: 700, color: FAINT, fontVariantNumeric: "tabular-nums" }}>
             {done ? "Session complete" : `${Math.min(idx + 1, total)} / ${total}`}
@@ -413,13 +414,13 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
               <strong style={{ color: EMERALD }}>{good}</strong> remembered ·{" "}
               <strong style={{ color: "#c0392b" }}>{again}</strong> to see again soon
             </p>
-            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
+            <button type="button" onClick={onClose} style={{ marginTop: 20, padding: "11px 24px", borderRadius: 11, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}>
               Done
             </button>
           </div>
         ) : cur ? (
           <>
-            <div style={{ marginTop: 16, border: `1px solid ${LINE}`, borderRadius: 14, background: "#FDF4F7", padding: "30px 22px", textAlign: "center", minHeight: 168, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <div style={{ marginTop: 16, border: `1px solid ${LINE}`, borderRadius: 14, background: BRAND_SOFT, padding: "30px 22px", textAlign: "center", minHeight: 168, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
               {showWord ? (
                 <>
                   <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 32, lineHeight: 1.1, overflowWrap: "anywhere" }}>{cur.item.word}</div>
@@ -457,7 +458,7 @@ function ReviewOverlay({ pool, mode, onClose }: { pool: VocabItem[]; mode: Mode;
                 <button type="button" onClick={() => grade(false)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "1.5px solid #F0C8C0", background: "#FDF3F1", color: "#c0392b", fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Again
                 </button>
-                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                <button type="button" onClick={() => grade(true)} style={{ flex: 1, padding: "12px 10px", borderRadius: 11, border: "none", background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   Got it
                 </button>
               </div>

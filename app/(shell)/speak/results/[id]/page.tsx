@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { SANS, SERIF } from "@/lib/theme/tokens";
+import { BRAND, PANEL, SANS, SERIF, SLATE_BODY, WHITE } from "@/lib/theme/tokens";
 import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -84,7 +84,7 @@ export default async function SpeakResultPage({ params }: PageProps) {
       >
         <h1 style={{ margin: 0, fontFamily: SERIF, fontSize: 26, fontWeight: 600 }}>
           Speaking report{" "}
-          <span style={{ fontSize: 14, color: "#4A505C", fontFamily: SANS }}>· {when}</span>
+          <span style={{ fontSize: 14, color: SLATE_BODY, fontFamily: SANS }}>· {when}</span>
         </h1>
         <div style={{ display: "flex", gap: 14, alignItems: "baseline" }}>
           {attempt.library_id ? (
@@ -93,8 +93,8 @@ export default async function SpeakResultPage({ params }: PageProps) {
               style={{
                 fontSize: 13.5,
                 fontWeight: 700,
-                color: "#fff",
-                background: "#7D0132",
+                color: WHITE,
+                background: BRAND,
                 borderRadius: 999,
                 padding: "8px 16px",
                 textDecoration: "none",
@@ -105,7 +105,7 @@ export default async function SpeakResultPage({ params }: PageProps) {
           ) : null}
           <Link
             href="/speak"
-            style={{ fontSize: 13.5, fontWeight: 700, color: "#7D0132", textDecoration: "none" }}
+            style={{ fontSize: 13.5, fontWeight: 700, color: BRAND, textDecoration: "none" }}
           >
             ← Speaking practice
           </Link>
@@ -174,7 +174,7 @@ function RevisionStrip({
   return (
     <section
       style={{
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #E6E8EC",
         borderRadius: 16,
         padding: "15px 18px",
@@ -182,7 +182,7 @@ function RevisionStrip({
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "#7D0132" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: BRAND }}>
           SECOND DELIVERY · vs {when}
         </span>
         <span
@@ -208,7 +208,7 @@ function RevisionStrip({
             )
           : null}
       </div>
-      <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#4A505C" }}>
+      <p style={{ margin: "10px 0 0", fontSize: 12.5, color: SLATE_BODY }}>
         Same cue card, two deliveries — this is how examiners hear progress. Fewer fillers and a
         steadier pace matter as much as the band itself.
       </p>

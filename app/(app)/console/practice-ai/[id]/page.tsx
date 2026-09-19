@@ -28,6 +28,7 @@ import { GiveToStudents } from "./give-to-students";
 import { PrintableWorksheet } from "./printable";
 import { LessonStaffBar } from "./staff-bar";
 import { WorksheetButton } from "./worksheet";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -176,7 +177,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             <div
               style={{
                 borderRadius: 28,
-                background: "#fff",
+                background: PANEL,
                 padding: "30px 32px",
                 boxShadow: LIFT_PANEL,
               }}
@@ -352,7 +353,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             </div>
 
             {tags.length > 0 ? (
-              <div style={{ borderRadius: 22, background: "#fff", padding: "18px 20px", boxShadow: LIFT_CARD }}>
+              <div style={{ borderRadius: 22, background: PANEL, padding: "18px 20px", boxShadow: LIFT_CARD }}>
                 <div
                   style={{
                     fontSize: 11,

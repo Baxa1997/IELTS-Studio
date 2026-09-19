@@ -6,6 +6,18 @@
  * No `"use client"` (server + client both import it).
  */
 
+import {
+  BRAND,
+  BRAND_LINE,
+  BRAND_SOFT,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WELL,
+  withAlpha,
+} from "@/lib/theme/tokens";
+
 export interface StudioTheme {
   /** Primary action / identity colour. */
   accent: string;
@@ -35,21 +47,25 @@ export interface StudioTheme {
 
 /** The IELTS studio look, captured as tokens. */
 export const IELTS_STUDIO_THEME: StudioTheme = {
-  accent: "#7D0132",
-  accentSoft: "#FDF4F7",
-  accentLine: "#F0D3DE",
+  accent: BRAND,
+  accentSoft: BRAND_SOFT,
+  accentLine: BRAND_LINE,
   accentShadow: "0 6px 16px -6px rgba(125,1,50,.55)",
-  ink: "#121317",
-  body: "#3B4150",
-  muted: "#8B919D",
+  ink: SLATE_INK,
+  body: SLATE_STRONG,
+  muted: SLATE_MUTED,
   canvas: "#F6F7F9",
   panel: "#fff",
-  line: "#E6E8EC",
-  soft: "#FBFBFC",
+  line: SLATE_LINE,
+  soft: WELL,
   softLine: "#ECEEF2",
 };
 
-/** A slightly stronger tint of an accent colour, for the generate-surface gradient. */
-export function accentStrong(hex: string): string {
-  return `${hex}33`;
+/** A slightly stronger tint of an accent colour, for the generate-surface gradient.
+ *  Delegates to `withAlpha` so it keeps working when the colour handed in is a
+ *  `var(--tk-…)` token rather than a hex: `${token}33` yields the string
+ *  "var(--tk-brand)33", which is not a colour and which the browser drops
+ *  without an error. 0x33/0xFF is the ~20% this used to append. */
+export function accentStrong(colour: string): string {
+  return withAlpha(colour, 20);
 }

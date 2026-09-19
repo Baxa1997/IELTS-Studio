@@ -1,10 +1,11 @@
 import {
+  BRAND,
   BRAND_DARKEST,
   BRAND_MID,
   BRAND_PALE,
-  BRAND,
   SANS,
   SERIF,
+  WHITE,
 } from "@/lib/theme/tokens";
 import { commissionRange, formatMoney, type ReferralSettings } from "@/lib/referrals/types";
 
@@ -33,7 +34,7 @@ export function PitchPanel({ percent, settings }: { percent: number; settings: R
         borderRadius: 20,
         padding: "34px 32px",
         background: `linear-gradient(120deg, ${BRAND_DARKEST} 0%, ${BRAND} 58%, ${BRAND_MID} 100%)`,
-        color: "#fff",
+        color: WHITE,
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",

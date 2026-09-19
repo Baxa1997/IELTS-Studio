@@ -1,6 +1,7 @@
 import { BandCountUp } from "@/components/landing/band-countup";
 
 import {
+  BODY,
   BRAND,
   BRAND_TINT,
   BRAND_TINT_LINE,
@@ -9,6 +10,7 @@ import {
   INK,
   LINE,
   MUTED,
+  PANEL,
   RADIUS,
   SANS,
   WHITE,
@@ -23,7 +25,7 @@ export function Band9Card() {
           top: -16,
           right: 18,
           zIndex: 2,
-          background: WHITE,
+          background: PANEL,
           border: `1px solid ${LINE}`,
           boxShadow: "0 8px 24px rgba(18,19,23,0.07)",
           borderRadius: RADIUS.pill,
@@ -43,7 +45,7 @@ export function Band9Card() {
 
       <div
         style={{
-          background: WHITE,
+          background: PANEL,
           border: `1px solid ${LINE}`,
           borderRadius: RADIUS.card,
           boxShadow: "0 24px 60px rgba(18,19,23,0.08)",
@@ -108,7 +110,7 @@ export function Band9Card() {
           <div
             style={{
               fontSize: 15,
-              color: "#4a505c",
+              color: BODY,
               maxWidth: 330,
               margin: "14px auto 0",
               lineHeight: 1.55,

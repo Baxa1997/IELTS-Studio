@@ -9,15 +9,15 @@ import {
   BRAND_TINT,
   BRAND_TINT_LINE,
   DISPLAY,
-  eyebrow,
   INK,
   LINE,
   MUTED,
+  PANEL,
   RADIUS,
   SANS,
   STRONG,
   WELL,
-  WHITE,
+  eyebrow,
 } from "@/app/_landing/design";
 
 import type { InfoTab } from "./docs-ui";
@@ -303,7 +303,7 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
                       {p.soon ? (
                         <span
                           style={{
-                            background: WHITE,
+                            background: PANEL,
                             border: `1px solid ${LINE}`,
                             color: MUTED,
                             borderRadius: RADIUS.pill,

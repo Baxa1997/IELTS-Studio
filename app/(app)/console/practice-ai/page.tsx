@@ -23,6 +23,7 @@ import {
 } from "@/lib/lessons/theme";
 
 import { Composer } from "./composer";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -187,7 +188,7 @@ export default async function PracticeAiPage({
             style={{
               marginTop: 30,
               borderRadius: 26,
-              background: "#fff",
+              background: PANEL,
               padding: "44px 28px",
               textAlign: "center",
               color: SOFT,
@@ -236,7 +237,7 @@ function Card({ lesson }: { lesson: LessonCard }) {
       style={{
         display: "block",
         borderRadius: 26,
-        background: "#fff",
+        background: PANEL,
         overflow: "hidden",
         textDecoration: "none",
         color: INK,

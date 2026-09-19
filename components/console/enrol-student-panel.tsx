@@ -5,7 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { addStudentAccount, type AddStudentState } from "@/app/(app)/console/groups/actions";
 import { useConsolePanels } from "@/components/console/console-chrome";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { AMBER, INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, SOFT, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The design's "Enrol a student" slide-over: one form that creates the account
@@ -35,7 +35,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 export interface EnrolGroup {
@@ -191,7 +191,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
                       <span style={{ display: "block", fontSize: 13, fontWeight: 500, color: INK }}>
                         {g.name}
                       </span>
-                      <span style={{ display: "block", fontSize: 11.5, color: "#737189" }}>
+                      <span style={{ display: "block", fontSize: 11.5, color: SOFT }}>
                         {g.meta}
                       </span>
                     </span>
@@ -199,7 +199,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
                       style={{
                         fontSize: 11.5,
                         fontWeight: 600,
-                        color: on ? INDIGO : "#737189",
+                        color: on ? INDIGO : SOFT,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -228,10 +228,10 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
           </div>
 
           {state.error ? (
-            <p style={{ fontSize: 12.5, color: "#A63A30", margin: 0 }}>{state.error}</p>
+            <p style={{ fontSize: 12.5, color: RED_DEEP, margin: 0 }}>{state.error}</p>
           ) : null}
           {state.warning ? (
-            <p style={{ fontSize: 12.5, color: "#B8791F", margin: 0 }}>{state.warning}</p>
+            <p style={{ fontSize: 12.5, color: AMBER, margin: 0 }}>{state.warning}</p>
           ) : null}
 
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
@@ -242,7 +242,7 @@ export function EnrolStudentPanel({ groups }: { groups: EnrolGroup[] }) {
               style={{
                 flex: 1,
                 background: INDIGO,
-                color: "#fff",
+                color: WHITE,
                 border: 0,
                 borderRadius: 8,
                 padding: 11,

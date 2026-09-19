@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { deleteHoliday, saveHoliday, type ActionState } from "../center-actions";
@@ -32,7 +32,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 12.5,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 const pretty = (iso: string) =>
@@ -93,8 +93,8 @@ export function Holidays({ holidays }: { holidays: Holiday[] }) {
           disabled={adding}
           className="cn-btn cn-btn--green"
           style={{
-            background: "#16794C",
-            color: "#fff",
+            background: GREEN,
+            color: WHITE,
             border: 0,
             borderRadius: 8,
             padding: "8px 14px",

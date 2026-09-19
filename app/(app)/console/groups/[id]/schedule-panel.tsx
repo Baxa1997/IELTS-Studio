@@ -7,7 +7,7 @@ import { describeDays } from "@/lib/console/timetable-days";
 import { type GroupFormState, setGroupSchedule } from "../actions";
 import { type RoomChoice, ScheduleFields } from "../schedule-fields";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { GREEN, INDIGO_CONSOLE as INDIGO, INK, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Change when an existing group meets.
@@ -79,7 +79,7 @@ export function SchedulePanel({
               alignItems: "center",
               gap: 10,
               textAlign: "left",
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 9,
               padding: "9px 11px",
@@ -87,7 +87,7 @@ export function SchedulePanel({
               cursor: "pointer",
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#16162E" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>
               {describeDays(s.weekdays)}
             </span>
             <span style={{ fontSize: 12.5, color: MUTED }}>
@@ -189,7 +189,7 @@ function ScheduleForm({
             borderRadius: 8,
             border: "none",
             background: INDIGO,
-            color: "#fff",
+            color: WHITE,
             fontSize: 12.5,
             fontWeight: 600,
             fontFamily: "inherit",
@@ -218,7 +218,7 @@ function ScheduleForm({
           </button>
         ) : null}
         {state.notice ? (
-          <span style={{ fontSize: 12.5, color: "#16794C" }}>{state.notice}</span>
+          <span style={{ fontSize: 12.5, color: GREEN }}>{state.notice}</span>
         ) : null}
         {state.error ? (
           <span style={{ fontSize: 12.5, color: "#B3261E" }} role="alert">

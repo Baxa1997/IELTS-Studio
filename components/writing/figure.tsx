@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
 import type { AxisFigure, Figure, PieFigure, TableFigure } from "@/lib/writing/figure";
+import { PANEL, SLATE_STRONG, WELL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Renders an Academic Task 1 figure (chart/graph/table) from structured data.
@@ -66,7 +67,7 @@ export function FigureView({ figure, expandable = true }: { figure: Figure; expa
             }}
             title="View full screen"
             aria-label="View figure full screen"
-            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", border: "1px solid #E2DED0", background: "#fff", borderRadius: 8, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: "#3B4150", cursor: "pointer" }}
+            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", border: "1px solid #E2DED0", background: PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A505C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
@@ -105,7 +106,7 @@ function FigureModal({ figure, onClose }: { figure: Figure; onClose: () => void 
         role="dialog"
         aria-modal="true"
         aria-label={figure.title}
-        style={{ background: "#fff", borderRadius: 16, border: "1px solid #E6E8EC", padding: "22px 26px 28px", width: "min(960px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "0 30px 80px -30px rgba(20,24,40,.55)" }}
+        style={{ background: PANEL, borderRadius: 16, border: "1px solid #E6E8EC", padding: "22px 26px 28px", width: "min(960px, 100%)", maxHeight: "90vh", overflow: "auto", boxShadow: "0 30px 80px -30px rgba(20,24,40,.55)" }}
       >
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14, marginBottom: 18 }}>
           <h3 style={{ margin: 0, fontFamily: SANS, fontSize: 18, fontWeight: 700, color: INK, lineHeight: 1.35 }}>
@@ -116,7 +117,7 @@ function FigureModal({ figure, onClose }: { figure: Figure; onClose: () => void 
             type="button"
             onClick={onClose}
             aria-label="Close"
-            style={{ flexShrink: 0, width: 34, height: 34, border: "1px solid #E2DED0", background: "#FBFBFC", borderRadius: 9, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#3B4150" }}
+            style={{ flexShrink: 0, width: 34, height: 34, border: "1px solid #E2DED0", background: WELL, borderRadius: 9, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SLATE_STRONG }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
@@ -158,7 +159,7 @@ function useHoverTooltip() {
         transform: "translate(-50%, calc(-100% - 12px))",
         pointerEvents: "none",
         background: INK,
-        color: "#fff",
+        color: WHITE,
         borderRadius: 8,
         padding: "6px 9px",
         fontSize: 12,
@@ -390,7 +391,7 @@ function TableFigureView({ figure }: { figure: TableFigure }) {
         <thead>
           <tr>
             {figure.columns.map((c, i) => (
-              <th key={i} style={{ ...cell, fontWeight: 700, color: MUTED, background: "#FBFBFC", whiteSpace: "nowrap" }}>
+              <th key={i} style={{ ...cell, fontWeight: 700, color: MUTED, background: WELL, whiteSpace: "nowrap" }}>
                 {c}
               </th>
             ))}

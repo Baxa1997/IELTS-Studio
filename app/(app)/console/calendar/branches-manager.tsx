@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
-import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE, INK, MUTED, PANEL, RED_DEEP } from "@/lib/theme/tokens";
 import { fieldStyle, FormMessage, SubmitButton } from "@/components/console/finance-ui";
 
 import { type ActionState, deleteBranch, saveBranch } from "./actions";
@@ -113,7 +113,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
             marginLeft: "auto",
             background: "none",
             border: 0,
-            color: "#4340CB",
+            color: INDIGO_CONSOLE,
             fontFamily: "inherit",
             fontSize: 12.5,
             cursor: "pointer",
@@ -134,7 +134,7 @@ function BranchEditor({ branch }: { branch?: BranchRow }) {
         border: "1px solid #C5C4BE",
         borderRadius: 10,
         padding: "12px 13px",
-        background: "#fff",
+        background: PANEL,
       }}
     >
       {branch ? <input type="hidden" name="id" value={branch.id} /> : null}
@@ -230,7 +230,7 @@ function DeleteBranchButton({ id, name, rooms }: { id: string; name: string; roo
         style={{
           background: "none",
           border: 0,
-          color: "#A63A30",
+          color: RED_DEEP,
           fontFamily: "inherit",
           fontSize: 12.5,
           cursor: "pointer",
@@ -239,7 +239,7 @@ function DeleteBranchButton({ id, name, rooms }: { id: string; name: string; roo
         {pending ? "…" : "Delete"}
       </button>
       {state.error ? (
-        <span style={{ fontSize: 11.5, color: "#A63A30" }}> {state.error}</span>
+        <span style={{ fontSize: 11.5, color: RED_DEEP }}> {state.error}</span>
       ) : null}
     </form>
   );

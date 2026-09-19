@@ -7,6 +7,7 @@ import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 
 import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../trap-explain";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ const GOOD_BG = "#EAF6F0";
 const BAD = "#b91c1c";
 const BAD_BG = "#FDECEC";
 const CARD: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: "1px solid #E6E8EC",
   borderRadius: 16,
   padding: "20px 22px",
@@ -286,7 +287,7 @@ export default async function ListeningResultPage({ params }: PageProps) {
               alignItems: "center",
               gap: 8,
               background: INK,
-              color: "#fff",
+              color: WHITE,
               padding: "10px 18px",
               borderRadius: 999,
               fontSize: 14.5,

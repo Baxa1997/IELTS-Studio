@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { FAINT, INK, SANS, TONE, type Tone } from "./ui";
+import { BODY, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The bell, and the panel behind it.
@@ -67,12 +68,12 @@ export function AlertsBell({ alerts, count }: { alerts: AlertRow[]; count: numbe
           position: "relative",
           width: 34,
           height: 34,
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #E0DED8",
           borderRadius: 8,
           display: "grid",
           placeItems: "center",
-          color: "#4C4A63",
+          color: BODY,
           cursor: "pointer",
         }}
       >
@@ -86,7 +87,7 @@ export function AlertsBell({ alerts, count }: { alerts: AlertRow[]; count: numbe
               top: -4,
               right: -4,
               background: TONE.red.ink,
-              color: "#fff",
+              color: WHITE,
               fontSize: 10,
               fontWeight: 600,
               borderRadius: 20,
@@ -114,7 +115,7 @@ export function AlertsBell({ alerts, count }: { alerts: AlertRow[]; count: numbe
                   top: 58,
                   right: 28,
                   width: 330,
-                  background: "#fff",
+                  background: PANEL,
                   border: "1px solid #E4E2DC",
                   borderRadius: 12,
                   boxShadow: "0 18px 44px rgba(20,19,58,.16)",

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { MUTED } from "@/lib/theme/tokens";
 
 /**
  * "Platform · Users" — where you are, in the header bar.
@@ -30,5 +31,5 @@ export function HeaderCrumb() {
       ? "Platform · Centers · this center"
       : `Platform · ${pathname.replace("/admin/", "").replace(/\//g, " · ") || "Overview"}`);
 
-  return <div style={{ fontSize: 12.5, color: "#6E6C87" }}>{crumb}</div>;
+  return <div style={{ fontSize: 12.5, color: MUTED }}>{crumb}</div>;
 }

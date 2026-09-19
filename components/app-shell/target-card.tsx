@@ -1,4 +1,4 @@
-import { SANS, SERIF } from "@/lib/theme/tokens";
+import { SANS, SERIF, WHITE } from "@/lib/theme/tokens";
 
 /**
  * "Your target" card pinned to the bottom of the sidebar rail — the learner's
@@ -26,7 +26,7 @@ export function TargetCard({ target }: { target: number }) {
         border: "1px solid rgba(255,255,255,.08)",
         borderRadius: 14,
         padding: 16,
-        color: "#fff",
+        color: WHITE,
       }}
     >
       <div

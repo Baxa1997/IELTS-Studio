@@ -1,5 +1,5 @@
 import type React from "react";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { AMBER, GREEN, INDIGO_CONSOLE as INDIGO, PANEL, RED, RED_DEEP } from "@/lib/theme/tokens";
 
 /**
  * The platform console's visual kit.
@@ -42,9 +42,9 @@ export type Tone = "indigo" | "green" | "amber" | "red" | "neutral";
 /** tint / ink pairs, straight from the design. */
 export const TONE: Record<Tone, { tint: string; ink: string; border: string }> = {
   indigo: { tint: "#EEEDF8", ink: INDIGO, border: "#C9C7E4" },
-  green: { tint: "#EAF4EE", ink: "#16794C", border: "#C4E0CF" },
-  amber: { tint: "#FDF4E7", ink: "#B8791F", border: "#EBD3A8" },
-  red: { tint: "#FBEDEB", ink: "#C2453A", border: "#EABCB6" },
+  green: { tint: "#EAF4EE", ink: GREEN, border: "#C4E0CF" },
+  amber: { tint: "#FDF4E7", ink: AMBER, border: "#EBD3A8" },
+  red: { tint: "#FBEDEB", ink: RED, border: "#EABCB6" },
   neutral: { tint: "#F1F0EB", ink: MUTED, border: LINE },
 };
 
@@ -58,9 +58,9 @@ export const TONE: Record<Tone, { tint: string; ink: string; border: string }> =
  */
 export const BADGE: Record<Tone, { tint: string; ink: string }> = {
   indigo: { tint: "#DEDDF6", ink: "#3B38B0" },
-  green: { tint: "#E7F1EA", ink: "#16794C" },
+  green: { tint: "#E7F1EA", ink: GREEN },
   amber: { tint: "#FBEEE0", ink: "#A9721F" },
-  red: { tint: "#F7E4E2", ink: "#A63A30" },
+  red: { tint: "#F7E4E2", ink: RED_DEEP },
   neutral: { tint: "#E4EDF7", ink: "#2F5D8C" },
 };
 
@@ -141,7 +141,7 @@ export function Card({
   return (
     <div
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${LINE}`,
         borderRadius: 14,
         overflow: "hidden",
@@ -232,7 +232,7 @@ export function Kpi({
   return (
     <div
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${LINE}`,
         borderRadius: 12,
         padding: "14px 15px",

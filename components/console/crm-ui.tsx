@@ -57,22 +57,24 @@ export {
 } from "@/lib/theme/tokens";
 
 import {
+  BODY,
   CONSOLE,
   FAINT,
   FIELD_LINE,
   GREEN,
   HAIR,
+  INDIGO_CONSOLE as INDIGO,
   INK,
   LINE,
   MUTED,
+  PANEL,
+  RED,
   RED_DEEP,
   RULE,
   SANS_CONSOLE as SANS,
   SERIF_CONSOLE as SERIF,
   SOFT,
-  BODY,
-  RED,
-  INDIGO_CONSOLE as INDIGO,
+  WHITE,
 } from "@/lib/theme/tokens";
 
 /** Page ground. */
@@ -140,7 +142,7 @@ export function initials(name: string): string {
  *  now — it is how the reference's own cards read as solid at this border
  *  weight. Strip it and every console card loses its edge. */
 export const cardStyle: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 12,
   boxShadow: "0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)",
@@ -400,7 +402,7 @@ export function Card({
       id={id}
       style={{
         ...cardStyle,
-        ...(tone === "dark" ? { background: RAIL.bg, border: "none", color: "#fff" } : null),
+        ...(tone === "dark" ? { background: RAIL.bg, border: "none", color: WHITE } : null),
         ...(flush ? { overflow: "hidden" } : { padding: 18 }),
         ...style,
       }}
@@ -1069,11 +1071,11 @@ const btnBase: React.CSSProperties = {
 export function buttonStyle(
   variant: "primary" | "green" | "ghost" = "primary",
 ): React.CSSProperties {
-  if (variant === "primary") return { ...btnBase, background: INDIGO, color: "#fff", border: 0 };
-  if (variant === "green") return { ...btnBase, background: GREEN, color: "#fff", border: 0 };
+  if (variant === "primary") return { ...btnBase, background: INDIGO, color: WHITE, border: 0 };
+  if (variant === "green") return { ...btnBase, background: GREEN, color: WHITE, border: 0 };
   return {
     ...btnBase,
-    background: "#fff",
+    background: PANEL,
     color: INK,
     // FIELD_LINE, not LINE. A ghost button has to say "this is pressable"
     // against white, and unlike a card it cannot lean on a drop shadow to be

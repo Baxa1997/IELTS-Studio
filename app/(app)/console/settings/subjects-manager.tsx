@@ -11,7 +11,7 @@ import {
   setSubjectActive,
   type SubjectState,
 } from "./subject-actions";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The center's subject list.
@@ -37,7 +37,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 export interface SubjectItem {
@@ -93,7 +93,7 @@ export function SubjectsManager({ subjects }: { subjects: SubjectItem[] }) {
             border: 0,
             borderRadius: 8,
             background: INDIGO,
-            color: "#fff",
+            color: WHITE,
             padding: "9px 14px",
             fontFamily: "inherit",
             fontSize: 13,
@@ -107,7 +107,7 @@ export function SubjectsManager({ subjects }: { subjects: SubjectItem[] }) {
       </form>
 
       {state.error ? (
-        <p style={{ fontSize: 12.5, color: "#A63A30", margin: 0 }} role="alert">
+        <p style={{ fontSize: 12.5, color: RED_DEEP, margin: 0 }} role="alert">
           {state.error}
         </p>
       ) : null}

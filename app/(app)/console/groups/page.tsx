@@ -26,6 +26,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadGroups, type GroupStatus } from "@/lib/console/groups";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
+import { INDIGO_CONSOLE, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -172,7 +173,7 @@ export default async function GroupsPage({
           marginBottom: 16,
           alignItems: "center",
           flexWrap: "wrap",
-          // background: "#fff",
+          // background: PANEL,
           // padding: 6,
           // borderRadius: 6,
         }}
@@ -196,7 +197,7 @@ export default async function GroupsPage({
             defaultValue={sp.q ?? ""}
             placeholder="Filter by name or teacher…"
             aria-label="Filter groups"
-            style={{ ...fieldStyle, width: 260, background: "#fff" }}
+            style={{ ...fieldStyle, width: 260, background: PANEL }}
           />
         </form>
       </div>
@@ -377,7 +378,7 @@ function GroupCard({ group: g }: { group: Card_ }) {
           fontFamily: SANS,
           fontSize: 12,
           fontWeight: 600,
-          color: "#4340CB",
+          color: INDIGO_CONSOLE,
         }}
       >
         Open group <span aria-hidden style={{ marginLeft: 5 }}>→</span>

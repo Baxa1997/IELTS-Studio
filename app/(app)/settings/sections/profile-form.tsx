@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { saveProfileDetails, type SettingsState } from "../actions";
 
 import { buttonStyle, fieldStyle, labelStyle, Message } from "./form-ui";
+import { MUTED } from "@/lib/theme/tokens";
 
 /** Name and phone. The email is shown, not edited — it is how they sign in. */
 export function ProfileForm({
@@ -50,7 +51,7 @@ export function ProfileForm({
         >
           {email ?? "—"}
         </div>
-        <span style={{ fontSize: 12.5, color: "#6E6C87" }}>
+        <span style={{ fontSize: 12.5, color: MUTED }}>
           This is how you sign in, so it can&apos;t be changed here.
         </span>
       </div>

@@ -25,6 +25,14 @@ import { LegalFooter } from "@/components/legal-footer";
 // only needs the prompt type and the save-draft action from them.
 import type { LibraryPrompt } from "@/app/(studio)/write/writing-studio";
 import { saveDraft } from "@/app/(studio)/write/actions";
+import {
+  BRAND_SOFT,
+  PANEL,
+  SLATE_BODY,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 export type { LibraryPrompt };
 
@@ -39,7 +47,7 @@ const EMERALD = "#1C7A4F";
 
 const cardStyle: React.CSSProperties = {
   position: "relative",
-  background: "#fff",
+  background: PANEL,
   border: "1px solid rgba(28,27,46,.09)",
   borderRadius: 14,
   color: INK,
@@ -418,12 +426,12 @@ export function WritingLibrary({
             height: 42,
             padding: "0 16px",
             border: "1px solid #E2DED0",
-            background: "#fff",
+            background: PANEL,
             borderRadius: 11,
             fontFamily: SANS,
             fontSize: 14,
             fontWeight: 600,
-            color: "#3B4150",
+            color: SLATE_STRONG,
             textDecoration: "none",
           }}
         >
@@ -612,7 +620,7 @@ export function WritingLibrary({
                         fontSize: 12,
                         fontWeight: 700,
                         color: BRAND,
-                        background: "#FDF4F7",
+                        background: BRAND_SOFT,
                         border: "1px solid #F0D3DE",
                         borderRadius: 999,
                         padding: "3px 10px",
@@ -631,7 +639,7 @@ export function WritingLibrary({
                   fontFamily: SANS,
                   fontSize: 13,
                   fontWeight: 700,
-                  color: checkWords >= 20 ? EMERALD : "#8B919D",
+                  color: checkWords >= 20 ? EMERALD : SLATE_MUTED,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -678,7 +686,7 @@ export function WritingLibrary({
                 style={{
                   fontFamily: SANS,
                   fontSize: 13,
-                  color: "#8B919D",
+                  color: SLATE_MUTED,
                   flex: "1 1 180px",
                   minWidth: 0,
                 }}
@@ -743,7 +751,7 @@ export function WritingLibrary({
               padding: "12px 14px",
               border: "1px solid #E2DED0",
               borderRadius: 12,
-              background: "#fff",
+              background: PANEL,
               fontFamily: SANS,
               fontSize: 14.5,
               lineHeight: 1.6,
@@ -795,7 +803,7 @@ export function WritingLibrary({
             <h2 style={{ margin: 0, fontFamily: SANS, fontSize: 18, fontWeight: 700, color: INK }}>
               Or choose a ready topic
             </h2>
-            <span style={{ fontFamily: SANS, fontSize: 14, color: "#8B919D" }}>
+            <span style={{ fontFamily: SANS, fontSize: 14, color: SLATE_MUTED }}>
               Showing <strong style={{ color: INK }}>{visible.length}</strong> of {cards.length}
             </span>
           </div> */}
@@ -822,7 +830,7 @@ export function WritingLibrary({
                   gap: 9,
                   height: 44,
                   padding: "0 14px",
-                  background: "#fff",
+                  background: PANEL,
                   border: "1px solid #E2DED0",
                   borderRadius: 11,
                 }}
@@ -878,7 +886,7 @@ export function WritingLibrary({
                         fontSize: 14,
                         fontWeight: on ? 700 : 600,
                         cursor: "pointer",
-                        color: on ? BRAND : "#4A505C",
+                        color: on ? BRAND : SLATE_BODY,
                         background: on ? "#FDF4F7" : "#fff",
                         border: on ? "1px solid #E3A7BD" : "1px solid #E2DED0",
                       }}
@@ -899,7 +907,7 @@ export function WritingLibrary({
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
-                    color: bandFilter != null ? BRAND : "#4A505C",
+                    color: bandFilter != null ? BRAND : SLATE_BODY,
                     background: bandFilter != null ? "#FDF4F7" : "#fff",
                     border: bandFilter != null ? "1px solid #E3A7BD" : "1px solid #E2DED0",
                   }}
@@ -993,7 +1001,7 @@ export function WritingLibrary({
                   </option>
                 ))}
               </select>
-              <p style={{ fontSize: 12, color: "#8B919D", margin: "6px 0 0", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: SLATE_MUTED, margin: "6px 0 0", lineHeight: 1.5 }}>
                 How demanding the wording and ideas are. A student practising alone gets this
                 pitched from their own measured band — a class has no single band, so you say.
               </p>
@@ -1002,7 +1010,7 @@ export function WritingLibrary({
             {tab === "task2" ? (
               <div>
                 <label htmlFor="wl-cat" style={genLabel}>
-                  Question type <span style={{ color: "#8B919D" }}>(optional)</span>
+                  Question type <span style={{ color: SLATE_MUTED }}>(optional)</span>
                 </label>
                 <select
                   id="wl-cat"
@@ -1022,7 +1030,7 @@ export function WritingLibrary({
 
             <div>
               <label htmlFor="wl-pref" style={genLabel}>
-                Topic preference <span style={{ color: "#8B919D" }}>(optional)</span>
+                Topic preference <span style={{ color: SLATE_MUTED }}>(optional)</span>
               </label>
               <input
                 id="wl-pref"
@@ -1046,7 +1054,7 @@ export function WritingLibrary({
                 style={{
                   flex: 1,
                   background: BRAND,
-                  color: "#fff",
+                  color: WHITE,
                   border: 0,
                   borderRadius: 10,
                   padding: 11,
@@ -1063,7 +1071,7 @@ export function WritingLibrary({
                 type="button"
                 onClick={() => setSetupOpen(false)}
                 style={{
-                  background: "#fff",
+                  background: PANEL,
                   border: "1px solid #E6E8EC",
                   borderRadius: 10,
                   padding: "11px 16px",
@@ -1100,7 +1108,7 @@ const iconChip: React.CSSProperties = {
   width: 38,
   height: 38,
   borderRadius: 11,
-  background: "#FDF4F7",
+  background: BRAND_SOFT,
   color: BRAND,
   border: "1px solid #F0D3DE",
   display: "flex",
@@ -1113,7 +1121,7 @@ const fieldLabel: React.CSSProperties = {
   fontFamily: SANS,
   fontWeight: 700,
   fontSize: 13.5,
-  color: "#3B4150",
+  color: SLATE_STRONG,
   marginBottom: 8,
 };
 
@@ -1123,7 +1131,7 @@ const fieldArea: React.CSSProperties = {
   padding: "14px 16px",
   border: "1px solid #E2DED0",
   borderRadius: 12,
-  background: "#fff",
+  background: PANEL,
   fontFamily: SANS,
   fontSize: 14.5,
   lineHeight: 1.6,
@@ -1165,7 +1173,7 @@ function GradingModal() {
     >
       <div
         style={{
-          background: "#fff",
+          background: PANEL,
           borderRadius: 20,
           padding: "34px 34px 30px",
           maxWidth: 400,
@@ -1240,7 +1248,7 @@ function genButton(disabled: boolean, big = false): React.CSSProperties {
     border: "none",
     borderRadius: 12,
     background: BRAND,
-    color: "#fff",
+    color: WHITE,
     fontFamily: SANS,
     fontSize: big ? 15.5 : 15,
     fontWeight: 700,
@@ -1448,7 +1456,7 @@ const genLabel: React.CSSProperties = {
   display: "block",
   fontFamily: SANS,
   fontSize: 12.5,
-  color: "#4A505C",
+  color: SLATE_BODY,
   marginBottom: 5,
 };
 const genField: React.CSSProperties = {
@@ -1458,5 +1466,5 @@ const genField: React.CSSProperties = {
   padding: "10px 11px",
   fontFamily: SANS,
   fontSize: 13.5,
-  background: "#fff",
+  background: PANEL,
 };

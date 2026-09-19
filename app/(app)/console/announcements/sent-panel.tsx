@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FiCheckCircle, FiExternalLink, FiSend } from "react-icons/fi";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The right-hand column: what you sent, and how Telegram gets connected.
@@ -65,7 +65,7 @@ export function SentPanel({
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #E9E7E1",
         borderRadius: 14,
         overflow: "hidden",

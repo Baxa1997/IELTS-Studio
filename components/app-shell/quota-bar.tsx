@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Zap } from "lucide-react";
 
-import { SANS } from "@/lib/theme/tokens";
+import { BRAND, SANS, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
 import type { UsageSummary } from "@/lib/quota";
 
 /** Show the warning once any limited counter has this many (or fewer) left. */
@@ -31,13 +31,13 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
         borderBottom: `1px solid ${empty ? "#F5D9D9" : "#F0D3DE"}`,
         fontFamily: SANS,
         fontSize: 13,
-        color: "#4A505C",
+        color: SLATE_BODY,
       }}
     >
       <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <Zap size={14} style={{ color: empty ? "#DC2626" : "#7D0132", flex: "none" }} />
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          <strong style={{ color: "#121317" }}>{usage.planName}</strong>
+          <strong style={{ color: SLATE_INK }}>{usage.planName}</strong>
           {empty ? " — you're out of " : " — running low: "}
           {empty ? (
             <strong style={{ color: "#DC2626" }}>
@@ -47,11 +47,11 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
           {empty ? " for this month" : null}
           {!empty ? (
             <>
-              <strong style={{ color: "#121317" }}>
+              <strong style={{ color: SLATE_INK }}>
                 {Number.isFinite(practices) ? practices : "unlimited"}
               </strong>{" "}
               practice sets ·{" "}
-              <strong style={{ color: "#121317" }}>
+              <strong style={{ color: SLATE_INK }}>
                 {Number.isFinite(gradings) ? gradings : "unlimited"}
               </strong>{" "}
               gradings left this month
@@ -65,8 +65,8 @@ export function QuotaBar({ usage }: { usage: UsageSummary }) {
           flex: "none",
           fontWeight: 700,
           fontSize: 12.5,
-          color: "#fff",
-          background: "#7D0132",
+          color: WHITE,
+          background: BRAND,
           borderRadius: 999,
           padding: "4px 13px",
           textDecoration: "none",

@@ -1,4 +1,5 @@
 import { FAINT, INK, LINE, MUTED, SANS } from "@/components/console/page-ui";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Table furniture for the platform console.
@@ -30,7 +31,7 @@ export function FilterBar({ children }: { children: React.ReactNode }) {
           fontFamily: SANS,
           fontWeight: 600,
           fontSize: 13.5,
-          color: "#fff",
+          color: WHITE,
           background: INK,
           border: "none",
           borderRadius: 9,
@@ -59,7 +60,7 @@ const control: React.CSSProperties = {
   fontFamily: SANS,
   fontSize: 13.5,
   color: INK,
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 9,
   padding: "8px 11px",

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Branded page furniture for the organization console.
@@ -32,7 +33,7 @@ export const LINE = "var(--pu-line, #ECEAF2)";
 export const TINT = "var(--pu-tint, #F4F4FE)";
 
 export const cardStyle: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 16,
   padding: 18,
@@ -378,7 +379,7 @@ export function PrimaryLink({ href, children }: { href: string; children: React.
         alignItems: "center",
         gap: 7,
         background: INDIGO,
-        color: "#fff",
+        color: WHITE,
         borderRadius: 11,
         padding: "9px 15px",
         fontFamily: SANS,

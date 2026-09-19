@@ -10,6 +10,7 @@ import { daysUntil, levelCheckDue } from "@/lib/plan/types";
 
 import { startLevelCheck } from "./actions";
 import { PlanBandCard } from "./plan-band-card";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,7 @@ export default async function PlanPage() {
             Tuned to your level, paced to your goal
           </h1>
         </div>
-        <Link href="/onboarding" style={{ marginTop: 4, padding: "10px 18px", borderRadius: 10, border: `1px solid ${LINE}`, background: "#fff", color: MUTED, fontFamily: SANS, fontSize: 13.5, fontWeight: 600, textDecoration: "none" }}>
+        <Link href="/onboarding" style={{ marginTop: 4, padding: "10px 18px", borderRadius: 10, border: `1px solid ${LINE}`, background: PANEL, color: MUTED, fontFamily: SANS, fontSize: 13.5, fontWeight: 600, textDecoration: "none" }}>
           Edit plan
         </Link>
       </div>
@@ -111,14 +112,14 @@ function CountdownCard({ examDate, days, target, elapsedPct }: { examDate: strin
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "clamp(18px,2.2vw,26px) clamp(20px,2.8vw,30px)" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", flexShrink: 0, animation: "plan-pulse-brand 2.4s ease infinite" }} />
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: PANEL, flexShrink: 0, animation: "plan-pulse-brand 2.4s ease infinite" }} />
             <Eyebrow tone="rgba(255,255,255,0.72)">{hasFuture ? "Exam countdown" : "Exam date"}</Eyebrow>
           </div>
 
           {hasFuture ? (
             <>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
-                <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(38px,5vw,52px)", color: "#fff", lineHeight: 1, letterSpacing: "-1.5px", fontVariantNumeric: "tabular-nums" }}>{days}</span>
+                <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(38px,5vw,52px)", color: WHITE, lineHeight: 1, letterSpacing: "-1.5px", fontVariantNumeric: "tabular-nums" }}>{days}</span>
                 <span style={{ fontFamily: SANS, fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.62)" }}>{days === 1 ? "day to go" : "days to go"}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
@@ -130,18 +131,18 @@ function CountdownCard({ examDate, days, target, elapsedPct }: { examDate: strin
             </>
           ) : (
             <div style={{ maxWidth: 460 }}>
-              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(19px,2.4vw,25px)", color: "#fff", marginBottom: 7, letterSpacing: "-.015em", lineHeight: 1.15 }}>
+              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(19px,2.4vw,25px)", color: WHITE, marginBottom: 7, letterSpacing: "-.015em", lineHeight: 1.15 }}>
                 {examDate != null ? "Your test date has passed" : "No test date yet"}
               </div>
               <p style={{ margin: 0, fontFamily: SANS, fontSize: 14, color: "rgba(255,255,255,0.66)", lineHeight: 1.6 }}>
                 {examDate != null ? (
                   <>
                     {fmtFull(examDate)} is behind you.{" "}
-                    <Link href="/onboarding" style={{ color: "#fff", fontWeight: 700, textDecoration: "underline" }}>Set a new date</Link> to keep your plan paced.
+                    <Link href="/onboarding" style={{ color: WHITE, fontWeight: 700, textDecoration: "underline" }}>Set a new date</Link> to keep your plan paced.
                   </>
                 ) : (
                   <>
-                    <Link href="/onboarding" style={{ color: "#fff", fontWeight: 700, textDecoration: "underline" }}>Add a test date</Link> for a live countdown and a week-by-week plan.
+                    <Link href="/onboarding" style={{ color: WHITE, fontWeight: 700, textDecoration: "underline" }}>Add a test date</Link> for a live countdown and a week-by-week plan.
                   </>
                 )}
               </p>
@@ -211,7 +212,7 @@ function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | 
 
 function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: boolean }) {
   return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(20px,2.4vw,26px)" }}>
+    <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(20px,2.4vw,26px)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: EMERALD, flexShrink: 0, animation: "plan-pulse-green 2s ease infinite" }} />
         <Eyebrow>This week</Eyebrow>
@@ -244,7 +245,7 @@ function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: bool
           padding: 14,
           borderRadius: 12,
           background: BRAND,
-          color: "#fff",
+          color: WHITE,
           fontFamily: SANS,
           fontSize: 15,
           fontWeight: 700,
@@ -333,7 +334,7 @@ const DARK_PILL: React.CSSProperties = {
   fontFamily: SANS,
   fontSize: 13,
   fontWeight: 700,
-  color: "#fff",
+  color: WHITE,
 };
 
 /** How far into the study window we are (created → exam), 0..1. null without a date. */

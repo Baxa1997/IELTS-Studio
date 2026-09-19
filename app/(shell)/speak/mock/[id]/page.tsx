@@ -12,6 +12,7 @@ import { ListenBack, type LBTurn } from "../../listen-back";
 import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
 import { AwaitingGrade } from "./awaiting-grade";
 import { UngradedMock } from "./ungraded";
+import { PANEL, SLATE_STRONG } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -167,7 +168,7 @@ export default async function MockResultPage({ params }: PageProps) {
               <div
                 key={p}
                 style={{
-                  background: "#fff",
+                  background: PANEL,
                   border: `1px solid ${LINE}`,
                   borderRadius: 14,
                   padding: "14px 16px",
@@ -179,7 +180,7 @@ export default async function MockResultPage({ params }: PageProps) {
                   PART {p}
                 </div>
                 <p
-                  style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: "#3B4150" }}
+                  style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.55, color: SLATE_STRONG }}
                 >
                   {partNotes[p]}
                 </p>
@@ -207,7 +208,7 @@ export default async function MockResultPage({ params }: PageProps) {
       {prepNotes ? (
         <details
           style={{
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${LINE}`,
             borderRadius: 14,
             padding: "13px 16px",
@@ -227,7 +228,7 @@ export default async function MockResultPage({ params }: PageProps) {
               margin: "10px 0 0",
               fontSize: 13.5,
               lineHeight: 1.65,
-              color: "#3B4150",
+              color: SLATE_STRONG,
               whiteSpace: "pre-wrap",
             }}
           >

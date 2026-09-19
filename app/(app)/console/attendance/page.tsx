@@ -34,6 +34,7 @@ import { centerNow, registersToMark, type DayLesson } from "@/lib/console/schedu
 
 import { AlertSettingsForm } from "./alert-settings-form";
 import { DateStrip } from "./date-strip";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -198,7 +199,7 @@ function LessonCard({ lesson, date }: { lesson: DayLesson; date: string }) {
         display: "block",
         textDecoration: "none",
         color: "inherit",
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #E9E7E1",
         borderLeft: `3px solid ${accent}`,
         borderRadius: 12,

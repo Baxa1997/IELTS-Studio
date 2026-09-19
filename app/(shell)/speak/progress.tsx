@@ -8,6 +8,7 @@
  */
 
 import { bandColor } from "@/lib/ui/band";
+import { PANEL, SLATE_LINE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const MUTED = "#4A505C";
@@ -67,7 +68,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
   return (
     <section
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${LINE}`,
         borderRadius: 16,
         padding: "16px 18px",
@@ -177,7 +178,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
                     marginTop: 5,
                     height: 5,
                     borderRadius: 3,
-                    background: "#E6E8EC",
+                    background: SLATE_LINE,
                     overflow: "hidden",
                   }}
                 >

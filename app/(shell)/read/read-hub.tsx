@@ -34,6 +34,7 @@ import { titleCase } from "@/lib/reading/titles";
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
+import { BRAND_SOFT, SLATE_MUTED } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -241,7 +242,7 @@ export function ReadingHub({
             display: "inline-flex",
             alignItems: "center",
             gap: 9,
-            background: "#FDF4F7",
+            background: BRAND_SOFT,
             border: "1px solid rgba(125,1,50,.16)",
             color: BRAND,
             padding: "8px 14px",
@@ -814,7 +815,7 @@ function TabButton({
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? BRAND : "#8B919D" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? BRAND : SLATE_MUTED }}>
         {icon}
       </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
@@ -901,6 +902,6 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ marginTop: 18, fontSize: 13.5, color: "#8B919D", fontFamily: SANS }}>{children}</p>
+    <p style={{ marginTop: 18, fontSize: 13.5, color: SLATE_MUTED, fontFamily: SANS }}>{children}</p>
   );
 }

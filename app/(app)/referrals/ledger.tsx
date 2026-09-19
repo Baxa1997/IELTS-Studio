@@ -1,4 +1,4 @@
-import { BRAND, GREEN, HAIR, INK, LINE, MUTED, SANS, WHITE } from "@/lib/theme/tokens";
+import { BRAND, GREEN, HAIR, INK, LINE, MUTED, PANEL, SANS, WELL, WHITE } from "@/lib/theme/tokens";
 import { formatMoney, type CommissionRow } from "@/lib/referrals/types";
 
 /**
@@ -20,11 +20,11 @@ import { formatMoney, type CommissionRow } from "@/lib/referrals/types";
  */
 export function Ledger({ rows, holdDays }: { rows: CommissionRow[]; holdDays: number }) {
   return (
-    <div style={{ background: WHITE, border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
+    <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", minWidth: 460, borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#FBFBFC" }}>
+            <tr style={{ background: WELL }}>
               <Th>Earned</Th>
               <Th>Rate</Th>
               <Th>Your cut</Th>

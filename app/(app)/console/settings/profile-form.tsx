@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 
 import { saveCenterProfile, type ActionState } from "../center-actions";
-import { GREEN, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INK, MUTED, PANEL, RED_DEEP, SOFT, WHITE } from "@/lib/theme/tokens";
 
 const label: React.CSSProperties = {
   fontSize: 12,
@@ -19,9 +19,9 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
-const readOnly: React.CSSProperties = { ...field, background: "#F7F6F2", color: "#737189" };
+const readOnly: React.CSSProperties = { ...field, background: "#F7F6F2", color: SOFT };
 
 /**
  * The center's own profile. Only the name is editable, and that is a database
@@ -72,14 +72,14 @@ export function CenterProfileForm({
           <input value={plan} readOnly style={readOnly} />
         </div>
       </div>
-      <p style={{ fontSize: 11.5, color: "#777581", margin: "0 0 14px", lineHeight: 1.55 }}>
+      <p style={{ fontSize: 11.5, color: FAINT, margin: "0 0 14px", lineHeight: 1.55 }}>
         Status and plan aren&apos;t editable here by design — they&apos;re not writable by any
         client at all, only by the platform. That&apos;s what stops a center approving or upgrading
         itself.
       </p>
 
       {state.error ? (
-        <p style={{ fontSize: 12.5, color: "#A63A30", margin: "0 0 10px" }}>{state.error}</p>
+        <p style={{ fontSize: 12.5, color: RED_DEEP, margin: "0 0 10px" }}>{state.error}</p>
       ) : null}
       {state.ok ? (
         <p style={{ fontSize: 12.5, color: GREEN, margin: "0 0 10px" }}>{state.ok}</p>
@@ -91,7 +91,7 @@ export function CenterProfileForm({
         className="cn-btn cn-btn--green"
         style={{
           background: GREEN,
-          color: "#fff",
+          color: WHITE,
           border: 0,
           borderRadius: 8,
           padding: "10px 15px",

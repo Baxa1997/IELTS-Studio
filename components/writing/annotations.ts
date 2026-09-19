@@ -4,6 +4,8 @@
  * <AnnotatedEssay> renders from the same shapes/colors.
  */
 
+import { BRAND } from "@/lib/theme/tokens";
+
 export interface Annotation {
   text: string;
   type: "spelling" | "grammar" | "vocabulary" | "cohesion";
@@ -14,7 +16,7 @@ export interface Annotation {
 export const ANN_STYLE: Record<Annotation["type"], { bg: string; fg: string; label: string }> = {
   spelling: { bg: "rgba(192,57,43,.16)", fg: "#a8362a", label: "Spelling" },
   grammar: { bg: "rgba(194,138,26,.16)", fg: "#946813", label: "Grammar" },
-  vocabulary: { bg: "rgba(125,1,50,.14)", fg: "#7D0132", label: "Vocabulary" },
+  vocabulary: { bg: "rgba(125,1,50,.14)", fg: BRAND, label: "Vocabulary" },
   cohesion: { bg: "rgba(47,143,124,.16)", fg: "#256b5c", label: "Cohesion" },
 };
 export const ANN_ORDER: Annotation["type"][] = ["spelling", "grammar", "vocabulary", "cohesion"];

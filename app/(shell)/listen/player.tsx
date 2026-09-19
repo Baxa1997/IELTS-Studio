@@ -33,6 +33,7 @@ import { formatClock } from "@/components/exam/timer";
 
 import { RUN } from "./theme";
 import type { AudioSeg, PauseSeg, PlayerPhase, Segment } from "./types";
+import { BRAND_DARKEST, BRAND_DEEP, BRAND_PALE, PANEL, WHITE } from "@/lib/theme/tokens";
 
 // ---- Player (segment engine + audio strip) --------------------------------
 
@@ -526,12 +527,12 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
   const pct = (pos.progress * 100).toFixed(2);
   /* The player's own dark skin. It was navy; it follows the runner's accent now. */
   const skin = {
-    bg: "#2C0013",
+    bg: BRAND_DARKEST,
     border: "#4A0620",
     text: "#fff7fa",
     muted: "#d9bec8",
-    rail: "#5C0125",
-    fill: "#E3A7BD",
+    rail: BRAND_DEEP,
+    fill: BRAND_PALE,
     control: "rgba(255,255,255,0.09)",
     controlBorder: "rgba(255,255,255,0.18)",
     play: "#F2C3D3",
@@ -592,7 +593,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             borderRadius: 9999,
             background: skin.play,
             border: "none",
-            color: "#fff",
+            color: WHITE,
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -703,7 +704,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             width: 14,
             height: 14,
             borderRadius: 9999,
-            background: "#fff",
+            background: PANEL,
             border: `3px solid ${skin.fill}`,
             boxShadow: "0 1px 6px rgba(0,0,0,0.35)",
           }}
@@ -738,7 +739,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             padding: "0 12px",
             background: skin.play,
             border: "none",
-            color: "#fff",
+            color: WHITE,
             fontSize: 12.5,
             fontWeight: 700,
           }}
@@ -797,7 +798,7 @@ export function ReplayList({ segments }: { segments: Segment[] }) {
     <div
       style={{
         marginTop: 16,
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${RUN.bCard}`,
         borderRadius: 16,
         padding: "18px 22px",

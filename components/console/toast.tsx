@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { FiAlertTriangle, FiCheck, FiX } from "react-icons/fi";
 
 import { useDrawerClose } from "./finance-ui";
+import { INK, MUTED, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The banner that says a thing worked, and the rule about when a drawer shuts.
@@ -83,7 +84,7 @@ export function ToastHost({ children }: { children: React.ReactNode }) {
               boxShadow: "0 12px 32px rgba(22,22,46,.14)",
               fontFamily: "var(--font-sans3), ui-sans-serif, system-ui, sans-serif",
               fontSize: 13.5,
-              color: "#16162E",
+              color: INK,
               lineHeight: 1.5,
             }}
           >
@@ -98,7 +99,7 @@ export function ToastHost({ children }: { children: React.ReactNode }) {
                 alignItems: "center",
                 justifyContent: "center",
                 background: m.tone === "error" ? "#B3261E" : "#16794C",
-                color: "#fff",
+                color: WHITE,
                 marginTop: 1,
               }}
             >
@@ -113,7 +114,7 @@ export function ToastHost({ children }: { children: React.ReactNode }) {
                 background: "transparent",
                 border: 0,
                 cursor: "pointer",
-                color: "#6E6C87",
+                color: MUTED,
                 display: "inline-flex",
                 padding: 2,
               }}

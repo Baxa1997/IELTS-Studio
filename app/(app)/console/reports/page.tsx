@@ -39,6 +39,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ReportAlerts } from "./alerts-button";
 import { RangePicker } from "./range-picker";
 import { ExportReportButton } from "./export-button";
+import { MUTED as TK_MUTED } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -198,7 +199,7 @@ export default async function ReportsPage({
                 fontSize: 11,
                 letterSpacing: ".08em",
                 textTransform: "uppercase",
-                color: "#6E6C87",
+                color: TK_MUTED,
                 marginBottom: 6,
               }}
             >

@@ -26,6 +26,7 @@ import {
   Stack,
   Tag,
 } from "./crm-ui";
+import { PANEL } from "@/lib/theme/tokens";
 
 const SKILL_LABEL = {
   writing: "Writing",
@@ -409,7 +410,7 @@ function ExportPdfLink({ studentId }: { studentId: string }) {
         fontSize: 13.5,
         fontWeight: 500,
         textDecoration: "none",
-        background: "#FFF",
+        background: PANEL,
         color: INK,
         border: "1px solid #C5C4BE",
       }}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * What a server error looks like when it reaches a person.
@@ -83,7 +84,7 @@ export default function AppError({
               border: 0,
               borderRadius: 10,
               background: INK,
-              color: "#fff",
+              color: WHITE,
               padding: "10px 18px",
               fontFamily: "inherit",
               fontSize: 14,
@@ -98,7 +99,7 @@ export default function AppError({
             style={{
               border: `1px solid ${LINE}`,
               borderRadius: 10,
-              background: "#fff",
+              background: PANEL,
               color: MUTED,
               padding: "10px 16px",
               fontSize: 14,

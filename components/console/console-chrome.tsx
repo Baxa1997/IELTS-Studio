@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sparkles } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INDIGO_CONSOLE as INDIGO, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The console's page chrome, from the "Center Admin CRM" design: a sticky
@@ -322,7 +322,7 @@ export function ConsoleChrome({
                 flex: "none",
                 borderRadius: "50%",
                 background: "#1b2a4a",
-                color: "#fff",
+                color: WHITE,
                 fontSize: 12,
                 fontWeight: 600,
                 display: "flex",
@@ -445,7 +445,7 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
             <div style={{ height: 10 }} />
             <Cred label="Password" value={flash.credentials.password} />
           </div>
-          <p style={{ fontSize: 12, color: "#777581", margin: 0, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 12, color: FAINT, margin: 0, lineHeight: 1.55 }}>
             The password isn&apos;t shown again — copy it now if you still need to hand it over.
           </p>
         </>
@@ -458,7 +458,7 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
             onClick={() => void copy()}
             style={{
               flex: 1,
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #CFCABC",
               borderRadius: 9,
               padding: 11,
@@ -478,7 +478,7 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
           style={{
             flex: 1,
             background: INDIGO,
-            color: "#fff",
+            color: WHITE,
             border: 0,
             borderRadius: 9,
             padding: 11,
@@ -499,7 +499,7 @@ function FlashBody({ flash, onClose }: { flash: ConsoleFlash; onClose: () => voi
 function Cred({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontSize: 11.5, color: "#16794C", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 11.5, color: GREEN, fontWeight: 600 }}>{label}</div>
       <div
         style={{
           fontFamily: "ui-monospace, monospace",
@@ -553,7 +553,7 @@ function SlideOver({
           position: "relative",
           width: 460,
           maxWidth: "100vw",
-          background: "#fff",
+          background: PANEL,
           height: "100dvh",
           overflowY: "auto",
           boxShadow: "-20px 0 50px rgba(20,19,58,.2)",
@@ -608,7 +608,7 @@ function Modal({
           maxWidth: "100%",
           maxHeight: "90dvh",
           overflowY: "auto",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 16,
           padding: "24px 26px",
           boxShadow: "0 30px 60px rgba(20,19,58,.28)",
@@ -657,7 +657,7 @@ function PanelHead({
         >
           {title}
         </h2>
-        <p style={{ margin: 0, fontSize: 13, color: "#6E6C87" }}>{note}</p>
+        <p style={{ margin: 0, fontSize: 13, color: MUTED }}>{note}</p>
       </div>
       <button
         onClick={onClose}
@@ -672,7 +672,7 @@ function PanelHead({
           flex: "none",
           cursor: "pointer",
           fontSize: 15,
-          color: "#6E6C87",
+          color: MUTED,
         }}
       >
         ×

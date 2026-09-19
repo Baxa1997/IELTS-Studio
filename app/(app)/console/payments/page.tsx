@@ -11,6 +11,7 @@ import { monthStart, today } from "@/lib/finance/period";
 import { createClient } from "@/lib/supabase/server";
 
 import { TransactionForm } from "../finance/transaction-form";
+import { WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -126,7 +127,7 @@ export default async function PaymentsPage() {
               triggerStyle={{
                 background: "#1B8A5A",
                 border: 0,
-                color: "#fff",
+                color: WHITE,
                 padding: "10px 16px",
                 fontSize: 13.5,
                 fontWeight: 600,

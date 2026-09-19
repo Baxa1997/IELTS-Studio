@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, Highlighter } from "lucide-react";
 
 import { BRAND, MUTED, SANS } from "./tokens";
+import { PANEL } from "@/lib/theme/tokens";
 
 /**
  * Shared exam-surface reading tools — a real-test text highlighter (marker pens)
@@ -148,7 +149,7 @@ export function MarkerToolbar({ tool, setTool, onClear, marks }: {
         <Eraser size={13} />
       </button>
       <button type="button" onClick={onClear} disabled={!marks} title="Clear all highlights"
-        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: SANS, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: "#fff", border: `1px solid ${LINE}`, color: marks ? "#3B4150" : "#8B919D", opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
+        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: SANS, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: PANEL, border: `1px solid ${LINE}`, color: marks ? "#3B4150" : "#8B919D", opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
     </div>
   );
 }

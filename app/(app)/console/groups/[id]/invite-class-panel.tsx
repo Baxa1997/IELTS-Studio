@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { inviteGroupToTelegram, type GroupInviteState } from "../actions";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Getting a whole class signed in, in one action.
@@ -80,7 +81,7 @@ const button: React.CSSProperties = {
   borderRadius: 999,
   border: 0,
   background: "#1b2340",
-  color: "#fff",
+  color: WHITE,
   fontFamily: "inherit",
   fontSize: 15,
   fontWeight: 700,
@@ -90,7 +91,7 @@ const ghost: React.CSSProperties = {
   padding: "8px 14px",
   borderRadius: 999,
   border: "1px solid #E2E0DA",
-  background: "#fff",
+  background: PANEL,
   fontFamily: "inherit",
   fontSize: 13,
   fontWeight: 600,

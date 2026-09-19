@@ -5,7 +5,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { setTeacherSubjects, type SubjectState } from "../settings/subject-actions";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Which subjects this teacher can be given.
@@ -124,7 +124,7 @@ export function TeacherSubjectsCell({
               top: "calc(100% + 6px)",
               zIndex: 41,
               width: 220,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 10,
               boxShadow: "0 14px 40px rgba(20,25,50,.16)",
@@ -152,7 +152,7 @@ export function TeacherSubjectsCell({
               Tick none and they can be put on any group.
             </p>
             {state.error ? (
-              <p style={{ fontSize: 12, color: "#A63A30", margin: "0 0 8px" }} role="alert">
+              <p style={{ fontSize: 12, color: RED_DEEP, margin: "0 0 8px" }} role="alert">
                 {state.error}
               </p>
             ) : null}
@@ -164,7 +164,7 @@ export function TeacherSubjectsCell({
                 border: 0,
                 borderRadius: 8,
                 background: INDIGO,
-                color: "#fff",
+                color: WHITE,
                 padding: "7px 12px",
                 fontFamily: "inherit",
                 fontSize: 12.5,

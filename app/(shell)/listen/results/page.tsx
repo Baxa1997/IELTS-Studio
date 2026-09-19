@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +88,7 @@ export default async function ListeningResultsPage() {
         {attempts.length === 0 ? (
           <div
             style={{
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #E6E8EC",
               borderRadius: 16,
               padding: "36px 28px",
@@ -113,7 +114,7 @@ export default async function ListeningResultsPage() {
                     display: "flex",
                     alignItems: "center",
                     gap: 16,
-                    background: "#fff",
+                    background: PANEL,
                     border: "1px solid #E6E8EC",
                     borderRadius: 14,
                     padding: "16px 20px",

@@ -13,6 +13,7 @@ import {
 import { useActionFeedback } from "@/components/console/toast";
 import { createAssignment, type GroupFormState } from "../actions";
 import { V2 } from "./ui";
+import { PANEL } from "@/lib/theme/tokens";
 
 const FIELD =
   "border-input h-10 w-full min-w-0 rounded-lg border bg-transparent px-3 py-2 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50";
@@ -255,4 +256,4 @@ const heading: React.CSSProperties = { margin: 0, fontFamily: "var(--font-serif4
 const description: React.CSSProperties = { margin: "6px 0 0", fontSize: 13, lineHeight: 1.5, color: V2.faint };
 const twoColumns: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 };
 const changeButton: React.CSSProperties = { marginLeft: "auto", flex: "none", border: 0, background: "transparent", color: V2.indigo, fontSize: 12.5, fontWeight: 600, cursor: "pointer" };
-const secondaryButton: React.CSSProperties = { height: 36, padding: "0 15px", borderRadius: 8, border: `1px solid ${V2.field}`, background: "#fff", color: V2.ink, fontSize: 13, fontWeight: 600, cursor: "pointer" };
+const secondaryButton: React.CSSProperties = { height: 36, padding: "0 15px", borderRadius: 8, border: `1px solid ${V2.field}`, background: PANEL, color: V2.ink, fontSize: 13, fontWeight: 600, cursor: "pointer" };

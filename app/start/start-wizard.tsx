@@ -15,6 +15,7 @@ import { pitchDifficulty, SELF_REPORT_BANDS } from "@/lib/plan/constants";
 import type { StudyPlanInput } from "@/lib/plan/types";
 
 import { savePlanForCurrentUser, stashOnboarding } from "./actions";
+import { PANEL, SLATE_LINE, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -132,7 +133,7 @@ export function StartWizard({ mode = "signup" }: { mode?: "signup" | "authed" })
   }
 
   return (
-    <div className="onb-shell" style={{ height: "100dvh", overflow: "hidden", display: "grid", gridTemplateColumns: "minmax(0,1fr) clamp(380px,32vw,460px)", fontFamily: SANS, color: INK, background: "#fff" }}>
+    <div className="onb-shell" style={{ height: "100dvh", overflow: "hidden", display: "grid", gridTemplateColumns: "minmax(0,1fr) clamp(380px,32vw,460px)", fontFamily: SANS, color: INK, background: PANEL }}>
       <style>{STYLES}</style>
 
       {/* ── Main (≈70%): brand, horizontal stepper, step content ── */}
@@ -216,7 +217,7 @@ function StepWelcome({ mode, onContinue }: { mode: "signup" | "authed"; onContin
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {skills.map((s) => (
-          <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px", opacity: s.on ? 1 : 0.78 }}>
+          <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12, background: PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px", opacity: s.on ? 1 : 0.78 }}>
             <span style={{ flex: "none", width: 40, height: 40, borderRadius: 11, background: s.on ? TINT : "#F4F4F6", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <s.Icon size={19} color={s.on ? BRAND : "#9A9DAC"} strokeWidth={2} />
             </span>
@@ -430,7 +431,7 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
           <span style={{ letterSpacing: ".06em", textTransform: "uppercase" }}>Building your profile</span>
           <span style={{ color: BRAND }}>{pct}%</span>
         </div>
-        <div style={{ height: 6, borderRadius: 999, background: "#E6E8EC", overflow: "hidden" }}>
+        <div style={{ height: 6, borderRadius: 999, background: SLATE_LINE, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: "linear-gradient(90deg,#9B1044,#7D0132)", transition: "width .5s cubic-bezier(.4,.7,.2,1)" }} />
         </div>
       </div>
@@ -438,15 +439,15 @@ function CoachPanel({ step, target, self, examDate, thinking }: { step: number; 
       {/* live notes */}
       <div className="coach-notes" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, marginTop: 18, paddingRight: 2 }}>
         {notes.map((n) => (
-          <div key={n.id} className="coach-note" style={{ display: "flex", gap: 10, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "12px 13px", boxShadow: "0 2px 10px -6px rgba(40,40,90,.16)" }}>
+          <div key={n.id} className="coach-note" style={{ display: "flex", gap: 10, background: PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: "12px 13px", boxShadow: "0 2px 10px -6px rgba(40,40,90,.16)" }}>
             <span style={{ flex: "none", width: 30, height: 30, borderRadius: 9, background: TINT, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <n.Icon size={15} color={BRAND} strokeWidth={2.2} />
             </span>
-            <p style={{ margin: 0, fontFamily: SANS, fontSize: 13, lineHeight: 1.5, color: "#3B4150" }}>{n.text}</p>
+            <p style={{ margin: 0, fontFamily: SANS, fontSize: 13, lineHeight: 1.5, color: SLATE_STRONG }}>{n.text}</p>
           </div>
         ))}
         {thinking ? (
-          <div className="coach-note" style={{ display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "11px 14px" }}>
+          <div className="coach-note" style={{ display: "inline-flex", alignItems: "center", gap: 8, alignSelf: "flex-start", background: PANEL, border: `1px solid ${LINE}`, borderRadius: 14, padding: "11px 14px" }}>
             {[0, 0.18, 0.36].map((d) => (
               <span key={d} style={{ width: 6, height: 6, borderRadius: "50%", background: BRAND, animation: `coach-bounce 1s ${d}s infinite` }} />
             ))}
@@ -513,7 +514,7 @@ function RouteItem({ n, title, desc }: { n: number; title: string; desc: string 
 
 function StatTile({ Icon, label, value }: { Icon: LucideIcon; label: string; value: string }) {
   return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 13, padding: "12px 14px" }}>
+    <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 13, padding: "12px 14px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
         <Icon size={14} color={BRAND} strokeWidth={2.2} />
         <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 10.5, letterSpacing: ".07em", textTransform: "uppercase", color: FAINT }}>{label}</span>
@@ -533,7 +534,7 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
 
 function PrimaryButton({ children, onClick, disabled, style }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; style?: React.CSSProperties }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} style={{ width: "100%", height: 54, border: "none", borderRadius: 13, background: BRAND, color: "#fff", fontFamily: SANS, fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: "0 14px 28px -16px rgba(125,1,50,.9)", ...style }}>
+    <button type="button" onClick={onClick} disabled={disabled} style={{ width: "100%", height: 54, border: "none", borderRadius: 13, background: BRAND, color: WHITE, fontFamily: SANS, fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.55 : 1, boxShadow: "0 14px 28px -16px rgba(125,1,50,.9)", ...style }}>
       {children}
     </button>
   );
@@ -554,9 +555,9 @@ function GoogleMark() {
   );
 }
 
-const cardStyle: React.CSSProperties = { background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, boxShadow: "0 1px 2px rgba(26,33,56,.04)" };
+const cardStyle: React.CSSProperties = { background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, boxShadow: "0 1px 2px rgba(26,33,56,.04)" };
 function googleBtn(busy: boolean): React.CSSProperties {
-  return { width: "100%", height: 54, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, border: `1.5px solid ${LINE}`, borderRadius: 13, background: "#fff", fontFamily: SANS, fontSize: 16, fontWeight: 700, color: INK, cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1, boxShadow: "0 10px 24px -16px rgba(26,33,56,.5)" };
+  return { width: "100%", height: 54, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, border: `1.5px solid ${LINE}`, borderRadius: 13, background: PANEL, fontFamily: SANS, fontSize: 16, fontWeight: 700, color: INK, cursor: busy ? "default" : "pointer", opacity: busy ? 0.7 : 1, boxShadow: "0 10px 24px -16px rgba(26,33,56,.5)" };
 }
 const backBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 14.5, fontWeight: 600, color: MUTED, padding: 0, marginBottom: 16 };
 const signInRow: React.CSSProperties = { fontFamily: SANS, fontSize: 14, color: MUTED, textAlign: "center", margin: "16px 0 0" };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Pick the months, download the sheet.
@@ -87,7 +87,7 @@ export function MonthsExport({
               fontWeight: 600,
               border: "none",
               background: INDIGO,
-              color: "#fff",
+              color: WHITE,
               textDecoration: "none",
             }}
           >

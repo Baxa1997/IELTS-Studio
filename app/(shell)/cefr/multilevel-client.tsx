@@ -33,6 +33,16 @@ import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { Timer } from "@/components/exam/timer";
 import { engineClient } from "@/lib/engine/client";
 import { WordLookup } from "@/app/(studio)/read/_shared/word-lookup";
+import {
+  BRAND_DEEP,
+  BRAND_LINE,
+  BRAND_SOFT,
+  FIELD_LINE,
+  PANEL,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `multilevel` namespace. */
 const callEngine = engineClient("multilevel");
@@ -538,7 +548,7 @@ function Hub({
               <SectionLabel>Your recent papers</SectionLabel>
               <div
                 style={{
-                  background: "#fff",
+                  background: PANEL,
                   border: "1px solid rgba(28,27,46,.09)",
                   borderRadius: 14,
                   overflow: "hidden",
@@ -599,7 +609,7 @@ function Hub({
 
       {error ? <UpgradeNotice message={error} /> : null}
 
-      <p style={{ margin: "32px 0 0", fontSize: 13, color: "#8B919D" }}>
+      <p style={{ margin: "32px 0 0", fontSize: 13, color: SLATE_MUTED }}>
         Original content in the Uzbekistan Multilevel (DTM) format. Not affiliated with or endorsed
         by the State Testing Centre.
       </p>
@@ -641,7 +651,7 @@ function TabButton({
         transition: "background .15s ease",
       }}
     >
-      <span style={{ display: "flex", flex: "none", color: active ? BRAND : "#8B919D" }}>
+      <span style={{ display: "flex", flex: "none", color: active ? BRAND : SLATE_MUTED }}>
         {icon}
       </span>
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
@@ -723,7 +733,7 @@ function PracticeCard({
       className="lp-hover"
       style={{
         position: "relative",
-        background: "#fff",
+        background: PANEL,
         border: "1px solid rgba(28,27,46,.09)",
         borderRadius: 14,
         padding: 16,
@@ -747,7 +757,7 @@ function PracticeCard({
               width: 34,
               height: 34,
               borderRadius: 9,
-              background: "#FDF4F7",
+              background: BRAND_SOFT,
               color: BRAND,
               display: "flex",
               alignItems: "center",
@@ -784,7 +794,7 @@ function PracticeCard({
           {level}
         </span>
       </div>
-      <span style={{ fontSize: 13, color: "#8B919D", lineHeight: 1.45 }}>{desc}</span>
+      <span style={{ fontSize: 13, color: SLATE_MUTED, lineHeight: 1.45 }}>{desc}</span>
       <div
         style={{
           marginTop: "auto",
@@ -796,7 +806,7 @@ function PracticeCard({
           paddingTop: 10,
         }}
       >
-        <span style={{ fontSize: 12.5, color: "#8B919D" }}>
+        <span style={{ fontSize: 12.5, color: SLATE_MUTED }}>
           {eyebrow} · {meta}
         </span>
         <span
@@ -866,7 +876,7 @@ function RecentRow({
           width: 34,
           height: 34,
           borderRadius: 9,
-          background: "#FDF4F7",
+          background: BRAND_SOFT,
           color: BRAND,
           display: "flex",
           alignItems: "center",
@@ -890,7 +900,7 @@ function RecentRow({
         >
           {full ? "Full reading paper" : `Part ${part ?? ""} practice`}
         </span>
-        <span style={{ display: "block", fontSize: 12.5, color: "#8B919D", marginTop: 1 }}>
+        <span style={{ display: "block", fontSize: 12.5, color: SLATE_MUTED, marginTop: 1 }}>
           {full ? "35 questions" : "single part"} · {fmtWhen(it.created_at)}
         </span>
       </span>
@@ -969,7 +979,7 @@ function ReadingGenerateModal({
           width: "min(640px, 100%)",
           maxHeight: "88vh",
           overflowY: "auto",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 20,
           padding: "26px 26px 22px",
           boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)",
@@ -1103,7 +1113,7 @@ function ModalOption({
         gap: 14,
         textAlign: "left",
         width: "100%",
-        background: "#fff",
+        background: PANEL,
         border: "1px solid rgba(28,27,46,.09)",
         borderRadius: 14,
         padding: 14,
@@ -1115,7 +1125,7 @@ function ModalOption({
           width: 42,
           height: 42,
           borderRadius: 11,
-          background: "#FDF4F7",
+          background: BRAND_SOFT,
           color: BRAND,
           display: "flex",
           alignItems: "center",
@@ -1136,7 +1146,7 @@ function ModalOption({
             display: "block",
             fontFamily: SANS,
             fontSize: 13,
-            color: "#8B919D",
+            color: SLATE_MUTED,
             marginTop: 2,
             lineHeight: 1.45,
           }}
@@ -1157,7 +1167,7 @@ const modalCloseBtn: React.CSSProperties = {
   height: 30,
   borderRadius: 9,
   border: "1px solid rgba(28,27,46,.09)",
-  background: "#fff",
+  background: PANEL,
   color: MUTED,
   display: "flex",
   alignItems: "center",
@@ -1389,7 +1399,7 @@ function MarkerToolbar({
           fontSize: 12,
           fontWeight: 600,
           cursor: marks ? "pointer" : "default",
-          background: "#fff",
+          background: PANEL,
           border: `1px solid ${D_LINE}`,
           color: marks ? D_SLATE3 : D_SLATE2,
           opacity: marks ? 1 : 0.55,
@@ -1587,7 +1597,7 @@ function ReadingRunner({
             {fs.isFull ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
-            <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 16, color: "#fff" }}>
+            <span style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 16, color: WHITE }}>
               Reading
             </span>
             <span
@@ -1656,7 +1666,7 @@ function ReadingRunner({
                   fontFamily: JAKARTA,
                   fontWeight: 700,
                   fontSize: 17,
-                  color: "#F0D3DE",
+                  color: BRAND_LINE,
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
@@ -1690,7 +1700,7 @@ function ReadingRunner({
       {/* Info + progress bar */}
       <div
         style={{
-          background: "#fff",
+          background: PANEL,
           padding: "10px clamp(16px,3vw,32px)",
           display: "flex",
           alignItems: "center",
@@ -1898,7 +1908,7 @@ function ReadingRunner({
             width: 380,
             maxWidth: "calc(100vw - 40px)",
             height: "min(72vh, 600px)",
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${D_LINE}`,
             borderRadius: 16,
             boxShadow: "0 24px 60px -20px rgba(15,23,42,.45)",
@@ -1924,7 +1934,7 @@ function ReadingRunner({
         style={{
           flex: "none",
           borderTop: `1px solid ${D_LINE}`,
-          background: "#fff",
+          background: PANEL,
           padding: "10px 20px",
           display: "flex",
           alignItems: "center",
@@ -2023,7 +2033,7 @@ function cefrPartPill(active: boolean): React.CSSProperties {
     borderRadius: 999,
     cursor: "pointer",
     flex: "none",
-    background: "#fff",
+    background: PANEL,
     fontFamily: JAKARTA,
     border: `1.5px solid ${active ? D_ACCENT : D_LINE}`,
   };
@@ -2048,12 +2058,12 @@ function cefrNavCircle(answered: boolean, current: boolean): React.CSSProperties
     return {
       ...base,
       borderColor: D_ACCENT,
-      background: "#fff",
+      background: PANEL,
       color: D_ACCENT,
       boxShadow: `0 0 0 3px ${D_ATINT}`,
     };
-  if (answered) return { ...base, borderColor: D_ACCENT, background: D_ACCENT, color: "#fff" };
-  return { ...base, borderColor: D_LINE, background: "#fff", color: D_SLATE2 };
+  if (answered) return { ...base, borderColor: D_ACCENT, background: D_ACCENT, color: WHITE };
+  return { ...base, borderColor: D_LINE, background: PANEL, color: D_SLATE2 };
 }
 
 /** Countdown that fires `onExpire` once at zero; render-prop exposes raw seconds left. */
@@ -2147,7 +2157,7 @@ function CefrCoach({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        background: "#fff",
+        background: PANEL,
         minWidth: 0,
       }}
     >
@@ -2168,7 +2178,7 @@ function CefrCoach({
               height: 32,
               borderRadius: 8,
               background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
-              color: "#fff",
+              color: WHITE,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2340,7 +2350,7 @@ function CefrCoach({
               border: "none",
               cursor: sending || !input.trim() ? "default" : "pointer",
               background: D_ACCENT,
-              color: "#fff",
+              color: WHITE,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -2359,7 +2369,7 @@ function dsSubmitBtn(busy: boolean): React.CSSProperties {
   return {
     padding: "11px 22px",
     background: D_ACCENT,
-    color: "#fff",
+    color: WHITE,
     border: "none",
     borderRadius: 8,
     fontFamily: JAKARTA,
@@ -2990,7 +3000,7 @@ function wPrimaryBtn(disabled: boolean): React.CSSProperties {
     border: "none",
     borderRadius: 10,
     background: W_ACCENT,
-    color: "#fff",
+    color: WHITE,
     fontFamily: JAKARTA,
     fontSize: 14,
     fontWeight: 700,
@@ -3006,7 +3016,7 @@ const wGhostBtn: React.CSSProperties = {
   padding: "0 16px",
   border: `1px solid ${W_LINE}`,
   borderRadius: 10,
-  background: "#fff",
+  background: PANEL,
   color: W_MUTED,
   fontFamily: JAKARTA,
   fontSize: 14,
@@ -3176,7 +3186,7 @@ function TaskStudio({
         style={{
           flexShrink: 0,
           height: 62,
-          background: "#fff",
+          background: PANEL,
           borderBottom: `1px solid ${W_LINE}`,
           display: "flex",
           alignItems: "center",
@@ -3196,7 +3206,7 @@ function TaskStudio({
               height: 36,
               padding: "0 13px 0 10px",
               border: `1px solid ${W_LINE}`,
-              background: "#fff",
+              background: PANEL,
               borderRadius: 9,
               fontFamily: JAKARTA,
               fontSize: 14,
@@ -3218,7 +3228,7 @@ function TaskStudio({
                 padding: "0 9px",
                 borderRadius: 6,
                 background: W_INK,
-                color: "#fff",
+                color: WHITE,
                 fontSize: 11.5,
                 fontWeight: 700,
                 letterSpacing: ".05em",
@@ -3240,7 +3250,7 @@ function TaskStudio({
             >
               {kind}
             </span>
-            <span style={{ color: "#cbd5e1" }}>·</span>
+            <span style={{ color: FIELD_LINE }}>·</span>
             <span
               style={{
                 fontFamily: JAKARTA,
@@ -3308,7 +3318,7 @@ function TaskStudio({
               height: 36,
               borderRadius: 9,
               border: `1px solid ${W_LINE}`,
-              background: "#fff",
+              background: PANEL,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -3411,7 +3421,7 @@ function TaskStudio({
             style={{
               flex: 1,
               minWidth: 0,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${W_LINE}`,
               borderRadius: 14,
               display: "flex",
@@ -3458,7 +3468,7 @@ function TaskStudio({
             style={{
               flex: 1,
               minWidth: 0,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${W_LINE}`,
               borderRadius: 14,
               display: "flex",
@@ -3559,7 +3569,7 @@ function TaskStudio({
                   fontFamily: PLEX,
                   fontSize: 16.5,
                   lineHeight: 1.85,
-                  color: "#3B4150",
+                  color: SLATE_STRONG,
                 }}
               />
             </div>
@@ -3608,7 +3618,7 @@ function TaskStudio({
             style={{
               width: 320,
               flexShrink: 0,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${W_LINE}`,
               borderRadius: 14,
               display: "flex",
@@ -3640,7 +3650,7 @@ function TaskStudio({
               borderRadius: 999,
               border: "none",
               background: W_ACCENT,
-              color: "#fff",
+              color: WHITE,
               cursor: "pointer",
               fontFamily: JAKARTA,
               fontWeight: 700,
@@ -3671,7 +3681,7 @@ function TaskStudio({
         style={{
           flexShrink: 0,
           minHeight: 44,
-          background: "#fff",
+          background: PANEL,
           borderTop: `1px solid ${W_LINE}`,
           display: "flex",
           alignItems: "center",
@@ -3735,7 +3745,7 @@ function WritingPromptPanel({
       style={{
         width: 348,
         flexShrink: 0,
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${W_LINE}`,
         borderRadius: 14,
         display: "flex",
@@ -4049,7 +4059,7 @@ function WritingCoach({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        background: "#fff",
+        background: PANEL,
         minWidth: 0,
       }}
     >
@@ -4072,7 +4082,7 @@ function WritingCoach({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#fff",
+            color: WHITE,
           }}
         >
           <Sparkles size={18} />
@@ -4127,7 +4137,7 @@ function WritingCoach({
               fontFamily: JAKARTA,
               fontSize: 13.5,
               lineHeight: 1.55,
-              color: "#3B4150",
+              color: SLATE_STRONG,
             }}
           >
             {empty}
@@ -4268,7 +4278,7 @@ function WritingCoach({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#fff",
+              color: WHITE,
             }}
           >
             <Send size={15} />
@@ -4313,7 +4323,7 @@ function CefrGradingOverlay() {
       <div
         style={{
           width: "min(420px,94vw)",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 22,
           overflow: "hidden",
           boxShadow: "0 40px 90px -30px rgba(15,23,42,.7)",
@@ -4339,7 +4349,7 @@ function CefrGradingOverlay() {
               justifyContent: "center",
               borderRadius: "50%",
               background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
-              color: "#fff",
+              color: WHITE,
             }}
           >
             <Loader2 size={26} className="animate-spin" />
@@ -4436,7 +4446,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
           padding: "18px 22px",
           borderRadius: 14,
           background: `linear-gradient(135deg,${D_ACCENT} 0%,#5C0125 100%)`,
-          color: "#fff",
+          color: WHITE,
           marginBottom: 18,
         }}
       >
@@ -4552,7 +4562,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
               fontFamily: PLEX,
               fontSize: 15,
               lineHeight: 1.8,
-              color: "#3B4150",
+              color: SLATE_STRONG,
               margin: "10px 0 0",
               whiteSpace: "pre-wrap",
             }}
@@ -4617,7 +4627,7 @@ function ScoreBanner({ score, max, level }: { score: number; max: number; level?
     <div
       style={{
         background: `linear-gradient(135deg,${D_ACCENT} 0%,#5C0125 100%)`,
-        color: "#fff",
+        color: WHITE,
         borderRadius: 12,
         padding: "18px 24px",
         marginBottom: 16,
@@ -4704,7 +4714,7 @@ function PartHeading({ n, cefr, count }: { n: number; cefr: string; count: strin
             width: 3,
             height: 3,
             borderRadius: "50%",
-            background: "#cbd5e1",
+            background: FIELD_LINE,
             display: "inline-block",
           }}
         />
@@ -4797,7 +4807,7 @@ function Instruction({ children }: { children: React.ReactNode }) {
           fontWeight: 400,
           fontSize: 14,
           lineHeight: 1.6,
-          color: "#5C0125",
+          color: BRAND_DEEP,
           margin: 0,
         }}
       >

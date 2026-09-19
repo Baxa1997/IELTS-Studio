@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { archivePractice, restorePractice, type PracticeFormState } from "./actions";
+import { PANEL } from "@/lib/theme/tokens";
 
 const MUTED = "#5A6076";
 const LINE = "#ECEAF2";
@@ -40,7 +41,7 @@ export function PracticeRowActions({
           disabled={archiving || restoring}
           style={{
             border: `1px solid ${LINE}`,
-            background: "#fff",
+            background: PANEL,
             color: MUTED,
             borderRadius: 9,
             padding: "5px 11px",

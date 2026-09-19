@@ -7,6 +7,7 @@ import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/components/admin/u
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { loadAccountUsage, setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Plan and limits for one account, as the design draws it.
@@ -34,7 +35,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 export interface ManageTarget {
@@ -136,7 +137,7 @@ export function ManageModal({
           width: "min(460px, 100%)",
           maxHeight: "calc(100vh - 40px)",
           overflowY: "auto",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 16,
           boxShadow: "0 30px 70px rgba(14,13,38,.34)",
         }}
@@ -351,7 +352,7 @@ export function ManageModal({
                 alignItems: "center",
                 gap: 7,
                 border: `1px solid ${target.suspended ? TONE.green.border : TONE.red.border}`,
-                background: "#fff",
+                background: PANEL,
                 borderRadius: 9,
                 padding: "10px 13px",
                 fontFamily: "inherit",
@@ -390,7 +391,7 @@ export function ManageModal({
               disabled={planPending}
               style={{
                 background: TONE.indigo.ink,
-                color: "#fff",
+                color: WHITE,
                 border: 0,
                 borderRadius: 9,
                 padding: "10px 20px",

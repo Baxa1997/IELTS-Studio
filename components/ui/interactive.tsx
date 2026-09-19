@@ -14,7 +14,15 @@
 
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 
-import { FAINT, INK, LINE, MUTED, RED_DEEP, SANS, WHITE } from "@/lib/theme/tokens";
+import {
+  FAINT,
+  INK,
+  LINE,
+  MUTED,
+  PANEL,
+  RED_DEEP,
+  SANS,
+} from "@/lib/theme/tokens";
 
 /* ── modal ─────────────────────────────────────────────────────────────────── */
 
@@ -103,7 +111,7 @@ export function Modal({
           // that behaves in both cases. (Carried over from the groups console's
           // local modal, which is where this was worked out.)
           margin: "auto",
-          background: WHITE,
+          background: PANEL,
           borderRadius: 18,
           boxShadow: "0 30px 60px rgba(20,19,58,.28)",
           fontFamily: SANS,
@@ -153,7 +161,7 @@ export function Modal({
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              background: WHITE,
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 9,
               color: MUTED,

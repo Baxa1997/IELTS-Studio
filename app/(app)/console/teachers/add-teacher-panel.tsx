@@ -6,6 +6,7 @@ import { useConsolePanels } from "@/components/console/console-chrome";
 
 import { addTeacherAccount, type AddStudentState } from "../groups/actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Create a teacher account on the spot — name, login, password. Email is
@@ -39,7 +40,7 @@ const fieldStyle: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
@@ -180,7 +181,7 @@ export function AddTeacherPanel({ onDone }: { onDone?: () => void }) {
               style={{
                 flex: 1,
                 background: GREEN,
-                color: "#fff",
+                color: WHITE,
                 border: 0,
                 borderRadius: 8,
                 padding: 11,

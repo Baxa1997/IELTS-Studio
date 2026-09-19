@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CloseGroupButton, DeleteGroupButton } from "../../../group-forms";
 import { SANS } from "@/components/console/crm-ui";
 import { V2, card as v2card, serifHead } from "../../ui";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -316,7 +317,7 @@ function SetupChecklist({ items }: { items: SetupChecklistItem[] }) {
                 whiteSpace: "nowrap",
                 border: `1px solid ${item.done ? V2.field : V2.ink}`,
                 borderRadius: 9,
-                background: "#fff",
+                background: PANEL,
                 padding: "9px 13px",
                 color: item.done ? V2.ink : V2.ink,
                 fontFamily: SANS,

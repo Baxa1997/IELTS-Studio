@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { BODY, INDIGO_CONSOLE as INDIGO, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The day being marked.
@@ -60,7 +60,7 @@ export function DateStrip({
           alignItems: "stretch",
           border: `1px solid ${HAIRLINE}`,
           borderRadius: 10,
-          background: "#fff",
+          background: PANEL,
           overflow: "hidden",
           boxShadow: "0 1px 2px rgba(22,22,46,.04)",
         }}
@@ -124,7 +124,7 @@ export function DateStrip({
           marginLeft: "auto",
           border: `1px solid ${HAIRLINE}`,
           borderRadius: 10,
-          background: "#fff",
+          background: PANEL,
           overflow: "hidden",
         }}
       >
@@ -169,7 +169,7 @@ const step: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   padding: "0 11px",
-  color: "#4C4A63",
+  color: BODY,
   textDecoration: "none",
 };
 
@@ -182,6 +182,6 @@ const chip: React.CSSProperties = {
   fontSize: 12.5,
   textDecoration: "none",
   border: `1px solid ${HAIRLINE}`,
-  background: "#fff",
-  color: "#4C4A63",
+  background: PANEL,
+  color: BODY,
 };

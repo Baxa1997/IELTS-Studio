@@ -25,7 +25,7 @@ import {
    it straddled the rail's edge and had to be legible against both the dark rail
    and the light page; the toggle now sits inside the brand row on a white rail,
    so it takes the rail's own greys instead. */
-import { WHITE } from "@/lib/theme/tokens";
+import { PANEL, SLATE_MUTED, WHITE } from "@/lib/theme/tokens";
 
 import { SidebarNav } from "./sidebar-nav";
 
@@ -325,7 +325,7 @@ export function AppShell({
           alignItems: "center",
           gap: 10,
           padding: "0 14px",
-          background: "#fff",
+          background: PANEL,
           borderBottom: `1px solid ${BORDER}`,
         }}
       >
@@ -335,7 +335,7 @@ export function AppShell({
           style={{
             background: "none",
             border: "none",
-            color: "#8B919D",
+            color: SLATE_MUTED,
             cursor: "pointer",
             display: "flex",
           }}
@@ -484,7 +484,7 @@ export function AppShell({
                    burgundy, which would be the only burgundy left on this
                    surface. */
                 border: `1px solid ${RAIL_BORDER}`,
-                background: WHITE,
+                background: PANEL,
                 borderRadius: 999,
                 cursor: "pointer",
                 color: TOGGLE_INK,
@@ -698,7 +698,7 @@ function ProfileMenu({
             right: "auto",
             minWidth: 248,
             zIndex: 21,
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${RAIL_BORDER}`,
             borderRadius: 14,
             boxShadow: "0 24px 52px -20px rgba(28,25,15,.32)",
@@ -774,7 +774,7 @@ function ProfileMenu({
                   height: 20,
                   borderRadius: 10,
                   background: "#b3261e",
-                  color: "#fff",
+                  color: WHITE,
                   fontSize: 11.5,
                   fontWeight: 700,
                   display: "grid",

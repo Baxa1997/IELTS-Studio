@@ -13,6 +13,8 @@
  * --font-display / --font-body names.
  */
 
+import { BRAND, WHITE } from "@/lib/theme/tokens";
+
 const LUCIDA_CSS = `
 .lucida {
   /* --- neutral scale (warm-tinted): 0 = lightest surface, 1000 = ink --- */
@@ -230,7 +232,7 @@ export const PERSONAS: Persona[] = [
     initial: "E",
     name: "Emily",
     accent: "var(--color-primary-500)",
-    hex: "#7D0132",
+    hex: BRAND,
     glow: "rgba(125,1,50,0.35)",
     tint: "rgba(125,1,50,0.08)",
     mockTrait: "Warm & encouraging",
@@ -388,7 +390,7 @@ export function PersonaAvatar({
             fontFamily: "var(--font-display)",
             fontSize: size * 0.34,
             fontWeight: 700,
-            color: "#FFFFFF",
+            color: WHITE,
           }}
         >
           {initial}

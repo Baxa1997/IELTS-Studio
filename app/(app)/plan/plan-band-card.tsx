@@ -10,6 +10,7 @@ import {
   SKILL_LABELS,
   type SkillEstimateView,
 } from "@/lib/estimates/compute";
+import { BRAND, BRAND_LINE, BRAND_SOFT, PANEL } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -36,7 +37,7 @@ interface Accent {
 }
 
 const ACCENTS: Record<string, Accent> = {
-  reading: { color: "#7D0132", soft: "#FDF4F7", softBorder: "#F0D3DE", track: "#F0D3DE", href: "/read" },
+  reading: { color: BRAND, soft: BRAND_SOFT, softBorder: BRAND_LINE, track: BRAND_LINE, href: "/read" },
   writing: { color: "#B9791A", soft: "#FFF3E0", softBorder: "#F6E0B8", track: "#EBCF9E", href: "/write" },
 };
 
@@ -72,7 +73,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
   const delta = measured && base != null ? Math.round((currentBand - base) * 10) / 10 : 0;
 
   return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(20px,2.4vw,26px)" }}>
+    <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(20px,2.4vw,26px)" }}>
       {/* header: skill + editable target */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 22 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
@@ -88,7 +89,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
             disabled={pending}
             onChange={(e) => onTargetChange(Number(e.target.value))}
             aria-label={`${SKILL_LABELS[skill]} target band`}
-            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: "#FDF4F7", border: "1px solid #F0D3DE", padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
+            style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK, background: BRAND_SOFT, border: "1px solid #F0D3DE", padding: "4px 10px", borderRadius: 8, cursor: pending ? "default" : "pointer", fontVariantNumeric: "tabular-nums" }}
           >
             {TARGET_OPTIONS.map((b) => (
               <option key={b} value={b}>

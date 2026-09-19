@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { assignPractice, type PracticeFormState } from "@/app/(app)/console/practices/actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO } from "@/lib/theme/tokens";
+import { INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 const INK = "#1A2138";
 const MUTED = "#5A6076";
@@ -45,7 +45,7 @@ export function AssignToClassPanel({
       {open ? (
         <div
           style={{
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${LINE}`,
             borderRadius: 14,
             boxShadow: "0 12px 34px rgba(26,33,56,0.16)",
@@ -138,7 +138,7 @@ export function AssignToClassPanel({
               disabled={pending}
               style={{
                 background: INDIGO,
-                color: "#fff",
+                color: WHITE,
                 border: "none",
                 borderRadius: 10,
                 padding: "9px 14px",
@@ -169,7 +169,7 @@ export function AssignToClassPanel({
           onClick={() => setOpen(true)}
           style={{
             background: INK,
-            color: "#fff",
+            color: WHITE,
             border: "none",
             borderRadius: 999,
             padding: "10px 16px",

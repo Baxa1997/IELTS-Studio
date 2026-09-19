@@ -1,4 +1,12 @@
-import { BRAND, BRAND_DARKEST, BRAND_MID, BRAND_PALE, SANS, SERIF } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_DARKEST,
+  BRAND_MID,
+  BRAND_PALE,
+  SANS,
+  SERIF,
+  WHITE,
+} from "@/lib/theme/tokens";
 import {
   formatMoney,
   nextPayoutDate,
@@ -53,7 +61,7 @@ export function EarningsHero({
         borderRadius: 20,
         padding: "26px 32px 26px",
         background: `linear-gradient(120deg, ${BRAND_DARKEST} 0%, ${BRAND} 58%, ${BRAND_MID} 100%)`,
-        color: "#fff",
+        color: WHITE,
         marginTop: 18,
       }}
     >

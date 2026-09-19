@@ -6,6 +6,7 @@ import { EMBER } from "@/lib/lessons/theme";
 
 import { setLessonStatus, type LessonActionState } from "./actions";
 import { ShareModal, type GroupOption } from "./share-modal";
+import { WHITE } from "@/lib/theme/tokens";
 
 /**
  * The one button that gets a lesson in front of a class.
@@ -97,7 +98,7 @@ const button: React.CSSProperties = {
   borderRadius: 999,
   border: 0,
   background: EMBER,
-  color: "#fff",
+  color: WHITE,
   fontFamily: "inherit",
   fontSize: 15,
   fontWeight: 700,

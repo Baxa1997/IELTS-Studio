@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import { FAINT, INK, MUTED } from "@/lib/theme/tokens";
+import { FAINT, GREEN, INK, MUTED, PANEL, WHITE } from "@/lib/theme/tokens";
 import { useActionFeedback } from "@/components/console/toast";
 import { type CenterSettings } from "@/lib/console/center-settings";
 import { orderedWeekdays } from "@/lib/console/timetable-days";
@@ -37,7 +37,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
   width: "100%",
 };
 
@@ -183,8 +183,8 @@ export function OperatingForm({ settings }: { settings: CenterSettings }) {
           disabled={pending}
           className="cn-btn cn-btn--green"
           style={{
-            background: "#16794C",
-            color: "#fff",
+            background: GREEN,
+            color: WHITE,
             border: 0,
             borderRadius: 8,
             padding: "9px 16px",

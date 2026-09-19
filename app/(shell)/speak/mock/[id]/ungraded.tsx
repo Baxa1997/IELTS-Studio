@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LucidaScope } from "../../lucida";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * A mock that will never have a band.
@@ -42,7 +43,7 @@ export function UngradedMock({ state }: { state: string }) {
           };
 
   return (
-    <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
+    <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
       <div
         style={{
           flex: 1,
@@ -109,7 +110,7 @@ export function UngradedMock({ state }: { state: string }) {
                 padding: "14px 24px",
                 borderRadius: 12,
                 background: "#1A1520",
-                color: "#fff",
+                color: WHITE,
                 fontSize: 15,
                 fontWeight: 600,
                 textDecoration: "none",

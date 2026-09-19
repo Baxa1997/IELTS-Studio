@@ -5,7 +5,19 @@ import { useEffect, useRef, useState } from "react";
 
 import { UI_LOCALE } from "@/lib/format/locale";
 
-import { BRAND, BRAND_TINT, BRAND_TINT_LINE, DISPLAY, INK, LINE, MUTED, RADIUS } from "./design";
+import {
+  BRAND,
+  BRAND_TINT,
+  BRAND_TINT_LINE,
+  DISPLAY,
+  GREEN,
+  GREEN_TINT,
+  GREY,
+  INK,
+  LINE,
+  MUTED,
+  RADIUS,
+} from "./design";
 
 type IconName = "users" | "centers" | "tasks" | "checks";
 
@@ -173,8 +185,8 @@ export function LiveStat({
         {delta ? (
           <span
             style={{
-              background: "#eaf6f0",
-              color: "#1c7a4f",
+              background: GREEN_TINT,
+              color: GREEN,
               borderRadius: RADIUS.pill,
               padding: "5px 11px",
               fontSize: 13,
@@ -186,7 +198,7 @@ export function LiveStat({
           </span>
         ) : null}
       </div>
-      <div style={{ fontSize: 14, color: "#6b7280", marginTop: 8 }}>{note}</div>
+      <div style={{ fontSize: 14, color: GREY, marginTop: 8 }}>{note}</div>
     </div>
   );
 }

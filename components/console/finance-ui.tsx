@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { FAINT, INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The client-side furniture the finance pages need: a slide-over that opens
@@ -28,7 +28,7 @@ export const fieldStyle: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 export const labelStyle: React.CSSProperties = {
@@ -54,7 +54,7 @@ export function Field({
     <div style={span ? { gridColumn: "1 / -1" } : undefined}>
       <label style={labelStyle}>
         {label}
-        {hint ? <span style={{ color: "#777581" }}> · {hint}</span> : null}
+        {hint ? <span style={{ color: FAINT }}> · {hint}</span> : null}
       </label>
       {children}
     </div>
@@ -113,7 +113,7 @@ export function SubmitButton({
       className="cn-btn"
       style={{
         background,
-        color: "#fff",
+        color: WHITE,
         border: 0,
         borderRadius: 9,
         padding: "9px 16px",
@@ -187,14 +187,14 @@ export function Drawer({
   const trigger: React.CSSProperties =
     variant === "ghost"
       ? {
-          background: "#fff",
+          background: PANEL,
           color: INK,
           border: "1px solid #C5C4BE",
           fontWeight: 500,
         }
       : {
           background: variant === "green" ? GREEN : INDIGO,
-          color: "#fff",
+          color: WHITE,
           border: 0,
           fontWeight: 600,
         };
@@ -243,7 +243,7 @@ export function Drawer({
               position: "relative",
               width,
               maxWidth: "100vw",
-              background: "#fff",
+              background: PANEL,
               height: "100dvh",
               overflowY: "auto",
               boxShadow: "-20px 0 50px rgba(20,19,58,.2)",

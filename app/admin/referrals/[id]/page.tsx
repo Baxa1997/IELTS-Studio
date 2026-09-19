@@ -20,7 +20,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { loadAccountDetail, type AdminLedgerRow, type Check } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { formatMoney, STATUS_LABEL } from "@/lib/referrals/types";
-import { BRAND, BRAND_LINE, BRAND_SOFT } from "@/lib/theme/tokens";
+import { BRAND, BRAND_LINE, BRAND_SOFT, GREEN, PANEL } from "@/lib/theme/tokens";
 
 import { DecisionBar } from "../decision-bar";
 
@@ -312,8 +312,8 @@ function LedgerRow({ row }: { row: AdminLedgerRow }) {
         : row.state === "reversed"
           ? { bg: "#F1F0EB", fg: MUTED, label: "refunded" }
           : row.state === "paid"
-            ? { bg: "#EAF4EE", fg: "#16794C", label: "paid out" }
-            : { bg: "#EAF4EE", fg: "#16794C", label: "ready" };
+            ? { bg: "#EAF4EE", fg: GREEN, label: "paid out" }
+            : { bg: "#EAF4EE", fg: GREEN, label: "ready" };
 
   return (
     <tr style={{ borderTop: `1px solid ${ROW_RULE}` }}>
@@ -352,7 +352,7 @@ function LedgerRow({ row }: { row: AdminLedgerRow }) {
 
 function Cell({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
-    <div style={{ background: "#fff", padding: "16px 18px" }}>
+    <div style={{ background: PANEL, padding: "16px 18px" }}>
       <div
         style={{
           fontFamily: SERIF,

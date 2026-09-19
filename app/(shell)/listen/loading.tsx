@@ -1,4 +1,5 @@
 import { Block } from "@/components/app-shell/page-skeleton";
+import { PANEL } from "@/lib/theme/tokens";
 
 /**
  * Listening hub fallback — mirrors the tabbed hub's exact shape (heading + usage
@@ -49,7 +50,7 @@ export default function ListenLoading() {
           <div
             key={i}
             style={{
-              background: "#fff",
+              background: PANEL,
               border: "1px solid rgba(28,27,46,.09)",
               borderRadius: 14,
               padding: 16,

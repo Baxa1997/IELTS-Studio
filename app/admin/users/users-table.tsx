@@ -20,6 +20,7 @@ import {
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { ManageModal, type ManageTarget } from "./manage-modal";
+import { BODY, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The users table, filtered in the browser.
@@ -93,7 +94,7 @@ const field: React.CSSProperties = {
   borderRadius: 8,
   padding: "8px 10px",
   fontSize: 12.5,
-  background: "#fff",
+  background: PANEL,
   fontFamily: "inherit",
   color: INK,
 };
@@ -278,7 +279,7 @@ export function UsersTable({
                   {u.role.replace("_", " ")}
                 </Pill>
               </div>
-              <div style={{ color: "#4C4A63", fontSize: 12.5, ...clip }}>
+              <div style={{ color: BODY, fontSize: 12.5, ...clip }}>
                 {u.orgKind === "center" ? u.orgName : "Individual"}
               </div>
               <div>

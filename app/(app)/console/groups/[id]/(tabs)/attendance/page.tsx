@@ -8,6 +8,7 @@ import { ENROLLED } from "@/lib/console/status";
 import { createClient } from "@/lib/supabase/server";
 import { SANS } from "@/components/console/crm-ui";
 import { Board, V2, serifHead } from "../../ui";
+import { WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -113,7 +114,7 @@ export default async function GroupAttendancePage({ params }: { params: Promise<
               padding: "11px 18px",
               borderRadius: 12,
               background: V2.indigo,
-              color: "#fff",
+              color: WHITE,
               fontFamily: SANS,
               fontSize: 14,
               fontWeight: 600,

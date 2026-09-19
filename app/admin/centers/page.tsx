@@ -25,6 +25,7 @@ import { MenuIcon } from "@/components/admin/menu-icons";
 import { OverflowMenu } from "@/components/admin/menu";
 import { loadCenters, type CenterRow } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
+import { BODY, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -268,7 +269,7 @@ export default async function CentersPage({
                 borderRadius: 8,
                 padding: "8px 10px",
                 fontSize: 12.5,
-                background: "#fff",
+                background: PANEL,
                 fontFamily: "inherit",
                 color: INK,
               }}
@@ -350,9 +351,9 @@ export default async function CentersPage({
                     {c.status}
                   </Pill>
                 </div>
-                <div style={{ textAlign: "right", color: "#4C4A63" }}>{c.teachers}</div>
-                <div style={{ textAlign: "right", color: "#4C4A63" }}>{c.groups}</div>
-                <div style={{ textAlign: "right", color: "#4C4A63" }}>{c.students}</div>
+                <div style={{ textAlign: "right", color: BODY }}>{c.teachers}</div>
+                <div style={{ textAlign: "right", color: BODY }}>{c.groups}</div>
+                <div style={{ textAlign: "right", color: BODY }}>{c.students}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <div style={{ width: 54, flex: "none" }}>
                     <Bar

@@ -17,9 +17,10 @@ import {
   INK,
   LINE,
   MUTED,
+  PANEL,
   SANS,
   SERIF,
-  WHITE,
+  WELL,
 } from "@/lib/theme/tokens";
 
 import { ApplyForm } from "./apply-form";
@@ -372,7 +373,7 @@ function payoutLine(totals: CurrencyTotal[], settings: ReferralSettings): string
 /* ── small pieces ─────────────────────────────────────────────────────────── */
 
 const card: React.CSSProperties = {
-  background: WHITE,
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 16,
 };
@@ -411,7 +412,7 @@ function Well({ children }: { children: React.ReactNode }) {
     <div
       style={{
         marginTop: "auto",
-        background: "#FBFBFC",
+        background: WELL,
         border: `1px solid ${HAIR}`,
         borderRadius: 12,
         padding: "14px 16px",

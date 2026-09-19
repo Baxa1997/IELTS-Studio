@@ -23,6 +23,7 @@ import {
 import { loadRevenue } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS } from "@/lib/billing/plans";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -104,7 +105,7 @@ export default async function PlansPage() {
             <Link
               href="/admin/users?plan=pro"
               style={{
-                background: "#fff",
+                background: PANEL,
                 border: `1px solid ${TONE.amber.border}`,
                 borderRadius: 8,
                 padding: "8px 13px",

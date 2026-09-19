@@ -7,7 +7,7 @@ import { FiCheckCircle, FiExternalLink, FiUsers } from "react-icons/fi";
 import { useActionFeedback } from "@/components/console/toast";
 
 import { startTelegramLink, unlinkTelegram, type ActionState } from "../../center-actions";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP } from "@/lib/theme/tokens";
 
 /**
  * Connect this group to its Telegram group — in one tap.
@@ -90,7 +90,7 @@ export function TelegramPanel({
             type="button"
             onClick={() => setChanging(true)}
             style={{
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "8px 13px",
@@ -108,7 +108,7 @@ export function TelegramPanel({
               type="submit"
               disabled={unlinking}
               style={{
-                background: "#fff",
+                background: PANEL,
                 border: "1px solid #C78A83",
                 borderRadius: 8,
                 padding: "8px 13px",
@@ -173,7 +173,7 @@ export function TelegramPanel({
             onClick={() => setChanging(false)}
             style={{
               marginLeft: 8,
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #C78A83",
               borderRadius: 9,
               padding: "9px 13px",
@@ -187,7 +187,7 @@ export function TelegramPanel({
           </button>
         ) : null}
         {startState.error ? (
-          <p style={{ fontSize: 12.5, color: "#A63A30", margin: "8px 0 0" }}>{startState.error}</p>
+          <p style={{ fontSize: 12.5, color: RED_DEEP, margin: "8px 0 0" }}>{startState.error}</p>
         ) : null}
       </form>
 
@@ -280,7 +280,7 @@ function ConnectChoices({ code, botUsername }: { code: string; botUsername: stri
               fontFamily: "ui-monospace, monospace",
               fontSize: 15,
               color: INDIGO,
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #C5C4BE",
               borderRadius: 8,
               padding: "9px 11px",
@@ -328,7 +328,7 @@ function TapTarget({
         padding: "11px 13px",
         borderRadius: 10,
         border: "1px solid #D9E9F4",
-        background: "#fff",
+        background: PANEL,
         textDecoration: "none",
         color: "inherit",
       }}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 import { planTier } from "@/lib/billing/plans";
+import { SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const BRAND = "#7D0132";
@@ -68,7 +69,7 @@ export function UpgradeProButton({ onDark = false }: { onDark?: boolean }) {
           borderRadius: 10,
           border: onDark ? "1px solid rgba(255,255,255,.35)" : "none",
           background: onDark ? "rgba(255,255,255,.14)" : BRAND,
-          color: "#fff",
+          color: WHITE,
           fontFamily: SANS,
           fontSize: 13,
           fontWeight: 700,
@@ -149,12 +150,12 @@ export function UpgradeNotice({ message }: { message: string }) {
             gap: 8,
             fontSize: 14.5,
             fontWeight: 700,
-            color: "#121317",
+            color: SLATE_INK,
           }}
         >
           <Sparkles size={16} style={{ color: BRAND }} /> Free practice used up
         </div>
-        <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: "#4A505C" }}>
+        <p style={{ margin: "5px 0 0", fontSize: 13, lineHeight: 1.5, color: SLATE_BODY }}>
           {message} Pro gives you unlimited gradings and practice sets every month.
         </p>
         {checkoutError ? (
@@ -173,7 +174,7 @@ export function UpgradeNotice({ message }: { message: string }) {
           borderRadius: 11,
           border: "none",
           background: BRAND,
-          color: "#fff",
+          color: WHITE,
           fontFamily: SANS,
           fontSize: 14,
           fontWeight: 700,

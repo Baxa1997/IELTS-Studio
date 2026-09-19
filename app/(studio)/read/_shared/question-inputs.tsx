@@ -4,6 +4,7 @@ import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/cons
 import type { NoteMeta } from "@/lib/reading/types";
 
 import { BRAND, INK, SANS } from "./tokens";
+import { PANEL } from "@/lib/theme/tokens";
 
 /** Answer-free question as delivered to the browser (no key/proof/explanation). */
 export interface DeliveredQuestion {
@@ -91,7 +92,7 @@ export function QuestionInput({
             ? `${LETTERS[i] ?? i + 1}. ${options[i]}`
             : options[i];
       return (
-        <select value={value} onChange={(e) => onChange(e.target.value)} className="lp-input" style={{ width: "100%", padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 14, color: INK }}>
+        <select value={value} onChange={(e) => onChange(e.target.value)} className="lp-input" style={{ width: "100%", padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}>
           <option value="">Choose…</option>
           {options.map((opt, i) => (
             <option key={i} value={opt}>
@@ -120,7 +121,7 @@ function TextAnswer({ value, onChange }: { value: string; onChange: (v: string) 
       autoComplete="off"
       spellCheck={false}
       className="lp-input"
-      style={{ width: "100%", maxWidth: 360, padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: "#fff", fontFamily: SANS, fontSize: 14, color: INK }}
+      style={{ width: "100%", maxWidth: 360, padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}
     />
   );
 }

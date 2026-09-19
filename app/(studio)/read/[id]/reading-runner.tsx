@@ -20,6 +20,16 @@ import { Timer, type DeliveredQuestion } from "../_shared/question-inputs";
 import { ReviewItem, WeakTypes, type TypeBreakdown } from "../_shared/review";
 import { btnBase, AMBER, BRAND, INK, MUTED, primaryBtn, RED, SANS, SERIF } from "../_shared/tokens";
 import { WordLookup } from "../_shared/word-lookup";
+import {
+  BRAND_SOFT,
+  PANEL,
+  SLATE_BODY,
+  SLATE_LINE,
+  SLATE_MUTED,
+  SLATE_STRONG,
+  WHITE,
+  withAlpha,
+} from "@/lib/theme/tokens";
 
 // ---- Types -----------------------------------------------------------------
 
@@ -283,7 +293,7 @@ export function ReadingRunner({
           inset: 0,
           display: "flex",
           flexDirection: "column",
-          background: "#fff",
+          background: PANEL,
           fontFamily: SANS,
           color: INK,
           overflow: "hidden",
@@ -315,7 +325,7 @@ export function ReadingRunner({
                 padding: "7px 10px",
                 margin: "-7px 0 -7px -10px",
                 borderRadius: 9,
-                color: "#4A505C",
+                color: SLATE_BODY,
                 fontSize: 14.5,
                 fontWeight: 600,
                 textDecoration: "none",
@@ -329,7 +339,7 @@ export function ReadingRunner({
             </Link>
             <span
               aria-hidden
-              style={{ width: 1, height: 22, background: "#E6E8EC", flex: "none" }}
+              style={{ width: 1, height: 22, background: SLATE_LINE, flex: "none" }}
             />
             <span
               style={{
@@ -348,7 +358,7 @@ export function ReadingRunner({
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 12.5, color: "#8B919D", fontWeight: 500 }}>Text size</span>
+              <span style={{ fontSize: 12.5, color: SLATE_MUTED, fontWeight: 500 }}>Text size</span>
               <button
                 type="button"
                 onClick={() => stepFont(-0.1)}
@@ -384,7 +394,7 @@ export function ReadingRunner({
                 height: 28,
                 borderRadius: 8,
                 border: "1.5px solid #E6E8EC",
-                background: "#fff",
+                background: PANEL,
                 color: MUTED,
                 display: "inline-flex",
                 alignItems: "center",
@@ -454,13 +464,13 @@ export function ReadingRunner({
                 borderRadius: 10,
                 border: "none",
                 background: accent,
-                color: "#fff",
+                color: WHITE,
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: submitting ? "default" : "pointer",
                 opacity: submitting ? 0.7 : 1,
                 fontFamily: SANS,
-                boxShadow: `0 4px 14px ${accent}47`,
+                boxShadow: `0 4px 14px ${withAlpha(accent, 28)}`,
               }}
             >
               {submitting ? "Marking…" : "Submit answers"}
@@ -506,7 +516,7 @@ export function ReadingRunner({
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span
                   style={{
-                    background: "#FDF4F7",
+                    background: BRAND_SOFT,
                     color: BRAND,
                     fontWeight: 700,
                     fontSize: 12.5,
@@ -517,7 +527,7 @@ export function ReadingRunner({
                   Reading Passage
                 </span>
                 {passage.topic ? (
-                  <span style={{ fontSize: 12.5, fontWeight: 500, color: "#8B919D" }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 500, color: SLATE_MUTED }}>
                     {passage.topic}
                   </span>
                 ) : null}
@@ -528,7 +538,7 @@ export function ReadingRunner({
                   alignItems: "center",
                   gap: 7,
                   fontSize: 13,
-                  color: "#8B919D",
+                  color: SLATE_MUTED,
                   margin: "12px 0 0",
                 }}
               >
@@ -563,7 +573,7 @@ export function ReadingRunner({
               <div
                 style={{
                   lineHeight: 1.75,
-                  color: "#3B4150",
+                  color: SLATE_STRONG,
                   fontSize: fontPx,
                   whiteSpace: "pre-wrap",
                 }}
@@ -602,7 +612,7 @@ export function ReadingRunner({
           style={{
             flex: "none",
             borderTop: "1px solid #ECEEF2",
-            background: "#fff",
+            background: PANEL,
             padding: "11px 24px",
             display: "flex",
             alignItems: "center",
@@ -681,7 +691,7 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     height: 28,
     borderRadius: 8,
     border: "1.5px solid #E6E8EC",
-    background: "#fff",
+    background: PANEL,
     color: disabled ? "#C9CDD4" : "#4A505C",
     fontWeight: 700,
     fontSize: 12.5,
@@ -711,12 +721,12 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
     return {
       ...base,
       borderColor: BRAND,
-      background: "#fff",
+      background: PANEL,
       color: BRAND,
       boxShadow: "0 0 0 3px rgba(125,1,50,.16)",
     };
-  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: "#fff" };
-  return { ...base, borderColor: "#E6E8EC", background: "#fff", color: "#8B919D" };
+  if (answered) return { ...base, borderColor: BRAND, background: BRAND, color: WHITE };
+  return { ...base, borderColor: SLATE_LINE, background: PANEL, color: SLATE_MUTED };
 }
 
 // ---- Confirm finish (in-app modal) -----------------------------------------
@@ -761,7 +771,7 @@ function ConfirmFinishModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "min(440px, 100%)",
-          background: "#fff",
+          background: PANEL,
           borderRadius: 18,
           padding: "26px 26px 22px",
           boxShadow: "0 30px 70px -24px rgba(30,27,46,.6)",
@@ -803,8 +813,8 @@ function ConfirmFinishModal({
               padding: "10px 18px",
               borderRadius: 11,
               border: "1.5px solid #E6E8EC",
-              background: "#fff",
-              color: "#3B4150",
+              background: PANEL,
+              color: SLATE_STRONG,
               fontFamily: SANS,
               fontWeight: 600,
               fontSize: 14.5,
@@ -821,7 +831,7 @@ function ConfirmFinishModal({
               borderRadius: 11,
               border: "none",
               background: BRAND,
-              color: "#fff",
+              color: WHITE,
               fontFamily: SANS,
               fontWeight: 600,
               fontSize: 14.5,

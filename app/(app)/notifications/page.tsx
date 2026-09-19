@@ -16,6 +16,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadInbox } from "@/lib/notifications/load";
 
 import { markRead } from "./actions";
+import { BRAND, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,7 @@ export default async function NotificationsPage() {
                 type="submit"
                 style={{
                   border: `1px solid ${LINE}`,
-                  background: "#fff",
+                  background: PANEL,
                   color: MUTED,
                   borderRadius: 9,
                   padding: "6px 12px",
@@ -117,7 +118,7 @@ export default async function NotificationsPage() {
                       style={{
                         fontSize: 13.5,
                         fontWeight: 600,
-                        color: "#7D0132",
+                        color: BRAND,
                         textDecoration: "none",
                       }}
                     >

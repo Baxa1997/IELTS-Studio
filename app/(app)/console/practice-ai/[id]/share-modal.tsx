@@ -30,6 +30,7 @@ import {
   setLessonSharing,
   type LessonActionState,
 } from "./actions";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * What happens after you publish: the two ways a lesson reaches people.
@@ -189,7 +190,7 @@ export function ShareModal({
                 style={{
                   padding: "4px 11px",
                   borderRadius: 999,
-                  background: "#fff",
+                  background: PANEL,
                   color: GOOD_INK,
                   fontSize: 11,
                   fontWeight: 700,
@@ -295,7 +296,7 @@ export function ShareModal({
                         placeItems: "center",
                         fontSize: 13,
                         fontWeight: 700,
-                        color: "#fff",
+                        color: WHITE,
                         background: on ? GOOD_INK : "#fff",
                         boxShadow: on ? "none" : "inset 0 0 0 2px #d8d3c8",
                       }}
@@ -388,7 +389,7 @@ export function ShareModal({
               borderRadius: 999,
               border: 0,
               background: EMBER,
-              color: "#fff",
+              color: WHITE,
               fontFamily: "inherit",
               fontSize: 15,
               fontWeight: 700,
@@ -431,7 +432,7 @@ export function ShareModal({
                   minWidth: 160,
                   fontSize: 12.5,
                   color: MUTED,
-                  background: "#fff",
+                  background: PANEL,
                   borderRadius: 999,
                   padding: "9px 13px",
                   overflow: "hidden",
@@ -540,7 +541,7 @@ const white: React.CSSProperties = {
   padding: "10px 17px",
   borderRadius: 999,
   border: 0,
-  background: "#fff",
+  background: PANEL,
   color: INK,
   fontFamily: "inherit",
   fontSize: 14,

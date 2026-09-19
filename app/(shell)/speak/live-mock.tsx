@@ -13,6 +13,7 @@ import { ConfirmQuit } from "./confirm-quit";
 // The tutor gets a person; an examiner should feel impersonal.
 import { LucidaScope, PERSONAS, personaById, WaveBars, mmss, type Persona } from "./lucida";
 import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Full mock (Parts 1–3) — the LIVE examiner. A bidirectional WebSocket to the
@@ -451,7 +452,7 @@ export function LiveMock({
   const LINE2 = "#E7E3E0";
   const DIV = "#EFEBE9";
   const cardStyle: React.CSSProperties = {
-    background: "#FFFFFF",
+    background: PANEL,
     border: `1px solid ${LINE2}`,
     borderRadius: 18,
   };
@@ -508,7 +509,7 @@ export function LiveMock({
   if (phase === "idle" || phase === "instructions") {
     const levelLabel = LEVELS.find((l) => l.v === level)?.label ?? "Mixed";
     return (
-      <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: INK }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: INK }}>
         <div
           style={{
             flex: 1,
@@ -593,7 +594,7 @@ export function LiveMock({
                         borderRadius: "50%",
                         display: "grid",
                         placeItems: "center",
-                        color: "#fff",
+                        color: WHITE,
                         fontSize: 24,
                         fontWeight: 700,
                         fontFamily: "var(--font-display)",
@@ -717,7 +718,7 @@ export function LiveMock({
                       width: 30,
                       height: 30,
                       borderRadius: "50%",
-                      background: "#FFFFFF",
+                      background: PANEL,
                       border: `1px solid ${LINE2}`,
                       display: "grid",
                       placeItems: "center",
@@ -780,7 +781,7 @@ export function LiveMock({
                     borderRadius: 12,
                     border: "none",
                     background: A,
-                    color: "#fff",
+                    color: WHITE,
                     textAlign: "center",
                     fontSize: 15,
                     fontWeight: 600,
@@ -850,7 +851,7 @@ export function LiveMock({
                 maxHeight: "min(92dvh, 760px)",
                 display: "flex",
                 flexDirection: "column",
-                background: "#FFFFFF",
+                background: PANEL,
                 borderRadius: 20,
                 boxShadow: "0 24px 60px rgba(26,21,32,0.3)",
                 color: INK,
@@ -1004,7 +1005,7 @@ export function LiveMock({
                   gap: 10,
                   padding: "16px 26px 22px",
                   borderTop: `1px solid ${DIV}`,
-                  background: "#FFFFFF",
+                  background: PANEL,
                 }}
               >
                 <button
@@ -1017,7 +1018,7 @@ export function LiveMock({
                     borderRadius: 12,
                     border: "none",
                     background: A,
-                    color: "#fff",
+                    color: WHITE,
                     fontSize: 15,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -1035,7 +1036,7 @@ export function LiveMock({
                     padding: "15px 22px",
                     borderRadius: 12,
                     border: `1px solid ${LINE2}`,
-                    background: "#fff",
+                    background: PANEL,
                     color: MUTED2,
                     fontSize: 15,
                     fontWeight: 600,
@@ -1112,7 +1113,7 @@ export function LiveMock({
   // examiner's note live on the full report; this is the reveal.
   if (phase === "ended") {
     return (
-      <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: INK }}>
+      <LucidaScope className="lucida-fill" style={{ background: PANEL, color: INK }}>
         <div
           style={{
             flex: 1,
@@ -1140,7 +1141,7 @@ export function LiveMock({
                       height: 180,
                       borderRadius: "50%",
                       border: `1px solid ${LINE2}`,
-                      background: "#FFFFFF",
+                      background: PANEL,
                       display: "grid",
                       placeItems: "center",
                       margin: "0 auto",
@@ -1245,7 +1246,7 @@ export function LiveMock({
                           borderRadius: 12,
                           border: "none",
                           background: A,
-                          color: "#fff",
+                          color: WHITE,
                           fontSize: 15,
                           fontWeight: 600,
                           cursor: "pointer",
@@ -1262,7 +1263,7 @@ export function LiveMock({
                         padding: "15px 24px",
                         borderRadius: 12,
                         background: "#DA7756",
-                        color: "#fff",
+                        color: WHITE,
                         fontSize: 15,
                         fontWeight: 600,
                         textDecoration: "none",

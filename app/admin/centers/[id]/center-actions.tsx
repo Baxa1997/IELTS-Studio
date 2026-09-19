@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { TONE } from "@/components/admin/ui";
 
 import { setAccountSuspended, type ReviewState } from "../../actions";
+import { INK, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Suspend a centre, or bring it back.
@@ -64,7 +65,7 @@ export function CenterActions({
             alignItems: "center",
             gap: 7,
             background: suspended ? TONE.green.ink : TONE.red.ink,
-            color: "#fff",
+            color: WHITE,
             border: 0,
             borderRadius: 9,
             padding: "10px 15px",
@@ -89,7 +90,7 @@ export function CenterActions({
             display: "flex",
             alignItems: "center",
             gap: 7,
-            background: "#fff",
+            background: PANEL,
             color: TONE.red.ink,
             border: `1px solid ${TONE.red.border}`,
             borderRadius: 9,
@@ -121,7 +122,7 @@ export function CenterActions({
             fontFamily: "inherit",
             fontSize: 13,
             cursor: "pointer",
-            color: "#16162E",
+            color: INK,
           }}
         >
           Cancel

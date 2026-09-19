@@ -54,11 +54,11 @@ export const MONO = "var(--font-geist-mono), ui-monospace, SFMono-Regular, monos
  * because AA does not care about our tonal hierarchy. Size and weight carry that
  * hierarchy instead, which is most of what they were doing anyway.
  */
-export const INK = "#16162E"; // primary text              17.7:1
-export const BODY = "#4C4A63"; // long-form body text        8.5:1
-export const MUTED = "#6E6C87"; // secondary text             5.1:1
-export const SOFT = "#737189"; // tertiary text              4.7:1
-export const FAINT = "#777581"; // captions                   4.5:1 (AA floor)
+export const INK = "var(--tk-ink)"; // primary text              17.7:1
+export const BODY = "var(--tk-body)"; // long-form body text        8.5:1
+export const MUTED = "var(--tk-muted)"; // secondary text             5.1:1
+export const SOFT = "var(--tk-soft)"; // tertiary text              4.7:1
+export const FAINT = "var(--tk-faint)"; // captions                   4.5:1 (AA floor)
 
 /* ── edges ─────────────────────────────────────────────────────────────────
  * COOLER AND LIGHTER, matching the reference kit's border ramp (its `--border`
@@ -74,18 +74,60 @@ export const FAINT = "#777581"; // captions                   4.5:1 (AA floor)
  * reference gets away with the same weight. A card that takes this border and
  * drops the shadow will be invisible again.
  */
-export const LINE = "#E2E8F0"; // card border
-export const RULE = "#E9EDF2"; // divider inside a card
-export const HAIR = "#EFF2F6"; // row / column divider
+export const LINE = "var(--tk-line)"; // card border
+export const RULE = "var(--tk-rule)"; // divider inside a card
+export const HAIR = "var(--tk-hair)"; // row / column divider
 
 /** Form-control border. Deliberately darker than the card hairline: a card edge
  *  only separates two surfaces, but a field edge has to say "you can type here",
  *  and at the card's weight it disappears on white. Moved onto the same cool
  *  ramp as `LINE`, one step down it, so the distinction survives the change —
  *  a field cannot borrow the card's shadow to stay visible. */
-export const FIELD_LINE = "#CBD5E1";
+export const FIELD_LINE = "var(--tk-field-line)";
 
+/**
+ * Literal white, and it STAYS literal white in dark mode.
+ *
+ * ⚠️ `WHITE` AND `PANEL` WERE ONE TOKEN AND HAD TO BE SEPARATED. The old
+ * `WHITE` was doing two unrelated jobs: the ink on a filled burgundy button
+ * (`color: WHITE`) and the fill of a card (`background: WHITE`). They look
+ * identical on a white page, so nothing forced them apart — but they invert in
+ * opposite directions. A card has to go dark; the ink on a burgundy button has
+ * to stay white, because the button underneath it is still burgundy.
+ *
+ * So: `WHITE` is the ink-on-an-accent one and never changes. Use `PANEL` for
+ * any surface. If you write `background: WHITE` you are almost certainly
+ * reaching for `PANEL`.
+ */
 export const WHITE = "#FFFFFF";
+
+/* ── the drifted neutrals ──────────────────────────────────────────────────
+ *
+ * ⚠️ NOT A PALETTE TO DESIGN IN — a record of one. These are the marketing
+ * site's cooler slate greys, written as literals into learner and console
+ * screens years before `lib/theme/tokens.ts` existed, 275 times. They are named
+ * here so those screens can take a token (and therefore work in dark mode)
+ * WITHOUT anyone having to re-approve 200 screens' worth of light-mode colour
+ * in the same change — the light value of each is byte-identical to the literal
+ * it replaced. In dark mode they resolve onto the real ladder, so the drift
+ * simply ends.
+ *
+ * On a NEW screen use INK / BODY / MUTED / LINE. Reaching for these is how a
+ * temporary record becomes a permanent second palette — which is exactly what
+ * happened to INDIGO_CONSOLE and friends below.
+ */
+export const SLATE_INK = "var(--tk-slate-ink)";
+export const SLATE_STRONG = "var(--tk-slate-strong)";
+export const SLATE_BODY = "var(--tk-slate-body)";
+export const SLATE_MUTED = "var(--tk-slate-muted)";
+export const SLATE_LINE = "var(--tk-slate-line)";
+
+/** A softer inner fill — wells, read-only blocks. Matches `LEARNER.well`. */
+export const WELL = "var(--tk-well)";
+
+/** The fill of a card, a panel, a menu — anything that sits ON the canvas.
+ *  White in light mode, near-black in dark. See the note on `WHITE`. */
+export const PANEL = "var(--tk-panel)";
 
 /* ── brand ─────────────────────────────────────────────────────────────────── */
 /*
@@ -108,22 +150,22 @@ export const WHITE = "#FFFFFF";
  * brands is the deliberate state, not drift: staff are a different audience on a
  * different surface, and repainting them was explicitly out of scope.
  */
-export const BRAND = "#7D0132"; // primary action           10.9:1
-export const BRAND_DEEP = "#5C0125"; // pressed / hover
-export const BRAND_DARK = "#43001D"; // panel ground
-export const BRAND_DARKEST = "#2C0013"; // darkest gradient stop
-export const BRAND_MID = "#9B1044"; // lighter gradient stop
-export const BRAND_LIGHT = "#B32A5B"; // lighter still — meters, chart fills
-export const BRAND_PALE = "#E3A7BD"; // disabled / empty-track fill
-export const BRAND_SOFT = "#FDF4F7"; // tinted fill
-export const BRAND_LINE = "#F0D3DE"; // tinted border
-export const BRAND_WASH = "#F8E8EE"; // between SOFT and LINE — hover on a tint
+export const BRAND = "var(--tk-brand)"; // primary action           10.9:1
+export const BRAND_DEEP = "var(--tk-brand-deep)"; // pressed / hover
+export const BRAND_DARK = "var(--tk-brand-dark)"; // panel ground
+export const BRAND_DARKEST = "var(--tk-brand-darkest)"; // darkest gradient stop
+export const BRAND_MID = "var(--tk-brand-mid)"; // lighter gradient stop
+export const BRAND_LIGHT = "var(--tk-brand-light)"; // lighter still — meters, chart fills
+export const BRAND_PALE = "var(--tk-brand-pale)"; // disabled / empty-track fill
+export const BRAND_SOFT = "var(--tk-brand-soft)"; // tinted fill
+export const BRAND_LINE = "var(--tk-brand-line)"; // tinted border
+export const BRAND_WASH = "var(--tk-brand-wash)"; // between SOFT and LINE — hover on a tint
 
 /** Staff only. See the note above before reaching for these on a learner screen. */
-export const INDIGO = "#3B43B5"; // primary action            7.9:1
-export const INDIGO_DEEP = "#2F3699"; // pressed / hover
-export const INDIGO_SOFT = "#ECEBFB"; // tinted fill
-export const INDIGO_LINE = "#E1DFF7"; // tinted border
+export const INDIGO = "var(--tk-indigo)"; // primary action            7.9:1
+export const INDIGO_DEEP = "var(--tk-indigo-deep)"; // pressed / hover
+export const INDIGO_SOFT = "var(--tk-indigo-soft)"; // tinted fill
+export const INDIGO_LINE = "var(--tk-indigo-line)"; // tinted border
 
 /*
  * The other three indigos, named rather than unified.
@@ -143,32 +185,32 @@ export const INDIGO_LINE = "#E1DFF7"; // tinted border
  * the skill hubs and the reading runner, then delete them and let the codemod's
  * imports fall back to `INDIGO`. Until someone has actually looked, they stay.
  */
-export const INDIGO_CONSOLE = "#4340CB"; // staff console + admin   (19 files)
-export const INDIGO_SHELL = "#4338CA"; // listen / speak / read hubs (12 files)
-export const INDIGO_STUDIO = "#4F46E5"; // reading studio + assistant  (3 files)
+export const INDIGO_CONSOLE = "var(--tk-indigo-console)"; // staff console + admin   (19 files)
+export const INDIGO_SHELL = "var(--tk-indigo-shell)"; // listen / speak / read hubs (12 files)
+export const INDIGO_STUDIO = "var(--tk-indigo-studio)"; // reading studio + assistant  (3 files)
 /* A fifth, found by the lint rule rather than by the survey that preceded it —
  * the grep looked for `INDIGO =` and this one is `INDIGO_INK =`. One file (the
  * console assistant) uses it as a deep ink. It is NOT `INDIGO_DEEP` above
  * (#2F3699); close, but not equal, and folding it in would move a rendered
  * colour, which is the one thing the codemod promises not to do. */
-export const INDIGO_INK = "#3730A3"; // assistant chat ink          (1 file)
+export const INDIGO_INK = "var(--tk-indigo-ink)"; // assistant chat ink          (1 file)
 
 /* ── status ────────────────────────────────────────────────────────────────── */
 
-export const GREEN = "#16794C"; // correct / paid / on track  4.9:1
-export const AMBER = "#B8791F"; // needs attention            3.5:1 (large text only)
-export const RED = "#C2453A"; // wrong / overdue            4.6:1
-export const RED_DEEP = "#A63A30"; // the same red as body text  5.9:1
+export const GREEN = "var(--tk-green)"; // correct / paid / on track  4.9:1
+export const AMBER = "var(--tk-amber)"; // needs attention            3.5:1 (large text only)
+export const RED = "var(--tk-red)"; // wrong / overdue            4.6:1
+export const RED_DEEP = "var(--tk-red-deep)"; // the same red as body text  5.9:1
 
 /** Tinted backgrounds paired with the ink that reads on them. Never pair a tint
  *  with anything but its own `fg` — the pairs are what carry the contrast. */
 export const TINT = {
   brand: { bg: BRAND_SOFT, fg: BRAND },
   indigo: { bg: INDIGO_SOFT, fg: INDIGO },
-  green: { bg: "#EAF4EE", fg: GREEN },
-  amber: { bg: "#FBEEE0", fg: "#A9721F" },
-  red: { bg: "#FBEAE8", fg: RED_DEEP },
-  neutral: { bg: "#F1F0EB", fg: MUTED },
+  green: { bg: "var(--tk-tint-green-bg)", fg: GREEN },
+  amber: { bg: "var(--tk-tint-amber-bg)", fg: "var(--tk-tint-amber-fg)" },
+  red: { bg: "var(--tk-tint-red-bg)", fg: RED_DEEP },
+  neutral: { bg: "var(--tk-tint-neutral-bg)", fg: MUTED },
 } as const;
 
 export type Tone = keyof typeof TINT;
@@ -214,10 +256,10 @@ export interface Surface {
  * ground the front door and sign-in already stand on.
  */
 export const LEARNER: Surface = {
-  canvas: "#F6F7F9",
-  panel: WHITE,
-  well: "#FBFBFC",
-  wellLine: "#ECEEF2",
+  canvas: "var(--tk-learner-canvas)",
+  panel: PANEL,
+  well: "var(--tk-learner-well)",
+  wellLine: "var(--tk-learner-well-line)",
   accent: BRAND,
   accentSoft: BRAND_SOFT,
   accentLine: BRAND_LINE,
@@ -228,9 +270,9 @@ export const LEARNER: Surface = {
 
 /** The staff console. Cream ground, serif headings. */
 export const CONSOLE: Surface = {
-  canvas: "#F4F3EF",
-  panel: WHITE,
-  well: "#FAFAF8",
+  canvas: "var(--tk-console-canvas)",
+  panel: PANEL,
+  well: "var(--tk-console-well)",
   wellLine: HAIR,
   accent: INDIGO,
   accentSoft: INDIGO_SOFT,
@@ -257,10 +299,10 @@ export const STUDIO: Surface = { ...LEARNER };
  *  the new lighter border weight it is what separates a card from the surface
  *  under it; remove it and the card edge goes back to being invisible. */
 export const cardStyle: CSSProperties = {
-  background: WHITE,
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 12,
-  boxShadow: "0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)",
+  boxShadow: "var(--tk-card-shadow)",
 };
 
 export const fieldStyle: CSSProperties = {
@@ -271,7 +313,7 @@ export const fieldStyle: CSSProperties = {
   fontFamily: "inherit",
   fontSize: 14,
   color: INK,
-  background: WHITE,
+  background: PANEL,
 };
 
 export const btnBase: CSSProperties = {
@@ -297,7 +339,7 @@ export function primaryBtn(disabled = false, accent: string = BRAND): CSSPropert
     color: WHITE,
     opacity: disabled ? 0.55 : 1,
     cursor: disabled ? "default" : "pointer",
-    boxShadow: disabled ? "none" : `0 12px 24px -12px ${accent}b3`,
+    boxShadow: disabled ? "none" : `0 12px 24px -12px ${withAlpha(accent, 70)}`,
   };
 }
 
@@ -305,7 +347,7 @@ export function primaryBtn(disabled = false, accent: string = BRAND): CSSPropert
 export function secondaryBtn(disabled = false): CSSProperties {
   return {
     ...btnBase,
-    background: WHITE,
+    background: PANEL,
     color: INK,
     border: `1px solid ${LINE}`,
     opacity: disabled ? 0.55 : 1,
@@ -313,7 +355,26 @@ export function secondaryBtn(disabled = false): CSSProperties {
   };
 }
 
-/** A slightly stronger tint of an accent, for the AI-generate gradients. */
-export function accentStrong(hex: string): string {
-  return `${hex}33`;
+/**
+ * Fade a colour to `pct`% opacity — the ONE safe way to do it now.
+ *
+ * ⚠️ `${colour}33` IS NOW A SILENT NO-OP. Appending two hex digits was a valid
+ * way to add alpha for as long as every token was a hex literal. The tokens are
+ * `var(--tk-…)` strings today, so that same expression produces
+ * `"var(--tk-brand)33"` — not a colour, not a parse error either. The browser
+ * drops the declaration and you get an element with no background and nothing
+ * in the console to explain it.
+ *
+ * `color-mix` resolves the var first and then mixes, so it works on a token, a
+ * hex, or a caller's arbitrary string. In oklab rather than sRGB because a
+ * burgundy faded through sRGB greys out through mud on the way.
+ */
+export function withAlpha(colour: string, pct: number): string {
+  return `color-mix(in oklab, ${colour} ${pct}%, transparent)`;
+}
+
+/** A slightly stronger tint of an accent, for the AI-generate gradients.
+ *  (0x33 / 0xFF ≈ 20%, the alpha this appended before the var switch.) */
+export function accentStrong(colour: string): string {
+  return withAlpha(colour, 20);
 }

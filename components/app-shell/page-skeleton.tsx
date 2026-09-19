@@ -1,3 +1,5 @@
+
+import { PANEL } from "@/lib/theme/tokens";
 /**
  * Instant content skeletons shown inside the app shell while a dynamic page renders
  * on the server. Each variant deliberately mirrors the shape of the page it stands
@@ -29,7 +31,7 @@ export function Card({ children, accent }: { children: React.ReactNode; accent?:
   return (
     <div
       style={{
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #E6E8EC",
         borderLeft: accent ? "3px solid #F0D3DE" : "1px solid #E6E8EC",
         borderRadius: 16,
@@ -94,7 +96,7 @@ export function PageSkeleton() {
       <div
         style={{
           marginTop: 18,
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #E6E8EC",
           borderRadius: 16,
           padding: "22px 24px",
@@ -209,7 +211,7 @@ export function ConsoleSkeleton({ kpis = 4, rows = 7 }: { kpis?: number; rows?: 
           <div
             key={i}
             style={{
-              background: "#fff",
+              background: PANEL,
               border: "1px solid #C5C4BE",
               borderRadius: 12,
               padding: "16px 18px",
@@ -223,7 +225,7 @@ export function ConsoleSkeleton({ kpis = 4, rows = 7 }: { kpis?: number; rows?: 
 
       <div
         style={{
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #C5C4BE",
           borderRadius: 12,
           marginTop: 18,
@@ -270,7 +272,7 @@ export function LauncherSkeleton({ narrow = false }: { narrow?: boolean }) {
       <div
         style={{
           marginTop: 20,
-          background: "#fff",
+          background: PANEL,
           border: "1px solid #E6E8EC",
           borderRadius: 16,
           padding: "26px 26px",

@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const MUTED = "#4A505C";
@@ -128,7 +129,7 @@ export function ListenBack({
   return (
     <section
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${LINE}`,
         borderRadius: 16,
         padding: "16px 18px",
@@ -177,7 +178,7 @@ export function ListenBack({
               borderRadius: "50%",
               border: "none",
               background: BRAND,
-              color: "#fff",
+              color: WHITE,
               fontSize: 15,
               cursor: "pointer",
               flexShrink: 0,

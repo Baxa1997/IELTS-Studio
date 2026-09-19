@@ -147,6 +147,300 @@
   --sidebar-ring: oklch(0.7 0.13 165);
 }
 
+/* ===================================================================
+   THE RUNTIME PALETTE  (`--tk-*`)
+   ===================================================================
+
+   ⚠️ THIS IS THE DARK-MODE SEAM. `lib/theme/tokens.ts` no longer holds
+   hex literals — every token there is now `var(--tk-…)` pointing at one
+   of the pairs below. That indirection is the ONLY reason dark mode can
+   exist in this codebase.
+
+   Why it had to be done this way. The app styles inline (5,330 `style={{}}`
+   against 918 `className`), so the Tailwind `dark:` variant reaches almost
+   nothing, and the semantic oklch tokens above feed `className` utilities
+   that this product barely uses. A plain JS constant — `INK = "#16162E"` —
+   is baked at build time and cannot change when a class is toggled on
+   <html>. A CSS custom property CAN: inline styles resolve `var()` against
+   the cascade at paint time, so one class on the root repaints every one of
+   the 63 files that import a token, with no component changes at all.
+
+   The light column is EXACTLY the hex the tokens module used to export, so
+   flipping this on moved no rendered colour in light mode. Any difference
+   you see in light mode after this change is a bug, not a redesign.
+
+   TWO RULES WHEN YOU EDIT THIS
+   1. Every `--tk-*` needs a value in BOTH blocks. A token defined only in
+      `:root` silently keeps its light value in dark mode, which is how you
+      get black text on a black card.
+   2. Do not append alpha to these in JS. `${BRAND}33` produced a valid hex
+      when BRAND was a hex; against `var(--tk-brand)` it produces the string
+      "var(--tk-brand)33", which is not a colour and which the browser drops
+      silently — no error, just an element with no background. Use
+      `withAlpha()` from the tokens module (it wraps `color-mix`). The same
+      trap is documented at app/(shell)/speak/lucida.tsx:217, which hit it
+      first.
+   =================================================================== */
+:root {
+  /* neutrals — text ladder. Ratios in the tokens module are against white. */
+  --tk-ink: #16162e;
+  --tk-body: #4c4a63;
+  --tk-muted: #6e6c87;
+  --tk-soft: #737189;
+  --tk-faint: #777581;
+
+  /* edges */
+  --tk-line: #e2e8f0;
+  --tk-rule: #e9edf2;
+  --tk-hair: #eff2f6;
+  --tk-field-line: #cbd5e1;
+
+  /* the surface a card is drawn in. NOT the same thing as `--tk-white`:
+     this one inverts in dark mode, that one never does. */
+  --tk-panel: #ffffff;
+
+  /* brand — learner burgundy */
+  --tk-brand: #7d0132;
+  --tk-brand-deep: #5c0125;
+  --tk-brand-dark: #43001d;
+  --tk-brand-darkest: #2c0013;
+  --tk-brand-mid: #9b1044;
+  --tk-brand-light: #b32a5b;
+  --tk-brand-pale: #e3a7bd;
+  --tk-brand-soft: #fdf4f7;
+  --tk-brand-line: #f0d3de;
+  --tk-brand-wash: #f8e8ee;
+
+  /* brand — staff indigo (and the three unresolved variants it drifted into) */
+  --tk-indigo: #3b43b5;
+  --tk-indigo-deep: #2f3699;
+  --tk-indigo-soft: #ecebfb;
+  --tk-indigo-line: #e1dff7;
+  --tk-indigo-console: #4340cb;
+  --tk-indigo-shell: #4338ca;
+  --tk-indigo-studio: #4f46e5;
+  --tk-indigo-ink: #3730a3;
+
+  /* status */
+  --tk-green: #16794c;
+  --tk-amber: #b8791f;
+  --tk-red: #c2453a;
+  --tk-red-deep: #a63a30;
+
+  /* tint pairs — a tinted ground and the ink that is legible on it. Never
+     cross the pairs; the contrast lives in the pairing, not the values. */
+  --tk-tint-green-bg: #eaf4ee;
+  --tk-tint-amber-bg: #fbeee0;
+  --tk-tint-amber-fg: #a9721f;
+  --tk-tint-red-bg: #fbeae8;
+  --tk-tint-neutral-bg: #f1f0eb;
+
+  /* surfaces — the three grounds a screen can be dressed in */
+  --tk-learner-canvas: #f6f7f9;
+  --tk-learner-well: #fbfbfc;
+  --tk-learner-well-line: #eceef2;
+  --tk-console-canvas: #f4f3ef;
+  --tk-console-well: #fafaf8;
+
+  /* the card shadow. Load-bearing in light mode (see the note on LINE in the
+     tokens module); in dark mode a light shadow is invisible, so it becomes a
+     real black one plus a top highlight that fakes the raised edge instead. */
+  --tk-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+
+  /* ── THE DRIFTED NEUTRALS ───────────────────────────────────────────────
+   * Greys that app screens are ALREADY painted in which are not the `--tk-`
+   * ladder above: they are the marketing palette's cooler slate, written as
+   * literals into ~200 learner and console files long before either palette
+   * existed. 275 occurrences, and every one of them is a spot that stays
+   * light-coloured on a dark page.
+   *
+   * There were two ways to deal with them and only one that could ship today.
+   * Repainting those screens onto `--tk-ink`/`--tk-body`/`--tk-muted` is the
+   * RIGHT end state, but it moves a rendered colour on a couple of hundred
+   * screens at once and wants a human eye on each. Naming them does not move
+   * anything: the light column below is the literal each file already had, so
+   * light mode is untouched, and dark mode starts working everywhere at once.
+   *
+   * ⚠️ SO THESE ARE A RECORD OF DRIFT, NOT A SECOND PALETTE TO DESIGN IN.
+   * Reaching for `SLATE_MUTED` on a new screen is how the drift becomes
+   * permanent — use `MUTED`. The same reasoning, and the same warning, applies
+   * to INDIGO_CONSOLE / INDIGO_SHELL / INDIGO_STUDIO in the tokens module,
+   * which exist for exactly this reason and have been waiting for the same
+   * decision.
+   *
+   * To finish the job: point each of these at its `--tk-` counterpart, look at
+   * the app, then delete them and let the imports fall back. */
+  --tk-slate-ink: #121317;
+  --tk-slate-strong: #3b4150;
+  --tk-slate-body: #4a505c;
+  --tk-slate-muted: #8b919d;
+  --tk-slate-line: #e6e8ec;
+  --tk-well: #fbfbfc;
+}
+
+/*
+ * DARK.
+ *
+ * Not an algorithmic inversion — the burgundy proves why. #7D0132 is a 10.9:1
+ * action colour on white and an unreadable near-black on a dark ground, so the
+ * brand ramp is re-anchored (BRAND lands on #CE4271) rather than flipped. The
+ * neutral ladder keeps its order and its ~violet hue so the product still reads
+ * as the same product; the tints invert from pale-on-white to deep-on-dark, and
+ * their `fg` inks lighten to stay legible against them.
+ *
+ * `color-scheme: dark` is not decoration: it is what turns the scrollbars, the
+ * native form controls and the autofill wash dark. Without it you get a dark
+ * page with white scrollbars down the side.
+ */
+.dark {
+  color-scheme: dark;
+
+  --tk-ink: #ededf2;
+  --tk-body: #c6c4d4;
+  --tk-muted: #a3a1b5;
+  --tk-soft: #9997ac;
+  --tk-faint: #908ea0;
+
+  /* On a dark ground the edge goes LIGHTER than the surface, so the light-mode
+     ordering inverts: LINE is the strongest, HAIR the quietest, as before. */
+  --tk-line: #2e2e3d;
+  --tk-rule: #292936;
+  --tk-hair: #24242f;
+  --tk-field-line: #3d3d50;
+
+  --tk-panel: #16161f;
+
+  --tk-brand: #ce4271;
+  --tk-brand-deep: #dd5c86; /* hover goes LIGHTER on dark, not darker */
+  --tk-brand-dark: #2a0f1a;
+  --tk-brand-darkest: #1b0910;
+  --tk-brand-mid: #d9527d;
+  --tk-brand-light: #e4708f;
+  --tk-brand-pale: #4a2433;
+  --tk-brand-soft: #2a141e;
+  --tk-brand-line: #472333;
+  --tk-brand-wash: #331923;
+
+  --tk-indigo: #7c84e8;
+  --tk-indigo-deep: #9098f0;
+  --tk-indigo-soft: #1d1e38;
+  --tk-indigo-line: #2e3053;
+  --tk-indigo-console: #8a87ee;
+  --tk-indigo-shell: #8a81ee;
+  --tk-indigo-studio: #9890f2;
+  --tk-indigo-ink: #a8a2f5;
+
+  --tk-green: #3fbf85;
+  --tk-amber: #e0a84a;
+  --tk-red: #e87b70;
+  --tk-red-deep: #f0928a;
+
+  --tk-tint-green-bg: #122a1f;
+  --tk-tint-amber-bg: #2e2314;
+  --tk-tint-amber-fg: #e0a84a;
+  --tk-tint-red-bg: #2e1715;
+  --tk-tint-neutral-bg: #22222c;
+
+  --tk-learner-canvas: #0e0e15;
+  --tk-learner-well: #1b1b25;
+  --tk-learner-well-line: #2a2a36;
+  --tk-console-canvas: #101016;
+  --tk-console-well: #1a1a22;
+
+  --tk-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  /* The drifted neutrals, inverted. They land ON the `--tk-` ladder rather than
+     beside it: the whole reason they are separate is a light-mode value nobody
+     has re-approved yet, and in dark mode there is no legacy value to preserve —
+     nothing has ever been rendered in it. So the drift ends here, and a screen
+     wearing these is already the right colour once the lights go out. */
+  --tk-slate-ink: #ededf2;
+  --tk-slate-strong: #d2d0dd;
+  --tk-slate-body: #c6c4d4;
+  --tk-slate-muted: #a3a1b5;
+  --tk-slate-line: #2e2e3d;
+  --tk-well: #1b1b25;
+}
+
+/* ── THE MARKETING PALETTE (`--mk-*`) ──────────────────────────────────────
+ *
+ * `app/_landing/design.ts` is the SECOND palette in this codebase — the front
+ * door, sign-in, the how-to-use pages and the 11 marketing routes are drawn
+ * from it rather than from `lib/theme/tokens.ts`. Two palettes is the state
+ * that existed before dark mode and is not something this change set out to
+ * fix; what it could not do was leave one of them baked while the other went
+ * runtime, because `/` and `/sign-in` sit either side of that seam and a
+ * learner crosses it in one click.
+ *
+ * Same contract as `--tk-*` above: light column is byte-for-byte what design.ts
+ * exported before, both blocks define every name, and no JS appends alpha.
+ *
+ * The greys here are COOLER than the `--tk-*` ladder (slate, against the app's
+ * violet-leaning neutrals) and the two are deliberately not merged — see the
+ * header of design.ts. The dark column keeps that distinction rather than
+ * quietly collapsing the two products into one grey.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --mk-brand: #7d0132;
+  --mk-brand-deep: #5c0125;
+  --mk-brand-darkest: #2c0013;
+  --mk-brand-panel: #43001d;
+  --mk-brand-tint: #fdf4f7;
+  --mk-brand-tint-line: #f0d3de;
+
+  --mk-ink: #121317;
+  --mk-body: #4a505c;
+  --mk-strong: #3b4150;
+  --mk-muted: #8b919d;
+  --mk-faint: #9aa0ac;
+  --mk-grey: #6b7280;
+
+  --mk-line: #e6e8ec;
+  --mk-rule: #ebedf1;
+  --mk-hair: #eceef2;
+  --mk-field: #dfe2e8;
+
+  --mk-panel: #ffffff;
+  --mk-well: #fbfbfc;
+  --mk-canvas: #f6f7f9;
+  --mk-paper: #eef0f4;
+  --mk-paper-rule: #dee2ea;
+
+  --mk-green: #1c7a4f;
+  --mk-green-tint: #eaf6f0;
+}
+
+.dark {
+  --mk-brand: #ce4271;
+  --mk-brand-deep: #dd5c86;
+  --mk-brand-darkest: #1b0910;
+  --mk-brand-panel: #2a0f1a;
+  --mk-brand-tint: #2a141e;
+  --mk-brand-tint-line: #472333;
+
+  --mk-ink: #edeef2;
+  --mk-body: #c4c8d2;
+  --mk-strong: #d6dae2;
+  --mk-muted: #9ca2ae;
+  --mk-faint: #8d93a0;
+  --mk-grey: #a8aeb9;
+
+  --mk-line: #2b2e36;
+  --mk-rule: #262930;
+  --mk-hair: #23262c;
+  --mk-field: #3a3e48;
+
+  --mk-panel: #16171d;
+  --mk-well: #191b21;
+  --mk-canvas: #0e0f13;
+  --mk-paper: #131519;
+  --mk-paper-rule: #2a2d35;
+
+  --mk-green: #3fbf85;
+  --mk-green-tint: #122a1f;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

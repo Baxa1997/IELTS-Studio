@@ -14,6 +14,7 @@ import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
 import { BandCard } from "./band-card";
 import { DashboardCoach } from "./dashboard-coach-lazy";
+import { PANEL, SLATE_LINE, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -27,7 +28,7 @@ const TINT = "#FDF4F7";
 const EMERALD = "#1C7A4F";
 const AMBER = "#B9791A";
 
-const card: React.CSSProperties = { background: "#fff", border: `1px solid ${LINE}`, borderRadius: 16, padding: 18 };
+const card: React.CSSProperties = { background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: 18 };
 
 export const dynamic = "force-dynamic";
 
@@ -132,9 +133,9 @@ function NextTask({ rec }: { rec: Recommendation }) {
         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".11em", textTransform: "uppercase", color: "rgba(255,255,255,.72)" }}>
           <Sparkles size={13} strokeWidth={2.4} /> Next task · picked for you
         </div>
-        <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(20px,2.3vw,25px)", lineHeight: 1.15, letterSpacing: "-.01em", color: "#fff", marginTop: 9 }}>{rec.title}</div>
+        <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(20px,2.3vw,25px)", lineHeight: 1.15, letterSpacing: "-.01em", color: WHITE, marginTop: 9 }}>{rec.title}</div>
         <p style={{ fontFamily: SANS, fontSize: 14.5, lineHeight: 1.55, color: "rgba(255,255,255,.84)", margin: "7px 0 0", maxWidth: 540 }}>{rec.reason}</p>
-        <Link href={rec.href} style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "#fff", color: INK, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, padding: "12px 22px", borderRadius: 11, textDecoration: "none", boxShadow: "0 14px 30px -14px rgba(0,0,0,.55)", marginTop: 18 }}>
+        <Link href={rec.href} style={{ display: "inline-flex", alignItems: "center", gap: 9, background: PANEL, color: INK, fontFamily: SANS, fontWeight: 700, fontSize: 14.5, padding: "12px 22px", borderRadius: 11, textDecoration: "none", boxShadow: "0 14px 30px -14px rgba(0,0,0,.55)", marginTop: 18 }}>
           {rec.cta} <ArrowRight size={16} />
         </Link>
       </div>
@@ -179,7 +180,7 @@ function WeekCard({ streakDays, done, goal }: { streakDays: number; done: number
         <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: MUTED }}>Weekly goal</span>
         <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: met ? EMERALD : INK, fontVariantNumeric: "tabular-nums" }}>{done} / {goal} tasks</span>
       </div>
-      <div style={{ height: 7, background: "#E6E8EC", borderRadius: 999, overflow: "hidden", marginTop: 8 }} aria-hidden>
+      <div style={{ height: 7, background: SLATE_LINE, borderRadius: 999, overflow: "hidden", marginTop: 8 }} aria-hidden>
         <div style={{ width: `${pct}%`, height: "100%", background: met ? EMERALD : BRAND, borderRadius: 999 }} />
       </div>
       <p style={{ fontFamily: SANS, fontSize: 12.5, color: MUTED, margin: "10px 0 0" }}>

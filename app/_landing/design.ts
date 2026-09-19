@@ -17,59 +17,73 @@
 /* ── brand ─────────────────────────────────────────────────────────────────── */
 
 /** The burgundy. Buttons, links, accents, the logo mark. */
-export const BRAND = "#7d0132";
+export const BRAND = "var(--mk-brand)";
 /** Pressed / hover. */
-export const BRAND_DEEP = "#5c0125";
+export const BRAND_DEEP = "var(--mk-brand-deep)";
 /** The darkest stop in the sign-in panel's gradient. */
-export const BRAND_DARKEST = "#2c0013";
+export const BRAND_DARKEST = "var(--mk-brand-darkest)";
 /** Panel ground under that gradient. */
-export const BRAND_PANEL = "#43001d";
+export const BRAND_PANEL = "var(--mk-brand-panel)";
 /** Tinted fill — chips, icon squares, the eyebrow pill. */
-export const BRAND_TINT = "#fdf4f7";
+export const BRAND_TINT = "var(--mk-brand-tint)";
 /** The border that pairs with `BRAND_TINT`. */
-export const BRAND_TINT_LINE = "#f0d3de";
+export const BRAND_TINT_LINE = "var(--mk-brand-tint-line)";
 
 /* ── ink ───────────────────────────────────────────────────────────────────── */
 
 /** Headings and the big numerals. */
-export const INK = "#121317";
+export const INK = "var(--mk-ink)";
 /** Body copy. */
-export const BODY = "#4a505c";
+export const BODY = "var(--mk-body)";
 /** Slightly stronger than body — list items, nav. */
-export const STRONG = "#3b4150";
+export const STRONG = "var(--mk-strong)";
 /** Eyebrows, captions, stat labels. */
-export const MUTED = "#8b919d";
+export const MUTED = "var(--mk-muted)";
 /** The quietest text — the IELTS disclaimer, disabled nav. */
-export const FAINT = "#9aa0ac";
+export const FAINT = "var(--mk-faint)";
 /** Stat sublines. */
-export const GREY = "#6b7280";
+export const GREY = "var(--mk-grey)";
 
 /* ── lines and grounds ─────────────────────────────────────────────────────── */
 
 /** Card and control borders. */
-export const LINE = "#e6e8ec";
+export const LINE = "var(--mk-line)";
 /** Section rules — header underline, footer top. */
-export const RULE = "#ebedf1";
+export const RULE = "var(--mk-rule)";
 /** The lightest divider, inside a card. */
-export const HAIR = "#eceef2";
+export const HAIR = "var(--mk-hair)";
 /** Form field borders. */
-export const FIELD = "#dfe2e8";
+export const FIELD = "var(--mk-field)";
 
+/**
+ * Literal white — and it STAYS white in dark mode.
+ *
+ * ⚠️ SPLIT FROM `PANEL`, same as in `lib/theme/tokens.ts`. This constant was
+ * doing two jobs that are indistinguishable on a white page and opposite in
+ * dark mode: the ink on a filled burgundy button (`color: WHITE`) and the fill
+ * of a card or the page ground (`background: PANEL`). The card has to invert;
+ * the ink on the button must not, because the button is still burgundy.
+ *
+ * `background: PANEL` is almost always wrong now — reach for `PANEL`.
+ */
 export const WHITE = "#ffffff";
+
+/** Card, panel and page fill. White in light mode, near-black in dark. */
+export const PANEL = "var(--mk-panel)";
 /** The centres band and the "are you a centre?" card. */
-export const WELL = "#fbfbfc";
+export const WELL = "var(--mk-well)";
 /** Sign-in page ground. */
-export const CANVAS = "#f6f7f9";
+export const CANVAS = "var(--mk-canvas)";
 /** The legal pages' ground — a cooler, bluer paper than CANVAS, with a hairline
  *  frame ruled down each side. Follows the reference the owner supplied. */
-export const PAPER = "#eef0f4";
-export const PAPER_RULE = "#dee2ea";
+export const PAPER = "var(--mk-paper)";
+export const PAPER_RULE = "var(--mk-paper-rule)";
 
 /* ── status ────────────────────────────────────────────────────────────────── */
 
 /** "Verified · calibrated", the stat delta, the Band-9 float. */
-export const GREEN = "#1c7a4f";
-export const GREEN_TINT = "#eaf6f0";
+export const GREEN = "var(--mk-green)";
+export const GREEN_TINT = "var(--mk-green-tint)";
 
 /* ── type ──────────────────────────────────────────────────────────────────── */
 /*
@@ -215,7 +229,7 @@ export function solidButton(size: "md" | "lg" = "lg"): React.CSSProperties {
 export function ghostButton(): React.CSSProperties {
   return {
     cursor: "pointer",
-    background: WHITE,
+    background: PANEL,
     color: INK,
     border: `1px solid ${FIELD}`,
     fontFamily: SANS,
@@ -233,6 +247,6 @@ export function cardStyle(pad = 28): React.CSSProperties {
     border: `1px solid ${LINE}`,
     borderRadius: 20,
     padding: pad,
-    background: WHITE,
+    background: PANEL,
   };
 }

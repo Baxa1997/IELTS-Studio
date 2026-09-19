@@ -4,6 +4,7 @@ import type React from "react";
 import { useState } from "react";
 
 import { ANN_ORDER, ANN_STYLE, matchRanges, type AnnRange, type Annotation } from "./annotations";
+import { PANEL, SLATE_STRONG, WELL } from "@/lib/theme/tokens";
 
 /**
  * The marked-up essay (Option A brand) — shared by the writing studio's Results
@@ -21,7 +22,7 @@ const SANS = "var(--font-hanken), system-ui, sans-serif";
 const INK = "#121317";
 const MUTED = "#3B4150";
 
-const cardStyle: React.CSSProperties = { background: "#fff", border: "1px solid #E6E8EC", borderRadius: 16 };
+const cardStyle: React.CSSProperties = { background: PANEL, border: "1px solid #E6E8EC", borderRadius: 16 };
 
 export function AnnotatedEssay({
   essayText,
@@ -45,7 +46,7 @@ export function AnnotatedEssay({
       </div>
 
       {present.length ? (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, padding: "12px 22px", borderBottom: "1px solid #F0EEE3", background: "#FBFBFC" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, padding: "12px 22px", borderBottom: "1px solid #F0EEE3", background: WELL }}>
           {present.map((t) => (
             <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 600, fontSize: 12, color: MUTED }}>
               <span style={{ width: 14, height: 7, borderRadius: 3, background: ANN_STYLE[t].bg, boxShadow: `inset 0 0 0 1px ${ANN_STYLE[t].fg}55` }} />
@@ -55,7 +56,7 @@ export function AnnotatedEssay({
         </div>
       ) : null}
 
-      <div style={{ padding: 22, fontFamily: SANS, fontSize: 16.5, lineHeight: 2.05, color: "#3B4150", whiteSpace: "pre-wrap" }}>
+      <div style={{ padding: 22, fontFamily: SANS, fontSize: 16.5, lineHeight: 2.05, color: SLATE_STRONG, whiteSpace: "pre-wrap" }}>
         {ranges.length ? renderMarked(essayText, ranges, active, setActive) : essayText}
       </div>
 

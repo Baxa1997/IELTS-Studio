@@ -36,6 +36,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { NeedsAttention } from "./needs-attention";
 import { PendingInvites, type PendingInvite } from "./pending-invites";
+import { WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -558,7 +559,7 @@ function Tick({ done }: { done: boolean }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#fff",
+        color: WHITE,
         fontSize: 11,
         fontWeight: 700,
         lineHeight: 1,

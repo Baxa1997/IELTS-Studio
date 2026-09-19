@@ -4,6 +4,7 @@ import { loadConductFlags } from "@/lib/admin/moderation";
 import { AlertsBell, type AlertRow } from "./alerts-bell";
 import { HeaderCrumb } from "./header-crumb";
 import { CREAM, FAINT, MUTED, SANS, TONE } from "./ui";
+import { INK, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The bar that runs across the top of every admin screen.
@@ -96,7 +97,7 @@ export async function AdminHeader() {
             display: "flex",
             alignItems: "center",
             gap: 8,
-            background: "#fff",
+            background: PANEL,
             border: "1px solid #E0DED8",
             borderRadius: 8,
             padding: "6px 11px",
@@ -125,7 +126,7 @@ export async function AdminHeader() {
               background: "transparent",
               fontFamily: "inherit",
               fontSize: 12.5,
-              color: "#16162E",
+              color: INK,
               width: "100%",
               minWidth: 0,
             }}
@@ -138,7 +139,7 @@ export async function AdminHeader() {
             display: "flex",
             alignItems: "center",
             gap: 7,
-            background: "#fff",
+            background: PANEL,
             border: "1px solid #E0DED8",
             borderRadius: 8,
             padding: "7px 11px",

@@ -32,6 +32,7 @@ import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
 import { TeacherSubjectsCell } from "./teacher-subjects-cell";
+import { FAINT, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -277,12 +278,12 @@ export default async function TeachersPage({
             <button
               type="submit"
               className="cn-btn cn-btn--ghost"
-              style={{ ...fieldStyle, background: "#fff", cursor: "pointer", fontWeight: 500 }}
+              style={{ ...fieldStyle, background: PANEL, cursor: "pointer", fontWeight: 500 }}
             >
               Apply
             </button>
           </form>
-          <span style={{ fontFamily: SANS, fontSize: 12, color: "#777581" }}>
+          <span style={{ fontFamily: SANS, fontSize: 12, color: FAINT }}>
             {rows.length} shown{rows.length !== teachers.length ? ` of ${teachers.length}` : ""}
           </span>
         </Toolbar>
@@ -318,7 +319,7 @@ export default async function TeachersPage({
                 </a>
                 <TD>
                   {t.role === "administrator" ? (
-                    <span style={{ color: "#777581" }}>—</span>
+                    <span style={{ color: FAINT }}>—</span>
                   ) : (
                     <TeacherSubjectsCell
                       teacherId={t.id}
@@ -339,13 +340,13 @@ export default async function TeachersPage({
                   <span title={`${t.turnaround.reviews} marked`}>
                     {describeTurnaround(t.turnaround)}
                     {t.turnaround.medianHours != null && t.turnaround.provisional ? (
-                      <span style={{ color: "#777581", fontSize: 11 }}> provisional</span>
+                      <span style={{ color: FAINT, fontSize: 11 }}> provisional</span>
                     ) : null}
                   </span>
                 </TD>
                 <TD>
                   {attendance == null ? (
-                    <span style={{ color: "#777581" }}>—</span>
+                    <span style={{ color: FAINT }}>—</span>
                   ) : (
                     <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Bar

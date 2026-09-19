@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SANS } from "@/lib/theme/tokens";
+import { SANS, SLATE_BODY, SLATE_MUTED } from "@/lib/theme/tokens";
 
 /**
  * Small in-app footer: the IELTS® non-affiliation disclaimer plus Privacy / Terms
@@ -23,7 +23,7 @@ export function LegalFooter({ note }: { note?: string }) {
         fontFamily: SANS,
       }}
     >
-      <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: "#8B919D", maxWidth: 520 }}>
+      <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.6, color: SLATE_MUTED, maxWidth: 520 }}>
         {note ?? "Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English."}
       </p>
       <nav style={{ display: "flex", gap: 16, flexShrink: 0 }}>
@@ -37,6 +37,6 @@ export function LegalFooter({ note }: { note?: string }) {
 const link: React.CSSProperties = {
   fontSize: 12.5,
   fontWeight: 600,
-  color: "#4A505C",
+  color: SLATE_BODY,
   textDecoration: "none",
 };

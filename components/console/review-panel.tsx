@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { reviewAttempt, type ReviewState } from "@/app/(app)/console/marking-actions";
 import { WRITING_CRITERIA, type AttemptKind } from "@/lib/console/attempts";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL, RED_DEEP, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The footer of an attempt report: what the AI said, what the centre says, and
@@ -53,7 +53,7 @@ export interface ReviewPanelProps {
 }
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 12,
   marginTop: 18,
@@ -67,7 +67,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 export function ReviewPanel({
@@ -279,7 +279,7 @@ export function ReviewPanel({
           </label>
 
           {state.error ? (
-            <p style={{ margin: 0, fontSize: 12.5, color: "#A63A30" }} role="alert">
+            <p style={{ margin: 0, fontSize: 12.5, color: RED_DEEP }} role="alert">
               {state.error}
             </p>
           ) : null}
@@ -293,7 +293,7 @@ export function ReviewPanel({
               disabled={pending}
               style={{
                 background: GREEN,
-                color: "#fff",
+                color: WHITE,
                 border: 0,
                 borderRadius: 8,
                 padding: "9px 16px",

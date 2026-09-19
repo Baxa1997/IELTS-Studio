@@ -14,7 +14,7 @@ import { runProposal, type RunState } from "./actions";
 import { liveProposalTurn } from "./live-proposal";
 import { TelegramStaffPanel } from "./telegram-panel";
 import { newThread } from "./thread-actions";
-import { INDIGO_STUDIO as INDIGO, INDIGO_INK } from "@/lib/theme/tokens";
+import { INDIGO_INK, INDIGO_STUDIO as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 const INK = "#16203a";
 const BODY = "#2a3350";
@@ -82,7 +82,7 @@ interface Capability {
 }
 
 const TINTS: Record<string, { bg: string; fg: string }> = {
-  indigo: { bg: "#eeecff", fg: "#3730a3" },
+  indigo: { bg: "#eeecff", fg: INDIGO_INK },
   blue: { bg: "#e7f1fb", fg: "#215d8f" },
   green: { bg: "#eaf5ee", fg: "#1f6b45" },
   amber: { bg: "#fdf1e3", fg: "#9a5b16" },
@@ -91,7 +91,7 @@ const TINTS: Record<string, { bg: string; fg: string }> = {
 };
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 16,
 };
@@ -279,7 +279,7 @@ export function AssistantChat({
             flex: "none",
             borderRadius: 11,
             background: "#1b2340",
-            color: "#fff",
+            color: WHITE,
             display: "grid",
             placeItems: "center",
           }}
@@ -338,7 +338,7 @@ export function AssistantChat({
             style={{
               padding: "9px 15px",
               borderRadius: 10,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               fontSize: 13,
               fontWeight: 700,
@@ -762,7 +762,7 @@ export function AssistantChat({
                   borderRadius: 10,
                   background: INDIGO,
                   border: 0,
-                  color: "#fff",
+                  color: WHITE,
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: busy ? "default" : "pointer",
@@ -848,7 +848,7 @@ function Bubble({
           flex: "none",
           borderRadius: 9,
           background: "#1b2340",
-          color: "#fff",
+          color: WHITE,
           display: "grid",
           placeItems: "center",
           marginTop: 2,
@@ -902,7 +902,7 @@ function DocumentCard({ offer }: { offer: DocumentOffer }) {
         gap: 12,
         border: `1px solid ${FIELD}`,
         borderRadius: 14,
-        background: "#fff",
+        background: PANEL,
         padding: "13px 15px",
         textDecoration: "none",
       }}
@@ -1027,7 +1027,7 @@ function ProposalCard({
               style={{
                 padding: "7px 13px",
                 borderRadius: 999,
-                background: "#fff",
+                background: PANEL,
                 border: "1px solid #d8eede",
                 fontSize: 12,
                 fontWeight: 700,
@@ -1075,7 +1075,7 @@ function ProposalCard({
         border: "1px solid #ddd9fb",
         borderRadius: 14,
         overflow: "hidden",
-        background: "#fff",
+        background: PANEL,
       }}
     >
       <input type="hidden" name="action" value={proposal.action} />
@@ -1097,7 +1097,7 @@ function ProposalCard({
             padding: "3px 9px",
             borderRadius: 999,
             background: INDIGO,
-            color: "#fff",
+            color: WHITE,
             fontSize: 10,
             fontWeight: 700,
             letterSpacing: ".06em",
@@ -1193,7 +1193,7 @@ function ProposalCard({
             flex: "none",
             padding: "9px 14px",
             borderRadius: 10,
-            background: "#fff",
+            background: PANEL,
             border: `1px solid ${LINE}`,
             fontSize: 13,
             fontWeight: 600,
@@ -1212,7 +1212,7 @@ function ProposalCard({
             borderRadius: 10,
             background: INDIGO,
             border: 0,
-            color: "#fff",
+            color: WHITE,
             fontSize: 13,
             fontWeight: 700,
             cursor: pending ? "default" : "pointer",

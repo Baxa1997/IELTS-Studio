@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import { LucidaScope } from "../../lucida";
+import { PANEL } from "@/lib/theme/tokens";
 
 /**
  * The report page, while the band is still being written.
@@ -64,7 +65,7 @@ export function AwaitingGrade({ sessionId }: { sessionId: string }) {
   }, [sessionId, router]);
 
   return (
-    <LucidaScope className="lucida-fill" style={{ background: "#FFFFFF", color: "#1A1520" }}>
+    <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
       <div
         style={{
           flex: 1,

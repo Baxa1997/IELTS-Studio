@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { BandCard } from "@/app/(app)/dashboard/band-card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -68,7 +69,7 @@ export default async function DiagnosticPage() {
       {diagnosticComplete ? (
         <section style={{ marginTop: 22 }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "#E9F4EE", border: "1px solid #C6E3D2", borderRadius: 14, padding: "14px 18px" }}>
-            <span style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", color: EMERALD, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+            <span style={{ width: 30, height: 30, borderRadius: 8, background: PANEL, color: EMERALD, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
@@ -90,7 +91,7 @@ export default async function DiagnosticPage() {
 
           <Link
             href="/dashboard"
-            style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 20px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -12px rgba(125,1,50,.7)" }}
           >
             Go to dashboard {ARROW}
           </Link>
@@ -157,7 +158,7 @@ function DiagnosticStep({
         flexWrap: "wrap",
         alignItems: "center",
         gap: 18,
-        background: "#fff",
+        background: PANEL,
         border: "1px solid #E6E8EC",
         borderRadius: 16,
         padding: 20,
@@ -223,7 +224,7 @@ function DiagnosticStep({
         ) : (
           <Link
             href={href}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: BRAND, color: "#fff", fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 18px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -14px rgba(125,1,50,.7)", whiteSpace: "nowrap" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: BRAND, color: WHITE, fontFamily: SANS, fontWeight: 600, fontSize: 14.5, padding: "11px 18px", borderRadius: 10, textDecoration: "none", boxShadow: "0 12px 24px -14px rgba(125,1,50,.7)", whiteSpace: "nowrap" }}
           >
             {cta} {ARROW}
           </Link>

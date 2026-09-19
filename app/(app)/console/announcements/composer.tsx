@@ -6,7 +6,13 @@ import { FiSend } from "react-icons/fi";
 
 import { sendAnnouncement, type ActionState } from "../center-actions";
 import { useActionFeedback } from "@/components/console/toast";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import {
+  FAINT as TK_FAINT,
+  INDIGO_CONSOLE as INDIGO,
+  PANEL,
+  RED_DEEP,
+  WHITE,
+} from "@/lib/theme/tokens";
 
 const INK = "#16162E";
 const MUTED = "#6E6C87";
@@ -26,7 +32,7 @@ const field: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: 13,
   color: INK,
-  background: "#fff",
+  background: PANEL,
 };
 
 type Audience = "everyone" | "students" | "teachers" | "group";
@@ -283,7 +289,7 @@ export function AnnouncementComposer({
               ) : null}
 
               {targets.length === 0 ? (
-                <p style={{ fontSize: 11.5, color: "#A63A30", margin: "7px 0 0" }}>
+                <p style={{ fontSize: 11.5, color: RED_DEEP, margin: "7px 0 0" }}>
                   {locked
                     ? "This group has no Telegram group connected — connect one on the group page."
                     : "Pick at least one Telegram group, or untick Telegram."}
@@ -306,7 +312,7 @@ export function AnnouncementComposer({
           style={{
             flex: 1,
             background: INDIGO,
-            color: "#fff",
+            color: WHITE,
             border: 0,
             borderRadius: 8,
             padding: 10,
@@ -320,7 +326,7 @@ export function AnnouncementComposer({
           {pending ? "Sending…" : "Send now"}
         </button>
       </div>
-      <div style={{ fontSize: 11.5, color: "#777581", marginTop: 10, lineHeight: 1.55 }}>
+      <div style={{ fontSize: 11.5, color: TK_FAINT, marginTop: 10, lineHeight: 1.55 }}>
         Reaches {reach} {reach === 1 ? "person" : "people"} in the app. A center student may have no
         address that can receive mail, so the bell is the one channel that reaches everybody.
       </div>

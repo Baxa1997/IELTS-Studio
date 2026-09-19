@@ -26,6 +26,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadStudents, type StudentRow } from "@/lib/console/people";
 
 import { StudentStatusCell } from "./status-cell";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -218,7 +219,7 @@ export default async function StudentsPage({
             <button
               type="submit"
               className="cn-btn cn-btn--ghost"
-              style={{ ...fieldStyle, background: "#fff", cursor: "pointer", fontWeight: 500 }}
+              style={{ ...fieldStyle, background: PANEL, cursor: "pointer", fontWeight: 500 }}
             >
               Apply
             </button>

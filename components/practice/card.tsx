@@ -28,6 +28,7 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
+import { BRAND_SOFT } from "@/lib/theme/tokens";
 
 /* Conditional class names are joined by code, never by string content: a
  * template literal like `${on ? " pc-x" : ""}` loses its leading space to
@@ -343,7 +344,7 @@ export function SeqTile({
         width: 28,
         height: 28,
         borderRadius: 8,
-        background: ink ? INK : "#FDF4F7",
+        background: ink ? INK : BRAND_SOFT,
         border: `1px solid ${ink ? INK : "rgba(125,1,50,.12)"}`,
         color: ink ? "#fff" : BRAND,
         fontFamily: SERIF,

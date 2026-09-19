@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { PANEL, WHITE, withAlpha } from "@/lib/theme/tokens";
 
 /** Brand tokens + shared button styles for the reading experience. Imported by
  *  both the single-passage runner and the full-test runner.
@@ -16,7 +17,7 @@ export const RED = "#c2410c";
 export const AMBER = "#F59E0B";
 
 export const cardStyle: CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: "1px solid #E6E8EC",
   borderRadius: 14,
 };
@@ -39,9 +40,11 @@ export function primaryBtn(disabled = false, accent?: string): CSSProperties {
   return {
     ...btnBase,
     background: accent ?? BRAND,
-    color: "#fff",
+    color: WHITE,
     opacity: disabled ? 0.55 : 1,
     cursor: disabled ? "default" : "pointer",
-    boxShadow: accent ? `0 12px 24px -12px ${accent}b3` : "0 12px 24px -12px rgba(125,1,50,.55)",
+    boxShadow: accent
+      ? `0 12px 24px -12px ${withAlpha(accent, 70)}`
+      : "0 12px 24px -12px rgba(125,1,50,.55)",
   };
 }

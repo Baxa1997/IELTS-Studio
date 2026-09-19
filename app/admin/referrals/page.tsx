@@ -5,7 +5,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { loadDecidedAccounts, loadPendingApplications, loadProgrammeTotals } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { STATUS_LABEL, type ReferralAccount } from "@/lib/referrals/types";
-import { BRAND, BRAND_LINE, BRAND_SOFT } from "@/lib/theme/tokens";
+import { BRAND, BRAND_LINE, BRAND_SOFT, PANEL } from "@/lib/theme/tokens";
 
 import { ProgrammeSummary } from "./summary";
 
@@ -95,7 +95,7 @@ export default async function AdminReferralsPage({
               fontFamily: SANS,
               fontSize: 13,
               color: INK,
-              background: "#fff",
+              background: PANEL,
             }}
           />
         </form>
@@ -211,7 +211,7 @@ function Row({ account, tab }: { account: ReferralAccount; tab: Tab }) {
             fontFamily: SANS,
             fontSize: 13,
             color: INK,
-            background: "#fff",
+            background: PANEL,
             textDecoration: "none",
             whiteSpace: "nowrap",
           }}

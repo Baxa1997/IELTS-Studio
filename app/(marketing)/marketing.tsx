@@ -7,7 +7,17 @@
 
 import Link from "next/link";
 
-import { BODY, BRAND, DISPLAY, INK, LINE, MUTED, WHITE } from "@/app/_landing/design";
+import {
+  BODY,
+  BRAND,
+  BRAND_TINT_LINE,
+  DISPLAY,
+  INK,
+  LINE,
+  MUTED,
+  PANEL,
+  WHITE,
+} from "@/app/_landing/design";
 
 const SERIF = DISPLAY;
 const ACCENT = BRAND;
@@ -68,7 +78,7 @@ export function CompareTable({
 }) {
   const cell: React.CSSProperties = { padding: "12px 14px", fontSize: 14.5, lineHeight: 1.55, color: BODY, verticalAlign: "top", borderTop: `1px solid ${LINE}` };
   return (
-    <div style={{ overflowX: "auto", margin: "16px 0 8px", border: `1px solid ${LINE}`, borderRadius: 14, background: "#fff" }}>
+    <div style={{ overflowX: "auto", margin: "16px 0 8px", border: `1px solid ${LINE}`, borderRadius: 14, background: PANEL }}>
       <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 560 }}>
         <thead>
           <tr>
@@ -108,7 +118,7 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
       <h2 style={{ margin: 0, fontFamily: SERIF, fontSize: 23, fontWeight: 600, letterSpacing: "-.01em", color: INK }}>Frequently asked questions</h2>
       <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }}>
         {items.map((it) => (
-          <div key={it.q} style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 12, padding: "14px 16px" }}>
+          <div key={it.q} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 12, padding: "14px 16px" }}>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: INK }}>{it.q}</h3>
             <p style={{ margin: "8px 0 0", fontSize: 15, lineHeight: 1.65, color: BODY }}>{it.a}</p>
           </div>
@@ -134,14 +144,14 @@ export function Cta({ title, sub }: { title: string; sub: string }) {
       }}
     >
       <div style={{ maxWidth: 420 }}>
-        <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, color: "#fff", lineHeight: 1.3 }}>{title}</div>
+        <div style={{ fontFamily: SERIF, fontSize: 21, fontWeight: 600, color: WHITE, lineHeight: 1.3 }}>{title}</div>
         <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.55, color: "#b7b9da" }}>{sub}</div>
       </div>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         <Link href="/sign-in" style={{ background: ACCENT, color: WHITE, fontWeight: 700, fontSize: 15, borderRadius: 999, padding: "12px 20px", textDecoration: "none", whiteSpace: "nowrap" }}>
           Start free
         </Link>
-        <Link href="/#pricing" style={{ color: "#f0d3de", fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
+        <Link href="/#pricing" style={{ color: BRAND_TINT_LINE, fontWeight: 600, fontSize: 14.5, textDecoration: "none", whiteSpace: "nowrap" }}>
           See pricing →
         </Link>
       </div>

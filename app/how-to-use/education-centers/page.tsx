@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
 import { landingManrope, landingSora } from "@/app/_landing/fonts";
-import { BODY, cardStyle, DISPLAY, eyebrow, INK, SANS, WHITE } from "@/app/_landing/design";
+import {
+  BODY,
+  DISPLAY,
+  INK,
+  PANEL,
+  SANS,
+  WHITE,
+  cardStyle,
+  eyebrow,
+} from "@/app/_landing/design";
 import { getSiteUrl, SITE_NAME } from "@/lib/seo";
 
 import {
@@ -301,7 +310,7 @@ export default function CentersGuide() {
   return (
     <div
       className={`${landingSora.variable} ${landingManrope.variable}`}
-      style={{ background: WHITE, fontFamily: SANS, color: INK, minHeight: "100%" }}
+      style={{ background: PANEL, fontFamily: SANS, color: INK, minHeight: "100%" }}
     >
       <style>{DESIGN_CSS}</style>
       <script

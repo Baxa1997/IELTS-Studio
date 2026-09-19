@@ -6,6 +6,7 @@ import { getSession, roleHome } from "@/lib/auth";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 
 import { PublicGrader } from "./grader";
+import { PANEL, SLATE_BODY, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
 
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -170,21 +171,21 @@ export default async function PublicGradePage() {
       />
 
       {/* ---- Header (same bar as the internal feedback page) ---- */}
-      <header style={{ height: 60, background: "#fff", borderBottom: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
+      <header style={{ height: 60, background: PANEL, borderBottom: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
         <Link href="/" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }} aria-label="EngProgress home">
           <BrandLogo tone="dark" fontSize={19} />
         </Link>
         <nav style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {session ? (
-            <Link href={roleHome(session.role)} style={{ ...navBtn, border: "1px solid #E2DED0", background: SOFT, color: "#3B4150" }}>
+            <Link href={roleHome(session.role)} style={{ ...navBtn, border: "1px solid #E2DED0", background: SOFT, color: SLATE_STRONG }}>
               Open your dashboard
             </Link>
           ) : (
             <>
-              <Link href="/sign-in" style={{ ...navBtn, color: "#3B4150" }}>
+              <Link href="/sign-in" style={{ ...navBtn, color: SLATE_STRONG }}>
                 Sign in
               </Link>
-              <Link href="/sign-in" style={{ ...navBtn, background: BRAND, color: "#fff", boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
+              <Link href="/sign-in" style={{ ...navBtn, background: BRAND, color: WHITE, boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
                 Create free account
               </Link>
             </>
@@ -217,7 +218,7 @@ export default async function PublicGradePage() {
           </h2>
           <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 9 }}>
             {FAQS.map((f) => (
-              <details key={f.q} style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 13, padding: "15px 18px" }}>
+              <details key={f.q} style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 13, padding: "15px 18px" }}>
                 <summary style={{ cursor: "pointer", fontSize: 15, fontWeight: 700, color: INK, listStyle: "none" }}>{f.q}</summary>
                 <p style={{ margin: "10px 0 0", fontSize: 14.5, lineHeight: 1.65, color: MUTED }}>{f.a}</p>
               </details>
@@ -247,6 +248,6 @@ export default async function PublicGradePage() {
 const footLink: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
-  color: "#4A505C",
+  color: SLATE_BODY,
   textDecoration: "none",
 };

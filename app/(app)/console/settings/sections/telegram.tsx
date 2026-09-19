@@ -4,6 +4,7 @@ import { loadGroups } from "@/lib/console/groups";
 import { createClient } from "@/lib/supabase/server";
 
 import { TelegramPanel } from "../../groups/[id]/telegram-panel";
+import { PANEL } from "@/lib/theme/tokens";
 
 /**
  * Every class's Telegram group, in one place.
@@ -58,7 +59,7 @@ export async function TelegramSection({ profile }: { profile: Profile }) {
           <section
             key={g.id}
             style={{
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 14,
               padding: "16px 18px",

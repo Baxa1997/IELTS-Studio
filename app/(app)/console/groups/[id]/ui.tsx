@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SANS, SERIF } from "@/components/console/crm-ui";
+import { INDIGO_INK, INDIGO_STUDIO, PANEL } from "@/lib/theme/tokens";
 
 /* ── the group page's own surface ───────────────────────────────────────────
  *
@@ -27,8 +28,8 @@ export const V2 = {
   field: "#e2e0d6",
   fill: "#fdfdfb",
   wash: "#faf9f5",
-  indigo: "#4f46e5",
-  indigoInk: "#3730a3",
+  indigo: INDIGO_STUDIO,
+  indigoInk: INDIGO_INK,
   indigoWash: "#f4f3ff",
   indigoTint: "#eeecff",
   green: "#1f6b45",
@@ -41,7 +42,7 @@ export const V2 = {
 } as const;
 
 export const card: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${V2.line}`,
   borderRadius: 18,
 };

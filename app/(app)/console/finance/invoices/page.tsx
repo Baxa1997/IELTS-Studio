@@ -33,6 +33,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TransactionForm } from "../transaction-form";
 import { GenerateInvoicesForm, GroupFeeForm } from "./invoice-forms";
 import { DownloadLink } from "@/components/console/file-links";
+import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -239,7 +240,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Sea
               type="submit"
               className="cn-btn cn-btn--ghost"
               style={{
-                background: "#fff",
+                background: PANEL,
                 border: "1px solid #C5C4BE",
                 borderRadius: 8,
                 padding: "7px 13px",

@@ -42,6 +42,7 @@ import { SlotForm } from "./calendar-forms";
 import { RoomsManager } from "./rooms-manager";
 import { type GridRoom } from "./timetable-grid";
 import { WeekBoard } from "./week-board";
+import { BODY, FAINT as TK_FAINT, PANEL, RED_DEEP } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -378,7 +379,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 alignItems: "stretch",
                 border: `1px solid ${HAIRLINE}`,
                 borderRadius: 10,
-                background: "#fff",
+                background: PANEL,
                 overflow: "hidden",
                 boxShadow: "0 1px 2px rgba(22,22,46,.04)",
               }}
@@ -460,7 +461,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 marginLeft: "auto",
                 border: `1px solid ${HAIRLINE}`,
                 borderRadius: 10,
-                background: "#fff",
+                background: PANEL,
                 overflow: "hidden",
               }}
             >
@@ -512,7 +513,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 borderRadius: 11,
                 fontFamily: SANS,
                 fontSize: 12.5,
-                color: "#A63A30",
+                color: RED_DEEP,
                 lineHeight: 1.55,
               }}
             >
@@ -535,7 +536,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                 borderRadius: 11,
                 fontFamily: SANS,
                 fontSize: 12.5,
-                color: "#A63A30",
+                color: RED_DEEP,
                 lineHeight: 1.55,
               }}
             >
@@ -549,7 +550,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                     {c.weekday === day ? (
                       <span style={{ opacity: 0.75 }}>Outlined in red below.</span>
                     ) : (
-                      <Link href={link({ day: String(c.weekday) })} style={{ color: "#A63A30" }}>
+                      <Link href={link({ day: String(c.weekday) })} style={{ color: RED_DEEP }}>
                         Show {WEEKDAYS[c.weekday].long} →
                       </Link>
                     )}
@@ -628,7 +629,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Sea
                       label={
                         <span>
                           {group.name}
-                          <span style={{ color: "#777581", marginLeft: 6, fontWeight: 400 }}>
+                          <span style={{ color: TK_FAINT, marginLeft: 6, fontWeight: 400 }}>
                             {group.teacherName ?? "no teacher"}
                           </span>
                         </span>
@@ -732,8 +733,8 @@ const weekBtn: React.CSSProperties = {
   fontSize: 12.5,
   textDecoration: "none",
   border: `1px solid ${HAIRLINE}`,
-  background: "#fff",
-  color: "#4C4A63",
+  background: PANEL,
+  color: BODY,
   lineHeight: 1.4,
 };
 
@@ -745,7 +746,7 @@ const stepBtn: React.CSSProperties = {
   padding: "0 11px",
   border: 0,
   background: "transparent",
-  color: "#4C4A63",
+  color: BODY,
   textDecoration: "none",
 };
 

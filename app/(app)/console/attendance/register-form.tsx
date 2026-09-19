@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { saveRegister, type ActionState } from "../center-actions";
 import { useActionFeedback } from "@/components/console/toast";
+import { BODY, FAINT, MUTED, SOFT, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The register itself: one row per student, three states, saved in a single
@@ -32,7 +33,7 @@ const OPTIONS: { value: Status; label: string; ink: string; bg: string }[] = [
   { value: "present", label: "Present", ink: GREEN, bg: "#EAF4EE" },
   { value: "late", label: "Late", ink: AMBER, bg: "#FDF2E3" },
   { value: "absent", label: "Absent", ink: RED, bg: "#FBEAE8" },
-  { value: "excused", label: "Excused", ink: "#4C4A63", bg: "#EFEEEA" },
+  { value: "excused", label: "Excused", ink: BODY, bg: "#EFEEEA" },
 ];
 
 export interface RegisterStudent {
@@ -95,7 +96,7 @@ export function RegisterForm({
           borderBottom: "1px solid #D4D3CE",
         }}
       >
-        <div style={{ fontSize: 12.5, color: "#737189" }}>
+        <div style={{ fontSize: 12.5, color: SOFT }}>
           {counts.present} present · {counts.late} late · {counts.absent} absent
           {counts.excused > 0 ? ` · ${counts.excused} excused` : ""}
         </div>
@@ -126,7 +127,7 @@ export function RegisterForm({
             className="cn-btn cn-btn--green"
             style={{
               background: GREEN,
-              color: "#fff",
+              color: WHITE,
               border: 0,
               borderRadius: 8,
               padding: "8px 14px",
@@ -183,7 +184,7 @@ export function RegisterForm({
             </span>
             <div style={{ flex: 1, minWidth: 120 }}>
               <div style={{ fontSize: 13.5, fontWeight: 500, color: INK }}>{s.name}</div>
-              <div style={{ fontSize: 11.5, color: "#777581" }}>{s.meta}</div>
+              <div style={{ fontSize: 11.5, color: FAINT }}>{s.meta}</div>
             </div>
             <div
               style={{ display: "flex", gap: 6 }}
@@ -209,7 +210,7 @@ export function RegisterForm({
                       whiteSpace: "nowrap",
                       border: `1px solid ${on ? o.ink : "#C5C4BE"}`,
                       background: on ? o.bg : "#fff",
-                      color: on ? o.ink : "#6E6C87",
+                      color: on ? o.ink : MUTED,
                     }}
                   >
                     {o.label}
@@ -222,7 +223,7 @@ export function RegisterForm({
       })}
 
       {students.length === 0 ? (
-        <div style={{ padding: 18, fontSize: 13, color: "#777581" }}>
+        <div style={{ padding: 18, fontSize: 13, color: FAINT }}>
           This group has no students yet, so there is nobody to mark.
         </div>
       ) : null}

@@ -6,7 +6,7 @@
  * splash with an instant, page-shaped skeleton.
  */
 import { Block } from "./page-skeleton";
-import { SANS } from "@/lib/theme/tokens";
+import { PANEL, SANS, WELL } from "@/lib/theme/tokens";
 
 const BORDER = "#E6E8EC";
 const FADE: React.CSSProperties = { animation: "lp-fadeup .25s ease both" };
@@ -22,7 +22,7 @@ function Panel({ children, style }: { children?: React.ReactNode; style?: React.
   return (
     <div
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${BORDER}`,
         borderRadius: 14,
         padding: 18,
@@ -56,7 +56,7 @@ export function StudioShellSkeleton() {
           height: 66,
           flex: "none",
           display: "flex",
-          background: "#FBFBFC",
+          background: WELL,
           borderBottom: `1px solid ${BORDER}`,
         }}
       >
@@ -97,7 +97,7 @@ export function StudioShellSkeleton() {
           style={{
             width: 272,
             flex: "none",
-            background: "#FBFBFC",
+            background: WELL,
             borderRight: `1px solid ${BORDER}`,
             display: "flex",
             flexDirection: "column",
@@ -186,7 +186,7 @@ export function StudioEditorSkeleton() {
         style={{
           height: 62,
           flex: "none",
-          background: "#fff",
+          background: PANEL,
           borderBottom: `1px solid ${BORDER}`,
           display: "flex",
           alignItems: "center",

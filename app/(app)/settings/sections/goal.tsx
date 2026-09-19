@@ -4,6 +4,7 @@ import { loadStudyPlan } from "@/lib/plan/service";
 
 import { Panel } from "./frame";
 import { GoalForm } from "./goal-form";
+import { BRAND } from "@/lib/theme/tokens";
 
 /** Target band, current level and test date — the plan everything is paced to. */
 export async function StudyGoalSection({ studentId }: { studentId: string }) {
@@ -14,7 +15,7 @@ export async function StudyGoalSection({ studentId }: { studentId: string }) {
       <Panel title="No goal yet" note="Set one up and your practice is matched to your level.">
         <Link
           href="/onboarding"
-          style={{ color: "#7D0132", fontWeight: 700, textDecoration: "none" }}
+          style={{ color: BRAND, fontWeight: 700, textDecoration: "none" }}
         >
           Set your goal →
         </Link>

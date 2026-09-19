@@ -7,6 +7,7 @@
  */
 
 import { bandColor } from "@/lib/ui/band";
+import { BRAND_LINE, PANEL, SLATE_MUTED, SLATE_STRONG } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -53,7 +54,7 @@ export interface SpeakMetrics {
 }
 
 const CARD: React.CSSProperties = {
-  background: "#fff",
+  background: PANEL,
   border: `1px solid ${LINE}`,
   borderRadius: 16,
   padding: "18px 20px",
@@ -251,7 +252,7 @@ export function SpeakingReport({
                 fontSize: 12.5,
                 fontWeight: 700,
                 letterSpacing: ".04em",
-                color: "#8B919D",
+                color: SLATE_MUTED,
                 textTransform: "uppercase",
                 lineHeight: 1.1,
               }}
@@ -420,7 +421,7 @@ export function SpeakingReport({
             holds it down: {result.score_blocker.why}
           </div>
         ) : null}
-        <div style={{ fontSize: 12, color: "#8B919D" }}>
+        <div style={{ fontSize: 12, color: SLATE_MUTED }}>
           {pBeta
             ? "Average of Fluency, Vocabulary and Grammar, rounded down to the half band — deliberately conservative. Pronunciation is shown but not counted until it hears enough audio."
             : "Official structure: all four criteria weigh 25% each, rounded down to the half band — deliberately conservative. Pronunciation was assessed from your Part 2 recording."}
@@ -429,7 +430,7 @@ export function SpeakingReport({
 
       {/* cue card + audio */}
       {cue ? (
-        <div style={{ ...CARD, background: TINT, borderColor: "#F0D3DE" }}>
+        <div style={{ ...CARD, background: TINT, borderColor: BRAND_LINE }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{cue.title}</div>
           <div style={{ fontSize: 13.5, color: MUTED, marginTop: 6 }}>
             You should say: {cue.bullets?.join(" · ")} — {cue.closing}
@@ -471,7 +472,7 @@ export function SpeakingReport({
             key={String(k)}
             style={{
               fontSize: 13,
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 999,
               padding: "7px 13px",
@@ -523,7 +524,7 @@ export function SpeakingReport({
                   {fmtBand(c.band)}
                 </span>
               </div>
-              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: "#3B4150" }}>
+              <p style={{ margin: "10px 0 0", fontSize: 13.5, lineHeight: 1.6, color: SLATE_STRONG }}>
                 {c.evidence}
               </p>
               {c.what_caps_it ? (
@@ -555,7 +556,7 @@ export function SpeakingReport({
             }}
           >
             {result.highlights.map((h) => (
-              <li key={h} style={{ fontSize: 13.5, lineHeight: 1.55, color: "#3B4150" }}>
+              <li key={h} style={{ fontSize: 13.5, lineHeight: 1.55, color: SLATE_STRONG }}>
                 {h}
               </li>
             ))}
@@ -586,7 +587,7 @@ export function SpeakingReport({
               margin: "10px 0 0",
               fontSize: 13.5,
               lineHeight: 1.7,
-              color: "#3B4150",
+              color: SLATE_STRONG,
               whiteSpace: "pre-wrap",
             }}
           >
@@ -595,7 +596,7 @@ export function SpeakingReport({
         </details>
       ) : null}
 
-      <p style={{ margin: 0, fontSize: 11.5, color: "#8B919D" }}>
+      <p style={{ margin: 0, fontSize: 11.5, color: SLATE_MUTED }}>
         AI-estimated bands, deliberately conservative — not affiliated with or endorsed by IELTS®.
       </p>
     </div>

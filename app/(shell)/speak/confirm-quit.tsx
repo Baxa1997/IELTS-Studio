@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Confirmation before abandoning a live speaking session.
@@ -68,7 +69,7 @@ export function ConfirmQuit({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#fff",
+          background: PANEL,
           borderRadius: 18,
           padding: "26px 26px 22px",
           maxWidth: 430,
@@ -102,7 +103,7 @@ export function ConfirmQuit({
             style={{
               width: "100%",
               background: INK,
-              color: "#fff",
+              color: WHITE,
               border: "none",
               borderRadius: 12,
               padding: "14px 18px",
@@ -119,7 +120,7 @@ export function ConfirmQuit({
             onClick={onConfirm}
             style={{
               width: "100%",
-              background: "#fff",
+              background: PANEL,
               color: RED,
               border: "1px solid #F0D2D2",
               borderRadius: 12,

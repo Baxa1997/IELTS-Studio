@@ -232,11 +232,16 @@ describe("collapsed rail: the toggle straddles the edge, clear of the logomark",
   });
 
   it("is dressed for BOTH grounds it sits on", () => {
-    // Half on the white rail, half on the warm canvas: it can borrow neither, so
-    // a translucent fill is wrong here — it needs a solid disc and a hairline.
+    // Half on the rail, half on the canvas: it can borrow neither, so a
+    // translucent fill is wrong here — it needs a solid disc and a hairline.
+    //
+    // PANEL, not WHITE: both are solid (which is what this test is really
+    // protecting), but PANEL is the theme-aware surface token, so the disc
+    // still matches the two grounds it straddles once they go dark. A literal
+    // white disc would be the one white dot left on a dark rail.
     const at = shell.indexOf("lp-sb-collapse lp-sb-item");
     const block = shell.slice(at, at + 1600);
-    expect(block).toMatch(/background: WHITE/);
+    expect(block).toMatch(/background: PANEL/);
     expect(block).not.toMatch(/background: "rgba\(255,255,255/);
   });
 });

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FiAlertTriangle, FiCheckCircle, FiChevronDown, FiInbox } from "react-icons/fi";
 
 import type { Finding } from "@/lib/console/report-findings";
-import { INDIGO_CONSOLE as INDIGO } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE as INDIGO, PANEL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * The report's warnings, collected into one control at the top of the page.
@@ -117,7 +117,7 @@ export function ReportAlerts({
               height: 18,
               borderRadius: 999,
               background: badge,
-              color: "#fff",
+              color: WHITE,
               fontSize: 11,
               fontWeight: 800,
               lineHeight: "18px",
@@ -158,7 +158,7 @@ export function ReportAlerts({
               right: 0,
               top: "calc(100% + 8px)",
               width: "min(400px, calc(100vw - 32px))",
-              background: "#fff",
+              background: PANEL,
               border: `1px solid ${LINE}`,
               borderRadius: 14,
               boxShadow: "0 18px 44px rgba(22,22,46,.16)",

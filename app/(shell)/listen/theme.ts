@@ -17,6 +17,8 @@
  * one file because that is where the constants happened to be.
  */
 
+import { BRAND as TK_BRAND, BRAND_DEEP, BRAND_LINE, BRAND_SOFT } from "@/lib/theme/tokens";
+
 export const SANS = "var(--font-hanken), system-ui, sans-serif";
 export const SERIF = "var(--font-newsreader), Georgia, serif";
 export const BRAND = "#7D0132";
@@ -38,13 +40,13 @@ export const RUN = {
   sans: DM,
   mono: DM,
   // burgundy accent (the handoff's violet, recoloured)
-  v: "#7d0132",
-  vHover: "#5c0125",
-  vDeep: "#5c0125",
-  vBg: "#fdf4f7",
-  vSoft: "#fdf4f7",
-  vBorder: "#f0d3de",
-  vTrack: "#f0d3de",
+  v: TK_BRAND,
+  vHover: BRAND_DEEP,
+  vDeep: BRAND_DEEP,
+  vBg: BRAND_SOFT,
+  vSoft: BRAND_SOFT,
+  vBorder: BRAND_LINE,
+  vTrack: BRAND_LINE,
   field: "#ffffff",
   fieldFocus: "#ffffff",
   focusBorder: "#dfa3ba",
@@ -52,7 +54,7 @@ export const RUN = {
   desk: "#f4f4f7",
   frame: "#ffffff",
   strip: "#fffafb",
-  rail: "#f0d3de",
+  rail: BRAND_LINE,
   // borders
   bFrame: "#ececf1",
   bBar: "#ececf1",
