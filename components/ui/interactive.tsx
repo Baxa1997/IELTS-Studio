@@ -14,15 +14,7 @@
 
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 
-import {
-  FAINT,
-  INK,
-  LINE,
-  MUTED,
-  PANEL,
-  RED_DEEP,
-  SANS,
-} from "@/lib/theme/tokens";
+import { FAINT, INK, LINE, MUTED, PANEL, RED_DEEP, SANS, withAlpha } from "@/lib/theme/tokens";
 
 /* ── modal ─────────────────────────────────────────────────────────────────── */
 
@@ -89,7 +81,11 @@ export function Modal({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(20,19,58,.4)",
+          // Token, not a literal: in dark this has to be real black. A navy
+          // scrim at 40% LIGHTENS a near-black page — the backdrop came
+          // forward instead of receding, which is half of why the dialog read
+          // as flat against it.
+          background: "var(--tk-scrim)",
           border: 0,
           cursor: "pointer",
         }}
@@ -113,7 +109,10 @@ export function Modal({
           margin: "auto",
           background: PANEL,
           borderRadius: 18,
-          boxShadow: "0 30px 60px rgba(20,19,58,.28)",
+          // The dialog's only edge — and a soft shadow draws no edge at all on
+          // a dark ground, so the dark value of this token carries a 1px ring
+          // as well.
+          boxShadow: "var(--tk-modal-shadow)",
           fontFamily: SANS,
           outline: "none",
         }}
@@ -215,7 +214,15 @@ export function Spinner({
         width: size,
         height: size,
         borderRadius: "50%",
-        border: `2px solid ${color ?? FAINT}40`,
+        /* ⚠️ `${colour}40` — THE TRAP THE PALETTE DOCUMENTS, AND THIS SPINNER
+           WAS ALREADY IN IT. Appending two hex digits was a valid way to add
+           alpha for as long as `FAINT` was a hex; it is `var(--tk-faint)` now,
+           so the expression produced `var(--tk-faint)40`, the whole `border`
+           declaration was dropped as unparseable, and a border with no style
+           has no width — the track vanished and the spinner drew nothing at
+           all, in BOTH themes. `withAlpha` resolves the var and then mixes.
+           (0x40/0xFF ≈ 25%, the alpha this had before the var switch.) */
+        border: `2px solid ${withAlpha(color ?? FAINT, 25)}`,
         borderTopColor: color ?? FAINT,
         ...style,
       }}

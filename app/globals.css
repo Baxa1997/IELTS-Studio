@@ -290,6 +290,16 @@
      real black one plus a top highlight that fakes the raised edge instead. */
   --tk-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
 
+  /* A DIALOG AND THE DARK IT IS DROPPED INTO. Both were literals inside
+     components/ui/interactive.tsx, and both are light-mode assumptions: a
+     navy-tinted scrim LIGHTENS a near-black page instead of pushing it back,
+     and a soft shadow does nothing at all on one — so the panel had no edge
+     and the ground behind it barely dimmed. In dark the scrim goes to real
+     black and the shadow grows a 1px ring, the same trick `--tk-card-shadow`
+     plays one line above. */
+  --tk-scrim: rgba(20, 19, 58, 0.4);
+  --tk-modal-shadow: 0 30px 60px rgba(20, 19, 58, 0.28);
+
   /* ── THE DRIFTED NEUTRALS ───────────────────────────────────────────────
    * Greys that app screens are ALREADY painted in which are not the `--tk-`
    * ladder above: they are the marketing palette's cooler slate, written as
@@ -600,8 +610,12 @@
   --tk-console-canvas: #101016;
   --tk-console-well: #1a1a22;
 
-  --tk-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35),
+  --tk-card-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --tk-scrim: rgba(0, 0, 0, 0.66);
+  --tk-modal-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--tk-line);
 
   /* The drifted neutrals, inverted. They land ON the `--tk-` ladder rather than
      beside it: the whole reason they are separate is a light-mode value nobody
@@ -1151,23 +1165,30 @@
   }
 }
 .ui-modal-x:hover {
-  background: #f1f0eb;
-  color: #16162e;
+  /* Both were frozen light values: a warm wash and a near-black ink, which on a
+     dark dialog is a light chip with invisible ink inside it. */
+  background: var(--tk-warm-well);
+  color: var(--tk-ink);
 }
 .ui-modal-x:focus-visible,
 .ui-card-link:focus-visible {
-  outline: 2px solid #7d0132;
+  /* Byte-identical in light (`--tk-brand` IS #7d0132 there) and orange in dark,
+     where the burgundy was a 1.6:1 ring on a dark dialog — visible enough to
+     photograph, nowhere near the 3:1 a focus indicator owes a keyboard user. */
+  outline: 2px solid var(--tk-brand);
   outline-offset: 2px;
 }
 
-/* Lives on the sidebar rail. DARK-based since the rail turned white — the old
-   white-on-white spinner was a click that produced no feedback at all. */
+/* Lives on the sidebar rail, and it is drawn in the RAIL'S OWN INKS — which is
+   the only version of this that survives a theme. It was dark-on-light ("the
+   old white-on-white spinner was a click that produced no feedback at all"),
+   and the dark rail reintroduced exactly that bug from the other side. */
 .lp-nav-spin {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  border: 2px solid rgba(22, 35, 43, 0.18);
-  border-top-color: #4b5359;
+  border: 2px solid var(--sh-rail-press);
+  border-top-color: var(--sh-rail-text);
   animation: lp-spin 0.6s linear infinite;
   flex: none;
 }
@@ -1714,7 +1735,10 @@
   display: none;
 }
 .lp-sb-grouprow:focus-visible {
-  outline: 2px solid #3b36c9;
+  /* Same ring as every other control in the rail. It was a leftover indigo from
+     the pre-redesign sidebar — the only indigo left on a surface that has none
+     (see shell.tsx), and 2.3:1 on the dark rail. */
+  outline: 2px solid var(--tk-brand);
   outline-offset: -2px;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1855,8 +1879,9 @@
     align-items: center;
     justify-content: center;
     /* Rings the RAIL'S OWN ground so the dot reads as sitting on the tile rather
-       than punched out of it — white again, with the rail. */
-    border: 1.5px solid #fff;
+       than punched out of it — so it has to BE that ground, in both themes. As
+       a literal white it was a bright halo around the badge on a dark rail. */
+    border: 1.5px solid var(--sh-rail-bg);
   }
   /* OUT OF FLOW, which is what lets the link shrink to its chip and centre. The
      shared text-collapse rule already gives it `max-width: 0`, and that is NOT
@@ -3226,7 +3251,11 @@
 .lp-plan-btn {
   appearance: none;
   -webkit-appearance: none;
-  background: #fff;
+  /* THE RAIL'S OWN PAPER, not a literal white. This was `#fff`, which is the
+     same value in light and a white tile on a near-black rail in dark — the
+     one thing in the sidebar that did not follow the theme, with near-white
+     ink on it (the component's inks were already tokens). */
+  background: var(--sh-rail-bg);
   transition:
     background 0.15s ease,
     width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
@@ -3234,7 +3263,10 @@
 }
 .lp-plan-btn:hover,
 .lp-plan-btn[aria-expanded="true"] {
-  background: #faf8f3;
+  /* The rail's own hover, shared with every other row in it. It was a private
+     #faf8f3 — a hair lighter than the rail wash and indistinguishable from it
+     in light, but light-only. */
+  background: var(--sh-rail-hover);
 }
 /* The dialog's upgrade button carries its fill inline, so its hover darkens
    with a filter — which an inline background does not block. */
@@ -3250,7 +3282,10 @@
 .lp-plan-btn:focus-visible,
 .lp-plan-cta:focus-visible,
 .lp-plan-link:focus-visible {
-  outline: 2px solid #b8421e;
+  /* The brand, which re-anchors to orange in dark (4.9:1 on the rail, 4.7:1 on
+     a dialog). It was the logomark's #b8421e — a MARK colour, fixed in both
+     themes, which leaves a 3.4:1 ring on a near-black rail. */
+  outline: 2px solid var(--tk-brand);
   outline-offset: 2px;
 }
 @media (min-width: 768px) {
