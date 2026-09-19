@@ -8,6 +8,15 @@ import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "l
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
+import {
+  CardAction,
+  CardFoot,
+  CardHead,
+  CardQuote,
+  PracticeCard,
+  StatusPill,
+  shortDate,
+} from "@/components/practice/card";
 import { TASK2_CATEGORIES } from "@/lib/prompts/constants";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
@@ -66,14 +75,26 @@ const ARROW = (
   </svg>
 );
 
-/** Estimated time + word target shown on every topic card. */
-function estMeta(taskType: string): string {
-  return taskType === "task2" ? "≈ 40 min · 250 words" : "≈ 20 min · 150 words";
+/** An essay the learner started on this prompt and never submitted. */
+export interface PromptDraft {
+  essayId: string;
+  words: number;
+  at: string | null;
+}
+
+/** The learner's marked essay on this prompt — the card's graded state. */
+export interface PromptMark {
+  essayId: string;
+  band: number | null;
+  words: number;
+  at: string | null;
 }
 
 export function WritingLibrary({
   library,
   practised,
+  drafts = {},
+  marked = {},
   pitchBand,
   isTeacher = false,
   groups = [],
@@ -82,6 +103,10 @@ export function WritingLibrary({
   /** Prompt ids the learner has already attempted — badged + filterable, but every
    *  card still starts a fresh attempt. Past grades are reviewed under Activities. */
   practised: string[];
+  /** Unfinished drafts and finished marks, keyed by prompt id. Plain objects
+   *  rather than Maps because this is a client component. */
+  drafts?: Record<string, PromptDraft>;
+  marked?: Record<string, PromptMark>;
   /** The band generated tasks are tuned to (computed from the learner's level). */
   pitchBand: number;
   /** Teachers get Attach on every card, not only on what they just generated. */
@@ -918,6 +943,8 @@ export function WritingLibrary({
                   p={p}
                   num={numById.get(p.id) ?? 0}
                   done={done.has(p.id)}
+                  draft={drafts[p.id]}
+                  mark={marked[p.id]}
                   busy={busy}
                   onOpen={() => open(p.id, numById.get(p.id))}
                   attach={
@@ -1214,169 +1241,28 @@ function genButton(disabled: boolean, big = false): React.CSSProperties {
   };
 }
 
-/** Top-right corner marker for prompts this learner generated with AI. */
-function AiCorner() {
-  return (
-    <span
-      title="AI-generated"
-      aria-label="AI-generated"
-      style={{
-        position: "absolute",
-        top: 14,
-        right: 14,
-        zIndex: 2,
-        width: 26,
-        height: 26,
-        borderRadius: 8,
-        background: "linear-gradient(135deg,#9B1044,#7D0132)",
-        color: "#fff",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)",
-      }}
-    >
-      <Sparkles size={14} strokeWidth={2.4} />
-    </span>
-  );
-}
-
-function DoneBadge() {
-  return (
-    <span
-      title="You've practised this"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 5,
-        padding: "4px 10px",
-        borderRadius: 8,
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: "#EAF6F0",
-        color: EMERALD,
-        border: "1px solid #CFE7DB",
-        whiteSpace: "nowrap",
-      }}
-    >
-      <Check size={13} strokeWidth={3} /> Practised
-    </span>
-  );
-}
-
-function NotPractisedBadge() {
-  return (
-    <span
-      style={{
-        padding: "4px 10px",
-        borderRadius: 8,
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: "#FDF4F7",
-        color: "#4A505C",
-        border: "1px solid #E6E8EC",
-        whiteSpace: "nowrap",
-      }}
-    >
-      Not practised
-    </span>
-  );
-}
-
-function BandChip({ band }: { band: number }) {
-  return (
-    <span
-      style={{
-        padding: "4px 10px",
-        borderRadius: 8,
-        fontSize: 12.5,
-        fontWeight: 700,
-        background: "#FDF4F7",
-        color: BRAND,
-        border: "1px solid #E3A7BD",
-        whiteSpace: "nowrap",
-      }}
-    >
-      Band {band}
-    </span>
-  );
-}
-
-function StartAction({ practised }: { practised: boolean }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        color: BRAND,
-        fontSize: 14,
-        fontWeight: 600,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {practised ? "Retake" : "Start"} <ArrowRight size={14} strokeWidth={2.2} />
-    </span>
-  );
-}
-
-function Divider() {
-  return <div style={{ height: 1, background: "rgba(28,27,46,.07)" }} />;
-}
-
-const rowBetween: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-};
-
-const cardTitle: React.CSSProperties = {
-  fontFamily: SANS,
-  fontWeight: 700,
-  fontSize: 15.5,
-  lineHeight: 1.3,
-  margin: "0 0 3px",
-  color: INK,
-};
-
-const cardSub: React.CSSProperties = {
-  fontSize: 13.5,
-  color: "#8B919D",
-  fontWeight: 500,
-};
-
-const metaText: React.CSSProperties = {
-  fontSize: 13,
-  color: "#8B919D",
-};
-
-const iconTile: React.CSSProperties = {
-  width: 40,
-  height: 40,
-  borderRadius: 11,
-  background: "#FDF4F7",
-  color: BRAND,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flex: "none",
-};
-
-const typeTag: React.CSSProperties = {
-  background: "#FDF4F7",
-  border: "1px solid #E6E8EC",
-  color: "#4A505C",
-  fontSize: 12,
-  fontWeight: 600,
-  padding: "3px 9px",
-  borderRadius: 7,
-};
-
+/**
+ * A writing card, built from the shared kit in components/practice/card.tsx.
+ *
+ * The canvas gives Writing a body of its own: the essay question itself, set in
+ * the serif and clamped to two lines, instead of Reading's title + subtitle. Its
+ * sequence tile is the dark "ink" variant, which is the one place the three hubs
+ * deliberately differ.
+ *
+ * ⚠️ AN AI-GENERATED PROMPT STAYS SEALED, AND THAT IS THE CANVAS'S OWN RULE.
+ * The owner's call was "reveal the question" — and the canvas does reveal it, for
+ * a library prompt. But its "New" card shows a MUTED teaser instead ("Fresh
+ * exam-style prompt on city transport, revealed the moment you start"), because a
+ * freshly generated prompt's wording is not settled until the learner starts it.
+ * So `generated` keeps the teaser and everything else shows `prompt_text`, which
+ * is both 1:1 with the design and the behaviour the hub already had.
+ */
 function PromptCard({
   p,
   num,
   done,
+  draft,
+  mark,
   busy,
   onOpen,
   attach,
@@ -1384,114 +1270,137 @@ function PromptCard({
   p: LibraryPrompt;
   num: number;
   done: boolean;
+  draft?: PromptDraft;
+  mark?: PromptMark;
   busy: boolean;
   onOpen: () => void;
-  /** Teacher only. Its presence splits the footer into Attach + Start, and
-   *  turns the card from one big <button> into a plain container — a button
-   *  inside a button is invalid, and the outer target would eat the Attach. */
   attach?: { onAttach: () => void; disabled: boolean };
 }) {
-  const meta = estMeta(p.task_type);
   const topic = p.topic_family && p.topic_family !== "custom" ? p.topic_family : null;
+  const target = wordTarget(p.task_type);
+  // An unfinished draft outranks a past mark: it is the thing left open.
+  const state = draft ? "draft" : mark ? "marked" : p.generated ? "fresh" : "target";
 
   return (
-    <CardBox
-      attach={attach}
-      busy={busy}
-      onOpen={onOpen}
-      style={{
-        ...cardStyle,
-        width: "100%",
-        minHeight: 166,
-        padding: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 11,
-        fontFamily: SANS,
-        cursor: busy ? "default" : "pointer",
-        opacity: busy ? 0.7 : 1,
-      }}
+    <PracticeCard
+      tone={busy ? null : state === "marked" ? "ink" : "brand"}
+      style={{ opacity: busy ? 0.7 : 1 }}
     >
-      {p.generated ? <AiCorner /> : null}
-      <div style={rowBetween}>
-        <span style={iconTile}>
-          <PenLine size={19} />
-        </span>
-        <span
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: 6,
-            flexWrap: "wrap",
-            paddingRight: p.generated ? 34 : 0,
-          }}
+      <CardHead
+        seq={num}
+        seqTone="ink"
+        icon={<PenLine size={11} strokeWidth={2} />}
+        label={["WRITING", taskLabel(p.task_type), topic].filter(Boolean).join(" · ").toUpperCase()}
+        pill={<PromptPill state={state} mark={mark} difficulty={p.difficulty} />}
+      />
+
+      <CardQuote muted={state === "fresh"}>
+        {state === "fresh"
+          ? `Fresh exam-style ${taskLabel(p.task_type).toLowerCase()} prompt${
+              topic ? ` on ${topic}` : ""
+            }, revealed the moment you start.`
+          : `“${p.prompt_text}”`}
+      </CardQuote>
+
+      <CardFoot meta={promptMeta({ state, draft, mark, target, taskType: p.task_type })}>
+        {attach ? (
+          <CardAction
+            kind="attach"
+            onClick={attach.onAttach}
+            disabled={attach.disabled}
+            title={attach.disabled ? "Create a class first" : undefined}
+          >
+            Attach
+          </CardAction>
+        ) : null}
+        {mark && !draft ? (
+          <CardAction kind="secondary" href={`/activities/essay/${mark.essayId}`}>
+            Feedback
+          </CardAction>
+        ) : null}
+        <CardAction
+          onClick={onOpen}
+          disabled={busy}
+          icon={<ArrowRight size={14} strokeWidth={2.4} />}
         >
-          {done ? <DoneBadge /> : <NotPractisedBadge />}
-          {!p.generated && p.difficulty ? <BandChip band={p.difficulty} /> : null}
-        </span>
-      </div>
-
-      {/* The actual question is hidden until the card is opened — every card reads as
-          a numbered "Practice test N", matching Reading & Listening. */}
-      <div>
-        <h4 style={cardTitle}>Practice test {num}</h4>
-        <span style={{ ...cardSub, display: "block" }}>Question revealed when you start</span>
-      </div>
-
-      {topic ? (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={typeTag}>{topic}</span>
-        </div>
-      ) : null}
-
-      <Divider />
-
-      {attach ? (
-        <>
-          <div style={{ ...metaText, marginTop: -2 }}>{meta}</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              onClick={attach.onAttach}
-              disabled={attach.disabled}
-              title={attach.disabled ? "Create a class first" : undefined}
-              style={{
-                ...cardAction,
-                background: BRAND,
-                border: 0,
-                color: "#fff",
-                cursor: attach.disabled ? "not-allowed" : "pointer",
-                opacity: attach.disabled ? 0.45 : 1,
-              }}
-            >
-              Attach
-            </button>
-            <button
-              type="button"
-              onClick={onOpen}
-              disabled={busy}
-              style={{ ...cardAction, background: "#1C7A4F", border: 0, color: "#fff" }}
-            >
-              {done ? "Retake" : "Start"}
-            </button>
-          </div>
-        </>
-      ) : (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-          }}
-        >
-          <span style={metaText}>{meta}</span>
-          <StartAction practised={done} />
-        </div>
-      )}
-    </CardBox>
+          {draft ? "Continue" : mark ? "Rewrite" : done ? "Retake" : "Start"}
+        </CardAction>
+      </CardFoot>
+    </PracticeCard>
   );
+}
+
+/** Which status pill a writing card wears. */
+function PromptPill({
+  state,
+  mark,
+  difficulty,
+}: {
+  state: "draft" | "marked" | "fresh" | "target";
+  mark?: PromptMark;
+  difficulty: number | null;
+}) {
+  if (state === "draft") return <StatusPill tone="progress">Draft</StatusPill>;
+  if (state === "marked" && mark) {
+    return (
+      <StatusPill tone="band" icon={<Check size={9} strokeWidth={3} />}>
+        {mark.band != null ? `Band ${mark.band.toFixed(1)}` : "Marked"}
+      </StatusPill>
+    );
+  }
+  if (state === "fresh") {
+    return (
+      <StatusPill tone="new" icon={<Sparkles size={9} strokeWidth={2.2} />}>
+        New
+      </StatusPill>
+    );
+  }
+  return difficulty != null ? (
+    <StatusPill tone="target">Band {difficulty}</StatusPill>
+  ) : (
+    <StatusPill tone="target">Any band</StatusPill>
+  );
+}
+
+/** The footer's left-hand line, which says something different in every state. */
+function promptMeta({
+  state,
+  draft,
+  mark,
+  target,
+  taskType,
+}: {
+  state: "draft" | "marked" | "fresh" | "target";
+  draft?: PromptDraft;
+  mark?: PromptMark;
+  target: number;
+  taskType: string;
+}): string {
+  if (state === "draft" && draft) {
+    return `${draft.words} of ${target} words · saved ${shortDate(draft.at)}`;
+  }
+  if (state === "marked" && mark) {
+    return [`${mark.words} words`, mark.at ? `marked ${shortDate(mark.at)}` : ""]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  return `${target} words · ${estMinutes(taskType)} min`;
+}
+
+/** "Task 2" / "Task 1" — the eyebrow's middle segment. */
+function taskLabel(taskType: string): string {
+  if (taskType === "task2") return "Task 2";
+  if (taskType === "task1_general") return "Task 1 GT";
+  return "Task 1";
+}
+
+/** The word count the exam asks for, which the draft state counts against. */
+function wordTarget(taskType: string): number {
+  return taskType === "task2" ? 250 : 150;
+}
+
+function estMinutes(taskType: string): number {
+  return taskType === "task2" ? 40 : 20;
 }
 
 const genLabel: React.CSSProperties = {
@@ -1510,47 +1419,3 @@ const genField: React.CSSProperties = {
   fontSize: 13.5,
   background: "#fff",
 };
-
-/** The two equal actions in a teacher card's footer. */
-const cardAction: React.CSSProperties = {
-  flex: 1,
-  borderRadius: 10,
-  padding: "9px 12px",
-  fontFamily: SANS,
-  fontSize: 13.5,
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-/**
- * The card's outer element. A student's is one big <button>; a teacher's has to
- * be a plain container, because it carries two real controls of its own.
- */
-function CardBox({
-  attach,
-  busy,
-  onOpen,
-  style,
-  children,
-}: {
-  attach?: { onAttach: () => void; disabled: boolean };
-  busy: boolean;
-  onOpen: () => void;
-  style: React.CSSProperties;
-  children: React.ReactNode;
-}) {
-  if (attach) return <div style={style}>{children}</div>;
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={() => {
-        if (!busy) onOpen();
-      }}
-      className="lp-hover"
-      style={{ ...style, textAlign: "left" }}
-    >
-      {children}
-    </button>
-  );
-}

@@ -8,7 +8,7 @@ import { seedStarterPrompts } from "@/lib/prompts/starter";
 import { DEFAULT_DIFFICULTY } from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
 
-import { WritingLibrary, type LibraryPrompt } from "./library";
+import { WritingLibrary, type LibraryPrompt, type PromptDraft, type PromptMark } from "./library";
 
 export const dynamic = "force-dynamic";
 
@@ -72,14 +72,53 @@ export default async function WritePage() {
     generated: (r.source as string | null) === "ai",
   }));
 
-  // Which prompts this learner has already attempted — badged + filterable in the
-  // list, but every card still starts a fresh attempt. Past grades live in Activities.
+  /* ⭐ WHAT THIS LEARNER HAS AGAINST EACH PROMPT. The redesigned card shows a
+     real band and an unfinished draft, so a bare "has attempted it" list is no
+     longer enough — it needs the essay itself (to link its feedback), its word
+     count, and when it was marked. Newest first, so the first row seen for a
+     prompt is the one to show. */
   const { data: done } = await supabase
     .from("essays")
-    .select("prompt_id")
+    .select("id, prompt_id, status, word_count, updated_at")
     .eq("student_id", profile.id)
-    .not("prompt_id", "is", null);
-  const practised = Array.from(new Set((done ?? []).map((d) => d.prompt_id as string)));
+    .not("prompt_id", "is", null)
+    .order("updated_at", { ascending: false });
+  const essays = done ?? [];
+  const practised = Array.from(new Set(essays.map((d) => d.prompt_id as string)));
+
+  /* ⚠️ TWO QUERIES, NOT A POSTGREST EMBED. `gradings` reaches `essays` through a
+     COMPOSITE foreign key (essay_id, organization_id); PostgREST cannot resolve
+     an embed across one and the request fails in a way that renders a blank
+     page rather than an error. Joined in JS instead. */
+  const essayIds = essays.map((e) => e.id as string);
+  const bandByEssay = new Map<string, number>();
+  if (essayIds.length) {
+    const { data: marks } = await supabase
+      .from("gradings")
+      .select("essay_id, overall_band, created_at")
+      .in("essay_id", essayIds)
+      .order("created_at", { ascending: false });
+    for (const m of marks ?? []) {
+      const id = m.essay_id as string;
+      // Newest grading wins — the revision loop re-grades the same essay.
+      if (!bandByEssay.has(id)) bandByEssay.set(id, Number(m.overall_band));
+    }
+  }
+
+  // Plain objects, not Maps: this crosses into a client component.
+  const drafts: Record<string, PromptDraft> = {};
+  const marked: Record<string, PromptMark> = {};
+  for (const e of essays) {
+    const promptId = e.prompt_id as string;
+    const essayId = e.id as string;
+    const words = (e.word_count as number | null) ?? 0;
+    const at = (e.updated_at as string | null) ?? null;
+    if (e.status === "draft") {
+      if (!drafts[promptId]) drafts[promptId] = { essayId, words, at };
+    } else if (!marked[promptId]) {
+      marked[promptId] = { essayId, words, at, band: bandByEssay.get(essayId) ?? null };
+    }
+  }
 
   const est = await loadStudentEstimates(profile.id);
 
@@ -110,6 +149,8 @@ export default async function WritePage() {
     <WritingLibrary
       library={library}
       practised={practised}
+      drafts={drafts}
+      marked={marked}
       pitchBand={pitchBand}
       isTeacher={profile.role === "teacher"}
       groups={teacherGroups}
