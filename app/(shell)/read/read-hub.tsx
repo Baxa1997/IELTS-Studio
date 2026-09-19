@@ -476,7 +476,7 @@ function TestTile({
       <CardHead
         seq={seq}
         icon={<BookOpen size={12} strokeWidth={1.9} />}
-        label="READING · ACADEMIC"
+        label="READING"
         level={levelChipForBand(targetBand)}
         dim={finished}
         pill={<TilePill state={state} graded={graded} locked={locked} />}
@@ -560,7 +560,7 @@ function PassageTile({
       <CardHead
         seq={seq}
         icon={<FileText size={12} strokeWidth={1.9} />}
-        label="READING · PASSAGE"
+        label="READING"
         level={levelChipForBand(p.difficulty)}
         dim={finished}
         pill={<TilePill state={state} graded={graded} locked={locked} />}

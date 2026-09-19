@@ -108,21 +108,28 @@ export function PracticeCard({
 // ---- Head ------------------------------------------------------------------
 
 /**
- * The top row: the sequence tile, the skill, the level it is pitched at, and
- * whatever else qualifies it on the left; the STATE pill hard right.
+ * The top row: the sequence tile, the level, and whatever genuinely varies
+ * between one card and the next; the STATE pill hard right.
  *
- * ⚠️ THE LEVEL LIVES HERE NOW, NOT IN THE STATUS PILL. It used to be the pill's
- * "target" state — which meant it showed only while the card had no other state
- * to report, and vanished the moment the learner paused or finished one. The
- * level is a fact about the content and never changes; the pill is about the
- * learner and always does. Splitting them lets both be true at once, which is
- * what the owner asked for.
+ * ⚠️ THE PILL SAYS THE LEVEL, NOT THE SKILL, AND THAT IS THE POINT.
+ * It used to read "READING" — on the Reading hub, where every card reads
+ * READING. Same for the "ACADEMIC" qualifier beside it, which the tab above
+ * already says, and for Listening's accent chip, which is British on all 45
+ * items. Three of the five things in this row were constant down the whole
+ * list, and the one thing a learner actually chooses by — how hard it is — was
+ * the smallest, flattest chip of the lot.
  *
- * Either way of naming the skill ends up in the same raised SkillPill: `label`
- * is the eyebrow form ("READING · ACADEMIC", pill + tail) and `chips` is
- * Listening's ("LISTENING" + "BRITISH", pill + flat chip). Pass one or the
- * other, not both. Order is always skill, level, details, tail — the tail is
- * the least useful and is the first thing an ellipsis eats.
+ * So the skill keeps its ICON and its COLOUR, which identify it just as well
+ * inside a hub, and hands the pill to the level. Five elements become three.
+ *
+ * ⚠️ THE LEVEL IS NOT THE STATUS PILL, either. It used to be the pill's
+ * "target" state, so it showed only while the card had nothing else to report
+ * and vanished the moment the learner paused or finished one. A level is a
+ * fact about the content and never changes; the pill is about the learner and
+ * always does.
+ *
+ * `label` names the skill ("READING"); `chips` is Listening's equivalent, where
+ * the chip carrying an icon is the skill. Pass one or the other, not both.
  */
 export function CardHead({
   seq,
@@ -138,64 +145,45 @@ export function CardHead({
   seq: number;
   /** "ink" is Writing's dark tile; Reading and Listening use the brand tint. */
   seqTone?: "brand" | "ink";
-  /** Goes inside the skill pill, so it is drawn in the skill's colour. */
+  /** Goes inside the pill, drawn in the skill's colour. */
   icon?: ReactNode;
+  /** The skill. Chooses the pill's colour; only shown when there is no level. */
   label?: string;
-  /** What the content is pitched at — see lib/practice/levels.ts. Shown in
-   *  every state, which is the whole point of it not being the status pill.
-   *  The hint carries the band it maps to, so the scale is a hover away. */
+  /** What the content is pitched at — see lib/practice/levels.ts. TAKES OVER
+   *  THE PILL, because it is the fact that varies between cards. Its hint
+   *  carries the band it maps to, so the scale stays a hover away. */
   level?: { text: string; hint?: string } | null;
-  /** The chip carrying an icon is the skill and becomes the raised pill. */
+  /** The chip carrying an icon is the skill. Anything else must EARN its place
+   *  — a chip that says the same thing on every card is noise, so Listening
+   *  passes its accent only when the library actually has more than one. */
   chips?: { icon?: ReactNode; label: string }[];
   pill?: ReactNode;
   /** A finished card steps back — see PracticeCard's `surface`. */
   dim?: boolean;
 }) {
   const skillChip = chips?.find((c) => c.icon);
-  const cut = label ? label.indexOf(" · ") : -1;
-  const skill = label ? (cut === -1 ? label : label.slice(0, cut)) : skillChip?.label;
-  const tail = label && cut !== -1 ? label.slice(cut + 3) : "";
+  const skill = label ?? skillChip?.label ?? "";
   const details = chips?.filter((c) => !c.icon).map((c) => c.label) ?? [];
 
   return (
     <div style={rowBetween}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <SeqTile seq={seq} tone={seqTone} dim={dim} />
-        {skill ? <SkillPill icon={icon ?? skillChip?.icon} skill={skill} dim={dim} /> : null}
-        {level ? <MonoChip title={level.hint}>{level.text}</MonoChip> : null}
+        {skill ? (
+          <SkillPill
+            icon={icon ?? skillChip?.icon}
+            skill={skill}
+            label={level?.text}
+            hint={level?.hint}
+            dim={dim}
+          />
+        ) : null}
         {details.map((d) => (
           <MonoChip key={d}>{d}</MonoChip>
         ))}
-        {tail ? <EyebrowTail full={label!} text={tail} /> : null}
       </div>
       {pill ?? null}
     </div>
-  );
-}
-
-/** What qualifies the skill — "ACADEMIC", "TASK 1 GT · HOUSING". Plain text on
- *  the card, so it keeps the colour that passes on white (#4A505C is 7.7:1),
- *  and it is the one part of the head allowed to ellipsise. */
-function EyebrowTail({ full, text }: { full: string; text: string }) {
-  return (
-    <span
-      // The qualifiers are the first thing an ellipsis eats on a narrow card,
-      // so the full label stays reachable on hover.
-      title={full}
-      style={{
-        fontFamily: MONO,
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: ".07em",
-        color: MUTED,
-        minWidth: 0,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-      }}
-    >
-      {text}
-    </span>
   );
 }
 
@@ -283,17 +271,27 @@ const SKILL_FALLBACK = SKILL_TONE.READING;
 export function SkillPill({
   icon,
   skill,
+  label,
+  hint,
   dim = false,
 }: {
   icon?: ReactNode;
+  /** Chooses the colour and nothing else. */
   skill: string;
-  /** A finished card steps back, and the skill steps back with it — the band is
-   *  what should be loudest there, not which hub you are already looking at. */
+  /** What the pill actually SAYS. Defaults to the skill's own name, but on a
+   *  hub every card has the same skill, so the hubs pass the level instead —
+   *  see the note on CardHead. */
+  label?: string;
+  /** Tooltip: the band a level maps to, so the scale stays a hover away. */
+  hint?: string;
+  /** A finished card steps back, and the pill steps back with it — the band is
+   *  what should be loudest there. */
   dim?: boolean;
 }) {
   const t = SKILL_TONE[skill.trim().toUpperCase()] ?? SKILL_FALLBACK;
   return (
     <span
+      title={hint}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -301,6 +299,8 @@ export function SkillPill({
         flex: "0 0 auto",
         opacity: dim ? 0.72 : 1,
         height: 23,
+        // On the outer span so the whole pill answers the hover, not the glyphs.
+        cursor: hint ? "help" : undefined,
         padding: icon ? "0 11px 0 9px" : "0 11px",
         borderRadius: 9999,
         background: `linear-gradient(180deg, ${t.top} 0%, ${t.base} 55%, ${t.foot} 100%)`,
@@ -317,7 +317,7 @@ export function SkillPill({
       }}
     >
       {icon}
-      {skill}
+      {label ?? skill}
     </span>
   );
 }

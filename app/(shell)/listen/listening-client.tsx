@@ -541,6 +541,17 @@ function Hub({
         .map((it, i) => ({ ...it, seq: i + 1 })),
     [catalogue],
   );
+  /* ⚠️ A CHIP THAT SAYS THE SAME THING ON EVERY CARD IS NOISE, NOT INFORMATION.
+     Every prompt in the engine's listening/tts.py asks for a British voice, so
+     the accent chip read "BRITISH" on all 45 library items — a whole element in
+     the busiest row of the card carrying nothing. Derived rather than hardcoded
+     against a constant the other repo owns: the day a second accent is
+     synthesised the chip comes back by itself, on exactly the cards that need
+     it, with nothing to remember here. */
+  const accentsVary = useMemo(() => {
+    const seen = new Set((catalogue?.items ?? []).map((it) => it.accent).filter(Boolean));
+    return seen.size > 1;
+  }, [catalogue]);
   const quick = useMemo(
     () =>
       (catalogue?.items ?? [])
@@ -712,6 +723,7 @@ function Hub({
                   <TestCard
                     key={it.id}
                     it={it}
+                    showAccent={accentsVary}
                     loading={busy === it.id}
                     disabled={!!busy}
                     onOpen={() => onOpen(it)}
@@ -766,6 +778,7 @@ function Hub({
                   <QuickCard
                     key={it.id}
                     it={it}
+                    showAccent={accentsVary}
                     loading={busy === it.id}
                     disabled={!!busy}
                     onOpen={() => onOpen(it)}
@@ -852,12 +865,14 @@ type AttachSlot = { onAttach: () => void; disabled: boolean };
  */
 function TestCard({
   it,
+  showAccent,
   loading,
   disabled,
   onOpen,
   attach,
 }: {
   it: LibraryItem & { seq: number };
+  showAccent: boolean;
   loading: boolean;
   disabled: boolean;
   onOpen: () => void;
@@ -866,6 +881,7 @@ function TestCard({
   return (
     <ListenCard
       it={it}
+      showAccent={showAccent}
       title={`Practice test ${it.seq}`}
       subtitle="4 parts · 40 questions · band score"
       maxScore={40}
@@ -882,12 +898,14 @@ function TestCard({
 /** A ready-made single-recording practice ("Quick practice N"). */
 function QuickCard({
   it,
+  showAccent,
   loading,
   disabled,
   onOpen,
   attach,
 }: {
   it: LibraryItem & { seq: number };
+  showAccent: boolean;
   loading: boolean;
   disabled: boolean;
   onOpen: () => void;
@@ -896,6 +914,7 @@ function QuickCard({
   return (
     <ListenCard
       it={it}
+      showAccent={showAccent}
       title={`Quick practice ${it.seq}`}
       subtitle={it.topic || "Listening practice"}
       maxScore={10}
@@ -916,6 +935,7 @@ function QuickCard({
  */
 function ListenCard({
   it,
+  showAccent,
   title,
   subtitle,
   maxScore,
@@ -928,6 +948,8 @@ function ListenCard({
   attach,
 }: {
   it: LibraryItem & { seq: number };
+  /** Only when the library holds more than one accent — see accentsVary. */
+  showAccent: boolean;
   title: string;
   subtitle: string;
   maxScore: number;
@@ -958,8 +980,9 @@ function ListenCard({
         seq={it.seq}
         chips={[
           { icon: <Headphones size={12} strokeWidth={1.9} />, label: "LISTENING" },
-          // Absent rather than guessed if the engine did not say.
-          ...(it.accent ? [{ label: it.accent.toUpperCase() }] : []),
+          // Only when it distinguishes this card from the next one, and absent
+          // rather than guessed if the engine did not say.
+          ...(showAccent && it.accent ? [{ label: it.accent.toUpperCase() }] : []),
         ]}
         // Shown in every state now. It used to be the "target" status pill, so
         // it vanished as soon as the learner paused or finished the practice.

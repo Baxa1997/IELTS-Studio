@@ -464,85 +464,11 @@ describe("the skill pill can actually be read", () => {
     ).toBe(true);
   });
 
-  it("holds the qualifier tail at a colour that passes on white", () => {
-    /* The tail is still plain text on the card — "TASK 1 GT · HOUSING" — so the
-       contrast rule applies to it as it did to the whole eyebrow. DIM (#8B919D)
-       is the 3:1 grey this was; MUTED (#4A505C) is 7.7:1. */
-    const tail = styleCarrying(fnBody("EyebrowTail"), "letterSpacing");
-    expect(styleProp(tail, "color")).toBe("MUTED");
-    expect(Number(/fontSize: (\d+)/.exec(tail)?.[1])).toBeGreaterThanOrEqual(11);
-  });
-
-  it("keeps Listening's detail chip in step with that tail", () => {
-    // A card shows one or the other depending on the hub, and the two hubs are
-    // one click apart, so a size or weight that drifts between them is visible.
-    const tail = styleCarrying(fnBody("EyebrowTail"), "letterSpacing");
+  it("keeps the flat detail chip legible in its own right", () => {
+    // Listening's accent chip, on the rare card that still shows one.
     const chip = styleCarrying(fnBody("MonoChip"), "letterSpacing");
-    expect(/fontSize: (\d+)/.exec(chip)?.[1]).toBe(/fontSize: (\d+)/.exec(tail)?.[1]);
-    expect(/fontWeight: (\d+)/.exec(chip)?.[1]).toBe(/fontWeight: (\d+)/.exec(tail)?.[1]);
-  });
-
-  it("gives each skill its own fill", () => {
-    const bases = Object.values(SKILL_TONES).map((t) => t.base);
-    expect(new Set(bases).size, "two skills share a fill — they stop differentiating").toBe(
-      bases.length,
-    );
-  });
-
-  it("keeps every label readable on its own fill", () => {
-    /* ⚠️ THE WHOLE POINT OF THE PILL. Lightening the fill was the owner's call,
-       and the way that goes wrong is silently: a tint drifts darker, or an ink
-       drifts lighter, and the label goes back to being hard to read — the exact
-       bug the pill was built to fix. 4.5:1 is the AA floor for text this size.
-
-       ⚠️ EVERY STOP, not just the darkest. Checking `foot` alone assumes the
-       gradient runs light-to-dark, and nothing enforces that — a dark `top`
-       then leaves the ink unreadable across the upper half of the pill and no
-       test says a word. That mutation went through on the first attempt. */
-    for (const [skill, t] of Object.entries(SKILL_TONES)) {
-      for (const stop of ["top", "base", "foot"] as const) {
-        expect(
-          contrast(t.ink, t[stop]),
-          `${skill}: ${t.ink} on its ${stop} (${t[stop]}) is too close to read`,
-        ).toBeGreaterThanOrEqual(4.5);
-      }
-    }
-  });
-
-  it("keeps every fill light, which is what was asked for", () => {
-    // A tint that drifts dark takes the ink's contrast with it, and the pill
-    // goes back to being the second loudest thing on the card.
-    for (const [skill, t] of Object.entries(SKILL_TONES)) {
-      for (const stop of ["top", "base", "foot"] as const) {
-        expect(
-          contrast("#FFFFFF", t[stop]),
-          `${skill}'s ${stop} (${t[stop]}) is no longer a light tint`,
-        ).toBeLessThan(2);
-      }
-    }
-  });
-
-  it("keeps every skill clear of the status pill's green and amber", () => {
-    /* The status pill sits on the same row: green is an earned band, amber an
-       unfinished run. A skill wearing either reads as a result. */
-    /* Read off the INK, not the tint: a tint this pale is nearly neutral, and a
-       near-neutral colour's hue swings wildly on a one-digit change. The ink is
-       also what the eye actually reads as the skill's colour. */
-    for (const [skill, t] of Object.entries(SKILL_TONES)) {
-      const h = hue(t.ink);
-      expect(h < 35 || h > 200, `${skill} (${t.ink}) is in the green/amber arc`).toBe(true);
-    }
-  });
-
-  it("has a fill for every skill the three hubs actually pass", () => {
-    /* ⚠️ THE FALLBACK IS SILENT. An unrecognised skill drops back to burgundy
-       rather than breaking, so a renamed label would take its colour with it and
-       nothing would say so. This is what notices. */
-    const passed = skillsPassedByHubs();
-    expect(passed.length, "found no skill labels — the regexes have gone stale").toBe(3);
-    for (const skill of passed) {
-      expect(Object.keys(SKILL_TONES), `${skill} has no fill and would fall back`).toContain(skill);
-    }
+    expect(Number(/fontSize: (\d+)/.exec(chip)?.[1])).toBeGreaterThanOrEqual(11);
+    expect(styleProp(chip, "color")).toBe("MUTED");
   });
 
   it("raises the skill and leaves every other chip flat", () => {
@@ -556,13 +482,15 @@ describe("the skill pill can actually be read", () => {
     expect(fnBody("MonoChip"), "a detail chip is raised too").not.toContain("linear-gradient");
   });
 
-  it("puts the level before the tail, since the tail is what gets cut", () => {
-    // Head order is skill, level, details, tail — and only the tail ellipsises.
+  it("gives the pill to the level and keeps only the skill's colour", () => {
+    /* ⚠️ THE HEAD MUST CARRY WHAT VARIES, NOT WHAT IS ALWAYS TRUE. The pill
+       used to read "READING" on the Reading hub, where every card does. The
+       skill keeps the icon and the colour — enough to identify it — and the
+       pill says the level, which is the thing a learner chooses by. */
     const head = fnBody("CardHead");
-    const at = (needle: string) => head.indexOf(needle);
-    expect(at("<SkillPill")).toBeLessThan(at("{level ?"));
-    expect(at("{level ?")).toBeLessThan(at("<EyebrowTail"));
-    expect(fnBody("EyebrowTail")).toContain("textOverflow");
+    expect(head, "the pill no longer shows the level").toContain("label={level?.text}");
+    expect(head, "the level's band is no longer a hover away").toContain("hint={level?.hint}");
+    expect(head, "the skill still drives the colour").toContain("skill={skill}");
   });
 });
 
@@ -656,38 +584,73 @@ describe("a finished card steps back and leads with the band", () => {
   });
 });
 
-describe("the level is a fact about the content, so it never disappears", () => {
-  it("reaches the head of both hubs, off the one shared scale", () => {
-    /* ⚠️ BOTH THROUGH lib/practice/levels.ts, NOT A LOCAL FORMATTER. Reading
-       stores bands 4-9 and listening stores levels 1-5; a hub that formats its
-       own chip is how they came to be printing two different scales in the
-       first place, and nothing about a card would look wrong. */
+// ---- 9. The head says only what varies -------------------------------------
+
+/**
+ * ⚠️ THE ROW WAS FIVE THINGS AND THREE OF THEM WERE CONSTANT.
+ *
+ * "READING" on the Reading hub, "ACADEMIC" when the tab above already said it,
+ * and "BRITISH" on all 45 listening items because every prompt in the engine
+ * asks for a British voice. Meanwhile the one fact a learner chooses by — how
+ * hard it is — was the smallest, flattest chip in the row.
+ *
+ * None of that shows up as a defect. Each addition looked reasonable on its
+ * own; it is only the accumulation that costs, and accumulation is exactly what
+ * no test catches unless one is written for it.
+ */
+describe("nothing in the head is the same on every card", () => {
+  it("names the skill without qualifying it", () => {
+    /* `label="READING · ACADEMIC"` is how the tail crept in the first time. The
+       tab above the grid already separates full tests from single passages, and
+       every task type has a tab of its own on Writing. */
+    for (const [hub, src] of [
+      ["read", READ],
+      ["write", WRITE],
+    ] as const) {
+      for (const m of src.matchAll(/\blabel="([^"]*)"/g)) {
+        expect(m[1], `${hub} qualifies the skill in the head: "${m[1]}"`).not.toContain(" · ");
+      }
+    }
+  });
+
+  it("shows listening's accent only when the library has more than one", () => {
+    /* Derived, not compared against a hardcoded "British" — that constant lives
+       in the other repo (listening/tts.py) and would rot here. The chip returns
+       by itself the day a second accent is synthesised. */
+    expect(LISTEN, "the accent chip is unconditional again").toContain("showAccent && it.accent");
+    expect(LISTEN, "nothing works out whether accents vary").toMatch(
+      /accentsVary[\s\S]{0,400}?new Set\(/,
+    );
+  });
+
+  it("carries the level on every card in all three hubs", () => {
     /* Checked per PROP, not per file. Asserting the helper merely appears
        somewhere passes while a second card beside it hand-builds its own chip —
-       which is exactly what the mutation did, and it went straight through. */
+       which is what an earlier mutation did, and it went straight through. */
     const props = [
       ...[...READ.matchAll(/\blevel=\{([^\n]*)/g)].map((m) => ["read", m[1]] as const),
+      ...[...WRITE.matchAll(/\blevel=\{([^\n]*)/g)].map((m) => ["write", m[1]] as const),
       ...[...LISTEN.matchAll(/\blevel=\{([^\n]*)/g)].map((m) => ["listen", m[1]] as const),
     ];
-    // Two reading cards (full test + single passage) and one listening card.
-    expect(props.length, "a card stopped showing its level").toBe(3);
+    // Two reading cards (full test + single passage), one writing, one listening.
+    expect(props.length, "a card stopped showing its level").toBe(4);
     for (const [hub, value] of props) {
       expect(value, `${hub} formats a level chip of its own: ${value}`).toContain("levelChipFor");
     }
   });
 
-  it("is no longer the status pill's target state", () => {
-    /* ⚠️ WHY THIS WAS ASKED FOR. As a status pill the level showed only while
-       the card had nothing else to report, so it vanished the moment the learner
-       paused or finished — which is exactly when they are choosing what to do
-       next. Neither hub may put it back there. */
+  it("leaves the status pill to the learner, on all three hubs", () => {
+    /* ⚠️ Writing kept its pitch here as "Band 5" longest, and it collided with
+       the "Band 7.0" the same pill shows once the essay is marked — one word,
+       one scale, two unrelated meanings. */
     for (const [hub, src] of [
       ["read", READ],
+      ["write", WRITE],
       ["listen", LISTEN],
     ] as const) {
       expect(
         /tone="target">\s*(Band|Level)\s*\{/.test(src),
-        `${hub} put the level back in the status pill`,
+        `${hub} put the pitch back in the status pill`,
       ).toBe(false);
     }
   });

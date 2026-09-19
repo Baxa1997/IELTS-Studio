@@ -17,6 +17,7 @@ import {
   StatusPill,
   shortDate,
 } from "@/components/practice/card";
+import { levelChipForBand } from "@/lib/practice/levels";
 import { TASK2_CATEGORIES } from "@/lib/prompts/constants";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
@@ -1304,9 +1305,12 @@ function PromptCard({
         seq={num}
         seqTone="ink"
         icon={<PenLine size={12} strokeWidth={2} />}
-        label={["WRITING", taskLabel(p.task_type), topic].filter(Boolean).join(" · ").toUpperCase()}
+        label="WRITING"
+        // The task type is the tab above and the topic is the prompt below, so
+        // neither earned its place up here. The level is what varies.
+        level={levelChipForBand(p.difficulty)}
         dim={finished}
-        pill={<PromptPill state={state} mark={mark} difficulty={p.difficulty} done={done} />}
+        pill={<PromptPill state={state} mark={mark} done={done} />}
       />
 
       {/* `full` only where there is something to reveal: a fresh prompt's own
@@ -1359,12 +1363,10 @@ function PromptCard({
 function PromptPill({
   state,
   mark,
-  difficulty,
   done,
 }: {
   state: "draft" | "marked" | "fresh" | "target";
   mark?: PromptMark;
-  difficulty: number | null;
   /** Attempted at some point, per the `practised` list. */
   done?: boolean;
 }) {
@@ -1394,11 +1396,11 @@ function PromptPill({
       </StatusPill>
     );
   }
-  return difficulty != null ? (
-    <StatusPill tone="target">Band {difficulty}</StatusPill>
-  ) : (
-    <StatusPill tone="target">Any band</StatusPill>
-  );
+  /* Nothing. The pitch used to sit here as "Band 5", which collided with the
+     "Band 7.0" this same pill shows once the essay is marked — one word, one
+     scale, two unrelated meanings. It is the level chip in the head now, on the
+     scale Reading and Listening already share. */
+  return null;
 }
 
 /** The footer's left-hand line, which says something different in every state. */
