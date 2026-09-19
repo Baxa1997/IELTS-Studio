@@ -20,6 +20,14 @@ import { DEEP_SEA_MINING } from "./p07-deep-sea-mining";
 import { CAHOKIA } from "./p08-cahokia";
 import { LANGUAGE_TECHNOLOGY } from "./p09-language-technology";
 import { COOLING_CITIES } from "./p10-cooling-cities";
+import { BIRDSONG_DIALECTS } from "./p11-birdsong-dialects";
+import { ASH_CLOUD } from "./p12-ash-cloud";
+import { SCREW_THREAD } from "./p13-screw-thread";
+import { ANAESTHESIA } from "./p14-anaesthesia";
+import { BIRCH_TAR } from "./p15-birch-tar";
+import { TIDE_MILLS } from "./p16-tide-mills";
+import { ROMAN_ROADS } from "./p17-roman-roads";
+import { OVERBOOKING } from "./p18-overbooking";
 import type { CuratedPassage, CuratedTest } from "./shared";
 import { TEST_01 } from "./tests/test-01";
 import { TEST_02 } from "./tests/test-02";
@@ -167,6 +175,14 @@ export const CURATED_READING_PASSAGES: CuratedPassage[] = [
   CAHOKIA,
   LANGUAGE_TECHNOLOGY,
   COOLING_CITIES,
+  BIRDSONG_DIALECTS,
+  ASH_CLOUD,
+  SCREW_THREAD,
+  ANAESTHESIA,
+  BIRCH_TAR,
+  TIDE_MILLS,
+  ROMAN_ROADS,
+  OVERBOOKING,
 ];
 
 export type { CuratedPassage, CuratedQuestion } from "./shared";
