@@ -129,4 +129,84 @@ export const ru: Messages = {
   "dash.baseline": "начальный",
   "dash.paid": "Оплата получена — тариф Pro активируется. Приятной практики!",
   "dash.cancelled": "Оплата отменена — вы остаётесь на бесплатном тарифе.",
+
+  /* ── карточка практики ───────────────────────────────────────────────── */
+  "card.new": "Новое",
+  "card.paused": "Приостановлено",
+  "card.retake": "Пройти снова",
+  "card.review": "Разбор",
+  "card.attach": "Прикрепить",
+  "card.pro": "Pro",
+  "card.unlockPro": "Открыть с Pro",
+  "card.attachClass": "Прикрепить к группе",
+
+  /* ── раздел Reading ──────────────────────────────────────────────────── */
+  "read.yourTests": "Ваши тесты",
+  "read.yourPassages": "Ваши тексты",
+  "read.ready": "Готово к началу",
+  "read.noTests": "Готовых тестов пока нет — создайте выше. В каждом 3 текста и 40 вопросов.",
+  "read.noPassages": "Готовых текстов пока нет — создайте выше.",
+  "read.fullTest": "Полный тест Reading",
+  "read.fullTestMeta": "3 текста · 60 мин",
+  "read.fullTestBlurb": "Три оригинальных текста с нарастающей сложностью, под ваш уровень.",
+  "read.generateTest": "Создать новый тест",
+  "read.passage": "Практика по тексту",
+  "read.passageMeta": "1 текст · ~20 мин",
+  "read.passageBlurb": "Один оригинальный текст с проверяемыми вопросами (~20 мин)",
+  "read.generatePassage": "Создать новый текст",
+  "read.disclaimer":
+    "Оригинальные тексты в формате IELTS Academic Reading. Не связано с IELTS® и не одобрено им.",
+
+  /* ── раздел Writing ──────────────────────────────────────────────────── */
+  "write.hub": "Практика Writing",
+  "write.intro":
+    "Проверьте уже написанное эссе, выберите тему или создайте новую. Вы получите строгий экзаменаторский балл по каждому критерию — и сможете дорабатывать тот же ответ.",
+  "write.question": "Задание",
+  "write.questionTask": "Задание",
+  "write.pasteExact": "Вставьте задание ровно так, как отвечали",
+  "write.yourEssay": "Ваше эссе",
+  "write.gradedReal": "Проверка как на экзамене",
+  "write.perCriterion": "Строгий балл по каждому критерию и правки",
+  "write.conservative":
+    "Осторожно и строго, как экзаменатор — ваш балл здесь и есть балл на экзамене.",
+  "write.pasteOwn": "Вставьте своё задание",
+  "write.pasteOwnNote":
+    "Есть конкретное задание с занятия или из книги? Вставьте — оценим ваш ответ по нему.",
+  "write.anyBand": "Любой band",
+  "write.noTopics": "Готовых тем пока нет — создайте первую кнопкой «Пусть ИИ выберет тему» выше.",
+  "write.noMatch": "Нет тем по вашим фильтрам.",
+  "write.classLevel": "Уровень группы",
+  "write.classLevelNote":
+    "Насколько сложны формулировки и идеи. Для ученика это берётся из его измеренного балла — у группы единого балла нет, поэтому выбираете вы.",
+  "write.questionType": "Тип задания",
+  "write.optional": "(необязательно)",
+  "write.anySurprise": "Любая — на ваш выбор",
+  "write.topicPref": "Предпочтение по теме",
+  "write.grading": "ИИ проверяет ваше эссе…",
+  "write.gradingNote":
+    "Каждый критерий читается как экзаменатором — Task, Coherence, Vocabulary, Grammar. Это занимает 15–30 секунд; не закрывайте вкладку.",
+  "write.gradingTitle": "Проверяем ваше эссе",
+  "write.rewrite": "Переписать",
+  "write.feedback": "Разбор",
+  "write.draft": "Черновик",
+  "write.practised": "Пройдено",
+  "write.checkOwn": "Проверить своё эссе",
+  "write.acadT1": "Academic · Task 1",
+  "write.acadT2": "Academic · Task 2",
+  "write.gt": "General Training",
+  "write.phQuestion": "Вставьте точное задание IELTS…",
+  "write.phEssay": "Вставьте или напишите здесь полный ответ…",
+  "write.phFull": "Вставьте сюда полное задание IELTS Writing…",
+  "write.letAI": "Пусть ИИ выберет тему",
+  "write.generate": "Создать тему",
+  "write.searchTopics": "Поиск тем…",
+  "write.filterBand": "Фильтр по целевому band",
+  "write.newPractice": "Новая практика",
+  "write.egTopics": "например: городской транспорт, удалённая работа",
+  "write.disclaimer":
+    "Задания в формате IELTS Writing, созданные ИИ. Не связано с IELTS® и не одобрено им.",
+
+  /* ── раздел Listening ────────────────────────────────────────────────── */
+  "listen.preparing": "Готовим…",
+  "listen.resume": "Продолжить",
 };

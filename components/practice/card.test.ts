@@ -76,8 +76,6 @@ function styleProp(style: string, prop: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-
-
 /**
  * SKILL_TONE, resolved through globals.css — FOR BOTH THEMES.
  *
@@ -224,12 +222,14 @@ describe("the card keeps the hover the stylesheet gives it", () => {
        and nothing was checking it. */
     for (const [skill, tone] of Object.entries(SKILL_TONES)) {
       const h = hue(resolve(tone.ink, theme));
-      expect(h > 70 && h < 170, `${skill} ${theme}: hue ${Math.round(h)}° is in the green arc`).toBe(
-        false,
-      );
-      expect(h >= 35 && h <= 70, `${skill} ${theme}: hue ${Math.round(h)}° is in the amber arc`).toBe(
-        false,
-      );
+      expect(
+        h > 70 && h < 170,
+        `${skill} ${theme}: hue ${Math.round(h)}° is in the green arc`,
+      ).toBe(false);
+      expect(
+        h >= 35 && h <= 70,
+        `${skill} ${theme}: hue ${Math.round(h)}° is in the amber arc`,
+      ).toBe(false);
     }
   });
 
@@ -239,7 +239,9 @@ describe("the card keeps the hover the stylesheet gives it", () => {
        falls back to the brand, so Listening would quietly stop being blue and
        nothing would fail. */
     const labels = skillsPassedByHubs();
-    expect(labels.length, "no skill labels found in the hubs — the pattern moved").toBeGreaterThan(0);
+    expect(labels.length, "no skill labels found in the hubs — the pattern moved").toBeGreaterThan(
+      0,
+    );
     for (const label of labels) {
       expect(SKILL_TONES[label.toUpperCase()], `${label} has no entry in SKILL_TONE`).toBeTruthy();
     }
@@ -611,7 +613,12 @@ describe("a locked card is gated, not dimmed", () => {
       ["listen", LISTEN],
     ] as const) {
       expect(src, `${hub} has no PRO pill`).toContain('tone="locked"');
-      expect(src, `${hub} does not name what unlocks it`).toContain("Unlock with Pro");
+      /* ⚠️ THE KEY, NOT THE ENGLISH. These hubs render through `t()` now, so
+         asserting the literal "Unlock with Pro" was asserting one locale's copy
+         and broke the moment the string moved into the dictionary. The rule —
+         a locked card must name what unlocks it — is unchanged, and checking
+         the key holds in all three languages instead of only one. */
+      expect(src, `${hub} does not name what unlocks it`).toContain("card.unlockPro");
     }
   });
 
@@ -647,9 +654,11 @@ describe("a finished card steps back and leads with the band", () => {
        for work already done — and for Writing it is backwards for the product
        too, since the revision loop is the whole moat. The primary is LAST in the
        footer, so the order swaps with the emphasis. */
+    /* Message KEYS rather than English, for the reason given above the
+       "Unlock with Pro" check. */
     for (const [hub, src, quiet, loud] of [
-      ["read", READ, "Retake", "Review"],
-      ["write", WRITE, "Rewrite", "Feedback"],
+      ["read", READ, "card.retake", "card.review"],
+      ["write", WRITE, "write.rewrite", "write.feedback"],
     ] as const) {
       const foot = src.slice(src.indexOf("<CardFoot"));
       const quietAt = foot.indexOf(quiet);

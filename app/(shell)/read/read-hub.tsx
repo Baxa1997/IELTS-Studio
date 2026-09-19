@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
@@ -61,7 +63,7 @@ export interface Graded {
   at: string | null;
 }
 
-/** An attempt still open — the card's "Paused" state. */
+/** An attempt still open — the card's t("card.paused") state. */
 export interface Live {
   /** Which passage was showing (1-based). Null on a single-passage run. */
   cursorIndex: number | null;
@@ -144,6 +146,7 @@ export function ReadingHub({
   freeUsed?: number;
   freeLimit?: number | null;
 }) {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("test");
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -284,28 +287,28 @@ export function ReadingHub({
           active={tab === "test"}
           onClick={() => setTab("test")}
           icon={<Layers size={17} />}
-          label="Full reading test"
-          sub="3 passages · 60 min"
+          label={t("read.fullTest")}
+          sub={t("read.fullTestMeta")}
         />
         <TabButton
           active={tab === "passage"}
           onClick={() => setTab("passage")}
           icon={<FileText size={17} />}
-          label="Passage practice"
-          sub="1 passage · ~20 min"
+          label={t("read.passage")}
+          sub={t("read.passageMeta")}
         />
       </div>
 
       {/* Panel */}
       {tab === "test" ? (
         <Panel
-          title="Full reading test"
-          blurb="Three original passages that rise in difficulty, pitched to your band."
-          action={<StartTestButton label="Generate fresh test" />}
+          title={t("read.fullTest")}
+          blurb={t("read.fullTestBlurb")}
+          action={<StartTestButton label={t("read.generateTest")} />}
         >
           {ownTests.length > 0 ? (
             <>
-              <SectionLabel>Your tests</SectionLabel>
+              <SectionLabel>{t("read.yourTests")}</SectionLabel>
               <Grid>
                 {ownTests.map((t, i) => (
                   <TestTile
@@ -327,7 +330,7 @@ export function ReadingHub({
 
           {libraryTests.length > 0 ? (
             <>
-              <SectionLabel>Ready to start</SectionLabel>
+              <SectionLabel>{t("read.ready")}</SectionLabel>
               <Grid>
                 {libraryTests.map((t, i) => {
                   const num = ownTests.length + i + 1;
@@ -360,13 +363,13 @@ export function ReadingHub({
         </Panel>
       ) : (
         <Panel
-          title="Passage practice"
-          blurb="One original passage with marked questions (~20 min)"
-          action={<GeneratePassageButton label="Generate fresh passage" />}
+          title={t("read.passage")}
+          blurb={t("read.passageBlurb")}
+          action={<GeneratePassageButton label={t("read.generatePassage")} />}
         >
           {ownPassages.length > 0 ? (
             <>
-              <SectionLabel>Your passages</SectionLabel>
+              <SectionLabel>{t("read.yourPassages")}</SectionLabel>
               <Grid>
                 {ownPassages.map((p, i) => (
                   <PassageTile
@@ -383,7 +386,7 @@ export function ReadingHub({
 
           {libraryPassages.length > 0 ? (
             <>
-              <SectionLabel>Ready to start</SectionLabel>
+              <SectionLabel>{t("read.ready")}</SectionLabel>
               <Grid>
                 {libraryPassages.map((p, i) => {
                   const num = ownPassages.length + i + 1;
@@ -403,7 +406,7 @@ export function ReadingHub({
           ) : null}
 
           {libraryPassages.length === 0 && ownPassages.length === 0 ? (
-            <EmptyHint>No ready passages yet — generate one above.</EmptyHint>
+            <EmptyHint>{t("read.noPassages")}</EmptyHint>
           ) : null}
         </Panel>
       )}
@@ -411,7 +414,7 @@ export function ReadingHub({
       {error ? <UpgradeNotice message={error} /> : null}
 
       {attachId ? (
-        <PracticeModal title="Attach to a class" onClose={() => setAttachId(null)}>
+        <PracticeModal title={t("card.attachClass")} onClose={() => setAttachId(null)}>
           <AttachForm
             kind="reading"
             contentId={attachId}
@@ -421,7 +424,7 @@ export function ReadingHub({
         </PracticeModal>
       ) : null}
 
-      <LegalFooter note="Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by IELTS®." />
+      <LegalFooter note={t("read.disclaimer")} />
     </div>
   );
 }
@@ -470,6 +473,7 @@ function TestTile({
   locked?: boolean;
   attach?: { onAttach: () => void; disabled: boolean };
 }) {
+  const t = useT();
   // A resumable run outranks a past result: the thing the learner left open is
   // more urgent than the thing they finished.
   const state = live ? "live" : graded ? "graded" : createdAt ? "fresh" : "target";
@@ -508,7 +512,7 @@ function TestTile({
             disabled={attach.disabled}
             title={attach.disabled ? "Create a class first" : undefined}
           >
-            Attach
+            {t("card.attach")}
           </CardAction>
         ) : null}
         {/* ⚠️ ON A FINISHED CARD, REVIEW IS THE PRIMARY AND RETAKE IS NOT.
@@ -522,9 +526,11 @@ function TestTile({
               onStart={onStart}
               loading={loading}
               kind="secondary"
-              label="Retake"
+              label={t("card.retake")}
             />
-            <CardAction href={`/activities/reading/${graded.attemptId}`}>Review</CardAction>
+            <CardAction href={`/activities/reading/${graded.attemptId}`}>
+              {t("card.review")}
+            </CardAction>
           </>
         ) : (
           <OpenAction
@@ -557,6 +563,7 @@ function PassageTile({
   loading?: boolean;
   attach?: { onAttach: () => void; disabled: boolean };
 }) {
+  const t = useT();
   const { graded, live, locked } = p;
   const state = live ? "live" : graded ? "graded" : href ? "fresh" : "target";
   const finished = state === "graded";
@@ -616,7 +623,7 @@ function PassageTile({
             disabled={attach.disabled}
             title={attach.disabled ? "Create a class first" : undefined}
           >
-            Attach
+            {t("card.attach")}
           </CardAction>
         ) : null}
         {graded && !live ? (
@@ -626,9 +633,11 @@ function PassageTile({
               onStart={onStart}
               loading={loading}
               kind="secondary"
-              label="Retake"
+              label={t("card.retake")}
             />
-            <CardAction href={`/activities/reading/${graded.attemptId}`}>Review</CardAction>
+            <CardAction href={`/activities/reading/${graded.attemptId}`}>
+              {t("card.review")}
+            </CardAction>
           </>
         ) : (
           <OpenAction
@@ -663,12 +672,13 @@ function OpenAction({
   kind?: "primary" | "secondary";
   label: string;
 }) {
+  const t = useT();
   // The arrow marks the action that moves you on; a secondary Retake is not it.
   const arrow = kind === "primary" ? <ArrowRight size={14} strokeWidth={2.4} /> : undefined;
   if (locked) {
     return (
       <CardAction onClick={onStart ?? (() => {})} icon={<Lock size={13} />}>
-        Unlock with Pro
+        {t("card.unlockPro")}
       </CardAction>
     );
   }
@@ -701,6 +711,7 @@ function TilePill({
   graded?: Graded | null;
   locked?: boolean;
 }) {
+  const t = useT();
   /* The gate outranks every state: a locked card cannot be started, so what it
      scored or how far in it got is not the thing to say about it. */
   if (locked) {
@@ -710,7 +721,7 @@ function TilePill({
       </StatusPill>
     );
   }
-  if (state === "live") return <StatusPill tone="progress">Paused</StatusPill>;
+  if (state === "live") return <StatusPill tone="progress">{t("card.paused")}</StatusPill>;
   if (state === "graded" && graded) {
     return (
       <StatusPill tone="band" icon={<Check size={9} strokeWidth={3} />}>
@@ -910,6 +921,8 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ marginTop: 18, fontSize: 13.5, color: SLATE_MUTED, fontFamily: SANS }}>{children}</p>
+    <p style={{ marginTop: 18, fontSize: 13.5, color: SLATE_MUTED, fontFamily: SANS }}>
+      {children}
+    </p>
   );
 }

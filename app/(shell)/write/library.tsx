@@ -1,5 +1,8 @@
 "use client";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -62,19 +65,21 @@ const cardStyle: React.CSSProperties = {
   boxShadow: "0 1px 3px rgba(28,27,46,.04)",
 };
 
-const TABS: { key: string; label: string; soon?: boolean }[] = [
-  { key: "check_own", label: "Check own writing" },
-  { key: "task1_academic", label: "Academic · Task 1" },
-  { key: "task2", label: "Academic · Task 2" },
-  { key: "task1_general", label: "General Training" },
-  // { key: "custom", label: "Your own topic" },
+/* ⚠️ THESE HOLD KEYS, NOT LABELS. A module constant is evaluated once at import
+   — outside React, before any locale is known — so it cannot call `t()`. The
+   render translates it instead. */
+const TABS: { key: string; labelKey: MessageKey; soon?: boolean }[] = [
+  { key: "check_own", labelKey: "write.checkOwn" },
+  { key: "task1_academic", labelKey: "write.acadT1" },
+  { key: "task2", labelKey: "write.acadT2" },
+  { key: "task1_general", labelKey: "write.gt" },
 ];
 
-/** Task-type options shared by the "Check own writing" and custom-prompt panels. */
-const TASK_OPTIONS: { k: string; l: string }[] = [
-  { k: "task2", l: "Academic · Task 2" },
-  { k: "task1_general", l: "General Training" },
-  { k: "task1_academic", l: "Academic · Task 1" },
+/** Task-type options shared by the "check own writing" and custom-prompt panels. */
+const TASK_OPTIONS: { k: string; lKey: MessageKey }[] = [
+  { k: "task2", lKey: "write.acadT2" },
+  { k: "task1_general", lKey: "write.gt" },
+  { k: "task1_academic", lKey: "write.acadT1" },
 ];
 
 const ARROW = (
@@ -130,6 +135,7 @@ export function WritingLibrary({
   isTeacher?: boolean;
   groups?: { id: string; name: string }[];
 }) {
+  const t = useT();
   const router = useRouter();
   // The prompt a teacher is setting to a class. assignPractice approves a
   // still-pending prompt as part of assigning, so a library id goes straight in.
@@ -405,7 +411,7 @@ export function WritingLibrary({
               color: INK,
             }}
           >
-            Writing practice
+            {t("write.hub")}
           </h1>
           {tab === "check_own" ? (
             <p
@@ -470,14 +476,14 @@ export function WritingLibrary({
           flexWrap: "wrap",
         }}
       >
-        {TABS.map((t) => {
-          const active = tab === t.key;
+        {TABS.map((tb) => {
+          const active = tab === tb.key;
           return (
             <button
-              key={t.key}
+              key={tb.key}
               type="button"
-              onClick={() => selectTab(t.key)}
-              disabled={t.soon}
+              onClick={() => selectTab(tb.key)}
+              disabled={tb.soon}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -488,15 +494,15 @@ export function WritingLibrary({
                 border: "none",
                 background: "transparent",
                 borderBottom: active ? `2.5px solid ${BRAND}` : "2.5px solid transparent",
-                color: active ? BRAND : t.soon ? "var(--hb-dim-line)" : SLATE_BODY,
+                color: active ? BRAND : tb.soon ? "var(--hb-dim-line)" : SLATE_BODY,
                 fontFamily: SANS,
                 fontSize: 15,
                 fontWeight: active ? 700 : 600,
-                cursor: t.soon ? "default" : "pointer",
+                cursor: tb.soon ? "default" : "pointer",
               }}
             >
-              {t.label}
-              {t.soon ? (
+              {t(tb.labelKey)}
+              {tb.soon ? (
                 <span
                   style={{
                     fontSize: 11,
@@ -555,10 +561,10 @@ export function WritingLibrary({
                     margin: 0,
                   }}
                 >
-                  The question
+                  {t("write.question")}
                 </p>
                 <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "1px 0 0" }}>
-                  Paste the task exactly as you answered it
+                  {t("write.pasteExact")}
                 </p>
               </div>
             </div>
@@ -572,16 +578,16 @@ export function WritingLibrary({
                   onClick={() => setCheckTask(o.k)}
                   style={ownPill(checkTask === o.k)}
                 >
-                  {o.l}
+                  {t(o.lKey)}
                 </button>
               ))}
             </div>
 
-            <label style={fieldLabel}>The question / task</label>
+            <label style={fieldLabel}>{t("write.questionTask")}</label>
             <textarea
               value={checkQuestion}
               onChange={(e) => setCheckQuestion(e.target.value)}
-              placeholder="Paste the exact IELTS question or task…"
+              placeholder={t("write.phQuestion")}
               className="lp-input"
               style={{ ...fieldArea, flex: 1, minHeight: 190, resize: "none" }}
             />
@@ -620,7 +626,7 @@ export function WritingLibrary({
                         margin: 0,
                       }}
                     >
-                      Your essay
+                      {t("write.yourEssay")}
                     </p>
                     <span
                       style={{
@@ -634,11 +640,11 @@ export function WritingLibrary({
                         padding: "3px 10px",
                       }}
                     >
-                      Graded like the real thing
+                      {t("write.gradedReal")}
                     </span>
                   </div>
                   <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "1px 0 0" }}>
-                    Examiner-strict band per criterion, with fixes
+                    {t("write.perCriterion")}
                   </p>
                 </div>
               </div>
@@ -658,7 +664,7 @@ export function WritingLibrary({
             <textarea
               value={checkEssay}
               onChange={(e) => setCheckEssay(e.target.value)}
-              placeholder="Paste or write your full answer here…"
+              placeholder={t("write.phEssay")}
               className="lp-input"
               style={{
                 ...fieldArea,
@@ -699,7 +705,7 @@ export function WritingLibrary({
                   minWidth: 0,
                 }}
               >
-                Conservative and examiner-strict — your band here is your band on exam day.
+                {t("write.conservative")}
               </span>
             </div>
           </section>
@@ -707,7 +713,7 @@ export function WritingLibrary({
       ) : tab === "custom" ? (
         <div style={{ ...cardStyle, padding: 24, maxWidth: 720 }}>
           <p style={{ fontFamily: SANS, fontWeight: 700, fontSize: 17, color: INK, margin: 0 }}>
-            Paste your own question
+            {t("write.pasteOwn")}
           </p>
           <p
             style={{
@@ -723,9 +729,9 @@ export function WritingLibrary({
           </p>
           <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
             {[
-              { k: "task2", l: "Academic · Task 2" },
-              { k: "task1_general", l: "General Training" },
-              { k: "task1_academic", l: "Academic · Task 1" },
+              { k: "task2", l: t("write.acadT2") },
+              { k: "task1_general", l: t("write.gt") },
+              { k: "task1_academic", l: t("write.acadT1") },
             ].map((o) => (
               <button
                 key={o.k}
@@ -750,7 +756,7 @@ export function WritingLibrary({
           <textarea
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
-            placeholder="Paste the full IELTS writing question here…"
+            placeholder={t("write.phFull")}
             className="lp-input"
             style={{
               width: "100%",
@@ -782,12 +788,12 @@ export function WritingLibrary({
           {/* AI banner — the shared aurora "AI generate" section */}
           <div style={{ marginBottom: 28 }}>
             <AiGenerateSection
-              title="Let AI choose a fresh topic"
+              title={t("write.letAI")}
               badge={`Tuned to band ${pitchBand.toFixed(0)}`}
               description="A brand-new, exam-style prompt pitched at your level — closest to the real test."
               cta={
                 <AiGenerateButton
-                  label="Generate a topic"
+                  label={t("write.generate")}
                   busyLabel="Generating… ~15s"
                   busy={busy}
                   generating={generatingKind === tab}
@@ -859,7 +865,7 @@ export function WritingLibrary({
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search topics…"
+                  placeholder={t("write.searchTopics")}
                   style={{
                     flex: 1,
                     minWidth: 0,
@@ -877,7 +883,7 @@ export function WritingLibrary({
                   [
                     ["all", "All topics"],
                     ["not", "Not practised"],
-                    ["done", "Practised"],
+                    ["done", t("write.practised")],
                   ] as [typeof pracFilter, string][]
                 ).map(([key, label]) => {
                   const on = pracFilter === key;
@@ -906,7 +912,7 @@ export function WritingLibrary({
                 <select
                   value={bandFilter ?? ""}
                   onChange={(e) => setBandFilter(e.target.value ? Number(e.target.value) : null)}
-                  aria-label="Filter by target band"
+                  aria-label={t("write.filterBand")}
                   style={{
                     height: 44,
                     padding: "0 12px",
@@ -917,10 +923,13 @@ export function WritingLibrary({
                     cursor: "pointer",
                     color: bandFilter != null ? BRAND : SLATE_BODY,
                     background: bandFilter != null ? BRAND_SOFT : PANEL,
-                    border: bandFilter != null ? `1px solid ${BRAND_PALE}` : `1px solid ${WARM_LINE_SOFT}`,
+                    border:
+                      bandFilter != null
+                        ? `1px solid ${BRAND_PALE}`
+                        : `1px solid ${WARM_LINE_SOFT}`,
                   }}
                 >
-                  <option value="">Any band</option>
+                  <option value="">{t("write.anyBand")}</option>
                   {[5, 6, 7, 8, 9].map((b) => (
                     <option key={b} value={b}>
                       Band {b}
@@ -942,7 +951,7 @@ export function WritingLibrary({
           ) : visible.length === 0 ? (
             <div style={{ ...cardStyle, padding: 28, textAlign: "center", borderStyle: "dashed" }}>
               <p style={{ fontFamily: SANS, fontSize: 14.5, color: MUTED, margin: 0 }}>
-                No topics match your filters.
+                {t("write.noMatch")}
               </p>
             </div>
           ) : (
@@ -991,11 +1000,11 @@ export function WritingLibrary({
       {gradingModal ? <GradingModal /> : null}
 
       {setupOpen ? (
-        <PracticeModal title="New practice" onClose={() => setSetupOpen(false)}>
+        <PracticeModal title={t("write.newPractice")} onClose={() => setSetupOpen(false)}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <label htmlFor="wl-level" style={genLabel}>
-                Level of the class
+                {t("write.classLevel")}
               </label>
               <select
                 id="wl-level"
@@ -1018,7 +1027,8 @@ export function WritingLibrary({
             {tab === "task2" ? (
               <div>
                 <label htmlFor="wl-cat" style={genLabel}>
-                  Question type <span style={{ color: SLATE_MUTED }}>(optional)</span>
+                  {t("write.questionType")}{" "}
+                  <span style={{ color: SLATE_MUTED }}>{t("write.optional")}</span>
                 </label>
                 <select
                   id="wl-cat"
@@ -1026,7 +1036,7 @@ export function WritingLibrary({
                   onChange={(e) => setGenCategory(e.target.value)}
                   style={genField}
                 >
-                  <option value="">Any — surprise me</option>
+                  <option value="">{t("write.anySurprise")}</option>
                   {TASK2_CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c.replace(/_/g, " ")}
@@ -1038,21 +1048,20 @@ export function WritingLibrary({
 
             <div>
               <label htmlFor="wl-pref" style={genLabel}>
-                Topic preference <span style={{ color: SLATE_MUTED }}>(optional)</span>
+                {t("write.topicPref")}{" "}
+                <span style={{ color: SLATE_MUTED }}>{t("write.optional")}</span>
               </label>
               <input
                 id="wl-pref"
                 value={preference}
                 onChange={(e) => setPreference(e.target.value)}
                 maxLength={50}
-                placeholder="e.g. urban transport, remote work"
+                placeholder={t("write.egTopics")}
                 style={genField}
               />
             </div>
 
-            {message ? (
-              <p style={{ fontSize: 13, color: WARM_RED, margin: 0 }}>{message}</p>
-            ) : null}
+            {message ? <p style={{ fontSize: 13, color: WARM_RED, margin: 0 }}>{message}</p> : null}
 
             <div style={{ display: "flex", gap: 8 }}>
               <button
@@ -1088,7 +1097,7 @@ export function WritingLibrary({
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -1096,7 +1105,7 @@ export function WritingLibrary({
       ) : null}
 
       {attachId ? (
-        <PracticeModal title="Attach to a class" onClose={() => setAttachId(null)}>
+        <PracticeModal title={t("card.attachClass")} onClose={() => setAttachId(null)}>
           <AttachForm
             kind="writing"
             contentId={attachId}
@@ -1106,7 +1115,7 @@ export function WritingLibrary({
         </PracticeModal>
       ) : null}
 
-      <LegalFooter note="AI-generated prompts in the IELTS Writing format. Not affiliated with or endorsed by IELTS®." />
+      <LegalFooter note={t("write.disclaimer")} />
     </div>
   );
 }
@@ -1162,11 +1171,12 @@ function ownPill(on: boolean): React.CSSProperties {
 
 /** Full-screen "AI is grading your essay" overlay shown while the grade call runs. */
 function GradingModal() {
+  const t = useT();
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Grading your essay"
+      aria-label={t("write.gradingTitle")}
       style={{
         position: "fixed",
         inset: 0,
@@ -1213,7 +1223,7 @@ function GradingModal() {
             margin: "18px 0 0",
           }}
         >
-          AI is grading your essay…
+          {t("write.grading")}
         </h3>
         <p
           style={{
@@ -1302,6 +1312,7 @@ function PromptCard({
   onOpen: () => void;
   attach?: { onAttach: () => void; disabled: boolean };
 }) {
+  const t = useT();
   const topic = p.topic_family && p.topic_family !== "custom" ? p.topic_family : null;
   const target = wordTarget(p.task_type);
   // An unfinished draft outranks a past mark: it is the thing left open.
@@ -1347,7 +1358,7 @@ function PromptCard({
             disabled={attach.disabled}
             title={attach.disabled ? "Create a class first" : undefined}
           >
-            Attach
+            {t("card.attach")}
           </CardAction>
         ) : null}
         {/* ⚠️ ON A MARKED PROMPT, FEEDBACK IS THE PRIMARY AND REWRITE IS NOT —
@@ -1357,9 +1368,11 @@ function PromptCard({
         {mark && !draft ? (
           <>
             <CardAction kind="secondary" onClick={onOpen} disabled={busy}>
-              Rewrite
+              {t("write.rewrite")}
             </CardAction>
-            <CardAction href={`/activities/essay/${mark.essayId}`}>Feedback</CardAction>
+            <CardAction href={`/activities/essay/${mark.essayId}`}>
+              {t("write.feedback")}
+            </CardAction>
           </>
         ) : (
           <CardAction
@@ -1386,7 +1399,8 @@ function PromptPill({
   /** Attempted at some point, per the `practised` list. */
   done?: boolean;
 }) {
-  if (state === "draft") return <StatusPill tone="progress">Draft</StatusPill>;
+  const t = useT();
+  if (state === "draft") return <StatusPill tone="progress">{t("write.draft")}</StatusPill>;
   if (state === "marked" && mark) {
     return (
       <StatusPill tone="band" icon={<Check size={9} strokeWidth={3} />}>
@@ -1397,7 +1411,7 @@ function PromptPill({
   if (state === "fresh") {
     return (
       <StatusPill tone="new" icon={<Sparkles size={9} strokeWidth={2.2} />}>
-        New
+        {t("card.new")}
       </StatusPill>
     );
   }
@@ -1408,7 +1422,7 @@ function PromptPill({
   if (done) {
     return (
       <StatusPill tone="target" icon={<Check size={9} strokeWidth={3} />}>
-        Practised
+        {t("write.practised")}
       </StatusPill>
     );
   }

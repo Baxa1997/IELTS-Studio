@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -418,6 +420,7 @@ function FreshPractice({
   onAttach: () => void;
   onDismiss: () => void;
 }) {
+  const t = useT();
   const parts = view.kind === "test" ? "Full test · 4 parts" : `Part ${view.part ?? "?"}`;
   return (
     <div style={{ padding: "20px 24px 0", fontFamily: SANS }}>
@@ -489,7 +492,7 @@ function FreshPractice({
               opacity: !canAttach || attaching ? 0.55 : 1,
             }}
           >
-            {attaching ? "Preparing…" : "Attach"}
+            {attaching ? t("listen.preparing") : t("card.attach")}
           </button>
           <button
             type="button"
@@ -976,6 +979,7 @@ function ListenCard({
   onOpen: () => void;
   attach?: AttachSlot;
 }) {
+  const t = useT();
   const done = it.best_score != null;
   const length = clock(it.duration_seconds);
   // An unfinished run outranks a past score: the thing left open is the urgent one.
@@ -1047,7 +1051,9 @@ function ListenCard({
           onOpen={onOpen}
           loading={loading}
           locked={it.locked}
-          label={state === "live" ? "Resume" : done ? "Retake" : "Start"}
+          label={
+            state === "live" ? t("listen.resume") : done ? t("card.retake") : t("common.start")
+          }
         />
       </CardFoot>
     </PracticeCard>
@@ -1144,10 +1150,11 @@ function OpenAction({
   locked?: boolean;
   label: string;
 }) {
+  const t = useT();
   if (locked) {
     return (
       <CardAction onClick={onOpen} icon={<Lock size={13} />}>
-        Unlock with Pro
+        {t("card.unlockPro")}
       </CardAction>
     );
   }
@@ -1253,7 +1260,9 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ marginTop: 18, fontSize: 13.5, color: SLATE_MUTED, fontFamily: SANS }}>{children}</p>
+    <p style={{ marginTop: 18, fontSize: 13.5, color: SLATE_MUTED, fontFamily: SANS }}>
+      {children}
+    </p>
   );
 }
 

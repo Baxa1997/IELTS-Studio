@@ -132,4 +132,86 @@ export const uz: Messages = {
   "dash.baseline": "boshlangʻich",
   "dash.paid": "Toʻlov qabul qilindi — Pro tarifingiz faollashmoqda. Mashqdan bahramand boʻling!",
   "dash.cancelled": "Toʻlov bekor qilindi — siz hamon bepul tarifdasiz.",
+
+  /* ── mashq kartasi ───────────────────────────────────────────────────── */
+  "card.new": "Yangi",
+  "card.paused": "Toʻxtatilgan",
+  "card.retake": "Qayta ishlash",
+  "card.review": "Koʻrib chiqish",
+  "card.attach": "Biriktirish",
+  "card.pro": "Pro",
+  "card.unlockPro": "Pro bilan oching",
+  "card.attachClass": "Guruhga biriktirish",
+
+  /* ── reading boʻlimi ─────────────────────────────────────────────────── */
+  "read.yourTests": "Testlaringiz",
+  "read.yourPassages": "Matnlaringiz",
+  "read.ready": "Boshlashga tayyor",
+  "read.noTests":
+    "Hozircha tayyor test yoʻq — yuqorida yarating. Har biri 3 ta matn, 40 ta savol boʻyicha baholanadi.",
+  "read.noPassages": "Hozircha tayyor matn yoʻq — yuqorida yarating.",
+  "read.fullTest": "Toʻliq reading testi",
+  "read.fullTestMeta": "3 ta matn · 60 daqiqa",
+  "read.fullTestBlurb": "Darajangizga moslangan, murakkabligi ortib boruvchi uchta original matn.",
+  "read.generateTest": "Yangi test yaratish",
+  "read.passage": "Matn mashqi",
+  "read.passageMeta": "1 ta matn · ~20 daqiqa",
+  "read.passageBlurb": "Baholanadigan savollari bilan bitta original matn (~20 daqiqa)",
+  "read.generatePassage": "Yangi matn yaratish",
+  "read.disclaimer":
+    "IELTS Academic Reading formatidagi original matnlar. IELTS® bilan aloqador emas va u tomonidan tasdiqlanmagan.",
+
+  /* ── writing boʻlimi ─────────────────────────────────────────────────── */
+  "write.hub": "Writing mashqi",
+  "write.intro":
+    "Yozgan essengizni tekshiring, mavzu tanlang yoki yangisini yarating. Har bir mezon boʻyicha imtihonchidek qatʼiy band olasiz — soʻng oʻsha javobni xohlagan darajangizga yetguncha qayta ishlaysiz.",
+  "write.question": "Savol",
+  "write.questionTask": "Savol / topshiriq",
+  "write.pasteExact": "Topshiriqni javob yozgan holida aynan joylashtiring",
+  "write.yourEssay": "Essengiz",
+  "write.gradedReal": "Haqiqiy imtihondek baholanadi",
+  "write.perCriterion": "Har bir mezon boʻyicha qatʼiy band va tuzatishlar",
+  "write.conservative":
+    "Ehtiyotkor va imtihonchidek qatʼiy — bu yerdagi bandingiz imtihon kunidagi bandingiz.",
+  "write.pasteOwn": "Oʻz savolingizni joylashtiring",
+  "write.pasteOwnNote":
+    "Darsdan yoki kitobdan aniq savol bormi? Joylashtiring — javobingizni oʻsha savolga qarab baholaymiz.",
+  "write.anyBand": "Har qanday band",
+  "write.noTopics":
+    "Hozircha tayyor mavzu yoʻq — birinchisini yaratish uchun yuqoridagi “AI yangi mavzu tanlasin” tugmasidan foydalaning.",
+  "write.noMatch": "Filtrlarga mos mavzu yoʻq.",
+  "write.classLevel": "Guruh darajasi",
+  "write.classLevelNote":
+    "Soʻz va gʻoyalar qanchalik murakkabligi. Yakka mashq qilayotgan oʻquvchiga bu oʻlchangan bandidan kelib chiqib beriladi — guruhda yagona band yoʻq, shuning uchun buni siz tanlaysiz.",
+  "write.questionType": "Savol turi",
+  "write.optional": "(ixtiyoriy)",
+  "write.anySurprise": "Farqi yoʻq — oʻzingiz tanlang",
+  "write.topicPref": "Mavzu tanlovi",
+  "write.grading": "AI essengizni baholamoqda…",
+  "write.gradingNote":
+    "Har bir mezonni imtihonchidek oʻqiyapti — Task, Coherence, Vocabulary, Grammar. Bu 15–30 soniya oladi; iltimos, bu oynani yopmang.",
+  "write.gradingTitle": "Essengiz baholanmoqda",
+  "write.rewrite": "Qayta yozish",
+  "write.feedback": "Fikr-mulohaza",
+  "write.draft": "Qoralama",
+  "write.practised": "Ishlangan",
+  "write.checkOwn": "Oʻz yozganingizni tekshirish",
+  "write.acadT1": "Academic · Task 1",
+  "write.acadT2": "Academic · Task 2",
+  "write.gt": "General Training",
+  "write.phQuestion": "Aniq IELTS savoli yoki topshirigʻini joylashtiring…",
+  "write.phEssay": "Toʻliq javobingizni shu yerga yozing yoki joylashtiring…",
+  "write.phFull": "Toʻliq IELTS writing savolini shu yerga joylashtiring…",
+  "write.letAI": "AI yangi mavzu tanlasin",
+  "write.generate": "Mavzu yaratish",
+  "write.searchTopics": "Mavzularni qidirish…",
+  "write.filterBand": "Maqsad band boʻyicha filtr",
+  "write.newPractice": "Yangi mashq",
+  "write.egTopics": "masalan: shahar transporti, masofaviy ish",
+  "write.disclaimer":
+    "IELTS Writing formatidagi AI yaratgan topshiriqlar. IELTS® bilan aloqador emas va u tomonidan tasdiqlanmagan.",
+
+  /* ── listening boʻlimi ───────────────────────────────────────────────── */
+  "listen.preparing": "Tayyorlanmoqda…",
+  "listen.resume": "Davom ettirish",
 };

@@ -145,6 +145,88 @@ export const en = {
   "dash.baseline": "baseline",
   "dash.paid": "Payment received — your Pro plan is activating now. Enjoy the extra practice!",
   "dash.cancelled": "Checkout cancelled — you’re still on the free plan.",
+
+  /* ── practice card ───────────────────────────────────────────────────── */
+  "card.new": "New",
+  "card.paused": "Paused",
+  "card.retake": "Retake",
+  "card.review": "Review",
+  "card.attach": "Attach",
+  "card.pro": "Pro",
+  "card.unlockPro": "Unlock with Pro",
+  "card.attachClass": "Attach to a class",
+
+  /* ── reading hub ─────────────────────────────────────────────────────── */
+  "read.yourTests": "Your tests",
+  "read.yourPassages": "Your passages",
+  "read.ready": "Ready to start",
+  "read.noTests":
+    "No ready tests yet — generate one above. Each is 3 passages, marked over all 40 questions.",
+  "read.noPassages": "No ready passages yet — generate one above.",
+  "read.fullTest": "Full reading test",
+  "read.fullTestMeta": "3 passages · 60 min",
+  "read.fullTestBlurb": "Three original passages that rise in difficulty, pitched to your band.",
+  "read.generateTest": "Generate fresh test",
+  "read.passage": "Passage practice",
+  "read.passageMeta": "1 passage · ~20 min",
+  "read.passageBlurb": "One original passage with marked questions (~20 min)",
+  "read.generatePassage": "Generate fresh passage",
+  "read.disclaimer":
+    "Original passages in the IELTS Academic Reading format. Not affiliated with or endorsed by IELTS®.",
+
+  /* ── writing hub ─────────────────────────────────────────────────────── */
+  "write.hub": "Writing practice",
+  "write.intro":
+    "Check an essay you’ve already written, pick a topic, or generate a fresh one. You’ll get an examiner-strict band per criterion — then revise the same response until it’s where you want it.",
+  "write.question": "The question",
+  "write.questionTask": "The question / task",
+  "write.pasteExact": "Paste the task exactly as you answered it",
+  "write.yourEssay": "Your essay",
+  "write.gradedReal": "Graded like the real thing",
+  "write.perCriterion": "Examiner-strict band per criterion, with fixes",
+  "write.conservative":
+    "Conservative and examiner-strict — your band here is your band on exam day.",
+  "write.pasteOwn": "Paste your own question",
+  "write.pasteOwnNote":
+    "Got a specific question from class or a book? Paste it and we’ll grade your answer against it.",
+  "write.anyBand": "Any band",
+  "write.noTopics":
+    "No ready topics here yet — use “Let AI choose a fresh topic” above to create your first.",
+  "write.noMatch": "No topics match your filters.",
+  "write.classLevel": "Level of the class",
+  "write.classLevelNote":
+    "How demanding the wording and ideas are. A student practising alone gets this pitched from their own measured band — a class has no single band, so you say.",
+  "write.questionType": "Question type",
+  "write.optional": "(optional)",
+  "write.anySurprise": "Any — surprise me",
+  "write.topicPref": "Topic preference",
+  "write.grading": "AI is grading your essay…",
+  "write.gradingNote":
+    "Reading every criterion the way an examiner would — Task, Coherence, Vocabulary, Grammar. This takes about 15–30 seconds; please keep this tab open.",
+  "write.gradingTitle": "Grading your essay",
+  "write.rewrite": "Rewrite",
+  "write.feedback": "Feedback",
+  "write.draft": "Draft",
+  "write.practised": "Practised",
+  "write.checkOwn": "Check own writing",
+  "write.acadT1": "Academic · Task 1",
+  "write.acadT2": "Academic · Task 2",
+  "write.gt": "General Training",
+  "write.phQuestion": "Paste the exact IELTS question or task…",
+  "write.phEssay": "Paste or write your full answer here…",
+  "write.phFull": "Paste the full IELTS writing question here…",
+  "write.letAI": "Let AI choose a fresh topic",
+  "write.generate": "Generate a topic",
+  "write.searchTopics": "Search topics…",
+  "write.filterBand": "Filter by target band",
+  "write.newPractice": "New practice",
+  "write.egTopics": "e.g. urban transport, remote work",
+  "write.disclaimer":
+    "AI-generated prompts in the IELTS Writing format. Not affiliated with or endorsed by IELTS®.",
+
+  /* ── listening hub ───────────────────────────────────────────────────── */
+  "listen.preparing": "Preparing…",
+  "listen.resume": "Resume",
 } as const;
 
 /** The key set every locale must satisfy. */
