@@ -51,8 +51,8 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 /** Small-caps labels and running numbers. Loaded by app/(shell)/layout.tsx. */
 const MONO = "var(--font-mono-data), ui-monospace, SFMono-Regular, monospace";
 
-const AMBER = "#9A5B12";
-const RULE = "rgba(28,27,46,.07)";
+const AMBER = "var(--pc-amber)";
+const RULE = "var(--pc-rule)";
 
 // ---- Shell -----------------------------------------------------------------
 
@@ -73,12 +73,12 @@ export type CardSurface = "open" | "done" | "locked";
 const SURFACE: Record<CardSurface, string | undefined> = {
   open: undefined,
   // Finished work steps back so it stops competing with what is still to do.
-  done: "#FAFAFB",
+  done: "var(--pc-surface-done)",
   /* Locked is TINTED, NOT DIMMED. It used to be the whole card at 66% opacity,
      which faded the topic, the level and the question count — precisely the
      material that would make someone want to pay — and made the card read as
      broken rather than gated. The gate is stated by the PRO pill instead. */
-  locked: "#FDFBFC",
+  locked: "var(--pc-surface-locked)",
 };
 
 /**
@@ -216,25 +216,25 @@ const SKILL_TONE: Record<
   { top: string; base: string; foot: string; ink: string; glow: string }
 > = {
   READING: {
-    top: "#FFF6F9",
-    base: "#FBE3EC",
-    foot: "#F2CFDD",
-    ink: BRAND,
-    glow: "rgba(125,1,50,.16)",
+    top: "var(--pc-read-top)",
+    base: "var(--pc-read-base)",
+    foot: "var(--pc-read-foot)",
+    ink: "var(--pc-read-ink)",
+    glow: "var(--pc-read-glow)",
   },
   WRITING: {
-    top: "#FBFBFD",
-    base: "#EBECF2",
-    foot: "#DCDEE8",
-    ink: "#242736",
-    glow: "rgba(18,19,23,.14)",
+    top: "var(--pc-write-top)",
+    base: "var(--pc-write-base)",
+    foot: "var(--pc-write-foot)",
+    ink: "var(--pc-write-ink)",
+    glow: "var(--pc-write-glow)",
   },
   LISTENING: {
-    top: "#F7FAFE",
-    base: "#E3ECFB",
-    foot: "#D1DFF6",
-    ink: "#1D3F8F",
-    glow: "rgba(29,63,143,.16)",
+    top: "var(--pc-listen-top)",
+    base: "var(--pc-listen-base)",
+    foot: "var(--pc-listen-foot)",
+    ink: "var(--pc-listen-ink)",
+    glow: "var(--pc-listen-glow)",
   },
 };
 
@@ -378,8 +378,8 @@ export function MonoChip({ title, children }: { title?: string; children: ReactN
         height: 21,
         padding: "0 9px",
         borderRadius: 7,
-        background: "#F4F4F7",
-        border: "1px solid #E7E7EC",
+        background: "var(--pc-chip)",
+        border: "1px solid var(--pc-well-line)",
         color: MUTED,
         fontFamily: MONO,
         // Sized and weighted with the eyebrow's tail — both are the detail beside
@@ -405,17 +405,37 @@ export type PillTone = "new" | "band" | "progress" | "target" | "locked";
 
 const PILL: Record<PillTone, { bg: string; border: string; fg: string }> = {
   // Brand — "we just made this for you".
-  new: { bg: "linear-gradient(180deg,#FDF4F7 0%,#F8DFE8 100%)", border: "#EFC7D5", fg: BRAND },
+  new: {
+    bg: "linear-gradient(180deg,var(--pc-pill-new-a) 0%,var(--pc-pill-new-b) 100%)",
+    border: "var(--pc-pill-new-line)",
+    fg: BRAND,
+  },
   // Green — a real, earned band.
-  band: { bg: "linear-gradient(180deg,#F2FBF6 0%,#DCF0E6 100%)", border: "#C3E0CD", fg: EMERALD },
+  band: {
+    bg: "linear-gradient(180deg,var(--pc-pill-band-a) 0%,var(--pc-pill-band-b) 100%)",
+    border: "var(--pc-pill-band-line)",
+    fg: EMERALD,
+  },
   // Amber — started, not finished.
-  progress: { bg: "linear-gradient(180deg,#FDF9EF 0%,#F6EAD2 100%)", border: "#E8D6AE", fg: AMBER },
+  progress: {
+    bg: "linear-gradient(180deg,var(--pc-pill-prog-a) 0%,var(--pc-pill-prog-b) 100%)",
+    border: "var(--pc-pill-prog-line)",
+    fg: AMBER,
+  },
   // Neutral — a card with nothing to report yet.
-  target: { bg: "linear-gradient(180deg,#FAFAFB 0%,#F1F1F5 100%)", border: "#E2E0EE", fg: DIM },
+  target: {
+    bg: "linear-gradient(180deg,var(--pc-pill-target-a) 0%,var(--pc-pill-target-b) 100%)",
+    border: "var(--pc-pill-target-line)",
+    fg: DIM,
+  },
   /* Brand, and deliberately as loud as an earned band: the gate is the one
      thing about a locked card the learner has to see, and it takes the slot the
      state would have used because that is where the eye already goes. */
-  locked: { bg: "linear-gradient(180deg,#FDF4F7 0%,#F6D9E4 100%)", border: "#EBBACD", fg: BRAND },
+  locked: {
+    bg: "linear-gradient(180deg,var(--pc-pill-locked-a) 0%,var(--pc-pill-locked-b) 100%)",
+    border: "var(--pc-pill-locked-line)",
+    fg: BRAND,
+  },
 };
 
 /**
@@ -510,7 +530,7 @@ export function CardBody({
           title={subtitle}
           style={{
             fontSize: 12,
-            color: "#6F6E7A",
+            color: "var(--pc-dim)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -566,7 +586,7 @@ export function ProgressRow({ pct, label }: { pct: number; label: string }) {
           flex: 1,
           height: 4,
           borderRadius: 9999,
-          background: "#EDEEF2",
+          background: "var(--pc-track)",
           overflow: "hidden",
         }}
       >
@@ -613,8 +633,8 @@ export function CardQuote({
     <div
       title={full}
       style={{
-        background: "#F8F9FB",
-        borderLeft: `2px solid ${muted ? "#E3C9D1" : BRAND}`,
+        background: "var(--pc-well)",
+        borderLeft: `2px solid ${muted ? "var(--pc-quote-muted)" : BRAND}`,
         borderRadius: "0 8px 8px 0",
         padding: "9px 11px",
       }}
@@ -624,7 +644,7 @@ export function CardQuote({
           fontFamily: SERIF,
           fontSize: 16,
           lineHeight: 1.4,
-          color: muted ? "#6F6E7A" : INK,
+          color: muted ? "var(--pc-dim)" : INK,
           // Held at two lines either way, so a one-line prompt does not shorten
           // its card out of step with the row.
           minHeight: "2.8em",
@@ -653,8 +673,8 @@ export function CardTags({ tags }: { tags: string[] }) {
         <span
           key={t}
           style={{
-            background: "#F8F9FB",
-            border: "1px solid #E7E7EC",
+            background: "var(--pc-well)",
+            border: "1px solid var(--pc-well-line)",
             color: MUTED,
             fontSize: 11,
             fontWeight: 600,
@@ -767,9 +787,19 @@ export function CardAction(props: ActionProps) {
 export function Waveform() {
   const bars = [4, 10, 16, 6, 12, 4, 14, 6, 8];
   return (
-    <svg width="44" height="16" viewBox="0 0 44 16" aria-hidden style={{ flex: "0 0 auto" }}>
+    /* ⚠️ `fill` IS SET IN `style`, NOT AS AN ATTRIBUTE. A CSS custom property is
+       not valid in an SVG presentation attribute — `fill="var(--pc-wave)"`
+       does not resolve and the bars render BLACK, with no error anywhere. Set
+       once on the <svg> and inherited by the rects. */
+    <svg
+      width="44"
+      height="16"
+      viewBox="0 0 44 16"
+      aria-hidden
+      style={{ flex: "0 0 auto", fill: "var(--pc-wave)" }}
+    >
       {bars.map((h, i) => (
-        <rect key={i} x={i * 5} y={(16 - h) / 2} width="2" height={h} rx="1" fill="#C79AAE" />
+        <rect key={i} x={i * 5} y={(16 - h) / 2} width="2" height={h} rx="1" />
       ))}
     </svg>
   );

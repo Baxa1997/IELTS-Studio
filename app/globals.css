@@ -319,6 +319,134 @@
   --tk-warm-red: #b91c1c;
   --tk-warm-green: #15803d;
   --tk-warm-amber: #b5852a;
+
+  /* ── THE PRACTICE CARD (`--pc-*`) ───────────────────────────────────────
+   * The card shared by the Reading, Writing and Listening hubs. Its surface
+   * lives in CSS rather than inline ON PURPOSE — an inline `background` or
+   * `border` beats a stylesheet `:hover` at any specificity, so a card would
+   * look right at rest and never light up under the pointer (the trap its own
+   * header and components/practice/card.test.ts both guard).
+   *
+   * That is also why it needed its own tokens rather than borrowing `--tk-`
+   * ones: the hover BORDERS and GLOWS are three tinted pairs with no
+   * equivalent in the shared ramp, and the two muted surfaces (`done`,
+   * `locked`) are near-whites that have to become near-blacks without becoming
+   * the same near-black as the ordinary card.
+   *
+   * ⚠️ `done` AND `locked` MUST STAY DISTINGUISHABLE FROM `--tk-panel`. Their
+   * whole job is to say "this one is finished" or "this one is gated" by
+   * stepping back a shade. Collapse them onto the panel colour and the card
+   * stops carrying its own state. */
+  --pc-surface: var(--tk-panel);
+  --pc-border: rgba(28, 27, 46, 0.09);
+  --pc-shadow: 0 1px 3px rgba(28, 27, 46, 0.04);
+  --pc-ink: var(--tk-slate-ink);
+  /* Finished work steps back so it stops competing with what is still to do. */
+  --pc-surface-done: #fafafb;
+  /* Locked is TINTED, NOT DIMMED — dimming faded the very material that would
+     make someone want to pay. The PRO pill states the gate instead. */
+  --pc-surface-locked: #fdfbfc;
+
+  --pc-hover-brand: #e8c4d2;
+  --pc-hover-done: #cfe7db;
+  --pc-hover-ink: #cbccd6;
+  --pc-glow-brand: 0 10px 24px rgba(125, 1, 50, 0.1);
+  --pc-glow-done: 0 10px 24px rgba(28, 122, 79, 0.1);
+  --pc-glow-ink: 0 10px 24px rgba(18, 19, 23, 0.12);
+
+  --pc-primary-hover: #64012a;
+  --pc-primary-disabled: #cc5c82;
+  --pc-attach-hover: #fbe9ef;
+
+  /* The LEVEL chip, one tinted ramp per skill (top → base → foot, plus the ink
+     that reads on it and the glow under it). Hand-tuned against white, and
+     ./card.test.ts checks each base's contrast — so the light column here is
+     byte-for-byte what the component used to hold inline, and only the dark
+     column is new. */
+  --pc-read-top: #fff6f9;
+  --pc-read-base: #fbe3ec;
+  --pc-read-foot: #f2cfdd;
+  /* Reading's chip ink. It used to take `BRAND` directly, unlike the other two
+     skills, which each carry their own — and in dark that is exactly why it
+     failed: #ce4271 on the dark burgundy base is 3.42:1, under the 4.5 floor
+     for a label this small, and NO base fixes it (the ink's own contrast
+     against pure black is only ~4.4). The ink had to lighten, not the ground.
+     Light is byte-for-byte the BRAND it replaced. */
+  --pc-read-ink: #7d0132;
+  --pc-read-glow: rgba(125, 1, 50, 0.16);
+  --pc-write-top: #fbfbfd;
+  --pc-write-base: #ebecf2;
+  --pc-write-foot: #dcdee8;
+  --pc-write-ink: #242736;
+  --pc-write-glow: rgba(18, 19, 23, 0.14);
+  --pc-listen-top: #f7fafe;
+  --pc-listen-base: #e3ecfb;
+  --pc-listen-foot: #d1dff6;
+  --pc-listen-ink: #1d3f8f;
+  --pc-listen-glow: rgba(29, 63, 143, 0.16);
+
+  /* The status pill: two gradient stops and a border, per state. */
+  --pc-pill-new-a: #fdf4f7;
+  --pc-pill-new-b: #f8dfe8;
+  --pc-pill-new-line: #efc7d5;
+  --pc-pill-band-a: #f2fbf6;
+  --pc-pill-band-b: #dcf0e6;
+  --pc-pill-band-line: #c3e0cd;
+  --pc-pill-prog-a: #fdf9ef;
+  --pc-pill-prog-b: #f6ead2;
+  --pc-pill-prog-line: #e8d6ae;
+  --pc-pill-target-a: #fafafb;
+  --pc-pill-target-b: #f1f1f5;
+  --pc-pill-target-line: #e2e0ee;
+  --pc-pill-locked-a: #fdf4f7;
+  --pc-pill-locked-b: #f6d9e4;
+  --pc-pill-locked-line: #ebbacd;
+
+  --pc-amber: #9a5b12;
+  --pc-rule: rgba(28, 27, 46, 0.07);
+
+  /* Inner surfaces: the prompt/passage quote block, the small meta chips, the
+     progress track — all near-whites that have to become near-blacks, and all
+     one shade away from the card they sit on rather than the page. */
+  --pc-well: #f8f9fb;
+  --pc-well-line: #e7e7ec;
+  --pc-chip: #f4f4f7;
+  --pc-track: #edeef2;
+  --pc-dim: #6f6e7a;
+  /* The quote's left rule when the card is muted (finished / locked). */
+  --pc-quote-muted: #e3c9d1;
+  /* The little waveform glyph on a listening card. */
+  --pc-wave: #c79aae;
+
+  /* Hub chrome the cards sit in: the writing library's cream rule and "soon"
+     badge, the reading hub's lavender chip, and the disabled tab ink. */
+  --hb-cream-line: #e0dbcb;
+  --hb-soon-ink: #9a8f77;
+  --hb-soon-bg: #ece8da;
+  --hb-dim-line: #c9cdd4;
+  --hb-lav-bg: #f1f1f8;
+  --hb-lav-line: #e2e0ee;
+  --hb-lav-ink: #5d5a72;
+
+  /* The activity gallery's six skill chips. */
+  --gl-writing-bg: #efeafb;
+  --gl-writing-ink: #5b3fa8;
+  --gl-writing-line: #e2d9f6;
+  --gl-reading-bg: #e6f1ea;
+  --gl-reading-ink: #14714a;
+  --gl-reading-line: #d6e8dd;
+  --gl-listening-bg: #e3f0f6;
+  --gl-listening-ink: #1d6f92;
+  --gl-listening-line: #d2e6ef;
+  --gl-speaking-bg: #fbe9ef;
+  --gl-speaking-ink: #a83a5b;
+  --gl-speaking-line: #f5dae3;
+  --gl-lesson-bg: #fdf0dc;
+  --gl-lesson-ink: #9a6310;
+  --gl-lesson-line: #f7e4c7;
+  --gl-neutral-bg: #f0efea;
+  --gl-neutral-ink: #5c616b;
+  --gl-neutral-line: #e6e4dc;
 }
 
 /*
@@ -432,6 +560,104 @@
   --tk-warm-red: #e87b70;
   --tk-warm-green: #3fbf85;
   --tk-warm-amber: #e0a84a;
+
+  /* The practice card, inverted. The border goes from a dark wash over white to
+     a light wash over near-black — same idea, opposite direction — and the rest
+     shadow becomes a real black one, since a 4%-black shadow is invisible on a
+     dark ground. The two hover glows keep their hue so a card still lifts in
+     its own colour. */
+  --pc-border: rgba(255, 255, 255, 0.1);
+  --pc-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  /* Both step AWAY from `--tk-panel` (#16161f) rather than towards it, so
+     "finished" and "gated" still read as different surfaces in the dark. */
+  --pc-surface-done: #131319;
+  --pc-surface-locked: #191520;
+
+  --pc-hover-brand: #6b2c41;
+  --pc-hover-done: #24513c;
+  --pc-hover-ink: #43434f;
+  --pc-glow-brand: 0 10px 24px rgba(206, 66, 113, 0.18);
+  --pc-glow-done: 0 10px 24px rgba(63, 191, 133, 0.16);
+  --pc-glow-ink: 0 10px 24px rgba(0, 0, 0, 0.55);
+
+  --pc-primary-hover: #e05c87;
+  --pc-primary-disabled: #6b2c41;
+  --pc-attach-hover: #3a1c27;
+
+  /* Tints invert: pale-over-white becomes deep-over-near-black, keeping each
+     skill's hue so a Reading chip still reads as Reading. The inks lighten to
+     stay legible on them — the pairs carry the contrast, as everywhere else. */
+  --pc-read-top: #2a1420;
+  --pc-read-base: #3a1a28;
+  --pc-read-foot: #4a2233;
+  --pc-read-ink: #e4708f; /* 5.16:1 on --pc-read-base */
+  --pc-read-glow: rgba(206, 66, 113, 0.22);
+  --pc-write-top: #1c1c24;
+  --pc-write-base: #26262f;
+  --pc-write-foot: #32323b;
+  --pc-write-ink: #c9c7d2;
+  --pc-write-glow: rgba(0, 0, 0, 0.5);
+  --pc-listen-top: #141c2c;
+  --pc-listen-base: #1b2740;
+  --pc-listen-foot: #24345a;
+  --pc-listen-ink: #8fb0ee;
+  --pc-listen-glow: rgba(60, 110, 220, 0.22);
+
+  --pc-pill-new-a: #2a141e;
+  --pc-pill-new-b: #3a1a28;
+  --pc-pill-new-line: #4a2233;
+  --pc-pill-band-a: #122a1f;
+  --pc-pill-band-b: #17382a;
+  --pc-pill-band-line: #1e4534;
+  --pc-pill-prog-a: #2e2314;
+  --pc-pill-prog-b: #3a2c18;
+  --pc-pill-prog-line: #4a3a1c;
+  --pc-pill-target-a: #1c1c24;
+  --pc-pill-target-b: #24242d;
+  --pc-pill-target-line: #2e2e3a;
+  --pc-pill-locked-a: #2a141e;
+  --pc-pill-locked-b: #3d1c2b;
+  --pc-pill-locked-line: #52263a;
+
+  --pc-amber: #e0a84a;
+  --pc-rule: rgba(255, 255, 255, 0.1);
+
+  --pc-well: #1a1a22;
+  --pc-well-line: #2c2c36;
+  --pc-chip: #22222b;
+  --pc-track: #2a2a34;
+  --pc-dim: #9a98a8;
+  --pc-quote-muted: #5a3540;
+  --pc-wave: #8a5a6d;
+
+  --hb-cream-line: #2e2b22;
+  --hb-soon-ink: #a89d86;
+  --hb-soon-bg: #2a2820;
+  --hb-dim-line: #3a3a45;
+  --hb-lav-bg: #1e1e2a;
+  --hb-lav-line: #2e2e40;
+  --hb-lav-ink: #a5a2bc;
+
+  /* Each chip keeps its hue and swaps direction: a pale ground with dark ink
+     becomes a deep ground with light ink. */
+  --gl-writing-bg: #221c36;
+  --gl-writing-ink: #b6a3f0;
+  --gl-writing-line: #322a4e;
+  --gl-reading-bg: #12291f;
+  --gl-reading-ink: #5ec894;
+  --gl-reading-line: #1d3d2e;
+  --gl-listening-bg: #132630;
+  --gl-listening-ink: #6bb6d8;
+  --gl-listening-line: #1e3846;
+  --gl-speaking-bg: #2d1620;
+  --gl-speaking-ink: #e8889f;
+  --gl-speaking-line: #43212f;
+  --gl-lesson-bg: #2d2415;
+  --gl-lesson-ink: #d9a44e;
+  --gl-lesson-line: #423520;
+  --gl-neutral-bg: #21212a;
+  --gl-neutral-ink: #a0a3ac;
+  --gl-neutral-line: #2e2e38;
 }
 
 /* ── THE MARKETING PALETTE (`--mk-*`) ──────────────────────────────────────
@@ -4447,11 +4673,11 @@ section[id] {
   flex-direction: column;
   gap: 12px;
   padding: 15px 16px;
-  border: 1px solid rgba(28, 27, 46, 0.09);
+  border: 1px solid var(--pc-border);
   border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(28, 27, 46, 0.04);
-  color: #121317;
+  background: var(--pc-surface);
+  box-shadow: var(--pc-shadow);
+  color: var(--pc-ink);
   text-align: left;
   text-decoration: none;
   transition:
@@ -4467,16 +4693,16 @@ section[id] {
   transform: translateY(-2px);
 }
 .pc-card[data-tone="brand"]:hover {
-  border-color: #e8c4d2;
-  box-shadow: 0 10px 24px rgba(125, 1, 50, 0.1);
+  border-color: var(--pc-hover-brand);
+  box-shadow: var(--pc-glow-brand);
 }
 .pc-card[data-tone="done"]:hover {
-  border-color: #cfe7db;
-  box-shadow: 0 10px 24px rgba(28, 122, 79, 0.1);
+  border-color: var(--pc-hover-done);
+  box-shadow: var(--pc-glow-done);
 }
 .pc-card[data-tone="ink"]:hover {
-  border-color: #cbccd6;
-  box-shadow: 0 10px 24px rgba(18, 19, 23, 0.12);
+  border-color: var(--pc-hover-ink);
+  box-shadow: var(--pc-glow-ink);
 }
 
 /* ---- The footer's two pill actions -------------------------------------- */
@@ -4510,44 +4736,44 @@ section[id] {
 .pc-act--primary {
   padding: 0 16px;
   border: 0;
-  background: #7d0132;
+  background: var(--tk-brand);
   color: #fff;
 }
 .pc-act--primary:hover:not(:disabled) {
-  background: #64012a;
+  background: var(--pc-primary-hover);
 }
 .pc-act--primary:disabled {
-  background: #cc5c82;
+  background: var(--pc-primary-disabled);
 }
 
 .pc-act--secondary {
   padding: 0 13px;
-  border: 1px solid #dfe2e8;
-  background: #fff;
-  color: #121317;
+  border: 1px solid var(--tk-slate-field);
+  background: var(--pc-surface);
+  color: var(--pc-ink);
 }
 .pc-act--secondary:hover:not(:disabled) {
-  background: #f6f7f9;
+  background: var(--tk-learner-canvas);
 }
 .pc-act--secondary:disabled {
-  color: #8b919d;
+  color: var(--tk-slate-muted);
 }
 
 /* A teacher's third control. Outline like the secondary, but brand-inked so
    "set this as homework" never reads as the same button as "open it". */
 .pc-act--attach {
   padding: 0 13px;
-  border: 1px solid #e3a7bd;
-  background: #fdf4f7;
-  color: #7d0132;
+  border: 1px solid var(--tk-brand-pale);
+  background: var(--tk-brand-soft);
+  color: var(--tk-brand);
 }
 .pc-act--attach:hover:not(:disabled) {
-  background: #fbe9ef;
+  background: var(--pc-attach-hover);
 }
 .pc-act--attach:disabled {
-  border-color: #e6e8ec;
-  background: #fff;
-  color: #8b919d;
+  border-color: var(--tk-slate-line);
+  background: var(--pc-surface);
+  color: var(--tk-slate-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

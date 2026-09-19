@@ -78,6 +78,7 @@ import type {
 } from "./types";
 import {
   BRAND as TK_BRAND,
+  BRAND_LIGHT,
   CANVAS,
   PANEL,
   SLATE_BODY,
@@ -1195,7 +1196,7 @@ function TabButton({
         border: "none",
         cursor: "pointer",
         textAlign: "left",
-        background: active ? "#fff" : "transparent",
+        background: active ? PANEL : "transparent",
         color: active ? BRAND : MUTED,
         boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none",
         transition: "background .15s ease",
@@ -1212,7 +1213,7 @@ function TabButton({
           style={{
             fontFamily: SANS,
             fontSize: 12,
-            color: active ? "#B32A5B" : "#8B919D",
+            color: active ? BRAND_LIGHT : SLATE_MUTED,
             marginTop: 2,
           }}
         >
@@ -1862,7 +1863,7 @@ function PartTab({
         fontSize: 13,
         fontWeight: 600,
         transition: "all .15s",
-        background: active ? "#fff" : "transparent",
+        background: active ? PANEL : "transparent",
         color: active ? RUN.vDeep : unlocked ? RUN.t3 : RUN.t5,
         boxShadow: active ? "0 1px 3px rgba(20,20,40,0.12)" : "none",
         cursor: unlocked ? "pointer" : "not-allowed",

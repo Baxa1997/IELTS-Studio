@@ -36,8 +36,10 @@ import { AttachForm, PracticeModal } from "@/components/console/teacher-practice
 import { GeneratePassageButton, StartTestButton } from "./generate-button";
 import {
   BRAND,
+  BRAND_LIGHT,
   BRAND_SOFT,
   CANVAS,
+  PANEL,
   SLATE_BODY as MUTED,
   SLATE_INK as INK,
   SLATE_LINE,
@@ -229,9 +231,9 @@ export function ReadingHub({
               display: "inline-flex",
               alignItems: "center",
               gap: 7,
-              background: "#F1F1F8",
-              border: "1px solid #E2E0EE",
-              color: "#5D5A72",
+              background: "var(--hb-lav-bg)",
+              border: "1px solid var(--hb-lav-line)",
+              color: "var(--hb-lav-ink)",
               padding: "8px 14px",
               borderRadius: 999,
               fontSize: 14,
@@ -814,7 +816,7 @@ function TabButton({
         border: "none",
         cursor: "pointer",
         textAlign: "left",
-        background: active ? "#fff" : "transparent",
+        background: active ? PANEL : "transparent",
         color: active ? BRAND : MUTED,
         boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none",
         transition: "background .15s ease",
@@ -831,7 +833,7 @@ function TabButton({
           style={{
             fontFamily: SANS,
             fontSize: 12,
-            color: active ? "#B32A5B" : "#8B919D",
+            color: active ? BRAND_LIGHT : SLATE_MUTED,
             marginTop: 2,
           }}
         >

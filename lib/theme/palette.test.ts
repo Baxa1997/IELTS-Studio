@@ -22,8 +22,18 @@ function block(open: RegExp): string {
   return css.slice(from, css.indexOf("\n}", from));
 }
 
+/**
+ * Token names declared in `text`, EXCLUDING pure aliases.
+ *
+ * A token whose value is itself a `var(...)` — `--pc-surface: var(--tk-panel)` —
+ * needs no dark override: it inherits whatever the token it points at resolves
+ * to. Requiring one would be wrong, and writing one would silently break the
+ * link it exists to express.
+ */
 function names(text: string, prefix: string): string[] {
-  return [...text.matchAll(new RegExp(`^\\s*(${prefix}[a-z0-9-]+):`, "gm"))].map((m) => m[1]);
+  return [...text.matchAll(new RegExp(`^\\s*(${prefix}[a-z0-9-]+):\\s*([^;]+);`, "gm"))]
+    .filter((m) => !/^var\(/.test(m[2].trim()))
+    .map((m) => m[1]);
 }
 
 describe("the runtime palette", () => {
@@ -31,6 +41,7 @@ describe("the runtime palette", () => {
     ["--tk-", "--tk-"],
     ["--mk-", "--mk-"],
     ["--sh-", "--sh-"],
+    ["--pc-", "--pc-"],
   ] as const) {
     it(`defines every ${label} token in BOTH light and dark`, () => {
       // A token declared only in `:root` keeps its LIGHT value on a dark page.

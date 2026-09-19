@@ -106,23 +106,67 @@ function shadowLayers(value: string): string[] {
     .filter(Boolean);
 }
 
-/** `const NAME = "#hex"` from the kit, so SKILL_TONE's `base: BRAND` resolves. */
-const HEX_CONSTS: Record<string, string> = Object.fromEntries(
-  [...card.matchAll(/const ([A-Z_]+) = "(#[0-9A-Fa-f]{6})";/g)].map((m) => [m[1], m[2]]),
-);
-
-/** SKILL_TONE, read off the source with its constants resolved. */
+/**
+ * SKILL_TONE, resolved through globals.css — FOR BOTH THEMES.
+ *
+ * ⚠️ THIS BLOCK USED TO BE DEAD, and the component's header claimed otherwise.
+ * card.tsx says "Every base is checked against white in ./card.test.ts, because
+ * a fill that drifts light takes the label's legibility with it"; the parser
+ * below built `SKILL_TONES` and then nothing ever asserted on it — ESLint had
+ * it flagged as an unused variable. So the guard the comment promised did not
+ * exist, and when the tones became `var(--pc-…)` for dark mode the only thing
+ * that noticed was the parser throwing.
+ *
+ * It is live now, and stronger than the comment described: each skill's INK is
+ * checked against its own BASE (the pair that actually has to be legible) at
+ * the 4.5:1 AA floor, in light AND dark. That is not a hypothetical — Reading
+ * failed it at 3.42:1 on the first dark palette, and no choice of base could
+ * fix it, which is what forced Reading to stop borrowing `BRAND` and take its
+ * own `--pc-read-ink`.
+ */
 type Tone = { top: string; base: string; foot: string; ink: string };
+
+/**
+ * `--var: #hex` pairs for one theme, gathered from EVERY matching block.
+ *
+ * globals.css declares its palettes in several `:root` / `.dark` pairs (the
+ * app tokens, the marketing set, the shell, the card), so this collects all of
+ * them rather than guessing which block holds a given name. First declaration
+ * wins, matching the cascade for equal specificity.
+ */
+function cssVars(theme: "light" | "dark"): Record<string, string> {
+  const selector = theme === "light" ? ":root" : ".dark";
+  const out: Record<string, string> = {};
+  const blocks = css.matchAll(/(^|\n)(:root|\.dark)\s*\{([^}]*)\}/g);
+  for (const b of blocks) {
+    if (b[2] !== selector) continue;
+    for (const m of b[3].matchAll(/^\s*(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{3,8});/gm)) {
+      if (!(m[1] in out)) out[m[1]] = m[2].toLowerCase();
+    }
+  }
+  return out;
+}
+
+/** `var(--x)` → its hex in `theme`; a literal hex passes through. */
+function resolve(value: string, theme: "light" | "dark"): string {
+  const v = value.trim();
+  if (v.startsWith("#")) return v.toLowerCase();
+  const name = v.match(/^var\((--[a-z0-9-]+)\)$/)?.[1];
+  expect(name, `${value} is neither a hex nor a var()`).toBeTruthy();
+  const hex = cssVars(theme)[name!];
+  expect(hex, `${name} has no ${theme} value in globals.css`).toBeTruthy();
+  return hex;
+}
+
 const SKILL_TONES: Record<string, Tone> = (() => {
   const at = card.indexOf("const SKILL_TONE: ");
   expect(at, "SKILL_TONE moved or was renamed").toBeGreaterThan(-1);
   const block = card.slice(at, card.indexOf("\n};", at));
   const out: Record<string, Tone> = {};
   for (const m of block.matchAll(
-    /([A-Z]+): \{\s*top: "(#[0-9A-Fa-f]{6})",\s*base: "?(#?[0-9A-Fa-f]{6}|[A-Z_]+)"?,\s*foot: "(#[0-9A-Fa-f]{6})",\s*ink: "?(#?[0-9A-Fa-f]{6}|[A-Z_]+)"?/g,
+    /([A-Z]+): \{\s*top: "([^"]+)",\s*base: "([^"]+)",\s*foot: "([^"]+)",\s*ink: "([^"]+)"/g,
   )) {
-    const hex = (v: string) => HEX_CONSTS[v] ?? v;
-    out[m[1]] = { top: m[2], base: hex(m[3]), foot: m[4], ink: hex(m[5]) };
+    out[m[1]] = { top: m[2], base: m[3], foot: m[4], ink: m[5] };
   }
   expect(Object.keys(out).length, "SKILL_TONE parsed to nothing — its shape changed").toBe(3);
   return out;
@@ -193,8 +237,39 @@ describe("the card keeps the hover the stylesheet gives it", () => {
   it("paints the resting surface in CSS, not inline", () => {
     // Both are what :hover changes, so both have to come from the rule.
     const body = ruleBody(".pc-card");
-    expect(declaration(body, "background")).toBe("#fff");
-    expect(declaration(body, "border")).toBe("1px solid rgba(28, 27, 46, 0.09)");
+    /* Tokens, not hexes, since dark mode — and in LIGHT they still resolve to
+       exactly the `#fff` / `rgba(28,27,46,.09)` this used to assert. What the
+       test guards is that the surface is painted in CSS AT ALL: paint it inline
+       instead and the stylesheet hover below can never win. */
+    expect(declaration(body, "background")).toBe("var(--pc-surface)");
+    expect(declaration(body, "border")).toBe("1px solid var(--pc-border)");
+  });
+
+  it.each(["light", "dark"] as const)(
+    "keeps every skill chip's label legible on its own fill (%s)",
+    (theme) => {
+      /* The pair that has to be legible is INK on BASE — the chip is a filled
+         pill and its label sits on it. 4.5:1 is the AA floor for text this
+         small (10px, uppercase). Reading failed this at 3.42:1 on the first
+         dark palette; see the note on `--pc-read-ink`. */
+      for (const [skill, tone] of Object.entries(SKILL_TONES)) {
+        const base = resolve(tone.base, theme);
+        const ink = resolve(tone.ink, theme);
+        expect(contrast(base, ink), `${skill} ${theme}: ${ink} on ${base}`).toBeGreaterThanOrEqual(
+          4.5,
+        );
+      }
+    },
+  );
+
+  it.each(["light", "dark"] as const)("ramps each chip top → base → foot (%s)", (theme) => {
+    // The chip is a gradient with a footer rule; if the three ever stop
+    // ordering by lightness it renders as a flat block with a stray line.
+    for (const [skill, tone] of Object.entries(SKILL_TONES)) {
+      const [top, base, foot] = [tone.top, tone.base, tone.foot].map((v) => luminance(resolve(v, theme)));
+      const ordered = theme === "light" ? top > base && base > foot : top < base && base < foot;
+      expect(ordered, `${skill} ${theme}: top/base/foot are not a ramp`).toBe(true);
+    }
   });
 
   it("sets no inline border or shadow on the card element itself", () => {
@@ -224,18 +299,24 @@ describe("the card keeps the hover the stylesheet gives it", () => {
   });
 
   it("paints both action pills in CSS, hover included", () => {
-    expect(declaration(ruleBody(".pc-act--primary"), "background")).toBe("#7d0132");
-    expect(declaration(ruleBody(".pc-act--primary:hover:not(:disabled)"), "background")).toBe(
-      "#64012a",
-    );
-    expect(declaration(ruleBody(".pc-act--secondary"), "background")).toBe("#fff");
-    expect(declaration(ruleBody(".pc-act--secondary:hover:not(:disabled)"), "background")).toBe(
-      "#f6f7f9",
-    );
-    expect(declaration(ruleBody(".pc-act--attach"), "background")).toBe("#fdf4f7");
-    expect(declaration(ruleBody(".pc-act--attach:hover:not(:disabled)"), "background")).toBe(
-      "#fbe9ef",
-    );
+    /* Each pill has a resting fill AND a distinct hover fill, both in CSS.
+       Asserted as tokens now; every one resolves in light to the hex it used to
+       name. The point is that a hover exists and differs from the rest state —
+       so the pair is compared, rather than each value pinned. */
+    for (const [rest, hover] of [
+      [".pc-act--primary", ".pc-act--primary:hover:not(:disabled)"],
+      [".pc-act--secondary", ".pc-act--secondary:hover:not(:disabled)"],
+      [".pc-act--attach", ".pc-act--attach:hover:not(:disabled)"],
+    ]) {
+      const a = declaration(ruleBody(rest), "background");
+      const b = declaration(ruleBody(hover), "background");
+      expect(a, `${rest} has no background`).toBeTruthy();
+      expect(b, `${hover} has no background`).toBeTruthy();
+      expect(b, `${hover} does not differ from its rest state`).not.toBe(a);
+    }
+    expect(declaration(ruleBody(".pc-act--primary"), "background")).toBe("var(--tk-brand)");
+    expect(declaration(ruleBody(".pc-act--secondary"), "background")).toBe("var(--pc-surface)");
+    expect(declaration(ruleBody(".pc-act--attach"), "background")).toBe("var(--tk-brand-soft)");
   });
 
   it("never styles an action inline", () => {

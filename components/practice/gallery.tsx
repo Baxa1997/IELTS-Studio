@@ -50,12 +50,12 @@ function cx(...parts: (string | false | undefined)[]): string {
 export type Tone = "writing" | "reading" | "listening" | "speaking" | "lesson" | "neutral";
 
 const TONE: Record<Tone, { bg: string; ink: string; line: string; label: string }> = {
-  writing: { bg: "#efeafb", ink: "#5b3fa8", line: "#e2d9f6", label: "Writing" },
-  reading: { bg: "#e6f1ea", ink: "#14714a", line: "#d6e8dd", label: "Reading" },
-  listening: { bg: "#e3f0f6", ink: "#1d6f92", line: "#d2e6ef", label: "Listening" },
-  speaking: { bg: "#fbe9ef", ink: "#a83a5b", line: "#f5dae3", label: "Speaking" },
-  lesson: { bg: "#fdf0dc", ink: "#9a6310", label: "Lesson", line: "#f7e4c7" },
-  neutral: { bg: "#f0efea", ink: "#5c616b", line: "#e6e4dc", label: "Practice" },
+  writing: { bg: "var(--gl-writing-bg)", ink: "var(--gl-writing-ink)", line: "var(--gl-writing-line)", label: "Writing" },
+  reading: { bg: "var(--gl-reading-bg)", ink: "var(--gl-reading-ink)", line: "var(--gl-reading-line)", label: "Reading" },
+  listening: { bg: "var(--gl-listening-bg)", ink: "var(--gl-listening-ink)", line: "var(--gl-listening-line)", label: "Listening" },
+  speaking: { bg: "var(--gl-speaking-bg)", ink: "var(--gl-speaking-ink)", line: "var(--gl-speaking-line)", label: "Speaking" },
+  lesson: { bg: "var(--gl-lesson-bg)", ink: "var(--gl-lesson-ink)", label: "Lesson", line: "var(--gl-lesson-line)" },
+  neutral: { bg: "var(--gl-neutral-bg)", ink: "var(--gl-neutral-ink)", line: "var(--gl-neutral-line)", label: "Practice" },
 };
 
 export interface GalleryItem {

@@ -28,6 +28,7 @@ import { saveDraft } from "@/app/(studio)/write/actions";
 import {
   BRAND,
   BRAND_LINE,
+  BRAND_MID,
   BRAND_PALE,
   BRAND_SOFT,
   PANEL,
@@ -463,7 +464,7 @@ export function WritingLibrary({
           display: "flex",
           alignItems: "center",
           gap: 6,
-          borderBottom: "1px solid #E0DBCB",
+          borderBottom: "1px solid var(--hb-cream-line)",
           marginBottom: 24,
           flexWrap: "wrap",
         }}
@@ -486,7 +487,7 @@ export function WritingLibrary({
                 border: "none",
                 background: "transparent",
                 borderBottom: active ? `2.5px solid ${BRAND}` : "2.5px solid transparent",
-                color: active ? BRAND : t.soon ? "#C9CDD4" : "#4A505C",
+                color: active ? BRAND : t.soon ? "var(--hb-dim-line)" : SLATE_BODY,
                 fontFamily: SANS,
                 fontSize: 15,
                 fontWeight: active ? 700 : 600,
@@ -500,8 +501,8 @@ export function WritingLibrary({
                     fontSize: 11,
                     fontWeight: 700,
                     letterSpacing: ".04em",
-                    color: "#9A8F77",
-                    background: "#ECE8DA",
+                    color: "var(--hb-soon-ink)",
+                    background: "var(--hb-soon-bg)",
                     padding: "2px 7px",
                     borderRadius: 6,
                   }}
@@ -737,7 +738,7 @@ export function WritingLibrary({
                   borderRadius: 999,
                   cursor: "pointer",
                   border: customTask === o.k ? `1px solid ${BRAND}` : `1px solid ${WARM_LINE_SOFT}`,
-                  background: customTask === o.k ? "#FDF4F7" : "#fff",
+                  background: customTask === o.k ? BRAND_SOFT : PANEL,
                   color: customTask === o.k ? BRAND : INK,
                 }}
               >
@@ -893,7 +894,7 @@ export function WritingLibrary({
                         fontWeight: on ? 700 : 600,
                         cursor: "pointer",
                         color: on ? BRAND : SLATE_BODY,
-                        background: on ? "#FDF4F7" : "#fff",
+                        background: on ? BRAND_SOFT : PANEL,
                         border: on ? `1px solid ${BRAND_PALE}` : `1px solid ${WARM_LINE_SOFT}`,
                       }}
                     >
@@ -914,7 +915,7 @@ export function WritingLibrary({
                     fontWeight: 600,
                     cursor: "pointer",
                     color: bandFilter != null ? BRAND : SLATE_BODY,
-                    background: bandFilter != null ? "#FDF4F7" : "#fff",
+                    background: bandFilter != null ? BRAND_SOFT : PANEL,
                     border: bandFilter != null ? `1px solid ${BRAND_PALE}` : `1px solid ${WARM_LINE_SOFT}`,
                   }}
                 >
@@ -1153,7 +1154,7 @@ function ownPill(on: boolean): React.CSSProperties {
     borderRadius: 999,
     cursor: "pointer",
     border: on ? `1px solid ${BRAND}` : `1px solid ${WARM_LINE_SOFT}`,
-    background: on ? "#FDF4F7" : "#fff",
+    background: on ? BRAND_SOFT : PANEL,
     color: on ? BRAND : INK,
   };
 }
@@ -1194,7 +1195,7 @@ function GradingModal() {
             width: 60,
             height: 60,
             borderRadius: 17,
-            background: "linear-gradient(135deg,#9B1044,#7D0132)",
+            background: `linear-gradient(135deg,${BRAND_MID},${BRAND})`,
             alignItems: "center",
             justifyContent: "center",
             boxShadow: "0 12px 28px -12px rgba(125,1,50,.7)",
