@@ -28,6 +28,13 @@ import { BIRCH_TAR } from "./p15-birch-tar";
 import { TIDE_MILLS } from "./p16-tide-mills";
 import { ROMAN_ROADS } from "./p17-roman-roads";
 import { OVERBOOKING } from "./p18-overbooking";
+import { HALF_BRAIN_SLEEP } from "./p19-half-brain-sleep";
+import { DEEP_TIME } from "./p20-deep-time";
+import { FIREWORKS } from "./p21-fireworks";
+import { ORPHAN_DRUGS } from "./p22-orphan-drugs";
+import { DYNAMIC_PRICING } from "./p23-dynamic-pricing";
+import { DENTAL_CALCULUS } from "./p24-dental-calculus";
+import { SCHOOL_BELL } from "./p25-school-bell";
 import type { CuratedPassage, CuratedTest } from "./shared";
 import { TEST_01 } from "./tests/test-01";
 import { TEST_02 } from "./tests/test-02";
@@ -183,6 +190,13 @@ export const CURATED_READING_PASSAGES: CuratedPassage[] = [
   TIDE_MILLS,
   ROMAN_ROADS,
   OVERBOOKING,
+  HALF_BRAIN_SLEEP,
+  DEEP_TIME,
+  FIREWORKS,
+  ORPHAN_DRUGS,
+  DYNAMIC_PRICING,
+  DENTAL_CALCULUS,
+  SCHOOL_BELL,
 ];
 
 export type { CuratedPassage, CuratedQuestion } from "./shared";
