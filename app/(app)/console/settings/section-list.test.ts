@@ -16,6 +16,7 @@ describe("sectionsFor", () => {
   it("gives the center admin every section, account first", () => {
     expect(keys("center_admin")).toEqual([
       "account",
+      "appearance",
       "center",
       "telegram",
       "billing",
@@ -24,9 +25,9 @@ describe("sectionsFor", () => {
     ]);
   });
 
-  it("gives teachers and administrators only their account and Telegram", () => {
-    expect(keys("teacher")).toEqual(["account", "telegram"]);
-    expect(keys("administrator")).toEqual(["account", "telegram"]);
+  it("gives teachers and administrators only their own account, look and Telegram", () => {
+    expect(keys("teacher")).toEqual(["account", "appearance", "telegram"]);
+    expect(keys("administrator")).toEqual(["account", "appearance", "telegram"]);
   });
 
   it("gives students and unknown roles nothing", () => {

@@ -3,7 +3,9 @@
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { SANS } from "@/lib/theme/tokens";
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n";
+import { SANS, WHITE } from "@/lib/theme/tokens";
 import {
   Activity,
   Award,
@@ -55,7 +57,18 @@ const TRAY: React.CSSProperties = {
 };
 
 type Item = {
+  /** The English text. Kept as the fallback, and as what appears when a key is
+   *  missing — see `labelKey`. */
   label: string;
+  /**
+   * The dictionary key this row's text comes from.
+   *
+   * Optional so a new row can be added without a translation and still render.
+   * It is a SEPARATE FIELD rather than `label` simply becoming a key because
+   * `label` is still the fallback: a row whose key nobody has translated shows
+   * English, not `nav.whatever`.
+   */
+  labelKey?: MessageKey;
   href: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
   soon?: boolean;
@@ -70,7 +83,17 @@ type Item = {
 };
 
 type Section = {
+  /**
+   * ⚠️ ALSO THE SECTION'S IDENTITY, WHICH IS WHY IT IS NOT TRANSLATED IN PLACE.
+   * This string keys the open/closed map (`openGroups`), builds the `panelId`
+   * for `aria-controls`, and is compared against `activeGroup`. Translate it
+   * here and a learner who switches language finds every group has forgotten
+   * whether it was open, because the keys no longer match. The DISPLAY sites
+   * read `titleKey` through `t()` instead; this stays English forever.
+   */
   title?: string;
+  /** The dictionary key for the heading a reader sees. */
+  titleKey?: MessageKey;
   icon?: LucideIcon;
   items: Item[];
   /** Pinned to the foot of the rail, below every other section — Settings. */
@@ -91,22 +114,23 @@ export function resolveActiveHref(
 const STUDENT: Section[] = [
   {
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Study plan", href: "/plan", icon: Target },
-      { label: "Activities", href: "/activities", icon: History },
-      { label: "Referrals", href: "/referrals", icon: Gift },
+      { label: "Dashboard", labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Study plan", labelKey: "nav.studyPlan", href: "/plan", icon: Target },
+      { label: "Activities", labelKey: "nav.activities", href: "/activities", icon: History },
+      { label: "Referrals", labelKey: "nav.referrals", href: "/referrals", icon: Gift },
     ],
   },
   {
     title: "Practices",
+    titleKey: "nav.section.practices",
     icon: Layers,
     items: [
-      { label: "Writing", href: "/write", icon: SquarePen },
-      { label: "Reading", href: "/read", icon: BookOpen },
-      { label: "Listening", href: "/listen", icon: Headphones },
-      { label: "Speaking", href: "/speak", icon: Mic },
-      { label: "CEFR practice", href: "/cefr", icon: GraduationCap },
-      { label: "Vocabulary", href: "/vocabulary", icon: BookA },
+      { label: "Writing", labelKey: "nav.writing", href: "/write", icon: SquarePen },
+      { label: "Reading", labelKey: "nav.reading", href: "/read", icon: BookOpen },
+      { label: "Listening", labelKey: "nav.listening", href: "/listen", icon: Headphones },
+      { label: "Speaking", labelKey: "nav.speaking", href: "/speak", icon: Mic },
+      { label: "CEFR practice", labelKey: "nav.cefr", href: "/cefr", icon: GraduationCap },
+      { label: "Vocabulary", labelKey: "nav.vocabulary", href: "/vocabulary", icon: BookA },
     ],
   },
 ];
@@ -114,19 +138,20 @@ const STUDENT: Section[] = [
 const ADMIN: Section[] = [
   {
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
-      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+      { label: "Assistant", labelKey: "nav.assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      { label: "Dashboard", labelKey: "nav.dashboard", href: "/console", icon: LayoutDashboard },
     ],
   },
   {
     title: "Centre",
+    titleKey: "nav.section.centre",
     icon: Users,
     items: [
-      { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
-      { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
-      { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
+      { label: "Groups", labelKey: "nav.groups", href: "/console/groups", icon: Users, countKey: "groups" },
+      { label: "Students", labelKey: "nav.students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Teachers", labelKey: "nav.teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       {
-        label: "Calendar",
+        label: "Calendar", labelKey: "nav.calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
@@ -137,26 +162,28 @@ const ADMIN: Section[] = [
 
   {
     title: "Money",
+    titleKey: "nav.section.money",
     icon: Wallet,
     items: [
-      { label: "Finance", href: "/console/finance", icon: Wallet },
-      { label: "Invoices", href: "/console/finance/invoices", icon: Receipt },
+      { label: "Finance", labelKey: "nav.finance", href: "/console/finance", icon: Wallet },
+      { label: "Invoices", labelKey: "nav.invoices", href: "/console/finance/invoices", icon: Receipt },
       // "Salary", not "Payroll": one word for the whole thing. The separate
       // Salary-rules builder is gone — a class carries the teacher's rate
       // beside the student's fee, which is where an owner looks for it.
-      { label: "Salary", href: "/console/finance/payroll", icon: Banknote },
+      { label: "Salary", labelKey: "nav.salary", href: "/console/finance/payroll", icon: Banknote },
     ],
   },
 
   {
     title: "Learning",
+    titleKey: "nav.section.learning",
     icon: School,
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practices", href: "/console/practice", icon: ClipboardList },
-      { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
-      { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
+      { label: "Practices", labelKey: "nav.practices", href: "/console/practice", icon: ClipboardList },
+      { label: "Marking", labelKey: "nav.marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
+      { label: "Results", labelKey: "nav.results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
 ];
@@ -164,36 +191,38 @@ const ADMIN: Section[] = [
 const ADMINISTRATOR: Section[] = [
   {
     items: [
-      { label: "Assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
-      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+      { label: "Assistant", labelKey: "nav.assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      { label: "Dashboard", labelKey: "nav.dashboard", href: "/console", icon: LayoutDashboard },
     ],
   },
   {
     title: "Centre",
+    titleKey: "nav.section.centre",
     icon: Users,
     items: [
-      { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
-      { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
-      { label: "Teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
+      { label: "Groups", labelKey: "nav.groups", href: "/console/groups", icon: Users, countKey: "groups" },
+      { label: "Students", labelKey: "nav.students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Teachers", labelKey: "nav.teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       {
-        label: "Calendar",
+        label: "Calendar", labelKey: "nav.calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
         alsoMatches: ["/console/attendance"],
       },
-      { label: "Take payment", href: "/console/payments", icon: Wallet },
+      { label: "Take payment", labelKey: "nav.takePayment", href: "/console/payments", icon: Wallet },
     ],
   },
   {
     title: "Learning",
+    titleKey: "nav.section.learning",
     icon: School,
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practice", href: "/console/practice", icon: ClipboardList },
-      { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
-      { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
+      { label: "Practice", labelKey: "nav.practice", href: "/console/practice", icon: ClipboardList },
+      { label: "Marking", labelKey: "nav.marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
+      { label: "Results", labelKey: "nav.results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
   // Announcements lives under the avatar — see accountItemsFor.
@@ -202,54 +231,57 @@ const ADMINISTRATOR: Section[] = [
 const TEACHER: Section[] = [
   {
     items: [
-      { label: "Assistant AI", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      { label: "Assistant AI", labelKey: "nav.assistantAi", href: "/console/assistant", icon: Bot, accent: "assistant" },
       {
-        label: "Practice English with AI",
+        label: "Practice English with AI", labelKey: "nav.practiceWithAi",
         href: "/console/practice-ai",
         icon: WandSparkles,
         accent: "generate",
       },
-      { label: "Dashboard", href: "/console", icon: LayoutDashboard },
+      { label: "Dashboard", labelKey: "nav.dashboard", href: "/console", icon: LayoutDashboard },
     ],
   },
 
   {
     title: "Practices",
+    titleKey: "nav.section.practices",
     icon: Layers,
     items: [
-      { label: "Writing", href: "/write", icon: SquarePen },
-      { label: "Reading", href: "/read", icon: BookOpen },
-      { label: "Listening", href: "/listen", icon: Headphones },
+      { label: "Writing", labelKey: "nav.writing", href: "/write", icon: SquarePen },
+      { label: "Reading", labelKey: "nav.reading", href: "/read", icon: BookOpen },
+      { label: "Listening", labelKey: "nav.listening", href: "/listen", icon: Headphones },
     ],
   },
 
   {
     title: "Teaching",
+    titleKey: "nav.section.teaching",
     icon: Users,
     items: [
-      { label: "Groups", href: "/console/groups", icon: Users, countKey: "groups" },
-      { label: "Students", href: "/console/students", icon: UserRound, countKey: "students" },
+      { label: "Groups", labelKey: "nav.groups", href: "/console/groups", icon: Users, countKey: "groups" },
+      { label: "Students", labelKey: "nav.students", href: "/console/students", icon: UserRound, countKey: "students" },
       {
-        label: "Calendar",
+        label: "Calendar", labelKey: "nav.calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
         alsoMatches: ["/console/attendance"],
       },
       // Their own payslip and its working — not the center's payroll.
-      { label: "My pay", href: "/console/finance/payroll", icon: Banknote },
+      { label: "My pay", labelKey: "nav.myPay", href: "/console/finance/payroll", icon: Banknote },
     ],
   },
 
   {
     title: "Learning",
+    titleKey: "nav.section.learning",
     icon: School,
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practices", href: "/console/practice", icon: ClipboardList },
-      { label: "Marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
-      { label: "Results", href: "/console/reports", icon: ChartNoAxesColumn },
+      { label: "Practices", labelKey: "nav.practices", href: "/console/practice", icon: ClipboardList },
+      { label: "Marking", labelKey: "nav.marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
+      { label: "Results", labelKey: "nav.results", href: "/console/reports", icon: ChartNoAxesColumn },
     ],
   },
   // Announcements is under the avatar (accountItemsFor), still scoped to their
@@ -257,25 +289,27 @@ const TEACHER: Section[] = [
 ];
 
 const SUPER_ADMIN: Section[] = [
-  { items: [{ label: "Overview", href: "/admin", icon: LayoutDashboard }] },
+  { items: [{ label: "Overview", labelKey: "nav.overview", href: "/admin", icon: LayoutDashboard }] },
   {
     title: "Platform",
+    titleKey: "nav.section.platform",
     icon: Building2,
     items: [
-      { label: "Centers", href: "/admin/centers", icon: Building2 },
-      { label: "Users", href: "/admin/users", icon: Users },
-      { label: "Plans & revenue", href: "/admin/plans", icon: CreditCard },
+      { label: "Centers", labelKey: "nav.centers", href: "/admin/centers", icon: Building2 },
+      { label: "Users", labelKey: "nav.users", href: "/admin/users", icon: Users },
+      { label: "Plans & revenue", labelKey: "nav.plansRevenue", href: "/admin/plans", icon: CreditCard },
       /* Approval is the only gate on the referral programme, so the queue has to
          be somewhere a super admin passes, not somewhere they remember. */
-      { label: "Referrals", href: "/admin/referrals", icon: Gift },
+      { label: "Referrals", labelKey: "nav.referrals", href: "/admin/referrals", icon: Gift },
     ],
   },
   {
     title: "Operations",
+    titleKey: "nav.section.operations",
     icon: Activity,
     items: [
-      { label: "Moderation", href: "/admin/moderation", icon: ShieldAlert },
-      { label: "System health", href: "/admin/health", icon: Activity },
+      { label: "Moderation", labelKey: "nav.moderation", href: "/admin/moderation", icon: ShieldAlert },
+      { label: "System health", labelKey: "nav.systemHealth", href: "/admin/health", icon: Activity },
     ],
   },
 ];
@@ -314,7 +348,7 @@ function sectionsFor(
     items: [
       home.items[0],
       {
-        label: "Assignments",
+        label: "Assignments", labelKey: "nav.assignments",
         href: "/assignments",
         icon: ClipboardCheck,
         badge: pending > 0 ? String(pending) : undefined,
@@ -328,19 +362,21 @@ function sectionsFor(
     withAssignments,
     {
       title: "Practice",
+      titleKey: "nav.section.practice",
       icon: Layers,
       items: [
-        { label: "Writing", href: "/write", icon: SquarePen },
-        { label: "Reading", href: "/read", icon: BookOpen },
-        { label: "Listening", href: "/listen", icon: Headphones },
-        { label: "Speaking", href: "/speak", icon: Mic },
-        { label: "Vocabulary", href: "/vocabulary", icon: BookA },
+        { label: "Writing", labelKey: "nav.writing", href: "/write", icon: SquarePen },
+        { label: "Reading", labelKey: "nav.reading", href: "/read", icon: BookOpen },
+        { label: "Listening", labelKey: "nav.listening", href: "/listen", icon: Headphones },
+        { label: "Speaking", labelKey: "nav.speaking", href: "/speak", icon: Mic },
+        { label: "Vocabulary", labelKey: "nav.vocabulary", href: "/vocabulary", icon: BookA },
       ],
     },
     {
       title: "You",
+      titleKey: "nav.section.you",
       icon: Award,
-      items: [{ label: "Certificates", href: "/certificates", icon: Award }],
+      items: [{ label: "Certificates", labelKey: "nav.certificates", href: "/certificates", icon: Award }],
     },
   ];
 }
@@ -499,7 +535,20 @@ export function settingsHrefFor(role: string, homeworkOnly: boolean): string | n
 function withSettings(sections: Section[], role: string, homeworkOnly: boolean): Section[] {
   const href = settingsHrefFor(role, homeworkOnly);
   if (!href) return sections;
-  return [...sections, { pinned: true, items: [{ label: "Settings", href, icon: Settings }] }];
+  return [...sections, { pinned: true, items: [{ label: "Settings", labelKey: "nav.settings", href, icon: Settings }] }];
+}
+
+/**
+ * A section heading as the reader sees it.
+ *
+ * Separate from `section.title`, which stays English because it is also the
+ * section's identity — see the note on `Section.title`.
+ */
+function sectionHeading(
+  section: Pick<Section, "title" | "titleKey">,
+  t: (k: MessageKey) => string,
+): string | undefined {
+  return section.titleKey ? t(section.titleKey) : section.title;
 }
 
 export function SidebarNav({
@@ -517,6 +566,7 @@ export function SidebarNav({
   /** Tallies keyed by an item's `countKey` — the console's nav counts. */
   counts?: Record<string, number>;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState(pendingAssignments);
   useEffect(() => {
@@ -616,7 +666,7 @@ export function SidebarNav({
                 onClick={() => toggleGroup(section.title as string)}
                 aria-expanded={open}
                 aria-controls={panelId}
-                data-label={section.title}
+                data-label={sectionHeading(section, t)}
                 className="lp-sb-item lp-sb-grouprow"
                 style={{
                   ...itemBase,
@@ -634,7 +684,7 @@ export function SidebarNav({
                   <span className="lp-sb-chip" style={chipStyle}>
                     <GroupIcon size={17} strokeWidth={1.9} />
                   </span>
-                  <span className="lp-sb-label">{section.title}</span>
+                  <span className="lp-sb-label">{sectionHeading(section, t)}</span>
                 </span>
                 <span
                   className="lp-sb-trail"
@@ -666,15 +716,33 @@ export function SidebarNav({
               aria-hidden={section.title && !open ? true : undefined}
             >
               <div className="lp-sb-sub-inner">
-                {section.title ? <div className="lp-sb-flyout-title">{section.title}</div> : null}
+                {section.title ? (
+                  <div className="lp-sb-flyout-title">{sectionHeading(section, t)}</div>
+                ) : null}
                 {section.items.map(
-                  ({ label, href, icon: Icon, soon, badge, badgeTone, countKey, accent }) => {
+                  ({
+                    label,
+                    labelKey,
+                    href,
+                    icon: Icon,
+                    soon,
+                    badge,
+                    badgeTone,
+                    countKey,
+                    accent,
+                  }) => {
+                    // Every place this row's words are READ: the visible span,
+                    // the screen-reader name, and `data-label`, which the
+                    // collapsed rail renders through `content: attr(data-label)`
+                    // in globals.css. The `key` below is deliberately NOT this —
+                    // a key has to be stable across a language change.
+                    const text = labelKey ? t(labelKey) : label;
                     if (soon) {
                       return (
                         <span
-                          key={label}
-                          data-label={label}
-                          aria-label={label}
+                          key={href}
+                          data-label={text}
+                          aria-label={text}
                           aria-disabled="true"
                           className="lp-sb-link"
                           style={{
@@ -689,7 +757,7 @@ export function SidebarNav({
                             <span className="lp-sb-chip" style={{ ...chipStyle, opacity: 0.5 }}>
                               <Icon size={17} strokeWidth={1.75} />
                             </span>
-                            <span className="lp-sb-label">{label}</span>
+                            <span className="lp-sb-label">{text}</span>
                           </span>
                           <span
                             className="lp-sb-soon-badge"
@@ -724,8 +792,8 @@ export function SidebarNav({
                           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
                           setPressed({ href, from: pathname });
                         }}
-                        data-label={label}
-                        aria-label={label}
+                        data-label={text}
+                        aria-label={text}
                         // The truth, not the optimistic look: the page you are on.
                         aria-current={href === activeHref ? "page" : undefined}
                         /* `tabIndex={-1}` inside a shut group: the rows are
@@ -765,7 +833,7 @@ export function SidebarNav({
                           >
                             <Icon size={17} strokeWidth={selected ? 2 : 1.75} />
                           </span>
-                          <span className="lp-sb-label">{label}</span>
+                          <span className="lp-sb-label">{text}</span>
                         </span>
                         <span
                           className="lp-sb-trail"
@@ -812,7 +880,7 @@ function badgeStyle(tone: "good" | "alert" = "good"): React.CSSProperties {
     fontFamily: SANS,
     fontWeight: 600,
     fontSize: 11.5,
-    color: "#fff",
+    color: WHITE,
     background: tone === "alert" ? "#b3261e" : "#0b6b40",
     padding: "1px 7px",
     borderRadius: 20,

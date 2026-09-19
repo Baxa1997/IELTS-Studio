@@ -3,6 +3,9 @@ import { Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+import { ThemeScript } from "@/components/theme/theme-script";
 
 // Geist Sans used to be loaded here too. Nothing referenced --font-geist-sans —
 // not a component, not globals.css, not the Tailwind theme (which maps
@@ -105,7 +108,27 @@ export default function RootLayout({
           error badge on every page in dev, which is exactly how a genuine
           hydration bug goes unnoticed. */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        {children}
+        {/* FIRST CHILD OF <body>, AND IT HAS TO STAY FIRST. An inline script is
+            executed while the parser is still here, so no body content has been
+            laid out yet and nothing has painted — which is what makes the theme
+            class land before the first frame instead of after it. Move it below
+            {children} and a dark-mode user sees a white page flash on every
+            cold load. (<head> would do equally well; <body> is used so this
+            layout never has to render a manual <head> alongside the metadata
+            Next injects into it.) */}
+        <ThemeScript />
+        {/* No `initial` here ON PURPOSE. This layout is the root of the STATIC
+            tree as well — the marketing pages and the front door — and reading
+            the locale cookie to pass one down would make every route in the app
+            dynamic, including those. The provider picks the cookie up on the
+            client instead. The authenticated layouts, which already read
+            cookies for the session, nest their own provider WITH the
+            server-resolved locale, and that inner one wins for their subtree —
+            so the app itself renders in the right language on the first paint
+            and only the cacheable pages settle a tick later. */}
+        <ThemeProvider>
+          <LocaleProvider>{children}</LocaleProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

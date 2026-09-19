@@ -1,4 +1,7 @@
 import { cookies } from "next/headers";
+
+import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { getLocale } from "@/lib/i18n/server";
 import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
 import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
@@ -83,24 +86,32 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
   const collapsed = cookieStore.get("sb_collapsed")?.value === "1";
 
+  // Free here: this layout already reads cookies for the session, so the tree is
+  // dynamic either way and the locale costs nothing extra. Passing it down is
+  // what makes the shell's chrome render in the right language on the FIRST
+  // paint rather than swapping after hydration.
+  const locale = await getLocale();
+
   return (
-    <div className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} lp-root`}>
-      <AppShell
-        role={profile.role}
-        homeworkOnly={isHomeworkOnlyStudent(profile)}
-        home={roleHome(profile.role)}
-        name={profile.full_name ?? contactLabel(profile) ?? "Account"}
-        roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
-        // The real inbox or the login — never the synthetic auth address.
-        email={contactLabel(profile) ?? undefined}
-        contentClassName=""
-        sidebarFooter={sidebarFooter}
-        quotaBar={quotaBar}
-        bell={<NotificationBell inbox={inbox} />}
-        initialCollapsed={collapsed}
-      >
-        {children}
-      </AppShell>
-    </div>
+    <LocaleProvider initial={locale}>
+      <div className={`${hanken.variable} ${newsreader.variable} ${jetbrains.variable} lp-root`}>
+        <AppShell
+          role={profile.role}
+          homeworkOnly={isHomeworkOnlyStudent(profile)}
+          home={roleHome(profile.role)}
+          name={profile.full_name ?? contactLabel(profile) ?? "Account"}
+          roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
+          // The real inbox or the login — never the synthetic auth address.
+          email={contactLabel(profile) ?? undefined}
+          contentClassName=""
+          sidebarFooter={sidebarFooter}
+          quotaBar={quotaBar}
+          bell={<NotificationBell inbox={inbox} />}
+          initialCollapsed={collapsed}
+        >
+          {children}
+        </AppShell>
+      </div>
+    </LocaleProvider>
   );
 }

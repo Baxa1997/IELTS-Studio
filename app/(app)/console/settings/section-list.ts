@@ -18,6 +18,10 @@ const OWNER = ["center_admin"] as const;
 
 export const SETTINGS_SECTIONS = [
   { key: "account", label: "My account", note: "Password and your own Telegram", roles: STAFF },
+  // STAFF, not OWNER: the theme and the interface language are personal to
+  // whoever is signed in, not the centre's settings. A teacher gets to read
+  // their own console in Uzbek without the centre admin deciding it for them.
+  { key: "appearance", label: "Appearance & language", note: "Theme and interface language", roles: STAFF },
   { key: "center", label: "Center", note: "Name, hours and holidays", roles: OWNER },
   { key: "telegram", label: "Telegram groups", note: "Where each class hears news", roles: STAFF },
   { key: "billing", label: "Billing & plan", note: "Your plan and this month's use", roles: OWNER },

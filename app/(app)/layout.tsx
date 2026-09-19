@@ -1,11 +1,20 @@
 import { cookies } from "next/headers";
+
+import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { getLocale } from "@/lib/i18n/server";
 import { Hanken_Grotesk, Manrope, Newsreader, Source_Serif_4 } from "next/font/google";
 
 import { PlanCard } from "@/components/app-shell/plan-card";
 import { QuotaBar } from "@/components/app-shell/quota-bar";
 import { AppShell } from "@/components/app-shell/shell";
 import { NotificationBell } from "@/components/app-shell/notification-bell";
-import { canManagePeople, contactLabel, isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
+import {
+  canManagePeople,
+  contactLabel,
+  isHomeworkOnlyStudent,
+  requireOrgUser,
+  roleHome,
+} from "@/lib/auth";
 import { loadNavCounts } from "@/lib/console/nav";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";
@@ -133,35 +142,43 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const quotaBar = usage ? <QuotaBar usage={usage} /> : null;
   const collapsed = cookieStore.get("sb_collapsed")?.value === "1";
 
+  // Free here: this layout already reads cookies for the session, so the
+  // tree is dynamic either way and the locale costs nothing extra. Passing it
+  // down is what makes the app's chrome render in the right language on the
+  // FIRST paint rather than swapping after hydration.
+  const locale = await getLocale();
+
   return (
-    <div
-      className={`${hanken.variable} ${newsreader.variable} ${serif4.variable} ${manrope.variable} lp-root`}
-    >
-      <AppShell
-        role={profile.role}
-        homeworkOnly={isHomeworkOnlyStudent(profile)}
-        variant={isStaff ? "console" : "learner"}
-        navCounts={navCounts}
-        showAssignments={showAssignments}
-        pendingAssignments={pendingAssignments}
-        home={roleHome(profile.role)}
-        name={profile.full_name ?? contactLabel(profile) ?? "Account"}
-        roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
-        /* A CENTRE wears its own name in the rail; a solo learner's personal org
+    <LocaleProvider initial={locale}>
+      <div
+        className={`${hanken.variable} ${newsreader.variable} ${serif4.variable} ${manrope.variable} lp-root`}
+      >
+        <AppShell
+          role={profile.role}
+          homeworkOnly={isHomeworkOnlyStudent(profile)}
+          variant={isStaff ? "console" : "learner"}
+          navCounts={navCounts}
+          showAssignments={showAssignments}
+          pendingAssignments={pendingAssignments}
+          home={roleHome(profile.role)}
+          name={profile.full_name ?? contactLabel(profile) ?? "Account"}
+          roleLabel={ROLE_LABEL[profile.role] ?? profile.role}
+          /* A CENTRE wears its own name in the rail; a solo learner's personal org
            has a generated name that is not a brand, so they keep ours. Gated on
            `kind`, not on the name being present, so a centre that somehow has a
            blank name falls back rather than rendering an empty wordmark. */
-        centreName={profile.org.kind === "center" ? profile.org.name?.trim() || null : null}
-        // The real inbox or the login — never the synthetic auth address.
-        email={contactLabel(profile) ?? undefined}
-        sidebarFooter={sidebarFooter}
-        quotaBar={quotaBar}
-        bell={<NotificationBell inbox={inbox} />}
-        unread={inbox.unread}
-        initialCollapsed={collapsed}
-      >
-        {children}
-      </AppShell>
-    </div>
+          centreName={profile.org.kind === "center" ? profile.org.name?.trim() || null : null}
+          // The real inbox or the login — never the synthetic auth address.
+          email={contactLabel(profile) ?? undefined}
+          sidebarFooter={sidebarFooter}
+          quotaBar={quotaBar}
+          bell={<NotificationBell inbox={inbox} />}
+          unread={inbox.unread}
+          initialCollapsed={collapsed}
+        >
+          {children}
+        </AppShell>
+      </div>
+    </LocaleProvider>
   );
 }

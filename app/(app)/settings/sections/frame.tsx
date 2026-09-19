@@ -1,6 +1,9 @@
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
+
 import { LEARNER_SECTIONS, type LearnerSectionKey } from "../learner-sections";
+import { PANEL } from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -15,13 +18,14 @@ const MUTED = "#4A505C";
  * globals.css) and swaps only the colours, through the `--settings-*` custom
  * properties — burgundy here, indigo in the console.
  */
-export function LearnerSettingsFrame({
+export async function LearnerSettingsFrame({
   active,
   children,
 }: {
   active: LearnerSectionKey;
   children: React.ReactNode;
 }) {
+  const t = await getT();
   const current = LEARNER_SECTIONS.find((s) => s.key === active);
 
   return (
@@ -47,7 +51,7 @@ export function LearnerSettingsFrame({
           margin: 0,
         }}
       >
-        Settings
+        {t("nav.settings")}
       </h1>
       <p style={{ fontSize: 15, lineHeight: 1.55, color: MUTED, margin: "8px 0 22px" }}>
         Your account, your study goal and your plan.
@@ -62,15 +66,15 @@ export function LearnerSettingsFrame({
               className="cn-settings-link"
               aria-current={s.key === active ? "page" : undefined}
             >
-              <span className="cn-settings-link-label">{s.label}</span>
-              <span className="cn-settings-link-note">{s.note}</span>
+              <span className="cn-settings-link-label">{t(s.labelKey)}</span>
+              <span className="cn-settings-link-note">{t(s.noteKey)}</span>
             </Link>
           ))}
         </nav>
 
         <section aria-labelledby="settings-section-title" style={{ minWidth: 0 }}>
           <h2 id="settings-section-title" className="cn-settings-title">
-            {current?.label}
+            {current ? t(current.labelKey) : null}
           </h2>
           {children}
         </section>
@@ -94,7 +98,7 @@ export function Panel({
   return (
     <div
       style={{
-        background: "#fff",
+        background: PANEL,
         border: `1px solid ${tone === "danger" ? "#F1C9C2" : "#E6E8EC"}`,
         borderRadius: 16,
         padding: "22px 24px",

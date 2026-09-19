@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/auth";
 
 import { resolveSection, sectionsFor } from "../section-list";
 import { AccountSection } from "../sections/account";
+import { AppearanceSection } from "@/app/(app)/settings/sections/appearance";
 import { BillingSection } from "../sections/billing";
 import { CenterSection } from "../sections/center";
 import { SettingsFrame } from "../sections/frame";
@@ -38,6 +39,11 @@ export default async function SettingsSectionPage({
     <SettingsFrame role={profile.role} active={section}>
       {section === "account" ? (
         <AccountSection profile={profile} />
+      ) : section === "appearance" ? (
+        /* The learner section, reused verbatim. Theme and language are personal
+           settings with no org, role or plan in them, so a second copy would be
+           two things to keep in step for no difference on screen. */
+        <AppearanceSection />
       ) : section === "center" ? (
         <CenterSection profile={profile} />
       ) : section === "telegram" ? (

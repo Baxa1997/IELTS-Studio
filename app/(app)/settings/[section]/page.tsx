@@ -4,6 +4,7 @@ import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 
 import { resolveLearnerSection } from "../learner-sections";
 import { LearnerAccountSection } from "../sections/account";
+import { AppearanceSection } from "../sections/appearance";
 import { LearnerBillingSection } from "../sections/billing";
 import { DeleteAccountSection } from "../sections/delete";
 import { LearnerSettingsFrame } from "../sections/frame";
@@ -36,6 +37,8 @@ export default async function LearnerSettingsSectionPage({
         <LearnerAccountSection profileId={profile.id} />
       ) : section === "goal" ? (
         <StudyGoalSection studentId={profile.id} />
+      ) : section === "appearance" ? (
+        <AppearanceSection />
       ) : section === "billing" ? (
         <LearnerBillingSection organizationId={profile.organization_id} />
       ) : (

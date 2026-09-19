@@ -2,29 +2,43 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { BRAND, LINE, MUTED, RADIUS, SANS, STRONG, WHITE } from "./design";
+import { useLocale } from "@/components/i18n/locale-provider";
+import { LOCALE_NAMES, LOCALE_SHORT, LOCALES, type Locale } from "@/lib/i18n/locales";
+
+import {
+  BRAND,
+  BRAND_TINT,
+  LINE,
+  MUTED,
+  PANEL,
+  RADIUS,
+  SANS,
+  STRONG,
+  WHITE,
+} from "./design";
 
 /**
  * The UZ / EN / RU picker from the design's header.
  *
- * ⚠️ IT DOES NOT TRANSLATE ANYTHING YET. The canvas specifies it and the
- * audience is Uzbek, so it is built exactly as drawn — but there is no i18n
- * layer in this app (no next-intl, no message catalogue, every string is
- * inline English), so the only thing choosing a language currently does is move
- * the tick. Wiring it means adding that layer; until then this is a promise the
- * page is making that the product does not keep, and it should either be wired
- * or removed rather than left indefinitely.
+ * IT IS WIRED NOW. This file used to carry a warning that choosing a language
+ * moved the tick and nothing else, because the app had no i18n layer. That
+ * layer is `lib/i18n`, and the picker writes the locale cookie through
+ * `useLocale()`.
+ *
+ * What it changes is the UI CHROME ONLY — nav, buttons, labels, headings.
+ * Passages, prompts, essays and the grader's feedback stay in English on
+ * purpose: the exam is in English, and the grader is calibrated against English
+ * anchors. Saying so is the menu's job, so the control does not overclaim a
+ * second time.
+ *
+ * The languages, their order and their names come from `lib/i18n/locales.ts`
+ * rather than a copy here, so a fourth one does not depend on remembering this
+ * file. Each is written in ITSELF (`Oʻzbekcha`, never "Uzbek"): someone looking
+ * for their language scans for the word they use for it, not for its English
+ * name, which they may not read.
  */
-const LANGS: { code: Lang; name: string }[] = [
-  { code: "UZ", name: "O‘zbekcha" },
-  { code: "EN", name: "English" },
-  { code: "RU", name: "Русский" },
-];
-
-type Lang = "UZ" | "EN" | "RU";
-
 export function LangPicker({ compact = false }: { compact?: boolean }) {
-  const [lang, setLang] = useState<Lang>("EN");
+  const { locale, setLocale } = useLocale();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
@@ -56,7 +70,7 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
           display: "flex",
           alignItems: "center",
           gap: 8,
-          background: WHITE,
+          background: PANEL,
           border: `1px solid ${LINE}`,
           borderRadius: RADIUS.pill,
           padding: compact ? "9px 15px" : "10px 16px",
@@ -72,7 +86,7 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
         <span style={{ fontSize: 14 }} aria-hidden>
           🌐
         </span>
-        {lang}
+        {LOCALE_SHORT[locale]}
         <span style={{ fontSize: 10, color: MUTED }} aria-hidden>
           ▾
         </span>
@@ -85,7 +99,7 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
             position: "absolute",
             top: compact ? 48 : 52,
             right: 0,
-            background: WHITE,
+            background: PANEL,
             border: `1px solid ${LINE}`,
             borderRadius: RADIUS.field,
             boxShadow: "0 18px 40px rgba(18,19,23,0.12)",
@@ -97,16 +111,16 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
             gap: 2,
           }}
         >
-          {LANGS.map((o) => {
-            const on = o.code === lang;
+          {LOCALES.map((code: Locale) => {
+            const on = code === locale;
             return (
               <button
-                key={o.code}
+                key={code}
                 type="button"
                 role="menuitemradio"
                 aria-checked={on}
                 onClick={() => {
-                  setLang(o.code);
+                  setLocale(code);
                   setOpen(false);
                 }}
                 style={{
@@ -122,12 +136,12 @@ export function LangPicker({ compact = false }: { compact?: boolean }) {
                   fontSize: 15,
                   padding: "11px 14px",
                   borderRadius: 10,
-                  background: on ? "#fdf4f7" : "transparent",
+                  background: on ? BRAND_TINT : "transparent",
                   color: on ? BRAND : STRONG,
                   fontWeight: on ? 700 : 500,
                 }}
               >
-                <span>{o.name}</span>
+                <span>{LOCALE_NAMES[code]}</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: BRAND }}>{on ? "✓" : ""}</span>
               </button>
             );
