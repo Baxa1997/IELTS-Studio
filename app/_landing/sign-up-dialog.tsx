@@ -118,7 +118,14 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           fontFamily: SANS,
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
           <div>
             <h2
               style={{
@@ -204,7 +211,14 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           <label htmlFor="su_name" style={label}>
             Full name
           </label>
-          <input ref={first} id="su_name" name="full_name" autoComplete="name" required style={field} />
+          <input
+            ref={first}
+            id="su_name"
+            name="full_name"
+            autoComplete="name"
+            required
+            style={field}
+          />
 
           <label htmlFor="su_phone" style={{ ...label, marginTop: 14 }}>
             Phone <span style={{ fontWeight: 500, color: MUTED }}>(optional)</span>
@@ -214,7 +228,14 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           <label htmlFor="su_email" style={{ ...label, marginTop: 14 }}>
             Email
           </label>
-          <input id="su_email" name="email" type="email" autoComplete="email" required style={field} />
+          <input
+            id="su_email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            style={field}
+          />
 
           <label htmlFor="su_password" style={{ ...label, marginTop: 14 }}>
             Password
@@ -303,8 +324,15 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
         </form>
 
         <p style={{ fontSize: 12.5, lineHeight: 1.55, color: MUTED, margin: "14px 0 0" }}>
-          By creating an account you agree to our <a href="/terms" style={{ color: BRAND }}>Terms of Service</a> and{" "}
-          <a href="/privacy" style={{ color: BRAND }}>Privacy Policy</a>.
+          By creating an account you agree to our{" "}
+          <a href="/terms" style={{ color: BRAND }}>
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" style={{ color: BRAND }}>
+            Privacy Policy
+          </a>
+          .
         </p>
       </div>
     </div>
@@ -324,7 +352,12 @@ export function SignUpButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={className} style={{ cursor: "pointer", ...style }}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={className}
+        style={{ cursor: "pointer", ...style }}
+      >
         {label}
       </button>
       <SignUpDialog open={open} onClose={() => setOpen(false)} />

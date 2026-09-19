@@ -25,7 +25,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
-const hero = read("../page.tsx");
+/* ⚠️ THE HERO MOVED OUT OF app/page.tsx. It is a component now, rendered by
+   three routes (`/`, `/uz`, `/ru`), and this scan found nothing the moment it
+   moved — which the "greater than 0" canary below caught, exactly as its
+   comment promised it would. */
+const hero = read("./landing-page.tsx");
 const signIn = read("../(auth)/sign-in/page.tsx");
 const chrome = read("./design-chrome.tsx");
 const footer = read("./site-footer.tsx");

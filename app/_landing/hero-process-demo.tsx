@@ -171,15 +171,29 @@ function GradeScene() {
               <span style={{ fontWeight: 600, color: SLATE_BODY }}>{c.label}</span>
               <span
                 className="hpd-in"
-                style={{ animationDelay: `${c.d + 0.45}s`, fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: c.color }}
+                style={{
+                  animationDelay: `${c.d + 0.45}s`,
+                  fontFamily: MONO,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: c.color,
+                }}
               >
                 {c.band}
               </span>
             </div>
-            <div style={{ height: 6, borderRadius: 999, background: WARM_WELL, overflow: "hidden" }}>
+            <div
+              style={{ height: 6, borderRadius: 999, background: WARM_WELL, overflow: "hidden" }}
+            >
               <div
                 className="hpd-bar"
-                style={{ animationDelay: `${c.d}s`, width: `${c.pct}%`, height: "100%", borderRadius: 999, background: c.color }}
+                style={{
+                  animationDelay: `${c.d}s`,
+                  width: `${c.pct}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background: c.color,
+                }}
               />
             </div>
           </div>
@@ -238,7 +252,16 @@ function GenScene() {
         >
           Reading passage · generated now
         </div>
-        <div className="hpd-in" style={{ animationDelay: ".3s", fontWeight: 700, fontSize: 15.5, color: INK, marginBottom: 10 }}>
+        <div
+          className="hpd-in"
+          style={{
+            animationDelay: ".3s",
+            fontWeight: 700,
+            fontSize: 15.5,
+            color: INK,
+            marginBottom: 10,
+          }}
+        >
           The Hidden Logistics of Airport Baggage
         </div>
         {[96, 100, 92, 98, 64].map((w, i) => (
@@ -256,24 +279,26 @@ function GenScene() {
           />
         ))}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12 }}>
-          {["True / False / Not Given", "Matching headings", "Pick TWO", "Summary completion"].map((q, i) => (
-            <span
-              key={q}
-              className="hpd-pop"
-              style={{
-                animationDelay: `${2.3 + i * 0.35}s`,
-                fontSize: 12,
-                fontWeight: 600,
-                color: INDIGO,
-                background: BRAND_SOFT,
-                border: `1px solid ${BRAND_LINE}`,
-                borderRadius: 999,
-                padding: "5px 11px",
-              }}
-            >
-              {q}
-            </span>
-          ))}
+          {["True / False / Not Given", "Matching headings", "Pick TWO", "Summary completion"].map(
+            (q, i) => (
+              <span
+                key={q}
+                className="hpd-pop"
+                style={{
+                  animationDelay: `${2.3 + i * 0.35}s`,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: INDIGO,
+                  background: BRAND_SOFT,
+                  border: `1px solid ${BRAND_LINE}`,
+                  borderRadius: 999,
+                  padding: "5px 11px",
+                }}
+              >
+                {q}
+              </span>
+            ),
+          )}
         </div>
       </div>
 
@@ -321,7 +346,18 @@ function GenScene() {
               <path d="M3 1.5 L10.5 6 L3 10.5 Z" fill="#fff" />
             </svg>
           </span>
-          <span aria-hidden style={{ display: "flex", alignItems: "center", gap: 2.5, height: 30, flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <span
+            aria-hidden
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2.5,
+              height: 30,
+              flex: 1,
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
             {Array.from({ length: 30 }, (_, i) => (
               <span
                 key={i}
@@ -337,7 +373,11 @@ function GenScene() {
               />
             ))}
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: SLATE_MUTED, whiteSpace: "nowrap" }}>Part 2 · map</span>
+          <span
+            style={{ fontFamily: MONO, fontSize: 11, color: SLATE_MUTED, whiteSpace: "nowrap" }}
+          >
+            Part 2 · map
+          </span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 14 }}>
@@ -363,7 +403,9 @@ function GenScene() {
 
         <div className="hpd-in" style={{ animationDelay: "4.7s", marginTop: 14, fontSize: 14 }}>
           <strong style={{ color: INK, fontWeight: 700 }}>Fresh for every session.</strong>{" "}
-          <span style={{ color: SLATE_BODY }}>Never a recycled test, never an answer you remember.</span>
+          <span style={{ color: SLATE_BODY }}>
+            Never a recycled test, never an answer you remember.
+          </span>
         </div>
       </div>
     </div>
@@ -409,7 +451,15 @@ export function HeroProcessDemo() {
       <style>{HPD_STYLES}</style>
 
       {/* header: what's happening + scene switcher */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 14,
+          flexWrap: "wrap",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 11, flexWrap: "wrap" }}>
           <span
             style={{
@@ -424,7 +474,10 @@ export function HeroProcessDemo() {
             }}
           >
             <svg width="15" height="15" viewBox="0 0 16 16">
-              <path d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z" fill="#fff" />
+              <path
+                d="M8 0 C8 4.4 4.4 8 0 8 C4.4 8 8 11.6 8 16 C8 11.6 11.6 8 16 8 C11.6 8 8 4.4 8 0 Z"
+                fill="#fff"
+              />
             </svg>
           </span>
           <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>
@@ -437,7 +490,13 @@ export function HeroProcessDemo() {
             {[0, 0.2, 0.4].map((d) => (
               <span
                 key={d}
-                style={{ width: 5, height: 5, borderRadius: "50%", background: INDIGO, animation: `hb-dots 1.2s infinite ${d}s` }}
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: INDIGO,
+                  animation: `hb-dots 1.2s infinite ${d}s`,
+                }}
               />
             ))}
           </span>

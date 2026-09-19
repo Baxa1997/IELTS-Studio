@@ -14,13 +14,10 @@ import {
   WELL,
 } from "@/lib/theme/tokens";
 
-const DeferredDemoScreen = dynamic(
-  () => import("./demo-screens").then((mod) => mod.DemoScreen),
-  {
-    ssr: false,
-    loading: () => <DemoScreenPlaceholder />,
-  },
-);
+const DeferredDemoScreen = dynamic(() => import("./demo-screens").then((mod) => mod.DemoScreen), {
+  ssr: false,
+  loading: () => <DemoScreenPlaceholder />,
+});
 
 // Interactive product showcase: a pill tab bar over a browser-frame card that
 // renders a LIVE coded replica of the real product screen (see demo-screens.tsx)

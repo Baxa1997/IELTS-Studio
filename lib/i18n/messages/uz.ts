@@ -214,4 +214,84 @@ export const uz: Messages = {
   /* ── listening boʻlimi ───────────────────────────────────────────────── */
   "listen.preparing": "Tayyorlanmoqda…",
   "listen.resume": "Davom ettirish",
+
+  /* ── bosh sahifa ─────────────────────────────────────────────────────── */
+  "lp.eyebrow": "AI · IELTS va CEFR",
+  "lp.heroA": "Professional AI platforma:",
+  "lp.heroB": "IELTS va CEFR",
+  "lp.heroC": "mashqlar",
+  "lp.heroLead":
+    "Mutlaq boshlovchidan Band 9 gacha. AI sizning darajangizga mos Writing, Reading, Listening va Speaking topshiriqlarini imtihon standartida yaratadi, mashq paytida yoʻl koʻrsatadi va rasmiy IELTS bandlari hamda CEFR mezonlari boʻyicha baholaydi.",
+  "lp.ctaStart": "Bepul baholashni boshlash",
+  "lp.ctaHow": "Qanday ishlashini koʻring",
+  "lp.noCard": "Karta shart emas · Boshlovchidan Band 9 gacha · CEFR A1–C2",
+  "lp.platform": "Platforma",
+  "lp.platformLead":
+    "Toʻrtala koʻnikma va CEFR — har safar yangidan yaratiladi, haqiqiy mezonlar boʻyicha baholanadi",
+  "lp.platformNote":
+    "Bu yerda oʻtgan yillar varianti yoʻq. Har bir topshiriq original va sizning darajangizda imtihon talablariga koʻra yaratiladi — Band 4 dagi ilk urinish boʻladimi yoki 9 ga soʻnggi qadam — shuning uchun mazmunni oldindan yodlab boʻlmaydi.",
+  "lp.cefrTitle": "Oʻzbekiston DTM imtihoni uchun CEFR / Multilevel",
+  "lp.cefrNote":
+    "Reading (5 qism, 35 savol) va Writing (3 topshiriq) — talab boʻyicha yaratiladi va CEFR mezonlari asosida baholanadi.",
+  "lp.cefrCta": "CEFR mashqlarini koʻrish",
+  "lp.coachEyebrow": "Faqat baho emas — yoʻl koʻrsatish",
+  "lp.coachTitle": "Mashq paytida yoningizda ustoz turadi",
+  "lp.coachNote":
+    "Esse yoki matn oʻrtasida qotib qolsangiz, shunchaki soʻrang. U shu zahoti, xohlasangiz oʻz tilingizda javob beradi — va vaqt ketayotganda tayyor javobni bermaydi, shuning uchun yakuniy bandingiz oʻzingizniki boʻlib qoladi.",
+  "lp.coachCta": "Yoʻl koʻrsatish qanday ishlashini koʻring",
+  "lp.pricing": "Narxlar",
+  "lp.pricingLead": "Bepul boshlang. Har kuni mashq qila boshlaganingizda tarifni koʻtaring.",
+  "lp.faqEyebrow": "Savollar",
+  "lp.faqTitle": "Avval soʻralishi kerak boʻlgan narsalar",
+  "lp.openDemo": "Toʻliq demoni ochish →",
+  "lp.finalTitle": "Haqiqiy bandingizni 60 soniyada biling",
+  "lp.finalNote":
+    "Essengizni joylashtiring, kalibrlangan band va sizni yuqoriga koʻtaradigan bitta tuzatishni oling — boshlash bepul.",
+  "lp.gradeFree": "Essени bepul baholash",
+  "lp.buildPlan": "Rejangizni tuzing",
+  "lp.statNew": "Shu oydagi yangi oʻquvchilar",
+  "lp.statNewNote": "oʻtgan oyda 650 ta edi",
+  "lp.statCenters": "Taʼlim markazlari",
+  "lp.statCentersNote": "Platformadagi maktab va IELTS markazlari",
+  "lp.statUsers": "Jami foydalanuvchilar",
+  "lp.statUsersNote": "Oʻquvchilar, oʻqituvchilar va adminlar",
+  "lp.statTasks": "Bajarilgan topshiriqlar",
+  "lp.statTasksNote": "Baholangan esselar, matnlar va mock testlar",
+  "lp.disclaimer":
+    "IELTS®, British Council, IDP yoki Cambridge Assessment English bilan aloqador emas va ular tomonidan tasdiqlanmagan.",
+
+  /* ── bosh sahifa savollari ───────────────────────────────────────────── */
+  "lp.faq1q": "Bu IELTS bilan aloqadormi?",
+  "lp.faq1a":
+    "Yoʻq. Biz mustaqil mashq vositasimiz — IELTS®, British Council, IDP yoki Cambridge Assessment English bilan aloqador emasmiz va ular tomonidan tasdiqlanmaganmiz. Baholashimiz ochiq band mezonlariga asoslanadi.",
+  "lp.faq2q": "Siz haqiqiy oʻtgan yillar variantlaridan foydalanasizmi?",
+  "lp.faq2a":
+    "Hech qachon. Har bir matn va savol original, AI tomonidan imtihon talablariga koʻra yaratiladi — demak siz hech qachon tarqalib ketgan materialda mashq qilmaysiz va mualliflik huquqi buzilmaydi.",
+  "lp.faq3q": "Baholash qanchalik aniq?",
+  "lp.faq3a":
+    "U inson baholovchilardan taxminan yarim band farq bilan kalibrlangan va ataylab ehtiyotkor. Ikki band orasida turganingizda pastrogʻini qoʻyamiz va yuqorisi uchun aynan nima yetishmayotganini aytamiz.",
+  "lp.faq4q": "U meni xursand qilish uchun bahoni oshirib yuboradimi?",
+  "lp.faq4a":
+    "Yoʻq — gap aynan shunda. Soxta 7.0 imtihon kunida ishonchni buzadigan yagona narsa, shuning uchun biz takrorlay olmaydigan raqamni berishdan koʻra qolgan ishni koʻrsatishni afzal koʻramiz.",
+  "lp.faq5q": "Speaking va Listening-chi?",
+  "lp.faq5a":
+    "Ikkalasi ham ishlaydi. Listening toʻliq toʻrt qismli testlar beradi: original koʻp ovozli audio, avtomatik baholash, transkript va tuzoqlar izohi. Speaking esa AI imtihonchi bilan toʻliq uch qismli mock test beradi.",
+
+  /* ── bosh sahifa boʻlimlari ──────────────────────────────────────────── */
+  "lp.demoEyebrow": "Ishlayotganini koʻring",
+  "lp.demoTitle": "Maketlar emas, haqiqiy mahsulot",
+  "lp.demoSub":
+    "Bular EngProgress ning haqiqiy ekranlari — fikr-mulohaza, testlar, ustoz — rasm emas, jonli koʻrinishda.",
+  "lp.proofEyebrow": "Isbot",
+  "lp.proofTitle": "Baholovchining haqiqiy hisobotlari",
+  "lp.proofSub":
+    "Imtihonchi tizimi haqiqatda chiqaradigan hisobot koʻrinishi. Ataylab ehtiyotkor: ikki band orasida pastrogʻini qoʻyadi va nima yetishmayotganini aniq aytadi.",
+
+  /* ── bosh sahifa metama'lumotlari (SEO) ──────────────────────────────── */
+  "lp.metaTitle":
+    "AI band baholashi bilan IELTS mashqi — Writing, Reading, Listening, Speaking va CEFR",
+  "lp.metaTitleShort": "AI band baholashi bilan IELTS mashqi — EngProgress",
+  "lp.metaDesc":
+    "Toʻrtala IELTS koʻnikmasi va CEFR ni darajangizga mos original AI topshiriqlari bilan mashq qiling, soʻng kalibrlangan band va uni koʻtaradigan aniq tuzatishlarni oling.",
+  "lp.metaAlt": "EngProgress IELTS mashq paneli va AI fikr-mulohazasi",
 };

@@ -115,7 +115,14 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
           fontFamily: SANS,
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
           <div>
             <h2
               style={{
@@ -172,9 +179,8 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
               </p>
               {state.signInWith ? (
                 <p style={{ fontSize: 15, lineHeight: 1.6, color: BODY, margin: "10px 0 0" }}>
-                  Your login is{" "}
-                  <strong style={{ color: BRAND }}>{state.signInWith}</strong> — sign in with that
-                  and the password you just chose, not with your email.
+                  Your login is <strong style={{ color: BRAND }}>{state.signInWith}</strong> — sign
+                  in with that and the password you just chose, not with your email.
                 </p>
               ) : null}
               {state.notice ? (
@@ -204,111 +210,105 @@ export function RegisterCenterDialog({ open, onClose }: { open: boolean; onClose
             </button>
           </div>
         ) : (
-        <form action={formAction} style={{ marginTop: 22 }}>
-          <label htmlFor="org_name" style={label}>
-            Official organization name
-          </label>
-          <input
-            ref={first}
-            id="org_name"
-            name="org_name"
-            required
-            placeholder="Bright Future Education LLC"
-            style={field}
-          />
+          <form action={formAction} style={{ marginTop: 22 }}>
+            <label htmlFor="org_name" style={label}>
+              Official organization name
+            </label>
+            <input
+              ref={first}
+              id="org_name"
+              name="org_name"
+              required
+              placeholder="Bright Future Education LLC"
+              style={field}
+            />
 
-          <label htmlFor="org_email" style={{ ...label, marginTop: 16 }}>
-            Contact email
-          </label>
-          <input
-            id="org_email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            placeholder="director@yourcenter.uz"
-            style={field}
-          />
+            <label htmlFor="org_email" style={{ ...label, marginTop: 16 }}>
+              Contact email
+            </label>
+            <input
+              id="org_email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="director@yourcenter.uz"
+              style={field}
+            />
 
-          <label htmlFor="org_login" style={{ ...label, marginTop: 16 }}>
-            Login for the center
-          </label>
-          <input
-            id="org_login"
-            name="login"
-            required
-            placeholder="brightfuture"
-            style={field}
-          />
-          <p style={{ fontSize: 12.5, color: GREY, margin: "6px 0 0" }}>
-            3–32 characters: letters, digits, and . _ - in the middle.
-          </p>
+            <label htmlFor="org_login" style={{ ...label, marginTop: 16 }}>
+              Login for the center
+            </label>
+            <input id="org_login" name="login" required placeholder="brightfuture" style={field} />
+            <p style={{ fontSize: 12.5, color: GREY, margin: "6px 0 0" }}>
+              3–32 characters: letters, digits, and . _ - in the middle.
+            </p>
 
-          <label htmlFor="org_password" style={{ ...label, marginTop: 16 }}>
-            Password
-          </label>
-          <input
-            id="org_password"
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            placeholder="At least 8 characters"
-            style={field}
-          />
+            <label htmlFor="org_password" style={{ ...label, marginTop: 16 }}>
+              Password
+            </label>
+            <input
+              id="org_password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              style={field}
+            />
 
-          {state.error ? (
-            <p
-              role="alert"
+            {state.error ? (
+              <p
+                role="alert"
+                style={{
+                  margin: "16px 0 0",
+                  fontSize: 14,
+                  color: RED_DEEP,
+                  background: SLATE_RED_BG,
+                  border: `1px solid ${BRAND_LINE}`,
+                  borderRadius: 12,
+                  padding: "11px 14px",
+                }}
+              >
+                {state.error}
+              </p>
+            ) : null}
+            {state.notice ? (
+              <p
+                style={{
+                  margin: "16px 0 0",
+                  fontSize: 14,
+                  color: BRAND,
+                  background: BRAND_TINT,
+                  borderRadius: 12,
+                  padding: "11px 14px",
+                }}
+              >
+                {state.notice}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={pending}
               style={{
-                margin: "16px 0 0",
-                fontSize: 14,
-                color: RED_DEEP,
-                background: SLATE_RED_BG,
-                border: `1px solid ${BRAND_LINE}`,
-                borderRadius: 12,
-                padding: "11px 14px",
+                width: "100%",
+                marginTop: 22,
+                background: pending ? BRAND_DEEP : BRAND,
+                color: WHITE,
+                border: 0,
+                borderRadius: RADIUS.field,
+                padding: 15,
+                fontFamily: SANS,
+                fontSize: 16,
+                fontWeight: 700,
+                cursor: pending ? "wait" : "pointer",
               }}
             >
-              {state.error}
-            </p>
-          ) : null}
-          {state.notice ? (
-            <p
-              style={{
-                margin: "16px 0 0",
-                fontSize: 14,
-                color: BRAND,
-                background: BRAND_TINT,
-                borderRadius: 12,
-                padding: "11px 14px",
-              }}
-            >
-              {state.notice}
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={pending}
-            style={{
-              width: "100%",
-              marginTop: 22,
-              background: pending ? BRAND_DEEP : BRAND,
-              color: WHITE,
-              border: 0,
-              borderRadius: RADIUS.field,
-              padding: 15,
-              fontFamily: SANS,
-              fontSize: 16,
-              fontWeight: 700,
-              cursor: pending ? "wait" : "pointer",
-            }}
-          >
-            {pending ? "Submitting…" : "Submit application"}
-          </button>
-        </form>
+              {pending ? "Submitting…" : "Submit application"}
+            </button>
+          </form>
         )}
       </div>
     </div>

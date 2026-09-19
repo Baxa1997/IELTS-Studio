@@ -5,17 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/components/i18n/locale-provider";
 import { LOCALE_NAMES, LOCALE_SHORT, LOCALES, type Locale } from "@/lib/i18n/locales";
 
-import {
-  BRAND,
-  BRAND_TINT,
-  LINE,
-  MUTED,
-  PANEL,
-  RADIUS,
-  SANS,
-  STRONG,
-  WHITE,
-} from "./design";
+import { BRAND, BRAND_TINT, LINE, MUTED, PANEL, RADIUS, SANS, STRONG, WHITE } from "./design";
 
 /**
  * The UZ / EN / RU picker from the design's header.

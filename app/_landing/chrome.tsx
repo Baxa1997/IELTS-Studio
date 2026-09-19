@@ -185,9 +185,7 @@ const FOOTER_COLS: { head: string; links: { label: string; href: string }[] }[] 
   },
   {
     head: "Learn & compare",
-    links: [
-      { label: "IELTS practice online", href: "/ielts-practice" },
-    ],
+    links: [{ label: "IELTS practice online", href: "/ielts-practice" }],
   },
   {
     head: "Company",
@@ -344,13 +342,43 @@ export function SiteFooter() {
             <span style={{ fontFamily: SANS, fontWeight: 400, fontSize: 13, color: SLATE_MUTED }}>
               © 2026 EngProgress. All rights reserved.
             </span>
-            <Link href="/privacy" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
+            <Link
+              href="/privacy"
+              className="lp-foot-link"
+              style={{
+                fontFamily: SANS,
+                fontWeight: 500,
+                fontSize: 13,
+                color: "#9698c0",
+                textDecoration: "none",
+              }}
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
+            <Link
+              href="/terms"
+              className="lp-foot-link"
+              style={{
+                fontFamily: SANS,
+                fontWeight: 500,
+                fontSize: 13,
+                color: "#9698c0",
+                textDecoration: "none",
+              }}
+            >
               Terms of Service
             </Link>
-            <Link href="/contact" className="lp-foot-link" style={{ fontFamily: SANS, fontWeight: 500, fontSize: 13, color: "#9698c0", textDecoration: "none" }}>
+            <Link
+              href="/contact"
+              className="lp-foot-link"
+              style={{
+                fontFamily: SANS,
+                fontWeight: 500,
+                fontSize: 13,
+                color: "#9698c0",
+                textDecoration: "none",
+              }}
+            >
               Contact
             </Link>
           </div>

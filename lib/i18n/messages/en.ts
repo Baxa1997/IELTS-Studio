@@ -227,6 +227,86 @@ export const en = {
   /* ── listening hub ───────────────────────────────────────────────────── */
   "listen.preparing": "Preparing…",
   "listen.resume": "Resume",
+
+  /* ── landing page ────────────────────────────────────────────────────── */
+  "lp.eyebrow": "AI · IELTS & CEFR",
+  "lp.heroA": "The professional AI platform for",
+  "lp.heroB": "IELTS & CEFR",
+  "lp.heroC": "practice",
+  "lp.heroLead":
+    "From a complete beginner to Band 9. AI generates exam-standard Writing, Reading, Listening and Speaking tasks at your exact level, coaches you while you practise, then scores you against the official IELTS bands and CEFR descriptors.",
+  "lp.ctaStart": "Start free assessment",
+  "lp.ctaHow": "See how it works",
+  "lp.noCard": "No card required · Complete beginner to Band 9 · CEFR A1–C2",
+  "lp.platform": "The platform",
+  "lp.platformLead":
+    "All four skills, plus CEFR — generated fresh, marked against the real criteria",
+  "lp.platformNote":
+    "Nothing here is a past paper. Every task is original and produced to the exam spec at your level — a first attempt at Band 4 or a final push for a 9 — so there is no way to memorise the content in advance.",
+  "lp.cefrTitle": "CEFR / Multilevel for the Uzbekistan DTM exam",
+  "lp.cefrNote":
+    "Reading (5 parts, 35 questions) and Writing (3 tasks), generated on demand and marked against the CEFR descriptors.",
+  "lp.cefrCta": "See CEFR practice",
+  "lp.coachEyebrow": "Coaching, not just scoring",
+  "lp.coachTitle": "A tutor sits with you while you practise",
+  "lp.coachNote":
+    "Stuck mid-essay or mid-passage, you can just ask. It answers in the moment, in your own language if you prefer — and it will not hand you the answer while the clock is running, so the band you finish with is still yours.",
+  "lp.coachCta": "See how coaching works",
+  "lp.pricing": "Pricing",
+  "lp.pricingLead": "Start free. Upgrade when you are practising every day.",
+  "lp.faqEyebrow": "Questions",
+  "lp.faqTitle": "The things worth asking first",
+  "lp.openDemo": "Open the full demo →",
+  "lp.finalTitle": "Find out your real band in 60 seconds",
+  "lp.finalNote":
+    "Paste an essay, get a calibrated band and the one fix that moves you up — free to start.",
+  "lp.gradeFree": "Grade an essay free",
+  "lp.buildPlan": "Build your plan",
+  "lp.statNew": "New learners this month",
+  "lp.statNewNote": "vs. 650 last month",
+  "lp.statCenters": "Education centers",
+  "lp.statCentersNote": "Schools and IELTS centers onboard",
+  "lp.statUsers": "Total users",
+  "lp.statUsersNote": "Learners, teachers and admins",
+  "lp.statTasks": "Tasks practised",
+  "lp.statTasksNote": "Graded essays, readings and mocks",
+  "lp.disclaimer":
+    "Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English.",
+
+  /* ── landing FAQ ─────────────────────────────────────────────────────── */
+  "lp.faq1q": "Is this affiliated with IELTS?",
+  "lp.faq1a":
+    "No. We're an independent practice tool — not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English. We ground our scoring in the public band descriptors.",
+  "lp.faq2q": "Do you use real past papers?",
+  "lp.faq2a":
+    "Never. Every passage and question is original and AI-generated to the exam spec, so you're never practising on leaked material — and we stay firmly on the right side of copyright.",
+  "lp.faq3q": "How accurate is the grading?",
+  "lp.faq3a":
+    "It's calibrated to within about half a band of human raters and deliberately conservative. When you sit between two bands we round down and tell you exactly what's missing for the higher one.",
+  "lp.faq4q": "Will it inflate my score to keep me happy?",
+  "lp.faq4a":
+    "No — that's the whole point. A false 7.0 is the one thing that breaks trust on exam day, so we'd rather show you the work that's left than hand you a number you won't repeat.",
+  "lp.faq5q": "What about Speaking and Listening?",
+  "lp.faq5a":
+    "Both are live. Listening gives you full four-section tests with original multi-voice audio, auto-marking, transcripts and trap explanations. Speaking gives you a full three-part mock with an AI examiner.",
+
+  /* ── landing sections ────────────────────────────────────────────────── */
+  "lp.demoEyebrow": "See it working",
+  "lp.demoTitle": "The real product, not mockups",
+  "lp.demoSub":
+    "These are the actual EngProgress screens — the feedback, the tests, the coach — rendered live, not pictures.",
+  "lp.proofEyebrow": "Proof",
+  "lp.proofTitle": "Real reports from the grader",
+  "lp.proofSub":
+    "The report layout the examiner engine actually produces. Conservative by design: between two bands it rounds down and names exactly what is missing.",
+
+  /* ── landing metadata (SEO) ──────────────────────────────────────────── */
+  "lp.metaTitle":
+    "IELTS Practice with AI Band Feedback — Writing, Reading, Listening, Speaking & CEFR",
+  "lp.metaTitleShort": "IELTS Practice with AI Band Feedback — EngProgress",
+  "lp.metaDesc":
+    "Practise all four IELTS skills and CEFR with original, AI-generated tasks at your level, then get a calibrated band and the exact fixes that raise it.",
+  "lp.metaAlt": "EngProgress IELTS practice dashboard and AI feedback",
 } as const;
 
 /** The key set every locale must satisfy. */

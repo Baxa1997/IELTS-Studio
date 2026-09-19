@@ -17,6 +17,12 @@ const REFERRAL_COOKIE_DAYS = 90;
 // `/start` is the pre-auth onboarding wizard (account creation is its last step).
 const PUBLIC_PATHS = [
   "/",
+  // The landing page in the other two languages. A public route MUST be listed
+  // here or the middleware 307s every logged-out visitor AND every crawler to
+  // /sign-in — which would make the localised pages worse than not having them,
+  // since Google would index a redirect where the hreflang promised a page.
+  "/uz",
+  "/ru",
   "/start",
   "/sign-in",
   "/forgot-password",
@@ -67,7 +73,6 @@ function isPublicPath(pathname: string): boolean {
   if (GONE_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
-
 
 /**
  * Stash a `?ref=` code for the sign-up that may follow.

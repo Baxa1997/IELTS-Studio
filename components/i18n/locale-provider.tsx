@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -38,6 +38,20 @@ const Ctx = createContext<LocaleCtx | null>(null);
 
 const listeners = new Set<() => void>();
 let cached: Locale | null = null;
+
+/** Routes that exist in all three languages. Mirrors `LOCALISED` in
+ *  `app/sitemap.ts` — grow the two together, or the picker offers a URL the
+ *  sitemap does not claim (or worse, one that 404s). */
+const LOCALISED_ROUTES = new Set(["/"]);
+
+/** The same path in another language, or the path unchanged when that page has
+ *  no localised sibling yet. */
+function localisedPath(pathname: string, next: Locale): string {
+  const stripped = pathname.replace(/^\/(uz|ru)(?=\/|$)/, "") || "/";
+  if (!LOCALISED_ROUTES.has(stripped)) return pathname;
+  if (next === DEFAULT_LOCALE) return stripped;
+  return stripped === "/" ? `/${next}` : `/${next}${stripped}`;
+}
 
 function readCookie(): Locale {
   const m = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]*)`));
@@ -80,6 +94,7 @@ export function LocaleProvider({
   const serverSnapshot = useCallback(() => initial ?? DEFAULT_LOCALE, [initial]);
   const locale = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Keep <html lang> honest: it is what a screen reader switches voice on, and
   // what the browser picks hyphenation and spell-check from, so it has to move
@@ -108,9 +123,19 @@ export function LocaleProvider({
          route's server components with the new cookie and patches them in,
          keeping client state and scroll position. It is what makes the control
          a language switch rather than a preference that takes effect later. */
-      router.refresh();
+      /* ⚠️ ON A LOCALISED ROUTE THE URL IS THE SOURCE OF TRUTH, SO IT HAS TO
+         MOVE. `/uz` renders Uzbek because of the path, not the cookie —
+         refreshing it in place would re-render the same Uzbek page and the
+         picker would look broken. So: if the current path carries a locale
+         prefix (or the page we are on has localised siblings), navigate to the
+         chosen language's URL; everywhere else the cookie is the only signal
+         and a refresh is the right move. Keeping the language in the URL is
+         also what makes it linkable and shareable. */
+      const target = localisedPath(pathname, l);
+      if (target !== pathname) router.push(target);
+      else router.refresh();
     },
-    [router],
+    [router, pathname],
   );
 
   const value = useMemo<LocaleCtx>(

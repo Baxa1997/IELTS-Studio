@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { PANEL, WARM_RULE, WELL } from "@/lib/theme/tokens";
 
-const ReportShowcase = dynamic(
-  () => import("./demo-screens").then((mod) => mod.ReportShowcase),
-  { ssr: false, loading: () => <ReportPlaceholder /> },
-);
+const ReportShowcase = dynamic(() => import("./demo-screens").then((mod) => mod.ReportShowcase), {
+  ssr: false,
+  loading: () => <ReportPlaceholder />,
+});
 
 export function DeferredReportShowcase() {
   const ref = useRef<HTMLDivElement>(null);
