@@ -28,6 +28,7 @@ import {
   shortDate,
 } from "@/components/practice/card";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/constants";
+import { titleCase } from "@/lib/reading/titles";
 
 import { AttachForm, PracticeModal } from "@/components/console/teacher-practice";
 
@@ -545,7 +546,8 @@ function PassageTile({
       <CardBody
         title={p.title}
         titleLines={2}
-        subtitle={p.topic ?? "Academic Reading"}
+        // Same lowercase-fragment field the test title is composed from.
+        subtitle={p.topic ? titleCase(p.topic) : "Academic Reading"}
         progress={
           live
             ? {

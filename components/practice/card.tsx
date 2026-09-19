@@ -149,10 +149,31 @@ export function CardHead({
  * drifts light takes the label's legibility with it — which is the bug this
  * pill was built to fix.
  */
-const SKILL_TONE: Record<string, { top: string; base: string; foot: string; glow: string }> = {
-  READING: { top: "#A32552", base: BRAND, foot: "#6C0128", glow: "rgba(125,1,50,.30)" },
-  WRITING: { top: "#3E4354", base: "#242736", foot: "#171922", glow: "rgba(18,19,23,.32)" },
-  LISTENING: { top: "#2F5BB7", base: "#1D3F8F", foot: "#16306F", glow: "rgba(29,63,143,.32)" },
+const SKILL_TONE: Record<
+  string,
+  { top: string; base: string; foot: string; ink: string; glow: string }
+> = {
+  READING: {
+    top: "#FFF6F9",
+    base: "#FBE3EC",
+    foot: "#F2CFDD",
+    ink: BRAND,
+    glow: "rgba(125,1,50,.16)",
+  },
+  WRITING: {
+    top: "#FBFBFD",
+    base: "#EBECF2",
+    foot: "#DCDEE8",
+    ink: "#242736",
+    glow: "rgba(18,19,23,.14)",
+  },
+  LISTENING: {
+    top: "#F7FAFE",
+    base: "#E3ECFB",
+    foot: "#D1DFF6",
+    ink: "#1D3F8F",
+    glow: "rgba(29,63,143,.16)",
+  },
 };
 
 /** An unrecognised skill falls back to the brand — the look this pill had before
@@ -168,15 +189,22 @@ const SKILL_FALLBACK = SKILL_TONE.READING;
  * ⚠️ THIS IS THE ONE LINE THAT SAYS WHICH SKILL THE CARD IS, and on white it
  * kept disappearing. It was the canvas's 10px eyebrow in #8B919D — about 3:1
  * against white, under the 4.5:1 AA floor for text this small — then 11px in
- * #4A505C, which passes but still reads as small print. Set on a filled pill it
- * is white on a dark ground — never under 9:1 for any of the three — and the
- * fill does the work the type was being asked to do on its own.
+ * #4A505C, which passes but still reads as small print. Set on a filled pill
+ * the fill does the work the type was being asked to do on its own.
+ *
+ * ⚠️ THE FILL IS LIGHT AND THE TEXT IS DARK, which is the owner's call and not
+ * a detail. A saturated fill made the pill the second loudest thing on the card
+ * after the Start button, so every card looked like it had two primary actions.
+ * The tint carries the skill just as well and the ink carries the contrast —
+ * never under 7:1 for any of the three, checked in ./card.test.ts against the
+ * gradient's DARKEST stop, since that is where dark-on-light is tightest.
  *
  * The raise is three declarations and every one is load-bearing:
  *   · the gradient gives the top a lit edge and the bottom a shaded one, which
  *     is the whole of the effect — a flat fill reads as a tag, not a button;
  *   · the INSET highlight is the gloss along the top edge;
- *   · the outer shadow lifts it off the card.
+ *   · the outer shadow lifts it off the card, and is also the only thing
+ *     holding the pill's edge now that the fill is close to the card's white.
  * No border — the reference has a pale ring and the owner's instruction was
  * explicitly to drop it, and on a card that already has a 1px edge of its own a
  * second ring 9px inside it reads as a mistake.
@@ -194,9 +222,11 @@ export function SkillPill({ icon, skill }: { icon?: ReactNode; skill: string }) 
         padding: icon ? "0 11px 0 9px" : "0 11px",
         borderRadius: 9999,
         background: `linear-gradient(180deg, ${t.top} 0%, ${t.base} 55%, ${t.foot} 100%)`,
-        boxShadow: `inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 1px rgba(0,0,0,.22), 0 2px 5px ${t.glow}`,
-        color: "#fff",
-        textShadow: "0 1px 1px rgba(0,0,0,.25)",
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 1px rgba(0,0,0,.05), 0 1px 3px ${t.glow}`,
+        color: t.ink,
+        // Letterpress rather than drop shadow: on a light ground the lift comes
+        // from a white edge BELOW the glyph, not a dark one under it.
+        textShadow: "0 1px 0 rgba(255,255,255,.75)",
         fontFamily: MONO,
         fontSize: 11,
         fontWeight: 700,

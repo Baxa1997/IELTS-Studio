@@ -112,29 +112,36 @@ const HEX_CONSTS: Record<string, string> = Object.fromEntries(
 );
 
 /** SKILL_TONE, read off the source with its constants resolved. */
-const SKILL_TONES: Record<string, { top: string; base: string; foot: string }> = (() => {
+type Tone = { top: string; base: string; foot: string; ink: string };
+const SKILL_TONES: Record<string, Tone> = (() => {
   const at = card.indexOf("const SKILL_TONE: ");
   expect(at, "SKILL_TONE moved or was renamed").toBeGreaterThan(-1);
   const block = card.slice(at, card.indexOf("\n};", at));
-  const out: Record<string, { top: string; base: string; foot: string }> = {};
+  const out: Record<string, Tone> = {};
   for (const m of block.matchAll(
-    /([A-Z]+): \{ top: "(#[0-9A-Fa-f]{6})", base: ([^,]+), foot: "(#[0-9A-Fa-f]{6})"/g,
+    /([A-Z]+): \{\s*top: "(#[0-9A-Fa-f]{6})",\s*base: "?(#?[0-9A-Fa-f]{6}|[A-Z_]+)"?,\s*foot: "(#[0-9A-Fa-f]{6})",\s*ink: "?(#?[0-9A-Fa-f]{6}|[A-Z_]+)"?/g,
   )) {
-    const base = m[3].trim().replace(/"/g, "");
-    out[m[1]] = { top: m[2], base: HEX_CONSTS[base] ?? base, foot: m[4] };
+    const hex = (v: string) => HEX_CONSTS[v] ?? v;
+    out[m[1]] = { top: m[2], base: hex(m[3]), foot: m[4], ink: hex(m[5]) };
   }
+  expect(Object.keys(out).length, "SKILL_TONE parsed to nothing — its shape changed").toBe(3);
   return out;
 })();
 
-/** Contrast of white text on `hex`, per WCAG 2.x. */
-function contrastWithWhite(hex: string): number {
+/** Relative luminance of a #rrggbb colour, per WCAG 2.x. */
+function luminance(hex: string): number {
   const n = parseInt(hex.slice(1), 16);
   const channels = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
     const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
-  const l = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-  return 1.05 / (l + 0.05);
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+/** Contrast ratio between two colours, per WCAG 2.x. */
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 /** Hue in degrees, for keeping a skill out of the status pill's green/amber arc. */
@@ -406,8 +413,8 @@ describe("the skill pill can actually be read", () => {
     expect(Number(/fontWeight: (\d+)/.exec(pill)?.[1])).toBeGreaterThanOrEqual(700);
   });
 
-  it("is white on its skill's colour, which is where its contrast comes from", () => {
-    expect(styleProp(pill, "color")).toBe('"#fff"');
+  it("draws its text in its skill's ink, not a shared one", () => {
+    expect(styleProp(pill, "color")).toBe("t.ink");
     // All three stops come from the skill's tone — a hardcoded stop would leave
     // one band of the gradient burgundy on every hub.
     const bg = styleValue(pill, "background");
@@ -464,21 +471,35 @@ describe("the skill pill can actually be read", () => {
     );
   });
 
-  it("keeps every fill readable under white text", () => {
-    /* ⚠️ THE WHOLE POINT OF THE PILL. A fill that drifts light takes the label's
-       legibility with it, which is the bug it was built to fix, and nothing but
-       the eye would catch it. 4.5:1 is the AA floor for text this size. */
+  it("keeps every label readable on its own fill", () => {
+    /* ⚠️ THE WHOLE POINT OF THE PILL. Lightening the fill was the owner's call,
+       and the way that goes wrong is silently: a tint drifts darker, or an ink
+       drifts lighter, and the label goes back to being hard to read — the exact
+       bug the pill was built to fix. 4.5:1 is the AA floor for text this size.
+
+       ⚠️ EVERY STOP, not just the darkest. Checking `foot` alone assumes the
+       gradient runs light-to-dark, and nothing enforces that — a dark `top`
+       then leaves the ink unreadable across the upper half of the pill and no
+       test says a word. That mutation went through on the first attempt. */
     for (const [skill, t] of Object.entries(SKILL_TONES)) {
-      // The top stop is the lightest part of the gradient, so it is the one that
-      // has to clear the floor — checking the base alone would miss a pale top.
-      for (const [part, hex] of [
-        ["base", t.base],
-        ["top", t.top],
-      ] as const) {
+      for (const stop of ["top", "base", "foot"] as const) {
         expect(
-          contrastWithWhite(hex),
-          `${skill}'s ${part} (${hex}) is too pale for white`,
+          contrast(t.ink, t[stop]),
+          `${skill}: ${t.ink} on its ${stop} (${t[stop]}) is too close to read`,
         ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it("keeps every fill light, which is what was asked for", () => {
+    // A tint that drifts dark takes the ink's contrast with it, and the pill
+    // goes back to being the second loudest thing on the card.
+    for (const [skill, t] of Object.entries(SKILL_TONES)) {
+      for (const stop of ["top", "base", "foot"] as const) {
+        expect(
+          contrast("#FFFFFF", t[stop]),
+          `${skill}'s ${stop} (${t[stop]}) is no longer a light tint`,
+        ).toBeLessThan(2);
       }
     }
   });
@@ -486,9 +507,12 @@ describe("the skill pill can actually be read", () => {
   it("keeps every skill clear of the status pill's green and amber", () => {
     /* The status pill sits on the same row: green is an earned band, amber an
        unfinished run. A skill wearing either reads as a result. */
+    /* Read off the INK, not the tint: a tint this pale is nearly neutral, and a
+       near-neutral colour's hue swings wildly on a one-digit change. The ink is
+       also what the eye actually reads as the skill's colour. */
     for (const [skill, t] of Object.entries(SKILL_TONES)) {
-      const h = hue(t.base);
-      expect(h < 35 || h > 200, `${skill} (${t.base}) is in the green/amber arc`).toBe(true);
+      const h = hue(t.ink);
+      expect(h < 35 || h > 200, `${skill} (${t.ink}) is in the green/amber arc`).toBe(true);
     }
   });
 
