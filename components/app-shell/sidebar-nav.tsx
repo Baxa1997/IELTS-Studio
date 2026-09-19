@@ -138,7 +138,13 @@ const STUDENT: Section[] = [
 const ADMIN: Section[] = [
   {
     items: [
-      { label: "Assistant", labelKey: "nav.assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      {
+        label: "Assistant",
+        labelKey: "nav.assistant",
+        href: "/console/assistant",
+        icon: Bot,
+        accent: "assistant",
+      },
       { label: "Dashboard", labelKey: "nav.dashboard", href: "/console", icon: LayoutDashboard },
     ],
   },
@@ -147,11 +153,30 @@ const ADMIN: Section[] = [
     titleKey: "nav.section.centre",
     icon: Users,
     items: [
-      { label: "Groups", labelKey: "nav.groups", href: "/console/groups", icon: Users, countKey: "groups" },
-      { label: "Students", labelKey: "nav.students", href: "/console/students", icon: UserRound, countKey: "students" },
-      { label: "Teachers", labelKey: "nav.teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       {
-        label: "Calendar", labelKey: "nav.calendar",
+        label: "Groups",
+        labelKey: "nav.groups",
+        href: "/console/groups",
+        icon: Users,
+        countKey: "groups",
+      },
+      {
+        label: "Students",
+        labelKey: "nav.students",
+        href: "/console/students",
+        icon: UserRound,
+        countKey: "students",
+      },
+      {
+        label: "Teachers",
+        labelKey: "nav.teachers",
+        href: "/console/teachers",
+        icon: GraduationCap,
+        countKey: "teachers",
+      },
+      {
+        label: "Calendar",
+        labelKey: "nav.calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
@@ -166,7 +191,12 @@ const ADMIN: Section[] = [
     icon: Wallet,
     items: [
       { label: "Finance", labelKey: "nav.finance", href: "/console/finance", icon: Wallet },
-      { label: "Invoices", labelKey: "nav.invoices", href: "/console/finance/invoices", icon: Receipt },
+      {
+        label: "Invoices",
+        labelKey: "nav.invoices",
+        href: "/console/finance/invoices",
+        icon: Receipt,
+      },
       // "Salary", not "Payroll": one word for the whole thing. The separate
       // Salary-rules builder is gone — a class carries the teacher's rate
       // beside the student's fee, which is where an owner looks for it.
@@ -181,9 +211,25 @@ const ADMIN: Section[] = [
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practices", labelKey: "nav.practices", href: "/console/practice", icon: ClipboardList },
-      { label: "Marking", labelKey: "nav.marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
-      { label: "Results", labelKey: "nav.results", href: "/console/reports", icon: ChartNoAxesColumn },
+      {
+        label: "Practices",
+        labelKey: "nav.practices",
+        href: "/console/practice",
+        icon: ClipboardList,
+      },
+      {
+        label: "Marking",
+        labelKey: "nav.marking",
+        href: "/console/marking",
+        icon: SquarePen,
+        countKey: "marking",
+      },
+      {
+        label: "Results",
+        labelKey: "nav.results",
+        href: "/console/reports",
+        icon: ChartNoAxesColumn,
+      },
     ],
   },
 ];
@@ -191,7 +237,13 @@ const ADMIN: Section[] = [
 const ADMINISTRATOR: Section[] = [
   {
     items: [
-      { label: "Assistant", labelKey: "nav.assistant", href: "/console/assistant", icon: Bot, accent: "assistant" },
+      {
+        label: "Assistant",
+        labelKey: "nav.assistant",
+        href: "/console/assistant",
+        icon: Bot,
+        accent: "assistant",
+      },
       { label: "Dashboard", labelKey: "nav.dashboard", href: "/console", icon: LayoutDashboard },
     ],
   },
@@ -200,17 +252,41 @@ const ADMINISTRATOR: Section[] = [
     titleKey: "nav.section.centre",
     icon: Users,
     items: [
-      { label: "Groups", labelKey: "nav.groups", href: "/console/groups", icon: Users, countKey: "groups" },
-      { label: "Students", labelKey: "nav.students", href: "/console/students", icon: UserRound, countKey: "students" },
-      { label: "Teachers", labelKey: "nav.teachers", href: "/console/teachers", icon: GraduationCap, countKey: "teachers" },
       {
-        label: "Calendar", labelKey: "nav.calendar",
+        label: "Groups",
+        labelKey: "nav.groups",
+        href: "/console/groups",
+        icon: Users,
+        countKey: "groups",
+      },
+      {
+        label: "Students",
+        labelKey: "nav.students",
+        href: "/console/students",
+        icon: UserRound,
+        countKey: "students",
+      },
+      {
+        label: "Teachers",
+        labelKey: "nav.teachers",
+        href: "/console/teachers",
+        icon: GraduationCap,
+        countKey: "teachers",
+      },
+      {
+        label: "Calendar",
+        labelKey: "nav.calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
         alsoMatches: ["/console/attendance"],
       },
-      { label: "Take payment", labelKey: "nav.takePayment", href: "/console/payments", icon: Wallet },
+      {
+        label: "Take payment",
+        labelKey: "nav.takePayment",
+        href: "/console/payments",
+        icon: Wallet,
+      },
     ],
   },
   {
@@ -220,9 +296,25 @@ const ADMINISTRATOR: Section[] = [
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practice", labelKey: "nav.practice", href: "/console/practice", icon: ClipboardList },
-      { label: "Marking", labelKey: "nav.marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
-      { label: "Results", labelKey: "nav.results", href: "/console/reports", icon: ChartNoAxesColumn },
+      {
+        label: "Practice",
+        labelKey: "nav.practice",
+        href: "/console/practice",
+        icon: ClipboardList,
+      },
+      {
+        label: "Marking",
+        labelKey: "nav.marking",
+        href: "/console/marking",
+        icon: SquarePen,
+        countKey: "marking",
+      },
+      {
+        label: "Results",
+        labelKey: "nav.results",
+        href: "/console/reports",
+        icon: ChartNoAxesColumn,
+      },
     ],
   },
   // Announcements lives under the avatar — see accountItemsFor.
@@ -231,9 +323,16 @@ const ADMINISTRATOR: Section[] = [
 const TEACHER: Section[] = [
   {
     items: [
-      { label: "Assistant AI", labelKey: "nav.assistantAi", href: "/console/assistant", icon: Bot, accent: "assistant" },
       {
-        label: "Practice English with AI", labelKey: "nav.practiceWithAi",
+        label: "Assistant AI",
+        labelKey: "nav.assistantAi",
+        href: "/console/assistant",
+        icon: Bot,
+        accent: "assistant",
+      },
+      {
+        label: "Practice English with AI",
+        labelKey: "nav.practiceWithAi",
         href: "/console/practice-ai",
         icon: WandSparkles,
         accent: "generate",
@@ -258,10 +357,23 @@ const TEACHER: Section[] = [
     titleKey: "nav.section.teaching",
     icon: Users,
     items: [
-      { label: "Groups", labelKey: "nav.groups", href: "/console/groups", icon: Users, countKey: "groups" },
-      { label: "Students", labelKey: "nav.students", href: "/console/students", icon: UserRound, countKey: "students" },
       {
-        label: "Calendar", labelKey: "nav.calendar",
+        label: "Groups",
+        labelKey: "nav.groups",
+        href: "/console/groups",
+        icon: Users,
+        countKey: "groups",
+      },
+      {
+        label: "Students",
+        labelKey: "nav.students",
+        href: "/console/students",
+        icon: UserRound,
+        countKey: "students",
+      },
+      {
+        label: "Calendar",
+        labelKey: "nav.calendar",
         href: "/console/calendar",
         icon: CalendarRange,
         // Attendance is this item's other tab — see ScheduleTabs.
@@ -279,9 +391,25 @@ const TEACHER: Section[] = [
     items: [
       // Practice → Marking → Results is the actual order of the work: it gets
       // set, it comes back, it gets marked, and then it means something.
-      { label: "Practices", labelKey: "nav.practices", href: "/console/practice", icon: ClipboardList },
-      { label: "Marking", labelKey: "nav.marking", href: "/console/marking", icon: SquarePen, countKey: "marking" },
-      { label: "Results", labelKey: "nav.results", href: "/console/reports", icon: ChartNoAxesColumn },
+      {
+        label: "Practices",
+        labelKey: "nav.practices",
+        href: "/console/practice",
+        icon: ClipboardList,
+      },
+      {
+        label: "Marking",
+        labelKey: "nav.marking",
+        href: "/console/marking",
+        icon: SquarePen,
+        countKey: "marking",
+      },
+      {
+        label: "Results",
+        labelKey: "nav.results",
+        href: "/console/reports",
+        icon: ChartNoAxesColumn,
+      },
     ],
   },
   // Announcements is under the avatar (accountItemsFor), still scoped to their
@@ -289,7 +417,9 @@ const TEACHER: Section[] = [
 ];
 
 const SUPER_ADMIN: Section[] = [
-  { items: [{ label: "Overview", labelKey: "nav.overview", href: "/admin", icon: LayoutDashboard }] },
+  {
+    items: [{ label: "Overview", labelKey: "nav.overview", href: "/admin", icon: LayoutDashboard }],
+  },
   {
     title: "Platform",
     titleKey: "nav.section.platform",
@@ -297,7 +427,12 @@ const SUPER_ADMIN: Section[] = [
     items: [
       { label: "Centers", labelKey: "nav.centers", href: "/admin/centers", icon: Building2 },
       { label: "Users", labelKey: "nav.users", href: "/admin/users", icon: Users },
-      { label: "Plans & revenue", labelKey: "nav.plansRevenue", href: "/admin/plans", icon: CreditCard },
+      {
+        label: "Plans & revenue",
+        labelKey: "nav.plansRevenue",
+        href: "/admin/plans",
+        icon: CreditCard,
+      },
       /* Approval is the only gate on the referral programme, so the queue has to
          be somewhere a super admin passes, not somewhere they remember. */
       { label: "Referrals", labelKey: "nav.referrals", href: "/admin/referrals", icon: Gift },
@@ -308,8 +443,18 @@ const SUPER_ADMIN: Section[] = [
     titleKey: "nav.section.operations",
     icon: Activity,
     items: [
-      { label: "Moderation", labelKey: "nav.moderation", href: "/admin/moderation", icon: ShieldAlert },
-      { label: "System health", labelKey: "nav.systemHealth", href: "/admin/health", icon: Activity },
+      {
+        label: "Moderation",
+        labelKey: "nav.moderation",
+        href: "/admin/moderation",
+        icon: ShieldAlert,
+      },
+      {
+        label: "System health",
+        labelKey: "nav.systemHealth",
+        href: "/admin/health",
+        icon: Activity,
+      },
     ],
   },
 ];
@@ -348,7 +493,8 @@ function sectionsFor(
     items: [
       home.items[0],
       {
-        label: "Assignments", labelKey: "nav.assignments",
+        label: "Assignments",
+        labelKey: "nav.assignments",
         href: "/assignments",
         icon: ClipboardCheck,
         badge: pending > 0 ? String(pending) : undefined,
@@ -376,7 +522,9 @@ function sectionsFor(
       title: "You",
       titleKey: "nav.section.you",
       icon: Award,
-      items: [{ label: "Certificates", labelKey: "nav.certificates", href: "/certificates", icon: Award }],
+      items: [
+        { label: "Certificates", labelKey: "nav.certificates", href: "/certificates", icon: Award },
+      ],
     },
   ];
 }
@@ -535,7 +683,13 @@ export function settingsHrefFor(role: string, homeworkOnly: boolean): string | n
 function withSettings(sections: Section[], role: string, homeworkOnly: boolean): Section[] {
   const href = settingsHrefFor(role, homeworkOnly);
   if (!href) return sections;
-  return [...sections, { pinned: true, items: [{ label: "Settings", labelKey: "nav.settings", href, icon: Settings }] }];
+  return [
+    ...sections,
+    {
+      pinned: true,
+      items: [{ label: "Settings", labelKey: "nav.settings", href, icon: Settings }],
+    },
+  ];
 }
 
 /**
@@ -632,6 +786,10 @@ export function SidebarNav({
 
   const isOpen = (title: string) => openGroups[title] ?? true;
 
+  /** Which collapsed flyout has been clicked through and should stay shut until
+   *  the pointer leaves it. See the note on `data-dismissed` below. */
+  const [dismissed, setDismissed] = useState<string | number | null>(null);
+
   const toggleGroup = (title: string) => {
     const next = isOpen(title)
       ? { ...openGroups, [title]: false }
@@ -656,6 +814,34 @@ export function SidebarNav({
           <div
             key={section.title ?? si}
             className={section.title ? "lp-sb-section lp-sb-section--group" : "lp-sb-section"}
+            /* ⚠️ DISMISSING A HOVER MENU YOU JUST CLICKED THROUGH. When the rail
+               is collapsed this section's children are a flyout card, opened by
+               `:hover` and `:focus-within` (globals.css). Click a row in it and
+               both are still true a moment later — the pointer has not moved and
+               the link you pressed now holds focus — so the card stayed open
+               over the page you had just navigated to, which is what it was
+               reported as.
+
+               CSS alone cannot express "open on hover, but not after a click",
+               so the click marks the section and the marker is what the
+               stylesheet hides on. It clears when the pointer actually leaves,
+               which is the moment the next hover should be allowed to open it
+               again. Blurring is the other half: `:focus-within` would hold the
+               card open by itself, and a link keeps focus after a client-side
+               navigation. Harmless while expanded — the rule that reads this is
+               scoped to the collapsed rail. */
+            data-dismissed={dismissed === (section.title ?? si) ? "1" : undefined}
+            onPointerLeave={() => setDismissed(null)}
+            onClickCapture={(e) => {
+              if (!(e.target instanceof Element)) return;
+              // The group's own row TOGGLES the card; only a link inside it is
+              // a navigation worth dismissing for.
+              if (!e.target.closest(".lp-sb-sub")) return;
+              const link = e.target.closest("a");
+              if (!link) return;
+              (link as HTMLElement).blur();
+              setDismissed(section.title ?? si);
+            }}
             /* `marginTop: auto` inside a column at least as tall as the rail is
                what pushes a pinned section to the foot, however short the list. */
             style={section.pinned ? { ...TRAY, marginTop: "auto", paddingTop: 12 } : TRAY}

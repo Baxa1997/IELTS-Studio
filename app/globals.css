@@ -2138,6 +2138,19 @@
     transform: translateX(0);
     transition-delay: 0s;
   }
+  /* ⚠️ AND SHUT AGAIN THE MOMENT YOU CLICK THROUGH IT. Both openers above are
+     still true just after a click — the pointer has not moved and the link now
+     holds focus — so the card sat open on top of the page it had just taken you
+     to. `data-dismissed` is set by the click and cleared when the pointer
+     genuinely leaves the section (sidebar-nav.tsx); it has to come AFTER the
+     rules it overrides and match them in specificity, which the extra attribute
+     does. Hovering away and back opens it again, as it should. */
+  .lp-shell-sidebar--collapsed .lp-sb-section--group[data-dismissed="1"]:hover .lp-sb-sub,
+  .lp-shell-sidebar--collapsed .lp-sb-section--group[data-dismissed="1"]:focus-within .lp-sb-sub {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-4px);
+  }
   /* The card itself. */
   .lp-shell-sidebar--collapsed .lp-sb-sub:not(.lp-sb-sub--flat) .lp-sb-sub-inner {
     min-width: 206px;

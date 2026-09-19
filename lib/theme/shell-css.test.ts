@@ -90,10 +90,18 @@ function rules(): { selector: string; body: string }[] {
  * footer, which is a deliberately dark band in both themes and whose white
  * hover is therefore correct — the one standing exception, and it is named
  * rather than pattern-matched so a second one cannot creep in beside it.
+ *
+ * ⚠️ THAT NAME IS AN ADDRESS, AND THE ADDRESS MOVED. The footer's stylesheet
+ * left `site-footer.tsx` for `footer-css.ts` when the component became a client
+ * module (a `"use client"` module cannot hand a string to the server module
+ * that injects it — see `app/_landing/client-boundary.test.ts`). The exemption
+ * pointed at a file that no longer holds any CSS, so the footer's two correct
+ * white hovers came back as failures. Being named is what made that visible in
+ * one run; a pattern would have carried the hole along silently.
  */
 const CSS_BLOCK = /const\s+[A-Za-z_0-9]*CSS\s*=\s*`([\s\S]*?)`;/g;
 /** The footer's ground does not follow the theme, so its inks must not either. */
-const CSS_EXEMPT = new Set(["app/_landing/site-footer.tsx"]);
+const CSS_EXEMPT = new Set(["app/_landing/footer-css.ts"]);
 
 describe("stylesheets written as template literals", () => {
   const blocks: { file: string; body: string }[] = [];

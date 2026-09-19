@@ -15,6 +15,9 @@ import {
   BRAND,
   BRAND_FILL,
   PANEL,
+  SLATE_AMBER,
+  SLATE_AMBER_BG,
+  SLATE_AMBER_LINE,
   SLATE_BODY as MUTED,
   SLATE_GREEN as EMERALD,
   SLATE_INK as INK,
@@ -22,7 +25,18 @@ import {
   SLATE_LINE as TRACK,
   SLATE_MUTED as FAINT,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
+
+/* ⚠️ THE THREE WARM PANELS ON THIS PAGE WERE CREAM LITERALS — `#FFF8EE`,
+   `#FFFBF4`, `#FFF6E7` — and their ink was a TOKEN. In dark mode the ink
+   inverted to near-white and the cream did not move, so the level-check
+   heading and the focus criterion were white on cream: present, legible in a
+   screenshot only if you knew what to look for, and unreadable in use. This is
+   the fill-and-ink trap `lib/theme/contrast.test.ts` exists for, and the fix is
+   the same one it enforces everywhere else — a fill that carries its own ink.
+   `SLATE_AMBER_BG` / `SLATE_AMBER_LINE` / `SLATE_AMBER` are that trio, already
+   defined in both themes (light #fdf6e7 on #8a5b12, dark #2e2314 on #e0a84a). */
 
 export const dynamic = "force-dynamic";
 
@@ -62,33 +76,77 @@ export default async function PlanPage() {
   return (
     <div style={{ fontFamily: SANS, color: INK }}>
       {/* ─── Header ─── */}
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 18 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 16,
+          marginBottom: 18,
+        }}
+      >
         <div>
           <Eyebrow>Your study plan</Eyebrow>
-          <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(24px,2.6vw,32px)", lineHeight: 1.08, letterSpacing: "-.015em", margin: "6px 0 0", color: INK }}>
+          <h1
+            style={{
+              fontFamily: SERIF,
+              fontWeight: 600,
+              fontSize: "clamp(24px,2.6vw,32px)",
+              lineHeight: 1.08,
+              letterSpacing: "-.015em",
+              margin: "6px 0 0",
+              color: INK,
+            }}
+          >
             Tuned to your level, paced to your goal
           </h1>
         </div>
-        <Link href="/onboarding" style={{ marginTop: 4, padding: "10px 18px", borderRadius: 10, border: `1px solid ${LINE}`, background: PANEL, color: MUTED, fontFamily: SANS, fontSize: 13.5, fontWeight: 600, textDecoration: "none" }}>
+        <Link
+          href="/onboarding"
+          style={{
+            marginTop: 4,
+            padding: "10px 18px",
+            borderRadius: 10,
+            border: `1px solid ${LINE}`,
+            background: PANEL,
+            color: MUTED,
+            fontFamily: SANS,
+            fontSize: 13.5,
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
           Edit plan
         </Link>
       </div>
 
       {/* ─── Countdown ─── */}
-      <CountdownCard examDate={plan.examDate} days={days} target={plan.targetBand} elapsedPct={elapsedPct} />
+      <CountdownCard
+        examDate={plan.examDate}
+        days={days}
+        target={plan.targetBand}
+        elapsedPct={elapsedPct}
+      />
 
       {/* ─── Level re-check ─── */}
       <LevelCheck due={checkDue} daysToCheck={daysToCheck} />
 
       {/* ─── Current → target (all four skills) ─── */}
-      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div
+        className="lp-cols-2"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}
+      >
         {SKILLS.map((s) => (
           <PlanBandCard key={s} estimate={estimates.bySkill[s]} />
         ))}
       </div>
 
       {/* ─── Weekly quota + weakest focus ─── */}
-      <div className="lp-cols-2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div
+        className="lp-cols-2"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+      >
         <WeeklyCard done={tasksThisWeek} goal={plan.weeklyGoal} met={goalMet} />
         <FocusCard weakest={weakestCriterion} />
       </div>
@@ -96,7 +154,17 @@ export default async function PlanPage() {
   );
 }
 
-function CountdownCard({ examDate, days, target, elapsedPct }: { examDate: string | null; days: number | null; target: number; elapsedPct: number | null }) {
+function CountdownCard({
+  examDate,
+  days,
+  target,
+  elapsedPct,
+}: {
+  examDate: string | null;
+  days: number | null;
+  target: number;
+  elapsedPct: number | null;
+}) {
   const hasFuture = examDate != null && days != null && days >= 0;
   return (
     <div
@@ -109,49 +177,171 @@ function CountdownCard({ examDate, days, target, elapsedPct }: { examDate: strin
       }}
     >
       {/* soft glow + concentric rings */}
-      <div aria-hidden style={{ position: "absolute", top: -40, right: 50, width: 180, height: 180, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 65%)", pointerEvents: "none" }} />
-      <div aria-hidden style={{ position: "absolute", top: -28, right: -28, width: 170, height: 170, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.10)", pointerEvents: "none" }} />
-      <div aria-hidden style={{ position: "absolute", top: 8, right: 8, width: 100, height: 100, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.08)", pointerEvents: "none" }} />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -40,
+          right: 50,
+          width: 180,
+          height: 180,
+          borderRadius: "50%",
+          background: "radial-gradient(circle,rgba(255,255,255,.14),transparent 65%)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -28,
+          right: -28,
+          width: 170,
+          height: 170,
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.10)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          width: 100,
+          height: 100,
+          borderRadius: "50%",
+          border: "1px solid rgba(255,255,255,0.08)",
+          pointerEvents: "none",
+        }}
+      />
 
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 24, padding: "clamp(18px,2.2vw,26px) clamp(20px,2.8vw,30px)" }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 24,
+          padding: "clamp(18px,2.2vw,26px) clamp(20px,2.8vw,30px)",
+        }}
+      >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: PANEL, flexShrink: 0, animation: "plan-pulse-brand 2.4s ease infinite" }} />
-            <Eyebrow tone="rgba(255,255,255,0.72)">{hasFuture ? "Exam countdown" : "Exam date"}</Eyebrow>
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: PANEL,
+                flexShrink: 0,
+                animation: "plan-pulse-brand 2.4s ease infinite",
+              }}
+            />
+            <Eyebrow tone="rgba(255,255,255,0.72)">
+              {hasFuture ? "Exam countdown" : "Exam date"}
+            </Eyebrow>
           </div>
 
           {hasFuture ? (
             <>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
-                <span style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(38px,5vw,52px)", color: WHITE, lineHeight: 1, letterSpacing: "-1.5px", fontVariantNumeric: "tabular-nums" }}>{days}</span>
-                <span style={{ fontFamily: SANS, fontSize: 16, fontWeight: 400, color: "rgba(255,255,255,0.62)" }}>{days === 1 ? "day to go" : "days to go"}</span>
+                <span
+                  style={{
+                    fontFamily: SERIF,
+                    fontWeight: 600,
+                    fontSize: "clamp(38px,5vw,52px)",
+                    color: WHITE,
+                    lineHeight: 1,
+                    letterSpacing: "-1.5px",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {days}
+                </span>
+                <span
+                  style={{
+                    fontFamily: SANS,
+                    fontSize: 16,
+                    fontWeight: 400,
+                    color: "rgba(255,255,255,0.62)",
+                  }}
+                >
+                  {days === 1 ? "day to go" : "days to go"}
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}>{fmtFull(examDate!)}</span>
-                <span style={{ width: 3, height: 3, borderRadius: "50%", background: "rgba(255,255,255,0.28)" }} />
-                <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}>Aiming for</span>
+                <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}>
+                  {fmtFull(examDate!)}
+                </span>
+                <span
+                  style={{
+                    width: 3,
+                    height: 3,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.28)",
+                  }}
+                />
+                <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}>
+                  Aiming for
+                </span>
                 <span style={DARK_PILL}>Band {target.toFixed(1)}</span>
               </div>
             </>
           ) : (
             <div style={{ maxWidth: 460 }}>
-              <div style={{ fontFamily: SERIF, fontWeight: 600, fontSize: "clamp(19px,2.4vw,25px)", color: WHITE, marginBottom: 7, letterSpacing: "-.015em", lineHeight: 1.15 }}>
+              <div
+                style={{
+                  fontFamily: SERIF,
+                  fontWeight: 600,
+                  fontSize: "clamp(19px,2.4vw,25px)",
+                  color: WHITE,
+                  marginBottom: 7,
+                  letterSpacing: "-.015em",
+                  lineHeight: 1.15,
+                }}
+              >
                 {examDate != null ? "Your test date has passed" : "No test date yet"}
               </div>
-              <p style={{ margin: 0, fontFamily: SANS, fontSize: 14, color: "rgba(255,255,255,0.66)", lineHeight: 1.6 }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: SANS,
+                  fontSize: 14,
+                  color: "rgba(255,255,255,0.66)",
+                  lineHeight: 1.6,
+                }}
+              >
                 {examDate != null ? (
                   <>
                     {fmtFull(examDate)} is behind you.{" "}
-                    <Link href="/onboarding" style={{ color: WHITE, fontWeight: 700, textDecoration: "underline" }}>Set a new date</Link> to keep your plan paced.
+                    <Link
+                      href="/onboarding"
+                      style={{ color: WHITE, fontWeight: 700, textDecoration: "underline" }}
+                    >
+                      Set a new date
+                    </Link>{" "}
+                    to keep your plan paced.
                   </>
                 ) : (
                   <>
-                    <Link href="/onboarding" style={{ color: WHITE, fontWeight: 700, textDecoration: "underline" }}>Add a test date</Link> for a live countdown and a week-by-week plan.
+                    <Link
+                      href="/onboarding"
+                      style={{ color: WHITE, fontWeight: 700, textDecoration: "underline" }}
+                    >
+                      Add a test date
+                    </Link>{" "}
+                    for a live countdown and a week-by-week plan.
                   </>
                 )}
               </p>
               <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 9 }}>
-                <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}>Aiming for</span>
+                <span style={{ fontFamily: SANS, fontSize: 13.5, color: "rgba(255,255,255,0.6)" }}>
+                  Aiming for
+                </span>
                 <span style={DARK_PILL}>Band {target.toFixed(1)}</span>
               </div>
             </div>
@@ -168,14 +358,64 @@ function ElapsedRing({ pct }: { pct: number }) {
   const C = 2 * Math.PI * 40; // r=40
   const off = C * (1 - Math.max(0, Math.min(1, pct)));
   return (
-    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+    <div
+      style={{
+        flexShrink: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
       <svg width="100" height="100" viewBox="0 0 100 100" aria-hidden>
-        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="7" />
-        <circle cx="50" cy="50" r="40" fill="none" stroke="#fff" strokeWidth="7" strokeDasharray={C} strokeDashoffset={off} strokeLinecap="round" transform="rotate(-90 50 50)" />
-        <text x="50" y="47" textAnchor="middle" fill="#fff" fontFamily={SERIF} fontSize="20" fontWeight="700">{Math.round(pct * 100)}%</text>
-        <text x="50" y="62" textAnchor="middle" fill="rgba(255,255,255,0.6)" fontFamily={SANS} fontSize="9" fontWeight="600">elapsed</text>
+        <circle
+          cx="50"
+          cy="50"
+          r="40"
+          fill="none"
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth="7"
+        />
+        <circle
+          cx="50"
+          cy="50"
+          r="40"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="7"
+          strokeDasharray={C}
+          strokeDashoffset={off}
+          strokeLinecap="round"
+          transform="rotate(-90 50 50)"
+        />
+        <text
+          x="50"
+          y="47"
+          textAnchor="middle"
+          fill="#fff"
+          fontFamily={SERIF}
+          fontSize="20"
+          fontWeight="700"
+        >
+          {Math.round(pct * 100)}%
+        </text>
+        <text
+          x="50"
+          y="62"
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.6)"
+          fontFamily={SANS}
+          fontSize="9"
+          fontWeight="600"
+        >
+          elapsed
+        </text>
       </svg>
-      <span style={{ fontFamily: SANS, fontSize: 11.5, color: "rgba(255,255,255,0.55)", marginTop: -2 }}>of study period</span>
+      <span
+        style={{ fontFamily: SANS, fontSize: 11.5, color: "rgba(255,255,255,0.55)", marginTop: -2 }}
+      >
+        of study period
+      </span>
     </div>
   );
 }
@@ -183,21 +423,77 @@ function ElapsedRing({ pct }: { pct: number }) {
 function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | null }) {
   if (due) {
     return (
-      <div style={{ marginBottom: 16, borderRadius: 16, background: "#FFF8EE", border: "1px solid #F6E0B8", padding: "16px 20px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14 }}>
+      <div
+        style={{
+          marginBottom: 16,
+          borderRadius: 16,
+          background: SLATE_AMBER_BG,
+          border: `1px solid ${SLATE_AMBER_LINE}`,
+          padding: "16px 20px",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 14,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ width: 38, height: 38, borderRadius: 11, background: "var(--tk-tint-amber-bg)", border: "1px solid #F6E0B8", color: AMBER, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <span
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 11,
+              background: "var(--tk-tint-amber-bg)",
+              border: `1px solid ${SLATE_AMBER_LINE}`,
+              color: AMBER,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flex: "none",
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
               <circle cx="12" cy="12" r="9" />
               <path d="M12 8v4l3 2" />
             </svg>
           </span>
           <div>
-            <div style={{ fontFamily: SANS, fontSize: 15.5, fontWeight: 700, color: INK }}>Time for a level check</div>
-            <div style={{ fontFamily: SANS, fontSize: 13.5, color: MUTED }}>Do a fresh timed task so your bands stay accurate.</div>
+            <div style={{ fontFamily: SANS, fontSize: 15.5, fontWeight: 700, color: INK }}>
+              Time for a level check
+            </div>
+            <div style={{ fontFamily: SANS, fontSize: 13.5, color: MUTED }}>
+              Do a fresh timed task so your bands stay accurate.
+            </div>
           </div>
         </div>
         <form action={startLevelCheck}>
-          <button type="submit" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #EBCF9E", background: "var(--tk-tint-amber-bg)", color: AMBER, fontFamily: SANS, fontSize: 13.5, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}>
+          <button
+            type="submit"
+            style={{
+              padding: "10px 16px",
+              borderRadius: 10,
+              border: `1px solid ${SLATE_AMBER_LINE}`,
+              background: "var(--tk-tint-amber-bg)",
+              color: AMBER,
+              fontFamily: SANS,
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+            }}
+          >
             Re-check my level →
           </button>
         </form>
@@ -206,8 +502,21 @@ function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | 
   }
   if (daysToCheck != null && daysToCheck > 0) {
     return (
-      <p style={{ fontFamily: SANS, fontSize: 14, color: MUTED, margin: "0 0 16px", padding: "0 2px", lineHeight: 1.65 }}>
-        Next level check in <strong style={{ color: BRAND, fontWeight: 700 }}>{daysToCheck} {daysToCheck === 1 ? "day" : "days"}</strong> — your bands keep updating with every graded task in the meantime.
+      <p
+        style={{
+          fontFamily: SANS,
+          fontSize: 14,
+          color: MUTED,
+          margin: "0 0 16px",
+          padding: "0 2px",
+          lineHeight: 1.65,
+        }}
+      >
+        Next level check in{" "}
+        <strong style={{ color: BRAND, fontWeight: 700 }}>
+          {daysToCheck} {daysToCheck === 1 ? "day" : "days"}
+        </strong>{" "}
+        — your bands keep updating with every graded task in the meantime.
       </p>
     );
   }
@@ -216,25 +525,74 @@ function LevelCheck({ due, daysToCheck }: { due: boolean; daysToCheck: number | 
 
 function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: boolean }) {
   return (
-    <div style={{ background: PANEL, border: `1px solid ${LINE}`, borderRadius: 16, padding: "clamp(20px,2.4vw,26px)" }}>
+    <div
+      style={{
+        background: PANEL,
+        border: `1px solid ${LINE}`,
+        borderRadius: 16,
+        padding: "clamp(20px,2.4vw,26px)",
+      }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: EMERALD, flexShrink: 0, animation: "plan-pulse-green 2s ease infinite" }} />
+        <span
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: EMERALD,
+            flexShrink: 0,
+            animation: "plan-pulse-green 2s ease infinite",
+          }}
+        />
         <Eyebrow>This week</Eyebrow>
       </div>
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 16 }}>
-        <span style={{ fontFamily: SERIF, fontSize: 52, fontWeight: 700, color: met ? EMERALD : INK, lineHeight: 1, letterSpacing: "-1.5px", fontVariantNumeric: "tabular-nums" }}>{done}</span>
-        <span style={{ fontFamily: SANS, fontSize: 16, color: MUTED, fontWeight: 400 }}>of {goal} tasks</span>
+        <span
+          style={{
+            fontFamily: SERIF,
+            fontSize: 52,
+            fontWeight: 700,
+            color: met ? EMERALD : INK,
+            lineHeight: 1,
+            letterSpacing: "-1.5px",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {done}
+        </span>
+        <span style={{ fontFamily: SANS, fontSize: 16, color: MUTED, fontWeight: 400 }}>
+          of {goal} tasks
+        </span>
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
         {Array.from({ length: goal }).map((_, i) => (
-          <div key={i} style={{ flex: "1 1 12px", minWidth: 12, height: 6, borderRadius: 999, background: i < done ? EMERALD : TRACK }} />
+          <div
+            key={i}
+            style={{
+              flex: "1 1 12px",
+              minWidth: 12,
+              height: 6,
+              borderRadius: 999,
+              background: i < done ? EMERALD : TRACK,
+            }}
+          />
         ))}
       </div>
 
-      <p style={{ fontFamily: SANS, fontSize: 13, color: MUTED, margin: "0 0 20px", lineHeight: 1.5 }}>
-        {met ? "You've hit this week's goal — every extra task still helps." : `${goal - done} more to hit this week's goal.`}
+      <p
+        style={{
+          fontFamily: SANS,
+          fontSize: 13,
+          color: MUTED,
+          margin: "0 0 20px",
+          lineHeight: 1.5,
+        }}
+      >
+        {met
+          ? "You've hit this week's goal — every extra task still helps."
+          : `${goal - done} more to hit this week's goal.`}
       </p>
 
       <Link
@@ -259,9 +617,27 @@ function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: bool
       >
         Practice next task
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
-          <path d="M2 7.5H13M13 7.5L8.5 3M13 7.5L8.5 12" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2 7.5H13M13 7.5L8.5 3M13 7.5L8.5 12"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
-        <span aria-hidden style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "40%", background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)", animation: "plan-shimmer 4s ease infinite 0.5s", pointerEvents: "none" }} />
+        <span
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: "40%",
+            background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent)",
+            animation: "plan-shimmer 4s ease infinite 0.5s",
+            pointerEvents: "none",
+          }}
+        />
       </Link>
     </div>
   );
@@ -269,36 +645,110 @@ function WeeklyCard({ done, goal, met }: { done: number; goal: number; met: bool
 
 function FocusCard({ weakest }: { weakest: WeakCriterion | null }) {
   return (
-    <div style={{ position: "relative", borderRadius: 16, padding: "clamp(20px,2.4vw,26px)", background: "#FFFBF4", border: "1px solid #F4E6C9", overflow: "hidden" }}>
-      <div aria-hidden style={{ position: "absolute", top: -55, right: -55, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle,rgba(185,121,26,0.10) 0%,transparent 65%)", pointerEvents: "none" }} />
+    <div
+      style={{
+        position: "relative",
+        borderRadius: 16,
+        padding: "clamp(20px,2.4vw,26px)",
+        background: SLATE_AMBER_BG,
+        border: `1px solid ${SLATE_AMBER_LINE}`,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -55,
+          right: -55,
+          width: 200,
+          height: 200,
+          borderRadius: "50%",
+          background: "radial-gradient(circle,rgba(185,121,26,0.10) 0%,transparent 65%)",
+          pointerEvents: "none",
+        }}
+      />
 
       <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: AMBER, flexShrink: 0, animation: "plan-pulse-amber 2.3s ease infinite" }} />
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: AMBER,
+              flexShrink: 0,
+              animation: "plan-pulse-amber 2.3s ease infinite",
+            }}
+          />
           <Eyebrow tone={AMBER}>Focus area</Eyebrow>
         </div>
 
         {weakest ? (
           <>
-            <div style={{ fontFamily: SERIF, fontSize: 24, fontWeight: 600, color: INK, letterSpacing: "-.01em", marginBottom: 6 }}>{weakest.label}</div>
-            <p style={{ fontFamily: SANS, fontSize: 13.5, color: MUTED, margin: "0 0 18px", lineHeight: 1.6 }}>
+            <div
+              style={{
+                fontFamily: SERIF,
+                fontSize: 24,
+                fontWeight: 600,
+                color: INK,
+                letterSpacing: "-.01em",
+                marginBottom: 6,
+              }}
+            >
+              {weakest.label}
+            </div>
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: 13.5,
+                color: MUTED,
+                margin: "0 0 18px",
+                lineHeight: 1.6,
+              }}
+            >
               avg band {weakest.meanBand.toFixed(1)}
-              {weakest.blockerCount > 0 ? ` · capping ${weakest.blockerCount} ${weakest.blockerCount === 1 ? "essay" : "essays"}` : ""}
+              {weakest.blockerCount > 0
+                ? ` · capping ${weakest.blockerCount} ${weakest.blockerCount === 1 ? "essay" : "essays"}`
+                : ""}
             </p>
             <TipCard>
               <strong style={{ color: AMBER, fontWeight: 700 }}>AI tip:</strong>{" "}
-              {CRITERION_TIP[weakest.key] ?? "target this criterion with one focused essay and resubmit to see it move."}
+              {CRITERION_TIP[weakest.key] ??
+                "target this criterion with one focused essay and resubmit to see it move."}
             </TipCard>
           </>
         ) : (
           <>
-            <p style={{ fontFamily: SANS, fontSize: 15, fontWeight: 400, color: INK, lineHeight: 1.7, margin: "0 0 18px" }}>
+            <p
+              style={{
+                fontFamily: SANS,
+                fontSize: 15,
+                fontWeight: 400,
+                color: INK,
+                lineHeight: 1.7,
+                margin: "0 0 18px",
+              }}
+            >
               Submit a Task 2 essay and the AI will pinpoint your weakest criterion — and the{" "}
-              <em style={{ fontStyle: "normal", color: AMBER, fontWeight: 700 }}>one fix</em> that lifts it.
+              <em style={{ fontStyle: "normal", color: AMBER, fontWeight: 700 }}>one fix</em> that
+              lifts it.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
               {["Task 2 essay", "AI analysis", "Band boost"].map((t) => (
-                <span key={t} style={{ background: "var(--tk-tint-amber-bg)", border: "1px solid #F6E0B8", borderRadius: 999, padding: "5px 12px", fontFamily: SANS, fontSize: 12, fontWeight: 700, color: AMBER }}>
+                <span
+                  key={t}
+                  style={{
+                    background: "var(--tk-tint-amber-bg)",
+                    border: `1px solid ${SLATE_AMBER_LINE}`,
+                    borderRadius: 999,
+                    padding: "5px 12px",
+                    fontFamily: SANS,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: AMBER,
+                  }}
+                >
                   {t}
                 </span>
               ))}
@@ -316,18 +766,52 @@ function FocusCard({ weakest }: { weakest: WeakCriterion | null }) {
 
 function TipCard({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ borderRadius: 12, background: "#FFF6E7", border: "1px solid #F4E6C9", padding: "13px 15px", display: "flex", alignItems: "flex-start", gap: 10 }}>
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginTop: 1, flexShrink: 0 }} aria-hidden>
+    <div
+      style={{
+        borderRadius: 12 /* A wash of the same amber OVER the card, not a second flat cream: the
+             tip has to read as nested in both themes, and two identical
+             surfaces would read as one. */,
+        background: withAlpha(SLATE_AMBER, 10),
+        border: `1px solid ${SLATE_AMBER_LINE}`,
+        padding: "13px 15px",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+      }}
+    >
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        style={{ marginTop: 1, flexShrink: 0 }}
+        aria-hidden
+      >
         <circle style={{ stroke: AMBER }} cx="8" cy="8" r="7" strokeWidth="1.5" />
         <path style={{ stroke: AMBER }} d="M8 5v4M8 11v1" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
-      <p style={{ margin: 0, fontFamily: SANS, fontSize: 12.5, color: MUTED, lineHeight: 1.6 }}>{children}</p>
+      <p style={{ margin: 0, fontFamily: SANS, fontSize: 12.5, color: MUTED, lineHeight: 1.6 }}>
+        {children}
+      </p>
     </div>
   );
 }
 
 function Eyebrow({ children, tone = FAINT }: { children: React.ReactNode; tone?: string }) {
-  return <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11, letterSpacing: ".09em", textTransform: "uppercase", color: tone }}>{children}</span>;
+  return (
+    <span
+      style={{
+        fontFamily: SANS,
+        fontWeight: 700,
+        fontSize: 11,
+        letterSpacing: ".09em",
+        textTransform: "uppercase",
+        color: tone,
+      }}
+    >
+      {children}
+    </span>
+  );
 }
 
 const DARK_PILL: React.CSSProperties = {
@@ -351,7 +835,10 @@ function studyElapsedPct(createdAt: string, examDate: string | null): number | n
 }
 
 function fmtFull(iso: string): string {
-  return new Intl.DateTimeFormat("en", { weekday: "short", month: "long", day: "numeric", year: "numeric" }).format(
-    new Date(`${iso}T00:00:00`),
-  );
+  return new Intl.DateTimeFormat("en", {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(`${iso}T00:00:00`));
 }
