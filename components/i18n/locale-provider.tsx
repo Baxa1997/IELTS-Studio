@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -78,6 +79,7 @@ export function LocaleProvider({
   // Must be referentially stable per `initial`, or the hook re-reads endlessly.
   const serverSnapshot = useCallback(() => initial ?? DEFAULT_LOCALE, [initial]);
   const locale = useSyncExternalStore(subscribe, snapshot, serverSnapshot);
+  const router = useRouter();
 
   // Keep <html lang> honest: it is what a screen reader switches voice on, and
   // what the browser picks hyphenation and spell-check from, so it has to move
@@ -86,16 +88,30 @@ export function LocaleProvider({
     document.documentElement.lang = HTML_LANG[locale];
   }, [locale]);
 
-  const setLocale = useCallback((l: Locale) => {
-    cached = l;
-    // A plain cookie write rather than a server action: the value has to be
-    // readable by the NEXT server render and it authorises nothing. SameSite=Lax
-    // so it survives arriving back in the app from an emailed link.
-    document.cookie =
-      `${LOCALE_COOKIE}=${l}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax` +
-      (location.protocol === "https:" ? "; secure" : "");
-    for (const listener of listeners) listener();
-  }, []);
+  const setLocale = useCallback(
+    (l: Locale) => {
+      cached = l;
+      // A plain cookie write rather than a server action: the value has to be
+      // readable by the NEXT server render and it authorises nothing. SameSite=Lax
+      // so it survives arriving back in the app from an emailed link.
+      document.cookie =
+        `${LOCALE_COOKIE}=${l}; path=/; max-age=${LOCALE_COOKIE_MAX_AGE}; samesite=lax` +
+        (location.protocol === "https:" ? "; secure" : "");
+      for (const listener of listeners) listener();
+
+      /* ⚠️ THE NOTIFY ABOVE ONLY REACHES CLIENT COMPONENTS, AND MOST OF THIS UI
+         IS NOT ONE. Every string a server component rendered was chosen from
+         the cookie at request time, so writing a new cookie changes nothing
+         they have already sent — the picker moved its tick, the chrome that
+         subscribes re-rendered, and the page around it stayed in the old
+         language until a hard reload. `router.refresh()` re-runs the current
+         route's server components with the new cookie and patches them in,
+         keeping client state and scroll position. It is what makes the control
+         a language switch rather than a preference that takes effect later. */
+      router.refresh();
+    },
+    [router],
+  );
 
   const value = useMemo<LocaleCtx>(
     () => ({ locale, setLocale, t: translator(locale) }),
