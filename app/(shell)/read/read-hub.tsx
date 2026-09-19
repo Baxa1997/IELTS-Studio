@@ -813,12 +813,35 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Three cards to a row, dropping to two and then one as the shell narrows.
- *  The columns come from `.pc-grid-3` in globals.css rather than an inline style,
- *  because an inline grid-template-columns would outrank its media queries and
- *  leave the grid stuck at three across on a phone. */
+/**
+ * Three cards to a row, dropping to two and then one as the shell narrows.
+ *
+ * ⚠️ INLINE, AND WITHOUT A MEDIA QUERY — deliberately, on both counts.
+ * A `.pc-grid-3` class in globals.css was the first attempt and never reached the
+ * running dev server: every other rule in that file was live, this one was not,
+ * and the grid silently fell back to block-stacked full-width cards. Writing the
+ * columns here removes the stylesheet from the question entirely.
+ *
+ * The cap is expressed in the track size rather than in breakpoints. Each track
+ * is at least a THIRD of the row, so a fourth column can never fit; once a third
+ * would be narrower than 280px the 280px floor wins instead and `auto-fit` drops
+ * the row to two, then one. That is why there is no media query for an inline
+ * style to outrank — the arithmetic is the breakpoint.
+ *
+ * 28px is the two 14px gaps between three columns; it has to match `gap` below.
+ */
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="pc-grid-3">{children}</div>;
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(max(280px, (100% - 28px) / 3), 1fr))",
+        gap: 14,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
