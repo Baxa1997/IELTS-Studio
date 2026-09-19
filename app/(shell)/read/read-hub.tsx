@@ -27,6 +27,7 @@ import {
   minutes,
   shortDate,
 } from "@/components/practice/card";
+import { levelChipForBand } from "@/lib/practice/levels";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/constants";
 import { titleCase } from "@/lib/reading/titles";
 
@@ -476,7 +477,7 @@ function TestTile({
         seq={seq}
         icon={<BookOpen size={12} strokeWidth={1.9} />}
         label="READING · ACADEMIC"
-        level={bandLabel(targetBand)}
+        level={levelChipForBand(targetBand)}
         dim={finished}
         pill={<TilePill state={state} graded={graded} locked={locked} />}
       />
@@ -560,7 +561,7 @@ function PassageTile({
         seq={seq}
         icon={<FileText size={12} strokeWidth={1.9} />}
         label="READING · PASSAGE"
-        level={bandLabel(p.difficulty)}
+        level={levelChipForBand(p.difficulty)}
         dim={finished}
         pill={<TilePill state={state} graded={graded} locked={locked} />}
       />
@@ -718,12 +719,6 @@ function TilePill({
   /* Nothing. The level used to live here, which meant it disappeared the moment
      the card had any state to report; it is a permanent chip in the head now. */
   return null;
-}
-
-/** The level chip's text. "Mixed" is honest for a test assembled from passages
- *  pitched at different bands — it is not a missing value. */
-function bandLabel(band: number | null): string {
-  return band != null ? `BAND ${band}` : "MIXED";
 }
 
 /** A full test is three passages, so the bar tracks passages and the label says

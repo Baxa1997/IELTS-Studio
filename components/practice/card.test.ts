@@ -657,9 +657,23 @@ describe("a finished card steps back and leads with the band", () => {
 });
 
 describe("the level is a fact about the content, so it never disappears", () => {
-  it("reaches the head of both hubs that have one", () => {
-    expect(READ, "reading passes no level").toContain("level={bandLabel(");
-    expect(LISTEN, "listening passes no level").toContain("level={`LEVEL ");
+  it("reaches the head of both hubs, off the one shared scale", () => {
+    /* ⚠️ BOTH THROUGH lib/practice/levels.ts, NOT A LOCAL FORMATTER. Reading
+       stores bands 4-9 and listening stores levels 1-5; a hub that formats its
+       own chip is how they came to be printing two different scales in the
+       first place, and nothing about a card would look wrong. */
+    /* Checked per PROP, not per file. Asserting the helper merely appears
+       somewhere passes while a second card beside it hand-builds its own chip —
+       which is exactly what the mutation did, and it went straight through. */
+    const props = [
+      ...[...READ.matchAll(/\blevel=\{([^\n]*)/g)].map((m) => ["read", m[1]] as const),
+      ...[...LISTEN.matchAll(/\blevel=\{([^\n]*)/g)].map((m) => ["listen", m[1]] as const),
+    ];
+    // Two reading cards (full test + single passage) and one listening card.
+    expect(props.length, "a card stopped showing its level").toBe(3);
+    for (const [hub, value] of props) {
+      expect(value, `${hub} formats a level chip of its own: ${value}`).toContain("levelChipFor");
+    }
   });
 
   it("is no longer the status pill's target state", () => {

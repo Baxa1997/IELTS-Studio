@@ -52,6 +52,7 @@ import {
   clock,
   shortDate,
 } from "@/components/practice/card";
+import { levelChipForLevel } from "@/lib/practice/levels";
 import { BAD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
 import type {
   Catalogue,
@@ -962,7 +963,8 @@ function ListenCard({
         ]}
         // Shown in every state now. It used to be the "target" status pill, so
         // it vanished as soon as the learner paused or finished the practice.
-        level={`LEVEL ${it.difficulty}`}
+        // Same 1-5 scale reading is mapped onto — see lib/practice/levels.ts.
+        level={levelChipForLevel(it.difficulty)}
         dim={state === "done"}
         pill={
           it.locked ? (

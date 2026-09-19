@@ -141,9 +141,10 @@ export function CardHead({
   /** Goes inside the skill pill, so it is drawn in the skill's colour. */
   icon?: ReactNode;
   label?: string;
-  /** What the content is pitched at — "BAND 6", "LEVEL 3". Shown in every
-   *  state, which is the whole point of it not being the status pill. */
-  level?: string | null;
+  /** What the content is pitched at — see lib/practice/levels.ts. Shown in
+   *  every state, which is the whole point of it not being the status pill.
+   *  The hint carries the band it maps to, so the scale is a hover away. */
+  level?: { text: string; hint?: string } | null;
   /** The chip carrying an icon is the skill and becomes the raised pill. */
   chips?: { icon?: ReactNode; label: string }[];
   pill?: ReactNode;
@@ -161,7 +162,7 @@ export function CardHead({
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <SeqTile seq={seq} tone={seqTone} dim={dim} />
         {skill ? <SkillPill icon={icon ?? skillChip?.icon} skill={skill} dim={dim} /> : null}
-        {level ? <MonoChip>{level}</MonoChip> : null}
+        {level ? <MonoChip title={level.hint}>{level.text}</MonoChip> : null}
         {details.map((d) => (
           <MonoChip key={d}>{d}</MonoChip>
         ))}
@@ -364,9 +365,10 @@ export function SeqTile({
  * Deliberately quiet: it sits next to a raised brand pill, and a second chip
  * competing with it would say the accent matters as much as the skill does.
  */
-export function MonoChip({ children }: { children: ReactNode }) {
+export function MonoChip({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <span
+      title={title}
       style={{
         display: "inline-flex",
         alignItems: "center",
