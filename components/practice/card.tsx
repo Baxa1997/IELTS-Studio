@@ -100,7 +100,7 @@ export function CardHead({
   seq: number;
   /** "ink" is Writing's dark tile; Reading and Listening use the brand tint. */
   seqTone?: "brand" | "ink";
-  /** Goes inside the skill pill, so it is drawn white on the brand. */
+  /** Goes inside the skill pill, so it is drawn white on the skill's colour. */
   icon?: ReactNode;
   label?: string;
   /** The chip carrying an icon is the skill and becomes the raised pill. */
@@ -117,9 +117,7 @@ export function CardHead({
              pill. Whatever follows it — Listening's accent — stays flat, so the
              pair reads as heading and detail rather than two of a kind. */
           c.icon ? (
-            <SkillPill key={c.label} icon={c.icon}>
-              {c.label}
-            </SkillPill>
+            <SkillPill key={c.label} icon={c.icon} skill={c.label} />
           ) : (
             <MonoChip key={c.label}>{c.label}</MonoChip>
           ),
@@ -131,15 +129,48 @@ export function CardHead({
 }
 
 /**
- * THE SKILL PILL — the raised brand chip that says READING / WRITING /
- * LISTENING, icon included.
+ * ONE COLOUR PER SKILL, so a card says what it is before anything is read.
+ *
+ * All three hubs share this card, and at a glance — in the sidebar's peripheral
+ * vision, or switching between Reading and Writing — an identical burgundy pill
+ * on every one of them carried no information. The fill is the fastest signal on
+ * the card, so it is the skill's.
+ *
+ * ⚠️ NONE OF THESE MAY BE GREEN OR AMBER. The status pill sits on the same row
+ * and uses green for an earned band and amber for an unfinished run; a skill
+ * wearing either would read as a result. That rules out the obvious "teal for
+ * audio", and is why Listening is blue.
+ *
+ * Writing's ink is not a new decision — the canvas already singles Writing out
+ * with the dark sequence tile (`seqTone="ink"`), which is the one place it drew
+ * the three hubs differently. Reading keeps the brand.
+ *
+ * Every base is checked against white in ./card.test.ts, because a fill that
+ * drifts light takes the label's legibility with it — which is the bug this
+ * pill was built to fix.
+ */
+const SKILL_TONE: Record<string, { top: string; base: string; foot: string; glow: string }> = {
+  READING: { top: "#A32552", base: BRAND, foot: "#6C0128", glow: "rgba(125,1,50,.30)" },
+  WRITING: { top: "#3E4354", base: "#242736", foot: "#171922", glow: "rgba(18,19,23,.32)" },
+  LISTENING: { top: "#2F5BB7", base: "#1D3F8F", foot: "#16306F", glow: "rgba(29,63,143,.32)" },
+};
+
+/** An unrecognised skill falls back to the brand — the look this pill had before
+ *  it had colours at all. A hub that renames its label therefore goes quietly
+ *  back to burgundy rather than breaking, so a test asserts the three hubs'
+ *  labels all land in the map. */
+const SKILL_FALLBACK = SKILL_TONE.READING;
+
+/**
+ * THE SKILL PILL — the raised chip that says READING / WRITING / LISTENING,
+ * icon included, in that skill's own colour.
  *
  * ⚠️ THIS IS THE ONE LINE THAT SAYS WHICH SKILL THE CARD IS, and on white it
  * kept disappearing. It was the canvas's 10px eyebrow in #8B919D — about 3:1
  * against white, under the 4.5:1 AA floor for text this small — then 11px in
- * #4A505C, which passes but still reads as small print. Set on the brand it is
- * white on #7D0132, roughly 12:1, and the fill does the work the type was being
- * asked to do on its own.
+ * #4A505C, which passes but still reads as small print. Set on a filled pill it
+ * is white on a dark ground — never under 9:1 for any of the three — and the
+ * fill does the work the type was being asked to do on its own.
  *
  * The raise is three declarations and every one is load-bearing:
  *   · the gradient gives the top a lit edge and the bottom a shaded one, which
@@ -150,7 +181,8 @@ export function CardHead({
  * explicitly to drop it, and on a card that already has a 1px edge of its own a
  * second ring 9px inside it reads as a mistake.
  */
-export function SkillPill({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
+export function SkillPill({ icon, skill }: { icon?: ReactNode; skill: string }) {
+  const t = SKILL_TONE[skill.trim().toUpperCase()] ?? SKILL_FALLBACK;
   return (
     <span
       style={{
@@ -161,9 +193,8 @@ export function SkillPill({ icon, children }: { icon?: ReactNode; children: Reac
         height: 23,
         padding: icon ? "0 11px 0 9px" : "0 11px",
         borderRadius: 9999,
-        background: `linear-gradient(180deg, #A32552 0%, ${BRAND} 55%, #6C0128 100%)`,
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 1px rgba(0,0,0,.22), 0 2px 5px rgba(125,1,50,.30)",
+        background: `linear-gradient(180deg, ${t.top} 0%, ${t.base} 55%, ${t.foot} 100%)`,
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 1px rgba(0,0,0,.22), 0 2px 5px ${t.glow}`,
         color: "#fff",
         textShadow: "0 1px 1px rgba(0,0,0,.25)",
         fontFamily: MONO,
@@ -174,7 +205,7 @@ export function SkillPill({ icon, children }: { icon?: ReactNode; children: Reac
       }}
     >
       {icon}
-      {children}
+      {skill}
     </span>
   );
 }
@@ -196,7 +227,7 @@ function CardEyebrow({ icon, label }: { icon?: ReactNode; label: string }) {
   const tail = cut === -1 ? "" : label.slice(cut + 3);
   return (
     <>
-      <SkillPill icon={icon}>{lead}</SkillPill>
+      <SkillPill icon={icon} skill={lead} />
       {tail ? (
         <span
           // The qualifiers are the first thing an ellipsis eats on a narrow

@@ -102,8 +102,72 @@ function shadowLayers(value: string): string[] {
   return value
     .replace(/rgba?\([^)]*\)/g, "«colour»")
     .split(",")
-    .map((p) => p.trim().replace(/^["'\s]+|["'\s,]+$/g, ""))
+    .map((p) => p.trim().replace(/^["'`\s]+|["'`\s,]+$/g, ""))
     .filter(Boolean);
+}
+
+/** `const NAME = "#hex"` from the kit, so SKILL_TONE's `base: BRAND` resolves. */
+const HEX_CONSTS: Record<string, string> = Object.fromEntries(
+  [...card.matchAll(/const ([A-Z_]+) = "(#[0-9A-Fa-f]{6})";/g)].map((m) => [m[1], m[2]]),
+);
+
+/** SKILL_TONE, read off the source with its constants resolved. */
+const SKILL_TONES: Record<string, { top: string; base: string; foot: string }> = (() => {
+  const at = card.indexOf("const SKILL_TONE: ");
+  expect(at, "SKILL_TONE moved or was renamed").toBeGreaterThan(-1);
+  const block = card.slice(at, card.indexOf("\n};", at));
+  const out: Record<string, { top: string; base: string; foot: string }> = {};
+  for (const m of block.matchAll(
+    /([A-Z]+): \{ top: "(#[0-9A-Fa-f]{6})", base: ([^,]+), foot: "(#[0-9A-Fa-f]{6})"/g,
+  )) {
+    const base = m[3].trim().replace(/"/g, "");
+    out[m[1]] = { top: m[2], base: HEX_CONSTS[base] ?? base, foot: m[4] };
+  }
+  return out;
+})();
+
+/** Contrast of white text on `hex`, per WCAG 2.x. */
+function contrastWithWhite(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const channels = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  const l = 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  return 1.05 / (l + 0.05);
+}
+
+/** Hue in degrees, for keeping a skill out of the status pill's green/amber arc. */
+function hue(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+  const max = Math.max(r, g, b);
+  const d = max - Math.min(r, g, b);
+  if (d === 0) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+
+/** Every skill label the three hubs hand to CardHead, in its three written
+ *  forms: `label="READING · …"`, `label={["WRITING", …]}` and `label: "LISTENING"`. */
+function skillsPassedByHubs(): string[] {
+  const hubs = [
+    "../../app/(shell)/read/read-hub.tsx",
+    "../../app/(shell)/write/library.tsx",
+    "../../app/(shell)/listen/listening-client.tsx",
+  ];
+  const found = new Set<string>();
+  for (const rel of hubs) {
+    const src = readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8");
+    for (const re of [
+      /label="([A-Z]{3,})(?:"| · )/g,
+      /label=\{\["([A-Z]{3,})"/g,
+      /label: "([A-Z]{3,})"/g,
+    ]) {
+      for (const m of src.matchAll(re)) found.add(m[1]);
+    }
+  }
+  return [...found];
 }
 
 /** The innermost `style={{ … }}` that declares `prop` — which is how a two-element
@@ -342,9 +406,14 @@ describe("the skill pill can actually be read", () => {
     expect(Number(/fontWeight: (\d+)/.exec(pill)?.[1])).toBeGreaterThanOrEqual(700);
   });
 
-  it("is white on the brand, which is where its contrast comes from", () => {
+  it("is white on its skill's colour, which is where its contrast comes from", () => {
     expect(styleProp(pill, "color")).toBe('"#fff"');
-    expect(styleValue(pill, "background")).toContain("BRAND");
+    // All three stops come from the skill's tone — a hardcoded stop would leave
+    // one band of the gradient burgundy on every hub.
+    const bg = styleValue(pill, "background");
+    for (const stop of ["t.top", "t.base", "t.foot"]) {
+      expect(bg, `the gradient does not use ${stop}`).toContain(stop);
+    }
   });
 
   it("carries no border", () => {
@@ -386,6 +455,52 @@ describe("the skill pill can actually be read", () => {
     const chip = styleCarrying(fnBody("MonoChip"), "letterSpacing");
     expect(/fontSize: (\d+)/.exec(chip)?.[1]).toBe(/fontSize: (\d+)/.exec(tail)?.[1]);
     expect(/fontWeight: (\d+)/.exec(chip)?.[1]).toBe(/fontWeight: (\d+)/.exec(tail)?.[1]);
+  });
+
+  it("gives each skill its own fill", () => {
+    const bases = Object.values(SKILL_TONES).map((t) => t.base);
+    expect(new Set(bases).size, "two skills share a fill — they stop differentiating").toBe(
+      bases.length,
+    );
+  });
+
+  it("keeps every fill readable under white text", () => {
+    /* ⚠️ THE WHOLE POINT OF THE PILL. A fill that drifts light takes the label's
+       legibility with it, which is the bug it was built to fix, and nothing but
+       the eye would catch it. 4.5:1 is the AA floor for text this size. */
+    for (const [skill, t] of Object.entries(SKILL_TONES)) {
+      // The top stop is the lightest part of the gradient, so it is the one that
+      // has to clear the floor — checking the base alone would miss a pale top.
+      for (const [part, hex] of [
+        ["base", t.base],
+        ["top", t.top],
+      ] as const) {
+        expect(
+          contrastWithWhite(hex),
+          `${skill}'s ${part} (${hex}) is too pale for white`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it("keeps every skill clear of the status pill's green and amber", () => {
+    /* The status pill sits on the same row: green is an earned band, amber an
+       unfinished run. A skill wearing either reads as a result. */
+    for (const [skill, t] of Object.entries(SKILL_TONES)) {
+      const h = hue(t.base);
+      expect(h < 35 || h > 200, `${skill} (${t.base}) is in the green/amber arc`).toBe(true);
+    }
+  });
+
+  it("has a fill for every skill the three hubs actually pass", () => {
+    /* ⚠️ THE FALLBACK IS SILENT. An unrecognised skill drops back to burgundy
+       rather than breaking, so a renamed label would take its colour with it and
+       nothing would say so. This is what notices. */
+    const passed = skillsPassedByHubs();
+    expect(passed.length, "found no skill labels — the regexes have gone stale").toBe(3);
+    for (const skill of passed) {
+      expect(Object.keys(SKILL_TONES), `${skill} has no fill and would fall back`).toContain(skill);
+    }
   });
 
   it("raises the skill and leaves the detail flat", () => {
