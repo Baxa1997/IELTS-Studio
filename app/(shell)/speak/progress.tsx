@@ -136,7 +136,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
         <polyline
           points={pts}
           fill="none"
-          stroke={BRAND}
+
           strokeWidth="2"
           strokeLinejoin="round"
           opacity="0.85"
@@ -148,7 +148,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
             cy={yOf(it.band)}
             r={it.kind === "mock" ? 4.4 : 3.4}
             fill={it.kind === "mock" ? BRAND : "#fff"}
-            stroke={BRAND}
+
             strokeWidth="2"
           />
         ))}

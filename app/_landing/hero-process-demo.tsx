@@ -11,7 +11,14 @@ import {
   SLATE_INK as INK,
   SLATE_LINE,
   SLATE_MUTED,
+  SLATE_GREEN,
+  SLATE_GREEN_BG,
+  SLATE_GREEN_LINE,
   WARM_AMBER as GOLD,
+  WARM_EDGE,
+  WARM_WELL,
+  WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 /**
@@ -31,7 +38,7 @@ import {
 
 const SANS = "var(--font-manrope), system-ui, sans-serif";
 const MONO = "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace";
-const EMERALD = "#1F8A5B";
+const EMERALD = SLATE_GREEN;
 
 const GRADE_MS = 12_000;
 const GEN_MS = 10_000;
@@ -51,9 +58,9 @@ function Mark({
   delay: number;
 }) {
   const colors = {
-    grammar: { bg: "rgba(224,168,46,.16)", line: GOLD },
-    spelling: { bg: "rgba(197,80,60,.14)", line: RED },
-    vocab: { bg: "rgba(125,1,50,.10)", line: INDIGO },
+    grammar: { bg: withAlpha(GOLD, 16), line: GOLD },
+    spelling: { bg: withAlpha(RED, 14), line: RED },
+    vocab: { bg: withAlpha(INDIGO, 10), line: INDIGO },
   }[tone];
   return (
     <span style={{ position: "relative", whiteSpace: "nowrap" }}>
@@ -101,7 +108,7 @@ function GradeScene() {
             position: "relative",
             fontSize: 14.5,
             lineHeight: 2,
-            color: "#4b493f",
+            color: SLATE_BODY,
             overflow: "hidden",
             borderRadius: 10,
           }}
@@ -169,7 +176,7 @@ function GradeScene() {
                 {c.band}
               </span>
             </div>
-            <div style={{ height: 6, borderRadius: 999, background: "#EFEDE3", overflow: "hidden" }}>
+            <div style={{ height: 6, borderRadius: 999, background: WARM_WELL, overflow: "hidden" }}>
               <div
                 className="hpd-bar"
                 style={{ animationDelay: `${c.d}s`, width: `${c.pct}%`, height: "100%", borderRadius: 999, background: c.color }}
@@ -199,8 +206,8 @@ function GradeScene() {
               fontSize: 12.5,
               fontWeight: 700,
               color: EMERALD,
-              background: "#e9f5ef",
-              border: "1px solid #cfe7da",
+              background: SLATE_GREEN_BG,
+              border: `1px solid ${SLATE_GREEN_LINE}`,
               borderRadius: 999,
               padding: "5px 12px",
               whiteSpace: "nowrap",
@@ -243,7 +250,7 @@ function GenScene() {
               width: `${w}%`,
               height: 9,
               borderRadius: 999,
-              background: "#E9E6DA",
+              background: WARM_WELL,
               marginBottom: 9,
             }}
           />
@@ -291,8 +298,8 @@ function GenScene() {
             display: "flex",
             alignItems: "center",
             gap: 12,
-            background: "#F7F6EF",
-            border: "1px solid #EAE7DE",
+            background: WARM_WELL,
+            border: `1px solid ${WARM_EDGE}`,
             borderRadius: 12,
             padding: "12px 14px",
           }}
@@ -323,7 +330,7 @@ function GenScene() {
                   animationDelay: `${1.4 + (i % 6) * 0.13}s`,
                   width: 3,
                   borderRadius: 2,
-                  background: i % 5 === 0 ? INDIGO : "#e8b9cb",
+                  background: i % 5 === 0 ? INDIGO : BRAND_LINE,
                   height: [10, 18, 26, 14, 22, 8][i % 6],
                   flex: "none",
                 }}
@@ -392,7 +399,7 @@ export function HeroProcessDemo() {
         maxWidth: 1280,
         margin: "46px auto 0",
         background: PANEL,
-        border: "1px solid #EAE7DE",
+        border: `1px solid ${WARM_EDGE}`,
         borderRadius: 22,
         boxShadow: "0 30px 60px -30px rgba(18,19,23,.18)",
         padding: "20px clamp(18px,3vw,30px) 22px",
@@ -423,7 +430,7 @@ export function HeroProcessDemo() {
           <span style={{ fontWeight: 700, fontSize: 15, color: INK }}>
             {scene === "grade" ? "AI Examiner" : "Practice generator"}
           </span>
-          <span style={{ fontSize: 14, color: "#908d80" }}>
+          <span style={{ fontSize: 14, color: SLATE_MUTED }}>
             {scene === "grade" ? "grading a Task 2 essay" : "composing a Cambridge-style test"}
           </span>
           <span style={{ display: "inline-flex", gap: 4, marginLeft: 2, alignItems: "center" }}>
@@ -451,8 +458,8 @@ export function HeroProcessDemo() {
                 fontFamily: "inherit",
                 fontSize: 12.5,
                 fontWeight: 700,
-                color: scene === key ? "#fff" : "#4a505c",
-                background: scene === key ? INDIGO : "#F3F1E5",
+                color: scene === key ? WHITE : SLATE_BODY,
+                background: scene === key ? INDIGO : WARM_WELL,
                 border: "1px solid " + (scene === key ? INDIGO : SLATE_LINE),
                 borderRadius: 999,
                 padding: "6px 14px",
@@ -479,13 +486,13 @@ const HPD_STYLES = `
 .hpd-scene{animation:hpd-fade .5s ease both}
 @keyframes hpd-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .hpd-scan{position:absolute;left:0;right:0;top:-30%;height:26%;pointer-events:none;
-  background:linear-gradient(180deg,transparent,rgba(125,1,50,.10) 45%,rgba(125,1,50,.16) 50%,rgba(125,1,50,.10) 55%,transparent);
+  background:linear-gradient(180deg,transparent,${withAlpha(INDIGO, 10)} 45%,${withAlpha(INDIGO, 16)} 50%,${withAlpha(INDIGO, 10)} 55%,transparent);
   animation:hpd-scan 3.4s cubic-bezier(.4,.2,.5,.9) .3s both}
 @keyframes hpd-scan{from{top:-30%}to{top:110%}}
 .hpd-mark{animation:hpd-mark .34s ease both}
 @keyframes hpd-mark{from{background:transparent;box-shadow:none}to{}}
 .hpd-tip{position:absolute;left:50%;bottom:calc(100% + 2px);transform:translateX(-50%);
-  font-size:10px;font-weight:700;letter-spacing:.01em;white-space:nowrap;background:#fff;
+  font-size:10px;font-weight:700;letter-spacing:.01em;white-space:nowrap;background:${PANEL};
   border:1px solid;border-radius:6px;padding:2px 7px;box-shadow:0 8px 16px -8px rgba(18,19,23,.3);
   animation:hpd-pop .3s cubic-bezier(.3,1.4,.5,1) both;z-index:2}
 @media (max-width:600px){.hpd-tip{display:none}}

@@ -3,7 +3,8 @@ import Link from "next/link";
 import {
   BODY,
   BRAND,
-  BRAND_DEEP,
+  BRAND_FILL,
+  BRAND_FILL_DEEP,
   BRAND_TINT,
   DISPLAY,
   eyebrow,
@@ -12,6 +13,7 @@ import {
   INK,
   ISLAND,
   LINE,
+  PANEL,
   RULE,
   SANS,
   solidButton,
@@ -181,14 +183,24 @@ export function CentersBand() {
           <Link
             href="/contact"
             className="lp-solid"
-            style={{ ...solidButton(), padding: "17px 32px", textAlign: "center", whiteSpace: "nowrap" }}
+            style={{
+              ...solidButton(),
+              padding: "17px 32px",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+            }}
           >
             Contact us
           </Link>
           <Link
             href="/how-to-use/education-centers"
             className="lp-ghost"
-            style={{ ...ghostButton(), padding: "17px 32px", textAlign: "center", display: "block" }}
+            style={{
+              ...ghostButton(),
+              padding: "17px 32px",
+              textAlign: "center",
+              display: "block",
+            }}
           >
             Center guide
           </Link>
@@ -214,14 +226,18 @@ export const DESIGN_CSS = `
     pointer-events:auto;
     max-width:${ISLAND.maxWidth}px;margin:0 auto;
     display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;
-    background:rgba(255,255,255,.92);
+    /* A TOKEN, NOT A WHITE. The island stays translucent in both themes — the
+       blur behind it is the effect — but the tint it carries has to follow the
+       page, or the header is a white pill floating on a near-black site with
+       the wordmark's near-white ink invisible on top of it. */
+    background:var(--mk-island);
     -webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);
     border:1px solid ${ISLAND.line};border-radius:999px;
     padding:9px 10px 9px 18px;
     box-shadow:${ISLAND.shadow};
     transition:box-shadow .2s ease,background .2s ease;
   }
-  .lp-island:hover{background:rgba(255,255,255,.97)}
+  .lp-island:hover{background:var(--mk-island-hover)}
 
   .lp-nav{display:inline-flex;align-items:center;justify-content:center;gap:2px}
   .lp-navlink{
@@ -231,7 +247,7 @@ export const DESIGN_CSS = `
     color:${BODY};text-decoration:none;
     transition:color .15s,background .15s;
   }
-  .lp-navlink:hover{color:${INK};background:rgba(18,19,23,.055)}
+  .lp-navlink:hover{color:${INK};background:var(--mk-island-wash)}
 
   .lp-nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px}
   .lp-island-cta{
@@ -239,24 +255,27 @@ export const DESIGN_CSS = `
     /* Holds its width through the signed-out → signed-in swap, so the row does
        not jump when the session resolves after paint. */
     min-width:124px;
-    background:${BRAND};color:${WHITE};
+    /* BRAND_FILL, not BRAND: the two are the same burgundy in light, and in
+       dark BRAND lightens to stay legible as TEXT, which leaves white on it at
+       3.8:1. A filled button needs the fill that still carries white. */
+    background:${BRAND_FILL};color:${WHITE};
     border-radius:999px;padding:10px 20px;
     font-family:${SANS};font-size:14.5px;font-weight:700;letter-spacing:-.005em;
     text-decoration:none;
     box-shadow:0 1px 0 rgba(255,255,255,.16) inset,0 6px 16px -8px rgba(125,1,50,.65);
     transition:background .15s,transform .15s;
   }
-  .lp-island-cta:hover{background:${BRAND_DEEP}}
+  .lp-island-cta:hover{background:${BRAND_FILL_DEEP}}
   .lp-island-cta:active{transform:translateY(1px)}
 
   .lp-burger{
     display:none;width:38px;height:38px;align-items:center;justify-content:center;
-    border:1px solid ${FIELD};border-radius:999px;background:${WHITE};
+    border:1px solid ${FIELD};border-radius:999px;background:${PANEL};
     color:${INK};cursor:pointer;
   }
   .lp-mobile-menu{
     position:absolute;left:16px;right:16px;top:calc(100% + 10px);
-    background:${WHITE};border:1px solid ${LINE};border-radius:22px;
+    background:${PANEL};border:1px solid ${LINE};border-radius:22px;
     box-shadow:0 24px 60px -24px rgba(18,19,23,.35);
     padding:14px;pointer-events:auto;
   }
@@ -276,7 +295,10 @@ export const DESIGN_CSS = `
     .lp-island-cta{min-width:0;padding:10px 15px;font-size:13.5px}
   }
   .lp-solid{transition:background .15s}
-  .lp-solid:hover{background:${BRAND_DEEP}}
+  /* solidButton() fills with BRAND_FILL and writes in WHITE, so its hover has to
+     stay on the fill ramp too — see BRAND_FILL_DEEP. (No backticks in here: this
+     is inside a template literal and one would end the string.) */
+  .lp-solid:hover{background:${BRAND_FILL_DEEP}}
   .lp-ghost{transition:border-color .15s,color .15s}
   .lp-ghost:hover{border-color:${BRAND};color:${BRAND}}
   .lp-card{transition:border-color .15s}

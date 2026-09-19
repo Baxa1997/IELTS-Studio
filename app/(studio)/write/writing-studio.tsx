@@ -514,14 +514,14 @@ export function WritingStudio({
                 {requirementList
                   .map((c) => (
                     <div key={c} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.soft, border: `1px solid ${theme.softLine}`, borderRadius: 10 }}>
-                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: SLATE_GREEN_BG, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: SLATE_GREEN_BG, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ stroke: EMERALD }} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
                       <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>{c}</span>
                     </div>
                   ))}
                 {/* live word-count requirement */}
                 <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 10 }}>
                   <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: lengthMet ? "#E5F3EA" : "#fff", border: lengthMet ? "none" : `2px solid ${theme.accentLine}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {lengthMet ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> : null}
+                    {lengthMet ? <svg style={{ stroke: EMERALD }} width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> : null}
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -550,7 +550,7 @@ export function WritingStudio({
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ fontFamily: SANS, fontSize: 13, color: SLATE_MUTED, fontWeight: 500 }}>{lengthMet ? "Target reached" : `${wordsToTarget} words to target`}</div>
               <div style={{ position: "relative", width: 46, height: 46 }}>
-                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke={theme.accentSoft} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" stroke={BRAND} strokeWidth="4.5" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={ringOffset} transform="rotate(-90 23 23)" style={{ transition: "stroke-dashoffset .35s ease" }} /></svg>
+                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" style={{ stroke: theme.accentSoft }} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" strokeWidth="4.5" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={ringOffset} transform="rotate(-90 23 23)" style={{ stroke: BRAND, transition: "stroke-dashoffset .35s ease" }} /></svg>
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontSize: 13, fontWeight: 800, color: INK, fontVariantNumeric: "tabular-nums" }}>{words}</div>
               </div>
             </div>
@@ -636,7 +636,7 @@ export function WritingStudio({
           {message ? (
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c2410c" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4M12 16h.01" /></svg>
           ) : (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            <svg style={{ stroke: EMERALD }} width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
           )}
         </span>
         <span style={{ fontFamily: SANS, fontSize: 13, color: SLATE_BODY }}>
@@ -837,7 +837,7 @@ function GradingOverlay({ theme }: { theme: StudioTheme }) {
           <span style={{ position: "relative", width: 66, height: 66, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
             <span className="lp-grade-ring" style={{ position: "absolute", inset: 0, borderRadius: "50%" }} aria-hidden />
             <span style={{ position: "absolute", inset: 7, borderRadius: "50%", background: PANEL, boxShadow: "inset 0 0 0 1px rgba(125,1,50,.12)" }} aria-hidden />
-            <svg className="lp-ai-spark" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ position: "relative" }}><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+            <svg className="lp-ai-spark" width="26" height="26" viewBox="0 0 24 24" fill="none" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: BRAND, position: "relative" }}><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
           </span>
           <h2 style={{ margin: "18px 0 0", fontFamily: SANS, fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-.01em" }}>
             Grading your essay

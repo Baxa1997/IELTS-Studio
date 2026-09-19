@@ -240,7 +240,7 @@ function AxisFigureView({ figure, big = false }: { figure: AxisFigure; big?: boo
           return (
             <g key={i}>
               <line x1={ML} y1={y} x2={W - MR} y2={y} stroke={GRID} strokeWidth={1} />
-              <text x={ML - 7} y={y + 3.5} textAnchor="end" fontSize={11} fill={MUTED} fontFamily={SANS}>
+              <text style={{ fill: MUTED }} x={ML - 7} y={y + 3.5} textAnchor="end" fontSize={11} fontFamily={SANS}>
                 {fmt(t)}
               </text>
             </g>
@@ -286,7 +286,7 @@ function AxisFigureView({ figure, big = false }: { figure: AxisFigure; big?: boo
                     width={Math.max(1, barW - 2)}
                     height={Math.max(0, yBase - y)}
                     rx={2}
-                    fill={color}
+
                     style={{ cursor: "pointer" }}
                     onMouseMove={(e) => report(e, labelOf(s.name, c), `${fmt(v)}${u}`)}
                   />
@@ -296,18 +296,18 @@ function AxisFigureView({ figure, big = false }: { figure: AxisFigure; big?: boo
 
         {/* x category labels */}
         {figure.categories.map((c, i) => (
-          <text key={i} x={bandCenter(i)} y={yBase + 16} textAnchor="middle" fontSize={11} fill={INK} fontFamily={SANS}>
+          <text style={{ fill: INK }} key={i} x={bandCenter(i)} y={yBase + 16} textAnchor="middle" fontSize={11} fontFamily={SANS}>
             {trunc(c, big ? 18 : 12)}
           </text>
         ))}
 
         {figure.x_label ? (
-          <text x={ML + plotW / 2} y={H - 4} textAnchor="middle" fontSize={11.5} fontWeight={600} fill={MUTED} fontFamily={SANS}>
+          <text style={{ fill: MUTED }} x={ML + plotW / 2} y={H - 4} textAnchor="middle" fontSize={11.5} fontWeight={600} fontFamily={SANS}>
             {figure.x_label}
           </text>
         ) : null}
         {figure.y_label ? (
-          <text x={12} y={MT + plotH / 2} textAnchor="middle" fontSize={11.5} fontWeight={600} fill={MUTED} fontFamily={SANS} transform={`rotate(-90 12 ${MT + plotH / 2})`}>
+          <text style={{ fill: MUTED }} x={12} y={MT + plotH / 2} textAnchor="middle" fontSize={11.5} fontWeight={600} fontFamily={SANS} transform={`rotate(-90 12 ${MT + plotH / 2})`}>
             {figure.y_label}
           </text>
         ) : null}

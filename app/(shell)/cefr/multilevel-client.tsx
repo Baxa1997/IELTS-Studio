@@ -3511,13 +3511,13 @@ function TaskStudio({
                 </span>
                 <div style={{ position: "relative", width: 44, height: 44 }}>
                   <svg width="44" height="44" viewBox="0 0 46 46">
-                    <circle cx="23" cy="23" r="19" fill="none" stroke={W_SOFT} strokeWidth="4.5" />
+                    <circle style={{ stroke: W_SOFT }} cx="23" cy="23" r="19" fill="none" strokeWidth="4.5" />
                     <circle
                       cx="23"
                       cy="23"
                       r="19"
                       fill="none"
-                      stroke={W_ACCENT}
+
                       strokeWidth="4.5"
                       strokeLinecap="round"
                       strokeDasharray={RING_C}

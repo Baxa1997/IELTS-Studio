@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 
-import { BRAND, BRAND_FILL, DISPLAY, INK as GROUND, MUTED as HEADING, SANS, WHITE } from "./design";
+import { BRAND, BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "./design";
 
 /**
  * The dark site footer.
@@ -40,12 +40,15 @@ const PHONE = "+998 97 711 68 12";
  *
  * Fill the other three in and they appear — nothing else needs changing.
  */
-const SOCIALS: { name: string; href: string | null; Icon: React.ComponentType<{ size?: number }> }[] =
-  [
-    { name: "Instagram", href: "https://instagram.com/engprogress", Icon: SiInstagram },
-    { name: "WhatsApp", href: `https://wa.me/${PHONE.replace(/[^0-9]/g, "")}`, Icon: SiWhatsapp },
-    { name: "Telegram", href: "https://t.me/engprogress_bot", Icon: SiTelegram },
-  ];
+const SOCIALS: {
+  name: string;
+  href: string | null;
+  Icon: React.ComponentType<{ size?: number }>;
+}[] = [
+  { name: "Instagram", href: "https://instagram.com/engprogress", Icon: SiInstagram },
+  { name: "WhatsApp", href: `https://wa.me/${PHONE.replace(/[^0-9]/g, "")}`, Icon: SiWhatsapp },
+  { name: "Telegram", href: "https://t.me/engprogress_bot", Icon: SiTelegram },
+];
 
 /**
  * The registered-entity line — the reference footer's last row (`IE: … INN: …`).
@@ -105,30 +108,47 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
 ];
 
 /* ── palette, on dark ──────────────────────────────────────────────────────── */
+/*
+ * ⚠️ EVERY COLOUR HERE IS WHITE AT SOME ALPHA, AND THAT IS DELIBERATE. The
+ * ground is `FOOTER_GROUND`, which is dark in BOTH themes, so white-on-it is
+ * correct in both and needs no dark variant. Reaching for an ink token instead
+ * is what broke this footer: `HEADING` was `MUTED`, which inverts, so in dark
+ * the column headings went light — on a band that had also gone light, because
+ * the ground was `INK`. Two tokens doing the opposite of their job.
+ */
 
 const LINK = "rgba(255,255,255,0.78)";
 const QUIET = "rgba(255,255,255,0.62)";
 const HAIRLINE = "rgba(255,255,255,0.10)";
 const DISC = "rgba(255,255,255,0.16)";
+/** Column headings and the fine print — the old `MUTED` (#8b919d) expressed as
+ *  white-on-this-ground, which is the same colour and cannot invert. */
+const HEADING = "rgba(255,255,255,0.55)";
 
 export function SiteFooter() {
   const socials = SOCIALS.filter((s) => s.href);
 
   return (
     <footer style={{ background: GROUND, color: LINK }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "72px 28px 0" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(260px,1.4fr) repeat(auto-fit,minmax(170px,1fr))",
-            gap: 40,
-          }}
-        >
+      <div className="ft-inner" style={{ maxWidth: 1240, margin: "0 auto" }}>
+        {/* THE COLUMNS ARE A CLASS, NOT AN INLINE STYLE, and they had to be: a
+            grid track's MINIMUM is a floor, not a hint, so
+            `minmax(260px,1.4fr) repeat(auto-fit,minmax(170px,1fr))` demands
+            260 + 4x170 = 940px however narrow the screen gets, and the footer
+            simply ran off the side of a phone. `auto-fit` collapses EMPTY
+            tracks; it does not reduce a count that does not fit. Only a media
+            query can, so the breakpoints live in FOOTER_CSS below. */}
+        <div className="ft-grid">
           {/* brand block */}
-          <div>
+          <div className="ft-brand">
             <Link
               href="/"
-              style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                textDecoration: "none",
+              }}
             >
               <span
                 aria-hidden
@@ -186,7 +206,11 @@ export function SiteFooter() {
                 fontSize: 15,
               }}
             >
-              <a href={`mailto:${CONTACT_EMAIL}`} className="ft-link" style={{ color: LINK, textDecoration: "none" }}>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="ft-link"
+                style={{ color: LINK, textDecoration: "none" }}
+              >
                 {CONTACT_EMAIL}
               </a>
               <a
@@ -282,7 +306,7 @@ export function SiteFooter() {
         </div>
 
         {/* hairline + the centred strip */}
-        <div style={{ borderTop: `1px solid ${HAIRLINE}`, marginTop: 56, padding: "30px 0 44px" }}>
+        <div className="ft-strip" style={{ borderTop: `1px solid ${HAIRLINE}` }}>
           <div
             style={{
               fontFamily: SANS,
@@ -347,4 +371,28 @@ export const FOOTER_CSS = `
   .ft-link:hover{color:#fff}
   .ft-disc{transition:border-color .15s,color .15s}
   .ft-disc:hover{border-color:${BRAND};color:#fff}
+
+  /* ── the columns, and the three widths they have to survive ───────────────
+     Every track minimum is wrapped in min(...,100%) so it can never be wider
+     than its container (the rule responsive.test.ts enforces), and the counts
+     step down at the two widths where they stop fitting: four link columns
+     beside the brand block, then two, then one. The brand block spans the row
+     once there are only two, because it carries the address and the socials
+     and reads as a header for them rather than as a fifth column. */
+  .ft-inner{padding:72px 28px 0}
+  .ft-grid{
+    display:grid;
+    grid-template-columns:minmax(min(260px,100%),1.4fr) repeat(auto-fit,minmax(min(170px,100%),1fr));
+    gap:40px;
+  }
+  .ft-strip{margin-top:56px;padding:30px 0 44px}
+  @media(max-width:900px){
+    .ft-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
+    .ft-brand{grid-column:1/-1}
+  }
+  @media(max-width:560px){
+    .ft-inner{padding:48px 20px 0}
+    .ft-grid{grid-template-columns:minmax(0,1fr);gap:28px}
+    .ft-strip{margin-top:36px;padding:24px 0 32px}
+  }
 `;

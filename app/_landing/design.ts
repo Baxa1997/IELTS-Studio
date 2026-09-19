@@ -21,6 +21,13 @@ export const BRAND = "var(--mk-brand)";
 /** The brand as a fill carrying WHITE text. Same value as `BRAND` in light, a
  *  darker orange in dark — see the note on `BRAND_FILL` in lib/theme/tokens. */
 export const BRAND_FILL = "var(--mk-brand-fill)";
+/** The pressed/hover state of a `BRAND_FILL` button.
+ *
+ *  ⚠️ NOT `BRAND_DEEP`. That is the ramp's "one step darker" in light and one
+ *  step LIGHTER in dark (by design — a dark surface needs the hover to come
+ *  toward the viewer), which drops white text on it to 3.0:1. A filled button
+ *  needs a hover that keeps its label legible, so this one darkens in both. */
+export const BRAND_FILL_DEEP = "var(--mk-brand-fill-deep)";
 
 /* The hero panel on the front door and sign-in: a three-stop brand gradient
  * carrying white copy. Deep in dark for that reason — see the note in
@@ -89,6 +96,30 @@ export const CANVAS = "var(--mk-canvas)";
 export const PAPER = "var(--mk-paper)";
 export const PAPER_RULE = "var(--mk-paper-rule)";
 
+/**
+ * THE FOOTER'S GROUND — dark in BOTH themes, which is the whole point of it.
+ *
+ * ⚠️ THE FOOTER USED TO TAKE `INK` FOR THIS and it is the clearest example in
+ * the codebase of a role confusion: #121317 is the right colour in light and
+ * the wrong ROLE, because ink inverts to near-white. The band turned white
+ * under a stack of `rgba(255,255,255,…)` text and the whole footer vanished.
+ *
+ * Everything drawn ON it is white-at-some-alpha, which is theme-independent
+ * precisely because this token is. Do not reach for `INK`, `MUTED` or any other
+ * ink token inside the footer — they invert and it does not.
+ */
+export const FOOTER_GROUND = "var(--mk-footer)";
+
+/**
+ * Fade a colour to `pct`% opacity.
+ *
+ * Re-exported from the app palette rather than written twice — the rule it
+ * encodes is the same on both sides of the product: `${BRAND}33` was a valid
+ * way to add alpha only while the tokens were hex literals, and it is a silently
+ * dropped declaration now that they are `var(--…)` strings.
+ */
+export { withAlpha } from "@/lib/theme/tokens";
+
 /* ── status ────────────────────────────────────────────────────────────────── */
 
 /** "Verified · calibrated", the stat delta, the Band-9 float. */
@@ -137,12 +168,13 @@ export const SHELL = { maxWidth: 1400, margin: "0 auto", padding: "0 28px" } as 
 export const ISLAND = {
   maxWidth: 1320,
   /** Warm white rather than a grey hairline — the border is catching light, not
-   *  drawing a box. */
-  line: "rgba(255,255,255,0.72)",
+   *  drawing a box. Dimmed in dark, where the same value is a bright ring. */
+  line: "var(--mk-island-line)",
   /** An inset highlight along the top plus a soft drop — what makes it read as
-   *  raised instead of merely outlined. */
-  shadow:
-    "0 1px 0 rgba(255,255,255,0.65) inset, 0 10px 30px -18px rgba(18,19,23,0.45), 0 2px 8px -4px rgba(18,19,23,0.08)",
+   *  raised instead of merely outlined. Both halves invert: in dark the
+   *  highlight nearly goes out and the drop becomes a real black one, because a
+   *  light shadow is invisible on a dark ground. */
+  shadow: "var(--mk-island-shadow)",
 } as const;
 
 /* ── display scale ─────────────────────────────────────────────────────────── */

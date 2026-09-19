@@ -808,6 +808,37 @@
 
   --mk-green: #1c7a4f;
   --mk-green-tint: #eaf6f0;
+
+  /* ── THE TWO MARKETING SURFACES THAT DO NOT INVERT WITH THE THEME ─────────
+   *
+   * THE FOOTER IS A DARK BAND IN BOTH THEMES. It was painted with `--mk-ink`,
+   * which is the right COLOUR in light and the wrong ROLE: ink inverts to
+   * near-white in dark, so the band turned white underneath text that is a
+   * stack of `rgba(255,255,255,…)` literals — white on white, the whole footer.
+   * A ground that carries fixed white copy has to be a ground token. In dark it
+   * goes slightly LIGHTER than the canvas (#0e0f13) rather than darker, so the
+   * band still reads as a band instead of merging into the page.
+   *
+   * The HEADER ISLAND is the mirror image: a translucent white pill that has to
+   * become a translucent dark one. It stays translucent in both — the blur
+   * behind it is the effect. */
+  --mk-footer: #121317;
+  --mk-island: rgba(255, 255, 255, 0.92);
+  --mk-island-hover: rgba(255, 255, 255, 0.97);
+  /* The nav link's hover wash: ink-tinted on a light island, light-tinted on a
+     dark one. */
+  --mk-island-wash: rgba(18, 19, 23, 0.055);
+  /* The island's edge and its raised look. Both are WHITE LIGHT in light mode —
+     the border is catching light rather than drawing a box — which on a dark
+     pill reads as a bright ring and a glowing top edge, so both dim in dark. */
+  --mk-island-line: rgba(255, 255, 255, 0.72);
+  --mk-island-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 10px 30px -18px rgba(18, 19, 23, 0.45),
+    0 2px 8px -4px rgba(18, 19, 23, 0.08);
+  /* A filled brand button's PRESSED colour. `--mk-brand-deep` cannot do this
+     job in dark: the ramp deliberately goes LIGHTER on hover there, and white
+     on #e97338 is 3.0:1 — a hover that makes the label harder to read. */
+  --mk-brand-fill-deep: #5c0125;
 }
 
 .dark {
@@ -842,6 +873,16 @@
 
   --mk-green: #3fbf85;
   --mk-green-tint: #122a1f;
+
+  --mk-footer: #16171d;
+  --mk-island: rgba(22, 23, 29, 0.92);
+  --mk-island-hover: rgba(28, 29, 36, 0.97);
+  --mk-island-wash: rgba(237, 238, 242, 0.08);
+  --mk-island-line: rgba(255, 255, 255, 0.1);
+  --mk-island-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 10px 30px -18px rgba(0, 0, 0, 0.8),
+    0 2px 8px -4px rgba(0, 0, 0, 0.5);
+  --mk-brand-fill-deep: #a93c14; /* white clears 6.3:1 */
 }
 
 /* ── THE SHELL PALETTE (`--sh-*`) ──────────────────────────────────────────

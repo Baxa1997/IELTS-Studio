@@ -203,7 +203,7 @@ function DiagnosticStep({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 11 }}>
           {chips.map((c, i) => (
             <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: MUTED, background: WELL, border: "1px solid #ECEADC", borderRadius: 8, padding: "5px 10px" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg style={{ stroke: BRAND }} width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 {i === 0 ? (
                   <>
                     <circle cx="12" cy="12" r="9" />

@@ -318,8 +318,8 @@ function TipCard({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ borderRadius: 12, background: "#FFF6E7", border: "1px solid #F4E6C9", padding: "13px 15px", display: "flex", alignItems: "flex-start", gap: 10 }}>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginTop: 1, flexShrink: 0 }} aria-hidden>
-        <circle cx="8" cy="8" r="7" stroke={AMBER} strokeWidth="1.5" />
-        <path d="M8 5v4M8 11v1" stroke={AMBER} strokeWidth="1.5" strokeLinecap="round" />
+        <circle style={{ stroke: AMBER }} cx="8" cy="8" r="7" strokeWidth="1.5" />
+        <path style={{ stroke: AMBER }} d="M8 5v4M8 11v1" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
       <p style={{ margin: 0, fontFamily: SANS, fontSize: 12.5, color: MUTED, lineHeight: 1.6 }}>{children}</p>
     </div>

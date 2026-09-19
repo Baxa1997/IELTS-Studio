@@ -97,7 +97,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
         position: "fixed",
         inset: 0,
         zIndex: 60,
-        background: "rgba(18,19,23,0.55)",
+        background: "var(--tk-scrim)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

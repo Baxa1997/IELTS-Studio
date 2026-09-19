@@ -7,6 +7,7 @@ import { bandColor as productBandColor } from "@/lib/ui/band";
 import {
   BRAND,
   BRAND as INDIGO,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_LINE as ACC_LINE,
   BRAND_LINE as V_BORDER,
@@ -27,9 +28,16 @@ import {
   SLATE_INK as INK,
   SLATE_LINE,
   SLATE_LINE as LINE,
+  SLATE_AMBER,
+  SLATE_AMBER_BG,
+  SLATE_FIELD,
+  SLATE_GREEN_BG,
   SLATE_MUTED,
   SLATE_MUTED as FAINT,
+  SLATE_RED,
+  SLATE_RED_BG,
   SLATE_STRONG,
+  WARM_WELL,
   WARM_AMBER as AMBER,
   WARM_EDGE as SP_LINE,
   WARM_LINE_SOFT,
@@ -82,14 +90,14 @@ function bandColor(band: number) {
   if (c.label !== "Competent") return c;
   return { ...c, fg: INDIGO, bg: BRAND_SOFT };
 }
-const EMERALD = "#2f8f5b";
+const EMERALD = SLATE_GREEN;
 
 // cream studio palette
 
 // listening accent palette — the real runner's violet, mapped onto the
 // burgundy scale so the mock screens match the page they sit on
-const V = "#9c1442";
-const V_SOFT = "#fef7fa";
+const V = BRAND;
+const V_SOFT = V_BG;
 
 const useIso = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -150,7 +158,7 @@ export function Frame({ children }: { children: React.ReactNode }) {
           gap: 10,
           padding: "10px 14px",
           borderBottom: "1px solid #EEECE0",
-          background: "#FBFAF5",
+          background: WELL,
         }}
       >
         <span style={{ display: "flex", gap: 6, flex: "none" }}>
@@ -183,30 +191,38 @@ export function Frame({ children }: { children: React.ReactNode }) {
 
 // ---- tiny inline icons -----------------------------------------------------
 
-function Arrow({ c = "#fff", s = 16 }: { c?: string; s?: number }) {
+/* ⚠️ THE COLOUR GOES IN `style`, NEVER IN THE `stroke`/`fill` ATTRIBUTE. These
+   take tokens now, and a token is a `var(--…)` string: a CSS custom property is
+   not valid in an SVG presentation attribute, does not resolve, and renders the
+   shape BLACK without throwing or logging. `style` resolves it. Guarded by
+   components/practice/svg-vars.test.ts. */
+function Arrow({ c = WHITE, s = 16 }: { c?: string; s?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ stroke: c }} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
 }
 function Check({ c = EMERALD, s = 13 }: { c?: string; s?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ stroke: c }} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 6 9 17l-5-5" />
     </svg>
   );
 }
-function Spark({ c = "#fff", s = 16 }: { c?: string; s?: number }) {
+function Spark({ c = WHITE, s = 16 }: { c?: string; s?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" style={{ stroke: c }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" />
     </svg>
   );
 }
-function Flame({ c = "#fff", s = 14 }: { c?: string; s?: number }) {
+/* `filled` used to be inferred by comparing `c` to the literal "#fff" the
+   callers passed. A token is a var() string, so that comparison can never be
+   true again — it is an explicit prop now rather than a silent always-filled. */
+function Flame({ c = WHITE, s = 14, filled = true }: { c?: string; s?: number; filled?: boolean }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill={c === "#fff" ? "none" : c} stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={s} height={s} viewBox="0 0 24 24" style={{ fill: filled ? c : "none", stroke: c }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8.5 14.5A4.5 4.5 0 1 0 16 11c-1.5 2-3 2.5-3 2.5s2-4-3-8c0 0 .5 4-2 6.5" />
     </svg>
   );
@@ -225,9 +241,9 @@ function TaskPill({ children }: { children: React.ReactNode }) {
 }
 
 const MARK = {
-  spelling: { bg: "#FCEFC7", fg: "#9A6A12" },
+  spelling: { bg: SLATE_AMBER_BG, fg: SLATE_AMBER },
   vocab: { bg: BRAND_SOFT, fg: BRAND },
-  grammar: { bg: "#FBE0DC", fg: "#C5503C" },
+  grammar: { bg: SLATE_RED_BG, fg: SLATE_RED },
 };
 function Mk({ kind, n, children }: { kind: keyof typeof MARK; n: number; children: React.ReactNode }) {
   const st = MARK[kind];
@@ -254,18 +270,18 @@ function WritingFeedbackScreen() {
       <div style={{ height: 60, flex: "none", background: PANEL, borderBottom: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${WARM_LINE_SOFT}`, background: SOFT, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ stroke: SLATE_STRONG }} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             Activities
           </span>
           <span style={{ width: 1, height: 24, background: LINE }} />
           <TaskPill>TASK 2</TaskPill>
           <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>Essay feedback</span>
-          <span style={{ color: "#C7C3B4" }}>·</span>
+          <span style={{ color: SLATE_MUTED }}>·</span>
           <span style={{ fontSize: 14, color: SLATE_MUTED }}>Living alone</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: `1px solid ${WARM_LINE_SOFT}`, background: SOFT, borderRadius: 10, fontSize: 13.5, fontWeight: 600, color: SLATE_STRONG }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b4150" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ stroke: SLATE_STRONG }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
             Export PDF
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", borderRadius: 10, background: INDIGO_FILL, color: ON_INDIGO, fontSize: 14, fontWeight: 700, boxShadow: "0 6px 16px -6px rgba(125,1,50,.7)" }}>
@@ -285,21 +301,21 @@ function WritingFeedbackScreen() {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: "var(--tk-slate-green-bg)", border: "1px solid #CDE9D8", borderRadius: 11 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: EMERALD }} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
             <span style={{ fontSize: 13.5, color: "var(--tk-slate-green)", fontWeight: 600 }}>Up to <strong style={{ fontWeight: 800, color: SLATE_GREEN }}>7.0</strong> with the fixes</span>
           </div>
         </div>
         <div style={{ flex: 1, display: "flex", gap: 12 }}>
           {tiles.map((t) => (
-            <div key={t.label} style={{ flex: 1, background: t.blk ? "#FCEEEA" : SOFT, border: `1px solid ${t.blk ? "#F3CFC6" : "#eceef2"}`, borderRadius: 12, padding: "11px 14px" }}>
+            <div key={t.label} style={{ flex: 1, background: t.blk ? SLATE_RED_BG : SOFT, border: `1px solid ${t.blk ? BRAND_LINE : SOFTLINE}`, borderRadius: 12, padding: "11px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: MUTED }}>{t.label}</span>
                 <span style={{ fontSize: 21, fontWeight: 800, color: t.blk ? RED : t.color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{t.band.toFixed(1)}</span>
               </div>
-              <div style={{ marginTop: 9, height: 5, borderRadius: 3, background: t.blk ? "#F3DAD3" : "#EEEAE0", overflow: "hidden" }}>
+              <div style={{ marginTop: 9, height: 5, borderRadius: 3, background: t.blk ? SLATE_RED_BG : WARM_WELL, overflow: "hidden" }}>
                 <div style={{ width: `${Math.round((t.band / 9) * 100)}%`, height: "100%", borderRadius: 3, background: t.blk ? RED : t.color }} />
               </div>
-              <div style={{ marginTop: 7, fontSize: 11.5, fontWeight: 600, color: t.blk ? RED : t.color === AMBER ? AMBER : "#9A8F77" }}>{t.tag}</div>
+              <div style={{ marginTop: 7, fontSize: 11.5, fontWeight: 600, color: t.blk ? RED : t.color === AMBER ? AMBER : SLATE_MUTED }}>{t.tag}</div>
             </div>
           ))}
         </div>
@@ -324,12 +340,12 @@ function WritingFeedbackScreen() {
             </div>
           </div>
           <div style={{ flex: 1, padding: "30px 40px", overflow: "hidden" }}>
-            <div style={{ maxWidth: 720, fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: "#241017" }}>
+            <div style={{ maxWidth: 720, fontFamily: SERIF, fontSize: 18, lineHeight: 2.0, color: SLATE_INK }}>
               In recent decades, the number of people choosing to live alone has risen sharply. While some regard this as a sign of social breakdown, I believe it <Mk kind="vocab" n={1}>primarily reflects</Mk> greater <Mk kind="spelling" n={2}>independance</Mk> and should be seen as a positive development.
               {"\n\n"}
               Firstly, living alone allows individuals to develop essential life skills. When a person is solely responsible for cooking, budgeting and cleaning, they inevitably become more self-reliant. For example, a young graduate who rents their own flat must learn to manage money carefully, which <Mk kind="grammar" n={3}>builds a discipline that benefits them later in life</Mk>.
             </div>
-            <p style={{ maxWidth: 720, margin: "26px 0 0", fontFamily: SANS, fontSize: 11.5, color: "#A7ABBA" }}>AI-estimated bands — not affiliated with or endorsed by IELTS®.</p>
+            <p style={{ maxWidth: 720, margin: "26px 0 0", fontFamily: SANS, fontSize: 11.5, color: SLATE_MUTED }}>AI-estimated bands — not affiliated with or endorsed by IELTS®.</p>
           </div>
         </div>
 
@@ -338,18 +354,18 @@ function WritingFeedbackScreen() {
           <div style={{ flex: "none", padding: "14px 16px", borderBottom: `1px solid ${SOFTLINE}` }}>
             <div style={{ display: "flex", gap: 4, background: WELL, borderRadius: 11, padding: 4 }}>
               {["Bands", "Fixes · 3", "Insights", "Write it better"].map((t, i) => (
-                <span key={t} style={{ flex: 1, textAlign: "center", height: 34, lineHeight: "34px", borderRadius: 8, fontSize: 13.5, fontWeight: 700, background: i === 0 ? "#fff" : "transparent", color: i === 0 ? INK : SLATE_MUTED, boxShadow: i === 0 ? "0 1px 3px rgba(26,33,56,.14)" : "none" }}>{t}</span>
+                <span key={t} style={{ flex: 1, textAlign: "center", height: 34, lineHeight: "34px", borderRadius: 8, fontSize: 13.5, fontWeight: 700, background: i === 0 ? PANEL : "transparent", color: i === 0 ? INK : SLATE_MUTED, boxShadow: i === 0 ? "0 1px 3px rgba(26,33,56,.14)" : "none" }}>{t}</span>
               ))}
             </div>
           </div>
           <div style={{ flex: 1, padding: 16, overflow: "hidden" }}>
             <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+                <svg style={{ stroke: RED }} width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
                 <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
                 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: SLATE_GREEN, background: "var(--tk-slate-green-bg)", border: "1px solid #CDE9D8", padding: "2px 8px", borderRadius: 999 }}>+0.5 band</span>
               </div>
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "#3b2932" }}>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: SLATE_STRONG }}>
                 <strong style={{ color: INK }}>Task Response</strong> — you state a clear position, but the counter-view is only mentioned, not developed. Give both sides equal, specific support to clear Band 7.
               </p>
             </div>
@@ -366,7 +382,7 @@ function WritingFeedbackScreen() {
                 <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: SLATE_STRONG }}>You argue living alone builds independence with a clear graduate example, but never address why others see it as “social breakdown”.</p>
               </div>
               <div style={{ display: "flex", gap: 10, padding: "11px 12px", background: SOFT, border: `1px solid ${SOFTLINE}`, borderRadius: 10 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: INDIGO, flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
                 <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: SLATE_INK }}><strong style={{ color: INDIGO }}>Fix:</strong> add one body paragraph that fairly develops the opposing view, then rebut it — that balance is what separates Band 6 from Band 7.</p>
               </div>
             </div>
@@ -391,18 +407,18 @@ function WritingStudioScreen() {
       <div style={{ height: 62, flex: "none", background: PANEL, borderBottom: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${LINE}`, background: SOFT, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ stroke: SLATE_STRONG }} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             Library
           </span>
           <span style={{ width: 1, height: 24, background: LINE }} />
           <TaskPill>TASK 2</TaskPill>
           <span style={{ fontSize: 14, fontWeight: 500, color: SLATE_STRONG }}>Academic Writing</span>
-          <span style={{ color: "#C7C3B4" }}>·</span>
+          <span style={{ color: SLATE_MUTED }}>·</span>
           <span style={{ fontSize: 14, color: SLATE_MUTED }}>Education</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${LINE}`, borderRadius: 9, background: SOFT, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 15, color: INK }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={INDIGO} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M12 2h0" /></svg>
+            <svg style={{ stroke: INDIGO }} width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M12 2h0" /></svg>
             34:12
           </span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600, color: EMERALD }}><Check c={EMERALD} s={13} /> Saved</span>
@@ -419,7 +435,7 @@ function WritingStudioScreen() {
         <div style={{ width: 356, flex: "none", background: PANEL, border: `1px solid ${LINE}`, borderRadius: 14, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 16px", borderBottom: `1px solid ${SOFTLINE}` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 13 }}>
-              <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: "#9A9684" }}>THE TASK</span>
+              <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: SLATE_MUTED }}>THE TASK</span>
               <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 11px", borderRadius: 7, background: ACC_SOFT, color: INDIGO, fontSize: 12.5, fontWeight: 700 }}>Agree / Disagree</span>
             </div>
             <p style={{ margin: 0, fontFamily: SERIF, fontSize: 19.5, lineHeight: 1.4, fontWeight: 600, color: INK }}>Some people believe unpaid community service should be a compulsory part of high-school programmes.</p>
@@ -430,12 +446,12 @@ function WritingStudioScreen() {
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {["Give reasons & examples", "~40 minutes"].map((c) => (
                 <div key={c} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: SOFT, border: `1px solid ${SOFTLINE}`, borderRadius: 10 }}>
-                  <span style={{ flex: "none", width: 22, height: 22, borderRadius: 6, background: "#E5F3EA", display: "flex", alignItems: "center", justifyContent: "center" }}><Check /></span>
+                  <span style={{ flex: "none", width: 22, height: 22, borderRadius: 6, background: SLATE_GREEN_BG, display: "flex", alignItems: "center", justifyContent: "center" }}><Check /></span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: SLATE_INK }}>{c}</span>
                 </div>
               ))}
               <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: ACC_SOFT, border: `1px solid ${ACC_LINE}`, borderRadius: 10 }}>
-                <span style={{ flex: "none", width: 22, height: 22, borderRadius: 6, background: "#E5F3EA", display: "flex", alignItems: "center", justifyContent: "center" }}><Check /></span>
+                <span style={{ flex: "none", width: 22, height: 22, borderRadius: 6, background: SLATE_GREEN_BG, display: "flex", alignItems: "center", justifyContent: "center" }}><Check /></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: SLATE_INK }}>At least {minWords} words</span>
@@ -455,13 +471,13 @@ function WritingStudioScreen() {
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <span style={{ fontSize: 13, color: SLATE_MUTED, fontWeight: 500 }}>Target reached</span>
               <div style={{ position: "relative", width: 46, height: 46 }}>
-                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke={ACC_SOFT} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" stroke={INDIGO} strokeWidth="4.5" strokeLinecap="round" strokeDasharray="119.4" strokeDashoffset="0" transform="rotate(-90 23 23)" /></svg>
+                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" style={{ stroke: ACC_SOFT }} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" style={{ stroke: INDIGO }} strokeWidth="4.5" strokeLinecap="round" strokeDasharray="119.4" strokeDashoffset="0" transform="rotate(-90 23 23)" /></svg>
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: INK, fontVariantNumeric: "tabular-nums" }}>{words}</div>
               </div>
             </div>
           </div>
           <div style={{ flex: 1, minHeight: 0, padding: "26px 30px", overflow: "hidden" }}>
-            <div style={{ maxWidth: 640, fontFamily: SERIF, fontSize: 16.5, lineHeight: 1.85, color: "#261218" }}>
+            <div style={{ maxWidth: 640, fontFamily: SERIF, fontSize: 16.5, lineHeight: 1.85, color: SLATE_INK }}>
               I strongly agree that a period of unpaid community service should be built into high-school education. Requiring young people to contribute to their communities develops empathy and practical skills that classroom study alone cannot provide.
               {"\n\n"}
               The most compelling argument is that community service exposes students to lives very different from their own. A teenager who spends a term helping at a care home, for instance, learns patience and responsibility while seeing first-hand the challenges older people face…
@@ -491,7 +507,7 @@ function WritingStudioScreen() {
             <div style={{ display: "flex", gap: 8 }}>
               <span style={{ flex: 1, padding: "9px 11px", border: `1px solid ${BRAND_LINE}`, borderRadius: 10, fontSize: 13.5, color: SLATE_MUTED }}>Ask your coach…</span>
               <span style={{ width: 40, borderRadius: 10, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: WHITE }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
               </span>
             </div>
           </div>
@@ -514,7 +530,7 @@ function ReadingScreen() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", flex: "none", borderBottom: "1px solid #EEEDF4" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: SLATE_BODY, fontSize: 14.5, fontWeight: 600 }}><span style={{ fontSize: 16 }}>‹</span> Exit</span>
-          <span style={{ width: 1, height: 22, background: "#ECEBF2" }} />
+          <span style={{ width: 1, height: 22, background: INDIGO_SOFT }} />
           <span style={{ fontSize: 14.5, fontWeight: 600, color: INK }}>Academic Reading · Passage practice</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -539,17 +555,17 @@ function ReadingScreen() {
           <div style={{ maxWidth: 620 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ background: BRAND_SOFT, color: INDIGO, fontWeight: 700, fontSize: 12.5, padding: "5px 12px", borderRadius: 8 }}>Reading Passage</span>
-              <span style={{ fontSize: 12.5, fontWeight: 500, color: "#9a96a8" }}>Urban design</span>
+              <span style={{ fontSize: 12.5, fontWeight: 500, color: SLATE_MUTED }}>Urban design</span>
             </div>
             <p style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: SLATE_MUTED, margin: "12px 0 0" }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b919d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 11-6 6v3h3l6-6M13 7l4 4M18 2l4 4-9 9H9v-4l9-9Z" /></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ stroke: SLATE_MUTED }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 11-6 6v3h3l6-6M13 7l4 4M18 2l4 4-9 9H9v-4l9-9Z" /></svg>
               Select a word to see its meaning — or pick a pen above to highlight.
             </p>
             <p style={{ fontSize: 14, fontStyle: "italic", color: MUTED, margin: "14px 0 0", lineHeight: 1.5 }}>
               You should spend about 20 minutes on <strong style={{ fontStyle: "normal", color: INK }}>Questions 1–{total}</strong>, which are based on the reading passage below.
             </p>
             <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 29, letterSpacing: "-.01em", color: INK, margin: "10px 0 20px" }}>The Rise of the Urban Park</h1>
-            <div style={{ lineHeight: 1.75, color: "#33202a", fontSize: 16 }}>
+            <div style={{ lineHeight: 1.75, color: SLATE_INK, fontSize: 16 }}>
               For most of human history, cities were dense, walled and almost entirely paved. The idea that a metropolis should set aside large tracts of land purely for recreation would have struck a medieval planner as absurd — space inside the walls was far too valuable to leave unbuilt.
               {"\n\n"}
               The change came in the nineteenth century, as industrial cities swelled and their air grew thick with smoke. Reformers began to argue that access to greenery was not a luxury but a public-health necessity, and that a walk among trees could restore workers exhausted by the factory floor…
@@ -559,7 +575,7 @@ function ReadingScreen() {
 
         {/* questions */}
         <div style={{ width: "44%", flex: "none", padding: "28px 40px", overflow: "hidden" }}>
-          <div style={{ background: "#F7F7FC", border: "1px solid #ECEBF4", borderRadius: 12, padding: "14px 16px", marginBottom: 18 }}>
+          <div style={{ background: CANVAS, border: "1px solid #ECEBF4", borderRadius: 12, padding: "14px 16px", marginBottom: 18 }}>
             <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".04em", color: INDIGO }}>QUESTIONS 1–5</div>
             <p style={{ margin: "6px 0 0", fontSize: 14, lineHeight: 1.5, color: SLATE_STRONG }}>Do the following statements agree with the information in the passage? Choose <strong>TRUE</strong>, <strong>FALSE</strong> or <strong>NOT GIVEN</strong>.</p>
           </div>
@@ -570,14 +586,14 @@ function ReadingScreen() {
           ].map((q) => (
             <div key={q.n} style={{ padding: "12px 0", borderBottom: "1px solid #F1F0F7" }}>
               <div style={{ display: "flex", gap: 10 }}>
-                <span style={{ flex: "none", width: 24, height: 24, borderRadius: 999, border: `1.5px solid ${q.pick ? INDIGO : "#ece0e5"}`, background: q.pick ? INDIGO : "#fff", color: q.pick ? "#fff" : "#8b919d", fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{q.n}</span>
+                <span style={{ flex: "none", width: 24, height: 24, borderRadius: 999, border: `1.5px solid ${q.pick ? INDIGO : SP_LINE}`, background: q.pick ? INDIGO : PANEL, color: q.pick ? WHITE : SLATE_MUTED, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{q.n}</span>
                 <span style={{ fontSize: 14.5, lineHeight: 1.45, color: SLATE_INK }}>{q.t}</span>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10, marginLeft: 34 }}>
                 {["TRUE", "FALSE", "NOT GIVEN"].map((o) => {
                   const on = q.pick === o;
                   return (
-                    <span key={o} style={{ fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${on ? INDIGO : "#ece0e5"}`, background: on ? "#EEF0FF" : "#fff", color: on ? INDIGO : SLATE_MUTED }}>{o}</span>
+                    <span key={o} style={{ fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${on ? INDIGO : SP_LINE}`, background: on ? INDIGO_SOFT : PANEL, color: on ? INDIGO : SLATE_MUTED }}>{o}</span>
                   );
                 })}
               </div>
@@ -594,7 +610,7 @@ function ReadingScreen() {
           const style: React.CSSProperties = { width: 30, height: 30, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, border: "1.5px solid", fontVariantNumeric: "tabular-nums" };
           if (isCur) return <span key={n} style={{ ...style, borderColor: INDIGO, background: PANEL, color: INDIGO, boxShadow: "0 0 0 3px rgba(79,70,229,.16)" }}>{n}</span>;
           if (isAnswered) return <span key={n} style={{ ...style, borderColor: INDIGO, background: INDIGO, color: WHITE }}>{n}</span>;
-          return <span key={n} style={{ ...style, borderColor: "#ece0e5", background: PANEL, color: SLATE_MUTED }}>{n}</span>;
+          return <span key={n} style={{ ...style, borderColor: SP_LINE, background: PANEL, color: SLATE_MUTED }}>{n}</span>;
         })}
       </div>
     </div>
@@ -607,7 +623,7 @@ function ReadingScreen() {
 
 function ListeningScreen() {
   const gap = (val?: string) => (
-    <span style={{ display: "inline-flex", minWidth: 96, height: 30, padding: "0 10px", margin: "0 2px", alignItems: "center", borderRadius: 8, border: `1.5px solid ${val ? "#e8b9cb" : "#e6e6ed"}`, background: val ? V_SOFT : "#fff", color: val ? "#5c0125" : "transparent", fontSize: 14.5, fontWeight: 600, verticalAlign: "middle" }}>
+    <span style={{ display: "inline-flex", minWidth: 96, height: 30, padding: "0 10px", margin: "0 2px", alignItems: "center", borderRadius: 8, border: `1.5px solid ${val ? V_BORDER : LINE}`, background: val ? V_SOFT : PANEL, color: val ? BRAND : "transparent", fontSize: 14.5, fontWeight: 600, verticalAlign: "middle" }}>
       {val ?? " "}
     </span>
   );
@@ -632,13 +648,13 @@ function ListeningScreen() {
       </div>
 
       {/* part tabs */}
-      <div style={{ flex: "none", display: "flex", gap: 6, padding: "12px 24px", background: "#faf9ff", borderBottom: "1px solid #ececf1" }}>
+      <div style={{ flex: "none", display: "flex", gap: 6, padding: "12px 24px", background: WELL, borderBottom: "1px solid #ececf1" }}>
         {[1, 2, 3, 4].map((p) => {
           const active = p === 2;
           const done = p === 1;
           return (
-            <span key={p} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, border: `1px solid ${active ? V_BORDER : "#ececf1"}`, background: active ? V_BG : "#fff", color: active ? "#6d0b2c" : "#6b6f7e" }}>
-              {done ? <Check c="#1b9e54" s={13} /> : null}
+            <span key={p} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 9, fontSize: 13.5, fontWeight: 600, border: `1px solid ${active ? V_BORDER : SOFTLINE}`, background: active ? V_BG : PANEL, color: active ? BRAND : SLATE_BODY }}>
+              {done ? <Check c={SLATE_GREEN} s={13} /> : null}
               Part {p}
             </span>
           );
@@ -650,7 +666,7 @@ function ListeningScreen() {
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <span style={{ fontSize: 13, fontWeight: 800, color: V }}>QUESTIONS 11–15</span>
-            <span style={{ fontSize: 13, color: "#9497a4" }}>Complete the notes · Write <strong style={{ color: SLATE_INK }}>ONE WORD ONLY</strong> for each answer</span>
+            <span style={{ fontSize: 13, color: SLATE_MUTED }}>Complete the notes · Write <strong style={{ color: SLATE_INK }}>ONE WORD ONLY</strong> for each answer</span>
           </div>
           <h2 style={{ fontFamily: LSANS, fontSize: 21, fontWeight: 700, color: SLATE_INK, margin: "8px 0 4px" }}>Riverside Community Centre</h2>
 
@@ -661,7 +677,7 @@ function ListeningScreen() {
               { pre: "A new ", val: undefined, post: " studio opens on the first floor in March.", n: true },
             ].map((l, i) => (
               <div key={i} style={{ padding: "6px 0", paddingLeft: 14, fontSize: 15, lineHeight: 2, color: SLATE_INK, display: "flex", gap: 8 }}>
-                <span style={{ color: "#c7cad6" }}>•</span>
+                <span style={{ color: SLATE_MUTED }}>•</span>
                 <span>{l.pre}{gap(l.val)}{l.post}</span>
               </div>
             ))}
@@ -671,7 +687,7 @@ function ListeningScreen() {
               { pre: "Members receive a monthly ", val: undefined, post: " with the class timetable.", n: true },
             ].map((l, i) => (
               <div key={i} style={{ padding: "6px 0", paddingLeft: 14, fontSize: 15, lineHeight: 2, color: SLATE_INK, display: "flex", gap: 8 }}>
-                <span style={{ color: "#c7cad6" }}>•</span>
+                <span style={{ color: SLATE_MUTED }}>•</span>
                 <span>{l.pre}{gap(l.val)}{l.post}</span>
               </div>
             ))}
@@ -718,7 +734,7 @@ function CoachScreen() {
               <div style={{ fontSize: 11.5, color: MUTED }}>Planning · strategy · what&rsquo;s next</div>
             </div>
           </div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          <svg style={{ stroke: MUTED }} width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
         </div>
         <div style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ alignSelf: "flex-end", maxWidth: "85%", padding: "9px 12px", borderRadius: 12, background: INDIGO_FILL, color: ON_INDIGO, fontSize: 13.5, lineHeight: 1.5 }}>What should I practise next?</div>
@@ -735,7 +751,7 @@ function CoachScreen() {
           <div style={{ display: "flex", gap: 8 }}>
             <span style={{ flex: 1, padding: "9px 11px", border: `1px solid ${BRAND_LINE}`, borderRadius: 10, fontSize: 13.5, color: SLATE_MUTED }}>Ask your coach…</span>
             <span style={{ width: 40, borderRadius: 10, background: INDIGO, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: WHITE }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
             </span>
           </div>
         </div>
@@ -815,7 +831,7 @@ function ProgressScreen() {
                   <span style={{ fontWeight: 500, fontSize: 13.5, color: FAINT }}>{h.d}</span>
                   <span style={{ fontWeight: 600, fontSize: 15, color: INK }}>{h.s}</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 999, color: h.up == null ? FAINT : EMERALD, background: h.up == null ? "#fbfbfc" : "#E5F2EB" }}>{h.delta}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 9px", borderRadius: 999, color: h.up == null ? FAINT : EMERALD, background: h.up == null ? WELL : SLATE_GREEN_BG }}>{h.delta}</span>
                     <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 18, color: INK, fontVariantNumeric: "tabular-nums" }}>{h.band}</span>
                   </span>
                 </div>
@@ -835,7 +851,7 @@ function ProgressScreen() {
               {["MO", "TU", "WE", "TH", "FR", "SA", "SU"].map((d, i) => (
                 <div key={d} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: 1 }}>
                   <span style={{ width: "100%", maxWidth: 30, height: 30, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: i < 5 ? INDIGO : WELL, border: `1.5px solid ${i === 4 ? INDIGO : i < 5 ? INDIGO : SLATE_LINE}` }}>
-                    <Flame c={i < 5 ? "#fff" : "#C7C9D4"} s={14} />
+                    <Flame c={i < 5 ? WHITE : SLATE_MUTED} filled={i < 5} s={14} />
                   </span>
                   <span style={{ fontSize: 10.5, fontWeight: 700, color: i === 4 ? INDIGO : FAINT }}>{d}</span>
                 </div>
@@ -851,7 +867,7 @@ function ProgressScreen() {
 
           <div style={{ background: PANEL, border: `1px solid ${SLATE_LINE}`, borderRadius: 16, padding: 18 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={AMBER} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+              <svg style={{ stroke: AMBER }} width="14" height="14" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".09em", textTransform: "uppercase", color: FAINT }}>Focus areas</span>
             </div>
             <div style={{ marginTop: 12 }}>
@@ -877,8 +893,8 @@ function ProgressScreen() {
 // re-invented — the dark ORB (the examiner is deliberately not a face; an exam
 // room should feel impersonal), the breathing rings, the mono clock.
 function SpeakingScreen() {
-  const SP_INK = "#1A1520";
-  const SP_FAINT = "#8C7F8A";
+  const SP_INK = SLATE_INK;
+  const SP_FAINT = SLATE_MUTED;
   const SP_ORB = "radial-gradient(circle at 32% 28%, rgba(60,52,72,0.85) 0%, #2C2535 46%, #1A1520 100%)";
   const parts: { n: number; label: string }[] = [
     { n: 1, label: "Interview" },
@@ -886,19 +902,19 @@ function SpeakingScreen() {
     { n: 3, label: "Discussion" },
   ];
   return (
-    <div style={{ width: 1200, height: 750, background: "#FBF9F8", fontFamily: SANS, color: SP_INK, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ width: 1200, height: 750, background: WELL, fontFamily: SANS, color: SP_INK, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {/* top bar */}
       <div style={{ flex: "none", height: 54, borderBottom: `1px solid ${SP_LINE}`, background: PANEL, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 22px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#E0574A" }} />
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: RED }} />
           <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: SP_INK }}>Live mock · recording</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-jetbrains), ui-monospace, monospace", fontSize: 13, color: SP_FAINT }}>
-          <span>08:24</span><span style={{ color: "#D6CFCB" }}>/</span><span>16:00</span>
+          <span>08:24</span><span style={{ color: SLATE_FIELD }}>/</span><span>16:00</span>
         </div>
       </div>
       {/* whole-test progress */}
-      <div style={{ flex: "none", height: 3, background: "#EFEBE8" }}>
+      <div style={{ flex: "none", height: 3, background: WARM_WELL }}>
         <div style={{ height: "100%", width: "52%", background: SP_INK }} />
       </div>
       {/* the three parts stay visible: a timer alone is pressure */}
@@ -907,8 +923,8 @@ function SpeakingScreen() {
           const active = p.n === 2;
           const done = p.n < 2;
           return (
-            <div key={p.n} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: active ? "#9c1442" : done ? "#2E9E6B" : "#B5ACA8" }}>
-              <span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: active ? "#9c1442" : done ? "#E4F5EC" : "#F1EEEC", color: active ? "#fff" : done ? "#2E9E6B" : "#9C938F", fontSize: 10.5 }}>{done ? "✓" : p.n}</span>
+            <div key={p.n} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: active ? BRAND : done ? SLATE_GREEN : SLATE_MUTED }}>
+              <span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: active ? BRAND_FILL : done ? SLATE_GREEN_BG : WARM_WELL, color: active ? WHITE : done ? SLATE_GREEN : SLATE_MUTED, fontSize: 10.5 }}>{done ? "✓" : p.n}</span>
               {p.label}
             </div>
           );
@@ -934,18 +950,18 @@ function SpeakingScreen() {
             <span key={i} style={{ width: 3.5, height: h, borderRadius: 2, background: SP_INK, opacity: 0.55 }} />
           ))}
         </div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 16, padding: "8px 18px", borderRadius: 999, background: "#FDF3E4", border: "1px solid rgba(217,119,6,0.28)" }}>
-          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#B45309" }}>Prep time</span>
-          <span style={{ fontFamily: "var(--font-jetbrains), ui-monospace, monospace", fontSize: 17, fontWeight: 600, color: "#B45309", fontVariantNumeric: "tabular-nums" }}>0:47</span>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 16, padding: "8px 18px", borderRadius: 999, background: SLATE_AMBER_BG, border: "1px solid rgba(217,119,6,0.28)" }}>
+          <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: SLATE_AMBER }}>Prep time</span>
+          <span style={{ fontFamily: "var(--font-jetbrains), ui-monospace, monospace", fontSize: 17, fontWeight: 600, color: SLATE_AMBER, fontVariantNumeric: "tabular-nums" }}>0:47</span>
         </div>
 
         {/* the cue card — the paper slip on exam day */}
         <div style={{ width: 660, marginTop: 18, textAlign: "left", background: PANEL, border: `1px solid ${SP_LINE}`, borderRadius: 16, padding: "16px 20px 18px", boxShadow: "0 14px 34px -20px rgba(26,21,32,.4)" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 7, background: "rgba(218,119,86,0.12)", color: "#B45309", fontSize: 10.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 7, background: "rgba(218,119,86,0.12)", color: SLATE_AMBER, fontSize: 10.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase" }}>
             Cue card
           </span>
           <div style={{ fontSize: 12.5, fontWeight: 600, color: SP_FAINT, margin: "12px 0 4px" }}>You should say:</div>
-          <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 14, lineHeight: 1.75, color: "#3A333F" }}>
+          <ul style={{ margin: 0, paddingLeft: 18, listStyle: "disc", fontSize: 14, lineHeight: 1.75, color: SLATE_STRONG }}>
             <li>what the skill is and why it interests you</li>
             <li>how you would go about learning it</li>
             <li>how long you think it would take</li>
@@ -1003,7 +1019,7 @@ function ReportWriting() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 18 }}>
         {[["Task Response", "6.0", true], ["Coherence", "6.5", false], ["Lexical Resource", "6.0", false], ["Grammar", "7.0", false]].map(([l, b, blk]) => (
-          <div key={l as string} style={{ background: blk ? "#FCEEEA" : SOFT, border: `1px solid ${blk ? "#F3CFC6" : "#eceef2"}`, borderRadius: 12, padding: "13px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div key={l as string} style={{ background: blk ? SLATE_RED_BG : SOFT, border: `1px solid ${blk ? BRAND_LINE : SOFTLINE}`, borderRadius: 12, padding: "13px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 14.5, fontWeight: 600, color: MUTED }}>{l as string}</span>
             <span style={{ fontSize: 22, fontWeight: 800, color: blk ? RED : SLATE_INK, fontVariantNumeric: "tabular-nums" }}>{b as string}</span>
           </div>
@@ -1011,7 +1027,7 @@ function ReportWriting() {
       </div>
       <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: RED }}>FIX THIS FIRST</span>
-        <span style={{ fontSize: 14, color: "#3b2932" }}>Task Response — develop the opposing view, don&rsquo;t just mention it.</span>
+        <span style={{ fontSize: 14, color: SLATE_STRONG }}>Task Response — develop the opposing view, don&rsquo;t just mention it.</span>
       </div>
     </div>
   );
@@ -1033,7 +1049,7 @@ function ReportReading() {
       <div style={{ marginTop: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: INK, marginBottom: 10 }}>Where you lost marks</div>
         {[["True / False / Not Given", "2 / 5", true], ["Matching headings", "3 / 4", false], ["Sentence completion", "4 / 4", false]].map(([t, s, weak]) => (
-          <div key={t as string} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, background: weak ? "#FDF1EE" : SOFT, border: `1px solid ${weak ? "#F3CFC6" : "#eceef2"}`, marginBottom: 8 }}>
+          <div key={t as string} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 10, background: weak ? SLATE_RED_BG : SOFT, border: `1px solid ${weak ? BRAND_LINE : SOFTLINE}`, marginBottom: 8 }}>
             <span style={{ fontSize: 14, fontWeight: 600, color: weak ? RED : SLATE_INK }}>{t as string}</span>
             <span style={{ fontSize: 14, fontWeight: 700, color: weak ? RED : SLATE_INK, fontVariantNumeric: "tabular-nums" }}>{s as string}</span>
           </div>
@@ -1069,7 +1085,7 @@ function ReportListening() {
         ))}
       </div>
       <div style={{ marginTop: 18, padding: "12px 14px", borderRadius: 10, background: V_SOFT, border: `1px solid ${V_BORDER}` }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "#6d0b2c", marginBottom: 4 }}>Q31 · you wrote “Tuesday”, answer was “Thursday”</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: BRAND, marginBottom: 4 }}>Q31 · you wrote “Tuesday”, answer was “Thursday”</div>
         <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>The speaker corrects herself — “…on Tuesday, sorry, I mean Thursday.” The transcript link jumps you to the exact line.</div>
       </div>
     </div>

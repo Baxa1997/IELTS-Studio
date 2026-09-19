@@ -17,6 +17,7 @@ import {
   LINE,
   MUTED,
   RADIUS,
+  withAlpha,
 } from "./design";
 
 type IconName = "users" | "centers" | "tasks" | "checks";
@@ -219,9 +220,9 @@ function statLabel(): React.CSSProperties {
 
 const LIVE_STAT_CSS = `
 .lp-live-icon{animation:lp-stat-float 2.8s ease-in-out infinite}
-.lp-live-pulse{position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:${BRAND};box-shadow:0 0 0 0 rgba(125,1,50,.35);animation:lp-stat-pulse 2s ease-out infinite}
+.lp-live-pulse{position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:${BRAND};box-shadow:0 0 0 0 ${withAlpha(BRAND, 35)};animation:lp-stat-pulse 2s ease-out infinite}
 @keyframes lp-stat-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-@keyframes lp-stat-pulse{0%{box-shadow:0 0 0 0 rgba(125,1,50,.35)}70%{box-shadow:0 0 0 7px rgba(125,1,50,0)}100%{box-shadow:0 0 0 0 rgba(125,1,50,0)}}
+@keyframes lp-stat-pulse{0%{box-shadow:0 0 0 0 ${withAlpha(BRAND, 35)}}70%{box-shadow:0 0 0 7px ${withAlpha(BRAND, 0)}}100%{box-shadow:0 0 0 0 ${withAlpha(BRAND, 0)}}}
 @media (max-width: 760px){.lp-live-stat{border-right:0!important;border-bottom:1px solid ${LINE}}.lp-live-stat:last-child{border-bottom:0!important}}
 @media (prefers-reduced-motion:reduce){.lp-live-icon,.lp-live-pulse{animation:none}}
 `;

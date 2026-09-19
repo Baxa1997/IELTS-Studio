@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
+import { PANEL, WARM_RULE, WELL } from "@/lib/theme/tokens";
+
 const ReportShowcase = dynamic(
   () => import("./demo-screens").then((mod) => mod.ReportShowcase),
   { ssr: false, loading: () => <ReportPlaceholder /> },
@@ -43,8 +45,8 @@ function ReportPlaceholder() {
         minHeight: 260,
         marginTop: 28,
         borderRadius: 18,
-        border: "1px solid #E5E2D2",
-        background: "linear-gradient(110deg,#faf9f4 8%,#fff 18%,#faf9f4 33%)",
+        border: `1px solid ${WARM_RULE}`,
+        background: `linear-gradient(110deg,${WELL} 8%,${PANEL} 18%,${WELL} 33%)`,
         backgroundSize: "200% 100%",
         animation: "lp-demo-shimmer 1.6s linear infinite",
       }}

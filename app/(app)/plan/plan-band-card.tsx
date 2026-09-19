@@ -140,7 +140,7 @@ export function PlanBandCard({ estimate }: { estimate: SkillEstimateView }) {
               >
                 Start diagnostic
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden>
-                  <path d="M1 6.5H12M12 6.5L7.5 2M12 6.5L7.5 11" stroke={a.color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M1 6.5H12M12 6.5L7.5 2M12 6.5L7.5 11" style={{ stroke: a.color }} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
             </>
@@ -163,9 +163,9 @@ function BandRing({ current, target, accent }: { current: number; target: number
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
       <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden>
-        <circle cx="54" cy="54" r="42" fill="none" stroke={TRACK} strokeWidth="8" />
-        <circle cx="54" cy="54" r="42" fill="none" stroke={accent.track} strokeWidth="8" strokeDasharray={C} strokeDashoffset={off(target / 9)} strokeLinecap="round" transform="rotate(-90 54 54)" />
-        <circle cx="54" cy="54" r="42" fill="none" stroke={accent.color} strokeWidth="8" strokeDasharray={C} strokeDashoffset={off(current / 9)} strokeLinecap="round" transform="rotate(-90 54 54)" />
+        <circle style={{ stroke: TRACK }} cx="54" cy="54" r="42" fill="none" strokeWidth="8" />
+        <circle cx="54" cy="54" r="42" fill="none" style={{ stroke: accent.track }} strokeWidth="8" strokeDasharray={C} strokeDashoffset={off(target / 9)} strokeLinecap="round" transform="rotate(-90 54 54)" />
+        <circle cx="54" cy="54" r="42" fill="none" style={{ stroke: accent.color }} strokeWidth="8" strokeDasharray={C} strokeDashoffset={off(current / 9)} strokeLinecap="round" transform="rotate(-90 54 54)" />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
         <span style={{ fontFamily: SERIF, fontSize: 26, fontWeight: 700, color: accent.color, lineHeight: 1 }}>{current.toFixed(1)}</span>
@@ -179,8 +179,8 @@ function EmptyRing({ accent }: { accent: Accent }) {
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
       <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden>
-        <circle cx="54" cy="54" r="42" fill="none" stroke={TRACK} strokeWidth="8" />
-        <circle cx="54" cy="54" r="42" fill="none" stroke={accent.track} strokeWidth="8" strokeDasharray="9 11" strokeLinecap="round" transform="rotate(-90 54 54)" />
+        <circle style={{ stroke: TRACK }} cx="54" cy="54" r="42" fill="none" strokeWidth="8" />
+        <circle cx="54" cy="54" r="42" fill="none" style={{ stroke: accent.track }} strokeWidth="8" strokeDasharray="9 11" strokeLinecap="round" transform="rotate(-90 54 54)" />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
@@ -203,7 +203,7 @@ function Bar({ pct, fill }: { pct: number; fill: string }) {
 function Arrow() {
   return (
     <svg width="16" height="11" viewBox="0 0 16 11" fill="none" aria-hidden>
-      <path d="M1 5.5H15M15 5.5L10 1M15 5.5L10 10" stroke={FAINT} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path style={{ stroke: FAINT }} d="M1 5.5H15M15 5.5L10 1M15 5.5L10 10" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

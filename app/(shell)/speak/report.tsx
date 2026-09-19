@@ -300,7 +300,7 @@ export function SpeakingReport({
               height="16"
               viewBox="0 0 24 24"
               fill="none"
-              stroke={GOOD}
+
               strokeWidth="2.4"
               strokeLinecap="round"
               strokeLinejoin="round"

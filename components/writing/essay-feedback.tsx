@@ -408,7 +408,7 @@ function SamplesView({
       <div style={{ border: `1px solid ${SLATE_LINE}`, borderRadius: 13, overflow: "hidden" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 14px", background: BRAND_SOFT, borderBottom: `1px solid ${BRAND_LINE}` }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+            <svg style={{ stroke: BRAND }} width="17" height="17" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
             <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>{sample.title || "Model answer"}</span>
           </span>
           <span style={{ fontSize: 11.5, fontWeight: 700, color: BRAND, background: PANEL, border: `1px solid ${BRAND_LINE}`, padding: "3px 9px", borderRadius: 999, fontVariantNumeric: "tabular-nums" }}>{wordCount} words</span>
@@ -467,7 +467,7 @@ function BandsView({
       {blocker ? (
         <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={RED} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
+            <svg style={{ stroke: RED }} width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
             {lift ? (
               <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: SLATE_GREEN, background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "2px 8px", borderRadius: 999 }}>+{lift.toFixed(1)} band</span>
@@ -510,7 +510,7 @@ function BandsView({
               </div>
             ) : null}
             <div style={{ display: "flex", gap: 10, padding: "11px 12px", background: WELL, border: "1px solid #EFECE0", borderRadius: 10 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: BRAND, flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
               <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: SLATE_STRONG }}><strong style={{ color: BRAND }}>Fix:</strong> {c.fix}</p>
             </div>
           </div>
