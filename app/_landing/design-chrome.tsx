@@ -23,7 +23,7 @@ import { SiteNav } from "./site-nav";
 // read the locale — and is re-exported on the same principle.
 export { SiteFooter } from "./site-footer";
 export { CentersBand } from "./centers-band";
-import { FOOTER_CSS } from "./site-footer";
+import { FOOTER_CSS } from "./footer-css";
 
 /**
  * Header, centres band and footer from the EngProgress design canvas.

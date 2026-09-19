@@ -6,7 +6,7 @@ import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n";
 
-import { BRAND, BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "./design";
+import { BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "./design";
 
 /**
  * The dark site footer.
@@ -153,7 +153,8 @@ export function SiteFooter() {
             260 + 4x170 = 940px however narrow the screen gets, and the footer
             simply ran off the side of a phone. `auto-fit` collapses EMPTY
             tracks; it does not reduce a count that does not fit. Only a media
-            query can, so the breakpoints live in FOOTER_CSS below. */}
+            query can, so the breakpoints live in FOOTER_CSS — `footer-css.ts`,
+            not this file; see the note there for why it cannot live here. */}
         <div className="ft-grid">
           {/* brand block */}
           <div className="ft-brand">
@@ -378,36 +379,3 @@ export function SiteFooter() {
     </footer>
   );
 }
-
-/** Hover states an inline style cannot express. Injected by whoever renders the
- *  footer, so a page that uses it outside the design chrome still gets them. */
-export const FOOTER_CSS = `
-  .ft-link{transition:color .15s}
-  .ft-link:hover{color:#fff}
-  .ft-disc{transition:border-color .15s,color .15s}
-  .ft-disc:hover{border-color:${BRAND};color:#fff}
-
-  /* ── the columns, and the three widths they have to survive ───────────────
-     Every track minimum is wrapped in min(...,100%) so it can never be wider
-     than its container (the rule responsive.test.ts enforces), and the counts
-     step down at the two widths where they stop fitting: four link columns
-     beside the brand block, then two, then one. The brand block spans the row
-     once there are only two, because it carries the address and the socials
-     and reads as a header for them rather than as a fifth column. */
-  .ft-inner{padding:72px 28px 0}
-  .ft-grid{
-    display:grid;
-    grid-template-columns:minmax(min(260px,100%),1.4fr) repeat(auto-fit,minmax(min(170px,100%),1fr));
-    gap:40px;
-  }
-  .ft-strip{margin-top:56px;padding:30px 0 44px}
-  @media(max-width:900px){
-    .ft-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
-    .ft-brand{grid-column:1/-1}
-  }
-  @media(max-width:560px){
-    .ft-inner{padding:48px 20px 0}
-    .ft-grid{grid-template-columns:minmax(0,1fr);gap:28px}
-    .ft-strip{margin-top:36px;padding:24px 0 32px}
-  }
-`;

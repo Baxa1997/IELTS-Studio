@@ -33,6 +33,13 @@ const hero = read("./landing-page.tsx");
 const signIn = read("../(auth)/sign-in/page.tsx");
 const chrome = read("./design-chrome.tsx");
 const footer = read("./site-footer.tsx");
+/* ⚠️ THE FOOTER IS TWO FILES NOW: the markup here, the stylesheet next door.
+   They were split because `site-footer.tsx` had to become a client component to
+   be translated, and a `"use client"` module cannot hand a plain string to the
+   server module that injects it — see `client-boundary.test.ts`. Which half a
+   check belongs to matters: a class is STYLED in one file and APPLIED in the
+   other, so the rename trap below is now a real gap rather than a formality. */
+const footerCss = read("./footer-css.ts");
 
 /**
  * Every auto-fit track declared in a file, with its minimum.
@@ -75,7 +82,7 @@ describe("no grid track can be wider than its container", () => {
        is a breakpoint — but capping the minimum is what stops the overflow being
        silent in between. This file did not read site-footer.tsx before, which is
        the whole reason the bug got past it. */
-    const all = tracks(footer);
+    const all = tracks(footerCss);
     expect(all.length).toBeGreaterThan(0);
     for (const t of all) {
       expect(t.capped, `minmax(${t.min}px, …) can overflow — wrap it in min(${t.min}px,100%)`).toBe(
@@ -87,13 +94,13 @@ describe("no grid track can be wider than its container", () => {
   it("gives the footer the breakpoints a capped track still needs", () => {
     // Capping stops the overflow; it does not stop five columns squeezing into
     // 64px each. The counts have to step down too.
-    expect(footer).toMatch(/@media\(max-width:900px\)/);
-    expect(footer).toMatch(/@media\(max-width:560px\)/);
-    expect(footer).toMatch(/\.ft-grid\{/);
+    expect(footerCss).toMatch(/@media\(max-width:900px\)/);
+    expect(footerCss).toMatch(/@media\(max-width:560px\)/);
+    expect(footerCss).toMatch(/\.ft-grid\{/);
     for (const cls of ["ft-grid", "ft-inner", "ft-brand", "ft-strip"]) {
-      // The rules and the markup are in one file here, but the same rename trap
-      // applies — a class styled and never applied is a layout that silently
-      // stops happening.
+      // Styled in `footer-css.ts`, applied in `site-footer.tsx` — a rename that
+      // touches one and not the other is a layout that silently stops
+      // happening, and nothing else would report it.
       expect(footer, `${cls} is styled but never applied`).toMatch(
         new RegExp(`className="${cls}"`),
       );
@@ -174,7 +181,7 @@ describe("the stylesheet is a template literal, so it has no raw backticks", () 
     // module with it — which is exactly what a backtick in a CSS comment did.
     for (const [src, decl] of [
       [chrome, "export const DESIGN_CSS = `"],
-      [footer, "export const FOOTER_CSS = `"],
+      [footerCss, "export const FOOTER_CSS = `"],
     ] as const) {
       const start = src.indexOf(decl) + decl.length;
       const body = src.slice(start, src.indexOf("\n`;", start));
