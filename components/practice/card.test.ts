@@ -76,6 +76,36 @@ function styleProp(style: string, prop: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+/**
+ * A style property whose value has commas of its own — a gradient, a multi-part
+ * box-shadow — which styleProp()'s comma delimiter cuts off at the first one.
+ * Reads to the next property name at the start of a line instead.
+ */
+function styleValue(style: string, prop: string): string {
+  const at = style.indexOf(`${prop}:`);
+  expect(at, `no ${prop} in this style object`).toBeGreaterThan(-1);
+  const rest = style.slice(at + prop.length + 1);
+  const next = /\n\s*[A-Za-z]+:/.exec(rest);
+  return rest.slice(0, next ? next.index : undefined).trim();
+}
+
+/**
+ * The comma-separated parts of a shadow, with the colour functions collapsed
+ * first so their own commas do not split it.
+ *
+ * ⚠️ `.filter(Boolean)` IS LOAD-BEARING. The style object's trailing comma
+ * yields an empty final part, and an empty string starts with nothing — so
+ * "is any layer not inset?" answered yes for a shadow that was entirely inset,
+ * and the mutation that drops the outer lift went through undetected.
+ */
+function shadowLayers(value: string): string[] {
+  return value
+    .replace(/rgba?\([^)]*\)/g, "«colour»")
+    .split(",")
+    .map((p) => p.trim().replace(/^["'\s]+|["'\s,]+$/g, ""))
+    .filter(Boolean);
+}
+
 /** The innermost `style={{ … }}` that declares `prop` — which is how a two-element
  *  component is told apart from the one-element version that had the bug. */
 function styleCarrying(fn: string, prop: string): string {
@@ -301,31 +331,70 @@ describe("clamped text is cut at a line, not through one", () => {
 /**
  * The line that says which skill the card is. At the canvas's 10px in #8B919D
  * it sat around 3:1 against white — under the 4.5:1 AA floor for small text,
- * and the owner's report was simply that they could not see it.
+ * and the owner's report was simply that they could not see it. It is now white
+ * on the brand, in a raised pill.
  */
-describe("the skill eyebrow can actually be read", () => {
-  const eyebrow = styleCarrying(fnBody("CardEyebrow"), "letterSpacing");
+describe("the skill pill can actually be read", () => {
+  const pill = styleCarrying(fnBody("SkillPill"), "letterSpacing");
 
-  it("is at least 11px and semibold", () => {
-    expect(Number(/fontSize: (\d+)/.exec(eyebrow)?.[1])).toBeGreaterThanOrEqual(11);
-    expect(Number(/fontWeight: (\d+)/.exec(eyebrow)?.[1])).toBeGreaterThanOrEqual(600);
+  it("is at least 11px and bold", () => {
+    expect(Number(/fontSize: (\d+)/.exec(pill)?.[1])).toBeGreaterThanOrEqual(11);
+    expect(Number(/fontWeight: (\d+)/.exec(pill)?.[1])).toBeGreaterThanOrEqual(700);
   });
 
-  it("uses a colour that passes against white", () => {
-    /* DIM (#8B919D) is the 3:1 grey this was; MUTED (#4A505C) is 7.7:1. Asserted
-       by name because the constant is what the rest of the kit reaches for. */
-    expect(styleProp(eyebrow, "color")).toBe("MUTED");
+  it("is white on the brand, which is where its contrast comes from", () => {
+    expect(styleProp(pill, "color")).toBe('"#fff"');
+    expect(styleValue(pill, "background")).toContain("BRAND");
   });
 
-  it("brands the skill token so the eye lands on it", () => {
-    expect(fnBody("CardEyebrow")).toContain("color: BRAND");
+  it("carries no border", () => {
+    /* The owner's instruction, and the reason is visible: the card already has a
+       1px edge, so a second ring 9px inside it reads as a mistake. */
+    expect(styleProp(pill, "border"), "the skill pill grew a border").toBeNull();
+    expect(styleProp(pill, "borderColor")).toBeNull();
   });
 
-  it("keeps Listening's chip in step with it", () => {
-    // Listening carries the same line as a MonoChip; the two hubs are one click
-    // apart, so a size or weight that drifts between them is visible.
+  it("keeps the three declarations that make it look raised", () => {
+    /* A flat fill reads as a tag. The gradient lights the top edge and shades
+       the bottom, the INSET highlight is the gloss along that top edge, and the
+       outer shadow lifts it off the card — drop any one and it goes flat. */
+    expect(styleValue(pill, "background"), "the gradient went flat").toContain("linear-gradient");
+    const layers = shadowLayers(styleValue(pill, "boxShadow"));
+    expect(
+      layers.some((l) => l.startsWith("inset 0 1px 0")),
+      "no inset highlight along the top edge",
+    ).toBe(true);
+    expect(
+      layers.some((l) => !l.startsWith("inset")),
+      "every shadow layer is inset — nothing lifts the pill off the card",
+    ).toBe(true);
+  });
+
+  it("holds the qualifier tail at a colour that passes on white", () => {
+    /* The tail is still plain text on the card — "TASK 1 GT · HOUSING" — so the
+       contrast rule applies to it as it did to the whole eyebrow. DIM (#8B919D)
+       is the 3:1 grey this was; MUTED (#4A505C) is 7.7:1. */
+    const tail = styleCarrying(fnBody("CardEyebrow"), "letterSpacing");
+    expect(styleProp(tail, "color")).toBe("MUTED");
+    expect(Number(/fontSize: (\d+)/.exec(tail)?.[1])).toBeGreaterThanOrEqual(11);
+  });
+
+  it("keeps Listening's detail chip in step with that tail", () => {
+    // A card shows one or the other depending on the hub, and the two hubs are
+    // one click apart, so a size or weight that drifts between them is visible.
+    const tail = styleCarrying(fnBody("CardEyebrow"), "letterSpacing");
     const chip = styleCarrying(fnBody("MonoChip"), "letterSpacing");
-    expect(/fontSize: (\d+)/.exec(chip)?.[1]).toBe(/fontSize: (\d+)/.exec(eyebrow)?.[1]);
-    expect(/fontWeight: (\d+)/.exec(chip)?.[1]).toBe(/fontWeight: (\d+)/.exec(eyebrow)?.[1]);
+    expect(/fontSize: (\d+)/.exec(chip)?.[1]).toBe(/fontSize: (\d+)/.exec(tail)?.[1]);
+    expect(/fontWeight: (\d+)/.exec(chip)?.[1]).toBe(/fontWeight: (\d+)/.exec(tail)?.[1]);
+  });
+
+  it("raises the skill and leaves the detail flat", () => {
+    /* Both of Listening's facts as raised pills would say the accent matters as
+       much as the skill does. The icon is what marks the skill chip. */
+    const head = fnBody("CardHead");
+    expect(head).toContain("c.icon ? (");
+    expect(head).toContain("<SkillPill");
+    expect(head).toContain("<MonoChip");
+    expect(fnBody("MonoChip"), "the detail chip is raised too").not.toContain("linear-gradient");
   });
 });

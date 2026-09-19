@@ -80,12 +80,13 @@ export function PracticeCard({
 // ---- Head ------------------------------------------------------------------
 
 /**
- * The top row: the sequence tile, the skill's icon and its small-caps label on
- * the left; the status pill hard right.
+ * The top row: the sequence tile and the skill on the left, the status pill
+ * hard right.
  *
- * `label` is the canvas's mono eyebrow ("READING · ACADEMIC"). `chips` is the
- * Listening variant, which the canvas draws as two bordered chips instead — pass
- * one or the other, not both.
+ * Whichever way the skill arrives, it comes out as the same raised SkillPill —
+ * `label` is the eyebrow form ("READING · ACADEMIC", pill + tail), `chips` is
+ * Listening's ("LISTENING" + "BRITISH", pill + flat chip). Pass one or the
+ * other, not both.
  */
 export function CardHead({
   seq,
@@ -99,22 +100,30 @@ export function CardHead({
   seq: number;
   /** "ink" is Writing's dark tile; Reading and Listening use the brand tint. */
   seqTone?: "brand" | "ink";
+  /** Goes inside the skill pill, so it is drawn white on the brand. */
   icon?: ReactNode;
   label?: string;
+  /** The chip carrying an icon is the skill and becomes the raised pill. */
   chips?: { icon?: ReactNode; label: string }[];
   pill?: ReactNode;
 }) {
   return (
     <div style={rowBetween}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <SeqTile seq={seq} tone={seqTone} />
-        {icon ? <span style={{ display: "flex", flex: "none", color: BRAND }}>{icon}</span> : null}
-        {label ? <CardEyebrow label={label} /> : null}
-        {chips?.map((c) => (
-          <MonoChip key={c.label} icon={c.icon} tone={c.icon ? "brand" : "neutral"}>
-            {c.label}
-          </MonoChip>
-        ))}
+        {label ? <CardEyebrow icon={icon} label={label} /> : null}
+        {chips?.map((c) =>
+          /* The skill chip is the one carrying an icon; it takes the raised
+             pill. Whatever follows it — Listening's accent — stays flat, so the
+             pair reads as heading and detail rather than two of a kind. */
+          c.icon ? (
+            <SkillPill key={c.label} icon={c.icon}>
+              {c.label}
+            </SkillPill>
+          ) : (
+            <MonoChip key={c.label}>{c.label}</MonoChip>
+          ),
+        )}
       </div>
       {pill ?? null}
     </div>
@@ -122,45 +131,93 @@ export function CardHead({
 }
 
 /**
- * The mono eyebrow — "WRITING · TASK 1 GT · HOUSING".
+ * THE SKILL PILL — the raised brand chip that says READING / WRITING /
+ * LISTENING, icon included.
  *
- * ⚠️ THIS IS THE ONE LINE THAT SAYS WHICH SKILL THE CARD IS, so it has to be
- * readable at a glance, and at the canvas's 10px in #8B919D it was not: that is
- * about 3:1 against white, under the 4.5:1 AA floor for text this small, and
- * mono caps at 10px are the hardest thing on the card to resolve. The canvas's
- * idiom is kept — mono, caps, tracking — and the legibility comes from a point
- * of size, a heavier weight and a colour that passes (#4A505C is 7.7:1).
+ * ⚠️ THIS IS THE ONE LINE THAT SAYS WHICH SKILL THE CARD IS, and on white it
+ * kept disappearing. It was the canvas's 10px eyebrow in #8B919D — about 3:1
+ * against white, under the 4.5:1 AA floor for text this small — then 11px in
+ * #4A505C, which passes but still reads as small print. Set on the brand it is
+ * white on #7D0132, roughly 12:1, and the fill does the work the type was being
+ * asked to do on its own.
  *
- * The leading token takes the brand, which does two things: it is the skill
- * name, so the eye lands on "READING" before the qualifiers after it, and it
- * matches Listening, whose cards carry the skill as a brand-tinted MonoChip
- * rather than an eyebrow. Callers all build the label as
- * `[SKILL, …qualifiers].join(" · ")`, so the split is on the first separator.
+ * The raise is three declarations and every one is load-bearing:
+ *   · the gradient gives the top a lit edge and the bottom a shaded one, which
+ *     is the whole of the effect — a flat fill reads as a tag, not a button;
+ *   · the INSET highlight is the gloss along the top edge;
+ *   · the outer shadow lifts it off the card.
+ * No border — the reference has a pale ring and the owner's instruction was
+ * explicitly to drop it, and on a card that already has a 1px edge of its own a
+ * second ring 9px inside it reads as a mistake.
  */
-function CardEyebrow({ label }: { label: string }) {
-  const cut = label.indexOf(" · ");
-  const lead = cut === -1 ? label : label.slice(0, cut);
-  const rest = cut === -1 ? "" : label.slice(cut);
+export function SkillPill({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
   return (
     <span
-      // The qualifiers are the first thing an ellipsis eats on a narrow card,
-      // so the full label stays reachable on hover.
-      title={label}
       style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        flex: "0 0 auto",
+        height: 23,
+        padding: icon ? "0 11px 0 9px" : "0 11px",
+        borderRadius: 9999,
+        background: `linear-gradient(180deg, #A32552 0%, ${BRAND} 55%, #6C0128 100%)`,
+        boxShadow:
+          "inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 1px rgba(0,0,0,.22), 0 2px 5px rgba(125,1,50,.30)",
+        color: "#fff",
+        textShadow: "0 1px 1px rgba(0,0,0,.25)",
         fontFamily: MONO,
         fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: ".07em",
-        color: MUTED,
-        minWidth: 0,
+        fontWeight: 700,
+        letterSpacing: ".08em",
         whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
       }}
     >
-      <span style={{ color: BRAND, fontWeight: 700 }}>{lead}</span>
-      {rest}
+      {icon}
+      {children}
     </span>
+  );
+}
+
+/**
+ * The skill pill plus whatever qualifies it — "WRITING" + "TASK 1 GT · HOUSING".
+ *
+ * Callers all build the label as `[SKILL, …qualifiers].join(" · ")`, so the
+ * split is on the first separator. The separator itself goes with it: the pill
+ * is its own boundary, and a middot floating beside it just looks orphaned.
+ *
+ * The tail keeps the canvas's idiom — mono, caps, tracking — at the size and
+ * colour that pass on white (#4A505C is 7.7:1), because it is still plain text
+ * on the card.
+ */
+function CardEyebrow({ icon, label }: { icon?: ReactNode; label: string }) {
+  const cut = label.indexOf(" · ");
+  const lead = cut === -1 ? label : label.slice(0, cut);
+  const tail = cut === -1 ? "" : label.slice(cut + 3);
+  return (
+    <>
+      <SkillPill icon={icon}>{lead}</SkillPill>
+      {tail ? (
+        <span
+          // The qualifiers are the first thing an ellipsis eats on a narrow
+          // card, so the full label stays reachable on hover.
+          title={label}
+          style={{
+            fontFamily: MONO,
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: ".07em",
+            color: MUTED,
+            minWidth: 0,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {tail}
+        </span>
+      ) : null}
+    </>
   );
 }
 
@@ -192,33 +249,27 @@ export function SeqTile({ seq, tone = "brand" }: { seq: number; tone?: "brand" |
   );
 }
 
-/** Listening's bordered label chip (the canvas gives that hub chips, not an
- *  eyebrow — its cards carry two facts, the skill and the accent). */
-export function MonoChip({
-  icon,
-  tone = "neutral",
-  children,
-}: {
-  icon?: ReactNode;
-  tone?: "brand" | "neutral";
-  children: ReactNode;
-}) {
-  const brand = tone === "brand";
+/**
+ * The flat detail chip beside the skill pill — Listening's accent ("BRITISH").
+ *
+ * Deliberately quiet: it sits next to a raised brand pill, and a second chip
+ * competing with it would say the accent matters as much as the skill does.
+ */
+export function MonoChip({ children }: { children: ReactNode }) {
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 5,
         height: 21,
         padding: "0 9px",
         borderRadius: 7,
-        background: brand ? "#FDF4F7" : "#F4F4F7",
-        border: `1px solid ${brand ? "rgba(125,1,50,.12)" : "#E7E7EC"}`,
-        color: brand ? BRAND : MUTED,
+        background: "#F4F4F7",
+        border: "1px solid #E7E7EC",
+        color: MUTED,
         fontFamily: MONO,
-        // Sized and weighted with CardEyebrow — this is Listening's version of
-        // the same line, and the two hubs sit next to each other in the nav.
+        // Sized and weighted with the eyebrow's tail — both are the detail beside
+        // the skill, and a card can show one or the other depending on the hub.
         fontSize: 11,
         fontWeight: 600,
         letterSpacing: ".07em",
@@ -226,7 +277,6 @@ export function MonoChip({
         flex: "0 0 auto",
       }}
     >
-      {icon}
       {children}
     </span>
   );

@@ -1298,7 +1298,7 @@ function PromptCard({
       <CardHead
         seq={num}
         seqTone="ink"
-        icon={<PenLine size={11} strokeWidth={2} />}
+        icon={<PenLine size={12} strokeWidth={2} />}
         label={["WRITING", taskLabel(p.task_type), topic].filter(Boolean).join(" · ").toUpperCase()}
         pill={<PromptPill state={state} mark={mark} difficulty={p.difficulty} />}
       />
