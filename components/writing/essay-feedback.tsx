@@ -33,6 +33,7 @@ import {
   WELL,
   WELL_LINE,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 /**
@@ -299,7 +300,7 @@ export function EssayFeedback({
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 {legend.map((t) => (
                   <div key={t} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ width: 11, height: 11, borderRadius: 3, background: ANN_STYLE[t].bg, border: `1px solid ${ANN_STYLE[t].fg}55` }} />
+                    <span style={{ width: 11, height: 11, borderRadius: 3, background: ANN_STYLE[t].bg, border: `1px solid ${withAlpha(ANN_STYLE[t].fg, 33)}` }} />
                     <span style={{ fontSize: 12.5, color: MUTED }}>{ANN_STYLE[t].label} <strong style={{ color: INK }}>{counts[t]}</strong></span>
                   </div>
                 ))}
@@ -531,11 +532,11 @@ function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRange
         const st = ANN_STYLE[r.ann.type];
         const on = selected === n;
         return (
-          <div key={n} data-fix={n} style={{ display: "flex", gap: 12, padding: "13px 13px", borderRadius: 12, background: on ? "#FBFBFC" : "transparent", boxShadow: on ? `0 0 0 2px ${st.fg}66` : "none", marginBottom: 6, transition: "background .15s ease, box-shadow .15s ease" }}>
-            <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: st.bg, border: `1px solid ${st.fg}40`, color: st.fg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{n}</span>
+          <div key={n} data-fix={n} style={{ display: "flex", gap: 12, padding: "13px 13px", borderRadius: 12, background: on ? "#FBFBFC" : "transparent", boxShadow: on ? `0 0 0 2px ${withAlpha(st.fg, 40)}` : "none", marginBottom: 6, transition: "background .15s ease, box-shadow .15s ease" }}>
+            <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: st.bg, border: `1px solid ${withAlpha(st.fg, 25)}`, color: st.fg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{n}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: st.fg, background: st.bg, border: `1px solid ${st.fg}40`, padding: "1px 8px", borderRadius: 6 }}>&ldquo;{r.ann.text.trim()}&rdquo;</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: st.fg, background: st.bg, border: `1px solid ${withAlpha(st.fg, 25)}`, padding: "1px 8px", borderRadius: 6 }}>&ldquo;{r.ann.text.trim()}&rdquo;</span>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", color: SLATE_MUTED, textTransform: "uppercase" }}>{st.label}</span>
               </div>
               {r.ann.note ? <p style={{ margin: "7px 0 8px", fontSize: 13.5, lineHeight: 1.5, color: SLATE_STRONG }}>{r.ann.note}</p> : <div style={{ height: 8 }} />}
@@ -673,7 +674,7 @@ function renderEssay(
         className="lp-mk"
         onClick={() => pick(n)}
         title={[r.ann.note, r.ann.fix ? `→ ${r.ann.fix}` : ""].filter(Boolean).join("   ") || undefined}
-        style={{ background: st.bg, color: st.fg, border: `1px solid ${st.fg}40`, borderRadius: 5, padding: "1px 5px", whiteSpace: "nowrap", boxShadow: on ? `0 0 0 2px ${st.fg}` : "none" }}
+        style={{ background: st.bg, color: st.fg, border: `1px solid ${withAlpha(st.fg, 25)}`, borderRadius: 5, padding: "1px 5px", whiteSpace: "nowrap", boxShadow: on ? `0 0 0 2px ${st.fg}` : "none" }}
       >
         {text.slice(r.start, r.end)}
         <sup style={{ fontSize: 10, fontWeight: 800, marginLeft: 1 }}>{n}</sup>

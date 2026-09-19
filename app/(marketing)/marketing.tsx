@@ -60,7 +60,7 @@ export function B({ children }: { children: React.ReactNode }) {
 
 export function A({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} style={{ color: ACCENT, fontWeight: 600, textDecoration: "none", borderBottom: `1px solid ${ACCENT}33` }}>
+    <Link href={href} style={{ color: ACCENT, fontWeight: 600, textDecoration: "none", borderBottom: `1px solid ${BRAND_TINT_LINE}` }}>
       {children}
     </Link>
   );

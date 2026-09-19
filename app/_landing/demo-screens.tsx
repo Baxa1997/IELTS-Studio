@@ -38,8 +38,6 @@ import {
   WELL as SOFT,
   WELL_LINE as SOFTLINE,
   WHITE,
-} from "@/lib/theme/tokens";
-import {
   withAlpha,
 } from "@/lib/theme/tokens";
 
@@ -234,7 +232,7 @@ const MARK = {
 function Mk({ kind, n, children }: { kind: keyof typeof MARK; n: number; children: React.ReactNode }) {
   const st = MARK[kind];
   return (
-    <span style={{ background: st.bg, color: st.fg, border: `1px solid ${st.fg}33`, borderRadius: 5, padding: "1px 5px", whiteSpace: "nowrap" }}>
+    <span style={{ background: st.bg, color: st.fg, border: `1px solid ${withAlpha(st.fg, 20)}`, borderRadius: 5, padding: "1px 5px", whiteSpace: "nowrap" }}>
       {children}
       <sup style={{ fontSize: 10, fontWeight: 800, marginLeft: 1 }}>{n}</sup>
     </span>
@@ -319,7 +317,7 @@ function WritingFeedbackScreen() {
             <div style={{ display: "flex", gap: 14 }}>
               {[["Spelling", MARK.spelling, 1], ["Vocabulary", MARK.vocab, 1], ["Grammar", MARK.grammar, 1]].map(([lbl, st, n]) => (
                 <span key={lbl as string} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 11, height: 11, borderRadius: 3, background: (st as { bg: string }).bg, border: `1px solid ${(st as { fg: string }).fg}55` }} />
+                  <span style={{ width: 11, height: 11, borderRadius: 3, background: (st as { bg: string }).bg, border: `1px solid ${withAlpha((st as { fg: string }).fg, 33)}` }} />
                   <span style={{ fontSize: 12.5, color: MUTED }}>{lbl as string} <strong style={{ color: INK }}>{n as number}</strong></span>
                 </span>
               ))}

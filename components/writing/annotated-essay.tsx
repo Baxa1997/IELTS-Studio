@@ -11,6 +11,7 @@ import {
   SLATE_STRONG,
   SLATE_STRONG as MUTED,
   WELL,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 /**
@@ -54,7 +55,7 @@ export function AnnotatedEssay({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, padding: "12px 22px", borderBottom: "1px solid #F0EEE3", background: WELL }}>
           {present.map((t) => (
             <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 600, fontSize: 12, color: MUTED }}>
-              <span style={{ width: 14, height: 7, borderRadius: 3, background: ANN_STYLE[t].bg, boxShadow: `inset 0 0 0 1px ${ANN_STYLE[t].fg}55` }} />
+              <span style={{ width: 14, height: 7, borderRadius: 3, background: ANN_STYLE[t].bg, boxShadow: `inset 0 0 0 1px ${withAlpha(ANN_STYLE[t].fg, 33)}` }} />
               {ANN_STYLE[t].label} <b style={{ color: INK }}>{counts[t]}</b>
             </span>
           ))}
@@ -81,7 +82,7 @@ export function AnnotatedEssay({
                   onMouseLeave={() => setActive(null)}
                   style={{ display: "flex", gap: 12, padding: "11px 22px", background: on ? "#F4F2E8" : "transparent", transition: "background .15s ease" }}
                 >
-                  <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: 7, background: st.bg, color: st.fg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 800, fontSize: 12, boxShadow: `inset 0 0 0 1px ${st.fg}40` }}>{i + 1}</span>
+                  <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: 7, background: st.bg, color: st.fg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontWeight: 800, fontSize: 12, boxShadow: `inset 0 0 0 1px ${withAlpha(st.fg, 25)}` }}>{i + 1}</span>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
                       <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: st.fg, background: st.bg, borderRadius: 5, padding: "1px 7px" }}>&ldquo;{r.ann.text.trim()}&rdquo;</span>

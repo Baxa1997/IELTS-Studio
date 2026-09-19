@@ -10,7 +10,7 @@ import { checkMicAccess, startMic, VoicePlayer } from "./audio";
 import { ConfirmQuit } from "./confirm-quit";
 import { LucidaScope, PERSONAS, PersonaAvatar, personaById, WaveBars } from "./lucida";
 import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
-import { BRAND_DEEP, BRAND_MID, PANEL, WHITE } from "@/lib/theme/tokens";
+import { BRAND_DEEP, BRAND_MID, PANEL, WHITE, withAlpha } from "@/lib/theme/tokens";
 
 /**
  * The speaking TUTOR room — a lesson, not an exam.
@@ -239,13 +239,13 @@ function roomTheme(p: Purpose) {
     ink2: dark ? "var(--sp-faint)" : "var(--sp-muted)",
     line: dark ? "rgba(245,240,238,0.16)" : "var(--sp-edge-4)",
     card: dark ? "rgba(245,240,238,0.06)" : "rgba(255,253,252,0.86)",
-    chipBg: dark ? "rgba(148,104,245,0.20)" : `${p.accent}1F`,
+    chipBg: dark ? "rgba(148,104,245,0.20)" : withAlpha(p.accent, 12),
     tint: dark ? "rgba(245,240,238,0.05)" : "var(--sp-stage-2)",
     track: dark ? "rgba(245,240,238,0.14)" : "var(--sp-edge-2)",
     shadow: dark ? "rgba(0,0,0,0.55)" : "rgba(26,21,32,0.18)",
-    glow: `${p.accent}55`,
-    blobA: `${dark ? "var(--color-primary-600)" : p.accent}4D`,
-    blobB: "var(--color-amber-500)33",
+    glow: withAlpha(p.accent, 33),
+    blobA: withAlpha(dark ? "var(--color-primary-600)" : p.accent, 30),
+    blobB: withAlpha("var(--color-amber-500)", 20),
   };
 }
 
@@ -1099,7 +1099,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                         fontFamily: "var(--font-display)",
                         fontSize: "var(--text-xs)",
                         fontWeight: 700,
-                        background: on ? `${item.accent}1F` : "var(--color-neutral-50)",
+                        background: on ? withAlpha(item.accent, 12) : "var(--color-neutral-50)",
                         color: on ? item.accent : "var(--color-neutral-500)",
                       }}
                     >
@@ -1141,7 +1141,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                   fontFamily: "inherit",
                   whiteSpace: "nowrap",
                   background: selectedPurpose.accent,
-                  boxShadow: `0 8px 22px ${selectedPurpose.accent}55`,
+                  boxShadow: `0 8px 22px ${withAlpha(selectedPurpose.accent, 33)}`,
                   opacity: state === "connecting" ? 0.6 : 1,
                 }}
               >

@@ -26,6 +26,7 @@ import {
   WARM_GREEN,
   WARM_RED as RED,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 /**
@@ -1184,7 +1185,7 @@ export function SpeakingClient({
                             fontFamily: "var(--font-display)",
                             fontSize: 13,
                             fontWeight: 700,
-                            background: on ? `${p.accent}1F` : "var(--sp-surface-2)",
+                            background: on ? withAlpha(p.accent, 12) : "var(--sp-surface-2)",
                             color: on ? p.accent : "var(--sp-muted)",
                           }}
                         >
