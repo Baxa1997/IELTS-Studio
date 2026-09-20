@@ -11,6 +11,7 @@ import {
   SLATE_LINE as LINE,
   SLATE_MUTED as FAINT,
 } from "@/lib/theme/tokens";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /**
  * What a CENTER student sees in place of a practice hub.
@@ -271,7 +272,7 @@ function Grid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+        gridTemplateColumns: PRACTICE_GRID_COLUMNS,
         gap: 14,
       }}
     >

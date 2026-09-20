@@ -1,4 +1,5 @@
 import { CardsSkeleton } from "@/components/app-shell/page-skeleton";
+import { PRACTICE_SKELETON_CARDS } from "@/lib/practice/grid";
 
 /**
  * Suspense fallback for the hub pages. The shell (sidebar + header) is owned by
@@ -12,7 +13,7 @@ export default function HubLoading() {
   // padding). A centered max-width here made content jump wider when it streamed in.
   return (
     <div style={{ width: "100%", padding: "32px 24px 64px" }}>
-      <CardsSkeleton tabs cards={4} />
+      <CardsSkeleton tabs cards={PRACTICE_SKELETON_CARDS} />
     </div>
   );
 }

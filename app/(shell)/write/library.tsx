@@ -54,6 +54,7 @@ import {
   WARM_RED,
   WHITE,
 } from "@/lib/theme/tokens";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 export type { LibraryPrompt };
 
@@ -1517,7 +1518,7 @@ function CardGrid({ children }: { children: React.ReactNode }) {
       className="lp-write-grid"
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(max(280px, (100% - 28px) / 3), 1fr))",
+        gridTemplateColumns: PRACTICE_GRID_COLUMNS,
         gap: 14,
       }}
     >

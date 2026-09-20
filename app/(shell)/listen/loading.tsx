@@ -1,5 +1,6 @@
 import { Block } from "@/components/app-shell/page-skeleton";
 import { PANEL } from "@/lib/theme/tokens";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /**
  * Listening hub fallback — mirrors the tabbed hub's exact shape (heading + usage
@@ -41,7 +42,7 @@ export default function ListenLoading() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+          gridTemplateColumns: PRACTICE_GRID_COLUMNS,
           gap: 14,
           marginTop: 18,
         }}

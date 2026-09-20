@@ -54,6 +54,7 @@ import {
   SLATE_LINE,
   SLATE_MUTED,
 } from "@/lib/theme/tokens";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
@@ -928,7 +929,7 @@ function Grid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(max(280px, (100% - 28px) / 3), 1fr))",
+        gridTemplateColumns: PRACTICE_GRID_COLUMNS,
         gap: 14,
       }}
     >

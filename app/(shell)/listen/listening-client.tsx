@@ -15,6 +15,7 @@ import { AttachForm, PracticeModal } from "@/components/console/teacher-practice
 
 import { FlagButton, NumChip } from "./question-ui";
 import { TRAP_EXPLAIN } from "./trap-explain";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /**
  * The map renderer is 750 lines of SVG cartography that only tests containing a
@@ -1262,7 +1263,7 @@ function Grid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+        gridTemplateColumns: PRACTICE_GRID_COLUMNS,
         gap: 14,
       }}
     >

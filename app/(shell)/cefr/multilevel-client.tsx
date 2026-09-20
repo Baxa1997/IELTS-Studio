@@ -62,6 +62,7 @@ import {
   WARM_RED as BAD,
   WHITE,
 } from "@/lib/theme/tokens";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /** Every engine call on this screen goes to the engine's `multilevel` namespace. */
 const callEngine = engineClient("multilevel");
@@ -694,7 +695,7 @@ function Grid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+        gridTemplateColumns: PRACTICE_GRID_COLUMNS,
         gap: 14,
       }}
     >
@@ -3511,13 +3512,19 @@ function TaskStudio({
                 </span>
                 <div style={{ position: "relative", width: 44, height: 44 }}>
                   <svg width="44" height="44" viewBox="0 0 46 46">
-                    <circle style={{ stroke: W_SOFT }} cx="23" cy="23" r="19" fill="none" strokeWidth="4.5" />
+                    <circle
+                      style={{ stroke: W_SOFT }}
+                      cx="23"
+                      cy="23"
+                      r="19"
+                      fill="none"
+                      strokeWidth="4.5"
+                    />
                     <circle
                       cx="23"
                       cy="23"
                       r="19"
                       fill="none"
-
                       strokeWidth="4.5"
                       strokeLinecap="round"
                       strokeDasharray={RING_C}

@@ -1,4 +1,3 @@
-
 import {
   BRAND_LINE,
   PANEL,
@@ -7,6 +6,7 @@ import {
   WARM_LINE,
   WARM_LINE_MID,
 } from "@/lib/theme/tokens";
+import { PRACTICE_GRID_COLUMNS, PRACTICE_SKELETON_CARDS } from "@/lib/practice/grid";
 /**
  * Instant content skeletons shown inside the app shell while a dynamic page renders
  * on the server. Each variant deliberately mirrors the shape of the page it stands
@@ -153,7 +153,13 @@ export function ListSkeleton({ sections = 2 }: { sections?: number }) {
 }
 
 /** A chooser/hub page: heading → optional tab row → a grid of cards. */
-export function CardsSkeleton({ cards = 4, tabs = false }: { cards?: number; tabs?: boolean }) {
+export function CardsSkeleton({
+  cards = PRACTICE_SKELETON_CARDS,
+  tabs = false,
+}: {
+  cards?: number;
+  tabs?: boolean;
+}) {
   return (
     <div style={FADE} role="status" aria-label="Loading">
       <Heading titleW={220} subW={420} />
@@ -167,7 +173,7 @@ export function CardsSkeleton({ cards = 4, tabs = false }: { cards?: number; tab
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+          gridTemplateColumns: PRACTICE_GRID_COLUMNS,
           gap: 14,
           marginTop: tabs ? 16 : 26,
         }}

@@ -1,4 +1,5 @@
 import { Block, Card } from "@/components/app-shell/page-skeleton";
+import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /**
  * CEFR hub fallback. Deliberately mirrors the hub's exact shape — heading, the
@@ -45,7 +46,7 @@ export default function CefrLoading() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+          gridTemplateColumns: PRACTICE_GRID_COLUMNS,
           gap: 14,
         }}
       >
