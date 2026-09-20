@@ -42,10 +42,6 @@ import {
 
 const RAIL_TEXT = "var(--sh-rail-text)"; // resting item text
 const RAIL_MUTED = "var(--sh-rail-muted)"; // counts / disabled / secondary
-/* "You are here": a light tint of the brand orange #dc5426, with a deeper orange
-   for the text and icon. The tint is 12% of #dc5426 over white; the ink is
-   4.98:1 on it — #dc5426 itself only reaches 3.4:1, too faint for a label.
-   Mirrored in globals.css for the collapsed rail's active tile and flyout row. */
 const RAIL_ACTIVE_BG = "var(--sh-rail-active-bg)";
 const RAIL_ACTIVE_INK = "var(--sh-rail-active-ink)";
 /** Sections are plain stacks — the rail is one surface and the gap between
@@ -60,14 +56,6 @@ type Item = {
   /** The English text. Kept as the fallback, and as what appears when a key is
    *  missing — see `labelKey`. */
   label: string;
-  /**
-   * The dictionary key this row's text comes from.
-   *
-   * Optional so a new row can be added without a translation and still render.
-   * It is a SEPARATE FIELD rather than `label` simply becoming a key because
-   * `label` is still the fallback: a row whose key nobody has translated shows
-   * English, not `nav.whatever`.
-   */
   labelKey?: MessageKey;
   href: string;
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
@@ -83,14 +71,6 @@ type Item = {
 };
 
 type Section = {
-  /**
-   * ⚠️ ALSO THE SECTION'S IDENTITY, WHICH IS WHY IT IS NOT TRANSLATED IN PLACE.
-   * This string keys the open/closed map (`openGroups`), builds the `panelId`
-   * for `aria-controls`, and is compared against `activeGroup`. Translate it
-   * here and a learner who switches language finds every group has forgotten
-   * whether it was open, because the keys no longer match. The DISPLAY sites
-   * read `titleKey` through `t()` instead; this stays English forever.
-   */
   title?: string;
   /** The dictionary key for the heading a reader sees. */
   titleKey?: MessageKey;
@@ -197,9 +177,6 @@ const ADMIN: Section[] = [
         href: "/console/finance/invoices",
         icon: Receipt,
       },
-      // "Salary", not "Payroll": one word for the whole thing. The separate
-      // Salary-rules builder is gone — a class carries the teacher's rate
-      // beside the student's fee, which is where an owner looks for it.
       { label: "Salary", labelKey: "nav.salary", href: "/console/finance/payroll", icon: Banknote },
     ],
   },
@@ -539,13 +516,6 @@ const chipStyle: React.CSSProperties = {
   flex: "none",
 };
 
-/**
- * The spinner beside a row while its page loads — and the signal that ends the
- * row's optimistic highlight. `onSettle` fires when a navigation stops being
- * pending. The pathname alone cannot end it: a click that redirects straight
- * back to the page you were on leaves the pathname unchanged, and the row you
- * pressed would stay lit.
- */
 function PendingDot({ onSettle }: { onSettle: () => void }) {
   const { pending } = useLinkStatus();
   const wasPending = useRef(false);
@@ -573,21 +543,6 @@ const itemBase: React.CSSProperties = {
   border: "1px solid transparent",
 };
 
-/**
- * Which rows are rendered in full while the pointer rests on them.
- *
- * ⚠️ `experimental.dynamicOnHover` in next.config is not enough by itself: Next
- * upgrades a hover to a full prefetch only when the link ALSO carries
- * `unstable_dynamicOnHover`. This rail never passed it, so a hover fetched the
- * loading skeleton alone and every click still waited on a whole server render.
- *
- * The heavy screens below are still not rendered on hover — sweeping the pointer
- * down the rail should not run payroll and report queries. But they are no
- * longer `prefetch={false}`, which also skipped their loading boundary: a click
- * on Finance showed nothing at all until the server answered. The default
- * prefetch fetches just that skeleton, which is cheap and is what lets the click
- * paint at once.
- */
 function renderOnHover(href: string): boolean {
   return !(
     href.startsWith("/admin") ||
@@ -659,14 +614,6 @@ function groupBadge(items: Item[]): { badge: string; tone: "good" | "alert" } | 
   };
 }
 
-/**
- * Where this person's settings live, or null when they have none.
- *
- * Staff share the console's settings (which sections each role sees is decided
- * in console/settings/section-list.ts); a solo learner has their own. A center
- * student has none — their center runs their account — and neither does the
- * platform owner.
- */
 export function settingsHrefFor(role: string, homeworkOnly: boolean): string | null {
   if (role === "center_admin" || role === "administrator" || role === "teacher") {
     return "/console/settings";
@@ -675,11 +622,6 @@ export function settingsHrefFor(role: string, homeworkOnly: boolean): string | n
   return null;
 }
 
-/**
- * The rail with Settings pinned at its foot, for anyone who has settings. It is a
- * flat section like Assistant and Dashboard, so it gets the same row, the same
- * active highlight and the same collapsed tile — only its position differs.
- */
 function withSettings(sections: Section[], role: string, homeworkOnly: boolean): Section[] {
   const href = settingsHrefFor(role, homeworkOnly);
   if (!href) return sections;
@@ -746,12 +688,6 @@ export function SidebarNav({
   const all = sections.flatMap((s) => s.items);
   const activeHref = resolveActiveHref(all, pathname);
 
-  /* The row just pressed, lit before its page arrives — the URL only changes once
-     the server has answered, so a highlight that followed it made every click look
-     ignored for the whole round trip. Remembered WITH the page it was pressed from
-     and dropped the moment the pathname moves on (the same adjust-during-render
-     pattern as `lastActiveGroup` below), so pressing BACK later cannot revive it.
-     `PendingDot` drops it for a navigation that lands where it started. */
   const [pressed, setPressed] = useState<{ href: string; from: string } | null>(null);
   if (pressed && pressed.from !== pathname) setPressed(null);
   const shownHref = pressed && pressed.from === pathname ? pressed.href : activeHref;

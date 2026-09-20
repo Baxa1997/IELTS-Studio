@@ -4,17 +4,6 @@ import { Loader2 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { SANS } from "@/lib/theme/tokens";
 
-/**
- * The signature "AI generate" section — an aurora-gradient banner with drifting
- * orbs, floating sparkles, a haloed glassmorphism icon, an optional live badge and
- * a white shimmer CTA. Imported from the Claude Design `AI Section.dc.html` and used
- * for every AI-generation surface (writing topic, reading passage/test, …).
- *
- * Robustness note: the dark gradient + clipping are set INLINE (not via the class)
- * so the surface can never render as a transparent/white box if the stylesheet is
- * cascaded over or loads late. The `.aib-card` class only drives the aurora
- * animation; `.aib-*` keyframes + reduced-motion live in globals.css.
- */
 export const AI_AURORA_GRADIENT =
   "linear-gradient(130deg,#2C0013 0%,#5C0125 18%,#5C0125 42%,#9B1044 62%,#7D0132 82%,#2C0013 100%)";
 
@@ -315,11 +304,6 @@ export function AiGenerateSection({
   );
 }
 
-/**
- * The white shimmer CTA used inside <AiGenerateSection>. Self-contained presentational
- * button — the caller owns the click + state. Shows a spinner + `busyLabel` while
- * `generating`, and is disabled while `busy`.
- */
 export function AiGenerateButton({
   label,
   busyLabel = "Generating…",
