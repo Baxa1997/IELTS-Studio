@@ -3,6 +3,12 @@
 import Link from "next/link";
 
 import { useT } from "@/components/i18n/locale-provider";
+import {
+  CONTACT_EMAIL,
+  CONTACT_MAILTO,
+  CONTACT_PHONE,
+  CONTACT_TEL_HREF,
+} from "@/lib/contact";
 
 import {
   BODY,
@@ -84,14 +90,14 @@ export function CentersBand() {
           >
             <span>
               ✉{" "}
-              <a href="mailto:centers@engprogress.com" style={{ fontWeight: 700, color: BRAND }}>
-                centers@engprogress.com
+              <a href={CONTACT_MAILTO} style={{ fontWeight: 700, color: BRAND }}>
+                {CONTACT_EMAIL}
               </a>
             </span>
             <span>
               ✆{" "}
-              <a href="tel:+998712000000" style={{ fontWeight: 700, color: BRAND }}>
-                +998 71 200 00 00
+              <a href={CONTACT_TEL_HREF} style={{ fontWeight: 700, color: BRAND }}>
+                {CONTACT_PHONE}
               </a>
             </span>
           </div>

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import { CONTACT_EMAIL } from "@/lib/contact";
 import Link from "next/link";
 
 import { B, LegalTitle, LI, P, Section, UL } from "../legal";
@@ -10,8 +12,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/terms" },
   robots: { index: true, follow: true },
 };
-
-const CONTACT_EMAIL = "bahridnurullav@gmail.com";
 
 export default function TermsPage() {
   return (

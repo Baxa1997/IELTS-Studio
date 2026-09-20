@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SiInstagram, SiTelegram, SiWhatsapp } from "react-icons/si";
 
 import { useT } from "@/components/i18n/locale-provider";
+import { CONTACT_EMAIL, CONTACT_PHONE } from "@/lib/contact";
 import type { MessageKey } from "@/lib/i18n";
 
 import { BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "./design";
@@ -36,11 +37,9 @@ import { BRAND_FILL, DISPLAY, FOOTER_GROUND as GROUND, SANS, WHITE } from "./des
 
 /* ── contact, as supplied by the owner ─────────────────────────────────────── */
 
-/** The same address the privacy policy already publishes, so there is one
- *  inbox rather than two. */
-const CONTACT_EMAIL = "bahridnurullav@gmail.com";
-/** One number for both calls and WhatsApp. */
-const PHONE = "+998 97 711 68 12";
+/** One inbox and one number for the whole site — `lib/contact.ts` holds them,
+ *  because the address used to be spelled out here and in five other files. */
+const PHONE = CONTACT_PHONE;
 
 /* ── the one thing only the owner can supply ───────────────────────────────── */
 

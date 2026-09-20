@@ -21,6 +21,7 @@ import {
 import { PLAN_ORDER, PLAN_TIERS, planTier, type OrgPlan } from "@/lib/billing/plans";
 import { getSubscription } from "@/lib/billing/service";
 import type { Profile } from "@/lib/auth";
+import { CONTACT_MAILTO } from "@/lib/contact";
 import { serverEnv } from "@/lib/env";
 import { getGenerationQuota, getGradingQuota } from "@/lib/quota";
 
@@ -327,7 +328,7 @@ function PlanCard({
           <UpgradeButtons plan={plan} providers={providers} />
         ) : plan === "enterprise" ? (
           <a
-            href="mailto:sales@engprogress.com"
+            href={CONTACT_MAILTO}
             className="cn-link"
             style={{ fontFamily: SANS, fontSize: 12, color: INDIGO, textDecoration: "none" }}
           >

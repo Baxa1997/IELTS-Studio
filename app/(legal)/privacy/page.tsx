@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { CONTACT_EMAIL } from "@/lib/contact";
+
 import { B, LegalTitle, LI, P, Section, UL } from "../legal";
 
 export const metadata: Metadata = {
@@ -9,8 +11,6 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
   robots: { index: true, follow: true },
 };
-
-const CONTACT_EMAIL = "bahridnurullav@gmail.com";
 
 export default function PrivacyPage() {
   return (

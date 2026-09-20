@@ -7,6 +7,8 @@
 
 import Link from "next/link";
 
+import { CONTACT_EMAIL } from "@/lib/contact";
+
 import {
   BODY,
   BRAND,
@@ -190,7 +192,7 @@ export function FactsNote({ competitor, site }: { competitor: string; site: stri
   return (
     <p style={{ margin: "20px 0 0", fontSize: 12.5, lineHeight: 1.6, color: "#9A9EAE" }}>
       Facts about {competitor} were checked on their public website ({site}) in July 2026 and may have
-      changed since — tell us at bahridnurullav@gmail.com if anything is out of date and we will correct
+      changed since — tell us at {CONTACT_EMAIL} if anything is out of date and we will correct
       it. {competitor} is a trademark of its owner; EngProgress is not affiliated with or endorsed by{" "}
       {competitor}.
     </p>

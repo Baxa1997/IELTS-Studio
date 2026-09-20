@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
-import { A, B, P, PageTitle, Sec } from "../marketing";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
-const EMAIL = "bahridnurullav@gmail.com";
+import { A, B, P, PageTitle, Sec } from "../marketing";
 
 export const metadata: Metadata = {
   title: "Contact EngProgress — Support & Feedback",
@@ -23,7 +23,7 @@ export default function ContactPage() {
       <Sec title="Email">
         <P>
           The fastest way to reach us is email:{" "}
-          <A href={`mailto:${EMAIL}`}>{EMAIL}</A>. Write in whatever language is comfortable —
+          <A href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</A>. Write in whatever language is comfortable —
           English, O&lsquo;zbekcha, or Русский.
         </P>
       </Sec>
