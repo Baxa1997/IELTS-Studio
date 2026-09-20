@@ -10,6 +10,19 @@ facts on the ground.
 
 Full background: `IELTS_Writing_Reading_SaaS_Project_Plan.md` (on Desktop).
 
+## At a glance
+
+- **Two repos.** This one is the **Next.js app** (learner + teacher + admin UI,
+  auth, billing, grading prompts). `~/Desktop/saas/ielts-ai-engine` is the
+  **Python engine** that generates and renders practice content — see below.
+- **Four IELTS skills + a CEFR/Multilevel track**, all generated on demand. No
+  human approval gate stands between a learner and a practice task.
+- **Two kinds of customer**: individuals (each gets a personal organisation) and
+  education centres (org + teachers + groups + assignments), one tenant model
+  for both, isolated by RLS.
+- **The moat is the grader**, not the feature list. Calibrated, conservative,
+  and specified in one place — the `ielts-examiner` skill.
+
 ## Product
 
 AI platform for IELTS. **All four skills ship**: Writing and Reading (the original core), plus **Listening** and **Speaking**, which are live and no longer carry a BETA badge (2026-08-02 — the earlier "coming soon / do not build them yet" instruction is retired). There is also a **CEFR / Multilevel** track for the Uzbekistan DTM exam: its Reading and Writing papers are live; Listening and Speaking are not built yet.
@@ -32,6 +45,32 @@ The whole game is **grading accuracy**. Every competitor already has "AI gives a
 - **Langfuse** — AI observability: traces, cost, prompt-version, and grading-quality evals. (Reality check: the app has a small Langfuse client; the engine currently records spend in the `ai_usage` table rather than Langfuse.)
 - AI providers: **Gemini**, routed **per task, not globally**. Which model serves which task — in both this app and the engine — is inventoried in the engine's `docs/model-inventory.md`; the October 2026 shutdown of the 2.5 line and how to migrate safely is `docs/model-migration-2026-10.md`. Never hardcode a model id outside those env-driven constants.
 
+## The engine repo (`ielts-ai-engine`)
+
+The backend that makes practice content. A **separate git repository** at
+`~/Desktop/saas/ielts-ai-engine`, Python + FastAPI (`main.py`), self-hosted on a
+Contabo box that this app calls over HTTP. It is not deployed by Vercel and
+does not ship with this repo.
+
+- **What lives there:** `reading/`, `listening/`, `speaking/`, `multilevel/`
+  (the CEFR track) and `lessons/` — each holding the prompts, the layout rules,
+  the schemas and the validators for that skill. `listening/` also owns
+  multi-voice TTS. `scripts/` holds the seeders and `scripts/qa/` the QA tools.
+- **What does NOT live there: grading.** The `ielts-examiner` skill in *this*
+  repo is the single source of truth for how work is scored; the engine proxies
+  the call. Do not re-implement rubric, anchors or strictness there.
+- **`docs/` is the real documentation** and is worth reading before touching
+  anything: `model-inventory.md` (which model serves which task, in both repos),
+  `model-migration-2026-10.md`, `calibration-log.md` (**read before changing any
+  grading arithmetic, anchor or strictness knob** — speaking grading is frozen),
+  the `listening-part{1,2,3,4}-spec.md` set, and `cefr-listening-spec.md`.
+- **Deploy order is engine first, app second.** The app expects endpoints the
+  engine may not have yet; shipping them the other way round breaks production.
+- **Tests need the venv recipe** — the system Python is PEP-668 locked and
+  `requirements.txt` alone does not collect.
+- **Never hardcode a model id** in either repo. Models are env-driven constants,
+  routed per task rather than globally.
+
 ## Non-negotiable principles
 
 1. **Multi-tenant from day one.** Center A must never see Center B's data. Enforce with Supabase **RLS** — not application code alone.
@@ -53,6 +92,59 @@ The whole game is **grading accuracy**. Every competitor already has "AI gives a
 - **Never call AI models from the client** (cost + abuse).
 - **All AI calls go through a single server-side service** with usage logging.
 - **Separate the generator from the grader** — different calls; the model that writes prompts/passages must not grade its own output leniently.
+
+## How to work in this repo
+
+These are about the mechanics of working here, and they are the rules broken
+most often. All of them exist because breaking one cost real time.
+
+- **⛔ DO NOT RUN `npm run build` FOR A UI CHANGE.** A dev server is usually
+  running, and `next build` and `next dev` share `.next/static` — a build while
+  dev is live leaves the browser serving stale CSS that looks exactly like a
+  bug you just introduced. The owner tests UI visually. Edit, commit, report.
+- **⛔ DO NOT PROBE THE RUNNING APP.** No browser harnesses, no screenshots, no
+  curling the dev server to "verify" a visual change. If a change cannot be
+  checked by reading the code, say so and hand it over.
+- **CHECK, DO NOT SWEEP.** `npx tsc --noEmit` plus the one test file that
+  covers what you touched is the normal verification. Run the whole suite once
+  before a commit that spans several areas, not after every edit — and never
+  run `prettier --write` while `vitest` is reading the same files, which
+  produces failures that vanish on a re-run.
+- **NEVER PUSH OR DEPLOY WITHOUT BEING ASKED.** Make the change, test it,
+  commit locally, then stop. Shipping is the owner's call, every time. This
+  includes anything that writes to the production database — the seed scripts
+  in `scripts/` among them.
+- **LONG JOBS GO TO A LOG, NOT THROUGH THE CONVERSATION.** Content generation
+  and seeding produce thousands of lines. Run them detached, then check a count
+  or a tail. Never read generated passages back to verify them.
+
+## Writing code here
+
+The codebase has a house style, and it is not about formatting — Prettier
+handles that. It is about what a file is expected to explain.
+
+- **COMMENT THE WHY AND THE TRAP, NEVER THE WHAT.** `// set the locale` is
+  noise. The comment worth writing is the one that stops the next person
+  undoing something load-bearing: what was tried, what broke, and why the
+  obvious-looking simplification is wrong. Mark those `⚠️`.
+- **A NON-OBVIOUS DECISION GETS A TEST THAT PINS IT.** Not for coverage — so
+  that reverting it turns something red with the reason attached. Then
+  **mutation-test the guard**: break the thing deliberately and confirm the test
+  actually fails. A guard that passes against the bug it was written for is
+  worse than none, and this has happened here.
+- **DERIVE, DO NOT SPELL OUT.** A list that must track a constant should be
+  computed from it. Hardcoded parallel lists go stale silently.
+- **NO COLOUR LITERALS.** Use the tokens in `lib/theme/tokens.ts`; every fill
+  carries its own ink (`GREEN_FILL` + `ON_GREEN`), because a literal fill with
+  a token ink inverts in dark mode and becomes unreadable.
+- **NO USER-FACING COPY AS STRING LITERALS** in the app shell or marketing
+  surfaces — keys in `lib/i18n/messages/en.ts`, which the other locales are
+  typed against. Exam content and grader output stay English on purpose.
+- **RESPECT THE CLIENT BOUNDARY.** A `"use client"` module may export a
+  component to a server module, never a value: strings, arrays and config
+  arrive as client references and produce junk without an error.
+- **MATCH THE FILE YOU ARE IN.** Comment density, naming and idiom should look
+  like the surrounding code, not like a different codebase.
 
 ## How grading must work (the anti-inflation playbook)
 
