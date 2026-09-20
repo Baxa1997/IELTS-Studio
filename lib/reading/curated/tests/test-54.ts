@@ -30,10 +30,10 @@ const MAP_ENDINGS = [
   "because a curved surface cannot be flattened without stretching something.",
   "which is exactly what a sailor crossing an ocean needs.",
   "although the distortion it introduces is in the shapes rather than the areas.",
-  "even though the projection was designed for a purpose nobody uses it for now.",
+  "because preserving local shape is exactly what a street-level view needs.",
   "because the countries it enlarges happen to be the wealthy ones.",
   "which the writer thinks is the wrong question to be arguing about.",
-  "despite having been published more than four centuries earlier.",
+  "since the same projection had been published by another man a century before.",
 ];
 
 export const TEST_54: CuratedTest = {
@@ -398,7 +398,7 @@ G) I think the energy spent on condemning one projection would be better spent t
           "matching_sentence_endings",
           MAP_ENDINGS,
           "The equal-area map promoted in the 1970s was not new,",
-          "despite having been published more than four centuries earlier.",
+          "since the same projection had been published by another man a century before.",
           "Cartographers who agreed entirely with the political point were nonetheless irritated by the campaign, partly because the projection Peters promoted had been published by James Gall a century earlier and partly because its own distortion, a pronounced vertical stretching of the tropics, is severe enough that few of them considered it an improvement.",
           "It had been published by Gall a century before.",
         ),
@@ -406,7 +406,7 @@ G) I think the energy spent on condemning one projection would be better spent t
           "matching_sentence_endings",
           MAP_ENDINGS,
           "Digital services still use a version of the 1569 chart,",
-          "even though the projection was designed for a purpose nobody uses it for now.",
+          "because preserving local shape is exactly what a street-level view needs.",
           "The problem arose when a chart designed for steering ships became the default image of the world on schoolroom walls and, much later, the default for digital mapping services, which adopted a variant of it because its property of preserving local shape at every zoom level is useful when a user is looking at a street rather than a hemisphere.",
           "It was designed for steering ships.",
         ),

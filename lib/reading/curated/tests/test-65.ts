@@ -33,7 +33,7 @@ const SPORT_ENDINGS = [
   "even though every competitor had equal access to the equipment.",
   "because a line has to be drawn somewhere and no line is principled.",
   "which the writer regards as the only honest way to run the argument.",
-  "despite the objection that the advantage was available to anybody who paid.",
+  "since the rule permits most of the gain and bars only the extreme designs.",
 ];
 
 export const TEST_65: CuratedTest = {
@@ -228,8 +228,8 @@ There is a further complication that makes prediction difficult. Thaw does not p
         fromList(
           "summary_completion",
           FROST_BANK,
-          "Highways suffer badly because a road conducts heat down and causes ______.",
-          "subsidence",
+          "Highways suffer badly because a road conducts heat down and makes the ground ______.",
+          "thaw",
           "Roads are the most visible failure — a road absorbs heat, conducts it downwards and thaws the ground beneath itself, so that northern highways develop the characteristic waves and sinkholes that require constant repair.",
           "The result is waves and sinkholes.",
         ),
@@ -394,9 +394,9 @@ G) What I think follows is that sport should stop pretending the line is discove
           "matching_sentence_endings",
           SPORT_ENDINGS,
           "Carbon-plated running shoes were restricted rather than prohibited,",
-          "despite the objection that the advantage was available to anybody who paid.",
+          "since the rule permits most of the gain and bars only the extreme designs.",
           "A limit was placed on sole thickness and on the number of plates, which permits most of the advantage and excludes the most extreme designs.",
-          "Only the extremes were excluded.",
+          "Most of the advantage is permitted.",
         ),
         fromList(
           "matching_sentence_endings",

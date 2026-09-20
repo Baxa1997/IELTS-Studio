@@ -27,7 +27,7 @@ const PUZZLE_BANK = [
 
 const COLOUR_PARAGRAPHS = ["A", "B", "C", "D", "E", "F", "G"];
 const COLOUR_ENDINGS = [
-  "because every language studied names black and white before anything else.",
+  "because a two-term language always splits the range the same way.",
   "although the speakers can distinguish the shades perfectly well without a word.",
   "which is why reaction times differ even when accuracy does not.",
   "even though the eye of every population tested is built the same way.",
@@ -382,9 +382,9 @@ G) The position that seems to me defensible is narrow and rather undramatic. Lan
           "matching_sentence_endings",
           COLOUR_ENDINGS,
           "The naming sequence looks biological rather than cultural,",
-          "because every language studied names black and white before anything else.",
+          "because a two-term language always splits the range the same way.",
           "A large comparative study in the late 1960s found that where a language has only two basic colour terms, they always divide roughly into dark-cool and light-warm; where it has three, the third is always red; where four, the fourth is green or yellow; and so on through a sequence that turned out to be remarkably consistent across unrelated languages.",
-          "The two-term stage is always dark-cool and light-warm.",
+          "Two-term languages always divide into dark-cool and light-warm.",
         ),
         fromList(
           "matching_sentence_endings",

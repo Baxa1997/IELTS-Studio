@@ -106,18 +106,18 @@ Pilkington was knighted, the firm collected licence fees for decades, and the pr
         noteLine(
           GLASS_FLOW,
           null,
-          "Molten glass is poured onto a bath of liquid ______",
+          "The bath is held under a reducing atmosphere so the ______ cannot oxidise",
           "tin",
-          "Molten glass poured onto liquid tin spreads out under gravity and is pulled in by its own surface tension, and those two forces reach equilibrium at a particular thickness — about seven millimetres for soda-lime glass.",
-          "It is poured 'onto liquid tin'.",
+          "Tin satisfies all three conditions, and the bath has to be held under a slightly reducing atmosphere of nitrogen and hydrogen, because molten tin exposed to air oxidises and the oxide marks the glass.",
+          "Molten tin exposed to air oxidises.",
         ),
         noteLine(
           GLASS_FLOW,
           null,
           "It spreads until ______ and surface tension balance",
           "gravity",
-          "The upper surface is flat because gravity has flattened it; the lower surface is flat because the tin beneath it is flat.",
-          "Gravity flattens the upper face against surface tension.",
+          "Molten glass poured onto liquid tin spreads out under gravity and is pulled in by its own surface tension, and those two forces reach equilibrium at a particular thickness — about seven millimetres for soda-lime glass.",
+          "The two forces named are gravity and surface tension.",
           { before: [{ text: "Continuous, from melt to cut sheet:", indent: 0 }] },
         ),
         noteLine(

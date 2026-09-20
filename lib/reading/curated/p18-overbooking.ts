@@ -86,10 +86,10 @@ The same reasoning has spread well beyond aviation. Hotels overbook, car hire co
     gapFill(
       "sentence_completion",
       "NO MORE THAN TWO WORDS",
-      "Between five and fifteen per cent of ticket holders are ______ on a typical flight.",
-      "no-shows",
-      "A business route on a Tuesday morning with a high proportion of flexible tickets may show fifteen per cent no-shows; a leisure route on a Saturday in August, sold months ahead on non-refundable fares, may show almost none, and is therefore barely overbooked at all.",
-      "They are the no-shows.",
+      "On a typical flight, five to fifteen per cent of ticket holders fail to ______ themselves.",
+      "present",
+      "Some passengers miss connections, some are delayed, some change plans, and on a typical flight between five and fifteen per cent of those holding a ticket do not present themselves.",
+      "They 'do not present themselves'.",
     ),
     gapFill(
       "sentence_completion",

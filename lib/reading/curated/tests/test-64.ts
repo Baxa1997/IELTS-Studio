@@ -87,9 +87,9 @@ There is a practical consequence for anyone brewing now. Because the strains are
         ),
         tfng(
           "A flavour compound was deliberately bred out of most brewing strains.",
-          "TRUE",
-          "They have lost the ability to produce a compound that tastes strongly of cloves and smoke, which is desirable in one or two traditional styles and unwanted in almost everything else; the loss is a broken gene, exactly the kind of degradation that happens when selection stops protecting a function and then actively removes it.",
-          "Selection 'actively removes it'.",
+          "FALSE",
+          "None of this was planned, and that is the point worth holding on to.",
+          "The passage insists that 'none of this was planned'.",
         ),
         tfng(
           "The wild parent of lager yeast was identified in Europe.",

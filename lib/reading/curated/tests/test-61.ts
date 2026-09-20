@@ -20,7 +20,7 @@ const RING_BANK = [
   "bark",
   "frost",
   "chronology",
-  "sapwood",
+  "felling",
 ];
 
 // ---- Passage 3 · education research · lettered paragraphs ------------------
@@ -240,10 +240,10 @@ The method has limits that are worth stating plainly. It needs regional chronolo
         fromList(
           "summary_completion",
           RING_BANK,
-          "Where the outer wood is missing, only a date for the last surviving ring can be given, since the ______ has been trimmed away.",
-          "sapwood",
+          "Where the outer wood has been trimmed away, the result is the earliest possible ______ date.",
+          "felling",
           "A timber that has been trimmed of its outer wood can be dated only to the last surviving ring, which gives the earliest possible felling date and not the actual one, and the distinction has decided more than one archaeological argument.",
-          "The outer wood has been trimmed off.",
+          "It gives 'the earliest possible felling date'.",
         ),
         mcq(
           "What determines the width of a particular ring?",

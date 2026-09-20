@@ -32,8 +32,8 @@ const PLACEBO_ENDINGS = [
   "although the effect disappeared once the trial was unblinded.",
   "which is why the ritual surrounding a treatment may matter as much as its content.",
   "because no ethics committee would now approve the original design.",
-  "despite the absence of any active ingredient in either group.",
-  "which the writer regards as the strongest objection to the whole field.",
+  "which they had been told, in writing, contained nothing active.",
+  "and the enthusiasm has run ahead of the mechanistic evidence.",
 ];
 
 export const TEST_53: CuratedTest = {
@@ -407,18 +407,18 @@ G) My own view is that the field is at the stage where it is easy to overclaim. 
         fromList(
           "matching_sentence_endings",
           PLACEBO_ENDINGS,
-          "The comparison groups in these studies both improved,",
-          "despite the absence of any active ingredient in either group.",
+          "One trial assigned patients either to nothing or to pills,",
+          "which they had been told, in writing, contained nothing active.",
           "In the best known of them, patients with irritable bowel syndrome were randomly assigned either to no treatment or to a course of pills they were told, explicitly and in writing, were inert.",
           "Neither arm received an active drug.",
         ),
         fromList(
           "matching_sentence_endings",
           PLACEBO_ENDINGS,
-          "The dependence on self-reported outcomes is a real weakness,",
-          "which the writer regards as the strongest objection to the whole field.",
+          "The measured effects are real but limited,",
+          "and the enthusiasm has run ahead of the mechanistic evidence.",
           "The effects measured are real but modest, they are concentrated in symptoms that are reported rather than measured, and the enthusiasm surrounding them has run some distance ahead of the mechanistic evidence.",
-          "The writer's central caution is about reported symptoms.",
+          "Enthusiasm has outrun the mechanistic evidence.",
         ),
       ],
     },

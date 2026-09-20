@@ -29,10 +29,10 @@ const SPECIES_PARAGRAPHS = ["A", "B", "C", "D", "E", "F", "G"];
 const SPECIES_ENDINGS = [
   "because the organisms in question do not reproduce sexually at all.",
   "although the two populations continue to exchange genes where they meet.",
-  "which is why the same museum drawer can be relabelled twice in a decade.",
+  "since more than two dozen published concepts are in active use.",
   "even though no biologist doubts that the animals are different.",
   "because conservation law attaches money and protection to the category.",
-  "which the writer thinks is a reason to be careful rather than a reason to despair.",
+  "because everything else in biology is built on top of it.",
   "despite having been proposed by the same researcher who rejected it later.",
 ];
 
@@ -403,8 +403,8 @@ G) My own view is that the species is best understood as a real pattern observed
         fromList(
           "matching_sentence_endings",
           SPECIES_ENDINGS,
-          "Competing concepts can reclassify the same specimens,",
-          "which is why the same museum drawer can be relabelled twice in a decade.",
+          "There is no single agreed test for the category,",
+          "since more than two dozen published concepts are in active use.",
           "There are, by one survey, more than two dozen published species concepts in active use.",
           "With two dozen concepts in use, labels move.",
         ),
@@ -412,7 +412,7 @@ G) My own view is that the species is best understood as a real pattern observed
           "matching_sentence_endings",
           SPECIES_ENDINGS,
           "The category remains approximate and indispensable,",
-          "which the writer thinks is a reason to be careful rather than a reason to despair.",
+          "because everything else in biology is built on top of it.",
           "A category that is admitted to be approximate is still the category everything else is built on.",
           "Approximate, but everything is built on it.",
         ),

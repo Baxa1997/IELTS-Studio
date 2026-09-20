@@ -54,10 +54,10 @@ The idea has an afterlife. Modern tidal barrages work on the same principle — 
       "They 'march steadily around the clock'.",
     ),
     tfng(
-      "Tide mills were a medieval invention.",
+      "The earliest tide mill known is the one recorded in the Domesday survey.",
       "FALSE",
       "A tide mill has been excavated in Northern Ireland dated to the seventh century, and others of similar age are known from the coasts of Ireland and Britain; the Domesday survey of 1086 records one on the south coast of England.",
-      "One dates to the seventh century.",
+      "An excavated mill predates Domesday by some four hundred years.",
     ),
     tfng(
       "A larger pond allows the mill to run for longer.",
