@@ -48,13 +48,14 @@ import {
   CardFoot,
   CardHead,
   CardTags,
+  clock,
+  LevelLabel,
   PracticeCard,
+  shortDate,
   StatusPill,
   Waveform,
-  clock,
-  shortDate,
 } from "@/components/practice/card";
-import { levelChipForLevel } from "@/lib/practice/levels";
+import { groupByLevel, levelChipForLevel, levelSectionTitle } from "@/lib/practice/levels";
 import { BAD, BRAND, INK, MUTED, PART_GENRE, RUN, SANS, SERIF, TINT } from "./theme";
 import type {
   Catalogue,
@@ -548,6 +549,7 @@ function Hub({
   /** Attach for a GENERATED item — needs the engine's promote step first. */
   attachMine?: (id: string) => AttachSlot | undefined;
 }) {
+  const t = useT();
   // Tab 1: FULL tests only (part 0). Tab 2: single-recording quick practices.
   const tests = useMemo(
     () =>
@@ -734,19 +736,25 @@ function Hub({
             </EmptyHint>
           ) : (
             <div style={{ marginTop: 20 }}>
-              <Grid>
-                {tests.map((it) => (
-                  <TestCard
-                    key={it.id}
-                    it={it}
-                    showAccent={accentsVary}
-                    loading={busy === it.id}
-                    disabled={!!busy}
-                    onOpen={() => onOpen(it)}
-                    attach={attachLibrary?.(it.id)}
-                  />
-                ))}
-              </Grid>
+              {/* Listening stores the level outright, so no band mapping here. */}
+              {groupByLevel(tests, (it) => it.difficulty).map(({ level, items }) => (
+                <Fragment key={level ?? "mixed"}>
+                  <LevelLabel>{levelSectionTitle(t, level)}</LevelLabel>
+                  <Grid>
+                    {items.map((it) => (
+                      <TestCard
+                        key={it.id}
+                        it={it}
+                        showAccent={accentsVary}
+                        loading={busy === it.id}
+                        disabled={!!busy}
+                        onOpen={() => onOpen(it)}
+                        attach={attachLibrary?.(it.id)}
+                      />
+                    ))}
+                  </Grid>
+                </Fragment>
+              ))}
             </div>
           )}
         </>
@@ -789,19 +797,24 @@ function Hub({
           {quick.length > 0 ? (
             <>
               <SectionLabel>Ready-made quick practices</SectionLabel>
-              <Grid>
-                {quick.map((it) => (
-                  <QuickCard
-                    key={it.id}
-                    it={it}
-                    showAccent={accentsVary}
-                    loading={busy === it.id}
-                    disabled={!!busy}
-                    onOpen={() => onOpen(it)}
-                    attach={attachLibrary?.(it.id)}
-                  />
-                ))}
-              </Grid>
+              {groupByLevel(quick, (it) => it.difficulty).map(({ level, items }) => (
+                <Fragment key={level ?? "mixed"}>
+                  <LevelLabel>{levelSectionTitle(t, level)}</LevelLabel>
+                  <Grid>
+                    {items.map((it) => (
+                      <QuickCard
+                        key={it.id}
+                        it={it}
+                        showAccent={accentsVary}
+                        loading={busy === it.id}
+                        disabled={!!busy}
+                        onOpen={() => onOpen(it)}
+                        attach={attachLibrary?.(it.id)}
+                      />
+                    ))}
+                  </Grid>
+                </Fragment>
+              ))}
             </>
           ) : null}
         </>

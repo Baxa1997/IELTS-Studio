@@ -139,6 +139,8 @@ export const ru: Messages = {
   "card.pro": "Pro",
   "card.unlockPro": "Открыть с Pro",
   "card.attachClass": "Прикрепить к группе",
+  "practice.level": "Уровень {n}",
+  "practice.levelMixed": "Смешанные уровни",
 
   /* ── раздел Reading ──────────────────────────────────────────────────── */
   "read.yourTests": "Ваши тесты",

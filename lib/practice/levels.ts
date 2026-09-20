@@ -76,3 +76,80 @@ function chip(level: number): LevelChip {
      came for. */
   return { text: `LEVEL ${level}`, hint: `Level ${level} of ${MAX_LEVEL} · ${row.hint}` };
 }
+
+// ---- Grouping a hub's library into one section per level ---------------------
+
+/** One level's worth of cards, in the order the hub should render them. */
+export interface LevelSection<T> {
+  /** 1..MAX_LEVEL, or null for content whose level cannot be established. */
+  level: number | null;
+  items: T[];
+}
+
+/**
+ * Split an already-ordered list into one section per level, easiest first.
+ *
+ * DERIVED FROM PRACTICE_LEVELS rather than a literal 1..5, so changing the scale
+ * changes the sections with no edit here or in any hub.
+ *
+ * Three properties the hubs rely on:
+ *
+ *   1. ⚠️ AN EMPTY LEVEL PRODUCES NO SECTION. A heading with nothing under it
+ *      reads as content that failed to load, and the library is uneven by
+ *      design — there is no band 4 full test at all.
+ *
+ *   2. ⚠️ ORDER IS PRESERVED INSIDE A SECTION, because the caller numbers the
+ *      cards BEFORE grouping. The sequence number is in the card label and in
+ *      the URL (`?n=`), so it has to stay attached to the item rather than be
+ *      recomputed from a position in a section.
+ *
+ *   3. ⚠️ UNKNOWN LEVEL SORTS LAST, NEVER DROPPED. A card with no difficulty is
+ *      real practice; a `levelOf` returning null must not make it disappear from
+ *      the hub.
+ *
+ * `levelOf` returns a LEVEL, not a band — a caller holding bands maps them with
+ * bandToLevel first, so this stays one job.
+ */
+export function groupByLevel<T>(
+  items: readonly T[],
+  levelOf: (item: T) => number | null,
+): LevelSection<T>[] {
+  const buckets = new Map<number | null, T[]>();
+  for (const item of items) {
+    const raw = levelOf(item);
+    /* Clamped, not discarded: a stray level outside the scale belongs at the
+       nearer end rather than in the unknown bucket. */
+    const key =
+      raw == null || !Number.isFinite(raw)
+        ? null
+        : Math.min(MAX_LEVEL, Math.max(MIN_LEVEL, Math.round(raw)));
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(item);
+    else buckets.set(key, [item]);
+  }
+
+  const out: LevelSection<T>[] = [];
+  for (const { level } of PRACTICE_LEVELS) {
+    const got = buckets.get(level);
+    if (got?.length) out.push({ level, items: got });
+  }
+  const unknown = buckets.get(null);
+  if (unknown?.length) out.push({ level: null, items: unknown });
+  return out;
+}
+
+/**
+ * The heading for one level section, translated.
+ *
+ * Takes `t` rather than importing it, so this module stays free of the i18n
+ * provider and usable from a server component.
+ */
+export function levelSectionTitle(
+  t: (
+    key: "practice.level" | "practice.levelMixed",
+    vars?: Record<string, string | number>,
+  ) => string,
+  level: number | null,
+): string {
+  return level == null ? t("practice.levelMixed") : t("practice.level", { n: level });
+}

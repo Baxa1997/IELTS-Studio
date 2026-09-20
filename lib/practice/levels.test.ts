@@ -4,6 +4,7 @@ import {
   MAX_LEVEL,
   PRACTICE_LEVELS,
   bandToLevel,
+  groupByLevel,
   levelChipForBand,
   levelChipForLevel,
 } from "./levels";
@@ -113,5 +114,69 @@ describe("the table itself", () => {
         expect(bandToLevel(band), `band ${band} is not level ${row.level}`).toBe(row.level);
       }
     }
+  });
+});
+
+/**
+ * Sectioning a hub's library by level. Every failure below renders a hub that
+ * looks finished and misleads or loses content:
+ *
+ *   1. AN EMPTY HEADING. The library has no band 4 full test, so a section per
+ *      level in the abstract prints "Level 1" above nothing, which reads as a
+ *      load that failed.
+ *
+ *   2. A RENUMBERED CARD. The sequence number is in the card label and in the
+ *      URL. Recomputing it from a position inside a section silently renames
+ *      every card below the first level boundary.
+ *
+ *   3. A CARD THAT VANISHES. Content whose difficulty is null has to appear
+ *      somewhere; dropping it removes real practice from the hub with no error.
+ */
+describe("grouping a library into level sections", () => {
+  const card = (n: number, level: number | null) => ({ n, level });
+  const byLevel = (c: { level: number | null }) => c.level;
+
+  it("orders sections easiest first and skips the levels with nothing in them", () => {
+    const out = groupByLevel([card(1, 3), card(2, 5), card(3, 3)], byLevel);
+    // ⚠️ The empty heading. Levels 1, 2 and 4 hold nothing and must not appear.
+    expect(out.map((s) => s.level)).toEqual([3, 5]);
+    expect(out[0].items.map((c) => c.n)).toEqual([1, 3]);
+  });
+
+  it("keeps the number the caller attached, not the position in the section", () => {
+    // ⚠️ The renumbering. Cards 11 and 12 are level 5, card 13 is level 2, so
+    // grouping REORDERS them — and 13 must still be 13 under its own heading.
+    const out = groupByLevel([card(11, 5), card(12, 5), card(13, 2)], byLevel);
+    expect(out.map((s) => s.level)).toEqual([2, 5]);
+    expect(out[0].items.map((c) => c.n)).toEqual([13]);
+    expect(out[1].items.map((c) => c.n)).toEqual([11, 12]);
+  });
+
+  it("puts content with no level last and never drops it", () => {
+    // ⚠️ The vanishing card. A full test assembled across bands has no single
+    // level, and it is still a test a learner can sit.
+    const out = groupByLevel([card(1, null), card(2, 4)], byLevel);
+    expect(out.map((s) => s.level)).toEqual([4, null]);
+    expect(out.flatMap((s) => s.items.map((c) => c.n))).toEqual([2, 1]);
+  });
+
+  it("clamps a level off either end of the scale rather than losing it", () => {
+    const out = groupByLevel([card(1, 0), card(2, 99), card(3, Number.NaN)], byLevel);
+    expect(out.map((s) => s.level)).toEqual([1, MAX_LEVEL, null]);
+  });
+
+  it("derives its sections from the scale, so every level can hold cards", () => {
+    // Guards the literal-1..5 regression: a section exists for each defined level.
+    const all = PRACTICE_LEVELS.map((r, i) => card(i, r.level));
+    expect(groupByLevel(all, byLevel).map((s) => s.level)).toEqual(
+      PRACTICE_LEVELS.map((r) => r.level),
+    );
+  });
+
+  it("loses nothing: every card in equals exactly one card out", () => {
+    const cards = [card(1, 2), card(2, null), card(3, 2), card(4, 5), card(5, 1)];
+    const out = groupByLevel(cards, byLevel);
+    expect(out.flatMap((s) => s.items).length).toBe(cards.length);
+    expect(new Set(out.flatMap((s) => s.items.map((c) => c.n))).size).toBe(cards.length);
   });
 });

@@ -155,6 +155,11 @@ export const en = {
   "card.pro": "Pro",
   "card.unlockPro": "Unlock with Pro",
   "card.attachClass": "Attach to a class",
+  /* Headings that split a hub's ready-made library into one block per level.
+     The chip on a card says LEVEL 3; these say the same thing so a learner
+     reads one scale, not two. */
+  "practice.level": "Level {n}",
+  "practice.levelMixed": "Mixed levels",
 
   /* ── reading hub ─────────────────────────────────────────────────────── */
   "read.yourTests": "Your tests",

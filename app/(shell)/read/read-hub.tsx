@@ -3,7 +3,7 @@
 import { useT } from "@/components/i18n/locale-provider";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -24,12 +24,18 @@ import {
   CardFoot,
   CardHead,
   CardTags,
+  LevelLabel,
   PracticeCard,
   StatusPill,
   minutes,
   shortDate,
 } from "@/components/practice/card";
-import { levelChipForBand } from "@/lib/practice/levels";
+import {
+  bandToLevel,
+  groupByLevel,
+  levelChipForBand,
+  levelSectionTitle,
+} from "@/lib/practice/levels";
 import { READING_QUESTION_LABELS, type ReadingQuestionType } from "@/lib/reading/constants";
 import { titleCase } from "@/lib/reading/titles";
 
@@ -331,26 +337,33 @@ export function ReadingHub({
           {libraryTests.length > 0 ? (
             <>
               <SectionLabel>{t("read.ready")}</SectionLabel>
-              <Grid>
-                {libraryTests.map((t, i) => {
-                  const num = ownTests.length + i + 1;
-                  return (
-                    <TestTile
-                      key={t.id}
-                      seq={num}
-                      title={t.title}
-                      subtitle={t.subtitle}
-                      targetBand={t.targetBand}
-                      graded={t.graded}
-                      live={t.live}
-                      onStart={() => void startLibrary("test", t.id, num)}
-                      loading={loadingId === t.id}
-                      attach={attachFor(t.id)}
-                      locked={t.locked}
-                    />
-                  );
-                })}
-              </Grid>
+              {/* Numbered BEFORE grouping: the sequence is in the card label and
+                  in the URL, so it must survive being reordered into levels. */}
+              {groupByLevel(
+                libraryTests.map((test, i) => ({ test, num: ownTests.length + i + 1 })),
+                ({ test }) => bandToLevel(test.targetBand),
+              ).map(({ level, items }) => (
+                <Fragment key={level ?? "mixed"}>
+                  <LevelLabel>{levelSectionTitle(t, level)}</LevelLabel>
+                  <Grid>
+                    {items.map(({ test, num }) => (
+                      <TestTile
+                        key={test.id}
+                        seq={num}
+                        title={test.title}
+                        subtitle={test.subtitle}
+                        targetBand={test.targetBand}
+                        graded={test.graded}
+                        live={test.live}
+                        onStart={() => void startLibrary("test", test.id, num)}
+                        loading={loadingId === test.id}
+                        attach={attachFor(test.id)}
+                        locked={test.locked}
+                      />
+                    ))}
+                  </Grid>
+                </Fragment>
+              ))}
             </>
           ) : null}
 
@@ -387,21 +400,26 @@ export function ReadingHub({
           {libraryPassages.length > 0 ? (
             <>
               <SectionLabel>{t("read.ready")}</SectionLabel>
-              <Grid>
-                {libraryPassages.map((p, i) => {
-                  const num = ownPassages.length + i + 1;
-                  return (
-                    <PassageTile
-                      key={p.id}
-                      p={p}
-                      seq={num}
-                      onStart={() => void startLibrary("passage", p.id, num)}
-                      loading={loadingId === p.id}
-                      attach={attachFor(p.id)}
-                    />
-                  );
-                })}
-              </Grid>
+              {groupByLevel(
+                libraryPassages.map((p, i) => ({ p, num: ownPassages.length + i + 1 })),
+                ({ p }) => bandToLevel(p.difficulty),
+              ).map(({ level, items }) => (
+                <Fragment key={level ?? "mixed"}>
+                  <LevelLabel>{levelSectionTitle(t, level)}</LevelLabel>
+                  <Grid>
+                    {items.map(({ p, num }) => (
+                      <PassageTile
+                        key={p.id}
+                        p={p}
+                        seq={num}
+                        onStart={() => void startLibrary("passage", p.id, num)}
+                        loading={loadingId === p.id}
+                        attach={attachFor(p.id)}
+                      />
+                    ))}
+                  </Grid>
+                </Fragment>
+              ))}
             </>
           ) : null}
 

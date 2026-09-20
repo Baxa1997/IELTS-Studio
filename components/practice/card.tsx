@@ -641,6 +641,38 @@ export function CardQuote({
  * all three hubs showed them before this redesign and dropping them would lose
  * real information, so they keep a row of their own in the canvas's chip idiom.
  */
+/**
+ * The heading for one level block inside a hub's ready-made library.
+ *
+ * ⚠️ DELIBERATELY LIGHTER THAN EACH HUB'S OWN SectionLabel. A section label names
+ * a list ("Ready to start"); this names a block within it. Giving them the same
+ * weight flattens the hierarchy, and the panel then reads as five unrelated
+ * lists instead of one library sorted by difficulty.
+ *
+ * Shared rather than copied into all three hubs: SectionLabel and Grid are
+ * already byte-identical in read-hub.tsx and listening-client.tsx, and a third
+ * duplicate of the same idea is how they drift apart.
+ */
+export function LevelLabel({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "18px 0 10px" }}>
+      <span
+        style={{
+          fontFamily: SANS,
+          fontWeight: 700,
+          fontSize: 11,
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
+          color: DIM,
+        }}
+      >
+        {children}
+      </span>
+      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.06)" }} />
+    </div>
+  );
+}
+
 export function CardTags({ tags }: { tags: string[] }) {
   if (tags.length === 0) return null;
   return (

@@ -6,7 +6,7 @@ import type { MessageKey } from "@/lib/i18n";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
 import { AiGenerateSection, AiGenerateButton } from "@/components/ai-generate-section";
@@ -16,11 +16,17 @@ import {
   CardFoot,
   CardHead,
   CardQuote,
+  LevelLabel,
   PracticeCard,
-  StatusPill,
   shortDate,
+  StatusPill,
 } from "@/components/practice/card";
-import { levelChipForBand } from "@/lib/practice/levels";
+import {
+  bandToLevel,
+  groupByLevel,
+  levelChipForBand,
+  levelSectionTitle,
+} from "@/lib/practice/levels";
 import { TASK2_CATEGORIES } from "@/lib/prompts/constants";
 import { UpgradeNotice } from "@/components/billing/upgrade-notice";
 import { LegalFooter } from "@/components/legal-footer";
@@ -216,6 +222,30 @@ export function WritingLibrary({
     if (bandFilter != null && p.difficulty !== bandFilter) return false;
     return true;
   });
+
+  /* The learner's own generated prompts stay a flat, newest-first block; only the
+     curated library is split into levels. Both come from `visible`, so a search or
+     a band filter narrows the sections exactly as it narrowed the single grid. */
+  const visibleGenerated = visible.filter((p) => p.generated);
+  const visibleCurated = visible.filter((p) => !p.generated);
+
+  /** One card. Extracted so the flat block and every level block draw the same
+   *  thing — they diverge the moment this is written out twice. */
+  const card = (p: (typeof cards)[number]) => (
+    <PromptCard
+      key={p.id}
+      p={p}
+      num={numById.get(p.id) ?? 0}
+      done={done.has(p.id)}
+      draft={drafts[p.id]}
+      mark={marked[p.id]}
+      busy={busy}
+      onOpen={() => open(p.id, numById.get(p.id))}
+      attach={
+        isTeacher ? { onAttach: () => setAttachId(p.id), disabled: groups.length === 0 } : undefined
+      }
+    />
+  );
 
   function open(id: string, num?: number) {
     setBusy(true);
@@ -955,44 +985,22 @@ export function WritingLibrary({
               </p>
             </div>
           ) : (
-            /* Three cards to a row, matching the Reading hub. The cap lives in
-               the TRACK SIZE rather than in breakpoints: each track is at least a
-               third of the row, so a fourth can never fit, and once a third would
-               be under 280px the floor wins and auto-fit drops to two, then one.
-               Inline for the same reason as Reading's Grid — a class in
-               globals.css did not reach the running dev server, and expressing the
-               cap this way leaves no media query that an inline style could
-               outrank. 28px is the two 14px gaps; it must match `gap`.
-               `lp-write-grid` is kept only as a hook — it has no rule behind it. */
-            <div
-              className="lp-write-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(max(280px, (100% - 28px) / 3), 1fr))",
-                gap: 14,
-              }}
-            >
-              {visible.map((p) => (
-                <PromptCard
-                  key={p.id}
-                  p={p}
-                  num={numById.get(p.id) ?? 0}
-                  done={done.has(p.id)}
-                  draft={drafts[p.id]}
-                  mark={marked[p.id]}
-                  busy={busy}
-                  onOpen={() => open(p.id, numById.get(p.id))}
-                  attach={
-                    isTeacher
-                      ? {
-                          onAttach: () => setAttachId(p.id),
-                          disabled: groups.length === 0,
-                        }
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
+            <>
+              {/* The learner's own prompts: one flat block, newest first, exactly
+                  as before. A level heading over a list of two or three would
+                  fragment it rather than organise it. */}
+              {visibleGenerated.length > 0 ? (
+                <CardGrid>{visibleGenerated.map(card)}</CardGrid>
+              ) : null}
+              {groupByLevel(visibleCurated, (p) => bandToLevel(p.difficulty)).map(
+                ({ level, items }) => (
+                  <Fragment key={level ?? "mixed"}>
+                    <LevelLabel>{levelSectionTitle(t, level)}</LevelLabel>
+                    <CardGrid>{items.map(card)}</CardGrid>
+                  </Fragment>
+                ),
+              )}
+            </>
           )}
         </>
       )}
@@ -1490,3 +1498,30 @@ const genField: React.CSSProperties = {
   fontSize: 13.5,
   background: PANEL,
 };
+
+/**
+ * Three cards to a row, matching the Reading hub. The cap lives in the TRACK SIZE
+ * rather than in breakpoints: each track is at least a third of the row, so a
+ * fourth can never fit, and once a third would be under 280px the floor wins and
+ * auto-fit drops to two, then one.
+ *
+ * ⚠️ INLINE, not a class. A `.lp-write-grid` rule in globals.css did not reach the
+ * running dev server while every other rule in that file was live, and the grid
+ * silently fell back to block-stacked full-width cards. Expressing the cap here
+ * leaves no media query an inline style could outrank. 28px is the two 14px gaps
+ * and must match `gap`; the class name is kept only as a hook with no rule behind it.
+ */
+function CardGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="lp-write-grid"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(max(280px, (100% - 28px) / 3), 1fr))",
+        gap: 14,
+      }}
+    >
+      {children}
+    </div>
+  );
+}

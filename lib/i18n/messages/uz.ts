@@ -142,6 +142,8 @@ export const uz: Messages = {
   "card.pro": "Pro",
   "card.unlockPro": "Pro bilan oching",
   "card.attachClass": "Guruhga biriktirish",
+  "practice.level": "{n}-daraja",
+  "practice.levelMixed": "Aralash darajalar",
 
   /* ── reading boʻlimi ─────────────────────────────────────────────────── */
   "read.yourTests": "Testlaringiz",
