@@ -392,8 +392,8 @@ G) What followed is instructive. Compliance in most countries with enforced laws
           BELT_ENDINGS,
           "The three-point design spread to every manufacturer,",
           "because its inventor's employer judged safety to outweigh ownership.",
-          "Bohlin's design was effective, cheap, and required no skill to use.",
-          "The design was released rather than licensed.",
+          "His employer took out a patent and then made it freely available to other manufacturers, on the stated grounds that its value to safety exceeded its value as property.",
+          "Safety value 'exceeded its value as property'.",
         ),
         fromList(
           "matching_sentence_endings",

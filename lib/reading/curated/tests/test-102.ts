@@ -30,9 +30,9 @@ const STERILE_ENDINGS = [
   "because a female that mates with a sterilised male lays eggs that never hatch.",
   "which is why the method works best when the pest population is already low.",
   "since the released insects must outnumber the wild males many times over.",
-  "although the same technique fails against a species that mates repeatedly.",
+  "because one sterile mating among ten dilutes rather than prevents.",
   "because the programme has to continue for as long as reinvasion is possible.",
-  "even though no pesticide is applied to the crop at any point.",
+  "since nothing is ever applied to the crop itself.",
   "which makes an island or a peninsula the ideal place to attempt it.",
 ];
 
@@ -405,16 +405,16 @@ G) The costs are the factory and the permanence. Rearing hundreds of millions of
         fromList(
           "matching_sentence_endings",
           STERILE_ENDINGS,
-          "A female that takes many mates dilutes the effect,",
-          "although the same technique fails against a species that mates repeatedly.",
+          "The method suits a species whose female mates once,",
+          "because one sterile mating among ten dilutes rather than prevents.",
           "It works poorly where a female mates many times with many males, since one sterile mating among ten dilutes rather than prevents.",
           "Repeated mating dilutes the sterile one.",
         ),
         fromList(
           "matching_sentence_endings",
           STERILE_ENDINGS,
-          "The crop is left entirely untreated,",
-          "even though no pesticide is applied to the crop at any point.",
+          "There is no residue and no harm to other insects,",
+          "since nothing is ever applied to the crop itself.",
           "No chemical is applied to the crop, so there is no residue and no harm to other insects.",
           "No chemical touches the crop.",
         ),

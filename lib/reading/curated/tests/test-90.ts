@@ -28,7 +28,7 @@ const LLOYDS_BANK = [
 const CRAB_PARAGRAPHS = ["A", "B", "C", "D", "E", "F", "G"];
 const CRAB_ENDINGS = [
   "because the animal's blood clots on contact with a bacterial contaminant.",
-  "which is why the test replaced a method that took three days and a rabbit.",
+  "which had taken three days and required a rabbit for every sample.",
   "since a bled animal returned to the sea may spawn less for a season.",
   "although a synthetic replacement has existed for more than a decade.",
   "because the birds that depend on the eggs arrive at a fixed time.",
@@ -386,8 +386,8 @@ G) The case is a clean illustration of something that recurs whenever biology en
         fromList(
           "matching_sentence_endings",
           CRAB_ENDINGS,
-          "The test was adopted quickly in the 1970s,",
-          "which is why the test replaced a method that took three days and a rabbit.",
+          "The extract displaced an older and slower procedure,",
+          "which had taken three days and required a rabbit for every sample.",
           "It replaced a method in which a sample was injected into a rabbit and the animal's temperature was monitored for three days, which was slower, less sensitive, and required far more animals.",
           "The older method used a rabbit over three days.",
         ),
