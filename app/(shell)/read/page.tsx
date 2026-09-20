@@ -26,9 +26,14 @@ export const dynamic = "force-dynamic";
 // short CEFR sets) so the practice hub only offers exam-realistic passages.
 const MIN_PRACTICE_QUESTIONS = 11;
 
-// The hand-written library holds 30 full tests (lib/reading/curated); the cap only
-// guards against a runaway table, so every library test shows.
-const LIBRARY_TEST_LIMIT = 100;
+// The hand-written library holds 103 full tests (lib/reading/curated). The cap only
+// guards against a runaway table, so it must stay AHEAD of that count or the newest
+// tests silently vanish from the hub — the list is ordered by band, so what drops off
+// is the hardest material, which nobody reports as missing.
+// ⚠️ Deliberately a literal rather than CURATED_READING_TESTS.length: importing the
+// curated module here would pull every passage body (~100 files of prose) into this
+// page's server bundle to learn one number.
+const LIBRARY_TEST_LIMIT = 150;
 
 /**
  * Reading hub — sidebar shell (like /write); the runner pages are full-screen.
