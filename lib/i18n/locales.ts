@@ -88,3 +88,23 @@ export const HTML_LANG: Record<Locale, string> = {
   en: "en",
   ru: "ru",
 };
+
+/**
+ * Where `path` lives in `locale` — the default locale keeps the bare URL and
+ * every other language sits under its prefix.
+ *
+ * ⚠️ DERIVED FROM `DEFAULT_LOCALE`, NEVER SPELLED OUT. The prefix set is
+ * "every locale that is not the default", so flipping the default stays the
+ * one-line change it was in September. `app/sitemap.ts` and the documentation
+ * routes both build their URLs with this; the language picker keeps its own
+ * version because it works the other way round — it strips a prefix off a live
+ * pathname rather than adding one to a known route.
+ *
+ * `path` is a route with a leading slash, and "/" is the special case: the
+ * default locale answers at "/" and the others at "/<locale>", not
+ * "/<locale>/".
+ */
+export function localePath(path: string, locale: Locale): string {
+  if (locale === DEFAULT_LOCALE) return path;
+  return path === "/" ? `/${locale}` : `/${locale}${path}`;
+}

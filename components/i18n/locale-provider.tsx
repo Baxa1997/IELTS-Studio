@@ -53,7 +53,7 @@ let cached: Locale | null = null;
 /** Routes that exist in all three languages. Mirrors `LOCALISED` in
  *  `app/sitemap.ts` — grow the two together, or the picker offers a URL the
  *  sitemap does not claim (or worse, one that 404s). */
-const LOCALISED_ROUTES = new Set(["/"]);
+const LOCALISED_ROUTES = new Set(["/", "/how-to-use", "/how-to-use/education-centers"]);
 
 /**
  * Every locale that lives under a path prefix — i.e. all of them but the

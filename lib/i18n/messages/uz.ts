@@ -26,6 +26,11 @@ export const uz: Messages = {
   "nav.settings": "Sozlamalar",
   "nav.signOut": "Chiqish",
 
+  /* ── documentation guides (the tab rail's own chrome) ─────────────── */
+  "doc.onThisPage": "Ushbu sahifada",
+  "doc.elsewhere": "Boshqa joyda",
+  "doc.soon": "TEZDA",
+
   "nav.assistant": "Yordamchi",
   "nav.groups": "Guruhlar",
   "nav.students": "Oʻquvchilar",

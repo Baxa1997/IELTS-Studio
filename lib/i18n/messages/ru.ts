@@ -23,6 +23,11 @@ export const ru: Messages = {
   "nav.settings": "Настройки",
   "nav.signOut": "Выйти",
 
+  /* ── documentation guides (the tab rail's own chrome) ─────────────── */
+  "doc.onThisPage": "На этой странице",
+  "doc.elsewhere": "Другое",
+  "doc.soon": "СКОРО",
+
   "nav.assistant": "Ассистент",
   "nav.groups": "Группы",
   "nav.students": "Студенты",

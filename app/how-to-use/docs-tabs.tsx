@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import {
   BODY,
   BRAND,
@@ -57,6 +59,11 @@ export interface DocsTabsProps {
 }
 
 export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps) {
+  /* Only the rail's OWN two labels come from the dictionary. Everything the
+     tabs say arrives already translated as props, from `../copy` — see the
+     note in ./copy/types.ts about why 7,000 words do not go in the dictionary
+     that every route ships to the browser. */
+  const t = useT();
   const [active, setActive] = useState(0);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -70,7 +77,7 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
    * `hashchange` covers a same-page link (the browser does not remount).
    */
   useEffect(() => {
-    const slugs = tabs.map((t) => slug(t.title));
+    const slugs = tabs.map((tab) => slug(tab.title));
     const apply = () => {
       const want = decodeURIComponent(window.location.hash.replace(/^#/, "")).toLowerCase();
       if (!want) return;
@@ -117,7 +124,7 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
           top: 0,
         }}
       >
-        <div style={eyebrow()}>On this page</div>
+        <div style={eyebrow()}>{t("doc.onThisPage")}</div>
         <div
           role="tablist"
           aria-orientation="vertical"
@@ -130,19 +137,19 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
             flexDirection: "column",
           }}
         >
-          {tabs.map((t, i) => {
+          {tabs.map((tab, i) => {
             const on = i === active;
             return (
               <button
-                key={t.title}
+                key={tab.title}
                 ref={(el) => {
                   buttons.current[i] = el;
                 }}
-                id={`tab-${slug(t.title)}`}
+                id={`tab-${slug(tab.title)}`}
                 role="tab"
                 type="button"
                 aria-selected={on}
-                aria-controls={`panel-${slug(t.title)}`}
+                aria-controls={`panel-${slug(tab.title)}`}
                 tabIndex={on ? 0 : -1}
                 onClick={() => select(i)}
                 className="lp-doctab"
@@ -165,16 +172,16 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
                 }}
               >
                 <span aria-hidden style={{ fontSize: 14, opacity: on ? 1 : 0.75 }}>
-                  {t.icon}
+                  {tab.icon}
                 </span>
-                {t.title}
+                {tab.title}
               </button>
             );
           })}
         </div>
 
         <div style={{ marginTop: 34 }}>
-          <div style={eyebrow()}>Elsewhere</div>
+          <div style={eyebrow()}>{t("doc.elsewhere")}</div>
           <div style={{ borderLeft: `1px solid ${LINE}`, marginTop: 14 }}>
             <Link
               href={elsewhere.href}
@@ -313,7 +320,7 @@ export function DocsTabs({ tabs, label, elsewhere, head, footer }: DocsTabsProps
                             letterSpacing: "0.08em",
                           }}
                         >
-                          SOON
+                          {t("doc.soon")}
                         </span>
                       ) : null}
                     </div>

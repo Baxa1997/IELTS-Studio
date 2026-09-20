@@ -33,6 +33,11 @@ export const en = {
   "nav.settings": "Settings",
   "nav.signOut": "Sign out",
 
+  /* ── documentation guides (the tab rail's own chrome) ─────────────── */
+  "doc.onThisPage": "On this page",
+  "doc.elsewhere": "Elsewhere",
+  "doc.soon": "SOON",
+
   /* ── console navigation ─────────────────────────────────────────────── */
   "nav.assistant": "Assistant",
   "nav.groups": "Groups",

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { absoluteUrl } from "@/lib/seo";
-import { DEFAULT_LOCALE, HTML_LANG, LOCALES } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, HTML_LANG, LOCALES, localePath } from "@/lib/i18n/locales";
 
 // NOTE: /pricing is deliberately absent. It lives under app/(app) and calls
 // requireOrgUser(), so an anonymous request 307s to /sign-in — listing it here
@@ -18,6 +18,8 @@ const publicRoutes = [
   { path: "/ielts-speaking-practice", priority: 0.8, changeFrequency: "monthly" },
   { path: "/cefr-multilevel-practice", priority: 0.8, changeFrequency: "monthly" },
   { path: "/for-education-centers", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/how-to-use", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/how-to-use/education-centers", priority: 0.7, changeFrequency: "monthly" },
   { path: "/sign-in", priority: 0.3, changeFrequency: "yearly" },
   { path: "/contact", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
@@ -31,14 +33,16 @@ const publicRoutes = [
 /**
  * Which routes exist in more than one language.
  *
- * Only the landing page so far. The other marketing pages are still
- * English-only, and listing a `/ru/...` that 404s is worse than listing
- * nothing — so this list grows as each page gets a localised route, not before.
+ * The landing page and the two documentation guides. The remaining marketing
+ * pages are still English-only, and listing a `/ru/...` that 404s is worse than
+ * listing nothing — so this list grows as each page gets a localised route, not
+ * before.
+ *
+ * ⚠️ MIRRORED BY `LOCALISED_ROUTES` IN `components/i18n/locale-provider.tsx`,
+ * and a test asserts the two sets are equal. Grow them together or the picker
+ * offers a URL this sitemap does not claim.
  */
-const LOCALISED = new Set(["/"]);
-
-const localisedPath = (path: string, locale: string) =>
-  locale === DEFAULT_LOCALE ? path : path === "/" ? `/${locale}` : `/${locale}${path}`;
+const LOCALISED = new Set(["/", "/how-to-use", "/how-to-use/education-centers"]);
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
@@ -51,7 +55,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
        English while the default locale is Uzbek. */
     const locales = many ? LOCALES : [DEFAULT_LOCALE];
     return locales.map((locale) => ({
-      url: absoluteUrl(localisedPath(route.path, locale)),
+      url: absoluteUrl(localePath(route.path, locale)),
       lastModified,
       changeFrequency: route.changeFrequency,
       priority: route.priority,
@@ -70,7 +74,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         ? {
             alternates: {
               languages: Object.fromEntries(
-                locales.map((l) => [HTML_LANG[l], absoluteUrl(localisedPath(route.path, l))]),
+                locales.map((l) => [HTML_LANG[l], absoluteUrl(localePath(route.path, l))]),
               ),
             },
           }
