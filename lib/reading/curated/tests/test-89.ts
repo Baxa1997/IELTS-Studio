@@ -32,7 +32,7 @@ const STUD_ENDINGS = [
   "since paint reflects nothing once a film of water covers it.",
   "because a snowplough will tear the fittings out of the surface.",
   "because the driver needs the line to be visible before the headlights reach it.",
-  "even though the same effect can now be printed into the paint itself.",
+  "which glass beads rolled into a painted line reproduce only in part.",
   "which makes the maintenance bill, not the invention, the real constraint.",
 ];
 
@@ -392,7 +392,7 @@ G) The honest assessment of the whole family of devices is that the invention wa
           "matching_sentence_endings",
           STUD_ENDINGS,
           "A lens returns the beam to its source,",
-          "even though the same effect can now be printed into the paint itself.",
+          "which glass beads rolled into a painted line reproduce only in part.",
           "Because it returns light along the incoming path, it is visible far beyond the distance at which paint becomes legible.",
           "Returning the beam is what makes it legible far ahead.",
         ),
@@ -417,8 +417,8 @@ G) The honest assessment of the whole family of devices is that the invention wa
           STUD_ENDINGS,
           "Raised fittings are avoided in cold countries,",
           "because a snowplough will tear the fittings out of the surface.",
-          "The countries with the most elaborate stud systems are those with wet winters and no ploughing, and a visitor who notices that roads are marked differently across a border is usually looking at a snow policy rather than a safety policy.",
-          "Ploughing decides where they are used.",
+          "In countries where snow is cleared mechanically, a raised fitting is torn out by the blade, so studs are either omitted, recessed below the surface where their optical performance is much worse, or accepted as an annual replacement cost.",
+          "The blade tears a raised fitting out.",
         ),
       ],
     },
