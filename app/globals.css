@@ -114,20 +114,33 @@
 }
 
 .dark {
-  --background: oklch(0.18 0.018 185);
-  --foreground: oklch(0.97 0.01 95);
-  --card: oklch(0.22 0.02 185);
-  --card-foreground: oklch(0.97 0.01 95);
-  --popover: oklch(0.22 0.02 185);
-  --popover-foreground: oklch(0.97 0.01 95);
+  /* ⚠️ THE DARK GROUND IS A WARM NEUTRAL, NOT A TINTED ONE, AND THE TINT IS IN
+   * THE HUE ANGLE RATHER THAN ANYWHERE OBVIOUS.
+   *
+   * These were oklch(… 0.018 185) — hue 185 is teal, and at L 0.18 a chroma of
+   * 0.018 is enough to read as "dark blue" against any neutral next to it, which
+   * is exactly what it looked like beside a white-ish card. The fix is the
+   * chroma, not the lightness: every L here is unchanged, so every contrast
+   * ratio these were chosen for still holds. Hue 95 is the warm side of neutral
+   * and matches the ink, which was already 95.
+   *
+   * Do not "simplify" these to `oklch(0.18 0 0)`. A chroma of exactly zero on a
+   * large dark ground reads as flat and slightly blue on an OLED panel; the
+   * residual 0.004 is what keeps it warm without being a colour. */
+  --background: oklch(0.18 0.004 95);
+  --foreground: oklch(0.97 0.008 95);
+  --card: oklch(0.22 0.004 95);
+  --card-foreground: oklch(0.97 0.008 95);
+  --popover: oklch(0.22 0.004 95);
+  --popover-foreground: oklch(0.97 0.008 95);
   --primary: oklch(0.7 0.13 165);
-  --primary-foreground: oklch(0.19 0.03 185);
-  --secondary: oklch(0.28 0.02 185);
-  --secondary-foreground: oklch(0.97 0.01 95);
-  --muted: oklch(0.28 0.02 185);
-  --muted-foreground: oklch(0.71 0.02 170);
-  --accent: oklch(0.32 0.03 165);
-  --accent-foreground: oklch(0.97 0.01 95);
+  --primary-foreground: oklch(0.19 0.006 95);
+  --secondary: oklch(0.28 0.005 95);
+  --secondary-foreground: oklch(0.97 0.008 95);
+  --muted: oklch(0.28 0.005 95);
+  --muted-foreground: oklch(0.71 0.008 95);
+  --accent: oklch(0.32 0.006 95);
+  --accent-foreground: oklch(0.97 0.008 95);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
@@ -137,12 +150,15 @@
   --chart-3: oklch(0.82 0.085 85);
   --chart-4: oklch(0.62 0.11 150);
   --chart-5: oklch(0.55 0.07 185);
-  --sidebar: oklch(0.22 0.02 185);
-  --sidebar-foreground: oklch(0.97 0.01 95);
+  /* The rail sits one step lighter than the page, which is the "darker and
+     lighter black" reading everybody expects from a dark shell. Same warm
+     neutral, same lightness as --card. */
+  --sidebar: oklch(0.22 0.004 95);
+  --sidebar-foreground: oklch(0.97 0.008 95);
   --sidebar-primary: oklch(0.7 0.13 165);
-  --sidebar-primary-foreground: oklch(0.19 0.03 185);
-  --sidebar-accent: oklch(0.32 0.03 165);
-  --sidebar-accent-foreground: oklch(0.97 0.01 95);
+  --sidebar-primary-foreground: oklch(0.19 0.006 95);
+  --sidebar-accent: oklch(0.32 0.006 95);
+  --sidebar-accent-foreground: oklch(0.97 0.008 95);
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.7 0.13 165);
 }
@@ -525,20 +541,20 @@
 .dark {
   color-scheme: dark;
 
-  --tk-ink: #ededf2;
-  --tk-body: #c6c4d4;
-  --tk-muted: #a3a1b5;
-  --tk-soft: #9997ac;
-  --tk-faint: #908ea0;
+  --tk-ink: #eeedeb;
+  --tk-body: #c7c6c4;
+  --tk-muted: #a4a3a1;
+  --tk-soft: #9a9997;
+  --tk-faint: #91908e;
 
   /* On a dark ground the edge goes LIGHTER than the surface, so the light-mode
      ordering inverts: LINE is the strongest, HAIR the quietest, as before. */
-  --tk-line: #2e2e3d;
-  --tk-rule: #292936;
-  --tk-hair: #24242f;
-  --tk-field-line: #3d3d50;
+  --tk-line: #302f2d;
+  --tk-rule: #2b2a28;
+  --tk-hair: #262523;
+  --tk-field-line: #403f3d;
 
-  --tk-panel: #16161f;
+  --tk-panel: #181715;
 
   /* ⚠️ THE DARK BRAND IS ORANGE, NOT BURGUNDY, AND NOT A LIGHTER PINK.
    *
@@ -570,7 +586,7 @@
   --tk-brand-wash: #2a1409; /* BRAND clears 4.58:1 on it */
   /* Deep orange, kept dark enough that white body copy clears 4.5:1 on the
      lightest stop (5.59:1) instead of the 3.48:1 the brand ramp would give. */
-  --tk-on-ink: #16161f;
+  --tk-on-ink: #181715;
   --tk-green-fill: #3fbf85;
   --tk-on-green: #08150f;
   --tk-red-fill: #e87b70;
@@ -602,13 +618,13 @@
   --tk-tint-amber-bg: #2e2314;
   --tk-tint-amber-fg: #e0a84a;
   --tk-tint-red-bg: #2e1715;
-  --tk-tint-neutral-bg: #22222c;
+  --tk-tint-neutral-bg: #242321;
 
-  --tk-learner-canvas: #0e0e15;
-  --tk-learner-well: #1b1b25;
-  --tk-learner-well-line: #2a2a36;
-  --tk-console-canvas: #101016;
-  --tk-console-well: #1a1a22;
+  --tk-learner-canvas: #100f0d;
+  --tk-learner-well: #1d1c1a;
+  --tk-learner-well-line: #2c2b29;
+  --tk-console-canvas: #11100e;
+  --tk-console-well: #1c1b19;
 
   --tk-card-shadow:
     0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35),
@@ -622,12 +638,12 @@
      has re-approved yet, and in dark mode there is no legacy value to preserve —
      nothing has ever been rendered in it. So the drift ends here, and a screen
      wearing these is already the right colour once the lights go out. */
-  --tk-slate-ink: #ededf2;
-  --tk-slate-strong: #d2d0dd;
-  --tk-slate-body: #c6c4d4;
-  --tk-slate-muted: #a3a1b5;
-  --tk-slate-line: #2e2e3d;
-  --tk-well: #1b1b25;
+  --tk-slate-ink: #eeedeb;
+  --tk-slate-strong: #d2d1cf;
+  --tk-slate-body: #c7c6c4;
+  --tk-slate-muted: #a4a3a1;
+  --tk-slate-line: #302f2d;
+  --tk-well: #1d1c1a;
   /* Tints invert from pale-on-white to deep-on-dark; their inks lighten to stay
      legible against them. Pairs, as always — never cross them. */
   --tk-slate-green: #3fbf85;
@@ -638,20 +654,20 @@
   --tk-slate-amber-line: #4a3a1c;
   --tk-slate-red: #e87b70;
   --tk-slate-red-bg: #2e1715;
-  --tk-slate-field: #33333f;
+  --tk-slate-field: #353432;
 
   /* The warm ramp, collapsed onto three weights — see the light block. The
      eight light values encode distinctions nothing on screen actually shows;
      reproducing all eight here would preserve drift that has no reason to
      exist in a theme nobody has rendered yet. */
-  --tk-warm-line: #32323b;
-  --tk-warm-line-soft: #2b2b34;
-  --tk-warm-line-mid: #32323b;
-  --tk-warm-line-deep: #32323b;
-  --tk-warm-hair: #2b2b34;
-  --tk-warm-edge: #2b2b34;
-  --tk-warm-rule: #2b2b34;
-  --tk-warm-well: #1a1a21;
+  --tk-warm-line: #343331;
+  --tk-warm-line-soft: #2d2c2a;
+  --tk-warm-line-mid: #343331;
+  --tk-warm-line-deep: #343331;
+  --tk-warm-hair: #2d2c2a;
+  --tk-warm-edge: #2d2c2a;
+  --tk-warm-rule: #2d2c2a;
+  --tk-warm-well: #1b1a18;
 
   --tk-warm-red: #e87b70;
   --tk-warm-green: #3fbf85;
@@ -666,12 +682,12 @@
   --pc-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   /* Both step AWAY from `--tk-panel` (#16161f) rather than towards it, so
      "finished" and "gated" still read as different surfaces in the dark. */
-  --pc-surface-done: #131319;
-  --pc-surface-locked: #191520;
+  --pc-surface-done: #141311;
+  --pc-surface-locked: #181715;
 
   --pc-hover-brand: #6b3520;
   --pc-hover-done: #24513c;
-  --pc-hover-ink: #43434f;
+  --pc-hover-ink: #454442;
   --pc-glow-brand: 0 10px 24px rgba(216, 93, 31, 0.18);
   --pc-glow-done: 0 10px 24px rgba(63, 191, 133, 0.16);
   --pc-glow-ink: 0 10px 24px rgba(0, 0, 0, 0.55);
@@ -682,7 +698,7 @@
 
   /* The skill inks, lightened for a dark card. */
   --pc-read-ink: #e97338; /* 5.97:1 on the card, 5.96 on the locked surface */
-  --pc-write-ink: #c9c7d2;
+  --pc-write-ink: #c9c8c6;
   --pc-listen-ink: #8fb0ee;
 
   --pc-pill-new-a: #2a1610;
@@ -694,9 +710,9 @@
   --pc-pill-prog-a: #2e2314;
   --pc-pill-prog-b: #3a2c18;
   --pc-pill-prog-line: #4a3a1c;
-  --pc-pill-target-a: #1c1c24;
-  --pc-pill-target-b: #24242d;
-  --pc-pill-target-line: #2e2e3a;
+  --pc-pill-target-a: #1e1d1b;
+  --pc-pill-target-b: #262523;
+  --pc-pill-target-line: #302f2d;
   --pc-pill-locked-a: #2a1610;
   --pc-pill-locked-b: #3d1f12;
   --pc-pill-locked-line: #522a18;
@@ -704,18 +720,18 @@
   --pc-amber: #e0a84a;
   --pc-rule: rgba(255, 255, 255, 0.1);
 
-  --pc-well: #1a1a22;
-  --pc-well-line: #2c2c36;
-  --pc-chip: #22222b;
-  --pc-track: #2a2a34;
-  --pc-dim: #9a98a8;
+  --pc-well: #1c1b19;
+  --pc-well-line: #2e2d2b;
+  --pc-chip: #242321;
+  --pc-track: #2c2b29;
+  --pc-dim: #9b9a98;
   --pc-quote-muted: #5a3524;
   --pc-wave: #8a5a3d;
 
   --hb-cream-line: #2e2b22;
   --hb-soon-ink: #a89d86;
   --hb-soon-bg: #2a2820;
-  --hb-dim-line: #3a3a45;
+  --hb-dim-line: #3c3b39;
   --hb-lav-bg: #1e1e2a;
   --hb-lav-line: #2e2e40;
   --hb-lav-ink: #a5a2bc;
@@ -737,9 +753,9 @@
   --gl-lesson-bg: #2d2415;
   --gl-lesson-ink: #d9a44e;
   --gl-lesson-line: #423520;
-  --gl-neutral-bg: #21212a;
-  --gl-neutral-ink: #a0a3ac;
-  --gl-neutral-line: #2e2e38;
+  --gl-neutral-bg: #232220;
+  --gl-neutral-ink: #a4a3a1;
+  --gl-neutral-line: #302f2d;
 
   --rp-err: #f08a6a;
   --rp-err-deep: #e87b70;
@@ -853,28 +869,28 @@
   --mk-hero-mid: #5c2410;
   --mk-hero-a: #1b0b04;
 
-  --mk-ink: #edeef2;
-  --mk-body: #c4c8d2;
-  --mk-strong: #d6dae2;
+  --mk-ink: #efeeec;
+  --mk-body: #c9c8c6;
+  --mk-strong: #dbdad8;
   --mk-muted: #9ca2ae;
   --mk-faint: #8d93a0;
   --mk-grey: #a8aeb9;
 
-  --mk-line: #2b2e36;
-  --mk-rule: #262930;
-  --mk-hair: #23262c;
-  --mk-field: #3a3e48;
+  --mk-line: #2f2e2c;
+  --mk-rule: #2a2927;
+  --mk-hair: #272624;
+  --mk-field: #3f3e3c;
 
-  --mk-panel: #16171d;
-  --mk-well: #191b21;
-  --mk-canvas: #0e0f13;
-  --mk-paper: #131519;
-  --mk-paper-rule: #2a2d35;
+  --mk-panel: #181715;
+  --mk-well: #1c1b19;
+  --mk-canvas: #100f0d;
+  --mk-paper: #161513;
+  --mk-paper-rule: #2e2d2b;
 
   --mk-green: #3fbf85;
   --mk-green-tint: #122a1f;
 
-  --mk-footer: #16171d;
+  --mk-footer: #181715;
   --mk-island: rgba(22, 23, 29, 0.92);
   --mk-island-hover: rgba(28, 29, 36, 0.97);
   --mk-island-wash: rgba(237, 238, 242, 0.08);
@@ -946,24 +962,24 @@
   /* The content ground. Declared in `:root` far above (the console's sticky top
      bar has to paint the same value and cannot import it), so ONLY its dark
      override belongs here. */
-  --lp-surface: #101016;
+  --lp-surface: #11100e;
 
-  --sh-ink: #e8e9ee;
-  --sh-canvas: #08080d;
-  --sh-rail-bg: #121218;
-  --sh-rail-border: #272730;
+  --sh-ink: #eae9e7;
+  --sh-canvas: #090806;
+  --sh-rail-bg: #131210;
+  --sh-rail-border: #292826;
   --sh-rail-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.8);
-  --sh-rail-ink: #ededf2;
-  --sh-rail-faint: #94929d;
-  --sh-rail-text: #c9c7d2;
-  --sh-rail-muted: #94929d;
-  --sh-rail-hover: #1c1c23;
-  --sh-rail-press: #24242d;
+  --sh-rail-ink: #eeedeb;
+  --sh-rail-faint: #949391;
+  --sh-rail-text: #c9c8c6;
+  --sh-rail-muted: #949391;
+  --sh-rail-hover: #1d1c1a;
+  --sh-rail-press: #262523;
   --sh-rail-active-bg: #3a1c10;
   --sh-rail-active-ink: #f08a5d; /* 6.5:1 on --sh-rail-active-bg */
   --sh-accent: #4ec08a;
-  --sh-toggle-ink: #b9b6c4;
-  --sh-fullbleed: #0c0c12;
+  --sh-toggle-ink: #b9b8b6;
+  --sh-fullbleed: #0d0c0a;
   --sh-content-shadow: 0 4px 14px -10px rgba(0, 0, 0, 0.9);
   --sh-alert: #b3352b; /* 6.07:1 with white */
   /* Inverted rather than kept: the pastel disc that is quiet on warm paper is
@@ -972,8 +988,8 @@
   --sh-avatar-ink: #c3b9f0;
   /* Lighter than the dark rail, so the tooltip still lifts off it. Inverting it
      to a light chip instead would make it the brightest object on the screen. */
-  --sh-tooltip-bg: #34344a;
-  --sh-tooltip-ink: #f2f2f7;
+  --sh-tooltip-bg: #373634;
+  --sh-tooltip-ink: #f3f2f0;
   --sh-danger-wash: #3a1a1a;
 }
 
@@ -4491,20 +4507,20 @@ section[id] {
  * lose to them on specificity.
  */
 .dark .pg-root {
-  --pg-line: #2b2b34;
-  --pg-ink: #ededf2;
-  --pg-muted: #9a989f;
-  --pg-surface: #16161f;
-  --pg-line-strong: #3a3a45;
+  --pg-line: #2d2c2a;
+  --pg-ink: #eeedeb;
+  --pg-muted: #9a9997;
+  --pg-surface: #181715;
+  --pg-line-strong: #3c3b39;
   --pg-focus-ring: rgba(255, 255, 255, 0.12);
-  --pg-chip-bg: #22222b;
-  --pg-chip-ink: #c9c7d2;
-  --pg-chip-hover: #2c2c37;
+  --pg-chip-bg: #242321;
+  --pg-chip-ink: #c9c8c6;
+  --pg-chip-hover: #2e2d2b;
   /* Inverted BACK: the selected chip is the one that contrasts with the page,
      so on a dark page it is the light one. Leaving this dark makes "All" read
      as the disabled chip and every unselected one as the choice. */
-  --pg-active-bg: #ededf2;
-  --pg-active-ink: #16161f;
+  --pg-active-bg: #eeedeb;
+  --pg-active-ink: #181715;
   --pg-wash: rgba(255, 255, 255, 0.04);
   --pg-veil: rgba(22, 22, 31, 0.66);
 }
