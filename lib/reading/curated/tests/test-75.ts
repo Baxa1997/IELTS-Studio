@@ -315,7 +315,7 @@ C) High repayment was then read as evidence of high returns, and this is where t
 
 D) When the randomised evaluations arrived, from the mid-2000s, they were consistent and disappointing. Across studies on several continents, access to microcredit produced no detectable average effect on household consumption, on health, on schooling, or on measures of women's decision-making within the household. Business activity did increase — more people ran a small enterprise, and existing enterprises bought more stock — without that translating into higher profits or incomes on average. The effects were not negative. They were approximately zero on the outcomes the movement had promised.
 
-E) The interpretation matters more than the result, and this is where I think both sides behave badly. The critics concluded that microfinance does not work, which the evidence does not support: a zero average is consistent with substantial benefit to some borrowers and harm to others, and the studies that looked for this found exactly that pattern, with established business owners gaining and marginal borrowers taking on debt that left them worse off. The defenders retreated to the claim that the loans help people manage cash flow and smooth consumption, which is probably true, is supported by the evidence on savings and insurance products, and is a far weaker claim than the one the movement was built on.
+E) The interpretation matters more than the result, and this is where I think both sides behave badly. The critics concluded that microfinance does not work, which the evidence does not support. A zero average is consistent with substantial benefit to some borrowers and harm to others, and the studies that looked for this found exactly that pattern, with established business owners gaining and marginal borrowers taking on debt that left them worse off. The defenders retreated to the claim that the loans help people manage cash flow and smooth consumption, which is probably true, is supported by the evidence on savings and insurance products, and is a far weaker claim than the one the movement was built on.
 
 F) There is a harder objection the debate has largely avoided. The theory requires that a poor household's binding constraint is capital, and for most of them it is not. What limits a small trader is usually demand: a village with forty households cannot support fifteen shops, and lending to the fifteenth does not create a customer. Where the constraint is a market rather than a loan, credit redistributes a fixed amount of trade between borrowers and leaves each of them with interest to pay. This is consistent with the finding of increased business activity and unchanged profit, which is otherwise a strange result.
 
@@ -356,10 +356,10 @@ G) My own conclusion is that the movement's real failure was rhetorical, and tha
         fromList(
           "matching_information",
           CREDIT_PARAGRAPHS,
-          "an account of which borrowers gained and which lost",
+          "the weaker claim the policy's defenders fell back on",
           "E",
-          "The critics concluded that microfinance does not work, which the evidence does not support: a zero average is consistent with substantial benefit to some borrowers and harm to others, and the studies that looked for this found exactly that pattern, with established business owners gaining and marginal borrowers taking on debt that left them worse off.",
-          "Paragraph E splits the borrowers in two.",
+          "The defenders retreated to the claim that the loans help people manage cash flow and smooth consumption, which is probably true, is supported by the evidence on savings and insurance products, and is a far weaker claim than the one the movement was built on.",
+          "Paragraph E reports the retreat.",
         ),
         ynng(
           "The writer thinks the group lending design was ingenious.",
@@ -370,8 +370,8 @@ G) My own conclusion is that the movement's real failure was rhetorical, and tha
         ynng(
           "The writer accepts the critics' conclusion that microfinance does not work.",
           "NO",
-          "The critics concluded that microfinance does not work, which the evidence does not support: a zero average is consistent with substantial benefit to some borrowers and harm to others, and the studies that looked for this found exactly that pattern, with established business owners gaining and marginal borrowers taking on debt that left them worse off.",
-          "That conclusion is not supported by the evidence.",
+          "The critics concluded that microfinance does not work, which the evidence does not support.",
+          "The evidence 'does not support' that conclusion.",
         ),
         ynng(
           "The writer thinks savings and insurance matter more to poor households than credit.",
@@ -406,8 +406,8 @@ G) My own conclusion is that the movement's real failure was rhetorical, and tha
           CREDIT_ENDINGS,
           "A zero average is not the same as no effect on anybody,",
           "because the average conceals gains for some and losses for others.",
-          "The effects were not negative. They were approximately zero on the outcomes the movement had promised.",
-          "An average of zero hides both directions.",
+          "A zero average is consistent with substantial benefit to some borrowers and harm to others, and the studies that looked for this found exactly that pattern, with established business owners gaining and marginal borrowers taking on debt that left them worse off.",
+          "An average of zero hides gains and losses alike.",
         ),
         fromList(
           "matching_sentence_endings",
