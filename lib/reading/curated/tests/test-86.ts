@@ -32,7 +32,7 @@ const SYNAESTHESIA_ENDINGS = [
   "since the letters that share a colour often share a shape or a position.",
   "although the advantage shows up only for the material the colours attach to.",
   "because a self-report cannot be checked against anything external.",
-  "even though the experience was dismissed as invention for most of a century.",
+  "even though it had been described carefully in the nineteenth century.",
   "which suggests the wiring is ordinary and the pruning is not.",
 ];
 
@@ -388,7 +388,7 @@ G) The most interesting implication is methodological rather than clinical. Syna
           "matching_sentence_endings",
           SYNAESTHESIA_ENDINGS,
           "The subject was absent from science for seventy years,",
-          "even though the experience was dismissed as invention for most of a century.",
+          "even though it had been described carefully in the nineteenth century.",
           "It was described carefully in the nineteenth century, notably by Francis Galton, who collected accounts and noticed that the associations were consistent within a person and idiosyncratic between people.",
           "It had been described well before the gap.",
         ),
@@ -403,10 +403,10 @@ G) The most interesting implication is methodological rather than clinical. Syna
         fromList(
           "matching_sentence_endings",
           SYNAESTHESIA_ENDINGS,
-          "Similar letters tend to take similar colours,",
+          "The pairings are not assigned at random,",
           "since the letters that share a colour often share a shape or a position.",
-          "Frequency of the letter in the language predicts the brightness of its colour.",
-          "Shape, position and frequency all predict the colour.",
+          "Across large samples, certain patterns recur: A tends towards red more often than chance allows, vowels are lighter than consonants, and letters of similar shape or adjacent position in the alphabet tend to take similar colours.",
+          "Shape and alphabetical position both predict the colour.",
         ),
         fromList(
           "matching_sentence_endings",

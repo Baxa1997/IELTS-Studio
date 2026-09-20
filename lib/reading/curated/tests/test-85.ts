@@ -32,7 +32,7 @@ const ROTATION_ENDINGS = [
   "since a break crop earns less per hectare than the crop it displaces.",
   "although the benefit only shows up in the years after it is grown.",
   "because the subsidy was paid on one crop and not on the sequence.",
-  "even though the practice was documented two thousand years ago.",
+  "since Roman writers were already recommending it two thousand years ago.",
   "which is why the advantage is hard to see in a single season's accounts.",
 ];
 
@@ -117,8 +117,8 @@ None of this makes bamboo a substitute for steel or a solution to anything on it
           "Traditional",
           "Effect: most of the ______ is leached out",
           "starch",
-          "An untreated culm contains a great deal of starch, which attracts beetles and termites, and a bamboo structure in a humid climate may last only a few years.",
-          "The starch is what is removed.",
+          "The cheapest traditional method is to stand freshly cut culms upright in running water for several weeks, which leaches out much of the starch.",
+          "The water 'leaches out much of the starch'.",
         ),
         noteLine(
           BAMBOO_NOTES,
@@ -391,8 +391,8 @@ G) Policy has generally made the problem worse before making it better. For deca
         fromList(
           "matching_sentence_endings",
           ROTATION_ENDINGS,
-          "Rotation was recommended in antiquity,",
-          "even though the practice was documented two thousand years ago.",
+          "The practice is far older than the science behind it,",
+          "since Roman writers were already recommending it two thousand years ago.",
           "Roman writers on agriculture recommended alternating crops and leaving land fallow, and medieval European farming was organised around a three-field system in which a third of the land grew nothing each year.",
           "Roman writers already recommended it.",
         ),

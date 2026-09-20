@@ -33,7 +33,7 @@ const ORGANOID_ENDINGS = [
   "although the cells organise themselves without being told where to go.",
   "because an immune system is the one component the dish does not contain.",
   "even though the same cells came from a patient rather than a cell line.",
-  "which makes the regulatory question harder than the biological one.",
+  "because the requirement is written into law in most jurisdictions.",
 ];
 
 export const TEST_91: CuratedTest = {
@@ -63,8 +63,8 @@ What the case does establish is narrower and more useful. A difference in outcom
         tfng(
           "Women were assigned to the two clinics according to their preference.",
           "FALSE",
-          "The first clinic was staffed by medical students; the second by trainee midwives.",
-          "Admission alternated by day, not by preference.",
+          "In the 1840s the maternity service of the Vienna General Hospital was divided into two clinics, and women arriving in labour were admitted to them on alternate days.",
+          "They were admitted 'on alternate days'.",
         ),
         tfng(
           "Overcrowding was eliminated because the safer clinic was more crowded.",
@@ -405,7 +405,7 @@ G) The honest summary is that organoids are not a replacement for animal testing
           "matching_sentence_endings",
           ORGANOID_ENDINGS,
           "A rodent study is performed even when it is thought less informative,",
-          "which makes the regulatory question harder than the biological one.",
+          "because the requirement is written into law in most jurisdictions.",
           "Safety testing requirements for new drugs are written into law in most jurisdictions and in several of them specify animal studies.",
           "The requirement is written into law.",
         ),

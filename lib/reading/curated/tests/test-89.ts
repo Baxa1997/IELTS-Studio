@@ -392,9 +392,9 @@ G) The honest assessment of the whole family of devices is that the invention wa
           "matching_sentence_endings",
           STUD_ENDINGS,
           "A lens returns the beam to its source,",
-          "because the driver needs the line to be visible before the headlights reach it.",
+          "even though the same effect can now be printed into the paint itself.",
           "Because it returns light along the incoming path, it is visible far beyond the distance at which paint becomes legible.",
-          "It is legible well beyond the paint.",
+          "Returning the beam is what makes it legible far ahead.",
         ),
         fromList(
           "matching_sentence_endings",

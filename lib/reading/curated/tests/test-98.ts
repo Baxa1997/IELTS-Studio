@@ -32,8 +32,8 @@ const PUMP_ENDINGS = [
   "since a spare part made in another country may take a year to arrive.",
   "although the village had never been asked whether it wanted that design.",
   "because a handpump has fewer components than the alternatives to it.",
-  "even though the survey counted the pump as functioning on the day it called.",
-  "which makes a repair fund collected locally the best predictor of survival.",
+  "because a household survey records only the state on the day it calls.",
+  "which is what happens when a group must save against an event with no date.",
 ];
 
 export const TEST_98: CuratedTest = {
@@ -395,7 +395,7 @@ G) The general lesson has been drawn many times and is still being relearned. Ca
           "matching_sentence_endings",
           PUMP_ENDINGS,
           "A village stops contributing while the pump is sound,",
-          "which makes a repair fund collected locally the best predictor of survival.",
+          "which is what happens when a group must save against an event with no date.",
           "Committees dissolve, treasurers leave, money collected for a repair that has not yet been needed is spent on something that has, and a village asked to pay monthly for a pump that is working will generally stop paying.",
           "Local saving against an undated event fails.",
         ),
@@ -403,7 +403,7 @@ G) The general lesson has been drawn many times and is still being relearned. Ca
           "matching_sentence_endings",
           PUMP_ENDINGS,
           "A pump may be broken for months and still be counted as working,",
-          "even though the survey counted the pump as functioning on the day it called.",
+          "because a household survey records only the state on the day it calls.",
           "Studies using sensors on pump handles, which record actual use continuously, have found substantially more downtime than household surveys report, and have also found that a broken pump is often not reported to anybody for weeks because nobody knows who to tell.",
           "The survey records only that day.",
         ),

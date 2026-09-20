@@ -31,7 +31,7 @@ const ROUNDABOUT_ENDINGS = [
   "which is why the severe collisions largely disappear and the minor ones do not.",
   "since the junction keeps working when the power supply fails.",
   "although a driver on foot or on a bicycle gains far less from the change.",
-  "because the entry rule was reversed to give priority to the circulating traffic.",
+  "until the entry rule was reversed to give priority to the circulating traffic.",
   "even though the design was invented in the country that adopted it last.",
   "which makes the land it occupies the usual reason for refusing one.",
 ];
@@ -395,7 +395,7 @@ G) The general point the case illustrates is about where safety comes from. The 
           "matching_sentence_endings",
           ROUNDABOUT_ENDINGS,
           "Early circles used to lock solid at busy times,",
-          "because the entry rule was reversed to give priority to the circulating traffic.",
+          "until the entry rule was reversed to give priority to the circulating traffic.",
           "Before that, entering traffic had priority, and the results were poor: a busy circle filled up and locked, because vehicles could keep entering a circle that had nowhere to discharge.",
           "The fix was to reverse the priority.",
         ),

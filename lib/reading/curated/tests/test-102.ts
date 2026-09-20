@@ -139,9 +139,9 @@ The uncomfortable summary is that irrigation in a closed basin is a process with
           "sentence_completion",
           "NO MORE THAN TWO WORDS",
           "Drainage water discharged into a river passes the problem ______.",
-          "downstream",
+          "along",
           "Discharged into a river, it salinises the water for everyone downstream and passes the problem along.",
-          "It goes to those downstream.",
+          "It 'passes the problem along'.",
         ),
         gapFill(
           "sentence_completion",

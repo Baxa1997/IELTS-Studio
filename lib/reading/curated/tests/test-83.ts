@@ -356,8 +356,8 @@ G) There is also a residue that the industry discusses less. Refining bauxite in
           "Paragraph B describes the monument cap.",
         ),
         ynng(
-          "The writer thinks the Hall–Héroult process is likely to be replaced soon.",
-          "NO",
+          "The writer accepts that the process has gone unusually long without replacement.",
+          "YES",
           "The process bearing both their names is still, with refinements, the only method used at scale anywhere in the world, more than a century and a quarter later.",
           "It remains the only method at scale.",
         ),

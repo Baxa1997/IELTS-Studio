@@ -234,8 +234,8 @@ The fair assessment is that these schemes are a modest, verifiable transfer with
           LABEL_BANK,
           "Inspection ______ are themselves a barrier to the poorest.",
           "fees",
-          "Robert Kagwe, who works with growers' associations, notes that the farms which end up certified tend to be the better-resourced ones within any given region, and that the scheme therefore selects for relative advantage even as it aims at disadvantage.",
-          "The fees are part of the barrier.",
+          "Certification requires an organised cooperative, record-keeping, and the payment of fees for inspection, which are a barrier to exactly the poorest and least organised farmers.",
+          "The inspection fees are named as a barrier.",
         ),
         fromList(
           "summary_completion",
