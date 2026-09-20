@@ -117,6 +117,13 @@ import { TEST_78 } from "./tests/test-78";
 import { TEST_79 } from "./tests/test-79";
 import { TEST_80 } from "./tests/test-80";
 import { TEST_81 } from "./tests/test-81";
+import { TEST_82 } from "./tests/test-82";
+import { TEST_83 } from "./tests/test-83";
+import { TEST_84 } from "./tests/test-84";
+import { TEST_85 } from "./tests/test-85";
+import { TEST_86 } from "./tests/test-86";
+import { TEST_87 } from "./tests/test-87";
+import { TEST_88 } from "./tests/test-88";
 
 /** Full three-passage library tests (13 + 13 + 14 questions). */
 export const CURATED_READING_TESTS: CuratedTest[] = [
@@ -201,6 +208,13 @@ export const CURATED_READING_TESTS: CuratedTest[] = [
   TEST_79,
   TEST_80,
   TEST_81,
+  TEST_82,
+  TEST_83,
+  TEST_84,
+  TEST_85,
+  TEST_86,
+  TEST_87,
+  TEST_88,
 ];
 
 export const CURATED_READING_PASSAGES: CuratedPassage[] = [
