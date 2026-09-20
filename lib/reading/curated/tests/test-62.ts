@@ -28,7 +28,7 @@ const PUZZLE_BANK = [
 const COLOUR_PARAGRAPHS = ["A", "B", "C", "D", "E", "F", "G"];
 const COLOUR_ENDINGS = [
   "because a two-term language always splits the range the same way.",
-  "although the speakers can distinguish the shades perfectly well without a word.",
+  "and its speakers will still distinguish it readily and accurately.",
   "which is why reaction times differ even when accuracy does not.",
   "even though the eye of every population tested is built the same way.",
   "because the boundary drawn between two colours is a matter of convention.",
@@ -389,8 +389,8 @@ G) The position that seems to me defensible is narrow and rather undramatic. Lan
         fromList(
           "matching_sentence_endings",
           COLOUR_ENDINGS,
-          "Missing vocabulary does not prevent discrimination,",
-          "although the speakers can distinguish the shades perfectly well without a word.",
+          "A language may have no word at all for a shade,",
+          "and its speakers will still distinguish it readily and accurately.",
           "People distinguish colours they have no word for, readily and accurately.",
           "They do so 'readily and accurately'.",
         ),

@@ -121,10 +121,10 @@ Their value lies precisely in that dullness. The tablets show a palace economy o
         noteLine(
           GRID_FLOW,
           null,
-          "Guessing three ______ names supplied the first sound values",
-          "place",
-          "Certain words appeared only on tablets from particular sites, in the position a place name would occupy.",
-          "The guess was that they were place names.",
+          "Guessing three Cretan ______ names supplied the first sound values",
+          "town",
+          "Ventris supposed that three of them might be Cretan town names known from later Greek sources — Knossos, Amnisos, Tylissos — and slotted the sound values that assumption implied into his grid.",
+          "He supposed they were 'Cretan town names'.",
         ),
         gapFill(
           "sentence_completion",
