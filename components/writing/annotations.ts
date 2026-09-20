@@ -1,7 +1,11 @@
 /**
  * Pure annotation helpers — no "use client", so server components (the Activities
- * essay page) can call cleanAnnotations() directly, while the client
- * <AnnotatedEssay> renders from the same shapes/colors.
+ * essay page) can call cleanAnnotations() directly, and any client renderer
+ * works from the same shapes/colors.
+ *
+ * The original client renderer, <AnnotatedEssay>, was deleted on 2026-09-20:
+ * nothing had imported it since the writing feedback rebuild. These helpers are
+ * still live — the Activities page uses them — so the shapes below stay.
  */
 
 import { BRAND } from "@/lib/theme/tokens";
