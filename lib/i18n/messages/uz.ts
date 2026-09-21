@@ -57,6 +57,7 @@ export const uz: Messages = {
   "nav.practiceWithAi": "AI bilan ingliz tilini mashq qiling",
   "nav.systemHealth": "Tizim holati",
   "nav.users": "Foydalanuvchilar",
+  "nav.broadcast": "Eʼlon yuborish",
 
   "nav.section.centre": "Markaz",
   "nav.section.learning": "Oʻrganish",

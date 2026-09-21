@@ -33,6 +33,15 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/recover-account",
   "/accept-invite",
+  /* Unsubscribing from marketing email. A PUBLIC ROUTE OR THE FEATURE IS A
+     COMPLAINT GENERATOR: the person clicking is in their inbox, usually signed
+     out, and a redirect to /sign-in reads as "they will not let me leave" —
+     which is the moment somebody presses the spam button instead. The signed
+     token in the URL is the authorisation; no session is wanted or needed.
+     `/api/unsubscribe` is the POST endpoint Gmail and Outlook hit by
+     themselves, with no browser and no cookie at all. */
+  "/unsubscribe",
+  "/api/unsubscribe",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
   "/p",

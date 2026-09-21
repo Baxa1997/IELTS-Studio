@@ -20,6 +20,15 @@ export async function sendEmail(options: {
   subject: string;
   text: string;
   html?: string;
+  /**
+   * Extra SMTP headers. Added for marketing broadcasts, which must carry
+   * `List-Unsubscribe` and `List-Unsubscribe-Post`: Gmail and Outlook render
+   * those as a native one-click "Unsubscribe" button beside the sender, and a
+   * bulk sender WITHOUT them is treated as a worse citizen than one whose
+   * recipients have an easy way out. Transactional mail passes nothing and is
+   * unaffected.
+   */
+  headers?: Record<string, string>;
 }): Promise<SendEmailResult> {
   const smtp = serverEnv.smtp;
   if (!smtp) {
@@ -41,6 +50,7 @@ export async function sendEmail(options: {
       subject: options.subject,
       text: options.text,
       html: options.html,
+      headers: options.headers,
     });
     return { sent: true };
   } catch (error) {

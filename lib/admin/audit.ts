@@ -39,7 +39,13 @@ export type AuditAction =
      also the only one whose detail carries a `reference` — the bank or Payme id
      is what a payout can be reconciled against a year later, and the audit row
      is the one place it is guaranteed to survive. */
-  | "referral.payout";
+  | "referral.payout"
+  /* A marketing broadcast. The only act here that reaches people OUTSIDE the
+     platform, which is exactly why it is logged: "who mailed the entire user
+     base, when, and saying what" has no other record, and the detail carries
+     the subject and the headcount so the answer does not depend on the
+     broadcast row still existing. */
+  | "platform.broadcast";
 
 export interface AuditEntry {
   action: AuditAction;
@@ -88,6 +94,7 @@ const PHRASING: Record<string, string> = {
   "user.limits_change": "Changed the limits for",
   "user.suspend": "Suspended",
   "user.restore": "Restored",
+  "platform.broadcast": "Sent a broadcast from",
 };
 
 export function phraseAction(action: string): string {

@@ -27,6 +27,7 @@ import {
   Layers,
   LayoutDashboard,
   type LucideIcon,
+  Megaphone,
   Mic,
   Receipt,
   School,
@@ -413,6 +414,10 @@ const SUPER_ADMIN: Section[] = [
       /* Approval is the only gate on the referral programme, so the queue has to
          be somewhere a super admin passes, not somewhere they remember. */
       { label: "Referrals", labelKey: "nav.referrals", href: "/admin/referrals", icon: Gift },
+      /* The only screen that emails people who did not ask for a message, so it
+         sits where a super admin has to pass it deliberately rather than behind
+         a URL somebody remembers. */
+      { label: "Broadcast", labelKey: "nav.broadcast", href: "/admin/marketing", icon: Megaphone },
     ],
   },
   {

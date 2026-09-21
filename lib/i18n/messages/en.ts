@@ -66,6 +66,7 @@ export const en = {
   "nav.practiceWithAi": "Practice English with AI",
   "nav.systemHealth": "System health",
   "nav.users": "Users",
+  "nav.broadcast": "Broadcast",
 
   /* ── sidebar section headings ───────────────────────────────────────── */
   "nav.section.centre": "Centre",

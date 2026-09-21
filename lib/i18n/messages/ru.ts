@@ -54,6 +54,7 @@ export const ru: Messages = {
   "nav.practiceWithAi": "Практика английского с AI",
   "nav.systemHealth": "Состояние системы",
   "nav.users": "Пользователи",
+  "nav.broadcast": "Рассылка",
 
   "nav.section.centre": "Центр",
   "nav.section.learning": "Обучение",
