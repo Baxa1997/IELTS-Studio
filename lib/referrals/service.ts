@@ -128,6 +128,7 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
         .select("id, amount_minor, currency, status, percent_applied, payable_after, created_at")
         .eq("referral_account_id", accountId)
         .order("created_at", { ascending: false })
+        .order("id")
         .range(from, to),
     ),
     admin
@@ -198,6 +199,7 @@ export async function loadEarnings(accountId: string): Promise<Earnings> {
       .select("organization_id")
       .eq("referral_account_id", accountId)
       .neq("status", "reversed")
+      .order("id")
       .range(from, to),
   );
   for (const p of payers) if (p.organization_id) converted.add(String(p.organization_id));

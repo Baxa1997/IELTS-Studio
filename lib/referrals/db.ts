@@ -59,6 +59,23 @@ export function toAccount(row: any): ReferralAccount {
  *
  * Pages explicitly rather than trusting the default. A SQL aggregate would be
  * better still, but that is a migration, and this is correct today.
+ *
+ * ⚠️ EVERY CALLER MUST ORDER BY SOMETHING UNIQUE, AND THAT IS NOT A STYLE RULE.
+ * `range()` is OFFSET/LIMIT, and Postgres gives no ordering guarantee between
+ * two separate queries — so paging an unordered select can return the same row
+ * on two pages and never return another one at all. Adding the rows up then
+ * produces a number that is wrong in BOTH directions, silently, and only once
+ * the result set crosses a thousand: exactly the size this helper exists to
+ * handle, so the bug it fixes and the bug it invites arrive together.
+ *
+ * `recordPayout` is the one that costs money — its sum is what a referrer is
+ * actually paid, so a duplicated row overpays them from the platform's pocket.
+ *
+ * A DISPLAY COLUMN IS NOT ENOUGH. `created_at`, `attributed_at` and
+ * `reviewed_at` are all non-unique (and `reviewed_at` is nullable), so ties
+ * re-order freely between pages. Order by those for the sake of the reader if
+ * you like, but always append a unique tiebreaker — `id`, or
+ * `organization_id` on `referral_attributions`, where that is the key.
  */
 export async function fetchAll<T>(
   page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,

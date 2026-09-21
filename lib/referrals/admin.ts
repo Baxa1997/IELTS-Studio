@@ -50,6 +50,7 @@ export async function loadDecidedAccounts(): Promise<ReferralAccount[]> {
       .select("id, code, status, percent, pitch, audience_url, applied_at, reviewed_at, review_note, profile_id, profiles(full_name, contact_email)")
       .neq("status", "pending")
       .order("reviewed_at", { ascending: false })
+      .order("id")
       .range(from, to),
   );
   return withEmails(admin, rows);
@@ -259,13 +260,14 @@ export async function loadProgrammeTotals(): Promise<ProgrammeTotals> {
 
   const [statuses, commissions, { count: referredSignups }] = await Promise.all([
     fetchAll<{ status: string; applied_at: string }>((from, to) =>
-      admin.from("referral_accounts").select("status, applied_at").range(from, to),
+      admin.from("referral_accounts").select("status, applied_at").order("id").range(from, to),
     ),
     fetchAll<CommissionQueryRow>((from, to) =>
       admin
         .from("referral_commissions")
         .select("amount_minor, currency, status, payable_after")
         .neq("status", "reversed")
+        .order("id")
         .range(from, to),
     ),
     admin
@@ -378,6 +380,7 @@ export async function loadAccountDetail(accountId: string): Promise<AccountDetai
         .select("organization_id, attributed_at, source")
         .eq("referral_account_id", accountId)
         .order("attributed_at", { ascending: false })
+        .order("organization_id")
         .range(from, to),
     ),
     fetchAll<CommissionQueryRow>((from, to) =>
@@ -385,6 +388,7 @@ export async function loadAccountDetail(accountId: string): Promise<AccountDetai
         .from("referral_commissions")
         .select("organization_id, amount_minor, currency, status, payable_after, created_at")
         .eq("referral_account_id", accountId)
+        .order("id")
         .range(from, to),
     ),
     admin.auth.admin.getUserById(String(row.profile_id)),
@@ -577,6 +581,7 @@ export async function loadDuePayouts(): Promise<DuePayout[]> {
       // anything starts storing `payable` this would quietly stop paying half
       // the ledger. Same reasoning as the revoke path above.
       .in("status", ["pending", "payable"])
+      .order("id")
       .range(from, to),
   );
 
@@ -665,6 +670,7 @@ export async function recordPayout(args: {
         .eq("referral_account_id", args.referralAccountId)
         .eq("currency", args.currency)
         .in("status", ["pending", "payable"])
+        .order("id")
         .range(from, to),
     );
   } catch (err) {

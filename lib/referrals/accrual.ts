@@ -148,32 +148,117 @@ export async function accrueCommission(input: AccrualInput): Promise<number> {
 /**
  * Does the paying workspace look like the referrer wearing a second hat?
  *
- * Phone only, for now. It is the strongest signal already on `profiles` — a
- * self-referrer has to reuse something, and the phone is collected at sign-up.
- * The card fingerprint is the better test and needs the Stripe payment method
- * expanded on the event, which is phase 6 work; this is the cheap half that
- * removes the obvious version of the abuse today.
+ * ⚠️ PHONE ALONE WAS A NO-OP, AND IT LOOKED LIKE A CHECK. The original version
+ * compared `profiles.phone` and returned false the moment the referrer had
+ * none — and GOOGLE OAUTH NEVER SUPPLIES A PHONE. Every referral account in
+ * production signed up with Google, so every one of them had `phone: null` and
+ * the guard exited on its first line, every time, while reading like protection.
+ * The case that exposed it: two Google accounts, near-identical names, one
+ * referring the other, both with a null phone.
+ *
+ * So identity is now a SET of tokens rather than one field, and a match on any
+ * of them refuses the commission. The email is the token that actually bites
+ * for an OAuth signup, since that is the one thing Google always gives us.
+ *
+ * STILL NOT THE CARD. A payment-method fingerprint is the strongest test there
+ * is and needs the Stripe payment method expanded on the event — phase 6. This
+ * is what can be done from data we already hold.
  */
 async function sharesAnIdentity(
   admin: ReturnType<typeof createAdminClient>,
   referrerProfileId: string,
   payingOrganizationId: string,
 ): Promise<boolean> {
-  const { data: referrer } = await admin
-    .from("profiles")
-    .select("phone")
-    .eq("id", referrerProfileId)
-    .maybeSingle();
-
-  const phone = normalizePhone(referrer?.phone);
-  if (!phone) return false;
+  const referrerTokens = await identityTokens(admin, [referrerProfileId]);
+  /* ⚠️ NO EARLY RETURN WHEN THE REFERRER HAS NO TOKENS, tempting as it looks.
+     An empty set matches nothing in the loop below anyway, so the "optimization"
+     buys one skipped query and costs the name flag further down — which is the
+     ONLY signal left for exactly the account that has no readable phone or
+     email. Removing the early return was how the mutation test caught it. */
 
   const { data: payers } = await admin
     .from("profiles")
-    .select("phone")
-    .eq("organization_id", payingOrganizationId);
+    .select("id, full_name")
+    .eq("organization_id", payingOrganizationId)
+    /* A personal org has exactly one member and is the only shape that can be a
+       self-referral in practice. The cap is so a large centre cannot turn one
+       accrual into hundreds of auth lookups; a centre buying a plan through a
+       referral link is a real sale, not somebody's second account. */
+    .limit(MAX_PAYERS_CHECKED);
 
-  return (payers ?? []).some((p) => normalizePhone(p.phone) === phone);
+  const payerIds = (payers ?? []).map((p) => p.id as string);
+  const payerTokens = await identityTokens(admin, payerIds);
+  for (const token of payerTokens) {
+    if (referrerTokens.has(token)) return true;
+  }
+
+  /* A NAME MATCH IS FLAGGED, NOT REFUSED — deliberately, and this is the line
+     most likely to be "tightened" by somebody who has not thought it through.
+     Uzbek surnames repeat constantly and a learner genuinely referring a sibling
+     is an ordinary, honest referral. Silently swallowing their money on a string
+     comparison is a worse failure than paying a suspect one that a human can
+     still review, because the referrer is never told and cannot appeal. Log it
+     and let a person decide. */
+  const { data: referrerProfile } = await admin
+    .from("profiles")
+    .select("full_name")
+    .eq("id", referrerProfileId)
+    .maybeSingle();
+  const referrerName = normalizeName(referrerProfile?.full_name);
+  if (referrerName && (payers ?? []).some((p) => normalizeName(p.full_name) === referrerName)) {
+    console.warn(
+      `[referrals] REVIEW: org ${payingOrganizationId} shares a name with referrer ${referrerProfileId} — commission allowed, worth a look`,
+    );
+  }
+
+  return false;
+}
+
+/** See the cap note in sharesAnIdentity. */
+const MAX_PAYERS_CHECKED = 25;
+
+/**
+ * Everything that identifies these people, as comparable strings.
+ *
+ * Prefixed by kind (`phone:`, `email:`) so a phone number can never collide with
+ * something that merely looks like one in another field.
+ */
+async function identityTokens(
+  admin: ReturnType<typeof createAdminClient>,
+  profileIds: string[],
+): Promise<Set<string>> {
+  const tokens = new Set<string>();
+  if (profileIds.length === 0) return tokens;
+
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, phone, contact_email")
+    .in("id", profileIds);
+
+  for (const p of profiles ?? []) {
+    const phone = normalizePhone(p.phone);
+    if (phone) tokens.add(`phone:${phone}`);
+    const contact = normalizeEmail(p.contact_email);
+    if (contact) tokens.add(`email:${contact}`);
+  }
+
+  /* THE AUTH EMAIL, WHICH IS THE ONLY ONE AN OAUTH SIGNUP HAS. `contact_email`
+     is filled in by centre accounts; a solo learner who signed in with Google
+     has nothing but the address on `auth.users`, and that is exactly the account
+     shape this guard kept missing. Failures are swallowed on purpose — a
+     self-referral check that cannot read one address must not take down the
+     accrual of a legitimate commission. */
+  for (const id of profileIds) {
+    try {
+      const { data } = await admin.auth.admin.getUserById(id);
+      const email = normalizeEmail(data?.user?.email);
+      if (email) tokens.add(`email:${email}`);
+    } catch (err) {
+      console.error(`[referrals] could not read auth identity for ${id}:`, err);
+    }
+  }
+
+  return tokens;
 }
 
 /** Digits only, so +998 90 123-45-67 and 998901234567 are the same person. */
@@ -183,6 +268,42 @@ function normalizePhone(raw: string | null | undefined): string | null {
   // Too short to identify anybody — treating it as a match would refuse real
   // commission over a typo.
   return digits.length >= 7 ? digits : null;
+}
+
+/**
+ * The address behind the aliases, so `me+ielts@gmail.com` and `m.e@gmail.com`
+ * are recognised as the same inbox as `me@gmail.com`.
+ *
+ * ⚠️ DOTS ARE ONLY IGNORED ON GMAIL. That is a Gmail behaviour, not an email
+ * one — plenty of providers treat `a.b@` and `ab@` as two different people, and
+ * stripping dots everywhere would merge strangers and refuse their commission.
+ * The `+tag` suffix is stripped generally: it is a convention, but a local part
+ * containing `+` is rare enough that the trade is worth it here.
+ */
+function normalizeEmail(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim().toLowerCase();
+  const at = trimmed.lastIndexOf("@");
+  if (at <= 0 || at === trimmed.length - 1) return null;
+
+  let local = trimmed.slice(0, at);
+  const domain = trimmed.slice(at + 1);
+
+  const plus = local.indexOf("+");
+  if (plus > 0) local = local.slice(0, plus);
+
+  // googlemail.com is the same service under another name.
+  const canonicalDomain = domain === "googlemail.com" ? "gmail.com" : domain;
+  if (canonicalDomain === "gmail.com") local = local.replace(/\./g, "");
+
+  return local ? `${local}@${canonicalDomain}` : null;
+}
+
+/** Case- and spacing-insensitive, for the flag-only name comparison. */
+function normalizeName(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const name = raw.trim().toLowerCase().replace(/\s+/g, " ");
+  return name.length >= 3 ? name : null;
 }
 
 /**

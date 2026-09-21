@@ -85,6 +85,22 @@ function isPublicPath(pathname: string): boolean {
  * somebody who clicks A's link and later B's still belongs to A — matching the
  * database's unique `organization_id`, which would otherwise silently disagree
  * with whatever the cookie last said.
+ *
+ * ⚠️ THE CLICK TIME IS PART OF THE COOKIE, AND IT IS LOAD-BEARING. A referral
+ * link is a public URL, so an EXISTING customer clicks it too — and until this
+ * carried a timestamp, the next trip through `/auth/callback` (which is every
+ * Google sign-in, not just a sign-up) attributed their months-old account to
+ * whoever's link they happened to open. That is permanent — `organization_id`
+ * is the primary key on `referral_attributions` — and it pays real commission
+ * on a customer the referrer never introduced. It happened in production: an
+ * account created 2026-08-02 was credited to a code approved 2026-09-19,
+ * 0.57 seconds after its owner signed in.
+ *
+ * `claimReferral()` compares this against the organization's `created_at` and
+ * refuses anything that already existed when the link was clicked. A timestamp
+ * rather than a freshness window on the org because a window has to be wrong in
+ * one of two directions: short enough to exclude an existing customer also
+ * excludes somebody who takes three days to click their confirmation email.
  */
 function captureReferral(request: NextRequest, response: NextResponse): void {
   const raw = request.nextUrl.searchParams.get("ref");
@@ -97,7 +113,9 @@ function captureReferral(request: NextRequest, response: NextResponse): void {
   if (!/^[a-z0-9][a-z0-9_-]{2,31}$/.test(code)) return;
   if (request.cookies.get(REFERRAL_COOKIE)) return;
 
-  response.cookies.set(REFERRAL_COOKIE, code, {
+  // `code.clickedAtMs` — parsed by readStashedReferral() in the attribution
+  // module, which is also what tolerates a legacy cookie with no dot in it.
+  response.cookies.set(REFERRAL_COOKIE, `${code}.${Date.now()}`, {
     path: "/",
     maxAge: REFERRAL_COOKIE_DAYS * 24 * 60 * 60,
     sameSite: "lax",
