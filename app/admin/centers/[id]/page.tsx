@@ -33,7 +33,7 @@ import { ago, daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
 
 import { CenterActions } from "./center-actions";
-import { PANEL, SLATE_AMBER, WARM_WELL } from "@/lib/theme/tokens";
+import { EMPTY_FILL, PANEL, SLATE_AMBER, WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -311,7 +311,7 @@ export default async function CenterDetailPage({ params }: { params: Promise<{ i
               </div>
               <Bar
                 width={`${(s.n / skillMax) * 100}%`}
-                fill={s.n === 0 ? "#E0DED8" : INDIGO}
+                fill={s.n === 0 ? EMPTY_FILL : INDIGO}
                 height={9}
               />
             </div>

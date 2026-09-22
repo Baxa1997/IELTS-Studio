@@ -23,18 +23,9 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { UsersTable, type UserRow } from "./users-table";
-import { INDIGO_CONSOLE, PANEL } from "@/lib/theme/tokens";
+import { INDIGO_CONSOLE, PANEL, PLAN_COLOR } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
-
-/** Straight from the design's `planMix`: free is the quiet grey that should
- *  dominate the bar, and the paid tiers climb toward the indigo accent. */
-const PLAN_COLOR: Record<OrgPlan, string> = {
-  trial: "#D8D6D0",
-  starter: "#7C79DB",
-  pro: INDIGO_CONSOLE,
-  enterprise: "#E5A85C",
-};
 
 /** The design's small KPI tile: 23px value in its own colour, 12px label. */
 function Tile({

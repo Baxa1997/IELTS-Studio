@@ -21,7 +21,7 @@ import {
 import { ago, loadAuditLog, phraseAction } from "@/lib/admin/audit";
 import { humanMs, loadHealth, type LatencyRow } from "@/lib/admin/health";
 import { requireSuperAdmin } from "@/lib/auth";
-import { WARM_WELL } from "@/lib/theme/tokens";
+import { EMPTY_FILL, WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -159,7 +159,7 @@ export default async function HealthPage() {
                 <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
                   <Bar
                     width={`${((row.medianMs ?? 0) / slowestGrade) * 100}%`}
-                    fill={row.calls === 0 ? "#E0DED8" : v.tone === "red" ? TONE.red.ink : INDIGO}
+                    fill={row.calls === 0 ? EMPTY_FILL : v.tone === "red" ? TONE.red.ink : INDIGO}
                   />
                 </div>
                 <div

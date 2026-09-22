@@ -12,37 +12,13 @@ import {
 } from "@/lib/public-grader/prompts";
 import type { PublicTeaser } from "@/lib/public-grader/teaser";
 import { bandColor } from "@/lib/ui/band";
-import {
-  BRAND,
-  BRAND_FILL,
-  BRAND_LINE,
-  BRAND_SOFT,
-  FAINT,
-  PANEL,
-  RED,
-  SLATE_AMBER_LINE,
-  SLATE_BODY as MUTED,
-  SLATE_GREEN,
-  SLATE_GREEN_BG,
-  SLATE_GREEN_LINE,
-  SLATE_INK as INK,
-  SLATE_LINE,
-  SLATE_LINE as LINE,
-  SLATE_MUTED,
-  SLATE_RED_BG,
-  SLATE_STRONG,
-  WARM_AMBER as AMBER,
-  WARM_LINE_SOFT,
-  WELL as SOFT,
-  WHITE,
-} from "@/lib/theme/tokens";
+import { BAR_BG, BRAND, BRAND_FILL, BRAND_LINE, BRAND_SOFT, EMERALD, FAINT, PANEL, RED, SLATE_AMBER_LINE, SLATE_BODY as MUTED, SLATE_GREEN, SLATE_GREEN_BG, SLATE_GREEN_LINE, SLATE_INK as INK, SLATE_LINE, SLATE_LINE as LINE, SLATE_MUTED, SLATE_RED_BG, SLATE_STRONG, TINT, TONE_LINE, TRACK, WARM_AMBER as AMBER, WARM_LINE_SOFT, WELL as SOFT, WHITE } from "@/lib/theme/tokens";
 
 type Status = "idle" | "grading" | "done" | "error";
 
 // ---- Brand tokens (same palette as the internal essay-feedback page) ---------
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const EMERALD = "#1F9D5E";
 const SOFT_LINE = WARM_LINE_SOFT;
 
 const ACCEPT = "image/png,image/jpeg,image/webp,application/pdf";
@@ -246,7 +222,7 @@ export function PublicGrader() {
         />
 
         {/* sticky action bar — always visible while you work */}
-        <div style={{ position: "sticky", bottom: 0, zIndex: 5, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "12px 16px", borderTop: `1px solid ${SOFT_LINE}`, background: "rgba(251,250,244,.94)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: "0 0 18px 18px" }}>
+        <div style={{ position: "sticky", bottom: 0, zIndex: 5, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "12px 16px", borderTop: `1px solid ${SOFT_LINE}`, background: BAR_BG, backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: "0 0 18px 18px" }}>
           <input ref={fileRef} type="file" accept={ACCEPT} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void transcribe(f); }} />
           <button
             type="button"
@@ -261,7 +237,7 @@ export function PublicGrader() {
               </>
             ) : (
               <>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ stroke: SLATE_STRONG }} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
                 </svg>
                 Upload photo or PDF
@@ -399,7 +375,7 @@ function Result({
           onClick={onAgain}
           style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 42, padding: "0 18px", borderRadius: 11, border: `1px solid ${WARM_LINE_SOFT}`, background: PANEL, color: SLATE_STRONG, fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8M3 4v4h4" /></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: SLATE_STRONG }} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8M3 4v4h4" /></svg>
           Grade another essay
         </button>
         <span style={{ fontSize: 12.5, fontWeight: 600, color: atLimit ? RED : SLATE_MUTED }}>
@@ -424,7 +400,7 @@ function Result({
         </div>
         {showLift ? (
           <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ stroke: EMERALD }} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 19V5M5 12l7-7 7 7" /></svg>
             <span style={{ fontSize: 13.5, color: SLATE_GREEN, fontWeight: 600 }}>
               Up to <strong style={{ fontWeight: 800, color: SLATE_GREEN }}>{teaser.bandWithFixes.toFixed(1)}</strong> with the fixes
             </span>
@@ -433,16 +409,16 @@ function Result({
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4" style={{ flex: 1, minWidth: 240 }}>
           {teaser.criteria.map((c) => {
             const isBlocker = teaser.blocker.criterion === c.key;
-            const color = isBlocker ? RED : c.band >= 6 ? "#3B4150" : AMBER;
+            const color = isBlocker ? RED : c.band >= 6 ? SLATE_STRONG : AMBER;
             const tag = isBlocker ? "Fix this first" : c.band >= 7 ? "Strong" : c.band >= 6 ? "Solid" : "Needs work";
-            const tagColor = isBlocker ? RED : c.band >= 6 ? "#9A8F77" : AMBER;
+            const tagColor = isBlocker ? RED : c.band >= 6 ? MUTED : AMBER;
             return (
-              <div key={c.key} style={{ background: isBlocker ? "#FCEEEA" : SOFT, border: `1px solid ${isBlocker ? "#F3CFC6" : SOFT_LINE}`, borderRadius: 12, padding: "10px 12px", minWidth: 0 }}>
+              <div key={c.key} style={{ background: isBlocker ? TINT.red.bg : SOFT, border: `1px solid ${isBlocker ? TONE_LINE.red : SOFT_LINE}`, borderRadius: 12, padding: "10px 12px", minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
                   <span style={{ fontSize: 11.5, fontWeight: 600, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{critShort(c.key)}</span>
                   <span style={{ fontSize: 20, fontWeight: 800, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{c.band.toFixed(1)}</span>
                 </div>
-                <div style={{ marginTop: 8, height: 5, borderRadius: 3, background: isBlocker ? "#F3DAD3" : "#EEEAE0", overflow: "hidden" }}>
+                <div style={{ marginTop: 8, height: 5, borderRadius: 3, background: isBlocker ? TONE_LINE.red : TRACK, overflow: "hidden" }}>
                   <div style={{ width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`, height: "100%", borderRadius: 3, background: color }} />
                 </div>
                 <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tagColor }}>{tag}</div>
@@ -476,7 +452,7 @@ function Result({
               ? { label: c.band >= 7 ? "Strong" : "Solid", text: SLATE_GREEN, bg: SLATE_GREEN_BG }
               : { label: "Developing", text: AMBER, bg: SLATE_RED_BG };
           return (
-            <div key={c.key} style={{ background: PANEL, border: `1px solid ${isBlocker ? "#F3CFC6" : "#EAE6D8"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
+            <div key={c.key} style={{ background: PANEL, border: `1px solid ${isBlocker ? TONE_LINE.red : SOFT_LINE}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11, gap: 8 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{c.label}</span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none" }}>
@@ -524,7 +500,7 @@ function Result({
         </div>
       </div>
 
-      <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>{teaser.disclaimer}</p>
+      <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.5, color: FAINT }}>{teaser.disclaimer}</p>
     </div>
   );
 }

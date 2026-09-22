@@ -6,19 +6,7 @@ import { getSession, roleHome } from "@/lib/auth";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 
 import { PublicGrader } from "./grader";
-import {
-  BRAND,
-  BRAND_FILL,
-  PANEL,
-  SLATE_BODY,
-  SLATE_BODY as MUTED,
-  SLATE_INK as INK,
-  SLATE_LINE as LINE,
-  SLATE_STRONG,
-  WARM_LINE_SOFT,
-  WELL as SOFT,
-  WHITE,
-} from "@/lib/theme/tokens";
+import { BRAND, BRAND_FILL, FAINT, PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP, PANEL, SLATE_BODY, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_STRONG, WARM_LINE_SOFT, WELL as SOFT, WHITE } from "@/lib/theme/tokens";
 
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --
 const SANS = "var(--font-hanken), system-ui, sans-serif";
@@ -170,7 +158,7 @@ export default async function PublicGradePage() {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)", fontFamily: SANS, color: INK }}>
+    <div style={{ minHeight: "100dvh", background: `linear-gradient(180deg, ${PAGE_GRAD_TOP}, ${PAGE_GRAD_BOTTOM})`, fontFamily: SANS, color: INK }}>
       <script
         type="application/ld+json"
         // Structured data for rich results — WebApplication + FAQPage + breadcrumbs.
@@ -235,7 +223,7 @@ export default async function PublicGradePage() {
 
         {/* ---- Footer ---- */}
         <footer style={{ marginTop: 44, borderTop: `1px solid ${SOFT_LINE}`, paddingTop: 18, display: "flex", flexWrap: "wrap", gap: 14, alignItems: "baseline", justifyContent: "space-between" }}>
-          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: "#C9CDD4", maxWidth: 620 }}>
+          <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: FAINT, maxWidth: 620 }}>
             Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge
             Assessment English. All questions are original and written for practice.
           </p>

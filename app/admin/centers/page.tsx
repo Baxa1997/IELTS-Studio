@@ -1,31 +1,11 @@
 import Link from "next/link";
 
-import {
-  Bar,
-  Card,
-  Empty,
-  FAINT,
-  HEAD_BG,
-  Identity,
-  INDIGO,
-  INK,
-  Kpi,
-  KpiRow,
-  LINE,
-  Pill,
-  PageTitle,
-  SOFT,
-  Surface,
-  TableHead,
-  TableRow,
-  TONE,
-  NAVY,
-} from "@/components/admin/ui";
+import { Bar, Card, Empty, FAINT, HEAD_BG, INDIGO, INK, Identity, Kpi, KpiRow, LINE, NAVY, ON_NAVY, PageTitle, Pill, SOFT, Surface, TONE, TableHead, TableRow } from "@/components/admin/ui";
 import { MenuIcon } from "@/components/admin/menu-icons";
 import { OverflowMenu } from "@/components/admin/menu";
 import { loadCenters, type CenterRow } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
-import { BODY, PANEL, WELL } from "@/lib/theme/tokens";
+import { BODY, PANEL, SOFT_INK, WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -246,8 +226,8 @@ export default async function CentersPage({
                   textDecoration: "none",
                   whiteSpace: "nowrap",
                   border: `1px solid ${on ? NAVY : "#E4E2DC"}`,
-                  background: on ? NAVY : "#fff",
-                  color: on ? "#fff" : "#4C4A63",
+                  background: on ? NAVY : PANEL,
+                  color: on ? ON_NAVY : SOFT_INK,
                   fontWeight: on ? 600 : 400,
                 }}
               >

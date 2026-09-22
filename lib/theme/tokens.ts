@@ -313,6 +313,99 @@ export const TINT = {
 
 export type Tone = keyof typeof TINT;
 
+/* ── the /admin platform console's chrome ───────────────────────────────────
+ *
+ * ⚠️ THESE EXIST BECAUSE components/admin/header.tsx AND components/admin/ui.tsx
+ * SPELLED THEM AS HEX. A literal cannot invert, so in dark mode the console's
+ * sticky top bar stayed near-white over a near-black page, every TONE tint
+ * stayed a pale wash under an ink that HAD lightened, and the plan cards kept a
+ * navy fill carrying white text on a dark ground. Same failure each time, and
+ * the reason CLAUDE.md's rule is "no colour literals" rather than "prefer
+ * tokens".
+ */
+
+/** The sticky console bar. Keeps its alpha in both themes — content scrolls
+ *  under it and the translucency is the design, not decoration. */
+export const HEAD_BG = "var(--tk-head-bg)";
+export const HEAD_LINE = "var(--tk-head-line)";
+/** Border for the small chips in that bar (search, date range). */
+export const CHIP_LINE = "var(--tk-chip-line)";
+/** One step off the panel — table header rows, read-only strips. */
+export const SUBTLE_BG = "var(--tk-subtle-bg)";
+/** A deep neutral panel and the ink that survives on it. In dark the panel goes
+ *  UP rather than down: darker than the page would simply disappear. */
+export const DEEP_PANEL = "var(--tk-deep-panel)";
+export const ON_DEEP_PANEL = "var(--tk-on-deep-panel)";
+/** Divider drawn INSIDE a deep panel, where LINE would vanish. */
+export const DEEP_PANEL_LINE = "var(--tk-deep-panel-line)";
+/** Secondary console ink, a step lighter than MUTED. */
+export const SOFT_INK = "var(--tk-soft-ink)";
+
+/** The outline that belongs with each TINT. Pair by name, never across. */
+export const TONE_LINE = {
+  indigo: "var(--tk-tone-indigo-line)",
+  green: "var(--tk-tone-green-line)",
+  amber: "var(--tk-tone-amber-line)",
+  red: "var(--tk-tone-red-line)",
+  neutral: LINE,
+} as const;
+
+/**
+ * The ink that goes ON a filled TONE swatch.
+ *
+ * ⚠️ NOT WHITE. A filled status button used `color: "#fff"`, which reads in
+ * light and fails in dark: GREEN/RED/AMBER/INDIGO all LIGHTEN in dark so they
+ * stay legible as text, and white stops clearing them (GREEN on white is
+ * 5.42:1 light, 2.33:1 dark). Each fill carries its own ink — the same rule as
+ * GREEN_FILL/ON_GREEN — so pair by name and never reach for white.
+ */
+export const ON_TONE = {
+  indigo: ON_INDIGO,
+  green: ON_GREEN,
+  amber: ON_AMBER,
+  red: ON_RED,
+  neutral: ON_INK,
+} as const;
+
+/** Console dividers, tracks and categorical chart colours. See the note beside
+ *  these in globals.css — each carries the exact light value of the literal it
+ *  replaced, so light mode is unchanged. */
+export const SOFT_RULE = "var(--tk-soft-rule)";
+export const TRACK = "var(--tk-track)";
+/** Fill for a bar representing zero — present but empty, not absent. */
+export const EMPTY_FILL = "var(--tk-empty-fill)";
+/** The supporting line beside INDIGO on a two-series chart. */
+export const SERIES_2 = "var(--tk-series-2)";
+export const PLAN_COLOR = {
+  trial: "var(--tk-plan-trial)",
+  starter: "var(--tk-plan-starter)",
+  pro: INDIGO_CONSOLE,
+  enterprise: "var(--tk-plan-enterprise)",
+} as const;
+/** Up / down deltas. Not GREEN/RED: those carry different light values and
+ *  swapping them would move a rendered colour. */
+export const POS_INK = "var(--tk-pos-ink)";
+export const NEG_INK = "var(--tk-neg-ink)";
+
+/** The two stops of a public page's ground gradient, and the sticky action bar
+ *  that floats over it. See the note in globals.css — /grade froze these as
+ *  hex and its headline disappeared in dark mode. */
+export const PAGE_GRAD_TOP = "var(--tk-page-grad-top)";
+export const PAGE_GRAD_BOTTOM = "var(--tk-page-grad-bottom)";
+export const BAR_BG = "var(--tk-bar-bg)";
+/** A brighter green than GREEN — for an icon or arrow, not body text. */
+export const EMERALD = "var(--tk-emerald)";
+
+/** Avatar badges: a step stronger than TINT on both sides, because two letters
+ *  have to carry across a table where a pill only has to read at 11px. */
+export const BADGE_TINT = {
+  indigo: { bg: "var(--tk-badge-indigo-bg)", fg: "var(--tk-badge-indigo-fg)" },
+  green: { bg: "var(--tk-badge-green-bg)", fg: GREEN },
+  amber: { bg: "var(--tk-badge-amber-bg)", fg: "var(--tk-badge-amber-fg)" },
+  red: { bg: "var(--tk-badge-red-bg)", fg: RED_DEEP },
+  neutral: { bg: "var(--tk-badge-neutral-bg)", fg: "var(--tk-badge-neutral-fg)" },
+} as const;
+
 /* ── surfaces ──────────────────────────────────────────────────────────────── */
 
 /**

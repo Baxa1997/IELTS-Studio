@@ -20,7 +20,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { loadAccountDetail, type AdminLedgerRow, type Check } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { formatMoney, STATUS_LABEL } from "@/lib/referrals/types";
-import { BRAND, BRAND_LINE, BRAND_SOFT, GREEN, PANEL } from "@/lib/theme/tokens";
+import { BRAND, BRAND_LINE, BRAND_SOFT, GREEN, PANEL, TINT } from "@/lib/theme/tokens";
 
 import { DecisionBar } from "../decision-bar";
 
@@ -83,7 +83,7 @@ export default async function ReferralDetailPage({ params }: { params: Promise<{
                   whiteSpace: "nowrap",
                   padding: "4px 12px",
                   borderRadius: 999,
-                  background: live ? BRAND_SOFT : "#F1F0EB",
+                  background: live ? BRAND_SOFT : TINT.neutral.bg,
                   border: `1px solid ${live ? BRAND_LINE : LINE}`,
                   color: live ? BRAND : MUTED,
                 }}
@@ -292,7 +292,7 @@ function CheckLine({ check }: { check: Check }) {
           whiteSpace: "nowrap",
           padding: "3px 10px",
           borderRadius: 999,
-          background: look ? "#FDF6EA" : "#EAF4EE",
+          background: look ? TINT.amber.bg : TINT.green.bg,
           color: look ? "#8A5A12" : "#16794C",
         }}
       >
@@ -306,14 +306,14 @@ function CheckLine({ check }: { check: Check }) {
 function LedgerRow({ row }: { row: AdminLedgerRow }) {
   const tone =
     row.state === "free"
-      ? { bg: "#F1F0EB", fg: MUTED, label: "free" }
+      ? { bg: TINT.neutral.bg, fg: MUTED, label: "free" }
       : row.state === "held"
-        ? { bg: "#FDF6EA", fg: "#8A5A12", label: "on hold" }
+        ? { bg: TINT.amber.bg, fg: TINT.amber.fg, label: "on hold" }
         : row.state === "reversed"
-          ? { bg: "#F1F0EB", fg: MUTED, label: "refunded" }
+          ? { bg: TINT.neutral.bg, fg: MUTED, label: "refunded" }
           : row.state === "paid"
-            ? { bg: "#EAF4EE", fg: GREEN, label: "paid out" }
-            : { bg: "#EAF4EE", fg: GREEN, label: "ready" };
+            ? { bg: TINT.green.bg, fg: GREEN, label: "paid out" }
+            : { bg: TINT.green.bg, fg: GREEN, label: "ready" };
 
   return (
     <tr style={{ borderTop: `1px solid ${ROW_RULE}` }}>

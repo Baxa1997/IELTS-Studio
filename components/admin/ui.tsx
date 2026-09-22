@@ -1,6 +1,7 @@
 import type React from "react";
 import {
   AMBER,
+  BADGE_TINT,
   CONSOLE_CANVAS as TK_CONSOLE_CANVAS,
   FAINT as TK_FAINT,
   GREEN,
@@ -11,8 +12,14 @@ import {
   RED,
   RED_DEEP,
   RULE as TK_RULE,
+  DEEP_PANEL as TK_DEEP_PANEL,
+  HEAD_BG as TK_HEAD_BG,
+  ON_DEEP_PANEL as TK_ON_DEEP_PANEL,
   SLATE_BODY,
   SLATE_LINE,
+  SOFT_INK,
+  TINT,
+  TONE_LINE,
   WARM_WELL as TK_WARM_WELL,
 } from "@/lib/theme/tokens";
 
@@ -43,14 +50,18 @@ export const RULE = TK_RULE;
 export const INK = TK_INK;
 export const BODY = SLATE_BODY;
 export const MUTED = TK_MUTED;
-export const SOFT = "#7C7A93";
+export const SOFT = SOFT_INK;
 export const LINE = SLATE_LINE;
 /** The two lighter rules: card-internal divider, then row divider. */
 export const ROW_RULE = TK_WARM_WELL;
 export { INDIGO };
-export const NAVY = "#14133A";
+/** ⚠️ NOT A HEX ANY MORE. It was #14133A — a fill you can put white on in light
+ *  and never in dark, where a panel darker than the page disappears into it.
+ *  `ON_NAVY` is its ink and must be used with it. */
+export const NAVY = TK_DEEP_PANEL;
+export const ON_NAVY = TK_ON_DEEP_PANEL;
 export const CREAM = TK_CONSOLE_CANVAS;
-export const HEAD_BG = "#FAFAF8";
+export const HEAD_BG = TK_HEAD_BG;
 
 /** The design's own two faces, loaded for this route group in the admin layout.
  *  Newsreader/Hanken were tried first and were visibly not the same page. */
@@ -59,13 +70,22 @@ export const SANS = "var(--font-work-sans), system-ui, sans-serif";
 
 export type Tone = "indigo" | "green" | "amber" | "red" | "neutral";
 
-/** tint / ink pairs, straight from the design. */
+/**
+ * tint / ink / border triples.
+ *
+ * ⚠️ DERIVED FROM `TINT`, NOT SPELLED OUT. Every tint here used to be a
+ * near-white hex while its ink was a token — so in dark mode the wash stayed
+ * pale and the ink LIGHTENED to suit a dark ground, leaving pale-on-pale. That
+ * is the fill-vs-ink inversion CLAUDE.md warns about, and it hit all five
+ * tones at once. Pair by name; never mix a tint from one with an ink from
+ * another, because the contrast lives in the pairing.
+ */
 export const TONE: Record<Tone, { tint: string; ink: string; border: string }> = {
-  indigo: { tint: "#EEEDF8", ink: INDIGO, border: "#C9C7E4" },
-  green: { tint: "#EAF4EE", ink: GREEN, border: "#C4E0CF" },
-  amber: { tint: "#FDF4E7", ink: AMBER, border: "#EBD3A8" },
-  red: { tint: "#FBEDEB", ink: RED, border: "#EABCB6" },
-  neutral: { tint: "#F1F0EB", ink: MUTED, border: LINE },
+  indigo: { tint: TINT.indigo.bg, ink: INDIGO, border: TONE_LINE.indigo },
+  green: { tint: TINT.green.bg, ink: GREEN, border: TONE_LINE.green },
+  amber: { tint: TINT.amber.bg, ink: AMBER, border: TONE_LINE.amber },
+  red: { tint: TINT.red.bg, ink: RED, border: TONE_LINE.red },
+  neutral: { tint: TINT.neutral.bg, ink: MUTED, border: TONE_LINE.neutral },
 };
 
 /**
@@ -77,11 +97,11 @@ export const TONE: Record<Tone, { tint: string; ink: string; border: string }> =
  * own badge pairs, a step darker on both sides.
  */
 export const BADGE: Record<Tone, { tint: string; ink: string }> = {
-  indigo: { tint: "#DEDDF6", ink: "#3B38B0" },
-  green: { tint: "#E7F1EA", ink: GREEN },
-  amber: { tint: "#FBEEE0", ink: "#A9721F" },
-  red: { tint: "#F7E4E2", ink: RED_DEEP },
-  neutral: { tint: "#E4EDF7", ink: "#2F5D8C" },
+  indigo: { tint: BADGE_TINT.indigo.bg, ink: BADGE_TINT.indigo.fg },
+  green: { tint: BADGE_TINT.green.bg, ink: BADGE_TINT.green.fg },
+  amber: { tint: BADGE_TINT.amber.bg, ink: BADGE_TINT.amber.fg },
+  red: { tint: BADGE_TINT.red.bg, ink: BADGE_TINT.red.fg },
+  neutral: { tint: BADGE_TINT.neutral.bg, ink: BADGE_TINT.neutral.fg },
 };
 
 /* ─────────────────────────── page frame ─────────────────────────── */
@@ -354,7 +374,7 @@ export function Bar({
   width,
   fill,
   height = 8,
-  track = "#F1F0EB",
+  track = TINT.neutral.bg,
 }: {
   /** Already a percentage string — the caller owns the maths. */
   width: string;
@@ -389,7 +409,7 @@ export function TableHead({ cols, children }: { cols: string; children: React.Re
         borderBottom: `1px solid ${RULE}`,
         fontSize: 11,
         letterSpacing: ".07em",
-        color: "#8B8999",
+        color: SOFT_INK,
         fontWeight: 600,
       }}
     >

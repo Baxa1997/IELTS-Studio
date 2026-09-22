@@ -20,7 +20,7 @@ import {
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { ManageModal, type ManageTarget } from "./manage-modal";
-import { BODY, PANEL, WELL } from "@/lib/theme/tokens";
+import { BODY, PANEL, SOFT_INK, WELL } from "@/lib/theme/tokens";
 
 /**
  * The users table, filtered in the browser.
@@ -384,7 +384,7 @@ export function UsersTable({
             disabled={safePage <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             aria-label="Previous page"
-            style={{ color: safePage <= 1 ? "#CFCDC8" : "#4C4A63" }}
+            style={{ color: safePage <= 1 ? FAINT : SOFT_INK }}
           >
             ‹
           </button>
@@ -394,7 +394,7 @@ export function UsersTable({
             disabled={safePage >= pages}
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             aria-label="Next page"
-            style={{ color: safePage >= pages ? "#CFCDC8" : "#4C4A63" }}
+            style={{ color: safePage >= pages ? FAINT : SOFT_INK }}
           >
             ›
           </button>

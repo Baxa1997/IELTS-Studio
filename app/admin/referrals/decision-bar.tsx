@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { reviewReferral, type ReviewState } from "@/app/admin/actions";
 import { INK, LINE, MUTED, SANS, TONE } from "@/components/admin/ui";
 import type { ReferralAccount } from "@/lib/referrals/types";
-import { PANEL, WELL } from "@/lib/theme/tokens";
+import { ON_TONE, PANEL, WELL } from "@/lib/theme/tokens";
 
 const initial: ReviewState = {};
 
@@ -171,8 +171,8 @@ function Decide({
       disabled={pending}
       style={{
         border: primary ? 0 : `1px solid ${TONE[tone].border}`,
-        background: primary ? TONE[tone].ink : "#fff",
-        color: primary ? "#fff" : TONE[tone].ink,
+        background: primary ? TONE[tone].ink : PANEL,
+        color: primary ? ON_TONE[tone] : TONE[tone].ink,
         borderRadius: 999,
         padding: primary ? "10px 24px" : "9px 20px",
         fontFamily: SANS,

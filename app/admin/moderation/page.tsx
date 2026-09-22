@@ -21,7 +21,7 @@ import {
 import { loadConductFlags } from "@/lib/admin/moderation";
 import { calendarAgo, within } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
-import { WARM_WELL } from "@/lib/theme/tokens";
+import { PLAN_COLOR, WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -86,7 +86,7 @@ export default async function ModerationPage() {
         <Kpi
           label="People involved"
           value={people.size}
-          accent="#7C79DB"
+          accent={PLAN_COLOR.starter}
           sub={[...kinds.entries()].map(([k, n]) => `${n} ${k}`).join(" · ") || "—"}
         />
       </KpiRow>

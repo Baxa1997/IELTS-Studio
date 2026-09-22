@@ -4,7 +4,7 @@ import { loadConductFlags } from "@/lib/admin/moderation";
 import { AlertsBell, type AlertRow } from "./alerts-bell";
 import { HeaderCrumb } from "./header-crumb";
 import { CREAM, FAINT, MUTED, SANS, TONE } from "./ui";
-import { INK, PANEL } from "@/lib/theme/tokens";
+import { CHIP_LINE, HEAD_BG, HEAD_LINE, INK, PANEL } from "@/lib/theme/tokens";
 
 /**
  * The bar that runs across the top of every admin screen.
@@ -76,10 +76,16 @@ export async function AdminHeader() {
            that is covered. `backdrop-filter` made it certain by creating a
            stacking context of its own. */
         zIndex: 20,
-        background: "rgba(244,243,239,.9)",
+        /* ⚠️ A TOKEN, NOT AN rgba() LITERAL. This was rgba(244,243,239,.9) —
+           near-white — so in dark mode the console's top bar stayed pale
+           across a near-black page. It is the first thing on the screen, so it
+           made every /admin page look broken. The token keeps the alpha,
+           because content scrolls under this bar and the translucency is the
+           design. */
+        background: HEAD_BG,
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
-        borderBottom: "1px solid #E4E2DC",
+        borderBottom: `1px solid ${HEAD_LINE}`,
         padding: "12px 28px",
         display: "flex",
         alignItems: "center",
@@ -98,7 +104,7 @@ export async function AdminHeader() {
             alignItems: "center",
             gap: 8,
             background: PANEL,
-            border: "1px solid #E0DED8",
+            border: `1px solid ${CHIP_LINE}`,
             borderRadius: 8,
             padding: "6px 11px",
             minWidth: 220,
@@ -140,7 +146,7 @@ export async function AdminHeader() {
             alignItems: "center",
             gap: 7,
             background: PANEL,
-            border: "1px solid #E0DED8",
+            border: `1px solid ${CHIP_LINE}`,
             borderRadius: 8,
             padding: "7px 11px",
             fontSize: 12.5,

@@ -5,7 +5,7 @@ import { requireSuperAdmin } from "@/lib/auth";
 import { loadDecidedAccounts, loadPendingApplications, loadProgrammeTotals } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { STATUS_LABEL, type ReferralAccount } from "@/lib/referrals/types";
-import { BRAND, BRAND_LINE, BRAND_SOFT, PANEL } from "@/lib/theme/tokens";
+import { BRAND, BRAND_LINE, BRAND_SOFT, PANEL, TINT } from "@/lib/theme/tokens";
 
 import { ProgrammeSummary } from "./summary";
 
@@ -100,7 +100,7 @@ export default async function AdminReferralsPage({
           />
         </form>
 
-        <div style={{ display: "flex", padding: 3, borderRadius: 999, background: "#EDEBE6", gap: 2 }}>
+        <div style={{ display: "flex", padding: 3, borderRadius: 999, background: TINT.neutral.bg, gap: 2 }}>
           <TabLink to="waiting" now={tab} q={params.q} count={pending.length}>
             Waiting
           </TabLink>
@@ -177,7 +177,7 @@ function Row({ account, tab }: { account: ReferralAccount; tab: Tab }) {
                 whiteSpace: "nowrap",
                 padding: "3px 10px",
                 borderRadius: 999,
-                background: account.status === "active" ? BRAND_SOFT : "#F1F0EB",
+                background: account.status === "active" ? BRAND_SOFT : TINT.neutral.bg,
                 border: `1px solid ${account.status === "active" ? BRAND_LINE : LINE}`,
                 color: account.status === "active" ? BRAND : MUTED,
               }}
@@ -249,7 +249,7 @@ function TabLink({
         fontWeight: on ? 600 : 500,
         whiteSpace: "nowrap",
         textDecoration: "none",
-        background: on ? "#fff" : "transparent",
+        background: on ? PANEL : "transparent",
         color: on ? INK : MUTED,
         boxShadow: on ? "0 1px 2px rgba(0,0,0,.06)" : "none",
       }}

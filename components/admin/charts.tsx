@@ -1,4 +1,5 @@
 import { FAINT, INDIGO, INK, LINE, MUTED, SANS } from "@/components/console/page-ui";
+import { NEG_INK, POS_INK, TRACK } from "@/lib/theme/tokens";
 
 /**
  * Charts for the platform console, drawn as plain SVG.
@@ -156,7 +157,7 @@ export function BarList({
               {r.value}
             </span>
           </div>
-          <div style={{ height: 8, borderRadius: 999, background: "#F2F1F7", overflow: "hidden" }}>
+          <div style={{ height: 8, borderRadius: 999, background: TRACK, overflow: "hidden" }}>
             <div
               style={{
                 width: `${Math.max(2, (r.value / peak) * 100)}%`,
@@ -184,7 +185,7 @@ export function DeltaStat({
 }) {
   const diff = value - previous;
   const pct = previous > 0 ? Math.round((diff / previous) * 100) : null;
-  const tone = diff > 0 ? "#15803d" : diff < 0 ? "#b91c1c" : FAINT;
+  const tone = diff > 0 ? POS_INK : diff < 0 ? NEG_INK : FAINT;
 
   return (
     <div>

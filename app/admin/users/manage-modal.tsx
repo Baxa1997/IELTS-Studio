@@ -7,17 +7,7 @@ import { FAINT, INK, LINE, MUTED, SANS, SERIF, TONE } from "@/components/admin/u
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
 import { loadAccountUsage, setAccountPlan, setAccountSuspended, type ReviewState } from "../actions";
-import {
-  CONSOLE_CANVAS,
-  INDIGO,
-  INDIGO_SOFT,
-  PANEL,
-  SLATE_AMBER,
-  SLATE_LINE,
-  SOFT,
-  WELL,
-  WHITE,
-} from "@/lib/theme/tokens";
+import { CONSOLE_CANVAS, HEAD_LINE, INDIGO, INDIGO_SOFT, PANEL, SLATE_AMBER, SLATE_LINE, SOFT, SOFT_RULE, WELL, WHITE } from "@/lib/theme/tokens";
 
 /**
  * Plan and limits for one account, as the design draws it.
@@ -39,7 +29,7 @@ import {
 
 const field: React.CSSProperties = {
   width: "100%",
-  border: `1px solid #E4E2DC`,
+  border: `1px solid ${HEAD_LINE}`,
   borderRadius: 8,
   padding: "10px 11px",
   fontFamily: "inherit",
@@ -159,7 +149,7 @@ export function ManageModal({
             alignItems: "center",
             gap: 12,
             padding: "20px 22px",
-            borderBottom: `1px solid #F0EEE9`,
+            borderBottom: `1px solid ${SOFT_RULE}`,
           }}
         >
           <span
@@ -203,7 +193,7 @@ export function ManageModal({
             style={{
               marginLeft: "auto",
               background: CONSOLE_CANVAS,
-              border: `1px solid #E4E2DC`,
+              border: `1px solid ${HEAD_LINE}`,
               borderRadius: 8,
               width: 32,
               height: 32,
@@ -348,7 +338,7 @@ export function ManageModal({
               gap: 10,
               marginTop: 16,
               paddingTop: 16,
-              borderTop: `1px solid #F0EEE9`,
+              borderTop: `1px solid ${SOFT_RULE}`,
             }}
           >
             {/* Its own form, submitted separately — suspending is not a variant
@@ -385,7 +375,7 @@ export function ManageModal({
               style={{
                 marginLeft: "auto",
                 background: CONSOLE_CANVAS,
-                border: `1px solid #E4E2DC`,
+                border: `1px solid ${HEAD_LINE}`,
                 borderRadius: 9,
                 padding: "10px 16px",
                 fontFamily: "inherit",

@@ -294,6 +294,78 @@
   --tk-tint-red-bg: #fbeae8;
   --tk-tint-neutral-bg: #f1f0eb;
 
+  /* ── the /admin console's own chrome ──────────────────────────────────────
+     ⚠️ ADDED BECAUSE components/admin/header.tsx AND ui.tsx HARDCODED THESE.
+     A literal cannot invert, so the platform console's sticky top bar stayed
+     near-white on a near-black page in dark mode — the single most visible
+     dark-mode bug on /admin, and the same class as the TONE tints below it.
+     `head-bg` keeps its alpha: the bar sits over scrolling content and the
+     translucency is the design, so this is rgba in both themes rather than a
+     flat fill. */
+  --tk-head-bg: rgba(244, 243, 239, .9);
+  --tk-head-line: #e4e2dc;
+  --tk-chip-line: #e0ded8;
+  /* Table header rows and other "one step off the panel" fills. */
+  --tk-subtle-bg: #fafaf8;
+  /* Deep neutral panel (plan cards). Was the literal NAVY, which is a colour
+     you can put white on in light and never in dark. */
+  --tk-deep-panel: #14133a;
+  --tk-deep-panel-line: #24234f;
+  --tk-on-deep-panel: #ffffff;
+  /* Secondary ink in the console, a step lighter than MUTED. */
+  --tk-soft-ink: #7c7a93;
+
+  /* TONE borders — the outline that goes with each tint above. */
+  --tk-tone-indigo-line: #c9c7e4;
+  --tk-tone-green-line: #c4e0cf;
+  --tk-tone-amber-line: #ebd3a8;
+  --tk-tone-red-line: #eabcb6;
+
+  /* BADGE pairs — a step darker than TONE on BOTH sides, because two letters
+     on an avatar have to carry across a table where a pill only has to be
+     legible at 11px. */
+  --tk-badge-indigo-bg: #deddf6;
+  --tk-badge-indigo-fg: #3b38b0;
+  --tk-badge-green-bg: #e7f1ea;
+  --tk-badge-amber-bg: #fbeee0;
+  --tk-badge-amber-fg: #a9721f;
+  --tk-badge-red-bg: #f7e4e2;
+  --tk-badge-neutral-bg: #e4edf7;
+  --tk-badge-neutral-fg: #2f5d8c;
+
+  /* Console dividers, tracks and categorical chart colours. Each carries the
+     exact light value of the literal it replaces, so nothing moves in light
+     mode — the same safety property scripts/codemod-dark-tokens.ts enforces
+     automatically, applied by hand where no existing token held the value.
+     ⚠️ ONE DELIBERATE MERGE: #f0eee9 (card dividers) and #efeee9 (chart
+     gridlines) differed by one unit in one channel and are now both soft-rule.
+     Imperceptible, and two greys nobody could tell apart is how a third one
+     gets invented later. */
+  --tk-soft-rule: #f0eee9;
+  --tk-track: #f2f1f7;
+  --tk-empty-fill: #e0ded8;
+  /* A second data series beside INDIGO. */
+  --tk-series-2: #b9b7ec;
+  /* Plan mix, categorical — free dominates and the paid tiers climb to indigo. */
+  --tk-plan-trial: #d8d6d0;
+  --tk-plan-starter: #7c79db;
+  --tk-plan-enterprise: #e5a85c;
+  /* Up / down deltas. */
+  --tk-pos-ink: #15803d;
+  --tk-neg-ink: #b91c1c;
+
+  /* ── public pages that are not the marketing site ─────────────────────────
+     ⚠️ ADDED BECAUSE /grade PAINTED ITS GROUND AS A HARDCODED GRADIENT. The
+     text on it already used INK, which correctly goes near-WHITE in dark — so
+     a frozen near-white ground left the headline invisible against it. The
+     ground and the ink have to move together or neither should move. */
+  --tk-page-grad-top: #fbfbfc;
+  --tk-page-grad-bottom: #f1f3f6;
+  /* Sticky action bars that sit over scrolling content — keeps its alpha. */
+  --tk-bar-bg: rgba(251, 250, 244, .94);
+  /* A brighter green than GREEN (#16794c) — an up-arrow, not body text. */
+  --tk-emerald: #1f9d5e;
+
   /* surfaces — the three grounds a screen can be dressed in */
   --tk-learner-canvas: #f6f7f9;
   --tk-learner-well: #fbfbfc;
@@ -619,6 +691,52 @@
   --tk-tint-amber-fg: #e0a84a;
   --tk-tint-red-bg: #2e1715;
   --tk-tint-neutral-bg: #242321;
+
+  /* The console chrome, inverted. The bar keeps its alpha so content still
+     shows through as it scrolls under. */
+  --tk-head-bg: rgba(26, 25, 23, .9);
+  --tk-head-line: #2c2b29;
+  --tk-chip-line: #34332f;
+  --tk-subtle-bg: #1b1a18;
+  /* In dark a "deep panel" cannot be darker than the page — it would vanish.
+     It goes UP, and its ink goes with it. */
+  --tk-deep-panel: #24234a;
+  --tk-deep-panel-line: #343268;
+  --tk-on-deep-panel: #eceaff;
+  --tk-soft-ink: #9d9bb4;
+
+  --tk-tone-indigo-line: #3a3866;
+  --tk-tone-green-line: #1f4634;
+  --tk-tone-amber-line: #4a3a1e;
+  --tk-tone-red-line: #4a2723;
+
+  /* Badges invert the light column: the fill goes deep and the ink goes
+     bright, the same rule the status fills follow. */
+  --tk-badge-indigo-bg: #2b2a57;
+  --tk-badge-indigo-fg: #b3b0ff;
+  --tk-badge-green-bg: #163425;
+  --tk-badge-amber-bg: #372916;
+  --tk-badge-amber-fg: #e8b765;
+  --tk-badge-red-bg: #3a1d1a;
+  --tk-badge-neutral-bg: #1f2a38;
+  --tk-badge-neutral-fg: #8fb6dd;
+
+  --tk-soft-rule: #252422;
+  --tk-track: #242327;
+  --tk-empty-fill: #34332f;
+  /* The second series has to stay distinguishable from INDIGO without going
+     brighter than the primary — it is the supporting line, not the subject. */
+  --tk-series-2: #7d7bb8;
+  --tk-plan-trial: #4a4844;
+  --tk-plan-starter: #8a87e6;
+  --tk-plan-enterprise: #e0a84a;
+  --tk-pos-ink: #4ec98a;
+  --tk-neg-ink: #e87b70;
+
+  --tk-page-grad-top: #131210;
+  --tk-page-grad-bottom: #0d0c0b;
+  --tk-bar-bg: rgba(24, 23, 21, .94);
+  --tk-emerald: #4ed092;
 
   --tk-learner-canvas: #100f0d;
   --tk-learner-well: #1d1c1a;

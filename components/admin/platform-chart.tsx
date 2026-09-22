@@ -1,5 +1,6 @@
 import type { Point } from "./charts";
 import { FAINT, INDIGO, SOFT } from "./ui";
+import { SERIES_2, SOFT_RULE } from "@/lib/theme/tokens";
 
 /**
  * Practice per day, with sign-ups underneath on the same days.
@@ -65,10 +66,10 @@ export function PlatformChart({
             <stop offset="100%" stopColor={INDIGO} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <path d={`M0 ${H * 0.33} L${W} ${H * 0.33}`} stroke="#EFEEE9" strokeWidth={1} />
-        <path d={`M0 ${H * 0.66} L${W} ${H * 0.66}`} stroke="#EFEEE9" strokeWidth={1} />
+        <path d={`M0 ${H * 0.33} L${W} ${H * 0.33}`} style={{ stroke: SOFT_RULE }} strokeWidth={1} />
+        <path d={`M0 ${H * 0.66} L${W} ${H * 0.66}`} style={{ stroke: SOFT_RULE }} strokeWidth={1} />
         <path d={line(p, true)} fill="url(#ad-practice-fill)" />
-        <path d={line(s)} fill="none" stroke="#B9B7EC" strokeWidth={2} strokeLinejoin="round" />
+        <path d={line(s)} fill="none" style={{ stroke: SERIES_2 }} strokeWidth={2} strokeLinejoin="round" />
         <path d={line(p)} fill="none" stroke={INDIGO} strokeWidth={2.2} strokeLinejoin="round" />
       </svg>
       <div
@@ -96,7 +97,7 @@ export function ChartLegend() {
         Practice
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <i style={{ width: 10, height: 3, borderRadius: 2, background: "#B9B7EC" }} />
+        <i style={{ width: 10, height: 3, borderRadius: 2, background: SERIES_2 }} />
         Sign-ups
       </span>
     </div>

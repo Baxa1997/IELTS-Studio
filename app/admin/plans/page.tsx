@@ -1,29 +1,10 @@
 import Link from "next/link";
 
-import {
-  Bar,
-  Card,
-  CardHead,
-  FAINT,
-  INDIGO,
-  INK,
-  Kpi,
-  KpiRow,
-  MUTED,
-  NAVY,
-  Notice,
-  Pill,
-  PageTitle,
-  SERIF,
-  SOFT,
-  Split,
-  Surface,
-  TONE,
-} from "@/components/admin/ui";
+import { Bar, Card, CardHead, FAINT, INDIGO, INK, Kpi, KpiRow, MUTED, NAVY, Notice, ON_NAVY, PageTitle, Pill, SERIF, SOFT, Split, Surface, TONE } from "@/components/admin/ui";
 import { loadRevenue } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS } from "@/lib/billing/plans";
-import { PANEL, SLATE_AMBER, WARM_WELL } from "@/lib/theme/tokens";
+import { DEEP_PANEL_LINE, PANEL, PLAN_COLOR, SLATE_AMBER, SOFT_RULE, WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -140,11 +121,11 @@ export default async function PlansPage() {
             <section
               key={key}
               style={{
-                background: dark ? NAVY : "#fff",
+                background: dark ? NAVY : PANEL,
                 border: `1px solid ${dark ? NAVY : "#E7E5DF"}`,
                 borderRadius: 14,
                 padding: 18,
-                color: dark ? "#fff" : INK,
+                color: dark ? ON_NAVY : INK,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -198,7 +179,7 @@ export default async function PlansPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     padding: "7px 0",
-                    borderTop: `1px solid ${dark ? "#24234F" : "#F0EEE9"}`,
+                    borderTop: `1px solid ${dark ? DEEP_PANEL_LINE : SOFT_RULE}`,
                     fontSize: 12.5,
                   }}
                 >
@@ -268,7 +249,7 @@ export default async function PlansPage() {
                   style={{
                     width: "100%",
                     borderRadius: "6px 6px 2px 2px",
-                    background: m.mrr > 0 ? INDIGO : "#EFEEE9",
+                    background: m.mrr > 0 ? INDIGO : SOFT_RULE,
                     height: `${Math.max(2, (m.mrr / historyMax) * 100)}%`,
                   }}
                 />
@@ -293,7 +274,7 @@ export default async function PlansPage() {
               </div>
               <Bar
                 width={`${Math.max(1, f.share * 100)}%`}
-                fill={f.share > 0.5 ? INDIGO : f.share > 0.05 ? "#7C79DB" : "#E5A85C"}
+                fill={f.share > 0.5 ? INDIGO : f.share > 0.05 ? PLAN_COLOR.starter : PLAN_COLOR.enterprise}
               />
             </div>
           ))}
