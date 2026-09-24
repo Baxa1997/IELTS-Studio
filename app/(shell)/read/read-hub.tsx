@@ -53,6 +53,7 @@ import {
   SLATE_INK as INK,
   SLATE_LINE,
   SLATE_MUTED,
+  withAlpha,
 } from "@/lib/theme/tokens";
 import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
@@ -261,7 +262,7 @@ export function ReadingHub({
             alignItems: "center",
             gap: 9,
             background: BRAND_SOFT,
-            border: "1px solid rgba(125,1,50,.16)",
+            border: `1px solid ${withAlpha(BRAND, 16)}`,
             color: BRAND,
             padding: "8px 14px",
             borderRadius: 999,
@@ -902,7 +903,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>
         {children}
       </span>
-      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+      <span style={{ height: 1, flex: 1, background: "var(--ex-hub-rule)" }} />
     </div>
   );
 }

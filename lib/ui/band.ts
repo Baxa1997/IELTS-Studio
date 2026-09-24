@@ -21,13 +21,26 @@ export interface BandColor {
   label: string;
 }
 
-/** Colour + tier for an overall band. Rounds nothing — pass the real band. */
+/**
+ * Colour + tier for an overall band. Rounds nothing — pass the real band.
+ *
+ * ⚠️ THESE ARE `var()`s, SO KEEP THEM IN `style`. They were hex, which left a
+ * dark-green 8.0 on a black card and a pale chip under it in dark mode on every
+ * result screen. The light values in `--ex-band-*` are the old hex exactly. A
+ * var() does not resolve in an SVG `fill=`/`stroke=` attribute — if a score
+ * ring ever draws with these, put the colour in `style={{ stroke }}`.
+ */
 export function bandColor(band: number): BandColor {
-  if (band >= 8) return { fg: "#15803D", bg: "#E6F5EB", label: "Expert" };
-  if (band >= 7) return { fg: "#16A34A", bg: "#E9F7EE", label: "Good" };
-  if (band >= 6) return { fg: "#4338CA", bg: "#ECEBFB", label: "Competent" };
-  if (band >= 5) return { fg: "#D97706", bg: "#FCF1DE", label: "Modest" };
-  if (band >= 4) return { fg: "#EA580C", bg: "#FDEADD", label: "Limited" };
-  if (band >= 3) return { fg: "#DC2626", bg: "#FCE4E0", label: "Very limited" };
-  return { fg: "#B91C1C", bg: "#FBE0DD", label: "Extremely limited" };
+  const tier = (t: string, label: string): BandColor => ({
+    fg: `var(--ex-band-${t}-fg)`,
+    bg: `var(--ex-band-${t}-bg)`,
+    label,
+  });
+  if (band >= 8) return tier("8", "Expert");
+  if (band >= 7) return tier("7", "Good");
+  if (band >= 6) return tier("6", "Competent");
+  if (band >= 5) return tier("5", "Modest");
+  if (band >= 4) return tier("4", "Limited");
+  if (band >= 3) return tier("3", "Very limited");
+  return tier("2", "Extremely limited");
 }

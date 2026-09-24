@@ -4,7 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser, Highlighter } from "lucide-react";
 
 import { BRAND, MUTED, SANS } from "./tokens";
-import { PANEL, SLATE_LINE as LINE } from "@/lib/theme/tokens";
+import {
+  BRAND_SOFT,
+  PANEL,
+  SLATE_LINE as LINE,
+  SLATE_MUTED,
+  SLATE_STRONG,
+} from "@/lib/theme/tokens";
 
 /**
  * Shared exam-surface reading tools — a real-test text highlighter (marker pens)
@@ -64,12 +70,22 @@ export const PENS: { key: PenColor; label: string; solid: string }[] = [
   { key: "blue", label: "Blue", solid: "#93c5fd" },
 ];
 
-/** Transparent pen fills — inject once per runner via a <style>{HIGHLIGHT_CSS}</style>. */
+/** Transparent pen fills — inject once per runner via a <style>{HIGHLIGHT_CSS}</style>.
+ *
+ *  ⚠️ LIGHTER IN DARK, ON PURPOSE. These strengths were tuned for dark ink on white;
+ *  under dark mode's near-white passage text the same wash lands mid-tone and the
+ *  marked words drop to ~3.4:1. At ~30% they clear 6:1 and still read as the pen.
+ *  A `.dark` selector rather than a var(): custom properties inside `::highlight()`
+ *  resolve unevenly across browsers, and a dropped declaration here is no mark. */
 export const HIGHLIGHT_CSS =
   "::highlight(read-hl-yellow){background-color:rgba(253,224,71,.5)}" +
   "::highlight(read-hl-green){background-color:rgba(134,239,172,.55)}" +
   "::highlight(read-hl-pink){background-color:rgba(249,168,212,.55)}" +
-  "::highlight(read-hl-blue){background-color:rgba(147,197,253,.6)}";
+  "::highlight(read-hl-blue){background-color:rgba(147,197,253,.6)}" +
+  ".dark ::highlight(read-hl-yellow){background-color:rgba(253,224,71,.3)}" +
+  ".dark ::highlight(read-hl-green){background-color:rgba(134,239,172,.3)}" +
+  ".dark ::highlight(read-hl-pink){background-color:rgba(249,168,212,.3)}" +
+  ".dark ::highlight(read-hl-blue){background-color:rgba(147,197,253,.32)}";
 
 function rangesOverlap(a: Range, b: Range): boolean {
   try {
@@ -129,7 +145,7 @@ export function useHighlighter(containerRef: React.RefObject<HTMLElement | null>
 
 // ---- Toolbar ---------------------------------------------------------------
 
-/** Compact marker toolbar styled for the light IELTS exam chrome. */
+/** Compact marker toolbar styled for the IELTS exam chrome. */
 export function MarkerToolbar({ tool, setTool, onClear, marks }: {
   tool: MarkTool; setTool: (t: MarkTool) => void; onClear: () => void; marks: number;
 }) {
@@ -144,11 +160,11 @@ export function MarkerToolbar({ tool, setTool, onClear, marks }: {
         );
       })}
       <button type="button" onClick={() => setTool(tool === "eraser" ? null : "eraser")} title="Eraser" aria-pressed={tool === "eraser"}
-        style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: tool === "eraser" ? "#FDF4F7" : "#fff", border: `1px solid ${tool === "eraser" ? BRAND : LINE}`, color: tool === "eraser" ? BRAND : MUTED, flexShrink: 0 }}>
+        style={{ width: 26, height: 26, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: tool === "eraser" ? BRAND_SOFT : PANEL, border: `1px solid ${tool === "eraser" ? BRAND : LINE}`, color: tool === "eraser" ? BRAND : MUTED, flexShrink: 0 }}>
         <Eraser size={13} />
       </button>
       <button type="button" onClick={onClear} disabled={!marks} title="Clear all highlights"
-        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: SANS, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: PANEL, border: `1px solid ${LINE}`, color: marks ? "#3B4150" : "#8B919D", opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
+        style={{ height: 26, padding: "0 10px", borderRadius: 7, fontFamily: SANS, fontSize: 12, fontWeight: 600, cursor: marks ? "pointer" : "default", background: PANEL, border: `1px solid ${LINE}`, color: marks ? SLATE_STRONG : SLATE_MUTED, opacity: marks ? 1 : 0.55, flexShrink: 0 }}>Clear</button>
     </div>
   );
 }

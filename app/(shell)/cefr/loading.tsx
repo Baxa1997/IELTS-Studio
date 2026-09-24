@@ -41,7 +41,7 @@ export default function CefrLoading() {
       {/* Section label + the five part cards */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0 16px" }}>
         <Block w={170} h={14} r={7} />
-        <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.08)" }} />
+        <span style={{ height: 1, flex: 1, background: "var(--ex-hub-rule)" }} />
       </div>
       <div
         style={{

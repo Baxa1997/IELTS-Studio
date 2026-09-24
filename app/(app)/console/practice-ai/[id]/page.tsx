@@ -8,6 +8,7 @@ import { loadGroups } from "@/lib/console/groups";
 import { loadLesson } from "@/lib/lessons/load";
 import { createClient } from "@/lib/supabase/server";
 import {
+  DEEP,
   EMBER,
   FAINT,
   INK,
@@ -28,7 +29,7 @@ import { GiveToStudents } from "./give-to-students";
 import { PrintableWorksheet } from "./printable";
 import { LessonStaffBar } from "./staff-bar";
 import { WorksheetButton } from "./worksheet";
-import { ON_INK, PANEL } from "@/lib/theme/tokens";
+import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -141,7 +142,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
               <span>{BLUEPRINT_LABEL[lesson.blueprint] ?? lesson.blueprint}</span>
               {lesson.level ? (
                 <>
-                  <span style={{ color: "#94a0a6" }}>·</span>
+                  <span style={{ color: "var(--pa-sep)" }}>·</span>
                   <span>{lesson.level}</span>
                 </>
               ) : null}
@@ -194,8 +195,11 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             <div
               style={{
                 borderRadius: 24,
-                background: INK,
-                color: ON_INK,
+                // DEEP + WHITE: this rail is written in fixed light inks (#8fa1aa,
+                // #dfe6ea, white washes), so its ground stays dark in both themes.
+                // INK inverts now, and ON_INK on a fixed navy was dark-on-dark.
+                background: DEEP,
+                color: WHITE,
                 padding: "20px 20px 18px",
                 boxShadow: "0 20px 44px -28px rgba(20,35,46,.7)",
               }}
@@ -374,7 +378,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
                         borderRadius: 999,
                         background: WASH,
                         fontSize: 12.5,
-                        color: "#46585f",
+                        color: "var(--pa-tag-ink)",
                       }}
                     >
                       {t.replaceAll("-", " ")}

@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import {
   BRAND as TK_BRAND,
   BRAND_DEEP,
+  BRAND_FILL,
   PANEL,
   SLATE_BODY,
   SLATE_INK,
@@ -21,9 +22,10 @@ export const BRAND = TK_BRAND;
 export const BRAND_DARK = BRAND_DEEP;
 export const INK = SLATE_INK;
 export const MUTED = SLATE_BODY;
-export const EMERALD = "#2f8f5b";
-export const RED = "#c2410c";
-export const AMBER = "#F59E0B";
+// Tokens, not hex — see the `--ex-*` block in globals.css. Light is unchanged.
+export const EMERALD = "var(--ex-rd-green)";
+export const RED = "var(--ex-err)";
+export const AMBER = "var(--ex-rd-amber)";
 
 export const cardStyle: CSSProperties = {
   background: PANEL,
@@ -48,12 +50,12 @@ export const btnBase: CSSProperties = {
 export function primaryBtn(disabled = false, accent?: string): CSSProperties {
   return {
     ...btnBase,
-    background: accent ?? BRAND,
+    // BRAND_FILL, not BRAND: this carries white, and dark-mode BRAND is an
+    // orange light enough to read as text (white on it is 3.8:1).
+    background: accent ?? BRAND_FILL,
     color: WHITE,
     opacity: disabled ? 0.55 : 1,
     cursor: disabled ? "default" : "pointer",
-    boxShadow: accent
-      ? `0 12px 24px -12px ${withAlpha(accent, 70)}`
-      : "0 12px 24px -12px rgba(125,1,50,.55)",
+    boxShadow: `0 12px 24px -12px ${withAlpha(accent ?? BRAND_FILL, accent ? 70 : 55)}`,
   };
 }

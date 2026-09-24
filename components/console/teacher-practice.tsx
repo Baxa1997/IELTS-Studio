@@ -13,6 +13,7 @@ import {
   SLATE_LINE,
   SLATE_MUTED,
   WARM_GREEN,
+  WARM_LINE_DEEP,
   WARM_RED,
   WELL,
   WHITE,
@@ -36,7 +37,7 @@ const LINE = SLATE_LINE;
 
 const field: React.CSSProperties = {
   width: "100%",
-  border: `1px solid #CFCABC`,
+  border: `1px solid ${WARM_LINE_DEEP}`,
   borderRadius: 9,
   padding: "10px 11px",
   fontFamily: SANS,
@@ -204,7 +205,7 @@ export function PracticeModal({
       <button
         aria-label="Close"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(20,19,58,.4)", border: 0 }}
+        style={{ position: "absolute", inset: 0, background: "var(--tk-scrim)", border: 0 }}
       />
       <div
         role="dialog"
@@ -219,7 +220,7 @@ export function PracticeModal({
           background: PANEL,
           borderRadius: 18,
           padding: "22px 24px",
-          boxShadow: "0 30px 60px rgba(20,19,58,.28)",
+          boxShadow: "var(--tk-modal-shadow)",
           fontFamily: SANS,
         }}
       >

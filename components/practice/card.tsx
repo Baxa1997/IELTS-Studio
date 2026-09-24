@@ -37,6 +37,7 @@ import {
   SLATE_GREEN as EMERALD,
   SLATE_INK as INK,
   SLATE_MUTED as DIM,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 /* Conditional class names are joined by code, never by string content: a
@@ -318,7 +319,7 @@ export function SeqTile({
         height: 28,
         borderRadius: 8,
         background: ink ? INK : BRAND_SOFT,
-        border: `1px solid ${ink ? INK : "rgba(125,1,50,.12)"}`,
+        border: `1px solid ${ink ? INK : withAlpha(BRAND, 12)}`,
         /* ⚠️ `PANEL`, NOT WHITE. The `ink` tile is the INVERTED one — a dark
            chip with light type — and `INK` already flips to near-white in dark,
            so the tile inverts correctly on its own. The label did not: it was
@@ -440,7 +441,7 @@ export function StatusPill({
         borderRadius: 9999,
         background: p.bg,
         border: `1px solid ${p.border}`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(20,17,15,.12)",
+        boxShadow: "var(--pc-pill-shadow)",
         color: p.fg,
         fontSize: 10,
         fontWeight: 700,
@@ -668,7 +669,7 @@ export function LevelLabel({ children }: { children: ReactNode }) {
       >
         {children}
       </span>
-      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.06)" }} />
+      <span style={{ height: 1, flex: 1, background: "var(--pc-level-rule)" }} />
     </div>
   );
 }

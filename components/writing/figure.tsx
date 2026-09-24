@@ -29,11 +29,16 @@ import {
  */
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
-const GRID = "#ECE9DD";
-const AXIS = "#C7C3B4";
+/* ⚠️ TOKENS, SO NONE OF THESE MAY GO IN AN SVG `fill=`/`stroke=` ATTRIBUTE — a
+   var() does not resolve there. Every shape below takes its colour through
+   `style`. The chart sits on the studio's PANEL, which goes dark, and the light
+   series (burgundy, forest, slate) vanished on it; `--ex-fig-*` keeps the light
+   hexes exactly and lifts each one in dark. */
+const GRID = "var(--ex-fig-grid)";
+const AXIS = "var(--ex-fig-axis)";
 
-/** Up to 8 distinct series/slice colours (brand indigo first). */
-const PALETTE = ["#7D0132", "#1C7A4F", "#C7853A", "#9B1044", "#2C7A9A", "#9A4F8E", "#B5852A", "#4A505C"];
+/** Up to 8 distinct series/slice colours (brand first). */
+const PALETTE = Array.from({ length: 8 }, (_, i) => `var(--ex-fig-${i + 1})`);
 
 /** Nothing to subscribe to: `mounted` changes once, when React reaches the
  *  client, and `useSyncExternalStore` gets that from its two snapshots alone. */
@@ -78,7 +83,7 @@ export function FigureView({ figure, expandable = true }: { figure: Figure; expa
             aria-label="View figure full screen"
             style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", border: `1px solid ${WARM_LINE_SOFT}`, background: PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4A505C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: MUTED }}>
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
             </svg>
             Expand
@@ -108,7 +113,7 @@ function FigureModal({ figure, onClose }: { figure: Figure; onClose: () => void 
   return (
     <div
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,24,40,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(16px,4vw,48px)", fontFamily: SANS }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "var(--ex-scrim-fig)", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(16px,4vw,48px)", fontFamily: SANS }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -239,14 +244,14 @@ function AxisFigureView({ figure, big = false }: { figure: AxisFigure; big?: boo
           const y = yFor(t);
           return (
             <g key={i}>
-              <line x1={ML} y1={y} x2={W - MR} y2={y} stroke={GRID} strokeWidth={1} />
+              <line x1={ML} y1={y} x2={W - MR} y2={y} strokeWidth={1} style={{ stroke: GRID }} />
               <text style={{ fill: MUTED }} x={ML - 7} y={y + 3.5} textAnchor="end" fontSize={11} fontFamily={SANS}>
                 {fmt(t)}
               </text>
             </g>
           );
         })}
-        <line x1={ML} y1={yBase} x2={W - MR} y2={yBase} stroke={AXIS} strokeWidth={1.4} />
+        <line x1={ML} y1={yBase} x2={W - MR} y2={yBase} strokeWidth={1.4} style={{ stroke: AXIS }} />
 
         {/* bars or lines */}
         {isLine
@@ -255,17 +260,15 @@ function AxisFigureView({ figure, big = false }: { figure: AxisFigure; big?: boo
               const pts = s.values.map((v, i) => `${bandCenter(i)},${yFor(v)}`).join(" ");
               return (
                 <g key={si}>
-                  <polyline points={pts} fill="none" stroke={color} strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" />
+                  <polyline points={pts} fill="none" strokeWidth={2.4} strokeLinejoin="round" strokeLinecap="round" style={{ stroke: color }} />
                   {s.values.map((v, i) => (
                     <circle
                       key={i}
                       cx={bandCenter(i)}
                       cy={yFor(v)}
                       r={5}
-                      fill="#fff"
-                      stroke={color}
                       strokeWidth={2}
-                      style={{ cursor: "pointer" }}
+                      style={{ cursor: "pointer", fill: PANEL, stroke: color }}
                       onMouseMove={(e) => report(e, labelOf(s.name, figure.categories[i]), `${fmt(v)}${u}`)}
                     />
                   ))}
@@ -286,8 +289,9 @@ function AxisFigureView({ figure, big = false }: { figure: AxisFigure; big?: boo
                     width={Math.max(1, barW - 2)}
                     height={Math.max(0, yBase - y)}
                     rx={2}
-
-                    style={{ cursor: "pointer" }}
+                    // ⚠️ The fill was dropped when the text fills moved to `style`
+                    // (8cffac2) and every bar rendered black. It lives here now.
+                    style={{ cursor: "pointer", fill: color }}
                     onMouseMove={(e) => report(e, labelOf(s.name, c), `${fmt(v)}${u}`)}
                   />
                 );
@@ -353,8 +357,8 @@ function PieFigureView({ figure, big = false }: { figure: PieFigure; big?: boole
           const color = PALETTE[i % PALETTE.length];
           const pct = `${Math.round(frac * 100)}%`;
           const onMove = (e: React.MouseEvent) => report(e, s.label, `${fmt(s.value)}${u} · ${pct}`);
-          if (frac >= 0.9999) return <circle key={i} cx={cx} cy={cy} r={r} fill={color} style={{ cursor: "pointer" }} onMouseMove={onMove} />;
-          return <path key={i} d={arc(cx, cy, r, start, end)} fill={color} style={{ cursor: "pointer" }} onMouseMove={onMove} />;
+          if (frac >= 0.9999) return <circle key={i} cx={cx} cy={cy} r={r} style={{ cursor: "pointer", fill: color }} onMouseMove={onMove} />;
+          return <path key={i} d={arc(cx, cy, r, start, end)} style={{ cursor: "pointer", fill: color }} onMouseMove={onMove} />;
         })}
       </svg>
       <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>

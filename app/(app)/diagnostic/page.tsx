@@ -7,8 +7,10 @@ import { loadStudentEstimates } from "@/lib/estimates/load";
 import {
   BRAND,
   BRAND_FILL,
+  BRAND_SOFT,
   PANEL,
   SLATE_GREEN as EMERALD,
+  SLATE_GREEN_BG,
   SLATE_INK as INK,
   SLATE_LINE,
   SLATE_STRONG as MUTED,
@@ -62,7 +64,7 @@ export default async function DiagnosticPage() {
         {/* progress */}
         {!diagnosticComplete ? (
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
-            <div style={{ flex: "1 1 auto", height: 7, background: "#EFEEE2", borderRadius: 999, overflow: "hidden", maxWidth: 320 }} aria-hidden>
+            <div style={{ flex: "1 1 auto", height: 7, background: "var(--ex-dg-track)", borderRadius: 999, overflow: "hidden", maxWidth: 320 }} aria-hidden>
               <div style={{ width: `${(doneCount / 2) * 100}%`, height: "100%", background: BRAND_FILL, borderRadius: 999, transition: "width .3s ease" }} />
             </div>
             <span style={{ fontFamily: SANS, fontWeight: 600, fontSize: 13, color: MUTED, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
@@ -74,17 +76,17 @@ export default async function DiagnosticPage() {
 
       {diagnosticComplete ? (
         <section style={{ marginTop: 22 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "#E9F4EE", border: "1px solid #C6E3D2", borderRadius: 14, padding: "14px 18px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "var(--ex-dg-ok-bg)", border: "1px solid var(--ex-dg-ok-line)", borderRadius: 14, padding: "14px 18px" }}>
             <span style={{ width: 30, height: 30, borderRadius: 8, background: PANEL, color: EMERALD, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6 9 17l-5-5" />
               </svg>
             </span>
             <div>
-              <p style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: "#1f6b44", margin: 0 }}>
+              <p style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: "var(--ex-dg-ok-ink)", margin: 0 }}>
                 Diagnostic complete — your baseline is set.
               </p>
-              <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.5, color: "#3f6e54", margin: "3px 0 0" }}>
+              <p style={{ fontFamily: SANS, fontSize: 13.5, lineHeight: 1.5, color: "var(--ex-dg-ok-body)", margin: "3px 0 0" }}>
                 These update automatically every time you submit graded work.
               </p>
             </div>
@@ -129,7 +131,7 @@ export default async function DiagnosticPage() {
         </div>
       )}
 
-      <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 12, lineHeight: 1.5, color: "#9a998c", margin: "28px 0 0" }}>
+      <p style={{ fontFamily: SANS, fontWeight: 400, fontSize: 12, lineHeight: 1.5, color: "var(--ex-dim)", margin: "28px 0 0" }}>
         Not affiliated with or endorsed by IELTS®, the British Council, IDP, or Cambridge Assessment English.
       </p>
     </div>
@@ -180,7 +182,7 @@ function DiagnosticStep({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: done ? "#EAF6F0" : "#FDF4F7",
+          background: done ? SLATE_GREEN_BG : BRAND_SOFT,
           color: done ? EMERALD : BRAND,
         }}
         aria-hidden
@@ -195,14 +197,14 @@ function DiagnosticStep({
       </span>
 
       <div style={{ flex: "1 1 240px", minWidth: 0 }}>
-        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: done ? EMERALD : "#9a998c" }}>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: done ? EMERALD : "var(--ex-dim)" }}>
           Step {n} · {skill === "reading" ? "Reading" : "Writing"}
         </div>
         <h2 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 19, lineHeight: 1.15, color: INK, margin: "5px 0 0" }}>{title}</h2>
         <p style={{ fontFamily: SANS, fontSize: 14, lineHeight: 1.5, color: MUTED, margin: "5px 0 0" }}>{blurb}</p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 11 }}>
           {chips.map((c, i) => (
-            <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: MUTED, background: WELL, border: "1px solid #ECEADC", borderRadius: 8, padding: "5px 10px" }}>
+            <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: SANS, fontWeight: 500, fontSize: 12.5, color: MUTED, background: WELL, border: "1px solid var(--ex-dg-chip-line)", borderRadius: 8, padding: "5px 10px" }}>
               <svg style={{ stroke: BRAND }} width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 {i === 0 ? (
                   <>
@@ -225,7 +227,7 @@ function DiagnosticStep({
             <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 30, lineHeight: 1, color: BRAND, fontVariantNumeric: "tabular-nums" }}>
               {band != null ? band.toFixed(1) : "—"}
             </div>
-            <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "#9a998c", marginTop: 4 }}>band</div>
+            <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 11, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ex-dim)", marginTop: 4 }}>band</div>
           </div>
         ) : (
           <Link

@@ -92,6 +92,7 @@ import {
   SLATE_LINE,
   SLATE_MUTED,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 /** Every engine call on this screen goes to the engine's `listening` namespace. */
@@ -628,7 +629,7 @@ function Hub({
               alignItems: "center",
               gap: 8,
               background: PANEL,
-              border: "1px solid rgba(28,27,46,.14)",
+              border: "1px solid var(--ex-hub-pill-line)",
               color: INK,
               padding: "8px 14px",
               borderRadius: 999,
@@ -648,7 +649,7 @@ function Hub({
                 alignItems: "center",
                 gap: 9,
                 background: TINT,
-                border: "1px solid rgba(125,1,50,.16)",
+                border: `1px solid ${withAlpha(BRAND, 16)}`,
                 color: BRAND,
                 padding: "8px 14px",
                 borderRadius: 999,
@@ -857,7 +858,7 @@ function GenerateCta({
                 padding: "5px 10px",
                 borderRadius: 8,
                 border: on ? "1px solid rgba(255,255,255,.9)" : "1px solid rgba(255,255,255,.28)",
-                background: on ? "#fff" : "rgba(255,255,255,.12)",
+                background: on ? WHITE : "rgba(255,255,255,.12)",
                 color: on ? BRAND : "rgba(255,255,255,.85)",
                 fontFamily: SANS,
                 fontSize: 12,
@@ -1253,7 +1254,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>
         {children}
       </span>
-      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+      <span style={{ height: 1, flex: 1, background: "var(--ex-hub-rule)" }} />
     </div>
   );
 }
@@ -1595,9 +1596,9 @@ function Runner({
       <style>{`
         @keyframes lp-pulse-ring { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.45); opacity: 0; } }
         .lp-qscroll::-webkit-scrollbar { width: 12px; }
-        .lp-qscroll::-webkit-scrollbar-thumb { background:#C9CDD4; border-radius:9999px; border:4px solid transparent; background-clip:content-box; }
+        .lp-qscroll::-webkit-scrollbar-thumb { background:${RUN.bIdle}; border-radius:9999px; border:4px solid transparent; background-clip:content-box; }
         .lp-run-input::placeholder { color:${RUN.t4}; }
-        .lp-run-input:focus { border-color:${RUN.focusBorder} !important; box-shadow:0 0 0 3px rgba(125,1,50,0.10); }
+        .lp-run-input:focus { border-color:${RUN.focusBorder} !important; box-shadow:0 0 0 3px ${withAlpha(RUN.v, 10)}; }
         .lp-form2 { display:grid; grid-template-columns:1fr 1fr; grid-auto-flow:column; column-gap:56px; }
         @media (max-width: 760px) { .lp-form2 { display:block; } }
         .lp-map-panel { grid-template-columns:minmax(360px,600px) minmax(260px,1fr); }
@@ -1913,14 +1914,14 @@ function JumpChip({
   answered: boolean;
   onClick: () => void;
 }) {
-  let bg: string = "#fff";
+  let bg: string = PANEL;
   let color: string = RUN.t3;
   let border: string = RUN.bField;
   let title = `Question ${n}`;
   if (current) {
-    bg = RUN.v;
-    color = "#fff";
-    border = RUN.v;
+    bg = RUN.vFill;
+    color = WHITE;
+    border = RUN.vFill;
     title = `Question ${n} (current)`;
   } else if (flagged) {
     bg = RUN.flagBg;
@@ -2000,7 +2001,7 @@ function RunnerFooter({
     justifyContent: "center",
     gap: 6,
     height: 38,
-    background: RUN.v,
+    background: RUN.vFill,
     border: "none",
     color: WHITE,
     fontFamily: RUN.sans,
@@ -2009,7 +2010,7 @@ function RunnerFooter({
     padding: "0 18px",
     borderRadius: 10,
     cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(125,1,50,0.3)",
+    boxShadow: `0 4px 12px ${withAlpha(RUN.vFill, 30)}`,
   };
   const ghost: React.CSSProperties = {
     display: "flex",
@@ -2229,7 +2230,7 @@ function AnswerField({
   const border = correct
     ? RUN.okBorder
     : wrong
-      ? "#E6B0B0"
+      ? RUN.badBorder
       : focused
         ? RUN.v
         : answered
@@ -2238,7 +2239,7 @@ function AnswerField({
   const bg = correct
     ? RUN.okTint
     : wrong
-      ? "#FDF2F2"
+      ? RUN.badTint
       : focused
         ? RUN.fieldFocus
         : answered
@@ -2301,7 +2302,13 @@ function AnswerField({
           → {result?.correct_answer}
         </span>
       ) : null}
-      {graded ? correct ? <Check size={16} color={RUN.ok} /> : <X size={16} color={BAD} /> : null}
+      {graded ? (
+        correct ? (
+          <Check size={16} style={{ color: RUN.ok }} />
+        ) : (
+          <X size={16} style={{ color: BAD }} />
+        )
+      ) : null}
     </span>
   );
 }
@@ -2372,11 +2379,10 @@ function CardHeader({
             height="14"
             viewBox="0 0 24 24"
             fill="none"
-            stroke={RUN.vDeep}
             strokeWidth="2.1"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ flexShrink: 0 }}
+            style={{ flexShrink: 0, stroke: RUN.vDeep }}
           >
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
@@ -2721,7 +2727,7 @@ function TablePanel({ table, ctx, bare }: { table: TableView; ctx: QCtx; bare?: 
                     style={{
                       ...cell,
                       fontWeight: ci === 0 ? 700 : 400,
-                      background: ci === 0 ? RUN.strip : "#fff",
+                      background: ci === 0 ? RUN.strip : PANEL,
                       whiteSpace: ci === 0 ? "nowrap" : "normal",
                     }}
                   >
@@ -3085,11 +3091,11 @@ function ChooseTwoPanel({ cluster, ctx }: { cluster: ClusterView; ctx: QCtx }) {
               ? isCorrect
                 ? RUN.okTint
                 : on
-                  ? "#FDF2F2"
-                  : "#fff"
+                  ? RUN.badTint
+                  : PANEL
               : on
                 ? RUN.vBg
-                : "#fff";
+                : PANEL;
             return (
               <button
                 key={letter}
@@ -3117,8 +3123,8 @@ function ChooseTwoPanel({ cluster, ctx }: { cluster: ClusterView; ctx: QCtx }) {
                     width: 22,
                     height: 22,
                     borderRadius: 6,
-                    border: `1.5px solid ${on || (graded && isCorrect) ? border : "#C9CDD4"}`,
-                    background: on && !graded ? RUN.v : "transparent",
+                    border: `1.5px solid ${on || (graded && isCorrect) ? border : RUN.bIdle}`,
+                    background: on && !graded ? RUN.vFill : "transparent",
                     color: WHITE,
                     display: "flex",
                     alignItems: "center",
@@ -3129,9 +3135,9 @@ function ChooseTwoPanel({ cluster, ctx }: { cluster: ClusterView; ctx: QCtx }) {
                   {on && !graded ? (
                     <Check size={14} />
                   ) : graded && isCorrect ? (
-                    <Check size={14} color={RUN.ok} />
+                    <Check size={14} style={{ color: RUN.ok }} />
                   ) : graded && on ? (
-                    <X size={14} color={BAD} />
+                    <X size={14} style={{ color: BAD }} />
                   ) : null}
                 </span>
                 <strong style={{ width: 16, flex: "none" }}>{letter}</strong>
@@ -3237,11 +3243,11 @@ function McqPanel({
                       ? isCorrect
                         ? RUN.okTint
                         : on
-                          ? "#FDF2F2"
-                          : "#fff"
+                          ? RUN.badTint
+                          : PANEL
                       : on
                         ? RUN.vBg
-                        : "#fff";
+                        : PANEL;
                     return (
                       <button
                         key={letter}
@@ -3275,8 +3281,8 @@ function McqPanel({
                             width: 20,
                             height: 20,
                             borderRadius: "50%",
-                            border: `1.5px solid ${on || isCorrect ? border : "#C9CDD4"}`,
-                            background: on && !graded ? RUN.v : "transparent",
+                            border: `1.5px solid ${on || isCorrect ? border : RUN.bIdle}`,
+                            background: on && !graded ? RUN.vFill : "transparent",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -3289,13 +3295,13 @@ function McqPanel({
                                 width: 8,
                                 height: 8,
                                 borderRadius: "50%",
-                                background: PANEL,
+                                background: WHITE,
                               }}
                             />
                           ) : isCorrect ? (
-                            <Check size={12} color={RUN.ok} />
+                            <Check size={12} style={{ color: RUN.ok }} />
                           ) : graded && on ? (
-                            <X size={12} color={BAD} />
+                            <X size={12} style={{ color: BAD }} />
                           ) : null}
                         </span>
                         <strong style={{ width: 16, flex: "none" }}>{letter}</strong>
@@ -3405,7 +3411,7 @@ function MatchingPanel({
                   padding: "0 10px",
                   borderRadius: 9,
                   border: `1.5px solid ${border}`,
-                  background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
+                  background: r ? (r.is_correct ? RUN.okTint : RUN.badTint) : PANEL,
                   fontFamily: RUN.sans,
                   fontSize: 14,
                   fontWeight: 700,
@@ -3421,10 +3427,10 @@ function MatchingPanel({
               </select>
               {r ? (
                 r.is_correct ? (
-                  <Check size={16} color={RUN.ok} />
+                  <Check size={16} style={{ color: RUN.ok }} />
                 ) : (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <X size={16} color={BAD} />
+                    <X size={16} style={{ color: BAD }} />
                     <span style={{ fontSize: 13, fontWeight: 700, color: RUN.ok }}>
                       → {r.correct_answer}
                     </span>
@@ -3462,7 +3468,7 @@ function FlowGapSelect({ n, letters, ctx }: { n: number; letters: string[]; ctx:
           padding: "0 10px",
           borderRadius: 9,
           border: `1.5px solid ${border}`,
-          background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
+          background: r ? (r.is_correct ? RUN.okTint : RUN.badTint) : PANEL,
           fontFamily: RUN.sans,
           fontSize: 14,
           fontWeight: 700,
@@ -3478,10 +3484,10 @@ function FlowGapSelect({ n, letters, ctx }: { n: number; letters: string[]; ctx:
       </select>
       {r ? (
         r.is_correct ? (
-          <Check size={16} color={RUN.ok} />
+          <Check size={16} style={{ color: RUN.ok }} />
         ) : (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <X size={16} color={BAD} />
+            <X size={16} style={{ color: BAD }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: RUN.ok, whiteSpace: "nowrap" }}>
               → {r.correct_answer}
             </span>
@@ -3556,7 +3562,7 @@ function FlowChartPanel({ flow, ctx, bare }: { flow: FlowChartView; ctx: QCtx; b
                 style={{
                   border: `1.5px solid ${r ? (r.is_correct ? RUN.ok : BAD) : RUN.bField}`,
                   borderRadius: 12,
-                  background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
+                  background: r ? (r.is_correct ? RUN.okTint : RUN.badTint) : PANEL,
                   padding: "13px 16px",
                   display: "flex",
                   alignItems: "center",
@@ -3728,7 +3734,7 @@ function ReviewPanel({ grade }: { grade: Grade }) {
                     width: 30,
                     height: 24,
                     borderRadius: 7,
-                    background: r.is_correct ? RUN.okBg : "#FDECEC",
+                    background: r.is_correct ? RUN.okBg : RUN.badBg,
                     color: r.is_correct ? RUN.ok : BAD,
                     display: "flex",
                     alignItems: "center",

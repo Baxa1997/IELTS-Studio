@@ -7,6 +7,7 @@ import { EMERALD, BRAND, INK, MUTED, SANS } from "./tokens";
 import {
   BRAND_FILL,
   BRAND_LINE,
+  BRAND_SOFT,
   PANEL,
   SLATE_LINE,
   SLATE_RED,
@@ -333,7 +334,7 @@ export function WordLookup({
                 padding: "9px 12px",
                 borderRadius: 10,
                 border: `1.5px solid ${save === "saved" ? EMERALD : BRAND_LINE}`,
-                background: save === "saved" ? "#EBF7F0" : "#FDF4F7",
+                background: save === "saved" ? "var(--ex-ok-wash)" : BRAND_SOFT,
                 color: save === "saved" ? EMERALD : BRAND,
                 fontFamily: SANS,
                 fontWeight: 600,

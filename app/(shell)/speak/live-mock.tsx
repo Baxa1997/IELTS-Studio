@@ -13,7 +13,12 @@ import { ConfirmQuit } from "./confirm-quit";
 // The tutor gets a person; an examiner should feel impersonal.
 import { LucidaScope, PERSONAS, personaById, WaveBars, mmss, type Persona } from "./lucida";
 import { bearerProtocols, downgradeToQueryCarry, prefersSubprotocol } from "./ws-auth";
-import { PANEL, WARM_EDGE as LINE2, WHITE } from "@/lib/theme/tokens";
+import { PANEL, WARM_EDGE as LINE2, WHITE, withAlpha } from "@/lib/theme/tokens";
+
+/** The session ink at an alpha — `rgba(26,21,32,…)` in light, exactly as it was
+ *  written, and a LIGHT wash in dark, where a dark wash on a dark stage vanished:
+ *  the selected-level tint, the examiner's rings, the live mic ring. */
+const inkWash = (pct: number) => withAlpha("var(--sp-ink)", pct);
 
 /**
  * Full mock (Parts 1–3) — the LIVE examiner. A bidirectional WebSocket to the
@@ -455,9 +460,9 @@ export function LiveMock({
     border: `1px solid ${LINE2}`,
     borderRadius: 18,
   };
-  const RING = "rgba(26,21,32,0.22)";
+  const RING = inkWash(22);
   const ORB =
-    "radial-gradient(circle at 32% 28%, rgba(60,52,72,0.85) 0%, var(--sp-glass) 46%, var(--sp-ink) 100%)";
+    "radial-gradient(circle at 32% 28%, var(--sp-orb-a) 0%, var(--sp-orb-b) 46%, var(--sp-orb-c) 100%)";
 
   const quotaHit = error ? /quota|upgrade|plan|Standard|Pro/i.test(error) : false;
   const persona = personaById(examiner);
@@ -656,7 +661,7 @@ export function LiveMock({
                           whiteSpace: "nowrap",
                           fontFamily: "inherit",
                           border: `1px solid ${on ? A : LINE2}`,
-                          background: on ? "rgba(26,21,32,0.06)" : "var(--sp-rail)",
+                          background: on ? inkWash(6) : "var(--sp-rail)",
                           color: on ? A : MUTED2,
                         }}
                       >
@@ -839,7 +844,7 @@ export function LiveMock({
               display: "grid",
               placeItems: "center",
               padding: 18,
-              background: "rgba(26,21,32,.55)",
+              background: "var(--sp-scrim)",
               backdropFilter: "blur(3px)",
             }}
           >
@@ -852,7 +857,7 @@ export function LiveMock({
                 flexDirection: "column",
                 background: PANEL,
                 borderRadius: 20,
-                boxShadow: "0 24px 60px rgba(26,21,32,0.3)",
+                boxShadow: "0 24px 60px rgba(26,21,32,0.3), 0 0 0 1px var(--ex-ring)",
                 color: INK,
                 overflow: "hidden",
               }}
@@ -918,7 +923,7 @@ export function LiveMock({
                           width: 28,
                           height: 28,
                           borderRadius: 8,
-                          background: "rgba(26,21,32,0.06)",
+                          background: inkWash(6),
                           color: A,
                           display: "grid",
                           placeItems: "center",
@@ -1507,13 +1512,15 @@ export function LiveMock({
                   borderRadius: "50%",
                   display: "grid",
                   placeItems: "center",
+                  // The FILL step, not the text step: in dark 500 is an orange white
+                  // cannot clear (3.8:1); --btn-primary-bg is identical in light.
                   background: active
-                    ? "var(--color-primary-500)"
+                    ? "var(--btn-primary-bg)"
                     : done
                       ? "var(--color-success-bg)"
                       : "var(--color-neutral-100)",
                   color: active
-                    ? "#fff"
+                    ? WHITE
                     : done
                       ? "var(--color-success)"
                       : "var(--color-neutral-500)",
@@ -1814,7 +1821,7 @@ export function LiveMock({
         style={{
           flex: "none",
           borderTop: "1px solid var(--color-neutral-200)",
-          background: "rgba(252,251,250,0.9)",
+          background: "var(--sp-dock)",
           backdropFilter: "blur(16px)",
           padding: "20px 24px calc(24px + env(safe-area-inset-bottom))",
         }}
@@ -1841,11 +1848,11 @@ export function LiveMock({
                 alignItems: "center",
                 justifyContent: "center",
                 background: userActive ? "var(--sp-ink)" : "var(--sp-edge)",
-                color: userActive ? "#FFFFFF" : "var(--color-neutral-600)",
+                color: userActive ? "var(--sp-on-ink)" : "var(--color-neutral-600)",
                 // ring always tracks the mic so a too-quiet voice still shows life
                 boxShadow:
                   micLevel > 0.004 && !examinerSpeaking
-                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px ${userActive ? "rgba(26,21,32,0.14)" : "rgba(26,21,32,0.07)"}`
+                    ? `0 0 0 ${3 + Math.min(1, micLevel * 26) * 9}px ${userActive ? inkWash(14) : inkWash(7)}`
                     : "none",
                 transition: "background .2s, box-shadow .1s",
               }}

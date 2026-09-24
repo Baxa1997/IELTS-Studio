@@ -6,6 +6,7 @@ import { clientEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/client";
 import {
   BRAND,
+  BRAND_FILL,
   BRAND_SOFT,
   BRAND_SOFT as TINT,
   PANEL,
@@ -138,8 +139,8 @@ export function CoachChat({ sessionId }: { sessionId: string }) {
               style={{
                 justifySelf: m.role === "user" ? "end" : "start",
                 maxWidth: "88%",
-                background: m.role === "user" ? BRAND : WELL_LINE,
-                color: m.role === "user" ? "#fff" : INK,
+                background: m.role === "user" ? BRAND_FILL : WELL_LINE,
+                color: m.role === "user" ? WHITE : INK,
                 border: m.role === "user" ? "none" : `1px solid ${LINE}`,
                 borderRadius: 12,
                 padding: "9px 13px",

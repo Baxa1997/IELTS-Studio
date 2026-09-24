@@ -15,6 +15,7 @@ import {
   BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
+  EMERALD,
   ON_INK,
   PANEL,
   RED,
@@ -49,7 +50,8 @@ import {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const EMERALD = "#1F9D5E";
+// `EMERALD` is the token now (light is this file's old #1F9D5E exactly) — which
+// is why every glyph that uses it draws with `style={{ stroke }}`, not `stroke=`.
 
 export interface CriterionScore {
   band: number;
@@ -194,7 +196,7 @@ export function EssayFeedback({
   return (
     <div
       className="lp-fb-root"
-      style={{ height: "100dvh", background: "#F4F1E7", fontFamily: SANS, display: "flex", flexDirection: "column", overflow: "hidden" }}
+      style={{ height: "100dvh", background: "var(--ex-fb-canvas)", fontFamily: SANS, display: "flex", flexDirection: "column", overflow: "hidden" }}
     >
       {/* header */}
       <header
@@ -206,7 +208,7 @@ export function EssayFeedback({
             href={backHref}
             style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${WARM_LINE_SOFT}`, background: WELL, borderRadius: 9, fontSize: 14, fontWeight: 600, color: SLATE_STRONG, textDecoration: "none" }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             {backLabel}
           </Link>
           <div style={{ width: 1, height: 24, background: SLATE_LINE }} />
@@ -215,7 +217,7 @@ export function EssayFeedback({
             <span style={{ fontSize: 15, fontWeight: 700, color: INK, flex: "none" }}>Essay feedback</span>
             {topicFamily ? (
               <>
-                <span style={{ color: "#C7C3B4" }}>·</span>
+                <span style={{ color: "var(--ex-sep)" }}>·</span>
                 <span style={{ fontSize: 14, color: SLATE_BODY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{topicFamily}</span>
               </>
             ) : null}
@@ -227,7 +229,7 @@ export function EssayFeedback({
             onClick={() => window.print()}
             style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", border: `1px solid ${WARM_LINE_SOFT}`, background: WELL, borderRadius: 10, fontFamily: "inherit", fontSize: 13.5, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B4150" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
             Export PDF
           </button>
           {onRevise ? (
@@ -246,7 +248,7 @@ export function EssayFeedback({
 
       {/* score summary strip */}
       <div style={{ flex: "none", background: PANEL, borderBottom: `1px solid ${SLATE_LINE}`, padding: "16px 22px", display: "flex", alignItems: "center", gap: 26 }} className="lp-fb-strip">
-        <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 16, paddingRight: 26, borderRight: "1px solid #EEE9DA" }}>
+        <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 16, paddingRight: 26, borderRight: "1px solid var(--ex-fb-rule)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 62, fontWeight: 800, lineHeight: 0.82, color: bandColor(overallBand).fg, fontVariantNumeric: "tabular-nums", letterSpacing: "-.03em" }}>{overallBand.toFixed(1)}</span>
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -256,8 +258,8 @@ export function EssayFeedback({
           </div>
           {showLift ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 13px", background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, borderRadius: 11 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
-              <span style={{ fontSize: 13.5, color: "#2C7A52", fontWeight: 600 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: EMERALD }}><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+              <span style={{ fontSize: 13.5, color: "var(--rp-ok)", fontWeight: 600 }}>
                 Up to <strong style={{ fontWeight: 800, color: SLATE_GREEN }}>{bandWithFixes!.toFixed(1)}</strong> with the fixes
               </span>
             </div>
@@ -268,16 +270,16 @@ export function EssayFeedback({
             const c = criteria[key];
             if (!c) return null;
             const isBlocker = blocker?.criterion === key;
-            const color = isBlocker ? RED : c.band >= 7 ? "#3B4150" : c.band >= 6 ? "#3B4150" : AMBER;
+            const color = isBlocker ? RED : c.band >= 6 ? SLATE_STRONG : AMBER;
             const tag = isBlocker ? "Fix this first" : c.band >= 7 ? "Strong" : c.band >= 6 ? "Solid" : "Needs work";
-            const tagColor = isBlocker ? RED : c.band >= 6 ? "#9A8F77" : AMBER;
+            const tagColor = isBlocker ? RED : c.band >= 6 ? "var(--ex-fb-tag)" : AMBER;
             return (
-              <div key={key} style={{ flex: 1, minWidth: 0, background: isBlocker ? "#FCEEEA" : "#FBFBFC", border: `1px solid ${isBlocker ? "#F3CFC6" : "#EFECE0"}`, borderRadius: 12, padding: "11px 14px" }}>
+              <div key={key} style={{ flex: 1, minWidth: 0, background: isBlocker ? "var(--rp-warm-bg)" : WELL, border: `1px solid ${isBlocker ? "var(--rp-warm-line-2)" : "var(--ex-fb-line)"}`, borderRadius: 12, padding: "11px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 600, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{critShort(key, taskType)}</span>
                   <span style={{ fontSize: 21, fontWeight: 800, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{c.band.toFixed(1)}</span>
                 </div>
-                <div style={{ marginTop: 9, height: 5, borderRadius: 3, background: isBlocker ? "#F3DAD3" : "#EEEAE0", overflow: "hidden" }}>
+                <div style={{ marginTop: 9, height: 5, borderRadius: 3, background: isBlocker ? "var(--rp-warm-line)" : "var(--ex-fb-track)", overflow: "hidden" }}>
                   <div style={{ width: `${Math.round((Math.min(9, c.band) / 9) * 100)}%`, height: "100%", borderRadius: 3, background: color }} />
                 </div>
                 <div style={{ marginTop: 7, fontSize: 11.5, fontWeight: 600, color: tagColor }}>{tag}</div>
@@ -309,7 +311,7 @@ export function EssayFeedback({
           </div>
           <div className="lp-fb-col" style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "30px 40px 40px" }}>
             {figure ? (
-              <div style={{ maxWidth: 760, margin: "0 auto 24px", padding: "18px 20px", background: WELL, border: "1px solid #EFECE0", borderRadius: 12 }}>
+              <div style={{ maxWidth: 760, margin: "0 auto 24px", padding: "18px 20px", background: WELL, border: "1px solid var(--ex-fb-line)", borderRadius: 12 }}>
                 <FigureView figure={figure} />
               </div>
             ) : null}
@@ -317,7 +319,7 @@ export function EssayFeedback({
               {ranges.length ? renderEssay(essayText, ranges, selected, pick) : essayText}
             </div>
             {children}
-            <p style={{ maxWidth: 760, margin: "26px auto 0", fontFamily: SANS, fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>{disclaimer ?? DEFAULT_DISCLAIMER}</p>
+            <p style={{ maxWidth: 760, margin: "26px auto 0", fontFamily: SANS, fontSize: 11.5, lineHeight: 1.5, color: "var(--ex-idle)" }}>{disclaimer ?? DEFAULT_DISCLAIMER}</p>
           </div>
         </main>
 
@@ -380,7 +382,7 @@ function SamplesView({
     }
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "44px 16px", textAlign: "center" }}>
-        <span className="animate-spin" style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid #F0D3DE`, borderTopColor: BRAND, display: "inline-block" }} aria-hidden />
+        <span className="animate-spin" style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid ${BRAND_LINE}`, borderTopColor: BRAND, display: "inline-block" }} aria-hidden />
         <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.55, color: MUTED, maxWidth: 280 }}>Writing a model answer for this exact task… about 30 seconds.</p>
       </div>
     );
@@ -417,7 +419,7 @@ function SamplesView({
           <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7, borderBottom: `1px solid ${WELL_LINE}` }}>
             {sample.highlights.map((h, j) => (
               <div key={j} style={{ display: "flex", gap: 8, fontSize: 12.5, lineHeight: 1.5, color: SLATE_STRONG }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2 }}><path d="M20 6 9 17l-5-5" /></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none", marginTop: 2, stroke: EMERALD }}><path d="M20 6 9 17l-5-5" /></svg>
                 <span>{h}</span>
               </div>
             ))}
@@ -425,7 +427,7 @@ function SamplesView({
         ) : null}
         <div style={{ padding: "14px 16px", fontFamily: SERIF, fontSize: 14.5, lineHeight: 1.75, color: SLATE_STRONG, whiteSpace: "pre-wrap" }}>{sample.essay}</div>
       </div>
-      <p style={{ margin: "4px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>
+      <p style={{ margin: "4px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "var(--ex-idle)" }}>
         An original AI-written model answer for study — not an official IELTS® answer. Learn the structure and phrasing; submit only your own writing.
       </p>
     </div>
@@ -442,7 +444,7 @@ function tabStyle(active: boolean): React.CSSProperties {
     fontSize: 13.5,
     fontWeight: 700,
     cursor: "pointer",
-    background: active ? "#fff" : "transparent",
+    background: active ? PANEL : "transparent",
     color: active ? INK : SLATE_BODY,
     boxShadow: active ? "0 1px 3px rgba(26,33,56,.14)" : "none",
   };
@@ -465,7 +467,7 @@ function BandsView({
   return (
     <div>
       {blocker ? (
-        <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid #F3CFC6", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
+        <div style={{ background: "var(--tk-tint-red-bg)", border: "1px solid var(--rp-warm-line-2)", borderRadius: 13, padding: "15px 16px", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
             <svg style={{ stroke: RED }} width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /></svg>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: RED }}>FIX THIS FIRST</span>
@@ -484,14 +486,14 @@ function BandsView({
         if (!c) return null;
         const isBlocker = blocker?.criterion === key;
         const badge = isBlocker
-          ? { label: "Capping", text: RED, bg: "#FCEEEA" }
+          ? { label: "Capping", text: RED, bg: "var(--rp-warm-bg)" }
           : c.band >= 7
-            ? { label: "Strong", text: "#2C7A52", bg: SLATE_GREEN_BG }
+            ? { label: "Strong", text: "var(--rp-ok)", bg: SLATE_GREEN_BG }
             : c.band >= 6
-              ? { label: "Solid", text: "#2C7A52", bg: SLATE_GREEN_BG }
-              : { label: "Developing", text: AMBER, bg: "#F6EAD0" };
+              ? { label: "Solid", text: "var(--rp-ok)", bg: SLATE_GREEN_BG }
+              : { label: "Developing", text: AMBER, bg: "var(--ex-fb-amber-bg)" };
         return (
-          <div key={key} style={{ background: PANEL, border: `1px solid ${isBlocker ? "#F3CFC6" : "#EAE6D8"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
+          <div key={key} style={{ background: PANEL, border: `1px solid ${isBlocker ? "var(--rp-warm-line-2)" : "var(--ex-fb-card-line)"}`, borderRadius: 13, padding: "15px 16px", marginBottom: 12 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11, gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>{critName(key, taskType)}</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none" }}>
@@ -509,7 +511,7 @@ function BandsView({
                 <p style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.5, color: SLATE_STRONG }}>{c.what_caps_it}</p>
               </div>
             ) : null}
-            <div style={{ display: "flex", gap: 10, padding: "11px 12px", background: WELL, border: "1px solid #EFECE0", borderRadius: 10 }}>
+            <div style={{ display: "flex", gap: 10, padding: "11px 12px", background: WELL, border: "1px solid var(--ex-fb-line)", borderRadius: 10 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: BRAND, flex: "none", marginTop: 1 }}><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" /></svg>
               <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.5, color: SLATE_STRONG }}><strong style={{ color: BRAND }}>Fix:</strong> {c.fix}</p>
             </div>
@@ -532,7 +534,7 @@ function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRange
         const st = ANN_STYLE[r.ann.type];
         const on = selected === n;
         return (
-          <div key={n} data-fix={n} style={{ display: "flex", gap: 12, padding: "13px 13px", borderRadius: 12, background: on ? "#FBFBFC" : "transparent", boxShadow: on ? `0 0 0 2px ${withAlpha(st.fg, 40)}` : "none", marginBottom: 6, transition: "background .15s ease, box-shadow .15s ease" }}>
+          <div key={n} data-fix={n} style={{ display: "flex", gap: 12, padding: "13px 13px", borderRadius: 12, background: on ? WELL : "transparent", boxShadow: on ? `0 0 0 2px ${withAlpha(st.fg, 40)}` : "none", marginBottom: 6, transition: "background .15s ease, box-shadow .15s ease" }}>
             <span style={{ flex: "none", width: 26, height: 26, borderRadius: 8, background: st.bg, border: `1px solid ${withAlpha(st.fg, 25)}`, color: st.fg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{n}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -543,7 +545,7 @@ function IssuesView({ ranges, selected }: { ranges: ReturnType<typeof matchRange
               {r.ann.fix ? (
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, flexWrap: "wrap" }}>
                   <span style={{ color: SLATE_MUTED, textDecoration: "line-through" }}>{r.ann.text.trim()}</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={EMERALD} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: EMERALD }}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
                   <span style={{ fontWeight: 700, color: SLATE_GREEN, background: SLATE_GREEN_BG, border: `1px solid ${SLATE_GREEN_LINE}`, padding: "1px 9px", borderRadius: 6 }}>{r.ann.fix}</span>
                 </div>
               ) : null}
@@ -570,12 +572,12 @@ function InsightsView({ insights, taskType }: { insights: WritingInsights; taskT
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {/* word count, headline */}
-      <div style={{ background: PANEL, border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
+      <div style={{ background: PANEL, border: "1px solid var(--ex-fb-card-line)", borderRadius: 13, padding: "15px 16px" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: MUTED }}>Word count</span>
-          <span style={{ fontSize: 24, fontWeight: 800, color: wordsOk ? "#1A7A48" : AMBER, fontVariantNumeric: "tabular-nums" }}>{insights.wordCount}</span>
+          <span style={{ fontSize: 24, fontWeight: 800, color: wordsOk ? "var(--rp-ok-deep)" : AMBER, fontVariantNumeric: "tabular-nums" }}>{insights.wordCount}</span>
         </div>
-        <p style={{ margin: "4px 0 0", fontSize: 12.5, color: wordsOk ? "#2C7A52" : "#9A7B2A" }}>
+        <p style={{ margin: "4px 0 0", fontSize: 12.5, color: wordsOk ? "var(--rp-ok)" : "var(--ex-fb-amber)" }}>
           {wordsOk ? `Above the ${minWords}-word minimum.` : `Aim for at least ${minWords} words — short answers cap Task Response.`}
         </p>
       </div>
@@ -588,51 +590,51 @@ function InsightsView({ insights, taskType }: { insights: WritingInsights; taskT
       </div>
 
       {/* linking words */}
-      <div style={{ background: PANEL, border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
+      <div style={{ background: PANEL, border: "1px solid var(--ex-fb-card-line)", borderRadius: 13, padding: "15px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>Linking words</span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: linkOk ? "#2C7A52" : AMBER, background: linkOk ? "#EAF6F0" : "#F6EAD0", padding: "2px 9px", borderRadius: 999 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: linkOk ? "var(--rp-ok)" : AMBER, background: linkOk ? SLATE_GREEN_BG : "var(--ex-fb-amber-bg)", padding: "2px 9px", borderRadius: 999 }}>
             {insights.linkingUnique} distinct · {insights.linkingTotal} total
           </span>
         </div>
         {insights.linkingUsed.length ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {insights.linkingUsed.slice(0, 12).map((w) => (
-              <span key={w} style={chip("#ECEEF2", "#3B4150")}>{w}</span>
+              <span key={w} style={chip(WELL_LINE, SLATE_STRONG)}>{w}</span>
             ))}
           </div>
         ) : (
-          <p style={{ margin: 0, fontSize: 13, color: "#9A7B2A" }}>No connectives detected — cohesion will suffer. Use markers like <em>however</em>, <em>for example</em>, <em>as a result</em>.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ex-fb-amber)" }}>No connectives detected — cohesion will suffer. Use markers like <em>however</em>, <em>for example</em>, <em>as a result</em>.</p>
         )}
         {insights.linkingUsed.length && !linkOk ? (
-          <p style={{ margin: "9px 0 0", fontSize: 12.5, color: "#9A7B2A" }}>Aim for 5+ different connectives across the essay.</p>
+          <p style={{ margin: "9px 0 0", fontSize: 12.5, color: "var(--ex-fb-amber)" }}>Aim for 5+ different connectives across the essay.</p>
         ) : null}
       </div>
 
       {/* repeated words */}
-      <div style={{ background: PANEL, border: "1px solid #EAE6D8", borderRadius: 13, padding: "15px 16px" }}>
+      <div style={{ background: PANEL, border: "1px solid var(--ex-fb-card-line)", borderRadius: 13, padding: "15px 16px" }}>
         <span style={{ fontSize: 14, fontWeight: 700, color: INK }}>Most repeated words</span>
         {insights.repeated.length ? (
           <>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
               {insights.repeated.map((r) => (
-                <span key={r.word} style={chip("#F6EAD0", "#9A6A12")}>{r.word} <strong>×{r.count}</strong></span>
+                <span key={r.word} style={chip("var(--ex-fb-amber-bg)", "var(--ex-fb-amber-deep)")}>{r.word} <strong>×{r.count}</strong></span>
               ))}
             </div>
             <p style={{ margin: "10px 0 0", fontSize: 12.5, color: MUTED }}>Vary these with synonyms — repetition narrows Lexical Resource.</p>
           </>
         ) : (
-          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#2C7A52" }}>Good — no word is over-repeated.</p>
+          <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--rp-ok)" }}>Good — no word is over-repeated.</p>
         )}
       </div>
 
       {runOn ? (
-        <div style={{ background: WELL, border: "1px solid #EFECE0", borderRadius: 13, padding: "13px 16px" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#9A7B2A" }}>Longest sentence is <strong>{insights.longestSentence} words</strong> — check it isn&rsquo;t a run-on; splitting it can lift Grammar.</p>
+        <div style={{ background: WELL, border: "1px solid var(--ex-fb-line)", borderRadius: 13, padding: "13px 16px" }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ex-fb-amber)" }}>Longest sentence is <strong>{insights.longestSentence} words</strong> — check it isn&rsquo;t a run-on; splitting it can lift Grammar.</p>
         </div>
       ) : null}
 
-      <p style={{ margin: "2px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "#C9CDD4" }}>
+      <p style={{ margin: "2px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "var(--ex-idle)" }}>
         These are objective surface stats, not a band — your band and the reasons behind it are on the Bands tab.
       </p>
     </div>
@@ -641,7 +643,7 @@ function InsightsView({ insights, taskType }: { insights: WritingInsights; taskT
 
 function Stat({ label, value, suffix = "" }: { label: string; value: number; suffix?: string }) {
   return (
-    <div style={{ background: WELL, border: "1px solid #EFECE0", borderRadius: 11, padding: "11px 12px", textAlign: "center" }}>
+    <div style={{ background: WELL, border: "1px solid var(--ex-fb-line)", borderRadius: 11, padding: "11px 12px", textAlign: "center" }}>
       <div style={{ fontSize: 21, fontWeight: 800, color: SLATE_STRONG, fontVariantNumeric: "tabular-nums" }}>{value}{suffix}</div>
       <div style={{ fontSize: 11.5, fontWeight: 600, color: SLATE_MUTED, marginTop: 2 }}>{label}</div>
     </div>

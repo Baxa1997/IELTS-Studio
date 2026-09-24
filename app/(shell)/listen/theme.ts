@@ -2,9 +2,9 @@
  * Listening's two looks, in one place.
  *
  * The hub wears the learner app's brand (Hanken over Newsreader, burgundy). The
- * in-test runner is a different surface on purpose — a flat, full-bleed light
- * exam screen in DM Sans throughout, mapping to the IELTS Listening handoff so
- * the runner recreates it closely.
+ * in-test runner is a different surface on purpose — a flat, full-bleed exam
+ * screen in DM Sans throughout, mapping to the IELTS Listening handoff so the
+ * runner recreates it closely.
  *
  * The handoff authored that runner with a violet accent. Only the ACCENT moved to
  * the burgundy; the handoff's layout, type, spacing and neutral scale are
@@ -20,8 +20,10 @@
 import {
   BRAND as TK_BRAND,
   BRAND_DEEP,
+  BRAND_FILL,
   BRAND_LINE,
   BRAND_SOFT,
+  PANEL,
   SLATE_BODY,
   SLATE_INK,
   WARM_GREEN as TK_WARM_GREEN,
@@ -38,10 +40,23 @@ export const GOOD = TK_WARM_GREEN;
 export const BAD = TK_WARM_RED;
 
 /* ---- Runner design tokens (IELTS Listening handoff) -------------------------
- * The in-test screen is a flat, full-bleed light exam surface in DM Sans
- * throughout. Values map to the IELTS Listening.dc.html handoff so the runner
- * recreates it closely — with the accent swapped from the handoff's violet to
- * the product burgundy (see the note at the top of this file). */
+ * The in-test screen is a flat, full-bleed exam surface in DM Sans throughout.
+ * Values map to the IELTS Listening.dc.html handoff so the runner recreates it
+ * closely — with the accent swapped from the handoff's violet to the product
+ * burgundy (see the note at the top of this file).
+ *
+ * ⚠️ EVERY ENTRY IS A TOKEN, AND HALF OF THEM USED TO BE HEX. The header and the
+ * question area had already moved onto `PANEL`, so in dark mode they went black
+ * while the question text (`t1`), the answer fields and the part-tab track kept
+ * their light-mode literals: navy text on a black page, white boxes floating on
+ * it. A half-converted surface is worse than an unconverted one. The `--ex-lr-*`
+ * values in globals.css carry the handoff's exact light hex, so light mode did
+ * not move; don't put a literal back in here.
+ *
+ * ⚠️ `v` IS FOR TEXT AND EDGES, `vFill` IS FOR ANYTHING CARRYING WHITE. In light
+ * they are the same burgundy. In dark `BRAND` is an orange light enough to read
+ * as text, and white on it is 3.8:1 — the current-question chip, the checked
+ * box and the Next button all need the darker fill. */
 export const DM = "var(--font-dmsans), -apple-system, system-ui, sans-serif";
 export const RUN = {
   // fonts — one family across the whole surface
@@ -50,51 +65,58 @@ export const RUN = {
   mono: DM,
   // burgundy accent (the handoff's violet, recoloured)
   v: TK_BRAND,
+  vFill: BRAND_FILL,
   vHover: BRAND_DEEP,
   vDeep: BRAND_DEEP,
   vBg: BRAND_SOFT,
   vSoft: BRAND_SOFT,
   vBorder: BRAND_LINE,
   vTrack: BRAND_LINE,
-  field: "#ffffff",
-  fieldFocus: "#ffffff",
-  focusBorder: "#dfa3ba",
+  field: PANEL,
+  fieldFocus: PANEL,
+  focusBorder: "var(--ex-lr-focus)",
   // surfaces
-  desk: "#f4f4f7",
-  frame: "#ffffff",
-  strip: "#fffafb",
+  desk: "var(--ex-lr-desk)",
+  frame: PANEL,
+  strip: "var(--ex-lr-strip)",
   rail: BRAND_LINE,
   // borders
-  bFrame: "#ececf1",
-  bBar: "#ececf1",
-  bCard: "#ececf1",
-  bHair: "#f2f2f6",
-  bRow: "#f2f2f6",
-  bField: "#e6e6ed",
-  bPill: "#ececf1",
-  bTab: "#ececf1",
+  bFrame: "var(--ex-lr-line)",
+  bBar: "var(--ex-lr-line)",
+  bCard: "var(--ex-lr-line)",
+  bHair: "var(--ex-lr-hair)",
+  bRow: "var(--ex-lr-hair)",
+  bField: "var(--ex-lr-field-line)",
+  bPill: "var(--ex-lr-line)",
+  bTab: "var(--ex-lr-line)",
+  /** An unticked box, an unset flag, the scrollbar thumb. */
+  bIdle: "var(--ex-idle)",
   // text
-  t1: "#1a1a24",
-  t2: "#6b6f7e",
-  t3: "#9497a4",
-  t4: "#b9bcc9",
-  t5: "#c7cad6",
-  t6: "#9497a4",
+  t1: "var(--ex-lr-t1)",
+  t2: "var(--ex-lr-t2)",
+  t3: "var(--ex-lr-t3)",
+  t4: "var(--ex-lr-t4)",
+  t5: "var(--ex-lr-t5)",
+  t6: "var(--ex-lr-t3)",
   // success (answered)
-  ok: "#1b9e54",
-  okBg: "#e7f7ee",
-  okBorder: "#c4ead3",
-  okTint: "#f4fbf7",
+  ok: "var(--ex-lr-ok)",
+  okBg: "var(--ex-lr-ok-bg)",
+  okBorder: "var(--ex-lr-ok-line)",
+  okTint: "var(--ex-lr-ok-tint)",
+  // wrong (after grading) — shared with the reading runner and the results page
+  badTint: "var(--ex-bad-tint)",
+  badBg: "var(--ex-bad-bg)",
+  badBorder: "var(--ex-bad-line)",
   // flag / amber
-  flag: "#e0952f",
-  flagText: "#b9772a",
-  flagBg: "#fdf3e3",
-  flagBorder: "#f2d9a8",
-  flagFill: "#f0c06a",
+  flag: "var(--ex-lr-flag)",
+  flagText: "var(--ex-lr-flag-ink)",
+  flagBg: "var(--ex-lr-flag-bg)",
+  flagBorder: "var(--ex-lr-flag-line)",
+  flagFill: "var(--ex-lr-flag-fill)",
   // report
-  report: "#dc2626",
-  reportBg: "#fef6f6",
-  reportBorder: "#f3c4c4",
+  report: "var(--ex-red)",
+  reportBg: "var(--ex-lr-report-bg)",
+  reportBorder: "var(--ex-lr-report-line)",
 } as const;
 
 /** Part → its "genre" subtitle, shown next to the Part label in the runner. */

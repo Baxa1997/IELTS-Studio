@@ -4,7 +4,7 @@ import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/cons
 import type { NoteMeta } from "@/lib/reading/types";
 
 import { BRAND, INK, SANS } from "./tokens";
-import { PANEL } from "@/lib/theme/tokens";
+import { BRAND_FILL, BRAND_SOFT, PANEL, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
 
 /** Answer-free question as delivered to the browser (no key/proof/explanation). */
 export interface DeliveredQuestion {
@@ -92,7 +92,7 @@ export function QuestionInput({
             ? `${LETTERS[i] ?? i + 1}. ${options[i]}`
             : options[i];
       return (
-        <select value={value} onChange={(e) => onChange(e.target.value)} className="lp-input" style={{ width: "100%", padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}>
+        <select value={value} onChange={(e) => onChange(e.target.value)} className="lp-input" style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--ex-select-line)", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}>
           <option value="">Choose…</option>
           {options.map((opt, i) => (
             <option key={i} value={opt}>
@@ -121,7 +121,7 @@ function TextAnswer({ value, onChange }: { value: string; onChange: (v: string) 
       autoComplete="off"
       spellCheck={false}
       className="lp-input"
-      style={{ width: "100%", maxWidth: 360, padding: "10px 12px", border: "1px solid #DAD8C9", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}
+      style={{ width: "100%", maxWidth: 360, padding: "10px 12px", border: "1px solid var(--ex-select-line)", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}
     />
   );
 }
@@ -144,9 +144,9 @@ export function InlineBlank({ value, onChange, label }: { value: string; onChang
         width: `${Math.max(7, Math.min(22, value.length + 3))}ch`,
         margin: "0 4px",
         padding: "3px 9px",
-        border: `1.5px solid ${value.trim() ? BRAND : "#C9CDD4"}`,
+        border: `1.5px solid ${value.trim() ? BRAND : "var(--ex-idle)"}`,
         borderRadius: 8,
-        background: value.trim() ? "#FDF4F7" : "#fff",
+        background: value.trim() ? BRAND_SOFT : PANEL,
         fontFamily: SANS,
         fontWeight: 600,
         fontSize: "inherit",
@@ -218,9 +218,9 @@ export function InlineSelect({
         maxWidth: "min(58vw, 260px)",
         margin: "0 4px",
         padding: "3px 8px",
-        border: `1.5px solid ${value.trim() ? BRAND : "#C9CDD4"}`,
+        border: `1.5px solid ${value.trim() ? BRAND : "var(--ex-idle)"}`,
         borderRadius: 8,
-        background: value.trim() ? "#FDF4F7" : "#fff",
+        background: value.trim() ? BRAND_SOFT : PANEL,
         fontFamily: SANS,
         fontWeight: 600,
         fontSize: "inherit",
@@ -293,13 +293,13 @@ function Pill({ name, value, label, checked, onChange }: { name: string; value: 
         cursor: "pointer",
         borderRadius: 9,
         padding: "8px 16px",
-        border: checked ? `1.5px solid ${BRAND}` : undefined,
-        background: checked ? BRAND : undefined,
+        border: checked ? `1.5px solid ${BRAND_FILL}` : undefined,
+        background: checked ? BRAND_FILL : undefined,
         transition: "background .14s ease, border-color .14s ease",
       }}
     >
       <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={SR_ONLY} />
-      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: checked ? "#fff" : "#3B4150", transition: "color .14s ease" }}>{label}</span>
+      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: checked ? WHITE : SLATE_STRONG, transition: "color .14s ease" }}>{label}</span>
     </label>
   );
 }

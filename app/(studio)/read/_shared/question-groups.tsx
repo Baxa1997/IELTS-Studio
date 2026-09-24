@@ -11,6 +11,7 @@ import {
 import { GapSelectSentence, GapSentence, InlineBlank, QuestionInput, type DeliveredQuestion } from "./question-inputs";
 import { BRAND, INK, MUTED, SANS } from "./tokens";
 import {
+  BRAND_FILL,
   BRAND_PALE as QUESTION_BORDER,
   BRAND_SOFT,
   CANVAS,
@@ -322,9 +323,9 @@ function PickTwoPanel({
               type="button"
               onClick={() => toggle(letter)}
               aria-pressed={on}
-              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? BRAND : SLATE_LINE}`, background: on ? "#FDF4F7" : "#fff", fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 13px", borderRadius: 11, border: `1.5px solid ${on ? BRAND : SLATE_LINE}`, background: on ? BRAND_SOFT : PANEL, fontFamily: SANS, fontSize: 14.5, color: INK, cursor: "pointer", textAlign: "left" }}
             >
-              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? BRAND : "#C9CDD4"}`, background: on ? BRAND : "#fff", color: WHITE, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
+              <span aria-hidden style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${on ? BRAND_FILL : "var(--ex-idle)"}`, background: on ? BRAND_FILL : PANEL, color: WHITE, display: "inline-flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800, lineHeight: 1 }}>
                 {on ? "✓" : ""}
               </span>
               <strong style={{ width: 16, flex: "none", color: BRAND }}>{letter}</strong>
@@ -350,9 +351,9 @@ function flagStyle(on: boolean): React.CSSProperties {
     fontSize: 14,
     fontFamily: SANS,
     transition: "all .14s ease",
-    background: on ? "#FEF6E7" : "#fff",
-    border: `1.5px solid ${on ? "#F6D58A" : "#E6E8EC"}`,
-    color: on ? "#C77C09" : "#C9CDD4",
+    background: on ? "var(--ex-flag-bg)" : PANEL,
+    border: `1.5px solid ${on ? "var(--ex-flag-line)" : SLATE_LINE}`,
+    color: on ? "var(--ex-amber-ink)" : "var(--ex-idle)",
   };
 }
 

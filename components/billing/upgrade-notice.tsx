@@ -4,9 +4,21 @@ import { useState } from "react";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 
 import { planTier } from "@/lib/billing/plans";
-import { BRAND, BRAND_FILL, BRAND_LINE, SLATE_BODY, SLATE_INK, WHITE } from "@/lib/theme/tokens";
+import {
+  BRAND,
+  BRAND_FILL,
+  BRAND_LINE,
+  BRAND_SOFT,
+  SLATE_BODY,
+  SLATE_INK,
+  WHITE,
+  withAlpha,
+} from "@/lib/theme/tokens";
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
+/** The plain-error alert's red. Every practice screen shows this notice, so a
+ *  literal here was a pale-pink box on every dark runner. */
+const ALERT_INK = "var(--ex-alert-ink)";
 
 /** True when an API/engine error message is the monthly quota running out (the
  *  engine 429 says "quota is used up"; the grade route's client copy says
@@ -67,7 +79,7 @@ export function UpgradeProButton({ onDark = false }: { onDark?: boolean }) {
           padding: "8px 14px",
           borderRadius: 10,
           border: onDark ? "1px solid rgba(255,255,255,.35)" : "none",
-          background: onDark ? "rgba(255,255,255,.14)" : BRAND,
+          background: onDark ? "rgba(255,255,255,.14)" : BRAND_FILL,
           color: WHITE,
           fontFamily: SANS,
           fontSize: 13,
@@ -86,7 +98,7 @@ export function UpgradeProButton({ onDark = false }: { onDark?: boolean }) {
         )}
       </button>
       {error ? (
-        <span style={{ fontFamily: SANS, fontSize: 12, color: onDark ? "#fecaca" : "#B4231F" }}>
+        <span style={{ fontFamily: SANS, fontSize: 12, color: onDark ? "#fecaca" : ALERT_INK }}>
           {error}
         </span>
       ) : null}
@@ -109,9 +121,9 @@ export function UpgradeNotice({ message }: { message: string }) {
         style={{
           fontFamily: SANS,
           fontSize: 13,
-          color: "#B4231F",
-          background: "#FEF2F2",
-          border: "1px solid #FECACA",
+          color: ALERT_INK,
+          background: "var(--ex-alert-bg)",
+          border: "1px solid var(--ex-alert-line)",
           borderRadius: 10,
           padding: "10px 12px",
           margin: "14px 0 0",
@@ -130,7 +142,7 @@ export function UpgradeNotice({ message }: { message: string }) {
       style={{
         fontFamily: SANS,
         margin: "16px 0 0",
-        background: "linear-gradient(120deg,#FDF4F7,#FDF4F7)",
+        background: `linear-gradient(120deg,${BRAND_SOFT},${BRAND_SOFT})`,
         border: `1px solid ${BRAND_LINE}`,
         borderRadius: 14,
         padding: "16px 18px",
@@ -158,7 +170,7 @@ export function UpgradeNotice({ message }: { message: string }) {
           {message} Pro gives you unlimited gradings and practice sets every month.
         </p>
         {checkoutError ? (
-          <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "#B4231F" }}>{checkoutError}</p>
+          <p style={{ margin: "6px 0 0", fontSize: 12.5, color: ALERT_INK }}>{checkoutError}</p>
         ) : null}
       </div>
       <button
@@ -178,7 +190,7 @@ export function UpgradeNotice({ message }: { message: string }) {
           fontSize: 14,
           fontWeight: 700,
           cursor: busy ? "default" : "pointer",
-          boxShadow: "0 10px 22px -10px rgba(125,1,50,.6)",
+          boxShadow: `0 10px 22px -10px ${withAlpha(BRAND_FILL, 60)}`,
         }}
       >
         {busy ? (

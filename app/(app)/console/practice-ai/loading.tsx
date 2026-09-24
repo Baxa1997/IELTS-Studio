@@ -36,7 +36,7 @@ export default function Loading() {
             margin: "42px auto 0",
             height: 210,
             borderRadius: 30,
-            background: "rgba(255,255,255,0.92)",
+            background: "var(--pa-glass)",
             boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 30px 60px -28px rgba(20,35,46,.28)",
           }}
         />
@@ -55,7 +55,7 @@ export default function Loading() {
                 boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 16px 34px -24px rgba(20,35,46,.35)",
               }}
             >
-              <div style={{ height: 108, background: "#eeeeeb" }} />
+              <div style={{ height: 108, background: "var(--pa-shimmer)" }} />
               <div style={{ padding: "20px 22px 22px" }}>
                 <Bar w="45%" h={12} />
                 <Bar w="90%" h={22} style={{ marginTop: 12 }} />

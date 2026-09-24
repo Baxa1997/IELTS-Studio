@@ -6,10 +6,15 @@ import {
   BRAND,
   BRAND_FILL,
   BRAND_SOFT,
+  PANEL,
   SLATE_BODY as MUTED,
+  SLATE_GREEN_BG,
   SLATE_INK as INK,
   SLATE_LINE as LINE,
   SLATE_MUTED as FAINT,
+  WARM_GREEN,
+  WARM_RED,
+  withAlpha,
 } from "@/lib/theme/tokens";
 import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
@@ -101,7 +106,7 @@ export function AssignedHub({
               alignItems: "center",
               gap: 9,
               background: BRAND_SOFT,
-              border: "1px solid rgba(125,1,50,.16)",
+              border: `1px solid ${withAlpha(BRAND, 16)}`,
               color: BRAND,
               padding: "8px 14px",
               borderRadius: 999,
@@ -167,13 +172,13 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
         display: "flex",
         flexDirection: "column",
         gap: 11,
-        background: a.done ? "#FDF4F7" : "#fff",
+        background: a.done ? BRAND_SOFT : PANEL,
         // UNFINISHED IS THE URGENT STATE, not just overdue. Most homework is set
         // without a due date, so keying the red edge to `overdue` meant a
         // student's outstanding work looked identical to work they had already
         // handed in — the whole page read as a neutral list.
-        border: `1px solid ${a.done ? LINE : a.overdue ? "#E4A9A4" : "#F0D2D2"}`,
-        borderLeft: `4px solid ${a.done ? "#CFE6D9" : a.overdue ? "#B3261E" : "#E2685C"}`,
+        border: `1px solid ${a.done ? LINE : a.overdue ? "var(--ex-hw-overdue-line)" : "var(--rp-err-line)"}`,
+        borderLeft: `4px solid ${a.done ? "var(--ex-hw-done-rule)" : a.overdue ? "var(--ex-hw-overdue)" : "var(--ex-hw-due)"}`,
         borderRadius: 16,
         padding: 16,
         minHeight: 150,
@@ -184,21 +189,21 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
         <span style={{ fontSize: 12, color: FAINT }}>{a.groupName}</span>
         {a.done ? (
-          <Chip bg="#EAF6F0" fg="#15803d">
+          <Chip bg={SLATE_GREEN_BG} fg={WARM_GREEN}>
             Done
           </Chip>
         ) : a.overdue ? (
-          <Chip bg="#FDECEC" fg="#b91c1c">
+          <Chip bg="var(--ex-bad-bg)" fg={WARM_RED}>
             Overdue
           </Chip>
         ) : a.dueAt ? (
-          <Chip bg="#FDF3E3" fg="#B9791A">
+          <Chip bg="var(--ex-hw-amber-bg)" fg="var(--ex-hw-amber)">
             Due {dateFmt(a.dueAt)}
           </Chip>
         ) : (
           // No due date is the common case, and it still has to read as
           // "you owe this" rather than as an item on a menu.
-          <Chip bg="#FDECEC" fg="#b91c1c">
+          <Chip bg="var(--ex-bad-bg)" fg={WARM_RED}>
             To do
           </Chip>
         )}
@@ -225,7 +230,7 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
       </div>
 
       <div style={{ height: 1, background: LINE }} />
-      <span style={{ fontSize: 14, fontWeight: 600, color: a.done ? BRAND : "#B3261E" }}>
+      <span style={{ fontSize: 14, fontWeight: 600, color: a.done ? BRAND : "var(--ex-hw-overdue)" }}>
         {a.done ? "Open again →" : "Start now →"}
       </span>
     </Link>

@@ -22,6 +22,7 @@ import { btnBase, AMBER, BRAND, INK, MUTED, primaryBtn, RED, SANS, SERIF } from 
 import { WordLookup } from "../_shared/word-lookup";
 import {
   BRAND_FILL,
+  BRAND_LINE,
   BRAND_SOFT,
   PANEL,
   SLATE_AMBER_BG,
@@ -30,6 +31,7 @@ import {
   SLATE_MUTED,
   SLATE_RED_BG,
   SLATE_STRONG,
+  WARM_RED,
   WELL_LINE,
   WHITE,
   withAlpha,
@@ -91,7 +93,8 @@ export function ReadingRunner({
   practiceNo?: number | null;
   resume?: ResumeState | null;
 }) {
-  const accent = BRAND;
+  // A FILL that carries white — BRAND_FILL, not BRAND (see `--tk-brand-fill`).
+  const accent = BRAND_FILL;
   const exitHref = "/read";
   const [phase, setPhase] = useState<Phase>("reading");
   const [answers, setAnswers] = useState<Record<string, string>>(() => resume?.answers ?? {});
@@ -420,12 +423,12 @@ export function ReadingRunner({
                       gap: 8,
                       padding: "6px 14px",
                       borderRadius: 10,
-                      background: warn ? "#FDECEC" : "#FDF4F7",
-                      border: `1px solid ${warn ? "#F3B4B4" : "#F0D3DE"}`,
+                      background: warn ? "var(--ex-bad-bg)" : BRAND_SOFT,
+                      border: `1px solid ${warn ? "var(--ex-bad-edge)" : BRAND_LINE}`,
                     }}
                     aria-label="time remaining"
                   >
-                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : BRAND }}>
+                    <span aria-hidden style={{ fontSize: 13, color: warn ? WARM_RED : BRAND }}>
                       ◷
                     </span>
                     <span
@@ -434,7 +437,7 @@ export function ReadingRunner({
                         fontWeight: 700,
                         fontSize: 15.5,
                         letterSpacing: ".02em",
-                        color: warn ? "#B91C1C" : BRAND,
+                        color: warn ? WARM_RED : BRAND,
                       }}
                     >
                       {text}
@@ -487,7 +490,7 @@ export function ReadingRunner({
               flex: "none",
               padding: "8px 20px",
               background: SLATE_RED_BG,
-              borderBottom: "1px solid #F3B4B4",
+              borderBottom: "1px solid var(--ex-bad-edge)",
             }}
           >
             <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">
@@ -696,7 +699,7 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     borderRadius: 8,
     border: `1.5px solid ${SLATE_LINE}`,
     background: PANEL,
-    color: disabled ? "#C9CDD4" : "#4A505C",
+    color: disabled ? "var(--ex-idle)" : SLATE_BODY,
     fontWeight: 700,
     fontSize: 12.5,
     cursor: disabled ? "default" : "pointer",
@@ -727,7 +730,7 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
       borderColor: BRAND,
       background: PANEL,
       color: BRAND,
-      boxShadow: "0 0 0 3px rgba(125,1,50,.16)",
+      boxShadow: `0 0 0 3px ${withAlpha(BRAND, 16)}`,
     };
   if (answered) return { ...base, borderColor: BRAND, background: BRAND_FILL, color: WHITE };
   return { ...base, borderColor: SLATE_LINE, background: PANEL, color: SLATE_MUTED };
@@ -767,7 +770,7 @@ function ConfirmFinishModal({
         alignItems: "center",
         justifyContent: "center",
         padding: 20,
-        background: "rgba(30,27,46,.45)",
+        background: "var(--ex-scrim-rd)",
         backdropFilter: "blur(2px)",
       }}
     >
@@ -778,7 +781,7 @@ function ConfirmFinishModal({
           background: PANEL,
           borderRadius: 18,
           padding: "26px 26px 22px",
-          boxShadow: "0 30px 70px -24px rgba(30,27,46,.6)",
+          boxShadow: "0 30px 70px -24px rgba(30,27,46,.6), 0 0 0 1px var(--ex-ring)",
           fontFamily: SANS,
           color: INK,
         }}
@@ -840,7 +843,7 @@ function ConfirmFinishModal({
               fontWeight: 600,
               fontSize: 14.5,
               cursor: "pointer",
-              boxShadow: "0 8px 20px -10px rgba(125,1,50,.7)",
+              boxShadow: `0 8px 20px -10px ${withAlpha(BRAND_FILL, 70)}`,
             }}
           >
             Submit anyway

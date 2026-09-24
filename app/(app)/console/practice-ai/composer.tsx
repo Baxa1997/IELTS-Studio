@@ -11,6 +11,7 @@ import {
   EMBER_OFF,
   FAINT,
   GHOST,
+  GOOD_FILL,
   GOOD_INK,
   INK,
   MUTED,
@@ -358,7 +359,7 @@ export function Composer() {
           width: "100%",
           maxWidth: 880,
           borderRadius: 30,
-          background: "rgba(255,255,255,0.92)",
+          background: "var(--pa-glass)",
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
           boxShadow: "0 1px 2px rgba(20,35,46,.05), 0 30px 60px -28px rgba(20,35,46,.28)",
@@ -425,7 +426,7 @@ export function Composer() {
               fontSize: 14,
               fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "inset 0 0 0 1px #e4e0d6",
+              boxShadow: "inset 0 0 0 1px var(--pa-cell-line)",
             }}
           >
             <svg
@@ -455,7 +456,7 @@ export function Composer() {
               padding: "6px 16px 6px 6px",
               borderRadius: 999,
               background: PANEL,
-              boxShadow: "inset 0 0 0 1px #e4e0d6",
+              boxShadow: "inset 0 0 0 1px var(--pa-cell-line)",
               cursor: "pointer",
               fontFamily: "inherit",
               color: BODY_INK,
@@ -513,7 +514,7 @@ export function Composer() {
                   display: "grid",
                   placeItems: "center",
                   background: listening ? "rgba(236,106,69,.12)" : "transparent",
-                  color: listening ? EMBER : "#4a5c66",
+                  color: listening ? EMBER : "var(--pa-mic-ink)",
                   cursor: "pointer",
                 }}
               >
@@ -676,7 +677,7 @@ export function Composer() {
                   padding: "13px 22px",
                   borderRadius: 999,
                   border: 0,
-                  background: mine ? INK : WHITE,
+                  background: mine ? INK : PANEL,
                   color: mine ? PAPER : INK,
                   fontSize: 15,
                   fontWeight: 500,
@@ -785,7 +786,7 @@ function Overlay({
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "rgba(20,35,46,0.42)",
+        background: "var(--pa-scrim)",
         backdropFilter: "blur(3px)",
         WebkitBackdropFilter: "blur(3px)",
         display: "grid",
@@ -811,7 +812,7 @@ function Overlay({
           borderRadius: 30,
           padding: "30px 30px 28px",
           textAlign: "left",
-          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6)",
+          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6), 0 0 0 1px var(--ex-ring)",
         }}
       >
         {children}
@@ -930,14 +931,14 @@ function Working({ stage, count }: { stage: number; count: number }) {
                   fontSize: 11,
                   fontWeight: 700,
                   color: WHITE,
-                  background: done ? GOOD_INK : active ? EMBER : "#dcd8cf",
+                  background: done ? GOOD_FILL : active ? EMBER : "var(--pa-step-off)",
                 }}
               >
                 {done ? "✓" : ""}
               </span>
               <span
                 style={{
-                  color: done ? GOOD_INK : active ? INK : "#a6b0b6",
+                  color: done ? GOOD_INK : active ? INK : "var(--pa-step-ink-off)",
                   fontWeight: active ? 700 : 500,
                 }}
               >
@@ -1313,7 +1314,7 @@ function ItemCount({
         padding: 4,
         borderRadius: 999,
         background: PANEL,
-        boxShadow: "inset 0 0 0 1px #e4e0d6",
+        boxShadow: "inset 0 0 0 1px var(--pa-cell-line)",
       }}
     >
       <Step label="Fewer exercises" onClick={() => setCount((c) => Math.max(COUNT_MIN, c - 1))}>
@@ -1409,9 +1410,9 @@ function SpecChip({
         fontWeight: on ? 700 : 500,
         fontFamily: "inherit",
         cursor: "pointer",
-        background: on ? INK : WHITE,
+        background: on ? INK : PANEL,
         color: on ? PAPER : BODY_INK,
-        boxShadow: on ? "none" : "inset 0 0 0 1px #e4e0d6",
+        boxShadow: on ? "none" : "inset 0 0 0 1px var(--pa-cell-line)",
       }}
     >
       {children}

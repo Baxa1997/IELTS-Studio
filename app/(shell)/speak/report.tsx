@@ -300,11 +300,13 @@ export function SpeakingReport({
               height="16"
               viewBox="0 0 24 24"
               fill="none"
-
               strokeWidth="2.4"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden
+              // In `style`: GOOD is a var(), which a `stroke=` attribute cannot resolve.
+              // 8cffac2 deleted the attribute without moving it, and the arrow vanished.
+              style={{ stroke: GOOD }}
             >
               <path d="M12 19V5M5 12l7-7 7 7" />
             </svg>

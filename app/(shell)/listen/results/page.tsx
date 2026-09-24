@@ -12,6 +12,7 @@ import {
   SLATE_LINE,
   WARM_GREEN as GOOD,
   WARM_RED as BAD,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
@@ -160,7 +161,7 @@ export default async function ListeningResultsPage() {
                       style={{
                         flex: "none",
                         background: TINT,
-                        border: "1px solid rgba(125,1,50,.16)",
+                        border: `1px solid ${withAlpha(BRAND, 16)}`,
                         color: BRAND,
                         padding: "5px 12px",
                         borderRadius: 999,

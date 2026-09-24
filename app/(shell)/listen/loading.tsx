@@ -52,7 +52,7 @@ export default function ListenLoading() {
             key={i}
             style={{
               background: PANEL,
-              border: "1px solid rgba(28,27,46,.09)",
+              border: "1px solid var(--pc-border)",
               borderRadius: 14,
               padding: 16,
               display: "flex",
@@ -68,7 +68,7 @@ export default function ListenLoading() {
               <Block w={140} h={16} r={8} />
               <Block w={180} h={12} r={6} mt={8} />
             </div>
-            <span style={{ height: 1, background: "rgba(28,27,46,.07)" }} />
+            <span style={{ height: 1, background: "var(--pc-rule)" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <Block w={140} h={12} r={6} />
               <Block w={54} h={13} r={7} />

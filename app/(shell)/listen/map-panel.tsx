@@ -22,7 +22,7 @@ import { Check, X } from "lucide-react";
 import { BAD, RUN } from "./theme";
 import { FlagButton, NumChip } from "./question-ui";
 import type { MapFeature, MapView, QCtx } from "./types";
-import { BRAND } from "@/lib/theme/tokens";
+import { BRAND, PANEL, withAlpha } from "@/lib/theme/tokens";
 
 // ---- IELTS-style schematic map rendering -------------------------------------
 
@@ -46,6 +46,15 @@ const MAP = {
   siteEdge: "#111111",
   accent: BRAND,
   frame: "#111111",
+  /* The graded marks drawn ON the plan. ⚠️ HEX, NOT `RUN.ok` / `BAD`: those are
+     theme tokens, and (a) a var() does not resolve in the `stroke=`/`fill=`
+     attributes these land in — the red ring for a wrong pick never drew — and
+     (b) the plan stays white in both themes, so it needs the light-theme greens
+     and reds, not the dark theme's. Same values the runner uses in light. */
+  ok: "#1b9e54",
+  okTint: "#f4fbf7",
+  bad: "#b91c1c",
+  badTint: "#fdf2f2",
 };
 
 /** A ground-coloured outline painted BEHIND each label's fill (paint-order:stroke)
@@ -533,9 +542,9 @@ export function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
       graded && assignedQ != null && ctx.results?.get(assignedQ)?.is_correct === false;
     const ring = graded
       ? correctQ != null
-        ? RUN.ok
+        ? MAP.ok
         : pickedWrong
-          ? BAD
+          ? MAP.bad
           : null
       : selectedForActive
         ? MAP.ink
@@ -544,9 +553,9 @@ export function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
           : null;
     const fill = graded
       ? correctQ != null
-        ? RUN.okTint
+        ? MAP.okTint
         : pickedWrong
-          ? "#FDF2F2"
+          ? MAP.badTint
           : MAP.site
       : MAP.site;
     const stroke = ring ?? MAP.siteEdge;
@@ -738,8 +747,8 @@ export function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
                   padding: "0 10px",
                   borderRadius: 9,
                   border: `1.5px solid ${border}`,
-                  background: r ? (r.is_correct ? RUN.okTint : "#FDF2F2") : "#fff",
-                  boxShadow: isActive && !r ? `0 0 0 3px rgba(125,1,50,0.10)` : undefined,
+                  background: r ? (r.is_correct ? RUN.okTint : RUN.badTint) : PANEL,
+                  boxShadow: isActive && !r ? `0 0 0 3px ${withAlpha(BRAND, 10)}` : undefined,
                   fontFamily: RUN.sans,
                   fontSize: 14,
                   fontWeight: 700,
@@ -761,10 +770,10 @@ export function MapPanel({ map, ctx }: { map: MapView; ctx: QCtx }) {
               </select>
               {r ? (
                 r.is_correct ? (
-                  <Check size={16} color={RUN.ok} />
+                  <Check size={16} style={{ color: RUN.ok }} />
                 ) : (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <X size={16} color={BAD} />
+                    <X size={16} style={{ color: BAD }} />
                     <span style={{ fontSize: 13, fontWeight: 700, color: RUN.ok }}>
                       → {r.correct_answer}
                     </span>

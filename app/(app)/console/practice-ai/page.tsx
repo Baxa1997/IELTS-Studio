@@ -10,11 +10,13 @@ import {
   type LessonStatus,
 } from "@/lib/console/lessons";
 import {
+  EMBER,
   FAINT,
   HERO_SKY,
   INK,
   LIFT_CARD,
   PAPER,
+  READING,
   SANS,
   SERIF,
   SOFT,
@@ -79,7 +81,7 @@ export default async function PracticeAiPage({
           >
             <span
               aria-hidden
-              style={{ width: 7, height: 7, borderRadius: 999, background: "#ec6a45" }}
+              style={{ width: 7, height: 7, borderRadius: 999, background: EMBER }}
             />
             Explanation + practice in one page
           </div>
@@ -100,7 +102,7 @@ export default async function PracticeAiPage({
               margin: "0 auto",
               fontSize: 21,
               lineHeight: 1.45,
-              color: "#33505c",
+              color: "var(--pa-sky-ink)",
               maxWidth: "40ch",
             }}
           >
@@ -168,7 +170,7 @@ export default async function PracticeAiPage({
                     fontSize: 14,
                     fontWeight: 600,
                     color: on ? INK : SOFT,
-                    background: on ? "#fff" : "transparent",
+                    background: on ? PANEL : "transparent",
                     boxShadow: on ? "0 1px 2px rgba(20,35,46,.1)" : "none",
                     whiteSpace: "nowrap",
                   }}
@@ -266,8 +268,8 @@ function Card({ lesson }: { lesson: LessonCard }) {
             borderRadius: 999,
             fontSize: 12,
             fontWeight: 700,
-            background: published ? INK : "rgba(255,255,255,0.85)",
-            color: published ? PAPER : "#4d5f68",
+            background: published ? INK : "var(--pa-glass-soft)",
+            color: published ? PAPER : READING,
             whiteSpace: "nowrap",
           }}
         >

@@ -223,6 +223,10 @@ export const BRAND_WASH = "var(--tk-brand-wash)"; // between SOFT and LINE — h
 export const HERO_A = "var(--tk-hero-a)";
 export const HERO_B = "var(--tk-hero-b)";
 export const HERO_C = "var(--tk-hero-c)";
+/** Between HERO_A and HERO_B — the practice hubs' generate aurora. BRAND_DEEP in
+ *  light; NOT BRAND_DEEP in dark, which goes light for hovers and would put the
+ *  aurora's white copy on bright orange. */
+export const HERO_MID = "var(--tk-hero-mid)";
 
 /** Staff only. See the note above before reaching for these on a learner screen. */
 export const INDIGO = "var(--tk-indigo)"; // primary action            7.9:1

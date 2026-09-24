@@ -21,16 +21,17 @@ import {
 export type { GradedItem };
 export type TypeBreakdown = Partial<Record<ReadingQuestionType, { attempted: number; correct: number }>>;
 
-/** Green ≥75% · amber ≥50% · red below — shared by the type + passage bars. */
+/** Green ≥75% · amber ≥50% · red below — shared by the type + passage bars. Tokens, so
+ *  keep them in `style` — they are also the bar FILLS, never an SVG attribute. */
 export function perfColor(pct: number): string {
-  if (pct >= 75) return "#16A34A";
-  if (pct >= 50) return "#D97706";
-  return "#DC2626";
+  if (pct >= 75) return "var(--ex-ok-edge)";
+  if (pct >= 50) return "var(--ex-warn)";
+  return "var(--ex-red)";
 }
 
 const STATUS = {
-  correct: { border: "#16A34A", bg: "#F6FBF7", ring: "#E4F0E8", pillBg: "#E6F5EB", pillTxt: WARM_GREEN, icon: "✓", label: "Correct" },
-  incorrect: { border: "#DC2626", bg: "#FDF5F3", ring: "#F4DAD2", pillBg: "#FCE4E0", pillTxt: "#C2410C", icon: "✕", label: "Incorrect" },
+  correct: { border: "var(--ex-ok-edge)", bg: "var(--ex-ok-card)", ring: "var(--ex-ok-ring)", pillBg: "var(--ex-ok-pill)", pillTxt: WARM_GREEN, icon: "✓", label: "Correct" },
+  incorrect: { border: "var(--ex-red)", bg: "var(--ex-bad-card)", ring: "var(--ex-bad-ring)", pillBg: "var(--ex-bad-pill)", pillTxt: "var(--ex-err)", icon: "✕", label: "Incorrect" },
   skipped: { border: SLATE_MUTED, bg: WELL_LINE, ring: SLATE_LINE, pillBg: SLATE_LINE, pillTxt: SLATE_BODY, icon: "–", label: "Skipped" },
 } as const;
 
@@ -83,7 +84,7 @@ export function ReviewItem({ item, passageBody, flagged }: { item: GradedItem; p
     status === "correct"
       ? { color: WARM_GREEN, fontWeight: 700 }
       : status === "incorrect"
-        ? { color: "#DC2626", fontWeight: 700, textDecoration: "line-through" }
+        ? { color: "var(--ex-red)", fontWeight: 700, textDecoration: "line-through" }
         : { color: SLATE_MUTED, fontWeight: 600, textDecoration: "line-through" };
   const shownStudent = status === "skipped" ? "no answer" : display(item.student_answer.trim() || "no answer");
 
@@ -94,7 +95,7 @@ export function ReviewItem({ item, passageBody, flagged }: { item: GradedItem; p
           <span style={{ color: SLATE_MUTED, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>Q{item.order_index}. </span>
           <span style={{ whiteSpace: "pre-wrap" }}>{item.prompt}</span>
           {flagged ? (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#C77C09", fontWeight: 600, marginLeft: 8, verticalAlign: "middle" }}>⚑ flagged</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--ex-amber-ink)", fontWeight: 600, marginLeft: 8, verticalAlign: "middle" }}>⚑ flagged</span>
           ) : null}
         </div>
         <span style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 999, background: s.pillBg, color: s.pillTxt, fontFamily: SANS, fontSize: 12.5, fontWeight: 700 }}>{s.icon} {s.label}</span>

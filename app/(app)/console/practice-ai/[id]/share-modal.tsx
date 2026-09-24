@@ -10,6 +10,7 @@ import {
   EMBER,
   FAINT,
   GOOD_BG,
+  GOOD_FILL,
   GOOD_INK,
   INK,
   MUTED,
@@ -149,7 +150,7 @@ export function ShareModal({
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "rgba(20,35,46,0.42)",
+        background: "var(--pa-scrim)",
         backdropFilter: "blur(3px)",
         WebkitBackdropFilter: "blur(3px)",
         display: "grid",
@@ -173,7 +174,7 @@ export function ShareModal({
           borderRadius: 24,
           background: PAPER,
           overflow: "hidden",
-          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6)",
+          boxShadow: "0 40px 80px -30px rgba(20,35,46,.6), 0 0 0 1px var(--ex-ring)",
         }}
       >
         {/* ── header ───────────────────────────────────────────────────────── */}
@@ -227,7 +228,7 @@ export function ShareModal({
                 height: 32,
                 borderRadius: 999,
                 border: 0,
-                background: "rgba(255,255,255,0.8)",
+                background: "var(--pa-glass-faint)",
                 color: MUTED,
                 fontSize: 16,
                 cursor: "pointer",
@@ -271,7 +272,7 @@ export function ShareModal({
                       borderRadius: 13,
                       cursor: "pointer",
                       background: on ? GOOD_BG : TROUGH,
-                      boxShadow: on ? "inset 0 0 0 2px #79b79c" : "none",
+                      boxShadow: on ? "inset 0 0 0 2px var(--pa-good-ring)" : "none",
                     }}
                   >
                     {/* The native control does the semantics and the keyboard;
@@ -297,8 +298,8 @@ export function ShareModal({
                         fontSize: 13,
                         fontWeight: 700,
                         color: WHITE,
-                        background: on ? GOOD_INK : "#fff",
-                        boxShadow: on ? "none" : "inset 0 0 0 2px #d8d3c8",
+                        background: on ? GOOD_FILL : PANEL,
+                        boxShadow: on ? "none" : "inset 0 0 0 2px var(--pa-check-line)",
                       }}
                     >
                       {on ? "✓" : ""}

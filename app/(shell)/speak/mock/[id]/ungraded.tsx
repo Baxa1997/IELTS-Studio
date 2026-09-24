@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { LucidaScope } from "../../lucida";
-import { PANEL, WARM_EDGE, WHITE } from "@/lib/theme/tokens";
+import { PANEL, WARM_EDGE } from "@/lib/theme/tokens";
 
 /**
  * A mock that will never have a band.
@@ -43,7 +43,7 @@ export function UngradedMock({ state }: { state: string }) {
           };
 
   return (
-    <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
+    <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "var(--sp-ink)" }}>
       <div
         style={{
           flex: 1,
@@ -63,8 +63,8 @@ export function UngradedMock({ state }: { state: string }) {
               borderRadius: "50%",
               display: "grid",
               placeItems: "center",
-              background: "#F5F2F0",
-              color: "#8C7F8A",
+              background: "var(--sp-surface-2)",
+              color: "var(--sp-muted)",
             }}
           >
             <svg
@@ -91,10 +91,10 @@ export function UngradedMock({ state }: { state: string }) {
           >
             {copy.title}
           </h1>
-          <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460" }}>
+          <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "var(--sp-body)" }}>
             {copy.body}
           </p>
-          <p style={{ margin: "14px 0 0", fontSize: 13, color: "#8C7F8A" }}>{copy.note}</p>
+          <p style={{ margin: "14px 0 0", fontSize: 13, color: "var(--sp-muted)" }}>{copy.note}</p>
           <div
             style={{
               marginTop: 24,
@@ -109,8 +109,8 @@ export function UngradedMock({ state }: { state: string }) {
               style={{
                 padding: "14px 24px",
                 borderRadius: 12,
-                background: "#1A1520",
-                color: WHITE,
+                background: "var(--sp-ink)",
+                color: "var(--sp-on-ink)",
                 fontSize: 15,
                 fontWeight: 600,
                 textDecoration: "none",
@@ -124,7 +124,7 @@ export function UngradedMock({ state }: { state: string }) {
                 padding: "14px 24px",
                 borderRadius: 12,
                 border: `1px solid ${WARM_EDGE}`,
-                color: "#5C5460",
+                color: "var(--sp-body)",
                 fontSize: 15,
                 fontWeight: 600,
                 textDecoration: "none",

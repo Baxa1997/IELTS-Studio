@@ -229,16 +229,19 @@ function roomTheme(p: Purpose) {
   const dark = p.theme === "stage";
   return {
     dark,
-    accent: dark ? "var(--sp-disabled)" : p.accent,
+    // ⚠️ The stage is DARK IN BOTH THEMES, so its ink/accent must not follow
+    // the scale — `--sp-panel-2` and `--sp-disabled` both go DARK in dark mode,
+    // which put dark text on the dark stage. `--sp-stage-*` hold them light.
+    accent: dark ? "var(--sp-stage-accent)" : p.accent,
     bg: dark
       ? "radial-gradient(900px 600px at 50% -10%, var(--sp-glass) 0%, var(--sp-glass-2) 55%, var(--sp-glass-3) 100%)"
       : p.theme === "interview"
         ? "radial-gradient(900px 560px at 78% -12%, var(--sp-info-tint) 0%, var(--sp-panel) 60%, var(--sp-line-2) 100%)"
         : "radial-gradient(820px 520px at 18% -10%, var(--sp-warm-tint) 0%, var(--sp-tab-on) 55%, var(--sp-edge-5) 100%)",
-    ink: dark ? "var(--sp-panel-2)" : "var(--sp-ink)",
+    ink: dark ? "var(--sp-stage-ink)" : "var(--sp-ink)",
     ink2: dark ? "var(--sp-faint)" : "var(--sp-muted)",
     line: dark ? "rgba(245,240,238,0.16)" : "var(--sp-edge-4)",
-    card: dark ? "rgba(245,240,238,0.06)" : "rgba(255,253,252,0.86)",
+    card: dark ? "rgba(245,240,238,0.06)" : "var(--sp-room-card)",
     chipBg: dark ? "rgba(148,104,245,0.20)" : withAlpha(p.accent, 12),
     tint: dark ? "rgba(245,240,238,0.05)" : "var(--sp-stage-2)",
     track: dark ? "rgba(245,240,238,0.14)" : "var(--sp-edge-2)",
@@ -798,7 +801,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
               {/* matched tutor */}
               <div
                 style={{
-                  background: "rgba(255,253,252,0.9)",
+                  background: "var(--sp-room-panel)",
                   border: "1px solid var(--color-neutral-200)",
                   borderRadius: "var(--radius-2xl)",
                   padding: 26,
@@ -909,7 +912,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
               {/* support language + what this session is */}
               <div
                 style={{
-                  background: "rgba(255,253,252,0.9)",
+                  background: "var(--sp-room-panel)",
                   border: "1px solid var(--color-neutral-200)",
                   borderRadius: "var(--radius-2xl)",
                   padding: 26,
@@ -1083,9 +1086,9 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                       fontSize: "var(--text-sm)",
                       fontWeight: 600,
                       border: `1px solid ${on ? item.accent : "var(--color-neutral-200)"}`,
-                      background: on ? "var(--color-neutral-0)" : "rgba(255,253,252,0.6)",
+                      background: on ? "var(--color-neutral-0)" : "var(--sp-room-chip)",
                       color: on ? "var(--color-neutral-1000)" : "var(--color-neutral-600)",
-                      boxShadow: on ? "0 0 0 3px rgba(26,21,32,0.05)" : "none",
+                      boxShadow: on ? `0 0 0 3px ${withAlpha("var(--sp-ink)", 5)}` : "none",
                     }}
                   >
                     <span
@@ -2355,10 +2358,13 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 borderRadius: "var(--radius-pill)",
                 border: `2px solid ${holding ? th.accent : th.line}`,
                 background: holding ? th.accent : "transparent",
+                // Ink ON the accent fill: dark on the stage, and `--sp-on-ink` elsewhere —
+                // white in light, dark in dark, where the accents brighten and white
+                // on them fell to ~2.5:1.
                 color: holding
                   ? th.dark
-                    ? "var(--color-neutral-1000)"
-                    : "#FFFFFF"
+                    ? "var(--sp-stage-on-accent)"
+                    : "var(--sp-on-ink)"
                   : speaking || thinking
                     ? th.ink2
                     : th.ink,
@@ -2440,7 +2446,7 @@ export function TutorRoom({ onExit, initialKind }: { onExit?: () => void; initia
                 placeItems: "center",
                 border: "none",
                 cursor: "pointer",
-                color: th.dark ? "var(--color-neutral-1000)" : "#FFFFFF",
+                color: th.dark ? "var(--sp-stage-on-accent)" : "var(--sp-on-ink)",
                 background: th.accent,
                 fontFamily: "inherit",
                 boxShadow:

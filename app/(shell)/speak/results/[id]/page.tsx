@@ -8,7 +8,10 @@ import {
   SANS,
   SERIF,
   SLATE_BODY,
+  SLATE_GREEN_BG,
   SLATE_LINE,
+  WARM_GREEN,
+  WELL_LINE,
   WHITE,
 } from "@/lib/theme/tokens";
 import { requireOrgUser } from "@/lib/auth";
@@ -170,9 +173,9 @@ function RevisionStrip({
         fontWeight: 700,
         borderRadius: 999,
         padding: "5px 11px",
-        background: delta > 0 ? "#EAF6F0" : delta < 0 ? "#FCEEEA" : "#ECEEF2",
-        color: delta > 0 ? "#15803D" : delta < 0 ? "#C2410C" : "#4A505C",
-        border: `1px solid ${delta > 0 ? "#CFE7DA" : delta < 0 ? "#F3CFC6" : "#E6E8EC"}`,
+        background: delta > 0 ? SLATE_GREEN_BG : delta < 0 ? "var(--rp-warm-bg)" : WELL_LINE,
+        color: delta > 0 ? WARM_GREEN : delta < 0 ? "var(--rp-err)" : SLATE_BODY,
+        border: `1px solid ${delta > 0 ? "var(--rp-ok-line)" : delta < 0 ? "var(--rp-warm-line-2)" : SLATE_LINE}`,
       }}
     >
       {label} {delta > 0 ? "+" : ""}
@@ -198,7 +201,7 @@ function RevisionStrip({
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: up ? "#15803D" : same ? "#4A505C" : "#C2410C",
+            color: up ? WARM_GREEN : same ? SLATE_BODY : "var(--rp-err)",
           }}
         >
           {prev.overall_band.toFixed(1)} → {now.overall_band.toFixed(1)}

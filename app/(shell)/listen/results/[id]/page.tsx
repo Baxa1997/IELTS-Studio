@@ -20,6 +20,7 @@ import {
   WARM_RED as BAD,
   WELL_LINE,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ interface PageProps {
 
 const SANS = "var(--font-hanken), system-ui, sans-serif";
 const SERIF = "var(--font-newsreader), Georgia, serif";
-const BAD_BG = "#FDECEC";
+const BAD_BG = "var(--ex-bad-bg)";
 const CARD: React.CSSProperties = {
   background: PANEL,
   border: `1px solid ${SLATE_LINE}`,
@@ -203,7 +204,7 @@ export default async function ListeningResultPage({ params }: PageProps) {
                 padding: "8px 16px",
                 borderRadius: 12,
                 background: TINT,
-                border: "1px solid rgba(125,1,50,.16)",
+                border: `1px solid ${withAlpha(BRAND, 16)}`,
                 color: BRAND,
                 fontWeight: 800,
                 fontSize: 17,

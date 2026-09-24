@@ -33,7 +33,7 @@ import { formatClock } from "@/components/exam/timer";
 
 import { RUN } from "./theme";
 import type { AudioSeg, PauseSeg, PlayerPhase, Segment } from "./types";
-import { BRAND_DARKEST, BRAND_DEEP, BRAND_PALE, PANEL, WHITE } from "@/lib/theme/tokens";
+import { BRAND_DARKEST, PANEL, WHITE } from "@/lib/theme/tokens";
 
 // ---- Player (segment engine + audio strip) --------------------------------
 
@@ -525,17 +525,23 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
     e.preventDefault();
   };
   const pct = (pos.progress * 100).toFixed(2);
-  /* The player's own dark skin. It was navy; it follows the runner's accent now. */
+  /* The player's own dark skin. It was navy; it follows the runner's accent now.
+   *
+   * ⚠️ DARK IN BOTH THEMES, SO ITS INKS ARE LIGHT IN BOTH — but the rail and the
+   * fill are NOT the brand ramp any more. They were BRAND_DEEP / BRAND_PALE,
+   * which swap places in dark (DEEP goes lighter so hovers lift, PALE goes to a
+   * dark brown), so the unplayed track lit up orange and the progress went dark:
+   * the scrubber read backwards. See `--ex-strip-*` in globals.css. */
   const skin = {
     bg: BRAND_DARKEST,
-    border: "#4A0620",
-    text: "#fff7fa",
-    muted: "#d9bec8",
-    rail: BRAND_DEEP,
-    fill: BRAND_PALE,
+    border: "var(--ex-strip-line)",
+    text: "var(--ex-strip-ink)",
+    muted: "var(--ex-strip-muted)",
+    rail: "var(--ex-strip-rail)",
+    fill: "var(--ex-strip-fill)",
     control: "rgba(255,255,255,0.09)",
     controlBorder: "rgba(255,255,255,0.18)",
-    play: "#F2C3D3",
+    play: "var(--ex-strip-play)",
   };
   const iconBtn: React.CSSProperties = {
     display: "flex",
@@ -577,7 +583,7 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
               position: "absolute",
               inset: -3,
               borderRadius: 9999,
-              background: "rgba(126,167,255,0.35)",
+              background: "var(--ex-strip-pulse)",
               animation: "lp-pulse-ring 1.2s ease-out infinite",
             }}
           />
@@ -704,7 +710,9 @@ export function AudioStrip({ player }: { player: PlayerApi }) {
             width: 14,
             height: 14,
             borderRadius: 9999,
-            background: PANEL,
+            // WHITE, not PANEL: the knob rides the strip, which is dark in both
+            // themes — a PANEL knob went black on it and vanished.
+            background: WHITE,
             border: `3px solid ${skin.fill}`,
             boxShadow: "0 1px 6px rgba(0,0,0,0.35)",
           }}

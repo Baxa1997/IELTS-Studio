@@ -6,6 +6,7 @@ import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import type { NoteMeta, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 
 import type { DeliveredQuestion } from "../../_shared/question-inputs";
 import { ReadingTestRunner, type ResumeState, type TestPassage } from "./test-runner";
@@ -120,7 +121,7 @@ export default async function ReadingTestPage({ params, searchParams }: PageProp
 
   // Full-screen, no sidebar — the focused exam experience.
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
+    <div style={{ minHeight: "100dvh", background: `linear-gradient(180deg,${PAGE_GRAD_TOP},${PAGE_GRAD_BOTTOM})` }}>
       <ReadingTestRunner
         testId={id}
         passages={testPassages}

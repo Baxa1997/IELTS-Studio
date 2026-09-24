@@ -8,7 +8,7 @@
  * still live — the Activities page uses them — so the shapes below stay.
  */
 
-import { BRAND } from "@/lib/theme/tokens";
+import { BRAND, withAlpha } from "@/lib/theme/tokens";
 
 export interface Annotation {
   text: string;
@@ -17,11 +17,15 @@ export interface Annotation {
   note?: string;
 }
 
+/** The mark colours in a graded essay. `fg` is a token (the dark-red/amber/teal inks
+ *  were unreadable on a dark card); the washes stay rgba because a 16% tint of the
+ *  hue reads as the same mark on either ground. Vocabulary follows the brand, so its
+ *  wash does too. Style-only — never an SVG attribute. */
 export const ANN_STYLE: Record<Annotation["type"], { bg: string; fg: string; label: string }> = {
-  spelling: { bg: "rgba(192,57,43,.16)", fg: "#a8362a", label: "Spelling" },
-  grammar: { bg: "rgba(194,138,26,.16)", fg: "#946813", label: "Grammar" },
-  vocabulary: { bg: "rgba(125,1,50,.14)", fg: BRAND, label: "Vocabulary" },
-  cohesion: { bg: "rgba(47,143,124,.16)", fg: "#256b5c", label: "Cohesion" },
+  spelling: { bg: "rgba(192,57,43,.16)", fg: "var(--ex-ann-spelling)", label: "Spelling" },
+  grammar: { bg: "rgba(194,138,26,.16)", fg: "var(--ex-ann-grammar)", label: "Grammar" },
+  vocabulary: { bg: withAlpha(BRAND, 14), fg: BRAND, label: "Vocabulary" },
+  cohesion: { bg: "rgba(47,143,124,.16)", fg: "var(--ex-ann-cohesion)", label: "Cohesion" },
 };
 export const ANN_ORDER: Annotation["type"][] = ["spelling", "grammar", "vocabulary", "cohesion"];
 

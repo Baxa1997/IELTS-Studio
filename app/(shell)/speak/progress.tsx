@@ -136,7 +136,10 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
         <polyline
           points={pts}
           fill="none"
-
+          // ⚠️ The stroke lives in `style`: BRAND is a var(), which an SVG attribute
+          // cannot resolve. It was deleted rather than moved in 8cffac2, and the
+          // trend line vanished.
+          style={{ stroke: BRAND }}
           strokeWidth="2"
           strokeLinejoin="round"
           opacity="0.85"
@@ -147,8 +150,7 @@ export function SpeakProgress({ items }: { items: SpeakProgressItem[] }) {
             cx={xOf(i)}
             cy={yOf(it.band)}
             r={it.kind === "mock" ? 4.4 : 3.4}
-            fill={it.kind === "mock" ? BRAND : "#fff"}
-
+            style={{ fill: it.kind === "mock" ? BRAND : PANEL, stroke: BRAND }}
             strokeWidth="2"
           />
         ))}

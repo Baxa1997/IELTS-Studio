@@ -16,7 +16,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { loadInbox } from "@/lib/notifications/load";
 
 import { markRead } from "./actions";
-import { BRAND, PANEL } from "@/lib/theme/tokens";
+import { BRAND, BRAND_SOFT, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +40,7 @@ export default async function NotificationsPage() {
        student's homework and inbox would be the last two indigo screens in the
        learner app. Setting the properties here repaints every page-ui component on
        the page at once, which a per-import swap could not do. */
-    <div style={{ "--pu-indigo": "#7D0132", "--pu-tint": "#FDF4F7" } as React.CSSProperties}>
+    <div style={{ "--pu-indigo": BRAND, "--pu-tint": BRAND_SOFT } as React.CSSProperties}>
       <PageHead
         eyebrow="Notifications"
         title="What's happened"

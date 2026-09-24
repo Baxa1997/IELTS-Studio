@@ -5,6 +5,7 @@ import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import type { NoteMeta, ReadingModule, ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 
 import {
   ReadingRunner,
@@ -100,7 +101,7 @@ export default async function ReadingRunnerPage({ params, searchParams }: PagePr
 
   // Full-screen, no sidebar — a focused single detail page for the actual reading.
   return (
-    <div style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#FBFBFC,#F1F3F6)" }}>
+    <div style={{ minHeight: "100dvh", background: `linear-gradient(180deg,${PAGE_GRAD_TOP},${PAGE_GRAD_BOTTOM})` }}>
       <ReadingRunner
         passage={runnerPassage}
         questions={delivered}

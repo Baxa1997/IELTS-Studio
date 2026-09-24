@@ -38,9 +38,10 @@ import {
   BRAND,
   BRAND_FILL,
   BRAND_LINE,
-  BRAND_MID,
   BRAND_PALE,
   BRAND_SOFT,
+  HERO_B,
+  HERO_C,
   PANEL,
   SLATE_BODY,
   SLATE_BODY as MUTED,
@@ -66,10 +67,10 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 const cardStyle: React.CSSProperties = {
   position: "relative",
   background: PANEL,
-  border: "1px solid rgba(28,27,46,.09)",
+  border: "1px solid var(--pc-border)",
   borderRadius: 14,
   color: INK,
-  boxShadow: "0 1px 3px rgba(28,27,46,.04)",
+  boxShadow: "var(--pc-shadow)",
 };
 
 /* ⚠️ THESE HOLD KEYS, NOT LABELS. A module constant is evaluated once at import
@@ -485,10 +486,10 @@ export function WritingLibrary({
             height="15"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#3B4150"
             strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            style={{ stroke: SLATE_STRONG }}
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
@@ -885,10 +886,10 @@ export function WritingLibrary({
                   height="17"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#8B919D"
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  style={{ stroke: SLATE_MUTED }}
                 >
                   <circle cx="11" cy="11" r="7" />
                   <path d="M21 21l-4.3-4.3" />
@@ -1190,7 +1191,7 @@ function GradingModal() {
         position: "fixed",
         inset: 0,
         zIndex: 80,
-        background: "rgba(20,20,40,.5)",
+        background: "var(--ex-scrim)",
         backdropFilter: "blur(3px)",
         display: "flex",
         alignItems: "center",
@@ -1206,7 +1207,7 @@ function GradingModal() {
           maxWidth: 400,
           width: "100%",
           textAlign: "center",
-          boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)",
+          boxShadow: "0 40px 90px -40px rgba(20,20,48,.6), 0 0 0 1px var(--ex-ring)",
         }}
       >
         <span
@@ -1215,7 +1216,9 @@ function GradingModal() {
             width: 60,
             height: 60,
             borderRadius: 17,
-            background: `linear-gradient(135deg,${BRAND_MID},${BRAND})`,
+            // The hero stops, not BRAND_MID/BRAND: identical in light, and deep
+            // enough in dark to keep the white spinner on them legible.
+            background: `linear-gradient(135deg,${HERO_C},${HERO_B})`,
             alignItems: "center",
             justifyContent: "center",
             boxShadow: "0 12px 28px -12px rgba(125,1,50,.7)",

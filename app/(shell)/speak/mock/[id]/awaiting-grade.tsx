@@ -65,7 +65,7 @@ export function AwaitingGrade({ sessionId }: { sessionId: string }) {
   }, [sessionId, router]);
 
   return (
-    <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "#1A1520" }}>
+    <LucidaScope className="lucida-fill" style={{ background: PANEL, color: "var(--sp-ink)" }}>
       <div
         style={{
           flex: 1,
@@ -83,8 +83,8 @@ export function AwaitingGrade({ sessionId }: { sessionId: string }) {
               height: 38,
               margin: "0 auto",
               borderRadius: "50%",
-              border: "3px solid #EFEBE9",
-              borderTopColor: "#1A1520",
+              border: "3px solid var(--sp-line)",
+              borderTopColor: "var(--sp-ink)",
               animation: "lcSpin .9s linear infinite",
             }}
           />
@@ -99,11 +99,11 @@ export function AwaitingGrade({ sessionId }: { sessionId: string }) {
           >
             Marking your mock
           </h1>
-          <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "#5C5460" }}>
+          <p style={{ margin: "10px 0 0", fontSize: 15, lineHeight: 1.6, color: "var(--sp-body)" }}>
             Every answer is being read against the official band descriptors, criterion by
             criterion. It takes under a minute, and your report opens here by itself.
           </p>
-          <p style={{ margin: "18px 0 0", fontSize: 12, color: "#8C7F8A" }}>
+          <p style={{ margin: "18px 0 0", fontSize: 12, color: "var(--sp-muted)" }}>
             You can leave this page — the report is saved to your results either way.
           </p>
         </div>

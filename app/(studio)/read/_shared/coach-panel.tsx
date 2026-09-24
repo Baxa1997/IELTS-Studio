@@ -5,16 +5,19 @@ import { MessageCircle, Send, X } from "lucide-react";
 
 import { Typewriter } from "@/components/typewriter";
 
-import { BRAND, INK, MUTED, SANS } from "./tokens";
+import { INK, MUTED, SANS } from "./tokens";
 import {
   BRAND_FILL,
   FAB_CLEARANCE,
+  HERO_B,
+  HERO_C,
   PANEL,
   SLATE_LINE,
   SLATE_MUTED,
   WARM_EDGE,
   WARM_LINE_MID,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 interface ChatMessage {
@@ -131,7 +134,7 @@ export function CoachPanel({
           fontFamily: SANS,
           fontWeight: 700,
           fontSize: 14,
-          boxShadow: "0 14px 30px -12px rgba(125,1,50,.7)",
+          boxShadow: `0 14px 30px -12px ${withAlpha(BRAND_FILL, 70)}`,
         }}
       >
         <MessageCircle size={17} /> Coach
@@ -163,7 +166,7 @@ export function CoachPanel({
     >
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "12px 14px", borderBottom: `1px solid ${WARM_EDGE}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#9B1044,#7D0132)", color: WHITE, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg,${HERO_C},${HERO_B})`, color: WHITE, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <MessageCircle size={15} />
           </span>
           <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14, color: INK }}>Reading coach</span>
@@ -193,8 +196,8 @@ export function CoachPanel({
                 fontSize: 13.5,
                 lineHeight: 1.55,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? BRAND : "#F4F2E8",
-                color: m.role === "student" ? "#fff" : INK,
+                background: m.role === "student" ? BRAND_FILL : "var(--ex-bubble)",
+                color: m.role === "student" ? WHITE : INK,
               }}
             >
               {m.role === "assistant" ? (

@@ -39,6 +39,7 @@ import {
   BRAND_DEEP,
   BRAND_DEEP as D_ATEXT,
   BRAND_FILL as D_ACCENT_FILL,
+  BRAND_LIGHT,
   BRAND_LINE,
   BRAND_LINE as D_ABORDER2,
   BRAND_PALE as TINT_BORDER,
@@ -49,7 +50,10 @@ import {
   BRAND_WASH as D_ATINT,
   CANVAS,
   FIELD_LINE,
+  HERO_B,
+  HERO_MID,
   LINE as D_LINE,
+  ON_INK,
   PANEL,
   SLATE_BODY as MUTED,
   SLATE_INK as INK,
@@ -61,6 +65,7 @@ import {
   WARM_GREEN as GOOD,
   WARM_RED as BAD,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
@@ -82,13 +87,20 @@ const SERIF = "var(--font-newsreader), Georgia, serif";
 // ---- "Reading B" design tokens (Claude Design project) ---------------------
 const JAKARTA = "'Plus Jakarta Sans', var(--font-hanken), system-ui, sans-serif";
 const PLEX = "'IBM Plex Serif', var(--font-newsreader), Georgia, serif";
-const D_DARK = "#0f172a"; // header
-const D_ABORDER = "#CC5C82"; // gap underline
-const D_PAGE = "#f8fafc"; // canvas
-const D_SLATE = "#64748b";
-const D_SLATE2 = "#94a3b8";
-const D_SLATE3 = "#334155";
-const D_INK = "#1e293b"; // body text
+/* ⚠️ TOKENS, AND THE DESIGN'S NAVY IS NOW TWO OF THEM. #0f172a was both the
+   header's GROUND (under white type) and a heading INK, and those move in
+   opposite directions in dark mode — so the ground is `D_HEAD`, dark in both
+   themes, and `D_DARK` is an ink that goes light. Reusing one for the other is
+   how this screen went navy-on-black. Light values are the old hex exactly
+   (`--ex-cf-*` in globals.css). */
+const D_HEAD = "var(--ex-cf-head)"; // header ground
+const D_DARK = "var(--ex-cf-ink)"; // heading ink
+const D_ABORDER = "var(--ex-cf-gap)"; // gap underline
+const D_PAGE = "var(--ex-cf-page)"; // canvas
+const D_SLATE = "var(--ex-cf-slate)";
+const D_SLATE2 = "var(--ex-cf-slate2)";
+const D_SLATE3 = "var(--ex-cf-slate3)";
+const D_INK = "var(--ex-cf-body)"; // body text
 
 // ---- Engine call -----------------------------------------------------------
 
@@ -555,10 +567,10 @@ function Hub({
               <div
                 style={{
                   background: PANEL,
-                  border: "1px solid rgba(28,27,46,.09)",
+                  border: "1px solid var(--pc-border)",
                   borderRadius: 14,
                   overflow: "hidden",
-                  boxShadow: "0 1px 3px rgba(28,27,46,.04)",
+                  boxShadow: "var(--pc-shadow)",
                 }}
               >
                 {recent.map((it, i) => (
@@ -651,7 +663,7 @@ function TabButton({
         border: "none",
         cursor: "pointer",
         textAlign: "left",
-        background: active ? "#fff" : "transparent",
+        background: active ? PANEL : "transparent",
         color: active ? BRAND : MUTED,
         boxShadow: active ? "0 2px 8px -3px rgba(28,27,46,.28)" : "none",
         transition: "background .15s ease",
@@ -668,7 +680,7 @@ function TabButton({
           style={{
             fontFamily: SANS,
             fontSize: 12,
-            color: active ? "#B32A5B" : "#8B919D",
+            color: active ? BRAND_LIGHT : SLATE_MUTED,
             marginTop: 2,
           }}
         >
@@ -685,7 +697,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       <span style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13.5, color: INK }}>
         {children}
       </span>
-      <span style={{ height: 1, flex: 1, background: "rgba(28,27,46,.1)" }} />
+      <span style={{ height: 1, flex: 1, background: "var(--ex-hub-rule)" }} />
     </div>
   );
 }
@@ -740,7 +752,7 @@ function PracticeCard({
       style={{
         position: "relative",
         background: PANEL,
-        border: "1px solid rgba(28,27,46,.09)",
+        border: "1px solid var(--pc-border)",
         borderRadius: 14,
         padding: 16,
         display: "flex",
@@ -750,7 +762,7 @@ function PracticeCard({
         fontFamily: SANS,
         cursor: disabled ? "default" : "pointer",
         opacity: disabled && !loading ? 0.55 : 1,
-        boxShadow: "0 1px 3px rgba(28,27,46,.04)",
+        boxShadow: "var(--pc-shadow)",
         width: "100%",
       }}
     >
@@ -808,7 +820,7 @@ function PracticeCard({
           justifyContent: "space-between",
           alignItems: "center",
           gap: 10,
-          borderTop: "1px solid rgba(28,27,46,.07)",
+          borderTop: "1px solid var(--pc-rule)",
           paddingTop: 10,
         }}
       >
@@ -870,7 +882,7 @@ function RecentRow({
         padding: "12px 14px",
         background: "transparent",
         border: "none",
-        borderTop: first ? "none" : "1px solid rgba(28,27,46,.07)",
+        borderTop: first ? "none" : "1px solid var(--pc-rule)",
         cursor: disabled ? "default" : "pointer",
         textAlign: "left",
         fontFamily: SANS,
@@ -975,7 +987,7 @@ function ReadingGenerateModal({
         alignItems: "center",
         justifyContent: "center",
         padding: 20,
-        background: "rgba(20,20,40,.5)",
+        background: "var(--ex-scrim)",
         backdropFilter: "blur(3px)",
       }}
     >
@@ -988,7 +1000,7 @@ function ReadingGenerateModal({
           background: PANEL,
           borderRadius: 20,
           padding: "26px 26px 22px",
-          boxShadow: "0 40px 90px -40px rgba(20,20,48,.6)",
+          boxShadow: "0 40px 90px -40px rgba(20,20,48,.6), 0 0 0 1px var(--ex-ring)",
           fontFamily: SANS,
           color: INK,
         }}
@@ -1120,7 +1132,7 @@ function ModalOption({
         textAlign: "left",
         width: "100%",
         background: PANEL,
-        border: "1px solid rgba(28,27,46,.09)",
+        border: "1px solid var(--pc-border)",
         borderRadius: 14,
         padding: 14,
         cursor: "pointer",
@@ -1172,7 +1184,7 @@ const modalCloseBtn: React.CSSProperties = {
   width: 30,
   height: 30,
   borderRadius: 9,
-  border: "1px solid rgba(28,27,46,.09)",
+  border: "1px solid var(--pc-border)",
   background: PANEL,
   color: MUTED,
   display: "flex",
@@ -1384,7 +1396,7 @@ function MarkerToolbar({
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          background: tool === "eraser" ? D_ATINT2 : "#fff",
+          background: tool === "eraser" ? D_ATINT2 : PANEL,
           border: `1px solid ${tool === "eraser" ? D_ACCENT : D_LINE}`,
           color: tool === "eraser" ? D_ACCENT : D_SLATE2,
           flexShrink: 0,
@@ -1545,12 +1557,14 @@ function ReadingRunner({
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap"
       />
       {/* Highlighter pens — transparent fills painted by the CSS Custom Highlight API. */}
-      <style>{`::highlight(cefr-hl-yellow){background-color:rgba(253,224,71,.5)}::highlight(cefr-hl-green){background-color:rgba(134,239,172,.55)}::highlight(cefr-hl-pink){background-color:rgba(249,168,212,.55)}::highlight(cefr-hl-blue){background-color:rgba(147,197,253,.6)}`}</style>
+      {/* Lighter washes in dark, where the passage text is near-white — see the note on
+          HIGHLIGHT_CSS in app/(studio)/read/_shared/highlighter.tsx. */}
+      <style>{`::highlight(cefr-hl-yellow){background-color:rgba(253,224,71,.5)}::highlight(cefr-hl-green){background-color:rgba(134,239,172,.55)}::highlight(cefr-hl-pink){background-color:rgba(249,168,212,.55)}::highlight(cefr-hl-blue){background-color:rgba(147,197,253,.6)}.dark ::highlight(cefr-hl-yellow){background-color:rgba(253,224,71,.3)}.dark ::highlight(cefr-hl-green){background-color:rgba(134,239,172,.3)}.dark ::highlight(cefr-hl-pink){background-color:rgba(249,168,212,.3)}.dark ::highlight(cefr-hl-blue){background-color:rgba(147,197,253,.32)}`}</style>
 
-      {/* Header (dark) */}
+      {/* Header (dark, in both themes) */}
       <div
         style={{
-          background: D_DARK,
+          background: D_HEAD,
           padding: "0 clamp(16px,3vw,32px)",
           height: 64,
           display: "flex",
@@ -1633,19 +1647,19 @@ function ReadingRunner({
                       gap: 8,
                       padding: "9px 22px",
                       borderRadius: 100,
-                      background: warn ? "rgba(185,28,28,.3)" : "rgba(125,1,50,.28)",
-                      border: `1px solid ${warn ? "rgba(248,113,113,.5)" : "rgba(125,1,50,.45)"}`,
+                      background: warn ? "rgba(185,28,28,.3)" : "var(--ex-cf-chip)",
+                      border: `1px solid ${warn ? "rgba(248,113,113,.5)" : "var(--ex-cf-chip-line)"}`,
                     }}
                     aria-label="time remaining"
                   >
-                    <Clock size={14} style={{ color: warn ? "#fecaca" : "#CC5C82" }} />
+                    <Clock size={14} style={{ color: warn ? "#fecaca" : "var(--ex-cf-chip-icon)" }} />
                     <span
                       style={{
                         fontFamily: JAKARTA,
                         fontWeight: 700,
                         fontSize: 17,
                         letterSpacing: ".02em",
-                        color: warn ? "#fecaca" : "#F0D3DE",
+                        color: warn ? "#fecaca" : "var(--ex-cf-head-ink)",
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
@@ -1663,8 +1677,8 @@ function ReadingRunner({
                 gap: 9,
                 padding: "9px 20px",
                 borderRadius: 100,
-                background: "rgba(125,1,50,.28)",
-                border: "1px solid rgba(125,1,50,.45)",
+                background: "var(--ex-cf-chip)",
+                border: "1px solid var(--ex-cf-chip-line)",
               }}
             >
               <span
@@ -1672,14 +1686,16 @@ function ReadingRunner({
                   fontFamily: JAKARTA,
                   fontWeight: 700,
                   fontSize: 17,
-                  color: BRAND_LINE,
+                  // Not BRAND_LINE: that goes DARK in dark mode, and this sits on the
+                  // header, which is dark in both. It was a brown score on black.
+                  color: "var(--ex-cf-head-ink)",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
                 {grade.score} / {grade.max_score}
               </span>
               <span
-                style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: "#CC5C82" }}
+                style={{ fontFamily: JAKARTA, fontWeight: 600, fontSize: 13, color: "var(--ex-cf-chip-icon)" }}
               >
                 {grade.max_score ? Math.round((grade.score / grade.max_score) * 100) : 0}%
               </span>
@@ -1778,7 +1794,7 @@ function ReadingRunner({
               padding: "6px 12px",
               borderRadius: 8,
               border: `1px solid ${D_LINE}`,
-              background: coachOpen ? "#fff" : D_ATINT2,
+              background: coachOpen ? PANEL : D_ATINT2,
               color: D_ACCENT,
               fontFamily: JAKARTA,
               fontWeight: 600,
@@ -2068,7 +2084,8 @@ function cefrNavCircle(answered: boolean, current: boolean): React.CSSProperties
       color: D_ACCENT,
       boxShadow: `0 0 0 3px ${D_ATINT}`,
     };
-  if (answered) return { ...base, borderColor: D_ACCENT, background: D_ACCENT, color: WHITE };
+  if (answered)
+    return { ...base, borderColor: D_ACCENT_FILL, background: D_ACCENT_FILL, color: WHITE };
   return { ...base, borderColor: D_LINE, background: PANEL, color: D_SLATE2 };
 }
 
@@ -2183,7 +2200,7 @@ function CefrCoach({
               width: 32,
               height: 32,
               borderRadius: 8,
-              background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
+              background: `linear-gradient(135deg,${HERO_B} 0%,${HERO_MID} 100%)`,
               color: WHITE,
               display: "flex",
               alignItems: "center",
@@ -2256,8 +2273,8 @@ function CefrCoach({
                 fontSize: 13.5,
                 lineHeight: 1.6,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? D_ACCENT : D_PAGE,
-                color: m.role === "student" ? "#fff" : D_INK,
+                background: m.role === "student" ? D_ACCENT_FILL : D_PAGE,
+                color: m.role === "student" ? WHITE : D_INK,
                 border: m.role === "student" ? "none" : `1px solid ${D_LINE}`,
               }}
             >
@@ -2629,7 +2646,13 @@ function Part1Questions({
                 padding: "9px 12px",
                 borderRadius: 9,
                 border: `1px solid ${border}`,
-                background: r ? (r.is_correct ? "#f0fdf4" : "#fef2f2") : filled ? D_ATINT2 : "#fff",
+                background: r
+                  ? r.is_correct
+                    ? "var(--ex-cf-ok-tint)"
+                    : "var(--ex-cf-bad-tint)"
+                  : filled
+                    ? D_ATINT2
+                    : PANEL,
                 cursor: "pointer",
                 fontFamily: JAKARTA,
               }}
@@ -2971,10 +2994,11 @@ function Part5Questions({
 // layout + coach), tinted with the CEFR violet so it sits beside the "Reading B"
 // runner as one product. It talks to the engine (callEngine) instead of the
 // IELTS essays API, and handles a multi-task paper with an in-header switcher.
-const W_ACCENT = D_ACCENT; // 7c3aed
+const W_ACCENT = D_ACCENT; // text, edges, bars
+const W_FILL = D_ACCENT_FILL; // anything carrying white — see `--tk-brand-fill`
 const W_SOFT2 = D_ATINT2; // faf5ff
 const W_LINE = D_LINE; // e2e8f0
-const W_SOFTLINE = "#eef1f5"; // faint inner divider
+const W_SOFTLINE = "var(--ex-cf-softline)"; // faint inner divider
 const W_CANVAS = D_PAGE; // f8fafc
 const W_INK = D_DARK; // 0f172a
 const W_BODY = D_INK; // 1e293b
@@ -3004,14 +3028,14 @@ function wPrimaryBtn(disabled: boolean): React.CSSProperties {
     padding: "0 18px",
     border: "none",
     borderRadius: 10,
-    background: W_ACCENT,
+    background: W_FILL,
     color: WHITE,
     fontFamily: JAKARTA,
     fontSize: 14,
     fontWeight: 700,
     cursor: disabled ? "default" : "pointer",
     opacity: disabled ? 0.55 : 1,
-    boxShadow: disabled ? "none" : "0 10px 22px -12px rgba(125,1,50,.7)",
+    boxShadow: disabled ? "none" : `0 10px 22px -12px ${withAlpha(W_FILL, 70)}`,
   };
 }
 const wGhostBtn: React.CSSProperties = {
@@ -3233,7 +3257,8 @@ function TaskStudio({
                 padding: "0 9px",
                 borderRadius: 6,
                 background: W_INK,
-                color: WHITE,
+                // ON_INK, not WHITE: W_INK is an ink and inverts to near-white in dark.
+                color: ON_INK,
                 fontSize: 11.5,
                 fontWeight: 700,
                 letterSpacing: ".05em",
@@ -3295,9 +3320,9 @@ function TaskStudio({
                       height: 28,
                       padding: "0 10px",
                       borderRadius: 8,
-                      border: `1px solid ${on ? W_ACCENT : W_LINE}`,
-                      background: on ? W_ACCENT : "#fff",
-                      color: on ? "#fff" : W_MUTED,
+                      border: `1px solid ${on ? W_FILL : W_LINE}`,
+                      background: on ? W_FILL : PANEL,
+                      color: on ? WHITE : W_MUTED,
                       fontFamily: JAKARTA,
                       fontWeight: 700,
                       fontSize: 12.5,
@@ -3359,10 +3384,10 @@ function TaskStudio({
                         fontFamily: JAKARTA,
                         fontWeight: 600,
                         fontSize: 13.5,
-                        color: urgent ? "#c2410c" : "#3B4150",
+                        color: urgent ? "var(--ex-err)" : SLATE_STRONG,
                       }}
                     >
-                      <Clock size={14} style={{ color: urgent ? "#c2410c" : W_FAINT }} />
+                      <Clock size={14} style={{ color: urgent ? "var(--ex-err)" : W_FAINT }} />
                       <span style={{ fontVariantNumeric: "tabular-nums" }}>{text}</span> left
                     </span>
                   );
@@ -3530,7 +3555,9 @@ function TaskStudio({
                       strokeDasharray={RING_C}
                       strokeDashoffset={ringOffset}
                       transform="rotate(-90 23 23)"
-                      style={{ transition: "stroke-dashoffset .35s ease" }}
+                      // The arc's colour is in `style` (W_ACCENT is a var()); 8cffac2 dropped
+                      // the `stroke=` attribute without moving it and the ring went empty.
+                      style={{ transition: "stroke-dashoffset .35s ease", stroke: W_ACCENT }}
                     />
                   </svg>
                   <div
@@ -3660,13 +3687,13 @@ function TaskStudio({
               padding: "12px 18px 12px 13px",
               borderRadius: 999,
               border: "none",
-              background: W_ACCENT,
+              background: W_FILL,
               color: WHITE,
               cursor: "pointer",
               fontFamily: JAKARTA,
               fontWeight: 700,
               fontSize: 14.5,
-              boxShadow: "0 14px 30px -12px rgba(125,1,50,.6)",
+              boxShadow: `0 14px 30px -12px ${withAlpha(W_FILL, 60)}`,
             }}
           >
             <span
@@ -3706,7 +3733,7 @@ function TaskStudio({
             width: 20,
             height: 20,
             borderRadius: "50%",
-            background: message ? "#FBE9DD" : "#E5F3EA",
+            background: message ? "var(--ex-warn-soft)" : "var(--ex-ok-soft)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -3910,7 +3937,7 @@ function WritingPromptPanel({
                   width: 22,
                   height: 22,
                   borderRadius: 6,
-                  background: lengthMet ? "#E5F3EA" : "#fff",
+                  background: lengthMet ? "var(--ex-ok-soft)" : PANEL,
                   border: lengthMet ? "none" : `2px solid ${D_ABORDER2}`,
                   display: "flex",
                   alignItems: "center",
@@ -4089,7 +4116,7 @@ function WritingCoach({
             width: 38,
             height: 38,
             borderRadius: 10,
-            background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
+            background: `linear-gradient(135deg,${HERO_B} 0%,${HERO_MID} 100%)`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -4168,8 +4195,8 @@ function WritingCoach({
                 fontSize: 13.5,
                 lineHeight: 1.6,
                 whiteSpace: "pre-wrap",
-                background: m.role === "student" ? W_ACCENT : W_CANVAS,
-                color: m.role === "student" ? "#fff" : W_BODY,
+                background: m.role === "student" ? W_FILL : W_CANVAS,
+                color: m.role === "student" ? WHITE : W_BODY,
                 border: m.role === "student" ? "none" : `1px solid ${W_LINE}`,
               }}
             >
@@ -4283,7 +4310,7 @@ function WritingCoach({
               height: 34,
               border: "none",
               borderRadius: 9,
-              background: W_ACCENT,
+              background: W_FILL,
               cursor: sending || !input.trim() ? "default" : "pointer",
               opacity: sending || !input.trim() ? 0.5 : 1,
               display: "flex",
@@ -4326,7 +4353,7 @@ function CefrGradingOverlay() {
         alignItems: "center",
         justifyContent: "center",
         padding: 20,
-        background: "rgba(15,23,42,.5)",
+        background: "var(--ex-scrim-cw)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
       }}
@@ -4337,7 +4364,7 @@ function CefrGradingOverlay() {
           background: PANEL,
           borderRadius: 22,
           overflow: "hidden",
-          boxShadow: "0 40px 90px -30px rgba(15,23,42,.7)",
+          boxShadow: "0 40px 90px -30px rgba(15,23,42,.7), 0 0 0 1px var(--ex-ring)",
         }}
       >
         <div
@@ -4359,7 +4386,7 @@ function CefrGradingOverlay() {
               alignItems: "center",
               justifyContent: "center",
               borderRadius: "50%",
-              background: "linear-gradient(135deg,#7D0132 0%,#5C0125 100%)",
+              background: `linear-gradient(135deg,${HERO_B} 0%,${HERO_MID} 100%)`,
               color: WHITE,
             }}
           >
@@ -4456,7 +4483,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
           gap: 16,
           padding: "18px 22px",
           borderRadius: 14,
-          background: `linear-gradient(135deg,${D_ACCENT} 0%,#5C0125 100%)`,
+          background: `linear-gradient(135deg,${HERO_B} 0%,${HERO_MID} 100%)`,
           color: WHITE,
           marginBottom: 18,
         }}
@@ -4532,7 +4559,7 @@ function WritingResult({ g }: { g: WritingGrade }) {
         </p>
       ) : null}
       <ResultBullets title="Strengths" items={g.strengths} color={GOOD} />
-      <ResultBullets title="Improve" items={g.improvements} color="#b45309" />
+      <ResultBullets title="Improve" items={g.improvements} color="var(--ex-cf-improve)" />
       {g.corrected_sentences?.length ? (
         <div style={{ marginTop: 14 }}>
           <ResultLabel>Suggested fixes</ResultLabel>
@@ -4637,7 +4664,7 @@ function ScoreBanner({ score, max, level }: { score: number; max: number; level?
   return (
     <div
       style={{
-        background: `linear-gradient(135deg,${D_ACCENT} 0%,#5C0125 100%)`,
+        background: `linear-gradient(135deg,${HERO_B} 0%,${HERO_MID} 100%)`,
         color: WHITE,
         borderRadius: 12,
         padding: "18px 24px",
@@ -4925,7 +4952,7 @@ function McqRow({
                 padding: "8px 12px",
                 borderRadius: 9,
                 border: `1px solid ${border}`,
-                background: graded && isAnswer ? "#f0fdf4" : isChosen ? D_ATINT2 : "#fff",
+                background: graded && isAnswer ? "var(--ex-cf-ok-tint)" : isChosen ? D_ATINT2 : PANEL,
                 cursor: graded ? "default" : "pointer",
               }}
             >

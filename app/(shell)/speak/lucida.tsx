@@ -143,6 +143,26 @@ const LUCIDA_CSS = `
   --sp-glass-3: #110E14;
   --sp-warm-tint: #FFF6F0;
   --sp-info-tint: #EEF4FF;
+  /* The live mock's examiner ORB: highlight → body → rim of a glass sphere. The
+     rim was --sp-ink, which is the right colour here and INVERTS in dark — the
+     sphere grew a white halo. So the orb owns its stops. */
+  --sp-orb-a: rgba(60, 52, 72, 0.85);
+  --sp-orb-b: #2C2535;
+  --sp-orb-c: #1A1520;
+  /* The dim behind the part-card dialog, and the frosted "You" dock the live
+     session pins to the bottom. Both were literals that stayed light on dark. */
+  --sp-scrim: rgba(26, 21, 32, 0.55);
+  --sp-dock: rgba(252, 251, 250, 0.9);
+  /* The tutor room. Its "stage" purpose is a DARK room in both themes, so its
+     ink and accent stay light and the ink on that accent stays dark — the
+     scale above would have inverted all three onto the dark stage. The other
+     rooms' frosted cards were literal near-white under an ink that inverts. */
+  --sp-stage-ink: #F5F0EE;
+  --sp-stage-accent: #CC5C82;
+  --sp-stage-on-accent: #17131C;
+  --sp-room-card: rgba(255, 253, 252, 0.86);
+  --sp-room-panel: rgba(255, 253, 252, 0.9);
+  --sp-room-chip: rgba(255, 253, 252, 0.6);
   /* Ink for the things these colours FILL. Same rule as the app palette: a fill
      and the text on it move in opposite directions between themes, so they are
      paired. --sp-on-ink is the label on an --sp-ink chip, which inverts. */
@@ -263,6 +283,19 @@ const LUCIDA_CSS = `
   --sp-glass-3: #201b29;
   --sp-warm-tint: #2e1f16;
   --sp-info-tint: #16203a;
+  /* Still lit from the top-left and darker at the rim — just lifted, so the
+     sphere reads against the dark stage instead of sinking into it. */
+  --sp-orb-a: rgba(128, 116, 148, 0.9);
+  --sp-orb-b: #4a4259;
+  --sp-orb-c: #2a2435;
+  --sp-scrim: rgba(0, 0, 0, 0.66);
+  --sp-dock: rgba(26, 22, 34, 0.9);
+  --sp-stage-ink: #efeaf3;
+  --sp-stage-accent: #e2804f;
+  --sp-stage-on-accent: #171320;
+  --sp-room-card: rgba(34, 29, 43, 0.86);
+  --sp-room-panel: rgba(34, 29, 43, 0.9);
+  --sp-room-chip: rgba(34, 29, 43, 0.6);
   --sp-on-ink: #171320;
   --color-on-success: #08150f;
   --color-on-amber: #2a1409;

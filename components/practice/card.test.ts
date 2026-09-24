@@ -117,6 +117,18 @@ function cssVars(theme: "light" | "dark"): Record<string, string> {
   return out;
 }
 
+/** The pill gloss's raw value in `theme` — a shadow list, so `cssVars` (hex
+ *  only) cannot read it. */
+function pillShadow(theme: "light" | "dark"): string {
+  const selector = theme === "light" ? ":root" : ".dark";
+  for (const b of css.matchAll(/(^|\n)(:root|\.dark)\s*\{([^}]*)\}/g)) {
+    if (b[2] !== selector) continue;
+    const m = /^\s*--pc-pill-shadow:\s*([^;]+);/m.exec(b[3]);
+    if (m) return m[1];
+  }
+  throw new Error(`--pc-pill-shadow has no ${theme} value in globals.css`);
+}
+
 /** `var(--x)` → its hex in `theme`; a literal hex passes through. */
 function resolve(value: string, theme: "light" | "dark"): string {
   const v = value.trim();
@@ -433,7 +445,17 @@ describe("the card still measures what the design canvas specifies", () => {
 describe("the status pill", () => {
   it("keeps its inset highlight on every tone", () => {
     // One shared boxShadow, so this is a single assertion rather than four.
-    expect(card).toContain("inset 0 1px 0 rgba(255,255,255,.9)");
+    expect(card).toContain('boxShadow: "var(--pc-pill-shadow)"');
+    expect(pillShadow("light")).toContain("inset 0 1px 0 rgba(255, 255, 255, 0.9)");
+  });
+
+  it("dims that highlight in dark instead of drawing a white rim", () => {
+    /* ⚠️ 90% white is a gloss on a pale pill and a bright RIM on a dark one —
+       every status pill on the hubs wore a white line across its top in dark
+       mode. Dimmed, not dropped: the chip still wants its edge. */
+    const alpha = /inset 0 1px 0 rgba\(255, 255, 255, ([\d.]+)\)/.exec(pillShadow("dark"));
+    expect(alpha, "the dark pill lost its inset highlight").not.toBeNull();
+    expect(Number(alpha![1])).toBeLessThanOrEqual(0.12);
   });
 
   it("offers the canvas's four states plus the gate", () => {

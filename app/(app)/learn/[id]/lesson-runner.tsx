@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { gradeClosed, type Answers } from "@/lib/lessons/grade";
 import {
+  DEEP,
   EMBER,
+  EMBER_OFF,
   FAINT,
   GHOST,
   GOOD_BG,
@@ -21,6 +23,7 @@ import {
   SANS,
   SOFT,
   STAGE_META,
+  SURFACE,
   TROUGH,
   TROUGH_DEEP,
   WARN_BG,
@@ -34,7 +37,7 @@ import type {
   LessonContent,
   OpenExercise,
 } from "@/lib/lessons/types";
-import { ON_INK, PANEL, WHITE } from "@/lib/theme/tokens";
+import { WHITE } from "@/lib/theme/tokens";
 
 /**
  * Doing a lesson: read it, answer it, hand it in, see what you got wrong.
@@ -264,7 +267,7 @@ export function LessonRunner({
           alignItems: "center",
           gap: 18,
           padding: "12px 22px",
-          background: "rgba(253,251,247,0.92)",
+          background: "var(--pa-bar)",
           backdropFilter: "blur(10px)",
           WebkitBackdropFilter: "blur(10px)",
           borderBottom: `1px solid ${HAIRLINE}`,
@@ -279,7 +282,7 @@ export function LessonRunner({
             width: 38,
             height: 38,
             borderRadius: 999,
-            background: PANEL,
+            background: SURFACE,
             display: "grid",
             placeItems: "center",
             color: MUTED,
@@ -370,7 +373,7 @@ export function LessonRunner({
               style={{
                 padding: "8px 14px",
                 borderRadius: 999,
-                background: PANEL,
+                background: SURFACE,
                 fontSize: 14,
                 fontWeight: 600,
                 color: READING,
@@ -392,7 +395,7 @@ export function LessonRunner({
                 padding: "9px 16px",
                 borderRadius: 999,
                 border: 0,
-                background: flags[current.id] ? WARN_BG : "#fff",
+                background: flags[current.id] ? WARN_BG : SURFACE,
                 color: flags[current.id] ? WARN_INK : MUTED,
                 fontFamily: "inherit",
                 fontSize: 14,
@@ -418,7 +421,7 @@ export function LessonRunner({
             <div
               style={{
                 borderRadius: 28,
-                background: PANEL,
+                background: SURFACE,
                 padding: "32px 34px",
                 boxShadow: LIFT_SHEET,
               }}
@@ -589,7 +592,7 @@ export function LessonRunner({
                 {[
                   { label: done ? "Right" : "Answered", swatch: GOOD_BG, ring: null },
                   { label: "Current", swatch: EMBER, ring: null },
-                  { label: "Flagged", swatch: "#fff", ring: "#f6c3b1" },
+                  { label: "Flagged", swatch: SURFACE, ring: "var(--pa-flag-ring)" },
                 ].map((l) => (
                   <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span
@@ -703,7 +706,7 @@ function Item({
   return (
     <div
       className="pa-pop pa-item"
-      style={{ borderRadius: 26, background: PANEL, boxShadow: LIFT_SHEET }}
+      style={{ borderRadius: 26, background: SURFACE, boxShadow: LIFT_SHEET }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span
@@ -758,7 +761,7 @@ function Item({
             style={{
               border: 0,
               borderRadius: 999,
-              background: PANEL,
+              background: SURFACE,
               outline: "none",
               fontFamily: "inherit",
               fontSize: 18,
@@ -766,7 +769,7 @@ function Item({
               maxWidth: "100%",
               padding: "8px 18px",
               color: INK,
-              boxShadow: "inset 0 0 0 2px #dbd6cb",
+              boxShadow: `inset 0 0 0 2px ${EMBER_OFF}`,
             }}
           />
           <span>{after}</span>
@@ -848,8 +851,8 @@ function Item({
                         placeItems: "center",
                         fontSize: 13.5,
                         fontWeight: 700,
-                        background: chosen && !isKey ? EMBER : "#fff",
-                        color: chosen && !isKey ? "#fff" : SOFT,
+                        background: chosen && !isKey ? EMBER : SURFACE,
+                        color: chosen && !isKey ? WHITE : SOFT,
                       }}
                     >
                       {String.fromCharCode(65 + i)}
@@ -1048,7 +1051,7 @@ function Feedback({
         padding: "20px 22px",
         borderRadius: 22,
         background: good === false ? WARN_BG : GOOD_BG,
-        color: good === false ? "#8f3a1e" : "#155442",
+        color: good === false ? "var(--pa-warn-deep)" : "var(--pa-good-deep)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700 }}>
@@ -1167,8 +1170,10 @@ function ScoreCard({
       className="pa-slide"
       style={{
         borderRadius: 28,
-        background: INK,
-        color: ON_INK,
+        // DEEP + WHITE, not INK + ON_INK: this card keeps its fixed light inks
+        // (#a9b8c0 below) in both themes, so its ground has to stay dark too.
+        background: DEEP,
+        color: WHITE,
         padding: "24px 28px",
         marginBottom: 22,
         display: "flex",
@@ -1290,8 +1295,8 @@ function SequenceAnswer({
                 placeItems: "center",
                 fontSize: 14,
                 fontWeight: 700,
-                background: on ? EMBER : "#fff",
-                color: on ? "#fff" : SOFT,
+                background: on ? EMBER : SURFACE,
+                color: on ? WHITE : SOFT,
               }}
             >
               {on ? at + 1 : ""}
@@ -1341,8 +1346,18 @@ function cellStyle(kind: "current" | "done" | "wrong" | "flag" | "todo"): React.
   if (kind === "done") return { ...base, background: GOOD_BG, color: GOOD_INK };
   if (kind === "wrong") return { ...base, background: WARN_BG, color: WARN_INK };
   if (kind === "flag")
-    return { ...base, background: PANEL, color: WARN_INK, boxShadow: "inset 0 0 0 2px #f6c3b1" };
-  return { ...base, background: PANEL, color: GHOST, boxShadow: "inset 0 0 0 1px #e4e0d6" };
+    return {
+      ...base,
+      background: SURFACE,
+      color: WARN_INK,
+      boxShadow: "inset 0 0 0 2px var(--pa-flag-ring)",
+    };
+  return {
+    ...base,
+    background: SURFACE,
+    color: GHOST,
+    boxShadow: "inset 0 0 0 1px var(--pa-cell-line)",
+  };
 }
 
 const railButton: React.CSSProperties = {

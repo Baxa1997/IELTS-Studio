@@ -92,6 +92,8 @@ describe("the runtime palette", () => {
     ["--pg-", "--pg-"],
     ["--sp-", "--sp-"],
     ["--rp-", "--rp-"],
+    ["--ex-", "--ex-"],
+    ["--pa-", "--pa-"],
     ["--color-", "--color-"],
   ] as const) {
     it(`defines every ${label} token in BOTH light and dark`, () => {
@@ -150,6 +152,36 @@ describe("the runtime palette", () => {
     // apart. If they ever match in dark, the split has been undone.
     expect(vars("light")["--tk-brand-fill"]).toBe(vars("light")["--tk-brand"]);
     expect(vars("dark")["--tk-brand-fill"]).not.toBe(vars("dark")["--tk-brand"]);
+  });
+
+  /* ── Practice AI prints on paper ─────────────────────────────────────────
+   *
+   * The worksheet and the lesson page print through `--pa-*`. Printed from dark
+   * mode they would put the DARK column's near-white ink on white paper, so an
+   * `@media print` block re-declares the light values under `.dark`. That block
+   * is a hand-kept copy of `:root`, and a copy drifts: a token added to one and
+   * not the other prints wrong for exactly the teachers who use dark mode, and
+   * nobody prints a worksheet to check. So the two are compared name by name. */
+  it("pins every --pa- token to its LIGHT value when printing", () => {
+    const light = new Map<string, string>();
+    for (const b of css.matchAll(/(^|\n):root\s*\{([^{}]*)\}/g)) {
+      for (const m of b[2].matchAll(/^\s*(--pa-[a-z0-9-]+):\s*([^;]+);/gm)) {
+        light.set(m[1], m[2].trim());
+      }
+    }
+    const print = /@media print\s*\{\s*\.dark\s*\{([^{}]*)\}/.exec(css);
+    expect(print, "no `@media print { .dark { … } }` block re-pinning --pa-*").not.toBeNull();
+    const printed = new Map<string, string>();
+    for (const m of print![1].matchAll(/^\s*(--pa-[a-z0-9-]+):\s*([^;]+);/gm)) {
+      printed.set(m[1], m[2].trim());
+    }
+
+    expect(light.size, "no --pa- tokens found at all").toBeGreaterThan(20);
+    expect([...light.keys()].filter((n) => !printed.has(n)), "missing from print").toEqual([]);
+    expect([...printed.keys()].filter((n) => !light.has(n)), "print-only").toEqual([]);
+    for (const [name, value] of light) {
+      expect(printed.get(name), `${name} prints differently from light`).toBe(value);
+    }
   });
 
   for (const source of ["lib/theme/tokens.ts", "app/_landing/design.ts"]) {

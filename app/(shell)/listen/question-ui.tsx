@@ -55,18 +55,20 @@ export function FlagButton({ flagged, onClick }: { flagged: boolean; onClick: ()
         border: "none",
         cursor: "pointer",
         flexShrink: 0,
-        color: flagged ? RUN.flag : "#C9CDD4",
+        color: flagged ? RUN.flag : RUN.bIdle,
       }}
     >
+      {/* ⚠️ The fill goes in `style`, not the `fill` attribute: it is a token,
+          and a var() does not resolve in an SVG presentation attribute. */}
       <svg
         width="16"
         height="16"
         viewBox="0 0 24 24"
-        fill={flagged ? RUN.flagFill : "none"}
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        style={{ fill: flagged ? RUN.flagFill : "none" }}
       >
         <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
         <line x1="4" y1="22" x2="4" y2="15" />

@@ -2,10 +2,12 @@
 
 import { Loader2 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
-import { SANS } from "@/lib/theme/tokens";
+import { HERO_A, HERO_B, HERO_C, HERO_MID, SANS } from "@/lib/theme/tokens";
 
-export const AI_AURORA_GRADIENT =
-  "linear-gradient(130deg,#2C0013 0%,#5C0125 18%,#5C0125 42%,#9B1044 62%,#7D0132 82%,#2C0013 100%)";
+/** The hero stops, not hex: this banner carries white copy, so in dark it has to
+ *  go the deep orange the other hero panels go — a literal kept it burgundy on
+ *  an orange-themed page. Light is byte-identical to the hex it replaced. */
+export const AI_AURORA_GRADIENT = `linear-gradient(130deg,${HERO_A} 0%,${HERO_MID} 18%,${HERO_MID} 42%,${HERO_C} 62%,${HERO_B} 82%,${HERO_A} 100%)`;
 
 function Spark({ size, fill, style }: { size: number; fill: string; style: CSSProperties }) {
   return (
@@ -310,7 +312,7 @@ export function AiGenerateButton({
   busy = false,
   generating = false,
   onClick,
-  color = "#5C0125",
+  color = HERO_MID,
   minWidth,
 }: {
   label: string;
@@ -318,7 +320,8 @@ export function AiGenerateButton({
   busy?: boolean;
   generating?: boolean;
   onClick: () => void;
-  /** Icon/text colour on the white pill (defaults to the design indigo). */
+  /** Icon/text colour on the white pill. The two glyphs draw in `currentColor`,
+   *  so a token is safe here — it never reaches an SVG attribute. */
   color?: string;
   /** Reserve width so swapping label↔busyLabel doesn't shift the button. */
   minWidth?: number;
@@ -359,13 +362,13 @@ export function AiGenerateButton({
       ) : (
         <>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden>
-            <path d="M8 0L9.6 6.4L16 8L9.6 9.6L8 16L6.4 9.6L0 8L6.4 6.4L8 0Z" fill={color} />
+            <path d="M8 0L9.6 6.4L16 8L9.6 9.6L8 16L6.4 9.6L0 8L6.4 6.4L8 0Z" fill="currentColor" />
           </svg>
           <span>{label}</span>
           <svg width="13" height="13" viewBox="0 0 15 15" fill="none" aria-hidden>
             <path
               d="M2 7.5H13M13 7.5L8.5 3M13 7.5L8.5 12"
-              stroke={color}
+              stroke="currentColor"
               strokeWidth="1.7"
               strokeLinecap="round"
               strokeLinejoin="round"

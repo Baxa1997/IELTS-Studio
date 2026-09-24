@@ -269,6 +269,9 @@
   --tk-hero-a: #2c0013;
   --tk-hero-b: #7d0132;
   --tk-hero-c: #9b1044;
+  /* The stop between A and B in the practice hubs' "generate" aurora. Same
+     job, same rule: it carries white, so in dark it stays deep. */
+  --tk-hero-mid: #5c0125;
 
   /* brand — staff indigo (and the three unresolved variants it drifted into) */
   --tk-indigo: #3b43b5;
@@ -535,6 +538,12 @@
 
   --pc-amber: #9a5b12;
   --pc-rule: rgba(28, 27, 46, 0.07);
+  /* The divider beside a level heading ("Band 5–6 ─────"). */
+  --pc-level-rule: rgba(28, 27, 46, 0.06);
+  /* The status pill's gloss — the 1px white inset is what makes it read as a
+     chip. ⚠️ At 90% white it is a bright RIM on a dark pill, so dark dims it
+     rather than dropping it (./card.test.ts pins both). */
+  --pc-pill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 1px 2px rgba(20, 17, 15, 0.12);
 
   /* Inner surfaces: the prompt/passage quote block, the small meta chips, the
      progress track — all near-whites that have to become near-blacks, and all
@@ -671,6 +680,7 @@
   --tk-hero-a: #1b0b04;
   --tk-hero-b: #8f3413;
   --tk-hero-c: #b2451b;
+  --tk-hero-mid: #5c2410; /* = --mk-hero-mid: the landing hero's same stop */
 
   --tk-indigo: #7c84e8;
   --tk-indigo-deep: #9098f0;
@@ -837,6 +847,8 @@
 
   --pc-amber: #e0a84a;
   --pc-rule: rgba(255, 255, 255, 0.1);
+  --pc-level-rule: rgba(255, 255, 255, 0.08);
+  --pc-pill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.45);
 
   --pc-well: #1c1b19;
   --pc-well-line: #2e2d2b;
@@ -1111,6 +1123,696 @@
   --sh-danger-wash: #3a1a1a;
 }
 
+/* ── THE EXAM RUNNERS (`--ex-*`) ───────────────────────────────────────────
+ *
+ * The in-test screens — the listening runner, both reading runners, the
+ * writing studio and the CEFR papers — plus the feedback they hand over to.
+ * They were the last surfaces still drawn in literals, and they were drawn in
+ * their OWN literals: each came from a different design handoff, so the
+ * listening runner's ink is #1a1a24, the CEFR paper's is #0f172a, the reading
+ * review's red is #dc2626. None of those are on the `--tk-` ladder.
+ *
+ * ⚠️ WHY THEY WERE BROKEN RATHER THAN MERELY LIGHT. Every runner had ALREADY
+ * moved some of its surfaces onto `PANEL`, so dark mode reached them halfway:
+ * the ground went black and the question text, answer boxes and option cards
+ * kept their light values. Navy text on a black page, white fields floating on
+ * it. That is the failure this block exists to end. The runners were once
+ * left light on purpose, as "paper", pending a design decision; the owner took
+ * it on 2026-09-23 (they follow the theme), and a runner cannot be paper when
+ * half of it is already ink anyway.
+ *
+ * Same contract as every palette above: the LIGHT column is byte-for-byte the
+ * literal each value replaced (light mode must not move — a difference there is
+ * a bug), every name is defined in both blocks, and nothing appends alpha in JS.
+ * Where a literal already had a byte-identical `--tk-` token, the file uses that
+ * token instead and it is not repeated here.
+ *
+ * ⚠️ NEVER HAND ONE OF THESE TO AN SVG PRESENTATION ATTRIBUTE (`fill=`,
+ * `stroke=`, or lucide's `color=` prop, which becomes `stroke=`). A var() does
+ * not resolve there. Put it in `style`. The exam MAP in the listening runner is
+ * the deliberate exception: a printed plan, fixed in both themes, drawn in hex.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  /* shared by more than one runner */
+  --ex-red: #dc2626;
+  --ex-bad-tint: #fdf2f2; /* a wrong answer's field / option ground */
+  --ex-bad-bg: #fdecec; /* a wrong-answer chip, the timer's warning state */
+  --ex-bad-line: #e6b0b0; /* a wrong answer's field edge */
+  --ex-idle: #c9cdd4; /* an unticked box, an unset flag, a disabled glyph */
+  /* The plain error alert every practice screen can show (UpgradeNotice). */
+  --ex-alert-ink: #b4231f;
+  --ex-alert-bg: #fef2f2;
+  --ex-alert-line: #fecaca;
+  /* The hub chrome's two ink-tinted hairlines. Kept as washes rather than
+     solid greys, so they read the same on the canvas and on a card. */
+  --ex-hub-rule: rgba(28, 27, 46, 0.1);
+  --ex-hub-pill-line: rgba(28, 27, 46, 0.14);
+
+  /* The band number and its tier chip on every result screen — lib/ui/band.ts.
+     Named by tier (8 = 8+, 2 = under 3), each fg paired with its own bg. */
+  --ex-band-8-fg: #15803d;
+  --ex-band-8-bg: #e6f5eb;
+  --ex-band-7-fg: #16a34a;
+  --ex-band-7-bg: #e9f7ee;
+  --ex-band-6-fg: #4338ca;
+  --ex-band-6-bg: #ecebfb;
+  --ex-band-5-fg: #d97706;
+  --ex-band-5-bg: #fcf1de;
+  --ex-band-4-fg: #ea580c;
+  --ex-band-4-bg: #fdeadd;
+  --ex-band-3-fg: #dc2626;
+  --ex-band-3-bg: #fce4e0;
+  --ex-band-2-fg: #b91c1c;
+  --ex-band-2-bg: #fbe0dd;
+
+  /* Learner-wide stylesheet states (globals.css rules further down): the
+     loading shimmer, the "AI is working" sweep, hover edges and washes, the
+     input placeholder. */
+  --ex-skel: #ece8da;
+  --ex-skel-shine: #f5f2e8;
+  --ex-ai-a: #f5d9e3;
+  --ex-ai-b: #ebbccd;
+  --ex-ai-c: #f0cbd9;
+  --ex-ai-d: #e9c2d2;
+  --ex-hover-line: #c8cbf0;
+  --ex-ghost-hover: #faf9f1;
+  --ex-row-hover: #fbfaf4;
+  --ex-placeholder: #a8a79a;
+  /* Floating panels: the scrim behind a dialog, and a 1px ring the dialog
+     draws in dark only. A soft shadow does nothing on a near-black page, so
+     without the ring the dialog had no edge; transparent here = no change. */
+  --ex-ring: transparent;
+  --ex-scrim-rd: rgba(30, 27, 46, 0.45);
+  /* Sticky bars that content scrolls under — they keep their translucency. */
+  --ex-glass: rgba(251, 251, 253, 0.88);
+  --ex-glass-strong: rgba(251, 251, 253, 0.92);
+  /* A filled button while it is busy ("Marking…") — the brand, washed out. */
+  --ex-fill-busy: #cc5c82;
+
+  /* reading runners */
+  --ex-err: #c2410c;
+  --ex-amber-ink: #c77c09;
+  --ex-bad-edge: #f3b4b4;
+  --ex-rd-green: #2f8f5b;
+  --ex-rd-amber: #f59e0b;
+  --ex-rd-exit-hover: #f6f6fa;
+  --ex-rd-pill-line: #e4e5ee;
+  --ex-rd-pill-hover-line: #c6c9e8;
+  --ex-rd-pill-hover: #fafafd;
+  --ex-rd-split: #f0eff5;
+  --ex-select-line: #dad8c9;
+  --ex-flag-bg: #fef6e7;
+  --ex-flag-line: #f6d58a;
+  --ex-bubble: #f4f2e8; /* the coach's reply bubble */
+  /* The graded review: a card per question, tinted by verdict. Each verdict
+     is a set — edge, card, ring, pill — and they are never crossed. */
+  --ex-warn: #d97706;
+  --ex-ok-edge: #16a34a;
+  --ex-ok-card: #f6fbf7;
+  --ex-ok-ring: #e4f0e8;
+  --ex-ok-pill: #e6f5eb;
+  --ex-ok-wash: #ebf7f0;
+  --ex-bad-card: #fdf5f3;
+  --ex-bad-ring: #f4dad2;
+  --ex-bad-pill: #fce4e0;
+
+  /* writing studio + the essay feedback page */
+  --ex-sep: #c7c3b4; /* the "·" between header crumbs */
+  --ex-ok-soft: #e5f3ea;
+  --ex-warn-soft: #fbe9dd;
+  --ex-ws-icon: #9a9684;
+  --ex-ws-clock: #8a897c;
+  --ex-dim: #9a998c;
+  --ex-scrim-ws: rgba(20, 22, 40, 0.46);
+  /* ⚠️ The feedback page's GROUND. It was a literal cream under INK text,
+     which goes near-white in dark — the whole page read as blank. */
+  --ex-fb-canvas: #f4f1e7;
+  --ex-fb-rule: #eee9da;
+  --ex-fb-line: #efece0;
+  --ex-fb-card-line: #eae6d8;
+  --ex-fb-track: #eeeae0;
+  --ex-fb-tag: #9a8f77;
+  --ex-fb-amber: #9a7b2a;
+  --ex-fb-amber-deep: #9a6a12;
+  --ex-fb-amber-bg: #f6ead0;
+  /* The essay's mark inks (components/writing/annotations.ts). */
+  --ex-ann-spelling: #a8362a;
+  --ex-ann-grammar: #946813;
+  --ex-ann-cohesion: #256b5c;
+  /* The Task 1 chart (components/writing/figure.tsx): grid, axis, and eight
+     categorical series in order. */
+  --ex-fig-grid: #ece9dd;
+  --ex-fig-axis: #c7c3b4;
+  --ex-fig-1: #7d0132;
+  --ex-fig-2: #1c7a4f;
+  --ex-fig-3: #c7853a;
+  --ex-fig-4: #9b1044;
+  --ex-fig-5: #2c7a9a;
+  --ex-fig-6: #9a4f8e;
+  --ex-fig-7: #b5852a;
+  --ex-fig-8: #4a505c;
+  --ex-scrim-fig: rgba(20, 24, 40, 0.55);
+
+  /* CEFR / Multilevel papers (app/(shell)/cefr) — the "Reading B" slate set.
+     ⚠️ `head` and `ink` share a light value and are NOT the same token: one
+     is a ground that carries white, the other is text. See D_HEAD / D_DARK. */
+  --ex-cf-head: #0f172a;
+  --ex-cf-ink: #0f172a;
+  --ex-cf-body: #1e293b;
+  --ex-cf-page: #f8fafc;
+  --ex-cf-slate: #64748b;
+  --ex-cf-slate2: #94a3b8;
+  --ex-cf-slate3: #334155;
+  --ex-cf-softline: #eef1f5;
+  --ex-cf-gap: #cc5c82;
+  --ex-cf-ok-tint: #f0fdf4;
+  --ex-cf-bad-tint: #fef2f2;
+  --ex-cf-improve: #b45309;
+  /* The timer / score chip ON the dark header, and its inks. */
+  --ex-cf-chip: rgba(125, 1, 50, 0.28);
+  --ex-cf-chip-line: rgba(125, 1, 50, 0.45);
+  --ex-cf-chip-icon: #cc5c82;
+  --ex-cf-head-ink: #f0d3de;
+  --ex-scrim: rgba(20, 20, 40, 0.5);
+  --ex-scrim-cw: rgba(15, 23, 42, 0.5);
+  /* Speaking's quit-confirmation dim. Global, not `--sp-`: the dialog is not
+     guaranteed to render inside the `.lucida` scope that defines those. */
+  --ex-scrim-sp: rgba(23, 22, 40, 0.45);
+
+  /* The placement diagnostic (/diagnostic). */
+  --ex-dg-track: #efeee2;
+  --ex-dg-ok-bg: #e9f4ee;
+  --ex-dg-ok-line: #c6e3d2;
+  --ex-dg-ok-ink: #1f6b44;
+  --ex-dg-ok-body: #3f6e54;
+  --ex-dg-chip-line: #eceadc;
+  /* A center student's homework cards (components/assignments/assigned-hub). */
+  --ex-hw-due: #e2685c;
+  --ex-hw-overdue: #b3261e;
+  --ex-hw-overdue-line: #e4a9a4;
+  --ex-hw-done-rule: #cfe6d9;
+  --ex-hw-amber: #b9791a;
+  --ex-hw-amber-bg: #fdf3e3;
+
+  /* listening runner */
+  --ex-lr-desk: #f4f4f7;
+  --ex-lr-strip: #fffafb;
+  --ex-lr-focus: #dfa3ba;
+  --ex-lr-line: #ececf1;
+  --ex-lr-hair: #f2f2f6;
+  --ex-lr-field-line: #e6e6ed;
+  --ex-lr-t1: #1a1a24;
+  --ex-lr-t2: #6b6f7e;
+  --ex-lr-t3: #9497a4;
+  --ex-lr-t4: #b9bcc9;
+  --ex-lr-t5: #c7cad6;
+  --ex-lr-ok: #1b9e54;
+  --ex-lr-ok-bg: #e7f7ee;
+  --ex-lr-ok-line: #c4ead3;
+  --ex-lr-ok-tint: #f4fbf7;
+  --ex-lr-flag: #e0952f;
+  --ex-lr-flag-ink: #b9772a;
+  --ex-lr-flag-bg: #fdf3e3;
+  --ex-lr-flag-line: #f2d9a8;
+  --ex-lr-flag-fill: #f0c06a;
+  --ex-lr-report-bg: #fef6f6;
+  --ex-lr-report-line: #f3c4c4;
+  /* The audio strip. It sits on BRAND_DARKEST, which stays dark in both
+     themes, so its inks are light in both — but its RAIL is the trap: it was
+     BRAND_DEEP, which goes LIGHTER in dark (hover lifts on a dark page), so the
+     unplayed track turned bright orange and the played part dark brown. The
+     scrubber read backwards. */
+  --ex-strip-line: #4a0620;
+  --ex-strip-ink: #fff7fa;
+  --ex-strip-muted: #d9bec8;
+  --ex-strip-rail: #5c0125;
+  --ex-strip-fill: #e3a7bd;
+  --ex-strip-play: #f2c3d3;
+  --ex-strip-pulse: rgba(126, 167, 255, 0.35);
+}
+
+.dark {
+  --ex-red: #e87b70;
+  --ex-bad-tint: #2c1715;
+  --ex-bad-bg: #3a1d1a;
+  --ex-bad-line: #6b322c;
+  --ex-idle: #4d4c4a;
+  --ex-alert-ink: #f0928a;
+  --ex-alert-bg: #2e1715;
+  --ex-alert-line: #4a2723;
+  --ex-hub-rule: rgba(255, 255, 255, 0.1);
+  --ex-hub-pill-line: rgba(255, 255, 255, 0.14);
+
+  /* Each tier keeps its hue; the number lightens to read on a dark card and
+     the chip goes deep under it. Every fg clears 6:1 on its own chip. */
+  --ex-band-8-fg: #4ec98a;
+  --ex-band-8-bg: #133122;
+  --ex-band-7-fg: #5fd394;
+  --ex-band-7-bg: #14301f;
+  --ex-band-6-fg: #9d97f5;
+  --ex-band-6-bg: #1f1e3d;
+  --ex-band-5-fg: #eaa64a;
+  --ex-band-5-bg: #33260f;
+  --ex-band-4-fg: #f08a55;
+  --ex-band-4-bg: #35200f;
+  --ex-band-3-fg: #ef7f75;
+  --ex-band-3-bg: #3a1b18;
+  --ex-band-2-fg: #e87b70;
+  --ex-band-2-bg: #361917;
+
+  --ex-skel: #1f1e1c;
+  --ex-skel-shine: #2a2927;
+  /* The sweep goes from pale pinks to deep brand browns — still a visible
+     sweep, now under light text. */
+  --ex-ai-a: #2a1610;
+  --ex-ai-b: #3d1d10;
+  --ex-ai-c: #33190f;
+  --ex-ai-d: #3a1c12;
+  --ex-hover-line: #4b4868;
+  --ex-ghost-hover: #22211f;
+  --ex-row-hover: #1f1e1c;
+  --ex-placeholder: #6f6e6c;
+  --ex-ring: #34332f;
+  --ex-scrim-rd: rgba(0, 0, 0, 0.66);
+  --ex-glass: rgba(24, 23, 21, 0.88);
+  --ex-glass-strong: rgba(24, 23, 21, 0.92);
+  --ex-fill-busy: #7a3a1f; /* white "Marking…" still clears 7:1 */
+
+  --ex-err: #f08a6a;
+  --ex-amber-ink: #e3a646;
+  --ex-bad-edge: #5a2b27;
+  --ex-rd-green: #4ec98a;
+  --ex-rd-amber: #f0b454;
+  --ex-rd-exit-hover: #22211f;
+  --ex-rd-pill-line: #3a3937;
+  --ex-rd-pill-hover-line: #55536e;
+  --ex-rd-pill-hover: #1f1e1c;
+  --ex-rd-split: #2b2a28;
+  --ex-select-line: #403f3d;
+  --ex-flag-bg: #2e2314;
+  --ex-flag-line: #5a4520;
+  --ex-bubble: #242321;
+  --ex-warn: #eaa64a;
+  --ex-ok-edge: #4ec98a;
+  --ex-ok-card: #13201a;
+  --ex-ok-ring: #1c3a2b;
+  --ex-ok-pill: #173524;
+  --ex-ok-wash: #13291d;
+  --ex-bad-card: #231413;
+  --ex-bad-ring: #4a2621;
+  --ex-bad-pill: #3a1b18;
+
+  --ex-sep: #5a5956;
+  --ex-ok-soft: #16301f;
+  --ex-warn-soft: #36200f;
+  --ex-ws-icon: #8b8a87;
+  --ex-ws-clock: #8b8a87;
+  --ex-dim: #8f8e8b;
+  --ex-scrim-ws: rgba(0, 0, 0, 0.66);
+  --ex-fb-canvas: #100f0d;
+  --ex-fb-rule: #2b2a28;
+  --ex-fb-line: #2e2d2b;
+  --ex-fb-card-line: #302f2d;
+  --ex-fb-track: #2c2b29;
+  --ex-fb-tag: #a89d86;
+  --ex-fb-amber: #e0b458;
+  --ex-fb-amber-deep: #e8b458;
+  --ex-fb-amber-bg: #2e2314;
+  --ex-ann-spelling: #f0877a;
+  --ex-ann-grammar: #e0b458;
+  --ex-ann-cohesion: #5cc4ad;
+  /* Each series keeps its hue and lifts to read on a dark card; the three
+     warm ones (orange, tan, olive) are spread apart so they stay separable. */
+  --ex-fig-grid: #2c2b29;
+  --ex-fig-axis: #5a5956;
+  --ex-fig-1: #e8703a;
+  --ex-fig-2: #4ec98a;
+  --ex-fig-3: #e3a35f;
+  --ex-fig-4: #e8889f;
+  --ex-fig-5: #6bb6d8;
+  --ex-fig-6: #c58fd0;
+  --ex-fig-7: #c9c064;
+  --ex-fig-8: #a4a3a1;
+  --ex-scrim-fig: rgba(0, 0, 0, 0.7);
+
+  /* The header stays a dark band — one step up from the page, so it still
+     reads as a bar — and everything written ON it stays light. */
+  --ex-cf-head: #1d1c1a;
+  --ex-cf-ink: #eeedeb;
+  --ex-cf-body: #dedddb;
+  --ex-cf-page: #100f0d;
+  --ex-cf-slate: #a4a3a1;
+  --ex-cf-slate2: #858482;
+  --ex-cf-slate3: #d2d1cf;
+  --ex-cf-softline: #262523;
+  --ex-cf-gap: #b85a30;
+  --ex-cf-ok-tint: #14211a;
+  --ex-cf-bad-tint: #2c1715;
+  --ex-cf-improve: #e8a445;
+  --ex-cf-chip: rgba(216, 93, 31, 0.2);
+  --ex-cf-chip-line: rgba(216, 93, 31, 0.42);
+  --ex-cf-chip-icon: #e8804f;
+  --ex-cf-head-ink: #f5cdb4;
+  --ex-scrim: rgba(0, 0, 0, 0.66);
+  --ex-scrim-cw: rgba(0, 0, 0, 0.66);
+  --ex-scrim-sp: rgba(0, 0, 0, 0.66);
+
+  --ex-dg-track: #2c2b29;
+  --ex-dg-ok-bg: #14291d;
+  --ex-dg-ok-line: #1e4534;
+  --ex-dg-ok-ink: #5cc99a;
+  --ex-dg-ok-body: #9fcdb4;
+  --ex-dg-chip-line: #302f2d;
+  --ex-hw-due: #e8806f;
+  --ex-hw-overdue: #e87b70;
+  --ex-hw-overdue-line: #6b322c;
+  --ex-hw-done-rule: #1e4534;
+  --ex-hw-amber: #e0a84a;
+  --ex-hw-amber-bg: #2e2314;
+
+  /* The text ladder keeps its order and lands on the `--tk-` dark ladder at
+     the top; the faint steps stay above their light-mode contrast (t3 2.9:1
+     light → 4.6:1 here, t4 1.9 → 3.1, t5 1.6 → 2.3), never below. */
+  --ex-lr-desk: #100f0d; /* the part-tab track: a step BELOW the panel, as in light */
+  --ex-lr-strip: #1e1714;
+  --ex-lr-focus: #a8532b;
+  --ex-lr-line: #302f2d;
+  --ex-lr-hair: #262523;
+  --ex-lr-field-line: #403f3d;
+  --ex-lr-t1: #eeedeb;
+  --ex-lr-t2: #a4a3a1;
+  --ex-lr-t3: #82817f;
+  --ex-lr-t4: #666563;
+  --ex-lr-t5: #52514f;
+  --ex-lr-ok: #3fbf85;
+  --ex-lr-ok-bg: #122a1f;
+  --ex-lr-ok-line: #1e4534;
+  --ex-lr-ok-tint: #14211a;
+  --ex-lr-flag: #e8a445;
+  --ex-lr-flag-ink: #e0a84a;
+  --ex-lr-flag-bg: #2e2314;
+  --ex-lr-flag-line: #4a3a1c;
+  --ex-lr-flag-fill: #d99a3c;
+  --ex-lr-report-bg: #2a1614;
+  --ex-lr-report-line: #4a2723;
+  --ex-strip-line: #3a1a0c;
+  --ex-strip-ink: #f7efe9;
+  --ex-strip-muted: #cdb3a4;
+  --ex-strip-rail: #4a2416; /* dim track … */
+  --ex-strip-fill: #ee8552; /* … bright progress, as in light */
+  --ex-strip-play: #c2471b; /* carries a white glyph: 4.99:1 */
+  --ex-strip-pulse: rgba(238, 133, 82, 0.35);
+}
+
+/* ── PRACTICE AI (`--pa-*`) ────────────────────────────────────────────────
+ *
+ * lib/lessons/theme.ts, the lesson prose (`.lp-lesson`, `.lp-section`, `.lp-l1`)
+ * and the `.pa-*` states. One palette for the teacher's library, the lesson
+ * page, the student runner (/learn) and the public share page.
+ *
+ * ⚠️ IT WAS PLAIN HEX ON PURPOSE, AND THAT STOPPED BEING SAFE. The module chose
+ * constants over CSS variables so a stale stylesheet could never cost it its
+ * colours. But its screens also took `PANEL` / `ON_INK` from the app palette,
+ * and those DO follow the theme: in dark the lesson sheet went black under the
+ * palette's fixed navy text, and the teacher's "Practice" rail put dark ON_INK
+ * text on its fixed navy fill. Half a theme reads as broken; the palette follows
+ * the theme now. Light values are the old hex exactly.
+ *
+ * `--pa-deep` is the exception that stays DARK in both: the panels that carry
+ * fixed light inks (the rail, the score card). Everything else inverts.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --pa-paper: #fdfbf7;
+  --pa-surface: #ffffff;
+  --pa-wash: #f6f4ef;
+  --pa-wash-warm: #f8f6f1;
+  --pa-trough: #f1efe9;
+  --pa-trough-deep: #eeece6;
+
+  --pa-ink: #14232e;
+  --pa-body: #3f5057;
+  --pa-reading: #4d5f68;
+  --pa-muted: #5c6b73;
+  --pa-soft: #6f8087;
+  --pa-faint: #8b969d;
+  --pa-ghost: #9aa5ab;
+
+  --pa-ember: #ec6a45;
+  --pa-ember-deep: #d95936;
+  --pa-ember-off: #dbd6cb;
+  --pa-teal: #1f6f6b;
+
+  --pa-good-bg: #e4f1ea;
+  --pa-good-ink: #1c6b52;
+  /* GOOD as a FILL under white — the same green in light, deeper in dark, where
+     the ink lightens to read as text and white would stop clearing it. */
+  --pa-good-fill: #1c6b52;
+  --pa-good-deep: #155442;
+  --pa-good-ring: #79b79c;
+  --pa-warn-bg: #fdefe9;
+  --pa-warn-ink: #c1502f;
+  --pa-warn-deep: #8f3a1e;
+  --pa-note-bg: #e9eefb;
+  --pa-note-ink: #3c4fa0;
+  --pa-note-alt-bg: #f0eefb;
+  --pa-note-alt-ink: #4b46a8;
+
+  --pa-hairline: rgba(20, 35, 46, 0.07);
+  --pa-rule: #e8e5de;
+  --pa-cell-line: #e4e0d6;
+  --pa-check-line: #d8d3c8;
+  --pa-flag-ring: #f6c3b1;
+  --pa-sep: #94a0a6;
+  --pa-tag-ink: #46585f;
+  --pa-mic-ink: #4a5c66;
+  --pa-step-off: #dcd8cf;
+  --pa-step-ink-off: #a6b0b6;
+
+  --pa-sky-1: #a9cfcf;
+  --pa-sky-2: #bcd9d6;
+  --pa-sky-3: #e8ebe2;
+  --pa-sky-soft: #dfeae4;
+  --pa-sky-ink: #33505c;
+
+  --pa-deep: #14232e;
+  --pa-ink-hover: #22384a;
+  --pa-ghost-hover: #e7e4dc;
+  --pa-shimmer: #eeeeeb;
+  --pa-shimmer-shine: #f6f5f2;
+  /* Frosted bars and cards over the paper; they keep their translucency. */
+  --pa-bar: rgba(253, 251, 247, 0.92);
+  --pa-bar-soft: rgba(253, 251, 247, 0.9);
+  --pa-glass: rgba(255, 255, 255, 0.92);
+  --pa-glass-soft: rgba(255, 255, 255, 0.85);
+  --pa-glass-faint: rgba(255, 255, 255, 0.8);
+  --pa-scrim: rgba(20, 35, 46, 0.42);
+
+  /* The lesson prose — what the model's HTML is dressed in. */
+  --pa-prose: #2a2d34;
+  --pa-prose-ink: #15171c;
+  --pa-prose-body: #3f4147;
+  --pa-prose-num: #b9b5ac;
+  --pa-prose-faint: #7c7a93;
+  --pa-prose-rule: #efede8;
+  --pa-prose-line: #e7e5df;
+  --pa-prose-well: #fafaf8;
+  --pa-prose-hover: #f3f2ee;
+  --pa-code-bg: #f1efea;
+  --pa-l1-bg: #f5f8f8;
+  --pa-l1-line: #e4e9ea;
+  --pa-l1-ink: #4a6a70;
+  --pa-l1-body: #33474b;
+  --pa-tip-bg: #eef4f5;
+  --pa-tip-line: #cfe0e3;
+  --pa-warn-box: #fbeee0;
+  --pa-warn-box-line: #e9cda6;
+  --pa-key-bg: #f3f1fb;
+  --pa-key-line: #d8d4f0;
+  --pa-wrong-ink: #8a7f79;
+  --pa-timeline-bg: #fbf6f2;
+  --pa-timeline-rule: #e0bfa8;
+}
+
+.dark {
+  --pa-paper: #100f0d;
+  --pa-surface: #181715;
+  --pa-wash: #1d1c1a;
+  --pa-wash-warm: #1f1e1b;
+  --pa-trough: #242321;
+  --pa-trough-deep: #2a2927;
+
+  /* The palette's inks are a cool slate, so the dark ladder keeps a hint of
+     that blue rather than borrowing the app's warm greys. */
+  --pa-ink: #e9eef0;
+  --pa-body: #c3ccd0;
+  --pa-reading: #b7c1c6;
+  --pa-muted: #a1acb1;
+  --pa-soft: #939fa5;
+  --pa-faint: #7e898f;
+  --pa-ghost: #6b757a;
+
+  --pa-ember: #e2603b; /* a fill under white: 3.5:1, a touch up on light */
+  --pa-ember-deep: #c9502d; /* hover goes DEEPER here, so the white holds */
+  --pa-ember-off: #3a3835;
+  --pa-teal: #4fb3ad;
+
+  --pa-good-bg: #15301f;
+  --pa-good-ink: #5cc99a;
+  --pa-good-fill: #237a5d;
+  --pa-good-deep: #6fd3a8;
+  --pa-good-ring: #3f8f6d;
+  --pa-warn-bg: #331a10;
+  --pa-warn-ink: #f08a64;
+  --pa-warn-deep: #f29a78;
+  --pa-note-bg: #1b2238;
+  --pa-note-ink: #9aa8ec;
+  --pa-note-alt-bg: #211e38;
+  --pa-note-alt-ink: #aba6f0;
+
+  --pa-hairline: rgba(255, 255, 255, 0.08);
+  --pa-rule: #2e2d2b;
+  --pa-cell-line: #34332f;
+  --pa-check-line: #3f3e3b;
+  --pa-flag-ring: #6b3a28;
+  --pa-sep: #5f6a70;
+  --pa-tag-ink: #b3bec3;
+  --pa-mic-ink: #aab6bc;
+  --pa-step-off: #3a3835;
+  --pa-step-ink-off: #5f6a70;
+
+  /* The library's sky: the same teal, at night. Still ends on the paper. */
+  --pa-sky-1: #173331;
+  --pa-sky-2: #172a29;
+  --pa-sky-3: #141715;
+  --pa-sky-soft: #15201d;
+  --pa-sky-ink: #9fc4c2;
+
+  /* Lifted, not darkened: a panel darker than the page would disappear. */
+  --pa-deep: #1f2c33;
+  --pa-ink-hover: #d7dee2;
+  --pa-ghost-hover: #2e2d2b;
+  --pa-shimmer: #1f1e1c;
+  --pa-shimmer-shine: #292826;
+  --pa-bar: rgba(16, 15, 13, 0.92);
+  --pa-bar-soft: rgba(16, 15, 13, 0.9);
+  --pa-glass: rgba(24, 23, 21, 0.92);
+  --pa-glass-soft: rgba(24, 23, 21, 0.85);
+  --pa-glass-faint: rgba(24, 23, 21, 0.8);
+  --pa-scrim: rgba(0, 0, 0, 0.66);
+
+  --pa-prose: #d4d5d9;
+  --pa-prose-ink: #eeedeb;
+  --pa-prose-body: #c4c5c9;
+  --pa-prose-num: #6a6862;
+  --pa-prose-faint: #a09eb4;
+  --pa-prose-rule: #2b2a28;
+  --pa-prose-line: #33322f;
+  --pa-prose-well: #1c1b19;
+  --pa-prose-hover: #242321;
+  --pa-code-bg: #262523;
+  --pa-l1-bg: #16201f;
+  --pa-l1-line: #25302f;
+  --pa-l1-ink: #8fbcc2;
+  --pa-l1-body: #c1d0d2;
+  --pa-tip-bg: #152326;
+  --pa-tip-line: #25393c;
+  --pa-warn-box: #2e2314;
+  --pa-warn-box-line: #4a3a1e;
+  --pa-key-bg: #1e1c33;
+  --pa-key-line: #34304f;
+  --pa-wrong-ink: #a29892;
+  --pa-timeline-bg: #231c16;
+  --pa-timeline-rule: #5a4332;
+}
+
+/* ⚠️ PAPER PRINTS LIGHT, WHATEVER THE SCREEN IS. The worksheet (printable.tsx)
+   and the lesson page print through these tokens; printed from dark mode they
+   would put near-white ink on white paper. So print re-pins the LIGHT column.
+   It must stay identical to the `:root` block above — palette.test.ts compares
+   them name by name. */
+@media print {
+  .dark {
+    --pa-paper: #fdfbf7;
+    --pa-surface: #ffffff;
+    --pa-wash: #f6f4ef;
+    --pa-wash-warm: #f8f6f1;
+    --pa-trough: #f1efe9;
+    --pa-trough-deep: #eeece6;
+    --pa-ink: #14232e;
+    --pa-body: #3f5057;
+    --pa-reading: #4d5f68;
+    --pa-muted: #5c6b73;
+    --pa-soft: #6f8087;
+    --pa-faint: #8b969d;
+    --pa-ghost: #9aa5ab;
+    --pa-ember: #ec6a45;
+    --pa-ember-deep: #d95936;
+    --pa-ember-off: #dbd6cb;
+    --pa-teal: #1f6f6b;
+    --pa-good-bg: #e4f1ea;
+    --pa-good-ink: #1c6b52;
+    --pa-good-fill: #1c6b52;
+    --pa-good-deep: #155442;
+    --pa-good-ring: #79b79c;
+    --pa-warn-bg: #fdefe9;
+    --pa-warn-ink: #c1502f;
+    --pa-warn-deep: #8f3a1e;
+    --pa-note-bg: #e9eefb;
+    --pa-note-ink: #3c4fa0;
+    --pa-note-alt-bg: #f0eefb;
+    --pa-note-alt-ink: #4b46a8;
+    --pa-hairline: rgba(20, 35, 46, 0.07);
+    --pa-rule: #e8e5de;
+    --pa-cell-line: #e4e0d6;
+    --pa-check-line: #d8d3c8;
+    --pa-flag-ring: #f6c3b1;
+    --pa-sep: #94a0a6;
+    --pa-tag-ink: #46585f;
+    --pa-mic-ink: #4a5c66;
+    --pa-step-off: #dcd8cf;
+    --pa-step-ink-off: #a6b0b6;
+    --pa-sky-1: #a9cfcf;
+    --pa-sky-2: #bcd9d6;
+    --pa-sky-3: #e8ebe2;
+    --pa-sky-soft: #dfeae4;
+    --pa-sky-ink: #33505c;
+    --pa-deep: #14232e;
+    --pa-ink-hover: #22384a;
+    --pa-ghost-hover: #e7e4dc;
+    --pa-shimmer: #eeeeeb;
+    --pa-shimmer-shine: #f6f5f2;
+    --pa-bar: rgba(253, 251, 247, 0.92);
+    --pa-bar-soft: rgba(253, 251, 247, 0.9);
+    --pa-glass: rgba(255, 255, 255, 0.92);
+    --pa-glass-soft: rgba(255, 255, 255, 0.85);
+    --pa-glass-faint: rgba(255, 255, 255, 0.8);
+    --pa-scrim: rgba(20, 35, 46, 0.42);
+    --pa-prose: #2a2d34;
+    --pa-prose-ink: #15171c;
+    --pa-prose-body: #3f4147;
+    --pa-prose-num: #b9b5ac;
+    --pa-prose-faint: #7c7a93;
+    --pa-prose-rule: #efede8;
+    --pa-prose-line: #e7e5df;
+    --pa-prose-well: #fafaf8;
+    --pa-prose-hover: #f3f2ee;
+    --pa-code-bg: #f1efea;
+    --pa-l1-bg: #f5f8f8;
+    --pa-l1-line: #e4e9ea;
+    --pa-l1-ink: #4a6a70;
+    --pa-l1-body: #33474b;
+    --pa-tip-bg: #eef4f5;
+    --pa-tip-line: #cfe0e3;
+    --pa-warn-box: #fbeee0;
+    --pa-warn-box-line: #e9cda6;
+    --pa-key-bg: #f3f1fb;
+    --pa-key-line: #d8d4f0;
+    --pa-wrong-ink: #8a7f79;
+    --pa-timeline-bg: #fbf6f2;
+    --pa-timeline-rule: #e0bfa8;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -1210,7 +1912,12 @@
   }
 }
 .lp-skel {
-  background-image: linear-gradient(90deg, #ece8da 0%, #f5f2e8 45%, #ece8da 80%);
+  background-image: linear-gradient(
+    90deg,
+    var(--ex-skel) 0%,
+    var(--ex-skel-shine) 45%,
+    var(--ex-skel) 80%
+  );
   background-size: 200% 100%;
   animation: lp-shimmer 1.4s linear infinite;
 }
@@ -1439,7 +2146,16 @@
   /* A clearly-visible LIGHT shade of the brand burgundy (not near-white), with
      enough contrast between stops that the slow sweep is actually noticeable.
      Dark text still reads fine on it. */
-  background-image: linear-gradient(120deg, #f5d9e3, #ebbccd, #f0cbd9, #e9c2d2, #f5d9e3);
+  /* ⚠️ Tokens: the text on this is `INK`, which goes near-white in dark, so a
+     pink sweep left the grading dialog's headline white-on-pink. */
+  background-image: linear-gradient(
+    120deg,
+    var(--ex-ai-a),
+    var(--ex-ai-b),
+    var(--ex-ai-c),
+    var(--ex-ai-d),
+    var(--ex-ai-a)
+  );
   background-size: 300% 300%;
   animation: lp-ai-bg 12s ease infinite;
 }
@@ -1697,9 +2413,9 @@
 .lp-grade-bar {
   background-image: linear-gradient(
     90deg,
-    #f0d3de 0%,
-    var(--grade-accent, #7d0132) 50%,
-    #f0d3de 100%
+    var(--tk-brand-line) 0%,
+    var(--grade-accent, var(--tk-brand)) 50%,
+    var(--tk-brand-line) 100%
   );
   background-size: 200% 100%;
   animation: lp-grade-bar 1.4s linear infinite;
@@ -1742,7 +2458,7 @@
 .lp-root .lp-hover:hover {
   transform: translateY(-3px);
   box-shadow: 0 24px 48px -30px rgba(26, 28, 51, 0.45);
-  border-color: #c8cbf0;
+  border-color: var(--ex-hover-line);
 }
 /* "Check own writing" two-pane (question | essay) collapses to one column. */
 @media (max-width: 900px) {
@@ -2490,7 +3206,7 @@
    is also why the sanitiser's class allow-list is `lp-*` — those are the hooks
    below, and nothing the model writes can reach any other class in the app. */
 .lp-lesson {
-  color: #2a2d34;
+  color: var(--pa-prose);
   font-size: 16px;
   line-height: 1.7;
 }
@@ -2501,7 +3217,7 @@
    where they are or how much is left. */
 .lp-section {
   padding: 26px 0;
-  border-top: 1px solid #efede8;
+  border-top: 1px solid var(--pa-prose-rule);
 }
 .lp-section:first-child {
   padding-top: 4px;
@@ -2515,14 +3231,14 @@
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.015em;
-  color: #15171c;
+  color: var(--pa-prose-ink);
   margin: 0 0 14px;
 }
 .lp-section-n {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   font-weight: 500;
-  color: #b9b5ac;
+  color: var(--pa-prose-num);
   letter-spacing: 0.04em;
 }
 
@@ -2531,8 +3247,8 @@
    just read. */
 .lp-l1 {
   margin: 14px 0 0;
-  border: 1px solid #e4e9ea;
-  background: #f5f8f8;
+  border: 1px solid var(--pa-l1-line);
+  background: var(--pa-l1-bg);
   border-radius: 10px;
   padding: 0 14px;
 }
@@ -2542,7 +3258,7 @@
   padding: 10px 0;
   font-size: 13px;
   font-weight: 600;
-  color: #4a6a70;
+  color: var(--pa-l1-ink);
   display: flex;
   align-items: center;
   gap: 7px;
@@ -2559,12 +3275,12 @@
   transform: rotate(90deg);
 }
 .lp-l1[open] > summary {
-  border-bottom: 1px solid #e4e9ea;
+  border-bottom: 1px solid var(--pa-l1-line);
 }
 .lp-l1 > div {
   padding: 12px 0 14px;
   font-size: 15px;
-  color: #33474b;
+  color: var(--pa-l1-body);
 }
 .lp-l1 > div p:last-child {
   margin-bottom: 0;
@@ -2575,13 +3291,13 @@
 .lp-lesson h3 {
   font-size: 16px;
   font-weight: 650;
-  color: #15171c;
+  color: var(--pa-prose-ink);
   margin: 20px 0 8px;
 }
 .lp-lesson h4 {
   font-size: 14.5px;
   font-weight: 650;
-  color: #15171c;
+  color: var(--pa-prose-ink);
   margin: 16px 0 6px;
 }
 .lp-lesson ul,
@@ -2594,12 +3310,12 @@
 }
 .lp-lesson strong {
   font-weight: 650;
-  color: #15171c;
+  color: var(--pa-prose-ink);
 }
 .lp-lesson code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9em;
-  background: #f1efea;
+  background: var(--pa-code-bg);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -2614,20 +3330,20 @@
 }
 .lp-lesson th,
 .lp-lesson td {
-  border: 1px solid #e7e5df;
+  border: 1px solid var(--pa-prose-line);
   padding: 8px 11px;
   text-align: left;
   vertical-align: top;
 }
 .lp-lesson th {
-  background: #fafaf8;
+  background: var(--pa-prose-well);
   font-weight: 650;
-  color: #15171c;
+  color: var(--pa-prose-ink);
 }
 .lp-lesson caption {
   caption-side: bottom;
   font-size: 12.5px;
-  color: #7c7a93;
+  color: var(--pa-prose-faint);
   padding-top: 6px;
   text-align: left;
 }
@@ -2684,23 +3400,23 @@
 }
 
 .lp-lesson .lp-tip {
-  background: #eef4f5;
-  border-color: #cfe0e3;
+  background: var(--pa-tip-bg);
+  border-color: var(--pa-tip-line);
 }
 .lp-lesson .lp-warn {
-  background: #fbeee0;
-  border-color: #e9cda6;
+  background: var(--pa-warn-box);
+  border-color: var(--pa-warn-box-line);
 }
 .lp-lesson .lp-example {
-  background: #fafaf8;
-  border-color: #e7e5df;
+  background: var(--pa-prose-well);
+  border-color: var(--pa-prose-line);
 }
 .lp-lesson .lp-key {
-  background: #f3f1fb;
-  border-color: #d8d4f0;
+  background: var(--pa-key-bg);
+  border-color: var(--pa-key-line);
 }
 .lp-lesson mark {
-  background: #fbeee0;
+  background: var(--pa-warn-box);
   color: inherit;
 }
 
@@ -2711,8 +3427,8 @@
 .lp-lesson s,
 .lp-lesson .lp-wrong {
   text-decoration: line-through;
-  text-decoration-color: #c1502f;
-  color: #8a7f79;
+  text-decoration-color: var(--pa-warn-ink);
+  color: var(--pa-wrong-ink);
 }
 /* A timeline is a DIAGRAM, and this used to be styled as a code block: grey
    box, hard border, monospace. On a projector it read as source code, which is
@@ -2724,10 +3440,10 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12.5px;
   line-height: 1.75;
-  color: #3f4147;
-  background: #fbf6f2;
+  color: var(--pa-prose-body);
+  background: var(--pa-timeline-bg);
   border: 0;
-  border-left: 3px solid #e0bfa8;
+  border-left: 3px solid var(--pa-timeline-rule);
   border-radius: 0 8px 8px 0;
   padding: 12px 16px;
   margin: 0 0 14px;
@@ -2743,12 +3459,12 @@
   display: block;
   margin: 0 0 16px;
   padding: 2px 0 2px 16px;
-  border-left: 3px solid #c1502f;
+  border-left: 3px solid var(--pa-warn-ink);
   font-family: var(--font-serif4), Georgia, serif;
   font-size: 19px;
   line-height: 1.4;
   font-weight: 500;
-  color: #15171c;
+  color: var(--pa-prose-ink);
   text-wrap: pretty;
 }
 
@@ -2762,18 +3478,18 @@
    joined by a second marker on the other side. The two disclosures on this page
    mean different things and have to keep looking different. */
 .lp-lesson details:not(.lp-l1) {
-  border: 1px solid #e7e5df;
+  border: 1px solid var(--pa-prose-line);
   border-radius: 10px;
   padding: 0;
   margin: 0 0 8px;
-  background: #fafaf8;
+  background: var(--pa-prose-well);
   overflow: hidden;
 }
 .lp-lesson details:not(.lp-l1) > summary {
   cursor: pointer;
   padding: 11px 40px 11px 14px;
   font-weight: 550;
-  color: #15171c;
+  color: var(--pa-prose-ink);
   list-style: none;
   position: relative;
 }
@@ -2789,24 +3505,24 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 13px;
-  color: #7c7a93;
+  color: var(--pa-prose-faint);
 }
 .lp-lesson details:not(.lp-l1)[open] > summary::after {
   content: "－";
 }
 .lp-lesson details:not(.lp-l1)[open] > summary {
-  border-bottom: 1px solid #e7e5df;
+  border-bottom: 1px solid var(--pa-prose-line);
 }
 .lp-lesson details:not(.lp-l1) > *:not(summary) {
   margin: 0;
   padding: 11px 14px;
-  color: #3f4147;
+  color: var(--pa-prose-body);
 }
 .lp-lesson details:not(.lp-l1) > summary:hover {
-  background: #f3f2ee;
+  background: var(--pa-prose-hover);
 }
 .lp-lesson details:not(.lp-l1) > summary:focus-visible {
-  outline: 2px solid #c1502f;
+  outline: 2px solid var(--pa-warn-ink);
   outline-offset: -2px;
 }
 
@@ -2866,7 +3582,12 @@
    pulse: the placeholder must not reflow or flicker, because the eye reads
    either as the page still changing after it has arrived. */
 .pa-shimmer {
-  background-image: linear-gradient(90deg, #eeeeeb 0%, #f6f5f2 40%, #eeeeeb 80%);
+  background-image: linear-gradient(
+    90deg,
+    var(--pa-shimmer) 0%,
+    var(--pa-shimmer-shine) 40%,
+    var(--pa-shimmer) 80%
+  );
   background-size: 200% 100%;
   animation: pa-shimmer 1.4s linear infinite;
 }
@@ -2874,7 +3595,7 @@
   .pa-shimmer {
     animation: none;
     background-image: none;
-    background-color: #eeeeeb;
+    background-color: var(--pa-shimmer);
   }
 }
 
@@ -2928,7 +3649,7 @@
   border: 0;
 }
 .pa-icon-btn:hover {
-  background: #f1efe9;
+  background: var(--pa-trough);
 }
 
 /* Starter chips: lift on hover. */
@@ -2970,7 +3691,7 @@
     transform 0.18s;
 }
 .pa-ember:hover:not(:disabled) {
-  background: #d95936;
+  background: var(--pa-ember-deep);
   transform: translateY(-1px);
 }
 .pa-ember:active:not(:disabled) {
@@ -2983,7 +3704,7 @@
     transform 0.18s;
 }
 .pa-dark:hover:not(:disabled) {
-  background: #22384a;
+  background: var(--pa-ink-hover);
   transform: translateY(-1px);
 }
 
@@ -2993,7 +3714,7 @@
     color 0.18s;
 }
 .pa-ghost:hover:not(:disabled) {
-  background: #e7e4dc;
+  background: var(--pa-ghost-hover);
 }
 
 /* A spec chip, a navigator cell, an answer option — small targets that need a
@@ -3005,7 +3726,7 @@
     color 0.15s;
 }
 .pa-tap:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 2px rgba(20, 35, 46, 0.14);
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--pa-ink) 14%, transparent);
 }
 
 /* Typed answers. A ring inside the field rather than a border, so nothing
@@ -3014,7 +3735,7 @@
   transition: box-shadow 0.18s;
 }
 .pa-field:focus {
-  box-shadow: inset 0 0 0 2px #ec6a45 !important;
+  box-shadow: inset 0 0 0 2px var(--pa-ember) !important;
 }
 
 /* ── Printing a lesson ──────────────────────────────────────────────────────
@@ -3147,7 +3868,7 @@
     opacity 0.18s;
 }
 .pa-send:hover:not(:disabled) {
-  background: #d95936;
+  background: var(--pa-ember-deep);
   transform: translateY(-1px);
 }
 .pa-send:active:not(:disabled) {
@@ -3176,8 +3897,8 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
-  background: #fdfbf7;
-  border-left: 1px solid rgba(20, 35, 46, 0.07);
+  background: var(--pa-paper);
+  border-left: 1px solid var(--pa-hairline);
 }
 /* Narrow: the rail stops being a column beside the item and becomes the next
    thing DOWN the page — item, then navigator, then submit — and the runner
@@ -3205,7 +3926,7 @@
     max-height: none;
     overflow: visible;
     border-left: 0;
-    border-top: 1px solid rgba(20, 35, 46, 0.07);
+    border-top: 1px solid var(--pa-hairline);
   }
 }
 
@@ -3498,7 +4219,7 @@
   transition: background 0.15s ease;
 }
 .lp-row:hover {
-  background: #fbfaf4;
+  background: var(--ex-row-hover);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -4005,11 +4726,11 @@
 }
 .lp-root .lp-input:focus {
   outline: none;
-  border-color: #7d0132;
-  box-shadow: 0 0 0 3px rgba(125, 1, 50, 0.15);
+  border-color: var(--tk-brand);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--tk-brand) 15%, transparent);
 }
 .lp-root .lp-input::placeholder {
-  color: #a8a79a;
+  color: var(--ex-placeholder);
 }
 .lp-root .lp-field {
   transition:
@@ -4017,8 +4738,8 @@
     box-shadow 0.2s ease;
 }
 .lp-root .lp-field:focus-within {
-  border-color: #7d0132;
-  box-shadow: 0 0 0 3px rgba(125, 1, 50, 0.13);
+  border-color: var(--tk-brand);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--tk-brand) 13%, transparent);
 }
 .lp-root .lp-ghost-btn {
   transition:
@@ -4026,8 +4747,8 @@
     border-color 0.2s ease;
 }
 .lp-root .lp-ghost-btn:hover {
-  background: #faf9f1;
-  border-color: #c8cbf0;
+  background: var(--ex-ghost-hover);
+  border-color: var(--ex-hover-line);
 }
 
 /* Reading runner: keep the passage beside the questions on desktop only. */
@@ -4228,15 +4949,15 @@
    here (not inline) so :hover can restyle them — an inline background would win
    over any hover rule. The checked chip sets indigo inline, which wins over this. */
 .rd-exit:hover {
-  background: #f6f6fa;
+  background: var(--ex-rd-exit-hover);
 }
 .rd-vpill {
-  border: 1.5px solid #e4e5ee;
-  background: #fff;
+  border: 1.5px solid var(--ex-rd-pill-line);
+  background: var(--tk-panel);
 }
 .rd-vpill:hover {
-  border-color: #c6c9e8;
-  background: #fafafd;
+  border-color: var(--ex-rd-pill-hover-line);
+  background: var(--ex-rd-pill-hover);
 }
 
 /* ── Reading exam runner: phone/tablet-portrait (≤860px) ──────────────────────
@@ -4258,7 +4979,7 @@
   }
   .rd-passage {
     border-right: none !important;
-    border-bottom: 1px solid #f0eff5 !important;
+    border-bottom: 1px solid var(--ex-rd-split) !important;
   }
   .rd-topbar {
     padding: 10px 12px !important;
@@ -4300,7 +5021,7 @@
   }
   .ml-rd-passage {
     border-right: none !important;
-    border-bottom: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid var(--tk-line) !important;
   }
   /* one swipeable row of part buttons instead of many tall wrapped rows */
   .ml-rd-qnav {

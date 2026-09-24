@@ -89,7 +89,7 @@ export function LessonStaffBar({
         alignItems: "center",
         gap: 16,
         padding: "14px 28px",
-        background: "rgba(253,251,247,0.9)",
+        background: "var(--pa-bar-soft)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         borderBottom: `1px solid ${HAIRLINE}`,

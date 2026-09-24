@@ -29,6 +29,8 @@ import { AMBER, BRAND, INK, MUTED, RED, SANS, SERIF } from "../../_shared/tokens
 import { WordLookup } from "../../_shared/word-lookup";
 import {
   BRAND_FILL,
+  BRAND_LINE,
+  BRAND_MID,
   BRAND_SOFT,
   PANEL,
   SLATE_AMBER_BG,
@@ -37,8 +39,10 @@ import {
   SLATE_MUTED,
   SLATE_RED_BG,
   SLATE_STRONG,
+  WARM_RED,
   WELL_LINE,
   WHITE,
+  withAlpha,
 } from "@/lib/theme/tokens";
 
 // ---- Types -----------------------------------------------------------------
@@ -500,12 +504,12 @@ export function ReadingTestRunner({
                       gap: 8,
                       padding: "6px 14px",
                       borderRadius: 10,
-                      background: warn ? "#FDECEC" : "#FDF4F7",
-                      border: `1px solid ${warn ? "#F3B4B4" : "#F0D3DE"}`,
+                      background: warn ? "var(--ex-bad-bg)" : BRAND_SOFT,
+                      border: `1px solid ${warn ? "var(--ex-bad-edge)" : BRAND_LINE}`,
                     }}
                     aria-label="time remaining"
                   >
-                    <span aria-hidden style={{ fontSize: 13, color: warn ? "#B91C1C" : BRAND }}>
+                    <span aria-hidden style={{ fontSize: 13, color: warn ? WARM_RED : BRAND }}>
                       ◷
                     </span>
                     <span
@@ -514,7 +518,7 @@ export function ReadingTestRunner({
                         fontWeight: 700,
                         fontSize: 15.5,
                         letterSpacing: ".02em",
-                        color: warn ? "#B91C1C" : BRAND,
+                        color: warn ? WARM_RED : BRAND,
                       }}
                     >
                       {text}
@@ -547,13 +551,13 @@ export function ReadingTestRunner({
                 padding: "9px 18px",
                 borderRadius: 10,
                 border: "none",
-                background: submitting ? "#CC5C82" : BRAND,
+                background: submitting ? "var(--ex-fill-busy)" : BRAND_FILL,
                 color: WHITE,
                 fontWeight: 600,
                 fontSize: 14,
                 cursor: submitting ? "default" : "pointer",
                 fontFamily: SANS,
-                boxShadow: "0 4px 14px rgba(125,1,50,.28)",
+                boxShadow: `0 4px 14px ${withAlpha(BRAND_FILL, 28)}`,
               }}
             >
               {submitting ? "Marking…" : "Finish Test"}
@@ -566,7 +570,7 @@ export function ReadingTestRunner({
               flex: "none",
               padding: "8px 20px",
               background: SLATE_RED_BG,
-              borderBottom: "1px solid #F3B4B4",
+              borderBottom: "1px solid var(--ex-bad-edge)",
             }}
           >
             <span style={{ fontSize: 13, color: RED, fontWeight: 600 }} role="alert">
@@ -822,7 +826,7 @@ function fontBtn(disabled: boolean): React.CSSProperties {
     borderRadius: 8,
     border: `1.5px solid ${SLATE_LINE}`,
     background: PANEL,
-    color: disabled ? "#C9CDD4" : "#4A505C",
+    color: disabled ? "var(--ex-idle)" : SLATE_BODY,
     fontWeight: 700,
     fontSize: 12.5,
     cursor: disabled ? "default" : "pointer",
@@ -853,7 +857,7 @@ function navCircle(answered: boolean, current: boolean): React.CSSProperties {
       borderColor: BRAND,
       background: PANEL,
       color: BRAND,
-      boxShadow: "0 0 0 3px rgba(125,1,50,.16)",
+      boxShadow: `0 0 0 3px ${withAlpha(BRAND, 16)}`,
     };
   if (answered) return { ...base, borderColor: BRAND, background: BRAND_FILL, color: WHITE };
   return { ...base, borderColor: SLATE_LINE, background: PANEL, color: SLATE_MUTED };
@@ -893,7 +897,7 @@ function ConfirmFinishModal({
         alignItems: "center",
         justifyContent: "center",
         padding: 20,
-        background: "rgba(30,27,46,.45)",
+        background: "var(--ex-scrim-rd)",
         backdropFilter: "blur(2px)",
         animation: "lp-fadeup .16s ease both",
       }}
@@ -905,7 +909,7 @@ function ConfirmFinishModal({
           background: PANEL,
           borderRadius: 18,
           padding: "26px 26px 22px",
-          boxShadow: "0 30px 70px -24px rgba(30,27,46,.6)",
+          boxShadow: "0 30px 70px -24px rgba(30,27,46,.6), 0 0 0 1px var(--ex-ring)",
           fontFamily: SANS,
           color: INK,
         }}
@@ -967,7 +971,7 @@ function ConfirmFinishModal({
               fontWeight: 600,
               fontSize: 14.5,
               cursor: "pointer",
-              boxShadow: "0 8px 20px -10px rgba(125,1,50,.7)",
+              boxShadow: `0 8px 20px -10px ${withAlpha(BRAND_FILL, 70)}`,
             }}
           >
             Finish anyway
@@ -1042,7 +1046,7 @@ function TestResultsView({
           position: "sticky",
           top: 0,
           zIndex: 20,
-          background: "rgba(251,251,253,.88)",
+          background: "var(--ex-glass)",
           backdropFilter: "blur(10px)",
           borderBottom: `1px solid ${WELL_LINE}`,
         }}
@@ -1110,7 +1114,7 @@ function TestResultsView({
                 fontSize: 14,
                 cursor: "pointer",
                 fontFamily: SANS,
-                boxShadow: "0 3px 10px rgba(125,1,50,.26)",
+                boxShadow: `0 3px 10px ${withAlpha(BRAND_FILL, 26)}`,
               }}
             >
               Retake test
@@ -1203,7 +1207,7 @@ function TestResultsView({
                   style={{
                     height: "100%",
                     width: `${result.percent}%`,
-                    background: "linear-gradient(90deg,#9B1044,#7D0132)",
+                    background: `linear-gradient(90deg,${BRAND_MID},${BRAND})`,
                     borderRadius: 999,
                   }}
                 />
@@ -1211,8 +1215,8 @@ function TestResultsView({
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <StatCard label="Time used" value={fmtClock(usedSeconds)} />
-              <StatCard label="To review" value={String(toReview)} color="#DC2626" />
-              <StatCard label="Flagged" value={String(counts.flagged)} color="#C77C09" />
+              <StatCard label="To review" value={String(toReview)} color="var(--ex-red)" />
+              <StatCard label="Flagged" value={String(counts.flagged)} color="var(--ex-amber-ink)" />
             </div>
           </div>
         </div>
@@ -1301,7 +1305,7 @@ function TestResultsView({
             position: "sticky",
             top: 62,
             zIndex: 10,
-            background: "rgba(251,251,253,.92)",
+            background: "var(--ex-glass-strong)",
             backdropFilter: "blur(8px)",
             padding: "12px 0",
             marginBottom: 8,
@@ -1327,9 +1331,9 @@ function TestResultsView({
                     fontSize: 14,
                     fontWeight: 600,
                     cursor: "pointer",
-                    border: `1.5px solid ${on ? BRAND : SLATE_LINE}`,
-                    background: on ? BRAND : "#fff",
-                    color: on ? "#fff" : "#3B4150",
+                    border: `1.5px solid ${on ? BRAND_FILL : SLATE_LINE}`,
+                    background: on ? BRAND_FILL : PANEL,
+                    color: on ? WHITE : SLATE_STRONG,
                   }}
                 >
                   {f.label} <span style={{ opacity: 0.6, fontWeight: 600 }}>{counts[f.key]}</span>

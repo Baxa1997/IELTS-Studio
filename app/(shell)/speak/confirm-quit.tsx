@@ -59,7 +59,7 @@ export function ConfirmQuit({
         position: "fixed",
         inset: 0,
         zIndex: 1000,
-        background: "rgba(23,22,40,.45)",
+        background: "var(--ex-scrim-sp)",
         display: "grid",
         placeItems: "center",
         padding: 18,
@@ -74,7 +74,7 @@ export function ConfirmQuit({
           padding: "26px 26px 22px",
           maxWidth: 430,
           width: "100%",
-          boxShadow: "0 24px 60px rgba(23,22,40,.28)",
+          boxShadow: "0 24px 60px rgba(23,22,40,.28), 0 0 0 1px var(--ex-ring)",
         }}
       >
         <h2

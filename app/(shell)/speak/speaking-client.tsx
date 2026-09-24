@@ -529,7 +529,9 @@ export function SpeakingClient({
     // The design's mock accent is the ink, not the violet — the violet is
     // reserved for the BETA badge and links, so the exam reads as serious.
     const A = "var(--sp-ink)";
-    const aTint = "rgba(26,21,32,0.08)";
+    // The session ink at 8% — identical to the old literal in light, and a light
+    // wash in dark rather than a dark one that vanished on the dark card.
+    const aTint = withAlpha("var(--sp-ink)", 8);
     const bandChip = (b: number) =>
       b >= 6
         ? { bg: "var(--sp-ok-bg)", fg: WARM_GREEN }
@@ -1534,8 +1536,8 @@ export function SpeakingClient({
                     padding: "0 13px",
                     fontSize: 12.5,
                     borderRadius: 999,
-                    background: difficulty === d ? BRAND : "#fff",
-                    color: difficulty === d ? "#fff" : INK,
+                    background: difficulty === d ? BRAND_FILL : PANEL,
+                    color: difficulty === d ? WHITE : INK,
                   }}
                 >
                   {d === null ? "Any level" : `Level ${d}`}

@@ -14,6 +14,7 @@ import {
   RowText,
   SANS,
 } from "@/components/console/page-ui";
+import { BRAND, BRAND_SOFT } from "@/lib/theme/tokens";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 
@@ -34,7 +35,7 @@ export default async function AssignmentsPage() {
        student's homework and inbox would be the last two indigo screens in the
        learner app. Setting the properties here repaints every page-ui component on
        the page at once, which a per-import swap could not do. */
-    <div style={{ "--pu-indigo": "#7D0132", "--pu-tint": "#FDF4F7" } as React.CSSProperties}>
+    <div style={{ "--pu-indigo": BRAND, "--pu-tint": BRAND_SOFT } as React.CSSProperties}>
       <PageHead
         eyebrow="Homework"
         title="Assignments"
