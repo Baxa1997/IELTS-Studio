@@ -64,9 +64,9 @@ export default function IeltsWritingPracticePage() {
 
       <Sec title="Strict on purpose">
         <P>
-          Our grader is calibrated against expert-judged essays and tuned to sit <B>slightly below</B> a
-          human examiner. When your essay lands between two bands, it rounds down and tells you what is
-          missing from the higher one.
+          Our grader is built on the official public band descriptors, anchored to a sample essay at
+          every band, and set up to err <B>low</B> rather than high. When your essay lands between two
+          bands, it rounds down and tells you what is missing from the higher one.
         </P>
         <P>
           That is a deliberate product decision and occasionally an unpopular one. An inflated 7.0 feels
@@ -112,7 +112,7 @@ export default function IeltsWritingPracticePage() {
           },
           {
             q: "How accurate is the writing band?",
-            a: "The grader is calibrated against expert-judged essays and deliberately tuned to be conservative — when an essay sits between two bands it rounds down and names what is missing for the higher one. The goal is that your practice band matches or slightly understates your exam-day band, never overstates it.",
+            a: "The grader is built on the official public band descriptors, anchored to a sample essay at every band, and deliberately conservative — when an essay sits between two bands it rounds down and names what is missing for the higher one. The goal is that your practice band matches or slightly understates your exam-day band, never overstates it.",
           },
           {
             q: "Will it mark down a templated essay?",

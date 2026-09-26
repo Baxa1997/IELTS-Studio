@@ -56,7 +56,7 @@ export default function IeltsPracticePage() {
             the model&rsquo;s gut feeling.
           </LI>
           <LI>
-            <B>Calibrated against expert-judged essays</B> and deliberately conservative: when your essay
+            <B>Anchored to a sample essay at every band</B> and deliberately conservative: when your essay
             sits between two bands, we round down and tell you exactly what is missing for the higher one.
           </LI>
           <LI>
@@ -117,7 +117,7 @@ export default function IeltsPracticePage() {
           },
           {
             q: "How accurate is the AI band score?",
-            a: "The grader is calibrated against expert-judged essays and tuned to be slightly conservative — when in doubt it rounds down and names what is missing for the higher band. The goal is that your practice band matches or slightly understates your exam-day band, never overstates it.",
+            a: "The grader is anchored to a sample essay at every band and deliberately conservative — when in doubt it rounds down and names what is missing for the higher band. The goal is that your practice band matches or slightly understates your exam-day band, never overstates it.",
           },
           {
             q: "Which IELTS skills can I practice?",

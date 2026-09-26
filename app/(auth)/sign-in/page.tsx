@@ -46,7 +46,9 @@ export const dynamic = "force-dynamic";
 const POINTS = [
   {
     title: "AI examiner for IELTS & CEFR",
-    body: "Band scores within ±0.5 of human examiners.",
+    // Not "within ±0.5 of human examiners": that has not been measured — every
+    // anchor is still "expert-verification pending". Say what the grader DOES.
+    body: "Four-criterion bands with the evidence quoted — rounded down when in doubt.",
   },
   {
     title: "Practice generated at your level",

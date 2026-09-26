@@ -277,7 +277,7 @@ export const uz: Messages = {
     "Hech qachon. Har bir matn va savol original, AI tomonidan imtihon talablariga koʻra yaratiladi — demak siz hech qachon tarqalib ketgan materialda mashq qilmaysiz va mualliflik huquqi buzilmaydi.",
   "lp.faq3q": "Baholash qanchalik aniq?",
   "lp.faq3a":
-    "U inson baholovchilardan taxminan yarim band farq bilan kalibrlangan va ataylab ehtiyotkor. Ikki band orasida turganingizda pastrogʻini qoʻyamiz va yuqorisi uchun aynan nima yetishmayotganini aytamiz.",
+    "U rasmiy ochiq band deskriptorlariga asoslangan, har bir band uchun izohlangan namuna inshoga tayanadi va ataylab ehtiyotkor. Ikki band orasida turganingizda pastrogʻini qoʻyamiz va yuqorisi uchun aynan nima yetishmayotganini aytamiz.",
   "lp.faq4q": "U meni xursand qilish uchun bahoni oshirib yuboradimi?",
   "lp.faq4a":
     "Yoʻq — gap aynan shunda. Soxta 7.0 imtihon kunida ishonchni buzadigan yagona narsa, shuning uchun biz takrorlay olmaydigan raqamni berishdan koʻra qolgan ishni koʻrsatishni afzal koʻramiz.",
@@ -420,7 +420,7 @@ export const uz: Messages = {
   /* ── the band-9 card in the hero ──────────────────────────────────────── */
   "b9.achievable": "Band 9 ga erishish mumkin",
   "b9.result": "Imtihon oluvchi natijasi",
-  "b9.verified": "Tekshirilgan · kalibrlangan",
+  "b9.verified": "Mezonlar boʻyicha · pastga yaxlitlangan",
   "b9.overallBand": "UMUMIY BAND",
   /* ── the sign-up dialog ───────────────────────────────────────────────── */
   "su.title": "Hisob yarating",

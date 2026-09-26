@@ -6,10 +6,10 @@ export const SITE_NAME = "EngProgress";
 export const PREVIEW_IMAGE = "/link-preview.jpg";
 
 export const SEO_DESCRIPTION =
-  "EngProgress is an AI platform for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel (Uzbekistan DTM) practice, from complete beginner to Band 9. Original Cambridge-style tests generated on demand at your level, a tutor that coaches you while you practise, and a calibrated, deliberately strict examiner-grade AI marking the result. Education centres run their teachers, groups, homework and per-student reports on it.";
+  "EngProgress is an AI platform for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel (Uzbekistan DTM) practice, from complete beginner to Band 9. Original Cambridge-style tests generated on demand at your level, a tutor that coaches you while you practise, and a deliberately strict, examiner-style AI marking the result. Education centres run their teachers, groups, homework and per-student reports on it.";
 
 export const LANDING_DESCRIPTION =
-  "AI-powered practice for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel, from complete beginner to Band 9. Fresh Cambridge-style tests every session at your own level, live coaching while you practise, strict examiner-calibrated band feedback, a revision loop that coaches one essay across drafts, and a full console for education centres.";
+  "AI-powered practice for all four IELTS skills — Writing, Reading, Listening and Speaking — plus CEFR / Multilevel, from complete beginner to Band 9. Fresh Cambridge-style tests every session at your own level, live coaching while you practise, strict, examiner-style band feedback, a revision loop that coaches one essay across drafts, and a full console for education centres.";
 
 /**
  * The machine-readable capability list. This is the field an LLM (ChatGPT,
@@ -25,7 +25,10 @@ export const PLATFORM_FEATURES = [
   "IELTS Listening: full 4-part tests with original multi-voice audio, Cambridge-style question groups, transcripts and per-answer explanations",
   "IELTS Speaking: a full three-part live mock with an AI examiner, Part-2 cue-card practice, and an AI speaking tutor that reacts and teaches while you talk",
   "CEFR / Multilevel practice for the Uzbekistan DTM exam — Reading (5 parts, 35 questions) and Writing (3 tasks), generated on demand",
-  "A calibrated, deliberately conservative grader built on the official public band descriptors — it rounds down and names the gap rather than inflating bands",
+  // Not "calibrated": this list is what an answer engine repeats, and the grader
+  // has not been measured against examiner-marked work yet — every anchor is
+  // still "expert-verification pending". Say what it DOES.
+  "A deliberately conservative grader built on the official public band descriptors and anchored to an annotated sample essay at every band — it rounds down and names the gap rather than inflating bands",
   "Live coaching WHILE you practise, not just a score afterwards: an in-task Writing tutor and Reading tutor that teach the move without handing over the answer until you submit, a Speaking tutor that reacts and corrects on every turn, and a study coach that plans the weeks before your test",
   "Built for every level, from a complete beginner to Band 9 — tasks are generated at your measured level and move up with you, and CEFR runs A1 to C2",
   "Level identification and continuous re-estimation: current band to target band, with the weakest skill surfaced",
@@ -34,9 +37,17 @@ export const PLATFORM_FEATURES = [
   "Original AI-generated practice content only — no copyrighted past papers, so no test can be memorised in advance",
 ];
 
+/**
+ * ⚠️ NO COMPETITOR BRANDS, AND NOTHING THAT SAYS "CAMBRIDGE" AS IF WE HAD IT.
+ * This list is the `keywords` meta AND the JSON-LD `keywords` answer engines read.
+ * "engnovate" and "ielts.gg" here bought nothing — Google has ignored the meta
+ * tag for years and Bing treats stuffing as a spam signal — while telling every
+ * crawler we were those products; "Cambridge 21" and "Cambridge IELTS practice"
+ * claimed the copyrighted books CLAUDE.md forbids us to touch. Describe what
+ * EngProgress is, in the words a learner searches with.
+ */
 export const SEO_KEYWORDS = [
   "EngProgress",
-  "engnovate",
   "IELTS practice",
   "ielts",
   "IELTS Writing practice",
@@ -50,10 +61,8 @@ export const SEO_KEYWORDS = [
   "Multilevel",
   "Multilevel exam",
   "DTM Multilevel",
-  "Cambridge 21",
-  "Cambridge practices",
-  "Cambridge IELTS practice",
-  "ielts.gg",
+  "IELTS writing checker",
+  "IELTS preparation Uzbekistan",
   "AI IELTS coach",
   "IELTS band score",
   "IELTS for education centers",

@@ -62,17 +62,17 @@ export default function IeltsSpeakingPracticePage() {
 
       <Sec title="How we talk about speaking scores">
         <P>
-          We will be straight with you about this, because it matters. Our Writing grader is calibrated
-          against expert-judged essays and tuned to sit slightly below a human examiner. Our Speaking
-          grader is <B>deliberately conservative but not yet independently calibrated</B> — it is built
-          on the official public band descriptors and marks strictly, and we are not going to claim more
-          for it than that until it has been measured against expert-marked speaking tests.
+          We will be straight with you about this, because it matters. Our Writing grader is anchored
+          to a sample essay at every band and rounds down when in doubt. Our Speaking grader is{" "}
+          <B>deliberately conservative but not yet independently calibrated</B> — it is built on the
+          official public band descriptors and marks strictly, and we are not going to claim more for it
+          than that until it has been measured against expert-marked speaking tests.
         </P>
         <P>
           So treat the speaking band as a strict, directional signal and treat the feedback as the real
           product: what capped you, on which criterion, with the fix. Practising the long turn four times
           a week is what moves your band. For a number you can lean on today, use{" "}
-          <A href="/ielts-writing-practice">Writing</A>, where the calibration work is done.
+          <A href="/ielts-writing-practice">Writing</A>, where every band has a sample essay behind it.
         </P>
       </Sec>
 
@@ -97,7 +97,7 @@ export default function IeltsSpeakingPracticePage() {
           },
           {
             q: "How accurate is the AI speaking band?",
-            a: "It is built on the official public band descriptors and marks strictly and conservatively, but unlike our writing grader it has not yet been calibrated against expert-marked speaking tests. Treat it as a strict directional signal rather than a precise prediction, and treat the per-criterion feedback as the thing to act on.",
+            a: "It is built on the official public band descriptors and marks strictly and conservatively, but it has not yet been measured against expert-marked speaking tests. Treat it as a strict directional signal rather than a precise prediction, and treat the per-criterion feedback as the thing to act on.",
           },
           {
             q: "What is the difference between the mock and the tutor?",

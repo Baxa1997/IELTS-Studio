@@ -18,7 +18,7 @@ const SOFT_LINE = WARM_LINE_SOFT;
 const PAGE_TITLE = "Free IELTS Writing Checker — Instant AI Band Score & Fixes";
 const PAGE_DESCRIPTION =
   "Check your IELTS Writing Task 2 essay online, free. Paste your text or upload a photo/PDF and " +
-  "get an instant, examiner-calibrated band for all four criteria plus your top 3 fixes. " +
+  "get an instant, examiner-strict band for all four criteria plus your top 3 fixes. " +
   "Conservative grading you can trust on exam day. No sign-up needed.";
 
 export const metadata: Metadata = {
@@ -56,10 +56,10 @@ const FAQS: Array<{ q: string; a: string }> = [
   {
     q: "How accurate is the AI band score?",
     a:
-      "The grader is calibrated against expert-marked essays and grounded in the official public " +
-      "IELTS band descriptors. It scores each criterion separately, with evidence, and is tuned to " +
-      "stay within half a band of a human examiner. When your essay sits between two bands, it " +
-      "rounds down — so the band you see here is one you can defend on exam day.",
+      "The grader is grounded in the official public IELTS band descriptors and anchored to " +
+      "annotated sample essays at every band. It scores each criterion separately, with evidence, " +
+      "and it is deliberately conservative: when your essay sits between two bands, it rounds " +
+      "down — so the band you see here is one you can defend on exam day.",
   },
   {
     q: "Is this IELTS writing checker really free?",
@@ -85,8 +85,8 @@ const FAQS: Array<{ q: string; a: string }> = [
     q: "Which IELTS writing checker gives the closest band to a real examiner?",
     a:
       "The only honest test is whether your practice band matches your exam-day band. EngProgress is " +
-      "built for exactly that: grading is grounded in the official public band descriptors, calibrated " +
-      "against expert-marked essays, and kept deliberately conservative so it never flatters you. " +
+      "built for exactly that: grading is grounded in the official public band descriptors, anchored " +
+      "to annotated sample essays at every band, and kept deliberately conservative so it never flatters you. " +
       "Whichever checker you use, prefer one that shows evidence for every score and errs low — an " +
       "inflated band is the most expensive kind of wrong.",
   },

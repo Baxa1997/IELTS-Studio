@@ -293,7 +293,7 @@ export const en = {
     "Never. Every passage and question is original and AI-generated to the exam spec, so you're never practising on leaked material — and we stay firmly on the right side of copyright.",
   "lp.faq3q": "How accurate is the grading?",
   "lp.faq3a":
-    "It's calibrated to within about half a band of human raters and deliberately conservative. When you sit between two bands we round down and tell you exactly what's missing for the higher one.",
+    "It's built on the official public band descriptors, anchored to an annotated sample essay at every band, and deliberately conservative. When you sit between two bands we round down and tell you exactly what's missing for the higher one.",
   "lp.faq4q": "Will it inflate my score to keep me happy?",
   "lp.faq4a":
     "No — that's the whole point. A false 7.0 is the one thing that breaks trust on exam day, so we'd rather show you the work that's left than hand you a number you won't repeat.",
@@ -434,7 +434,7 @@ export const en = {
   /* ── the band-9 card in the hero ──────────────────────────────────────── */
   "b9.achievable": "Band 9 achievable",
   "b9.result": "Examiner Result",
-  "b9.verified": "Verified · calibrated",
+  "b9.verified": "Per criterion · rounded down",
   "b9.overallBand": "OVERALL BAND",
   /* ── the sign-up dialog ───────────────────────────────────────────────── */
   "su.title": "Create your account",
