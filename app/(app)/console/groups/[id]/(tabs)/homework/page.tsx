@@ -7,7 +7,6 @@ import { loadGroupDetail } from "@/lib/console/groups";
 import { loadLibrary } from "@/lib/console/practice-library";
 import { ENROLLED } from "@/lib/console/status";
 import { today } from "@/lib/finance/period";
-import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 import { AssignSheet } from "./_components/assign-sheet";
@@ -91,7 +90,6 @@ export default async function GroupHomeworkPage({
     admin
       .from("reading_tests")
       .select("id, target_band")
-      .eq("organization_id", READING_LIBRARY_ORG_ID)
       .eq("is_library", true)
       .order("target_band", { ascending: true })
       .limit(12),

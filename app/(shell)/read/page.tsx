@@ -2,7 +2,6 @@ import { AssignedHub } from "@/shared/components/assignments/assigned-hub";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
-import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { composeTestSubtitle, composeTestTitle } from "@/lib/reading/titles";
 import type { ReadingQuestionType } from "@/lib/reading/types";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -79,11 +78,10 @@ export default async function ReadingHubPage() {
   const [estimates, libTestsRes, libPassagesRes, ownTestsRes, ownPassagesRes, attemptsRes] =
     await Promise.all([
       loadStudentEstimates(profile.id),
-      // Shared library (one org, read via service-role).
+      // Shared library: the templates, which belong to no org — read via service-role.
       admin
         .from("reading_tests")
         .select("id, target_band")
-        .eq("organization_id", READING_LIBRARY_ORG_ID)
         .eq("is_library", true)
         .order("target_band", { ascending: true })
         // Many tests share a band; without a tie-break their "Practice test N"
@@ -94,7 +92,6 @@ export default async function ReadingHubPage() {
       admin
         .from("reading_passages")
         .select("id, title, topic, difficulty")
-        .eq("organization_id", READING_LIBRARY_ORG_ID)
         .eq("is_library", true)
         .is("test_id", null)
         .order("difficulty", { ascending: true })

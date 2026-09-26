@@ -228,6 +228,12 @@ default, and the cascade destroyed every row that could have dated it.
 
 **Still open:**
 
+- **Shared practices still have an owner in production.** Migration
+  `20260926150000_shared_practices_have_no_owner.sql` makes the listening
+  catalogue, the reading templates and the writing starter set ownerless, so no
+  account delete can remove them, and gives centres' teachers the writing set.
+  Prepared and tested against a full local replay of every migration — **not
+  applied**. Order: deploy the engine, then the app, then apply it.
 - The listening library is empty. The audio survived
   (`listening-audio/library/`, 54 folders), so restored rows would play
   immediately; regenerated ones need fresh audio and a QA pass.

@@ -255,7 +255,8 @@ async function composeReadingSet(
  *  org + creator (creator is null for shared library content, which has no user). */
 async function storeReadingSet(
   client: SupabaseClient,
-  store: { organizationId: string; createdBy: string | null },
+  /** organizationId null = a shared library template, owned by no account. */
+  store: { organizationId: string | null; createdBy: string | null },
   composed: ComposedReadingSet,
   questions: PreparedQuestion[],
   status: "pending" | "approved",
@@ -368,7 +369,7 @@ export async function generateReadingForStudent(actor: ReadingActor): Promise<Ge
 export async function generateReadingTestForStudent(actor: ReadingActor): Promise<GeneratedReadingTest> {
   const centerBand = await resolveReadingTargetBand(actor);
   return buildAndStoreTest(createAdminClient(), {
-    storageOrgId: actor.organizationId,
+    ownerOrgId: actor.organizationId,
     createdBy: actor.userId,
     centerBand,
     isLibrary: false,
@@ -377,8 +378,9 @@ export async function generateReadingTestForStudent(actor: ReadingActor): Promis
 }
 
 interface BuildTestParams {
-  /** Org the test + passages are written to. */
-  storageOrgId: string;
+  /** Org that owns the test + passages; null for a shared library template,
+   *  which belongs to no account (migration 20260926150000). */
+  ownerOrgId: string | null;
   /** profiles.id of the author, or null for shared library content (no user). */
   createdBy: string | null;
   /** Difficulty center: P1 = band−1, P2 = band, P3 = band+1 (each clamped). */
@@ -426,7 +428,7 @@ async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Pro
   const { data: test, error: tErr } = await admin
     .from("reading_tests")
     .insert({
-      organization_id: p.storageOrgId,
+      organization_id: p.ownerOrgId,
       module: "academic",
       target_band: p.centerBand,
       status: "approved",
@@ -448,7 +450,7 @@ async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Pro
       passages.push(
         await storeReadingSet(
           admin,
-          { organizationId: p.storageOrgId, createdBy: p.createdBy },
+          { organizationId: p.ownerOrgId, createdBy: p.createdBy },
           composed,
           kept,
           "approved",
@@ -467,8 +469,15 @@ async function buildAndStoreTest(admin: SupabaseClient, p: BuildTestParams): Pro
 // ---- Shared library (ready-to-start, no waiting) ---------------------------
 
 /**
- * The single org that owns the shared reading LIBRARY (the ~10 ready tests + ~10
- * ready passages every learner sees). Seeded once by scripts/seed-reading-library.ts.
+ * The reserved org that USED to own the shared reading library.
+ *
+ * ⚠️ IT OWNS NOTHING NOW. Since migration 20260926150000 a template is a row with
+ * no owner at all (organization_id NULL, is_library true), so no account delete
+ * can take the library with it — which one delete of this org did in August
+ * 2026. Find templates by `is_library`, never by this id. The org row itself is
+ * kept, still protected by the protect_system_orgs trigger, because AI-usage
+ * rows and the account-deletion guard name it.
+ *
  * Templates are read with the service-role client; on "Start" they're cloned into
  * the learner's own org, so RLS/FK/grading downstream are untouched.
  */
@@ -478,27 +487,11 @@ export const READING_LIBRARY_ORG_ID = "00000000-0000-4000-8000-00000000111b";
  *  insert is rejected and swallowed (the one-time seed isn't billed to a tenant). */
 const LIBRARY_SEED_META = { organizationId: "reading-library-seed", userId: "reading-library-seed" };
 
-/** Idempotently ensure the shared library org row exists (seed bootstrap). */
-export async function ensureReadingLibraryOrg(): Promise<string> {
-  const admin = createAdminClient();
-  const { error } = await admin.from("organizations").upsert(
-    {
-      id: READING_LIBRARY_ORG_ID,
-      name: "IELTS Practice Library",
-      slug: "ielts-practice-library",
-      plan: "enterprise",
-    },
-    { onConflict: "id", ignoreDuplicates: true },
-  );
-  if (error) throw new ReadingServiceError(`Failed to ensure library org: ${error.message}`, "store_failed");
-  return READING_LIBRARY_ORG_ID;
-}
-
 /** Seed: generate one shared full test at an explicit difficulty (no user, no
- *  skill lookup). Stored under the library org as a template. */
+ *  skill lookup). Stored as a template, owned by no account. */
 export async function generateLibraryReadingTest(centerBand: number): Promise<GeneratedReadingTest> {
   return buildAndStoreTest(createAdminClient(), {
-    storageOrgId: READING_LIBRARY_ORG_ID,
+    ownerOrgId: null,
     createdBy: null,
     centerBand: clampBand(Math.round(centerBand)),
     isLibrary: true,
@@ -512,7 +505,7 @@ export async function generateLibraryReadingPassage(band: number): Promise<Gener
   const { composed, kept } = await composeValidated(input, LIBRARY_SEED_META);
   return storeReadingSet(
     createAdminClient(),
-    { organizationId: READING_LIBRARY_ORG_ID, createdBy: null },
+    { organizationId: null, createdBy: null },
     composed,
     kept,
     "approved",

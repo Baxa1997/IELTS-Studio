@@ -5,7 +5,6 @@ import { actionById } from "@/lib/console/assistant";
 import { recordAction } from "@/lib/console/assistant-actions";
 import { loadGroups, type RoomOption } from "@/lib/console/groups";
 import { listDays, parseClockTime, parseWeekdays } from "@/lib/console/timetable-days";
-import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -476,7 +475,6 @@ async function pickLibraryTest(band: string): Promise<{ id: string; band: number
   const { data } = await createAdminClient()
     .from("reading_tests")
     .select("id, target_band")
-    .eq("organization_id", READING_LIBRARY_ORG_ID)
     .eq("is_library", true)
     .order("target_band", { ascending: true })
     .limit(12);

@@ -15,6 +15,7 @@ import {
 import { DEFAULT_DIFFICULTY, TASK2_CATEGORIES, type Task2Category } from "@/lib/prompts/types";
 import { getGenerationQuota } from "@/lib/quota";
 import { instantiateLibraryTest } from "@/lib/reading/service";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export interface PracticeFormState {
@@ -296,10 +297,10 @@ export async function assignPractice(
     }
   }
 
-  // A LIBRARY reading test belongs to the shared library org, not to this
-  // center — assigning its id directly would point the assignment at another
-  // org's row, and every downstream join (the report, the runner, RLS) would be
-  // reading across a tenant boundary. Clone it into this org first.
+  // A LIBRARY reading test belongs to no center — assigning its id directly
+  // would point the assignment at a row outside this org, and every downstream
+  // join (the report, the runner, RLS) would be reading across a tenant
+  // boundary. Clone it into this org first.
   //
   // This lives in the action, not in one caller, because it has to hold for
   // every entry point: the reading hub's cards, the runner's floating control,
@@ -308,12 +309,19 @@ export async function assignPractice(
   // that path rather than a second copy.
   let assignedId = contentId;
   if (kind === "reading") {
-    const { data: test } = await supabase
+    /* ⚠️ THIS PROBE IS SERVICE-ROLE. A template belongs to no centre, so the
+       teacher's own (RLS) client cannot see it at all: this read came back empty
+       for every library card, and "Attach" on one answered "Practice not
+       found." It is narrowed by hand instead — a template, or a test this centre
+       owns — so another centre's test id still reads as not found. */
+    const { data: test } = await createAdminClient()
       .from("reading_tests")
-      .select("id, is_library")
+      .select("id, is_library, organization_id")
       .eq("id", contentId)
       .maybeSingle();
-    if (!test) return { error: "Practice not found." };
+    if (!test || (!test.is_library && test.organization_id !== profile.organization_id)) {
+      return { error: "Practice not found." };
+    }
     if (test.is_library) {
       try {
         assignedId = await instantiateLibraryTest(

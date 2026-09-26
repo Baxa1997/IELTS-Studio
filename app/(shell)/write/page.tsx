@@ -4,6 +4,7 @@ import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import { loadStudyPlan } from "@/lib/plan/service";
 import { pitchDifficulty } from "@/lib/plan/types";
+import { ensureSharedWritingPrompts } from "@/lib/prompts/shared";
 import { seedStarterPrompts } from "@/lib/prompts/starter";
 import { DEFAULT_DIFFICULTY } from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
@@ -43,7 +44,14 @@ export default async function WritePage({
   // page renders nothing until a plan exists. Then ensure the starter set is seeded.
   const plan = await loadStudyPlan(profile.id);
   if (!plan && !isStaff) return null;
-  if (plan) {
+
+  /* The curated set is ONE shared set that no account owns (lib/prompts/shared),
+     which is also what finally shows it to a centre's teachers — the per-org
+     copies were only ever made for learners with a plan. Until migration
+     20260926150000 runs there is no shared set, and the learner's org gets its
+     own copy exactly as before. */
+  const sharedSet = await ensureSharedWritingPrompts();
+  if (plan && !sharedSet) {
     await seedStarterPrompts(
       { studentId: profile.id, organizationId: profile.organization_id },
       plan,
@@ -53,16 +61,21 @@ export default async function WritePage({
   const supabase = await createClient();
 
   // Browsable library: approved AI-generated + curated 'seed' prompts (one-off
-  // custom pastes stay out). RLS restricts to the learner's org.
-  const { data: lib } = await supabase
+  // custom pastes stay out).
+  let libQuery = supabase
     .from("writing_prompts")
     .select("id, task_type, category, prompt_text, topic_family, difficulty, source, created_at")
     .eq("status", "approved")
-    .in("source", ["ai", "seed"])
+    .in("source", ["ai", "seed"]);
+  // With the shared set in place: it, plus this org's own generated prompts. The
+  // org's old copies of the set stay in the database — essays were repointed off
+  // them — but must not show up next to the shared rows as duplicates.
+  if (sharedSet) libQuery = libQuery.or("organization_id.is.null,source.eq.ai");
+  const { data: lib } = await libQuery
     .order("created_at", { ascending: false })
     // The curated set alone is ~176 prompts across the three tabs, so a cap of
-    // 60 silently cut most of it off. A learner's org holds only that set plus
-    // what they generate, so this stays a few hundred small rows.
+    // 60 silently cut most of it off. The set plus what one org generates stays
+    // a few hundred small rows.
     .limit(500);
 
   const library: LibraryPrompt[] = (lib ?? []).map((r) => ({

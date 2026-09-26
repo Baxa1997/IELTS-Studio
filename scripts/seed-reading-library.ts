@@ -32,29 +32,24 @@ const PASSAGE_BANDS = [4, 5, 5, 6, 6, 7, 7, 7, 8, 8];
 
 async function main(): Promise<void> {
   // Dynamic import so env is populated first.
-  const {
-    ensureReadingLibraryOrg,
-    generateLibraryReadingTest,
-    generateLibraryReadingPassage,
-    READING_LIBRARY_ORG_ID,
-  } = await import("../lib/reading/service");
+  const { generateLibraryReadingTest, generateLibraryReadingPassage } = await import(
+    "../lib/reading/service"
+  );
   const { createAdminClient } = await import("../lib/supabase/admin");
 
   console.log("\nSeeding the shared reading library (original, IELTS-format)…\n");
 
-  await ensureReadingLibraryOrg();
   const admin = createAdminClient();
 
-  // Resume: count what's already there, generate only the remainder.
+  // Resume: count what's already there, generate only the remainder. Templates
+  // are the is_library rows; since migration 20260926150000 they have no owner.
   const { count: haveTests } = await admin
     .from("reading_tests")
     .select("id", { count: "exact", head: true })
-    .eq("organization_id", READING_LIBRARY_ORG_ID)
     .eq("is_library", true);
   const { count: havePassages } = await admin
     .from("reading_passages")
     .select("id", { count: "exact", head: true })
-    .eq("organization_id", READING_LIBRARY_ORG_ID)
     .eq("is_library", true)
     .is("test_id", null);
 

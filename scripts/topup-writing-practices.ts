@@ -71,6 +71,25 @@ async function main(): Promise<void> {
     `\nWriting practice top-up — ${APPLY ? "APPLY: this writes to the database" : "dry run: reads only"}\n`,
   );
 
+  /* ⚠️ SUPERSEDED ONCE THE SHARED SET EXISTS. Since migration 20260926150000 the
+     curated set is one shared, ownerless set of rows, and the library shows
+     those instead of any org's copy — so topping copies up would only add rows
+     nobody sees. The shared rows also carry organization_id NULL, which the
+     grouping below would treat as one more "org". The library itself keeps the
+     shared set complete (lib/prompts/shared.ts). */
+  const { count: shared, error: sharedErr } = await admin
+    .from("writing_prompts")
+    .select("id", { count: "exact", head: true })
+    .is("organization_id", null)
+    .eq("source", "seed");
+  if (sharedErr) throw new Error(`checking for the shared set: ${sharedErr.message}`);
+  if ((shared ?? 0) > 0) {
+    console.log(
+      `The curated set is shared (${shared} ownerless rows) — per-org copies are no longer used. Nothing to do.`,
+    );
+    return;
+  }
+
   // ── 1. Every seed row, grouped by org ────────────────────────────────────
   // Paged by id (after the last id seen), NOT by offset. A learner opening the
   // library mid-scan inserts 176 rows at random uuids, which shifts every later

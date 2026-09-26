@@ -70,8 +70,6 @@ async function main(): Promise<void> {
   const { PICK_TWO_KEY_RE } = await import("../lib/reading/grade");
   const { CONFIDENCE_THRESHOLD, readingValidationOutputSchema } =
     await import("../lib/reading/types");
-  const { ensureReadingLibraryOrg, READING_LIBRARY_ORG_ID } =
-    await import("../lib/reading/service");
   const { generate } = await import("../lib/ai");
   const { createAdminClient } = await import("../lib/supabase/admin");
 
@@ -79,7 +77,9 @@ async function main(): Promise<void> {
   console.log(
     `\nCurated reading library — ${APPLY ? "APPLY: this writes to the database" : "dry run: checks only"}\n`,
   );
-  if (APPLY) await ensureReadingLibraryOrg();
+  // Templates belong to no org (migration 20260926150000), so there is no
+  // library org to create first. Before that migration, organization_id is still
+  // NOT NULL and every insert below is refused — apply it before seeding.
 
   /** Each row of a choose-two pair carries its own option before the pair is folded
    *  into one "A or C" key — checks see it exactly as they do for generated sets. */
@@ -173,7 +173,7 @@ async function main(): Promise<void> {
     const id = libraryIdFor(p.key);
     const { error: pErr } = await admin.from("reading_passages").insert({
       id,
-      organization_id: READING_LIBRARY_ORG_ID,
+      organization_id: null,
       title: p.title,
       body: p.body,
       module: "academic",
@@ -194,7 +194,7 @@ async function main(): Promise<void> {
       .insert(
         p.questions.map((q, i) => ({
           passage_id: id,
-          organization_id: READING_LIBRARY_ORG_ID,
+          organization_id: null,
           question_type: q.type,
           order_index: i + 1,
           prompt: q.prompt,
@@ -312,7 +312,7 @@ async function main(): Promise<void> {
       }
       const { error: tErr } = await admin.from("reading_tests").insert({
         id: testId,
-        organization_id: READING_LIBRARY_ORG_ID,
+        organization_id: null,
         module: "academic",
         target_band: t.targetBand,
         status: "approved",
