@@ -29,9 +29,15 @@ import { DesignSignInForm } from "./design-form";
  */
 
 export const metadata: Metadata = {
-  title: "Sign in | EngProgress",
+  // The root layout's template appends "| EngProgress" — spelling it here too
+  // rendered "Sign in | EngProgress | EngProgress".
+  title: "Sign in",
   description:
     "Sign in to EngProgress — AI-graded IELTS and CEFR practice for learners and education centers.",
+  // ⚠️ Without its own canonical this page inherits the root layout's "/", and
+  // a sitemap URL whose canonical names the homepage is one Search Console
+  // reports as a duplicate rather than indexing.
+  alternates: { canonical: "/sign-in" },
 };
 
 export const dynamic = "force-dynamic";

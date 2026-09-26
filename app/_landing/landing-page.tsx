@@ -263,7 +263,10 @@ export function LandingPage({ locale }: { locale: Locale }) {
             price: t.price === null ? undefined : String(t.price),
             priceCurrency: "USD",
             category: "IELTS practice platform",
-            url: `${site}/pricing`,
+            // ⚠️ Not `/pricing`: that route is signed-in only and 307s every
+            // crawler to /sign-in (see app/sitemap.ts). The public prices are
+            // the landing page's own section.
+            url: `${site}/#pricing`,
           };
         }),
       },
