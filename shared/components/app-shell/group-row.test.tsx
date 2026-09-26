@@ -258,6 +258,55 @@ describe("the groups behave as an accordion", () => {
 });
 
 /**
+ * THE PRACTICE LIST NEVER LOADS SHUT.
+ *
+ * Every press on a group row is saved, and opening one group folds the others
+ * as a side effect — so a single trip into Teaching left `Practices: false` in
+ * storage, and the practice list greeted every later visit folded. The owner's
+ * rule: it is open at the start, always.
+ */
+describe("the practice list opens on every load", () => {
+  const saveFolds = (folds: Record<string, boolean>) =>
+    window.localStorage.setItem("sb_open_groups", JSON.stringify(folds));
+
+  it("even when the last visit left it folded", () => {
+    saveFolds({ Practices: false, Teaching: true, Learning: false });
+    render(<SidebarNav role="teacher" />);
+    expect(panelOf("practices")).toHaveAttribute("data-open", "1");
+  });
+
+  it("while every other group keeps the state it was saved in", () => {
+    saveFolds({ Practices: false, Teaching: true, Learning: false });
+    render(<SidebarNav role="teacher" />);
+    expect(panelOf("learning"), "a saved fold elsewhere must survive").toHaveAttribute(
+      "data-open",
+      "0",
+    );
+  });
+
+  it("for a learner, and for a centre student's homework rail", () => {
+    pathname.current = "/dashboard";
+    saveFolds({ Practices: false, Practice: false });
+    render(<SidebarNav role="student" />);
+    expect(panelOf("practices")).toHaveAttribute("data-open", "1");
+    cleanup();
+
+    render(<SidebarNav role="student" showAssignments homeworkOnly />);
+    expect(panelOf("practice")).toHaveAttribute("data-open", "1");
+  });
+
+  it("can still be folded for the rest of the visit, and is open again on the next", () => {
+    render(<SidebarNav role="teacher" />);
+    fireEvent.click(groupToggle("Practices"));
+    expect(panelOf("practices")).toHaveAttribute("data-open", "0");
+
+    cleanup(); // a fresh page load: the rail mounts again from storage
+    render(<SidebarNav role="teacher" />);
+    expect(panelOf("practices")).toHaveAttribute("data-open", "1");
+  });
+});
+
+/**
  * THE CLICK ANSWERS BEFORE THE SERVER DOES.
  *
  * The highlight used to follow the URL, and the URL changes only once the next

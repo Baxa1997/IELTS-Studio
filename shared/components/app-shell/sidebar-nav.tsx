@@ -79,6 +79,10 @@ type Section = {
   items: Item[];
   /** Pinned to the foot of the rail, below every other section — Settings. */
   pinned?: boolean;
+  /** Starts open on every page load, whatever was folded last visit. The
+   *  owner's call for the practice list: it is what the rail is for, so it must
+   *  never greet anyone shut. Folding it still works — for that visit. */
+  openOnLoad?: boolean;
 };
 
 export function resolveActiveHref(
@@ -105,6 +109,7 @@ const STUDENT: Section[] = [
     title: "Practices",
     titleKey: "nav.section.practices",
     icon: Layers,
+    openOnLoad: true,
     items: [
       { label: "Writing", labelKey: "nav.writing", href: "/write", icon: SquarePen },
       { label: "Reading", labelKey: "nav.reading", href: "/read", icon: BookOpen },
@@ -323,6 +328,7 @@ const TEACHER: Section[] = [
     title: "Practices",
     titleKey: "nav.section.practices",
     icon: Layers,
+    openOnLoad: true,
     items: [
       { label: "Writing", labelKey: "nav.writing", href: "/write", icon: SquarePen },
       { label: "Reading", labelKey: "nav.reading", href: "/read", icon: BookOpen },
@@ -492,6 +498,7 @@ function sectionsFor(
       title: "Practice",
       titleKey: "nav.section.practice",
       icon: Layers,
+      openOnLoad: true,
       items: [
         { label: "Writing", labelKey: "nav.writing", href: "/write", icon: SquarePen },
         { label: "Reading", labelKey: "nav.reading", href: "/read", icon: BookOpen },
@@ -609,6 +616,21 @@ function writeOpenGroups(next: Record<string, boolean>): void {
   for (const listener of openStoreListeners) listener();
 }
 
+/**
+ * The saved folds, minus the groups that open on every load.
+ *
+ * ⚠️ A SAVED FOLD DOES NOT OUTLIVE THE VISIT FOR AN `openOnLoad` GROUP. The
+ * accordion persists every press, and opening any other group writes
+ * `Practices: false` as a side effect — so a single visit to Teaching shut the
+ * practice list on every load after it, which is how it was reported. Dropped
+ * here and only here: the other groups keep their preference, and a fold made
+ * during this visit still holds, because that lives in session state.
+ */
+function savedFolds(saved: Record<string, boolean>, sections: Section[]): Record<string, boolean> {
+  const everyLoad = new Set(sections.filter((s) => s.openOnLoad).map((s) => s.title));
+  return Object.fromEntries(Object.entries(saved).filter(([title]) => !everyLoad.has(title)));
+}
+
 function groupBadge(items: Item[]): { badge: string; tone: "good" | "alert" } | null {
   const badged = items.filter((i) => i.badge && Number(i.badge) > 0);
   if (badged.length === 0) return null;
@@ -710,7 +732,7 @@ export function SidebarNav({
     }
   }, [storedRaw]);
   const [session, setSession] = useState<Record<string, boolean>>({});
-  const openGroups = useMemo(() => ({ ...stored, ...session }), [stored, session]);
+  const openGroups: Record<string, boolean> = { ...savedFolds(stored, sections), ...session };
 
   const groupOf = (href?: string) =>
     href ? sections.find((s) => s.title && s.items.some((i) => i.href === href))?.title : undefined;
