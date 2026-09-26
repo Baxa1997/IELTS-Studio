@@ -52,11 +52,33 @@ export async function signIn(_prev: AuthFormState, formData: FormData): Promise<
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: isLogin ? "Invalid login or password." : error.message };
 
+  /* ⚠️ THE CONFIRMATION LINK IS OFTEN OPENED ON ANOTHER DEVICE. An email
+     sign-up claims its referral in /auth/callback — but that is wherever the
+     confirmation email was opened, usually a phone's mail app, which has no
+     `ep_ref` cookie. The person then signs in here, on the browser that DOES
+     have it, and nothing claimed it: the referrer was never credited. Safe for
+     an existing customer — `claimReferral` refuses any account older than the
+     click — and a no-op without a cookie. Never throws. */
+  await claimReferral();
+
   const session = await getSession();
   // `next` is honoured only when this role may actually have it — see
   // `landingFor`. Signing in as a learner on /sign-in?next=/console used to
   // land that learner in the centre console.
   redirect(session ? landingFor(session.role, next) : (next ?? "/dashboard"));
+}
+
+/**
+ * Keep a typed referral code across a Google sign-up.
+ *
+ * The sign-up dialog's code field is posted with the email form — so somebody
+ * who typed a code and then chose "Continue with Google" left it behind in the
+ * page, and Google is how three in four accounts here are made. This stashes it
+ * in the same cookie a `?ref=` link uses, for /auth/callback to claim. Setting a
+ * cookie on your own browser is all it can do, so it needs no session.
+ */
+export async function rememberReferralCode(raw: string): Promise<void> {
+  await stashReferralCode(raw);
 }
 
 /**

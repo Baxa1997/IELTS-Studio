@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
 
-import { signUp, type AuthFormState } from "@/app/(auth)/actions";
+import { rememberReferralCode, signUp, type AuthFormState } from "@/app/(auth)/actions";
 import { createClient } from "@/lib/supabase/client";
 
 import {
@@ -46,6 +46,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [state, formAction, pending] = useActionState(signUp, initial);
   const [googlePending, setGooglePending] = useState(false);
   const first = useRef<HTMLInputElement>(null);
+  const referral = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -62,6 +63,9 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   async function withGoogle() {
     setGooglePending(true);
+    // A code typed below is only posted by the email form; Google leaves the
+    // page, so it has to be put somewhere the callback can find it first.
+    await rememberReferralCode(referral.current?.value ?? "");
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -267,6 +271,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
             <span style={{ fontWeight: 500, color: MUTED }}>{t("su.optional")}</span>
           </label>
           <input
+            ref={referral}
             id="su_ref"
             name="referral_code"
             autoComplete="off"

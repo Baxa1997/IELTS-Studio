@@ -104,3 +104,26 @@ describe("what neither door will do", () => {
     expect(check).toBeLessThan(query);
   });
 });
+
+/*
+ * THE TWO WAYS A REAL REFERRAL STILL LEAKED (audit, 2026-09-26).
+ * Neither is visible from the referrer's side — they just never hear anything.
+ */
+describe("a referral survives the trip through someone else's device or Google", () => {
+  it("is claimed at password sign-in, after the sign-in succeeded", () => {
+    // The confirmation link is usually opened in a phone's mail app, which has
+    // no cookie; the browser that has it only ever sees a sign-in.
+    const signIn = authActions.slice(authActions.indexOf("export async function signIn"), authActions.indexOf("async function emailForLogin"));
+    const ok = signIn.indexOf("signInWithPassword(");
+    const claim = signIn.indexOf("await claimReferral();");
+    expect(claim).toBeGreaterThan(ok);
+    expect(claim).toBeLessThan(signIn.indexOf("redirect("));
+  });
+
+  it("keeps a code typed in the dialog when the person chooses Google", () => {
+    const google = dialog.slice(dialog.indexOf("async function withGoogle"), dialog.indexOf("signInWithOAuth("));
+    expect(google).toMatch(/await rememberReferralCode\(referral\.current\?\.value \?\? ""\)/);
+    expect(dialog).toMatch(/ref=\{referral\}\s*id="su_ref"/);
+    expect(authActions).toMatch(/export async function rememberReferralCode\(raw: string\): Promise<void> \{\s*await stashReferralCode\(raw\);/);
+  });
+});
