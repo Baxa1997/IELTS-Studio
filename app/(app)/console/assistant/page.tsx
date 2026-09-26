@@ -5,7 +5,7 @@ import { ACTIONS, loadCentreSnapshot } from "@/lib/console/assistant";
 import { listThreads, loadThread } from "@/lib/console/assistant-thread";
 import { staffLinkStatus } from "@/lib/telegram/staff";
 
-import { AssistantChat } from "./chat";
+import { AssistantChat } from "./_components/chat";
 
 export const dynamic = "force-dynamic";
 

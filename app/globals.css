@@ -64,7 +64,7 @@
      The cream ground the learner app and the console are drawn on, beside the
      white rail. It is a TOKEN rather than a literal because two things have to
      agree on it and they live in different files: the shell paints the surface
-     (SURFACE in components/app-shell/shell.tsx) and the console's sticky top bar
+     (SURFACE in shared/components/app-shell/shell.tsx) and the console's sticky top bar
      has to paint the same value to disappear into it. That bar was hard-coded
      #fff, which was invisible while the surface was also white and became a
      white band across the top of every console page the moment it went cream.
@@ -194,7 +194,7 @@
       "var(--tk-brand)33", which is not a colour and which the browser drops
       silently — no error, just an element with no background. Use
       `withAlpha()` from the tokens module (it wraps `color-mix`). The same
-      trap is documented at app/(shell)/speak/lucida.tsx:217, which hit it
+      trap is documented at shared/components/speaking/lucida.tsx:217, which hit it
       first.
    =================================================================== */
 :root {
@@ -298,7 +298,7 @@
   --tk-tint-neutral-bg: #f1f0eb;
 
   /* ── the /admin console's own chrome ──────────────────────────────────────
-     ⚠️ ADDED BECAUSE components/admin/header.tsx AND ui.tsx HARDCODED THESE.
+     ⚠️ ADDED BECAUSE app/admin/_components/header.tsx AND ui.tsx HARDCODED THESE.
      A literal cannot invert, so the platform console's sticky top bar stayed
      near-white on a near-black page in dark mode — the single most visible
      dark-mode bug on /admin, and the same class as the TONE tints below it.
@@ -382,7 +382,7 @@
   --tk-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
 
   /* A DIALOG AND THE DARK IT IS DROPPED INTO. Both were literals inside
-     components/ui/interactive.tsx, and both are light-mode assumptions: a
+     shared/components/ui/interactive.tsx, and both are light-mode assumptions: a
      navy-tinted scrim LIGHTENS a near-black page instead of pushing it back,
      and a soft shadow does nothing at all on one — so the panel had no edge
      and the ground behind it barely dimmed. In dark the scrim goes to real
@@ -469,7 +469,7 @@
    * lives in CSS rather than inline ON PURPOSE — an inline `background` or
    * `border` beats a stylesheet `:hover` at any specificity, so a card would
    * look right at rest and never light up under the pointer (the trap its own
-   * header and components/practice/card.test.ts both guard).
+   * header and shared/components/practice/card.test.ts both guard).
    *
    * That is also why it needed its own tokens rather than borrowing `--tk-`
    * ones: the hover BORDERS and GLOWS are three tinted pairs with no
@@ -902,7 +902,7 @@
 
 /* ── THE MARKETING PALETTE (`--mk-*`) ──────────────────────────────────────
  *
- * `app/_landing/design.ts` is the SECOND palette in this codebase — the front
+ * `app/_landing/_lib/design.ts` is the SECOND palette in this codebase — the front
  * door, sign-in, the how-to-use pages and the 11 marketing routes are drawn
  * from it rather than from `lib/theme/tokens.ts`. Two palettes is the state
  * that existed before dark mode and is not something this change set out to
@@ -1042,7 +1042,7 @@
  *
  * ⚠️ THIS IS THE PALETTE WHOSE ABSENCE MADE DARK MODE LOOK BROKEN. Everything
  * the `--tk-` tokens reach went dark on the first pass; the shell did not,
- * because these values were plain constants in `components/app-shell/shell.tsx`
+ * because these values were plain constants in `shared/components/app-shell/shell.tsx`
  * and `sidebar-nav.tsx`. The result was the worst of both: dark cards floating
  * on a cream page, and headings drawn in the DARK theme's near-white ink on
  * that same cream — invisible. A half-converted theme is worse than no theme,
@@ -1255,11 +1255,11 @@
   --ex-fb-amber: #9a7b2a;
   --ex-fb-amber-deep: #9a6a12;
   --ex-fb-amber-bg: #f6ead0;
-  /* The essay's mark inks (components/writing/annotations.ts). */
+  /* The essay's mark inks (shared/components/writing/annotations.ts). */
   --ex-ann-spelling: #a8362a;
   --ex-ann-grammar: #946813;
   --ex-ann-cohesion: #256b5c;
-  /* The Task 1 chart (components/writing/figure.tsx): grid, axis, and eight
+  /* The Task 1 chart (shared/components/writing/figure.tsx): grid, axis, and eight
      categorical series in order. */
   --ex-fig-grid: #ece9dd;
   --ex-fig-axis: #c7c3b4;
@@ -1306,7 +1306,7 @@
   --ex-dg-ok-ink: #1f6b44;
   --ex-dg-ok-body: #3f6e54;
   --ex-dg-chip-line: #eceadc;
-  /* A center student's homework cards (components/assignments/assigned-hub). */
+  /* A center student's homework cards (shared/components/assignments/assigned-hub). */
   --ex-hw-due: #e2685c;
   --ex-hw-overdue: #b3261e;
   --ex-hw-overdue-line: #e4a9a4;
@@ -2033,7 +2033,7 @@
   color: #fff;
 }
 
-/* ── shared primitive kit (components/ui/*) ───────────────────────────────────
+/* ── shared primitive kit (shared/components/ui/*) ───────────────────────────────────
    The handful of states an inline style cannot express. Everything else about
    these components — colour, spacing, type — comes from lib/theme/tokens.ts, so
    this stays deliberately tiny: if a rule here is doing more than :hover, :focus
@@ -4227,11 +4227,11 @@
    Scoped to `.cn-root` — set by app/(app)/console/layout.tsx — so the cream/
    indigo look never reaches the learner app or the platform super-admin
    console, which stay on the emerald Option A brand. Tokens and components
-   live in components/console/crm-ui.tsx; only states that need a pseudo-class
+   live in app/(app)/console/_components/crm-ui.tsx; only states that need a pseudo-class
    are here.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ---- console page chrome (components/console/console-chrome.tsx) --------- */
+/* ---- console page chrome (app/(app)/console/_components/console-chrome.tsx) --------- */
 /* The sticky top bar and slide-overs live INSIDE the app shell's content
    surface — the sidebar is the app's own, unchanged. */
 @media (max-width: 900px) {
@@ -4288,7 +4288,7 @@
   --destructive: #c2453a;
   --radius: 0.5rem;
 
-  /* And the older console kit (components/console/page-ui.tsx), which still
+  /* And the older console kit (shared/components/console/page-ui.tsx), which still
      renders the pending-invite list, the assignment report and the student
      report. Its tokens are `var(--pu-*, <Option A fallback>)`, so defining them
      here moves those pages onto the CRM brand too — and leaves the platform
@@ -5073,7 +5073,7 @@
 /* ── Platform console (/admin) ─────────────────────────────────────────────
    The Super Admin design's page area. Only what genuinely cannot be an inline
    style lives here: hover states and the breakpoints. Everything static stays
-   inline in components/admin/ui.tsx, so a stale stylesheet can never leave the
+   inline in app/admin/_components/ui.tsx, so a stale stylesheet can never leave the
    page half-painted — the lesson from the Practice AI hero. */
 
 .sa-row:hover {
@@ -5222,7 +5222,7 @@ section[id] {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PRACTICE GALLERY (components/practice/gallery.tsx)
+   PRACTICE GALLERY (shared/components/practice/gallery.tsx)
    One browsable grid, shared by every list of practice: a learner's history,
    a teacher's library, and the practices on a student's report.
 
@@ -5668,8 +5668,8 @@ section[id] {
    ⚠️ THE SURFACE LIVES HERE, NOT INLINE. Background and border are set in this
    stylesheet, next to the :hover that must not be cancelled — an inline
    `background` or `border` beats a stylesheet hover whatever its specificity,
-   which is the trap recorded at length in components/app-shell/nav-groups.test.ts
-   and re-guarded in components/practice/card.test.ts. Anything genuinely dynamic
+   which is the trap recorded at length in shared/components/app-shell/nav-groups.test.ts
+   and re-guarded in shared/components/practice/card.test.ts. Anything genuinely dynamic
    (a locked card's opacity, a progress bar's width) is still inline; the resting
    fill of a hovering element never is.
    ========================================================================== */

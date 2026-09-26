@@ -20,12 +20,12 @@ import {
   THead,
   Toolbar,
   TRow,
-} from "@/components/console/crm-ui";
-import { PanelButton } from "@/components/console/console-chrome";
+} from "@/app/(app)/console/_components/crm-ui";
+import { PanelButton } from "@/app/(app)/console/_components/console-chrome";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudents, type StudentRow } from "@/lib/console/people";
 
-import { StudentStatusCell } from "./status-cell";
+import { StudentStatusCell } from "./_components/status-cell";
 import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

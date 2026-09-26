@@ -1,13 +1,13 @@
 import Link from "next/link";
 
-import { Card, CardHead, Empty, FAINT, INK, LINE, MUTED, PageTitle, ROW_RULE, SANS, SOFT, Surface } from "@/components/admin/ui";
+import { Card, CardHead, Empty, FAINT, INK, LINE, MUTED, PageTitle, ROW_RULE, SANS, SOFT, Surface } from "@/app/admin/_components/ui";
 import { requireSuperAdmin } from "@/lib/auth";
 import { loadDuePayouts, loadPayoutHistory } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { formatMoney, nextPayoutDate } from "@/lib/referrals/types";
 import { BRAND } from "@/lib/theme/tokens";
 
-import { PayRow } from "./pay-row";
+import { PayRow } from "./_components/pay-row";
 
 export const dynamic = "force-dynamic";
 

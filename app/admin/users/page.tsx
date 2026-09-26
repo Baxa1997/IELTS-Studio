@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { MenuIcon } from "@/components/admin/menu-icons";
-import { OverflowMenu } from "@/components/admin/menu";
+import { MenuIcon } from "@/app/admin/_components/menu-icons";
+import { OverflowMenu } from "@/app/admin/_components/menu";
 import {
   Card,
   CardHead,
@@ -16,13 +16,13 @@ import {
   Surface,
   TONE,
   clip,
-} from "@/components/admin/ui";
+} from "@/app/admin/_components/ui";
 import { loadEngagement, loadUsers } from "@/lib/admin/platform";
 import { monthlyPrice } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
 
-import { UsersTable, type UserRow } from "./users-table";
+import { UsersTable, type UserRow } from "./_components/users-table";
 import { INDIGO_CONSOLE, PANEL, PLAN_COLOR } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

@@ -1,4 +1,4 @@
-import { ConsoleSkeleton } from "@/components/app-shell/page-skeleton";
+import { ConsoleSkeleton } from "@/shared/components/app-shell/page-skeleton";
 
 /**
  * Suspense fallback for the staff console.

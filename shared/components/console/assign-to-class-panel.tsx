@@ -1,0 +1,201 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { assignPractice, type PracticeFormState } from "@/lib/console/practice-actions";
+import { useActionFeedback } from "@/shared/components/console/toast";
+import {
+  FAB_CLEARANCE,
+  INDIGO,
+  INDIGO_FILL,
+  ON_INDIGO,
+  ON_INK,
+  PANEL,
+  SLATE_INK,
+  SLATE_LINE,
+  SLATE_MUTED,
+  WARM_GREEN,
+  WARM_RED,
+  WHITE,
+} from "@/lib/theme/tokens";
+
+const INK = SLATE_INK;
+const MUTED = SLATE_MUTED;
+const LINE = SLATE_LINE;
+const SANS = "var(--font-hanken), system-ui, sans-serif";
+
+/**
+ * Floating, staff-only, collapsed by default — so the runner it sits on looks
+ * exactly like the learner's until a teacher chooses to act.
+ */
+export function AssignToClassPanel({
+  kind,
+  contentId,
+  groups,
+}: {
+  kind: "writing" | "reading" | "listening";
+  contentId: string;
+  groups: { id: string; name: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useActionState(assignPractice, {} as PracticeFormState);
+  // This panel owns its own `open`, so it is not inside a Drawer and
+  // useDrawerClose cannot reach it — without this it stays sitting over the
+  // runner after a successful attach, looking like nothing happened.
+  useActionFeedback(state, { onSuccess: () => setOpen(false) });
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        right: 18,
+        // Clears the fixed theme button in this same corner.
+        bottom: FAB_CLEARANCE,
+        zIndex: 60,
+        fontFamily: SANS,
+        maxWidth: "min(340px, calc(100vw - 36px))",
+      }}
+    >
+      {open ? (
+        <div
+          style={{
+            background: PANEL,
+            border: `1px solid ${LINE}`,
+            borderRadius: 14,
+            boxShadow: "0 12px 34px rgba(26,33,56,0.16)",
+            padding: 16,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <strong style={{ fontSize: 14, color: INK }}>Set this to a group</strong>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              style={{
+                border: "none",
+                background: "none",
+                color: MUTED,
+                cursor: "pointer",
+                fontSize: 16,
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <p style={{ fontSize: 12.5, color: MUTED, margin: "6px 0 12px" }}>
+            Everyone in the group gets this exact practice, so their results compare.
+          </p>
+
+          <form action={formAction} style={{ display: "grid", gap: 10 }}>
+            <input type="hidden" name="kind" value={kind} />
+            <input type="hidden" name="content_id" value={contentId} />
+
+            <div style={{ display: "grid", gap: 6, maxHeight: 168, overflowY: "auto" }}>
+              {groups.map((g) => (
+                <label
+                  key={g.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13.5,
+                    color: INK,
+                  }}
+                >
+                  <input type="checkbox" name="group_ids" value={g.id} />
+                  {g.name}
+                </label>
+              ))}
+            </div>
+
+            <label style={{ display: "grid", gap: 4, fontSize: 12.5, color: MUTED }}>
+              Due (optional)
+              <input
+                type="date"
+                name="due_at"
+                style={{
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 9,
+                  padding: "6px 9px",
+                  fontFamily: SANS,
+                  fontSize: 13.5,
+                  color: INK,
+                }}
+              />
+            </label>
+
+            {/* The note goes to the students, in the app AND in the group's
+                Telegram post — assignPractice has always read `instructions`,
+                but nothing ever offered the field here. */}
+            <label style={{ display: "grid", gap: 4, fontSize: 12.5, color: MUTED }}>
+              Note for the group (optional)
+              <textarea
+                name="instructions"
+                rows={2}
+                placeholder="Focus on the introduction."
+                style={{
+                  border: `1px solid ${LINE}`,
+                  borderRadius: 9,
+                  padding: "7px 9px",
+                  fontFamily: SANS,
+                  fontSize: 13.5,
+                  color: INK,
+                  resize: "vertical",
+                }}
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={pending}
+              style={{
+                background: INDIGO_FILL,
+                color: ON_INDIGO,
+                border: "none",
+                borderRadius: 10,
+                padding: "9px 14px",
+                fontWeight: 600,
+                fontSize: 13.5,
+                cursor: pending ? "default" : "pointer",
+                opacity: pending ? 0.7 : 1,
+              }}
+            >
+              {pending ? "Setting…" : "Set as homework"}
+            </button>
+          </form>
+
+          {state.error ? (
+            <p style={{ marginTop: 8, fontSize: 12.5, color: WARM_RED }} role="alert">
+              {state.error}
+            </p>
+          ) : null}
+          {state.notice ? (
+            <p style={{ marginTop: 8, fontSize: 12.5, color: WARM_GREEN }} role="status">
+              {state.notice}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          style={{
+            background: INK,
+            color: ON_INK,
+            border: "none",
+            borderRadius: 999,
+            padding: "10px 16px",
+            fontWeight: 600,
+            fontSize: 13.5,
+            boxShadow: "0 10px 26px rgba(26,33,56,0.22)",
+            cursor: "pointer",
+          }}
+        >
+          Set this to a group
+        </button>
+      )}
+    </div>
+  );
+}

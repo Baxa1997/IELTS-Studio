@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { getSession, roleHome } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-import { SignOutButton } from "../sign-out-button";
+import { SignOutButton } from "./_components/sign-out-button";
 
 const COPY: Record<string, { title: string; body: (email: string) => string }> = {
   pending: {

@@ -13,7 +13,7 @@ import {
   Row,
   RowText,
   SANS,
-} from "@/components/console/page-ui";
+} from "@/shared/components/console/page-ui";
 import { BRAND, BRAND_SOFT } from "@/lib/theme/tokens";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { requireOrgUser, roleHome } from "@/lib/auth";

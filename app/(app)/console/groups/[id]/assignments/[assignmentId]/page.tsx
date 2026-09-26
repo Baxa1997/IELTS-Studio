@@ -15,8 +15,8 @@ import {
   SANS,
   StatRow,
   StatTile,
-} from "@/components/console/page-ui";
-import { KeepButton } from "./keep-button";
+} from "@/shared/components/console/page-ui";
+import { KeepButton } from "./_components/keep-button";
 import { requireOrgUser } from "@/lib/auth";
 import { loadAssignmentReport } from "@/lib/console/assignments";
 

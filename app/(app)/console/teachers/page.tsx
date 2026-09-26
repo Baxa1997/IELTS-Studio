@@ -18,8 +18,8 @@ import {
   THead,
   Toolbar,
   TRow,
-} from "@/components/console/crm-ui";
-import { PanelButton } from "@/components/console/console-chrome";
+} from "@/app/(app)/console/_components/crm-ui";
+import { PanelButton } from "@/app/(app)/console/_components/console-chrome";
 import { loadSubjects, loadTeacherSubjects } from "@/lib/console/subjects";
 import {
   describeTurnaround,
@@ -31,7 +31,7 @@ import { loadTeachers, loadTurnaround } from "@/lib/console/people";
 import { loadCenterReport } from "@/lib/console/reports";
 import { createClient } from "@/lib/supabase/server";
 
-import { TeacherSubjectsCell } from "./teacher-subjects-cell";
+import { TeacherSubjectsCell } from "./_components/teacher-subjects-cell";
 import { FAINT, PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

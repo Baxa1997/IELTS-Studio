@@ -1,4 +1,4 @@
-import { CardsSkeleton } from "@/components/app-shell/page-skeleton";
+import { CardsSkeleton } from "@/shared/components/app-shell/page-skeleton";
 import { PRACTICE_SKELETON_CARDS } from "@/lib/practice/grid";
 
 /**

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
-import { CentersGuide, centersMetadata } from "./centers-guide";
+import { CentersGuide, centersMetadata } from "./_components/centers-guide";
 
 /**
  * The education-centre guide in the DEFAULT language, at the bare URL — Uzbek.

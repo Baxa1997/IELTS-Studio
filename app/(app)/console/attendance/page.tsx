@@ -23,17 +23,17 @@ import {
   MUTED,
   PageHead,
   SANS,
-} from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
-import { ScheduleTabs } from "@/components/console/schedule-tabs";
+} from "@/app/(app)/console/_components/crm-ui";
+import { Drawer } from "@/shared/components/console/finance-ui";
+import { ScheduleTabs } from "@/app/(app)/console/_components/schedule-tabs";
 import { requireOrgUser } from "@/lib/auth";
 import { loadDay } from "@/lib/console/attendance";
 import { loadAlertSettings } from "@/lib/console/alerts";
 import { loadCenterSettings } from "@/lib/console/center-settings";
 import { centerNow, registersToMark, type DayLesson } from "@/lib/console/schedule";
 
-import { AlertSettingsForm } from "./alert-settings-form";
-import { DateStrip } from "./date-strip";
+import { AlertSettingsForm } from "./_components/alert-settings-form";
+import { DateStrip } from "./_components/date-strip";
 import { PANEL, WARM_LINE, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

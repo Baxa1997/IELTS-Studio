@@ -1,0 +1,880 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  BRAND,
+  BRAND_FILL,
+  BRAND_LINE,
+  BRAND_SOFT,
+  ON_INK,
+  PANEL,
+  SANS,
+  SERIF,
+  SLATE_BODY,
+  SLATE_GREEN,
+  SLATE_GREEN as EMERALD,
+  SLATE_GREEN_BG,
+  SLATE_MUTED,
+  SLATE_RED,
+  SLATE_RED_BG,
+  SLATE_STRONG,
+  WHITE,
+  withAlpha,
+} from "@/lib/theme/tokens";
+import { Timer } from "@/shared/components/exam/timer";
+import { Typewriter } from "@/shared/components/typewriter";
+import { cleanAnnotations, type Annotation } from "@/shared/components/writing/annotations";
+import { EssayFeedback } from "@/shared/components/writing/essay-feedback";
+import { FigureView } from "@/shared/components/writing/figure";
+import type { Figure } from "@/lib/writing/figure";
+
+import { saveDraft } from "../../actions";
+import { IELTS_STUDIO_THEME, accentStrong, type StudioTheme } from "../_lib/studio-theme";
+
+// ---- Types -----------------------------------------------------------------
+
+export type EssayTaskKind = "task2" | "task1_general" | "task1_academic";
+
+export interface ServedPrompt {
+  id: string;
+  task_type: EssayTaskKind;
+  prompt_text: string;
+  /** Academic Task 1 only: the chart/table the candidate must describe. */
+  figure: Figure | null;
+  category: string | null;
+  topic_family: string | null;
+  difficulty: number | null;
+  /** True for prompts this learner generated on demand (source = 'ai') vs. the
+   *  curated starter set (source = 'seed') — used by the library to surface fresh
+   *  ones first, without a band. Absent on the studio's served prompt. */
+  generated?: boolean;
+}
+
+export type LibraryPrompt = ServedPrompt;
+
+interface CriterionScore {
+  band: number;
+  evidence: string;
+  what_caps_it: string;
+  fix: string;
+}
+
+interface Grading {
+  overall_band: number;
+  band_with_fixes: number;
+  criteria: Record<string, CriterionScore>;
+  score_blocker: { criterion: string; why: string };
+  model: string;
+  version_no?: number;
+  annotations?: Annotation[];
+}
+
+interface TutorMsg {
+  role: "user" | "assistant";
+  content: string;
+  /** A freshly-arrived coach reply types in live; replayed history shows at once. */
+  animate?: boolean;
+}
+
+type Phase = "writing" | "results";
+
+// ---- Brand tokens ----------------------------------------------------------
+
+
+const AUTOSAVE_MS = 1500;
+
+function secondsForTask(kind: string): number {
+  return kind === "task2" ? 40 * 60 : 20 * 60;
+}
+function minWordsForTask(kind: string): number {
+  return kind === "task2" ? 250 : 150;
+}
+function minutesForTask(kind: string): number {
+  return kind === "task2" ? 40 : 20;
+}
+function requirementChips(kind: string): string[] {
+  if (kind === "task1_general") return ["Cover all three points", `At least ${minWordsForTask(kind)} words`, `~${minutesForTask(kind)} minutes`];
+  if (kind === "task1_academic") return ["Describe the key data", `At least ${minWordsForTask(kind)} words`, `~${minutesForTask(kind)} minutes`];
+  return ["Give reasons & examples", `At least ${minWordsForTask(kind)} words`, `~${minutesForTask(kind)} minutes`];
+}
+const CATEGORY_LABEL: Record<string, string> = {
+  opinion: "Agree / Disagree",
+  discussion: "Discuss both views",
+  problem_solution: "Problem / Solution",
+  two_part: "Two-part question",
+  advantages_disadvantages: "Advantages / Disadvantages",
+  positive_negative: "Positive / Negative",
+};
+
+// IELTS prompts ship with boilerplate ("spend 40 minutes…", "write at least 250
+// words") wrapped around the real topic statement. Split them so the editor can
+// give the topic the most weight and shrink the instructions.
+type PromptPart = { kind: "meta" | "topic" | "question"; text: string };
+const PROMPT_META_RE = /^(you should spend|write about the following|give reasons for your answer|write at least \d+\s*words|you should write at least)/i;
+const PROMPT_Q_RE = /(to what extent do you (agree|think)|do you agree or disagree|agree or disagree\??$|discuss both (these )?views|what are the (causes|advantages|disadvantages|problems|reasons|benefits|drawbacks)|why (do|is|are|has)|how (can|could|do)|what (problems|measures|solutions|steps))/i;
+
+function parsePromptParts(text: string): PromptPart[] {
+  let blocks = text.split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean);
+  if (blocks.length <= 1) blocks = text.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+  const parts: PromptPart[] = blocks.map((b) => {
+    if (PROMPT_META_RE.test(b)) return { kind: "meta" as const, text: b };
+    if (/\?\s*$/.test(b) && PROMPT_Q_RE.test(b) && b.length < 140) return { kind: "question" as const, text: b };
+    return { kind: "topic" as const, text: b };
+  });
+  // Never let parsing hide the whole prompt — if nothing read as the topic, show it all big.
+  if (!parts.some((p) => p.kind === "topic")) return blocks.map((b) => ({ kind: "topic" as const, text: b }));
+  return parts;
+}
+
+const TUTOR_CHIPS = ["Plan an outline", "Useful vocabulary", "Check my idea"];
+
+// ---- Studio ----------------------------------------------------------------
+
+export function WritingStudio({
+  prompt,
+  essayId: initialEssayId = null,
+  initialContent = "",
+  resumed = false,
+  learnerContext = "",
+  practiceNo = null,
+}: {
+  prompt: ServedPrompt;
+  essayId?: string | null;
+  initialContent?: string;
+  resumed?: boolean;
+  /** "Practice test N" — shown in the header when opened from a numbered library card. */
+  practiceNo?: number | null;
+  /** Compact "who is this learner" line (target/level/weakest area) so the coach
+   *  pitches its help to the right level. Context only — never quoted as a band. */
+  learnerContext?: string;
+}) {
+  const router = useRouter();
+  const taskKind = prompt.task_type;
+
+  // The studio chrome is driven by a single theme object so every accent/ink/border
+  // reference reads from one place.
+  const theme = IELTS_STUDIO_THEME;
+  const BRAND = theme.accent;
+  const INK = theme.ink;
+
+  const [phase, setPhase] = useState<Phase>("writing");
+  const [essayId, setEssayId] = useState<string | null>(initialEssayId);
+  const [content, setContent] = useState(initialContent);
+  const [timed, setTimed] = useState(!resumed);
+  const [grading, setGrading] = useState<Grading | null>(null);
+  const [disclaimer, setDisclaimer] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(initialContent ? "saved" : "idle");
+  const [submitting, setSubmitting] = useState(false);
+  const [lastGraded, setLastGraded] = useState("");
+
+  const [tutorOpen, setTutorOpen] = useState(true);
+  // On phones/tablets the coach opens as a floating modal over the editor (not an
+  // inline column that pushes the answer down), so start it CLOSED — the floating
+  // "Ask coach" button opens it. Desktop keeps it open as the side column. The
+  // viewport is unknown during SSR, so this one-time sync must run after mount.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1024px)").matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init from viewport, not a render loop
+      setTutorOpen(false);
+    }
+  }, []);
+  const [spellOn, setSpellOn] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [tutorMsgs, setTutorMsgs] = useState<TutorMsg[]>([]);
+  const [tutorInput, setTutorInput] = useState("");
+  const [tutorPending, setTutorPending] = useState(false);
+
+  const contentRef = useRef(content);
+  const essayIdRef = useRef(essayId);
+  const lastSavedRef = useRef(initialContent);
+  const submittingRef = useRef(false);
+  const tutorMsgsRef = useRef(tutorMsgs);
+  const tutorScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => void (contentRef.current = content), [content]);
+  useEffect(() => void (essayIdRef.current = essayId), [essayId]);
+  useEffect(() => void (tutorMsgsRef.current = tutorMsgs), [tutorMsgs]);
+  useEffect(() => {
+    tutorScrollRef.current?.scrollTo({ top: tutorScrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [tutorMsgs, tutorPending]);
+
+  const words = useMemo(() => content.trim().split(/\s+/).filter(Boolean).length, [content]);
+
+  const persist = useCallback(async (): Promise<string | null> => {
+    const c = contentRef.current;
+    if (!c.trim()) return essayIdRef.current;
+    setSaveState("saving");
+    const res = await saveDraft({ promptId: prompt.id, essayId: essayIdRef.current, content: c });
+    if (res.essayId) {
+      essayIdRef.current = res.essayId;
+      setEssayId(res.essayId);
+      lastSavedRef.current = c;
+      setSaveState("saved");
+      return res.essayId;
+    }
+    setSaveState("error");
+    return null;
+  }, [prompt.id]);
+
+  useEffect(() => {
+    if (phase !== "writing") return;
+    if (content.trim() === lastSavedRef.current.trim()) return;
+    const t = setTimeout(() => void persist(), AUTOSAVE_MS);
+    return () => clearTimeout(t);
+  }, [content, phase, persist]);
+
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden" && contentRef.current.trim() !== lastSavedRef.current.trim()) void persist();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, [persist]);
+
+  // Full-page exit (refresh / close / non-SPA navigation) also resets the studio:
+  // beacon the discard so the unsubmitted draft doesn't linger. Graded essays are
+  // kept by the route's guard (status='draft' + zero gradings).
+  useEffect(() => {
+    const onPageHide = () => {
+      navigator.sendBeacon?.(`/api/essays/discard?promptId=${prompt.id}`);
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [prompt.id]);
+
+  const submit = useCallback(async () => {
+    if (submittingRef.current) return;
+    if (!contentRef.current.trim()) {
+      setMessage("Write something before submitting.");
+      return;
+    }
+    submittingRef.current = true;
+    setSubmitting(true);
+    setMessage(null);
+
+    const id = await persist();
+    if (!id) {
+      setMessage("Couldn't save your essay. Please try again.");
+      submittingRef.current = false;
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/essays/${id}/grade`, { method: "POST" });
+      const body = (await res.json().catch(() => ({}))) as {
+        grading?: Grading;
+        disclaimer?: string;
+        message?: string;
+        error?: string;
+      };
+      if (res.status === 200 && body.grading) {
+        setGrading(body.grading);
+        setDisclaimer(body.disclaimer ?? null);
+        setLastGraded(contentRef.current);
+        setTimed(false);
+        setPhase("results");
+        window.scrollTo({ top: 0 });
+      } else if (res.status === 202) {
+        setMessage(body.message ?? "Grading is busy right now — your essay is queued. Try again shortly.");
+      } else if (res.status === 429) {
+        setMessage("You’ve used this month’s free gradings (your monthly grading limit) — upgrade from the Writing page for more.");
+      } else {
+        setMessage(body.message ?? body.error ?? "Grading failed. Please try again.");
+      }
+    } catch {
+      setMessage("Network error while grading — please try again.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }, [persist]);
+
+  const submitRef = useRef(submit);
+  useEffect(() => void (submitRef.current = submit), [submit]);
+  const onExpire = useCallback(() => void submitRef.current(), []);
+
+  function revise() {
+    setGrading(null);
+    setDisclaimer(null);
+    setMessage(null);
+    setTimed(false);
+    setPhase("writing");
+    window.scrollTo({ top: 0 });
+  }
+
+  // Leaving the studio resets it: discard the unsubmitted draft so the next visit
+  // starts blank and abandoned attempts never count as "practised". We persist
+  // first so the discard (keyed by prompt) is sure to find and remove the row;
+  // graded work has gradings and is kept by the route's guard. Best-effort.
+  const goLibrary = useCallback(async () => {
+    await persist();
+    try {
+      await fetch(`/api/essays/discard?promptId=${prompt.id}`, { method: "POST", keepalive: true });
+    } catch {
+      /* best-effort cleanup — navigation proceeds regardless */
+    }
+    router.push("/write");
+    router.refresh(); // re-fetch the library so a freshly generated prompt shows
+  }, [persist, prompt.id, router]);
+
+  // Upload/paste a photo or PDF of a written answer → transcribe to editable text.
+  // Faithful transcription server-side; we append it (non-destructive) so a typed
+  // draft is never silently wiped. The student then edits and grades as normal.
+  const transcribeFile = useCallback(
+    async (file: File) => {
+      if (uploading || submitting) return;
+      setUploading(true);
+      setMessage(null);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/writing/transcribe", { method: "POST", body: fd });
+        const body = (await res.json().catch(() => ({}))) as { text?: string; message?: string };
+        if (!res.ok || !body.text) {
+          setMessage(body.message ?? "Couldn't read that file — try a clearer photo or PDF.");
+          return;
+        }
+        const add = body.text.trim();
+        setContent((prev) => (prev.trim() ? `${prev.replace(/\s+$/, "")}\n\n${add}` : add));
+      } catch {
+        setMessage("Network error while reading the file — please try again.");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [uploading, submitting],
+  );
+
+  const onPasteFile = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const item = Array.from(e.clipboardData?.items ?? []).find((it) => it.type.startsWith("image/"));
+      const f = item?.getAsFile();
+      if (f) {
+        e.preventDefault(); // image paste → transcribe; text paste falls through normally
+        void transcribeFile(f);
+      }
+    },
+    [transcribeFile],
+  );
+
+  const sendTutor = useCallback(
+    async (raw?: string) => {
+      const q = (raw ?? tutorInput).trim();
+      if (!q || tutorPending) return;
+      const prior = tutorMsgsRef.current;
+      setTutorMsgs([...prior, { role: "user", content: q }]);
+      setTutorInput("");
+      setTutorPending(true);
+      try {
+        const res = await fetch("/api/writing/tutor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: q,
+            taskType: taskKind,
+            promptText: prompt.prompt_text,
+            draft: contentRef.current,
+            phase: lastGraded.trim() ? "results" : "writing",
+            history: prior.slice(-6),
+            learnerContext,
+          }),
+        });
+        const body = (await res.json().catch(() => ({}))) as { reply?: string; message?: string };
+        setTutorMsgs((m) => [...m, { role: "assistant", content: res.ok && body.reply ? body.reply : body.message ?? "I couldn’t respond just now — try again.", animate: true }]);
+      } catch {
+        setTutorMsgs((m) => [...m, { role: "assistant", content: "Network error — please try again.", animate: true }]);
+      } finally {
+        setTutorPending(false);
+      }
+    },
+    [tutorInput, tutorPending, taskKind, prompt.prompt_text, lastGraded, learnerContext],
+  );
+
+  // Once a coach reply has finished typing, clear its animate flag so reopening the
+  // coach (which remounts the panel) replays it instantly instead of re-typing every
+  // old reply at once — the "jumping / rewriting loop" bug.
+  const markTutorAnimated = useCallback((idx: number) => {
+    setTutorMsgs((m) => (m[idx]?.animate ? m.map((msg, j) => (j === idx ? { ...msg, animate: false } : msg)) : m));
+  }, []);
+
+  // ---- Results -------------------------------------------------------------
+
+  if (phase === "results" && grading) {
+    return (
+      <EssayFeedback
+        taskType={taskKind}
+        topicFamily={prompt.topic_family}
+        figure={prompt.figure}
+        overallBand={grading.overall_band}
+        bandWithFixes={grading.band_with_fixes}
+        criteria={grading.criteria}
+        blocker={grading.score_blocker}
+        essayText={lastGraded}
+        annotations={cleanAnnotations(grading.annotations)}
+        promptText={prompt.prompt_text}
+        backHref="/write"
+        backLabel="Library"
+        onRevise={revise}
+        disclaimer={disclaimer ?? undefined}
+      />
+    );
+  }
+
+  // ---- Editor --------------------------------------------------------------
+
+  const hasGraded = lastGraded.trim() !== "";
+  const unchangedSinceGrade = hasGraded && content.trim() === lastGraded.trim();
+  const minWords = minWordsForTask(taskKind);
+  const taskSeconds = secondsForTask(taskKind);
+  const requirementList = requirementChips(taskKind).filter((c) => !/\bwords\b/i.test(c));
+  const wordPct = Math.min(100, minWords ? Math.round((words / minWords) * 100) : 0);
+  const lengthMet = words >= minWords;
+  const wordsToTarget = Math.max(0, minWords - words);
+  const chars = content.length;
+  const paragraphs = content.trim() ? content.trim().split(/\n{2,}/).map((s) => s.trim()).filter(Boolean).length : 0;
+  const RING_C = 2 * Math.PI * 19; // ≈ 119.38
+  const ringOffset = RING_C * (1 - Math.min(1, minWords ? words / minWords : 0));
+  const taskNo = taskKind === "task2" ? "TASK 2" : "TASK 1";
+  const taskKindLabel = taskKind === "task2" ? "Academic · Essay" : taskKind === "task1_general" ? "General · Letter" : "Academic · Report";
+  const promptParts = parsePromptParts(prompt.prompt_text);
+
+  const submitDisabled = submitting || !content.trim() || unchangedSinceGrade;
+
+  return (
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.canvas }}>
+      {/* grading modal — a calm, on-brand cover every time we mark a submission */}
+      {submitting ? <GradingOverlay theme={theme} /> : null}
+
+      {/* header */}
+      <header className="lp-write-hdr" style={{ flexShrink: 0, height: 62, background: PANEL, borderBottom: `1px solid ${theme.line}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <button type="button" onClick={() => void goLibrary()} style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 13px 0 11px", border: `1px solid ${theme.line}`, background: theme.soft, borderRadius: 9, fontFamily: SANS, fontSize: 14, fontWeight: 600, color: SLATE_STRONG, cursor: "pointer" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            Library
+          </button>
+          <div className="lp-hide-sm" style={{ width: 1, height: 24, background: theme.line }} />
+          <div className="lp-hide-sm" style={{ display: "flex", alignItems: "center", gap: 9, fontFamily: SANS, minWidth: 0 }}>
+            <span style={{ display: "inline-flex", alignItems: "center", height: 24, padding: "0 9px", borderRadius: 6, background: INK, color: ON_INK, fontSize: 11.5, fontWeight: 700, letterSpacing: ".06em", flexShrink: 0 }}>{taskNo}</span>
+            {practiceNo != null ? (<span style={{ fontSize: 14, fontWeight: 700, color: INK, flexShrink: 0 }}>Practice test {practiceNo}</span>) : null}
+            <span style={{ fontSize: 14, fontWeight: 500, color: SLATE_STRONG }}>{taskKindLabel}</span>
+            {prompt.topic_family && prompt.topic_family !== "custom" ? (<><span style={{ color: "var(--ex-sep)" }}>·</span><span style={{ fontSize: 14, color: SLATE_BODY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prompt.topic_family}</span></>) : null}
+            {prompt.difficulty ? (<><span style={{ color: "var(--ex-sep)" }}>·</span><span style={{ fontSize: 14, color: SLATE_BODY, flexShrink: 0 }}>Band {prompt.difficulty}</span></>) : null}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+          {timed ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 7, height: 36, padding: "0 12px", border: `1px solid ${theme.line}`, borderRadius: 9, background: theme.soft }}><StudioTimer seconds={taskSeconds} onExpire={onExpire} /></div>
+          ) : null}
+          <SaveBadge state={saveState} />
+          <div style={{ width: 1, height: 24, background: theme.line }} />
+          <button type="button" onClick={() => void submit()} disabled={submitDisabled} style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 18px", border: "none", borderRadius: 10, background: BRAND_FILL, color: WHITE, fontFamily: SANS, fontSize: 14, fontWeight: 700, cursor: submitDisabled ? "default" : "pointer", opacity: submitDisabled ? 0.55 : 1, boxShadow: theme.accentShadow }}>
+            {submitting ? "Grading…" : hasGraded ? "Resubmit for grading" : "Submit for grading"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </button>
+        </div>
+      </header>
+
+      {/* body: prompt | answer | coach */}
+      <div className="lp-write-main" style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", gap: 16, padding: 16 }}>
+        {/* prompt */}
+        <aside className="lp-write-topic" style={{ width: 356, flexShrink: 0, background: PANEL, border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+            <div style={{ padding: "18px 20px 16px", borderBottom: `1px solid ${theme.softLine}` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 13 }}>
+                <span style={{ fontFamily: SANS, fontSize: 11.5, fontWeight: 800, letterSpacing: ".13em", color: SLATE_MUTED }}>THE TASK</span>
+                {prompt.category && CATEGORY_LABEL[prompt.category] ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 11px", borderRadius: 7, background: theme.accentSoft, color: BRAND, fontFamily: SANS, fontSize: 12.5, fontWeight: 700 }}>{CATEGORY_LABEL[prompt.category]}</span>
+                ) : null}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {promptParts.map((p, i) =>
+                  p.kind === "meta" ? (
+                    <p key={i} style={{ margin: 0, fontFamily: SANS, fontSize: 12.5, lineHeight: 1.45, fontWeight: 600, color: SLATE_MUTED }}>{p.text}</p>
+                  ) : p.kind === "question" ? (
+                    <p key={i} style={{ margin: 0, fontFamily: SERIF, fontSize: 14.5, fontStyle: "italic", lineHeight: 1.4, color: SLATE_BODY }}>{p.text}</p>
+                  ) : (
+                    <p key={i} style={{ margin: 0, fontFamily: SERIF, fontSize: 19.5, lineHeight: 1.4, fontWeight: 600, color: INK, whiteSpace: "pre-wrap" }}>{p.text}</p>
+                  ),
+                )}
+              </div>
+            </div>
+            {prompt.figure ? (
+              <div style={{ padding: "16px 20px", borderBottom: `1px solid ${theme.softLine}` }}>
+                <FigureView figure={prompt.figure} />
+              </div>
+            ) : null}
+            <div style={{ padding: "16px 20px" }}>
+              <p style={{ margin: "0 0 12px", fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".04em", color: SLATE_BODY }}>REQUIREMENTS</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {requirementList
+                  .map((c) => (
+                    <div key={c} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.soft, border: `1px solid ${theme.softLine}`, borderRadius: 10 }}>
+                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: SLATE_GREEN_BG, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ stroke: EMERALD }} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+                      <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>{c}</span>
+                    </div>
+                  ))}
+                {/* live word-count requirement */}
+                <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 13px", background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 10 }}>
+                  <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: lengthMet ? "var(--ex-ok-soft)" : PANEL, border: lengthMet ? "none" : `2px solid ${theme.accentLine}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {lengthMet ? <svg style={{ stroke: EMERALD }} width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> : null}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                      <span style={{ fontFamily: SANS, fontSize: 14, fontWeight: 600, color: SLATE_STRONG }}>{`At least ${minWords} words`}</span>
+                      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, color: BRAND, fontVariantNumeric: "tabular-nums" }}>{words}</span>
+                    </div>
+                    <div style={{ marginTop: 7, height: 5, borderRadius: 3, background: theme.accentSoft, overflow: "hidden" }}><div style={{ width: `${wordPct}%`, height: "100%", borderRadius: 3, background: BRAND_FILL, transition: "width .3s ease" }} /></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ flexShrink: 0, padding: "14px 20px", borderTop: `1px solid ${theme.softLine}`, display: "flex", alignItems: "center", gap: 9 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--ex-ws-icon)", flexShrink: 0 }}><path d="M12 16v-4M12 8h.01" /><circle cx="12" cy="12" r="9" /></svg>
+            <span style={{ fontFamily: SANS, fontSize: 12.5, color: SLATE_MUTED, lineHeight: 1.4 }}>{hasGraded ? "A model answer for this task is in your feedback." : "A model answer for this task unlocks after you submit."}</span>
+          </div>
+        </aside>
+
+        {/* answer */}
+        <main className="lp-write-answer" style={{ flex: 1, minWidth: 0, background: PANEL, border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ height: 60, flexShrink: 0, padding: "0 22px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${theme.softLine}`, gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              <h2 style={{ margin: 0, fontFamily: SANS, fontSize: 16, fontWeight: 700, color: INK }}>Your answer</h2>
+              <AutosavePill state={saveState} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div style={{ fontFamily: SANS, fontSize: 13, color: SLATE_MUTED, fontWeight: 500 }}>{lengthMet ? "Target reached" : `${wordsToTarget} words to target`}</div>
+              <div style={{ position: "relative", width: 46, height: 46 }}>
+                <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" style={{ stroke: theme.accentSoft }} strokeWidth="4.5" /><circle cx="23" cy="23" r="19" fill="none" strokeWidth="4.5" strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={ringOffset} transform="rotate(-90 23 23)" style={{ stroke: BRAND, transition: "stroke-dashoffset .35s ease" }} /></svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS, fontSize: 13, fontWeight: 800, color: INK, fontVariantNumeric: "tabular-nums" }}>{words}</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, padding: "26px 30px", overflow: "auto", display: "flex", flexDirection: "column" }}>
+            <textarea
+              autoFocus
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onBlur={() => {
+                if (contentRef.current.trim() !== lastSavedRef.current.trim()) void persist();
+              }}
+              onPaste={onPasteFile}
+              disabled={submitting || uploading}
+              placeholder="Start writing your response here — or paste a photo / upload a PDF of your written answer."
+              spellCheck={spellOn}
+              style={{ flex: 1, width: "100%", maxWidth: 680, minHeight: 240, resize: "none", border: "none", outline: "none", background: "transparent", fontFamily: SERIF, fontSize: 16.5, lineHeight: 1.85, color: SLATE_STRONG }}
+            />
+          </div>
+          <div style={{ flexShrink: 0, minHeight: 48, padding: "0 22px", borderTop: `1px solid ${theme.softLine}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: theme.soft, gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, fontFamily: SANS }}>
+              <span style={{ fontSize: 13, color: SLATE_BODY, fontVariantNumeric: "tabular-nums" }}><strong style={{ color: INK, fontWeight: 700 }}>{words}</strong> words</span>
+              <span style={{ fontSize: 13, color: SLATE_BODY, fontVariantNumeric: "tabular-nums" }}>{chars.toLocaleString("en-GB")} characters</span>
+              <span style={{ fontSize: 13, color: SLATE_BODY }}>{paragraphs} paragraph{paragraphs === 1 ? "" : "s"}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,application/pdf"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void transcribeFile(f);
+                  e.target.value = ""; // let the same file be re-picked
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || submitting}
+                title="Upload a photo or PDF of your written answer — we'll transcribe it for you to review"
+                style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: `1px solid ${theme.line}`, background: PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: SLATE_STRONG, cursor: uploading || submitting ? "default" : "pointer", opacity: uploading || submitting ? 0.6 : 1 }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: SLATE_BODY }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                {uploading ? "Reading…" : "Upload answer"}
+              </button>
+              <button type="button" onClick={() => setSpellOn((s) => !s)} aria-pressed={spellOn} style={{ display: "flex", alignItems: "center", gap: 7, height: 32, padding: "0 12px", border: `1px solid ${spellOn ? theme.accentLine : theme.line}`, background: spellOn ? theme.accentSoft : PANEL, borderRadius: 8, fontFamily: SANS, fontSize: 13, fontWeight: 600, color: spellOn ? BRAND : SLATE_STRONG, cursor: "pointer" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: spellOn ? BRAND : SLATE_BODY }}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+                Spelling check{spellOn ? " · on" : ""}
+              </button>
+            </div>
+          </div>
+        </main>
+
+        {/* coach */}
+        {tutorOpen ? (
+          <aside className="lp-write-coach" style={{ width: 316, flexShrink: 0, background: PANEL, border: `1px solid ${theme.line}`, borderRadius: 14, display: "flex", overflow: "hidden" }}>
+            <TutorPanel msgs={tutorMsgs} input={tutorInput} setInput={setTutorInput} pending={tutorPending} onSend={sendTutor} scrollRef={tutorScrollRef} unlockedSamples={hasGraded} onClose={() => setTutorOpen(false)} onAnimated={markTutorAnimated} theme={theme} />
+          </aside>
+        ) : null}
+
+        {/* floating "ask coach" button — only when the coach is collapsed */}
+        {!tutorOpen ? (
+          <button
+            type="button"
+            onClick={() => setTutorOpen(true)}
+            className="lp-fab lp-fab-ring"
+            aria-label="Open writing coach"
+            style={{ position: "absolute", right: 28, bottom: 28, zIndex: 7, display: "inline-flex", alignItems: "center", gap: 10, padding: "12px 20px 12px 14px", borderRadius: 999, border: "none", background: BRAND_FILL, color: WHITE, cursor: "pointer", fontFamily: SANS, fontWeight: 700, fontSize: 15, boxShadow: `0 14px 30px -12px ${withAlpha(BRAND_FILL, 55)}` }}
+          >
+            <span style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+            </span>
+            Ask coach
+          </button>
+        ) : null}
+      </div>
+
+      {/* status footer */}
+      <footer style={{ flexShrink: 0, minHeight: 46, background: PANEL, borderTop: `1px solid ${theme.line}`, display: "flex", alignItems: "center", gap: 10, padding: "8px 18px" }}>
+        <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: message ? "var(--ex-warn-soft)" : "var(--ex-ok-soft)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {message ? (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: "var(--ex-err)" }}><path d="M12 8v4M12 16h.01" /></svg>
+          ) : (
+            <svg style={{ stroke: EMERALD }} width="13" height="13" viewBox="0 0 24 24" fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+          )}
+        </span>
+        <span style={{ fontFamily: SANS, fontSize: 13, color: SLATE_BODY }}>
+          {message ? <span style={{ color: SLATE_RED }}>{message}</span> : unchangedSinceGrade ? "Edit your response, then resubmit to see if it worked." : <><strong style={{ color: INK, fontWeight: 700 }}>Ready to grade.</strong> The AI marks every mistake and gives a band per criterion — Task, Coherence, Vocabulary, Grammar.</>}
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+// ---- Tutor -----------------------------------------------------------------
+
+function TutorPanel({
+  msgs,
+  input,
+  setInput,
+  pending,
+  onSend,
+  scrollRef,
+  unlockedSamples,
+  onClose,
+  onAnimated,
+  theme,
+}: {
+  msgs: TutorMsg[];
+  input: string;
+  setInput: (s: string) => void;
+  pending: boolean;
+  onSend: (raw?: string) => void;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  unlockedSamples: boolean;
+  onClose: () => void;
+  onAnimated: (idx: number) => void;
+  theme: StudioTheme;
+}) {
+  const BRAND = theme.accent;
+  const INK = theme.ink;
+  return (
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: PANEL, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "15px 16px", borderBottom: `1px solid ${theme.softLine}` }}>
+        <span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 10, background: BRAND_FILL, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+        </span>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 14.5, color: INK }}>Writing coach</div>
+          <div style={{ fontFamily: SANS, fontSize: 12, color: SLATE_MUTED }}>{unlockedSamples ? "Samples unlocked · ask anything" : "Ideas & vocabulary · not answers"}</div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Collapse coach" title="Collapse coach" style={{ flexShrink: 0, width: 30, height: 30, border: "none", background: "transparent", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: SLATE_MUTED }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
+      </div>
+      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        {msgs.length === 0 ? (
+          <div style={{ background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 13, borderTopLeftRadius: 4, padding: "13px 14px", fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: SLATE_STRONG }}>
+            Hey! I can help you understand the task, plan ideas, and find sharper vocabulary — but <strong style={{ color: INK }}>you</strong> write the answer.
+          </div>
+        ) : (
+          msgs.map((m, i) => (
+            <Bubble key={i} msg={m} onReveal={() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })} onDone={() => onAnimated(i)} />
+          ))
+        )}
+        {pending ? (
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <span style={{ display: "inline-flex", gap: 5, padding: "13px 14px", borderRadius: 12, borderTopLeftRadius: 3, background: BRAND_SOFT, border: `1px solid ${BRAND_LINE}` }} aria-label="Coach is writing">
+              {[0, 1, 2].map((i) => (
+                <span key={i} style={{ width: 6, height: 6, borderRadius: 999, background: SLATE_MUTED, animation: `lp-think 1.1s ${i * 0.16}s infinite ease-in-out` }} />
+              ))}
+            </span>
+          </div>
+        ) : null}
+      </div>
+      <div style={{ flexShrink: 0, padding: "0 14px 8px", display: "flex", flexWrap: "wrap", gap: 7 }}>
+        {TUTOR_CHIPS.map((c) => (
+          <button key={c} type="button" onClick={() => onSend(c)} disabled={pending} style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 600, color: BRAND, background: theme.accentSoft, border: `1px solid ${theme.accentLine}`, borderRadius: 999, padding: "6px 12px", cursor: pending ? "default" : "pointer" }}>{c}</button>
+        ))}
+      </div>
+      <div style={{ flexShrink: 0, padding: "12px 14px", borderTop: `1px solid ${theme.softLine}` }}>
+        <form onSubmit={(e) => { e.preventDefault(); onSend(); }} style={{ display: "flex", alignItems: "center", gap: 8, background: theme.soft, border: `1px solid ${theme.line}`, borderRadius: 11, padding: "5px 6px 5px 13px" }} className="lp-field">
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask in any language…" style={{ flex: 1, minWidth: 0, border: "none", background: "transparent", outline: "none", fontFamily: SANS, fontSize: 13.5, color: INK }} />
+          <button type="submit" disabled={pending || !input.trim()} aria-label="Send" style={{ flexShrink: 0, width: 34, height: 34, border: "none", borderRadius: 9, background: BRAND_FILL, cursor: pending || !input.trim() ? "default" : "pointer", opacity: pending || !input.trim() ? 0.5 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/** Small "Autosaving / Saving… / Saved" pill in the answer card header. */
+function AutosavePill({ state }: { state: "idle" | "saving" | "saved" | "error" }) {
+  if (state === "error") {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: SLATE_RED_BG }}>
+        <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: SLATE_RED }}>Save failed</span>
+      </span>
+    );
+  }
+  const label = state === "saving" ? "Saving…" : state === "saved" ? "Saved" : "Autosaving";
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 24, padding: "0 9px", borderRadius: 7, background: SLATE_GREEN_BG }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: EMERALD }} />
+      <span style={{ fontFamily: SANS, fontSize: 12, fontWeight: 600, color: SLATE_GREEN }}>{label}</span>
+    </span>
+  );
+}
+
+function Bubble({ msg, onReveal, onDone }: { msg: TutorMsg; onReveal?: () => void; onDone?: () => void }) {
+  const isUser = msg.role === "user";
+  return (
+    <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
+      <div style={{ maxWidth: "85%", padding: "11px 14px", borderRadius: 12, fontFamily: SANS, fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", background: isUser ? BRAND_FILL : BRAND_SOFT, color: isUser ? WHITE : SLATE_STRONG, border: isUser ? "none" : `1px solid ${BRAND_SOFT}`, borderTopRightRadius: isUser ? 3 : 12, borderTopLeftRadius: isUser ? 12 : 3 }}>
+        {isUser ? msg.content : <Typewriter text={msg.content} animate={!!msg.animate} onReveal={onReveal} onDone={onDone} caretColor={SLATE_MUTED} />}
+      </div>
+    </div>
+  );
+}
+
+// ---- Timer + save badge ----------------------------------------------------
+
+/**
+ * The studio's countdown pill: the shared exam timer, wearing the studio's
+ * clock icon and its 5-minute warning threshold. The counting itself moved to
+ * `shared/components/exam/timer.tsx` — this version used to decrement on an interval,
+ * which meant a backgrounded tab handed the candidate extra minutes.
+ */
+function StudioTimer({ seconds, onExpire }: { seconds: number; onExpire: () => void }) {
+  return (
+    <Timer seconds={seconds} onExpire={onExpire} warnAt={300}>
+      {(text, left) => (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: SANS,
+            fontWeight: 600,
+            color: left <= 300 ? "var(--ex-err)" : SLATE_STRONG,
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            style={{ stroke: "var(--ex-ws-clock)" }}
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v4l3 2" />
+          </svg>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{text}</span> left
+        </span>
+      )}
+    </Timer>
+  );
+}
+
+// ---- Grading overlay -------------------------------------------------------
+
+const GRADING_STEPS_IELTS = [
+  "Reading your response, line by line…",
+  "Checking grammar, vocabulary & cohesion…",
+  "Weighing it against the official band descriptors…",
+  "Comparing with calibrated band examples…",
+  "Calibrating a fair, exam-accurate band…",
+];
+
+/**
+ * Full-screen modal shown every time the learner submits for grading. A calm,
+ * on-brand "give us a moment to do this properly" cover — a spinning emblem, a
+ * rotating line of what's happening, and an indeterminate bar — so the wait reads
+ * as care (accuracy) rather than lag. Covers the editor so nothing can be edited
+ * mid-grade. Mounts only while submitting, so its interval cleans up on its own.
+ */
+function GradingOverlay({ theme }: { theme: StudioTheme }) {
+  const steps = GRADING_STEPS_IELTS;
+  const BRAND = theme.accent;
+  const INK = theme.ink;
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setStep((s) => (s + 1) % steps.length), 2200);
+    return () => window.clearInterval(id);
+  }, [steps.length]);
+
+  return (
+    <div
+      role="alertdialog"
+      aria-label="Grading your essay"
+      aria-live="polite"
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, background: "var(--ex-scrim-ws)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
+    >
+      <div style={{ width: "min(424px, 94vw)", background: PANEL, borderRadius: 22, overflow: "hidden", boxShadow: "0 40px 90px -30px rgba(20,22,40,.7), 0 0 0 1px var(--ex-ring)", animation: "lp-grade-in .4s cubic-bezier(.33,1,.68,1) both", "--grade-accent": theme.accent, "--ai-soft": theme.accentSoft, "--ai-strong": accentStrong(theme.accent) } as React.CSSProperties}>
+        {/* animated brand header with the spinning emblem */}
+        <div className="lp-ai-surface" style={{ padding: "30px 26px 26px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", borderBottom: `1px solid ${theme.accentLine}` }}>
+          <span style={{ position: "relative", width: 66, height: 66, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+            <span className="lp-grade-ring" style={{ position: "absolute", inset: 0, borderRadius: "50%" }} aria-hidden />
+            <span style={{ position: "absolute", inset: 7, borderRadius: "50%", background: PANEL, boxShadow: `inset 0 0 0 1px ${withAlpha(BRAND, 12)}` }} aria-hidden />
+            <svg className="lp-ai-spark" width="26" height="26" viewBox="0 0 24 24" fill="none" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: BRAND, position: "relative" }}><path d="M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15l-1.9-4.1L5.5 9l4.6-1.4L12 3z" /></svg>
+          </span>
+          <h2 style={{ margin: "18px 0 0", fontFamily: SANS, fontSize: 19, fontWeight: 800, color: INK, letterSpacing: "-.01em" }}>
+            Grading your essay
+          </h2>
+          <p style={{ margin: "8px 0 0", fontFamily: SANS, fontSize: 13.5, lineHeight: 1.55, color: SLATE_STRONG, maxWidth: 320 }}>
+            Hang tight — we read every line and weigh it against the official band descriptors so your result is as accurate as possible.
+          </p>
+        </div>
+
+        {/* rotating status line + indeterminate progress */}
+        <div style={{ padding: "20px 26px 24px" }}>
+          <div style={{ minHeight: 22, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span key={step} style={{ fontFamily: SANS, fontSize: 13.5, fontWeight: 600, color: BRAND, textAlign: "center", animation: "lp-grade-cap .5s ease both" }}>
+              {steps[step]}
+            </span>
+          </div>
+          <div style={{ marginTop: 16, height: 6, borderRadius: 999, background: theme.accentSoft, overflow: "hidden" }}>
+            <div className="lp-grade-bar" style={{ height: "100%", width: "100%", borderRadius: 999 }} />
+          </div>
+          <p style={{ margin: "14px 0 0", fontFamily: SANS, fontSize: 12, color: SLATE_MUTED, textAlign: "center" }}>
+            This usually takes about 20–30 seconds. Please don&rsquo;t close this tab.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SaveBadge({ state }: { state: "idle" | "saving" | "saved" | "error" }) {
+  const text = state === "saving" ? "Saving…" : state === "saved" ? "Saved" : state === "error" ? "Save failed" : "";
+  if (!text) return null;
+  const ok = state === "saved";
+  return (
+    <span style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: SANS, fontWeight: 600, fontSize: 14, color: state === "error" ? "var(--ex-err)" : ok ? EMERALD : "var(--ex-dim)" }}>
+      {ok ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg> : null}
+      {text}
+    </span>
+  );
+}

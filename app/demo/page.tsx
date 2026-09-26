@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
-import { landingManrope, landingSora } from "@/app/_landing/fonts";
-import { DEMO_TABS } from "@/app/_landing/demo-content";
-import { DeferredReportShowcase } from "@/app/_landing/deferred-report-showcase";
-import { DemoTabs } from "@/app/_landing/demo-tabs";
+import { DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
+import { DEMO_TABS } from "@/app/_landing/_lib/demo-content";
+import { DeferredReportShowcase } from "@/app/_landing/_components/deferred-report-showcase";
+import { DemoTabs } from "@/app/_landing/_components/demo-tabs";
 import {
   BRAND,
   BRAND_FILL,
@@ -17,7 +17,7 @@ import {
   WHITE,
   ghostButton,
   solidButton,
-} from "@/app/_landing/design";
+} from "@/app/_landing/_lib/design";
 import { PREVIEW_IMAGE } from "@/lib/seo";
 
 const BTN_PRIMARY: React.CSSProperties = { ...solidButton(), textDecoration: "none", display: "inline-flex" };

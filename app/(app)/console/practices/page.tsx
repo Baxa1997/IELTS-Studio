@@ -9,14 +9,14 @@ import {
   RowText,
   StatRow,
   StatTile,
-} from "@/components/console/page-ui";
+} from "@/shared/components/console/page-ui";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadPractices, type PracticeRow, type PracticeTab } from "@/lib/console/practices";
 import { TASK2_CATEGORY_LABELS, type Task2Category } from "@/lib/prompts/types";
 
-import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
+import { PracticeGallery, type GalleryItem } from "@/shared/components/practice/gallery";
 
-import { PracticeRowActions } from "./practice-row-actions";
+import { PracticeRowActions } from "./_components/practice-row-actions";
 
 const TABS: { key: PracticeTab; label: string; blurb: string }[] = [
   {

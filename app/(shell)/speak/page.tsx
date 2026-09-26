@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 
-import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { AssignedHub } from "@/shared/components/assignments/assigned-hub";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { type OrgPlan, planTier } from "@/lib/billing/plans";
 import { createClient } from "@/lib/supabase/server";
 
-import type { SpeakProgressItem } from "./progress";
-import { SpeakingClient } from "./speaking-client";
+import type { SpeakProgressItem } from "./_components/progress";
+import { SpeakingClient } from "./_components/speaking-client";
 
 export const dynamic = "force-dynamic";
 

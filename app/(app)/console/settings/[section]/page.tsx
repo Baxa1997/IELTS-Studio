@@ -2,15 +2,15 @@ import { redirect } from "next/navigation";
 
 import { requireStaff } from "@/lib/auth";
 
-import { resolveSection, sectionsFor } from "../section-list";
-import { AccountSection } from "../sections/account";
-import { AppearanceSection } from "@/app/(app)/settings/sections/appearance";
-import { BillingSection } from "../sections/billing";
-import { CenterSection } from "../sections/center";
-import { SettingsFrame } from "../sections/frame";
-import { RolesSection } from "../sections/roles";
-import { SubjectsSection } from "../sections/subjects";
-import { TelegramSection } from "../sections/telegram";
+import { resolveSection, sectionsFor } from "./_lib/section-list";
+import { AccountSection } from "./_components/account";
+import { AppearanceSection } from "@/shared/components/account/appearance";
+import { BillingSection } from "./_components/billing";
+import { CenterSection } from "./_components/center";
+import { SettingsFrame } from "./_components/frame";
+import { RolesSection } from "./_components/roles";
+import { SubjectsSection } from "./_components/subjects";
+import { TelegramSection } from "./_components/telegram";
 
 export const dynamic = "force-dynamic";
 

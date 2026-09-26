@@ -10,8 +10,8 @@ import { today } from "@/lib/finance/period";
 import { READING_LIBRARY_ORG_ID } from "@/lib/reading/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { AssignSheet } from "../../assign-sheet";
-import { SANS, SERIF } from "@/components/console/crm-ui";
+import { AssignSheet } from "./_components/assign-sheet";
+import { SANS, SERIF } from "@/app/(app)/console/_components/crm-ui";
 import {
   Board,
   BoardHead,
@@ -22,7 +22,7 @@ import {
   V2,
   card as v2card,
   serifHead,
-} from "../../ui";
+} from "../_components/ui";
 import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

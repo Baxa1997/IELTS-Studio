@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 
-import { StudentReportView } from "@/components/console/student-report-view";
+import { StudentReportView } from "@/app/(app)/console/_components/student-report-view";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentReport } from "@/lib/console/student-report";
 import { createClient } from "@/lib/supabase/server";
 
-import { TelegramInvitePanel } from "../telegram-panel";
+import { TelegramInvitePanel } from "./_components/telegram-panel";
 
 /**
  * The same student report, reached from the center roster instead of a group —

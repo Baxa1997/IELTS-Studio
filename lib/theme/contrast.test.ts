@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { sourceFiles } from "@/test/source-files";
 
 /**
  * EVERY FILL AND THE INK ON IT, CHECKED IN BOTH THEMES.
@@ -32,7 +33,7 @@ const ROOT = process.cwd();
 const css =
   readFileSync(join(ROOT, "app/globals.css"), "utf8") +
   "\n" +
-  readFileSync(join(ROOT, "app/(shell)/speak/lucida.tsx"), "utf8");
+  readFileSync(join(ROOT, "shared/components/speaking/lucida.tsx"), "utf8");
 
 function vars(theme: "light" | "dark"): Record<string, string> {
   const out: Record<string, string> = {};
@@ -64,7 +65,7 @@ function resolve(value: string | undefined, theme: "light" | "dark", depth = 0):
 
 /** The exported token names, so `background: BRAND_FILL` can be evaluated. */
 const TOKENS: Record<string, string> = {};
-for (const source of ["lib/theme/tokens.ts", "app/_landing/design.ts"]) {
+for (const source of ["lib/theme/tokens.ts", "app/_landing/_lib/design.ts"]) {
   const src = readFileSync(join(ROOT, source), "utf8");
   for (const m of src.matchAll(/export const ([A-Z_0-9]+) = "([^"]+)";/g)) TOKENS[m[1]] = m[2];
 }
@@ -149,12 +150,7 @@ interface Finding {
 }
 
 function scan(): Finding[] {
-  const files = execFileSync("git", ["ls-files", "app", "components"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  })
-    .split("\n")
-    .filter((f) => /\.tsx?$/.test(f));
+  const files = sourceFiles("app", "shared").filter((f) => /\.tsx?$/.test(f));
 
   const out: Finding[] = [];
   for (const file of files) {

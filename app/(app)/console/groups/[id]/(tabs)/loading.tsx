@@ -1,4 +1,4 @@
-import { TabSkeleton } from "./skeleton";
+import { TabSkeleton } from "./_components/skeleton";
 
 /** The overview's fallback — and the default for any tab without its own. */
 export default function GroupOverviewLoading() {

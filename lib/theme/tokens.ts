@@ -2,8 +2,9 @@
  * The one palette.
  *
  * Before this module the app had four token sources — `globals.css` (oklch
- * semantic tokens), `components/console/crm-ui.tsx`, `(studio)/read/_shared/
- * tokens.ts` and `(studio)/write/studio-theme.ts` — plus 95 files that opened
+ * semantic tokens), `app/(app)/console/_components/crm-ui.tsx`,
+ * `shared/components/reading/tokens.ts` and
+ * `app/(studio)/write/[id]/_lib/studio-theme.ts` — plus 95 files that opened
  * with their own private `const INK = "…"` block. They had drifted measurably:
  * eight different inks, nine muteds, eight reds, four indigos. Nobody chose
  * eight inks; they accumulated one screen at a time.
@@ -26,7 +27,7 @@
  *
  * Adding a colour here is fine. Adding one in a component file is not: the ESLint
  * `no-restricted-syntax` rule in eslint.config.mjs will refuse a raw hex literal
- * under app/ and components/.
+ * under app/ and shared/.
  */
 
 import type { CSSProperties } from "react";
@@ -174,10 +175,10 @@ export const PANEL = "var(--tk-panel)";
  * THE LEARNER APP IS BURGUNDY, THE STAFF CONSOLE IS STILL INDIGO.
  *
  * The marketing site was rebuilt on the `EngProgress Platform` design canvas and
- * came out burgundy (`app/_landing/design.ts`). A learner who signed up from that
+ * came out burgundy (`app/_landing/_lib/design.ts`). A learner who signed up from that
  * page then walked into an indigo product, so the learner surfaces — dashboard,
  * the four skill hubs, the exam studios — were repainted to the canvas's colour.
- * The values below are COPIED from `app/_landing/design.ts`, not eyeballed, so
+ * The values below are COPIED from `app/_landing/_lib/design.ts`, not eyeballed, so
  * the two halves of the funnel are the same burgundy rather than two burgundies.
  *
  * The ramp is wider than marketing needs because a product has states marketing
@@ -319,7 +320,7 @@ export type Tone = keyof typeof TINT;
 
 /* ── the /admin platform console's chrome ───────────────────────────────────
  *
- * ⚠️ THESE EXIST BECAUSE components/admin/header.tsx AND components/admin/ui.tsx
+ * ⚠️ THESE EXIST BECAUSE app/admin/_components/header.tsx AND app/admin/_components/ui.tsx
  * SPELLED THEM AS HEX. A literal cannot invert, so in dark mode the console's
  * sticky top bar stayed near-white over a near-black page, every TONE tint
  * stayed a pale wash under an ink that HAD lightened, and the plan cards kept a
@@ -447,7 +448,7 @@ export interface Surface {
  * chosen to sit under indigo; under burgundy it read as a sepia photograph, and
  * it was also the loudest reason a learner arriving from the marketing site felt
  * they had changed product. `canvas`/`well` are now the canvas's own papers
- * (`CANVAS` and `WELL` in `app/_landing/design.ts`) — cool, near-white, the same
+ * (`CANVAS` and `WELL` in `app/_landing/_lib/design.ts`) — cool, near-white, the same
  * ground the front door and sign-in already stand on.
  */
 export const LEARNER: Surface = {

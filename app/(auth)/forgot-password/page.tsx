@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { requestPasswordReset, type AuthFormState } from "@/app/(auth)/actions";
+import { requestPasswordReset, type AuthFormState } from "@/lib/auth-actions";
 
 const initial: AuthFormState = {};
 

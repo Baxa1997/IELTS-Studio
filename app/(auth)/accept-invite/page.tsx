@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { AcceptInviteForm } from "./accept-form";
+import { AcceptInviteForm } from "./_components/accept-form";
 
 export default async function AcceptInvitePage({
   searchParams,

@@ -1,7 +1,7 @@
 import { applyUnsubscribe } from "@/lib/marketing/unsubscribe";
 import { BRAND, HAIR, INK, MUTED, PANEL, SANS, SERIF, WELL } from "@/lib/theme/tokens";
 
-import { ResubscribeButton } from "./resubscribe-button";
+import { ResubscribeButton } from "./_components/resubscribe-button";
 
 export const dynamic = "force-dynamic";
 

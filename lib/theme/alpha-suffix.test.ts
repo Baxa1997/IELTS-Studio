@@ -1,8 +1,9 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { sourceFiles } from "@/test/source-files";
 
 /**
  * `${COLOUR}33` IS NOT A COLOUR ANY MORE, AND IT FAILS IN SILENCE.
@@ -47,12 +48,7 @@ const ROOT = process.cwd();
 const SHAPES = [/\$\{[^}]+\}[0-9a-fA-F]{2}`/g, /var\(--[a-z0-9-]+\)[0-9a-fA-F]{2}/g];
 
 describe("alpha by hex suffix", () => {
-  const files = execFileSync("git", ["ls-files", "app", "components", "lib"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  })
-    .split("\n")
-    .filter((f) => /\.tsx?$/.test(f));
+  const files = sourceFiles("app", "shared", "lib").filter((f) => /\.tsx?$/.test(f));
 
   it("scans the files it is meant to", () => {
     expect(files.length).toBeGreaterThan(200);

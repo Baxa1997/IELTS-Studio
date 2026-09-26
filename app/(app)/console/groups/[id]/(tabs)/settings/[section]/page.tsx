@@ -1,14 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 
-import { SANS, TextLink } from "@/components/console/crm-ui";
+import { SANS, TextLink } from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupDetail, loadGroups } from "@/lib/console/groups";
 import { createClient } from "@/lib/supabase/server";
 
-import { AssignTeacherForm } from "../../../../group-forms";
-import { SchedulePanel, type ScheduleSeries } from "../../../schedule-panel";
-import { TelegramPanel } from "../../../telegram-panel";
-import { SectionCard, V2 } from "../../../ui";
+import { AssignTeacherForm } from "@/app/(app)/console/_components/group-forms";
+import { SchedulePanel, type ScheduleSeries } from "./_components/schedule-panel";
+import { TelegramPanel } from "@/app/(app)/console/_components/telegram-panel";
+import { SectionCard, V2 } from "../../_components/ui";
 
 export const dynamic = "force-dynamic";
 

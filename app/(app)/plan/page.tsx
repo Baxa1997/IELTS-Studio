@@ -9,7 +9,7 @@ import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
 import { daysUntil, levelCheckDue } from "@/lib/plan/types";
 
 import { startLevelCheck } from "./actions";
-import { PlanBandCard } from "./plan-band-card";
+import { PlanBandCard } from "./_components/plan-band-card";
 import {
   AMBER,
   BRAND,

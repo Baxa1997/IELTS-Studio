@@ -1,4 +1,4 @@
-import { Block, Card } from "@/components/app-shell/page-skeleton";
+import { Block, Card } from "@/shared/components/app-shell/page-skeleton";
 import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 
 /**

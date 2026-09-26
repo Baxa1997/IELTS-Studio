@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
      * `<Link>` ALSO carries `unstable_dynamicOnHover` (next/dist/client/
      * components/links.js checks both). For months no link did, so every hover
      * fetched the skeleton alone. The sidebar now opts its rows in — see
-     * `renderOnHover` in components/app-shell/sidebar-nav.tsx.
+     * `renderOnHover` in shared/components/app-shell/sidebar-nav.tsx.
      *
      * The cost is server renders for pages the user hovered but did not open.
      * That is a real cost and worth watching in the Vercel function count; it is

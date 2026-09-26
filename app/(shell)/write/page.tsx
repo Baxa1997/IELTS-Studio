@@ -1,4 +1,4 @@
-import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { AssignedHub } from "@/shared/components/assignments/assigned-hub";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
@@ -8,7 +8,7 @@ import { seedStarterPrompts } from "@/lib/prompts/starter";
 import { DEFAULT_DIFFICULTY } from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
 
-import { WritingLibrary, type LibraryPrompt, type PromptDraft, type PromptMark } from "./library";
+import { WritingLibrary, type LibraryPrompt, type PromptDraft, type PromptMark } from "./_components/library";
 
 export const dynamic = "force-dynamic";
 

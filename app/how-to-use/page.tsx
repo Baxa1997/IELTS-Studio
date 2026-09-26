@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
-import { LearnerGuide, learnerMetadata } from "./learner-guide";
+import { LearnerGuide, learnerMetadata } from "./_components/learner-guide";
 
 /**
  * The learner's guide in the DEFAULT language, at the bare URL. That is Uzbek.

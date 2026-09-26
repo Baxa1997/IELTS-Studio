@@ -23,12 +23,12 @@ const ROOT = join(__dirname, "..", "..");
 
 /** Every file that lays out practice cards, real or skeleton. */
 const GRIDS = [
-  "app/(shell)/read/read-hub.tsx",
-  "app/(shell)/write/library.tsx",
-  "app/(shell)/listen/listening-client.tsx",
-  "app/(shell)/cefr/multilevel-client.tsx",
-  "components/assignments/assigned-hub.tsx",
-  "components/app-shell/page-skeleton.tsx",
+  "app/(shell)/read/_components/read-hub.tsx",
+  "app/(shell)/write/_components/library.tsx",
+  "app/(shell)/listen/_components/listening-client.tsx",
+  "app/(shell)/cefr/_components/multilevel-client.tsx",
+  "shared/components/assignments/assigned-hub.tsx",
+  "shared/components/app-shell/page-skeleton.tsx",
   "app/(shell)/listen/loading.tsx",
   "app/(shell)/cefr/loading.tsx",
 ];

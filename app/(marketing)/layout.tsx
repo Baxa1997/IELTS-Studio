@@ -1,11 +1,11 @@
-import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
-import { landingManrope, landingSora } from "@/app/_landing/fonts";
+import { CentersBand, DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
 import {
   INK,
   PANEL,
   SANS,
   WHITE,
-} from "@/app/_landing/design";
+} from "@/app/_landing/_lib/design";
 
 /** Shared burgundy marketing shell for SEO landing pages. */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {

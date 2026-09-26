@@ -1,16 +1,16 @@
 import { redirect } from "next/navigation";
 
-import { Card, Empty, PageHead } from "@/components/console/crm-ui";
+import { Card, Empty, PageHead } from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadAutoMessageSettings } from "@/lib/console/auto-message-service";
 import { AUTO_MESSAGES, type AutoMessageSetting } from "@/lib/console/auto-messages";
 import { loadGroups } from "@/lib/console/groups";
 import { createClient } from "@/lib/supabase/server";
 
-import { AnnouncementComposer } from "./composer";
-import { AutomaticMessages } from "./automatic";
-import { SentPanel, type SentRow, type TelegramClass } from "./sent-panel";
-import { AnnouncementTabs } from "./tabs";
+import { AnnouncementComposer } from "./_components/composer";
+import { AutomaticMessages } from "./_components/automatic";
+import { SentPanel, type SentRow, type TelegramClass } from "./_components/sent-panel";
+import { AnnouncementTabs } from "./_components/tabs";
 
 export const dynamic = "force-dynamic";
 

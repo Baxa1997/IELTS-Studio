@@ -1,10 +1,10 @@
-import { AssignToClass } from "@/components/console/assign-to-class";
-import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { AssignToClass } from "@/shared/components/console/assign-to-class";
+import { AssignedHub } from "@/shared/components/assignments/assigned-hub";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-import { ListeningClient } from "./listening-client";
+import { ListeningClient } from "./_components/listening-client";
 
 export const dynamic = "force-dynamic";
 

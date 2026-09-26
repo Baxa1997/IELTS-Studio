@@ -17,8 +17,8 @@ import { describe, expect, it } from "vitest";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const attribution = read("./attribution.ts");
-const authActions = read("../../app/(auth)/actions.ts");
-const dialog = read("../../app/_landing/sign-up-dialog.tsx");
+const authActions = read("../auth-actions.ts");
+const dialog = read("../../app/_landing/_components/sign-up-dialog.tsx");
 const middleware = read("../../lib/supabase/middleware.ts");
 
 describe("the link door", () => {

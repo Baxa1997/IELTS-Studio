@@ -22,8 +22,8 @@ import {
   TextLink,
   THead,
   TRow,
-} from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
+} from "@/app/(app)/console/_components/crm-ui";
+import { Drawer } from "@/shared/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadFinanceSettings } from "@/lib/finance/load";
 import { formatMoney, toMajor } from "@/lib/finance/money";
@@ -32,15 +32,15 @@ import { monthLabel, monthStart, recentMonths, today } from "@/lib/finance/perio
 import { basisSuffix, type PayrollLine } from "@/lib/finance/salary";
 import { createClient } from "@/lib/supabase/server";
 
-import { MonthPicker } from "./month-picker";
-import { MonthsExport } from "./months-export";
+import { MonthPicker } from "./_components/month-picker";
+import { MonthsExport } from "./_components/months-export";
 import {
   AdjustPayslipForm,
   PayrollStatusForm,
   PayTeacherForm,
   RunPayrollForm,
-} from "./payroll-forms";
-import { DownloadLink } from "@/components/console/file-links";
+} from "./_components/payroll-forms";
+import { DownloadLink } from "@/app/(app)/console/finance/_components/file-links";
 import { WARM_LINE, WARM_LINE_MID } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

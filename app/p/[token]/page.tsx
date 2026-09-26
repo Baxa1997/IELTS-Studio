@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { LessonSections } from "@/components/lessons/lesson-sections";
-import { LessonRunner } from "@/app/(app)/learn/[id]/lesson-runner";
+import { LessonSections } from "@/shared/components/lessons/lesson-sections";
+import { LessonRunner } from "@/shared/components/lessons/lesson-runner";
 import { loadSharedLesson } from "@/lib/lessons/load-shared";
 import { INK, READING, SERIF } from "@/lib/lessons/theme";
 

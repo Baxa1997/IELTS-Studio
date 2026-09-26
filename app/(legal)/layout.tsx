@@ -1,6 +1,6 @@
-import { DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/design-chrome";
-import { landingManrope, landingSora } from "@/app/_landing/fonts";
-import { INK, PAPER, PAPER_RULE, SANS } from "@/app/_landing/design";
+import { DESIGN_CSS, SiteFooter, SiteHeader } from "@/app/_landing/_components/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
+import { INK, PAPER, PAPER_RULE, SANS } from "@/app/_landing/_lib/design";
 
 /**
  * Privacy and Terms.

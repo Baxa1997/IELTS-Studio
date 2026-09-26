@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { CONTACT_EMAIL } from "@/lib/contact";
 
-import { B, LegalTitle, LI, P, Section, UL } from "../legal";
+import { B, LegalTitle, LI, P, Section, UL } from "../_components/legal";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",

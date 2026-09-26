@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { LandingPage, landingMetadata } from "@/app/_landing/landing-page";
+import { LandingPage, landingMetadata } from "@/app/_landing/_components/landing-page";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/locales";
 
 /**

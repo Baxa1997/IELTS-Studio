@@ -5,7 +5,7 @@
  * Kept free of server-only and React imports so the same contract is shared by:
  *   - generation (the model emits this shape; we zod-validate it),
  *   - storage (writing_prompts.figure jsonb),
- *   - the studio renderer (components/writing/figure.tsx), and
+ *   - the studio renderer (shared/components/writing/figure.tsx), and
  *   - the grader (figureToText → the examiner sees the exact numbers, so Task
  *     Achievement is judged on whether the student reported the data accurately).
  *

@@ -1,0 +1,236 @@
+import { BandCountUp } from "./band-countup";
+import type { Translate } from "@/lib/i18n";
+
+import {
+  BODY,
+  BRAND,
+  BRAND_FILL,
+  BRAND_TINT,
+  BRAND_TINT_LINE,
+  DISPLAY,
+  GREEN,
+  INK,
+  LINE,
+  MUTED,
+  PANEL,
+  RADIUS,
+  SANS,
+  WHITE,
+} from "../_lib/design";
+
+export function Band9Card({ t }: { t: Translate }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: -16,
+          right: 18,
+          zIndex: 2,
+          background: PANEL,
+          border: `1px solid ${LINE}`,
+          boxShadow: "0 8px 24px rgba(18,19,23,0.07)",
+          borderRadius: RADIUS.pill,
+          padding: "10px 18px",
+          fontSize: 13,
+          fontWeight: 700,
+          color: GREEN,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span aria-hidden style={{ width: 7, height: 7, borderRadius: "50%", background: GREEN }} />
+        {t("b9.achievable")}
+      </div>
+
+      <div
+        style={{
+          background: PANEL,
+          border: `1px solid ${LINE}`,
+          borderRadius: RADIUS.card,
+          boxShadow: "0 24px 60px rgba(18,19,23,0.08)",
+          padding: 30,
+        }}
+      >
+        {/* header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            aria-hidden
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: RADIUS.icon,
+              background: BRAND_FILL,
+              color: WHITE,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 17,
+            }}
+          >
+            ✦
+          </div>
+          <div>
+            <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 16, color: INK }}>
+              {t("b9.result")}
+            </div>
+            <div style={{ fontSize: 13, color: GREEN, fontWeight: 600 }}>{t("b9.verified")}</div>
+          </div>
+          <span
+            style={{
+              marginLeft: "auto",
+              border: `1px solid ${BRAND_TINT_LINE}`,
+              background: BRAND_TINT,
+              color: BRAND,
+              borderRadius: RADIUS.badge,
+              padding: "5px 10px",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+            }}
+          >
+            AI
+          </span>
+        </div>
+
+        <div style={{ textAlign: "center", padding: "22px 0 6px" }}>
+          <Mortarboard />
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.24em",
+              color: MUTED,
+              marginTop: 10,
+            }}
+          >
+            {t("b9.overallBand")}
+          </div>
+          <BandCountUp />
+          <div
+            style={{
+              fontSize: 15,
+              color: BODY,
+              maxWidth: 330,
+              margin: "14px auto 0",
+              lineHeight: 1.55,
+              textWrap: "pretty",
+            }}
+          >
+            {t("b9.sub")}
+          </div>
+        </div>
+
+        {/* per-skill chips */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            gap: 10,
+            marginTop: 14,
+          }}
+        >
+          {/* Skill name + the band, built from the same keys the nav uses rather
+              than three more strings to translate. CEFR keeps its own name: it
+              is the framework's, in every language. */}
+          {[`${t("nav.writing")} 9`, `${t("nav.reading")} 9`, "CEFR C2"].map((chip) => (
+            <span
+              key={chip}
+              style={{
+                background: BRAND_TINT,
+                color: BRAND,
+                borderRadius: RADIUS.pill,
+                padding: "9px 18px",
+                fontSize: 14,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                fontFamily: SANS,
+              }}
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Mortarboard() {
+  return (
+    <div style={{ width: 98, margin: "0 auto" }} className="lp-cap">
+      <svg
+        aria-hidden
+        width="118"
+        height="96"
+        viewBox="0 0 128 104"
+        fill="none"
+        style={{
+          display: "block",
+          margin: "0 auto",
+          filter: "drop-shadow(0 12px 18px rgba(60,6,26,.24))",
+        }}
+      >
+        <defs>
+          <linearGradient
+            id="cap-board"
+            x1="20"
+            y1="28"
+            x2="112"
+            y2="74"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#9C1442" />
+            <stop offset="1" stopColor="#42011D" />
+          </linearGradient>
+          <linearGradient
+            id="cap-crown"
+            x1="44"
+            y1="48"
+            x2="86"
+            y2="80"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#7D0132" />
+            <stop offset="1" stopColor="#360117" />
+          </linearGradient>
+          <linearGradient
+            id="cap-tassel"
+            x1="110"
+            y1="50"
+            x2="120"
+            y2="90"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#F2CB60" />
+            <stop offset="1" stopColor="#C68F2A" />
+          </linearGradient>
+        </defs>
+        <ellipse cx="62" cy="96" rx="30" ry="5" fill="rgba(60,6,26,.10)" />
+        <path d="M40 48 L40 64 Q40 78 64 78 Q88 78 88 64 L88 48 Z" fill="url(#cap-crown)" />
+        <polygon points="64,26 120,50 64,72 8,50" fill="url(#cap-board)" />
+        <polygon points="64,26 8,50 64,50" fill="rgba(255,255,255,.15)" />
+        <polygon points="64,26 120,50 64,50" fill="rgba(255,255,255,.06)" />
+        <circle cx="64" cy="50" r="4" fill="url(#cap-tassel)" />
+        <circle cx="64" cy="50" r="1.7" fill="#9A6E1E" />
+        <path
+          d="M64 50 Q104 49 117 53 L117 66"
+          stroke="url(#cap-tassel)"
+          strokeWidth="2.6"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <circle cx="117" cy="67" r="3.4" fill="url(#cap-tassel)" />
+        <path
+          d="M113 68 L112 87 M116 70 L115 89 M118 69 L120 88 M120 67 L122 85"
+          stroke="url(#cap-tassel)"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  );
+}

@@ -18,28 +18,29 @@
  * measuring a render.
  */
 
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
+
+import { sourceFiles } from "@/test/source-files";
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 /* ⚠️ THE HERO MOVED OUT OF app/page.tsx. It is a component now, rendered by
    three routes (`/`, `/en`, `/ru`), and this scan found nothing the moment it
    moved — which the "greater than 0" canary below caught, exactly as its
    comment promised it would. */
-const hero = read("./landing-page.tsx");
+const hero = read("./_components/landing-page.tsx");
 const signIn = read("../(auth)/sign-in/page.tsx");
-const chrome = read("./design-chrome.tsx");
-const footer = read("./site-footer.tsx");
+const chrome = read("./_components/design-chrome.tsx");
+const footer = read("./_components/site-footer.tsx");
 /* ⚠️ THE FOOTER IS TWO FILES NOW: the markup here, the stylesheet next door.
    They were split because `site-footer.tsx` had to become a client component to
    be translated, and a `"use client"` module cannot hand a plain string to the
    server module that injects it — see `client-boundary.test.ts`. Which half a
    check belongs to matters: a class is STYLED in one file and APPLIED in the
    other, so the rename trap below is now a real gap rather than a formality. */
-const footerCss = read("./footer-css.ts");
+const footerCss = read("./_lib/footer-css.ts");
 
 /**
  * Every auto-fit track declared in a file, with its minimum.
@@ -161,9 +162,7 @@ describe("the footer's layout travels with the footer", () => {
        a class now — it needs breakpoints — which means a page that renders
        <SiteFooter/> without also injecting DESIGN_CSS/FOOTER_CSS gets a footer
        with no columns at all, and nothing fails: the links just stack. */
-    const files = execFileSync("git", ["ls-files", "app"], { encoding: "utf8" })
-      .split("\n")
-      .filter((f) => /\.tsx$/.test(f) && f !== "app/_landing/site-footer.tsx");
+    const files = sourceFiles("app").filter((f) => /\.tsx$/.test(f) && f !== "app/_landing/_components/site-footer.tsx");
     const missing = files.filter((f) => {
       const src = readFileSync(f, "utf8");
       // `<SiteFooter`, not the bare name: a file that DEFINES one is not a file

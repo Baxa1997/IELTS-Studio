@@ -41,7 +41,8 @@ old engine; the engine cannot serve a request the app has not learned to make.
 ## 2. Where things are in the app
 
 ```
-app/
+app/                             every route folder: page.tsx (+ layout/loading/actions.ts)
+                                 and its own _components/ _lib/ _types/ — see CLAUDE.md
   (marketing)  _landing/  p/     public pages, SEO, pricing copy
   (auth)                         sign-in, sign-up (individual + organisation tabs)
   (shell)                        the four skill hubs + CEFR — read/ write/ listen/ speak/ cefr/
@@ -53,11 +54,15 @@ app/
   admin/                         platform super_admin only
   api/                           route handlers (billing, cron, exports, engine proxies)
 
+shared/components/   UI used by more than one area, by domain (ui/, app-shell/, speaking/ …)
+
 lib/
   auth.ts          ⭐ roles, guards, roleHome, isHomeworkOnlyStudent
+  auth-actions.ts  sign-in/up/out, reset, accept-invite — the server actions every area calls
   quota.ts         ⭐ the single choke point for plan limits and billing_enforced
   provision.ts     org/profile creation, and the personal-workspace cleanup
-  console/         staff console data layer (groups, attendance, assignments, assistant)
+  console/         staff console data layer (groups, attendance, assignments, assistant),
+                   plus the marking and practice-library server actions
   finance/         kassa, ledger, invoices, payroll, reports, xlsx/pdf builders
   reading/ writing/ grading/ lessons/   the skills' server logic
   engine/client.ts how the app talks to the engine
@@ -69,9 +74,15 @@ scripts/                seeds, QA smoke tests, admin creation
 .claude/skills/ielts-examiner/   ⭐ grading rubric — the source of truth
 ```
 
-**Component/design conventions live in `components/`**: `app-shell/` is the rail
-and frame every role shares; `console/` is the CRM-styled staff chrome;
-`brand/` holds the wordmarks, including a centre's own.
+**Where a file lives follows who uses it** (the full rules are "Folder
+structure" in `CLAUDE.md`): inside the route folder that uses it, in
+`shared/components/` once two areas do, and server code two areas call in
+`lib/`. `shared/components/app-shell/` is the rail and frame every role shares;
+`brand/` holds the wordmarks, including a centre's own; `ui/` is the shadcn kit.
+The console's own kit — `crm-ui.tsx`, `console-chrome.tsx` and the panels only
+staff screens use — lives in `app/(app)/console/_components/`, because nothing
+outside the console uses it. Imports only flow `app/` → `shared/` → `lib/`;
+`npm run lint` rejects any import that goes the other way.
 
 ---
 

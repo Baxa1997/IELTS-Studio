@@ -44,7 +44,7 @@ const code = (p: string) =>
   read(p)
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
-const ledger = code("../../app/(app)/referrals/ledger.tsx");
+const ledger = code("../../app/(app)/referrals/_components/ledger.tsx");
 const page = code("../../app/(app)/referrals/page.tsx");
 const types = code("./types.ts");
 const service = code("./service.ts");
@@ -81,7 +81,7 @@ describe("what the referrer's row is allowed to carry", () => {
     // The design asked for these columns. Without a reason recorded next to the
     // absence, the obvious "improvement" is to add them back. Read from the
     // RAW file, because this is the one assertion that is about the prose.
-    expect(read("../../app/(app)/referrals/ledger.tsx")).toMatch(
+    expect(read("../../app/(app)/referrals/_components/ledger.tsx")).toMatch(
       /withheld from the[\s*]+referrer's column grant/,
     );
   });
@@ -134,7 +134,7 @@ describe("two currencies stay two numbers", () => {
     // The design stacked "$118.20" over "1,477,500 so'm" — a conversion at
     // ~12,500. There is no rate anywhere in this system, and a hardcoded one
     // would be wrong in both currencies and drift further every week.
-    const hero = code("../../app/(app)/referrals/earnings-hero.tsx");
+    const hero = code("../../app/(app)/referrals/_components/earnings-hero.tsx");
     expect(hero).not.toMatch(/12[_,]?500|\* *12500|exchange/i);
     // The second balance is announced as a separate one, not a translation.
     expect(hero).toMatch(/and \{formatMoney/);
@@ -152,7 +152,7 @@ describe("the offer quotes a number somebody can actually earn", () => {
     // plan; 15% of the largest thing anybody can buy is $4.50. Quoting a figure
     // nobody can reach is the same failure as an inflated band — forgiven until
     // the first payout, and never after it.
-    const panel = code("../../app/(app)/referrals/pitch-panel.tsx");
+    const panel = code("../../app/(app)/referrals/_components/pitch-panel.tsx");
     expect(panel).toMatch(/commissionRange\(percent\)/);
     expect(panel).not.toMatch(/14\.85|annual/i);
     expect(types).toMatch(/PLAN_TIERS/);

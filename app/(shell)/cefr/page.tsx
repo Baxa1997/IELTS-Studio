@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 
-import { MultilevelClient } from "./multilevel-client";
+import { MultilevelClient } from "./_components/multilevel-client";
 
 export const dynamic = "force-dynamic";
 

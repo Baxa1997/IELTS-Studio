@@ -1,8 +1,8 @@
 /**
  * The codemod `eslint.config.mjs` promises and nobody wrote.
  *
- * That config scopes its no-raw-hex rule to `components/ui/**` and
- * `components/exam/**` on purpose, and says the glob "grows as
+ * That config scopes its no-raw-hex rule to `shared/components/ui/**` and
+ * `shared/components/exam/**` on purpose, and says the glob "grows as
  * `scripts/codemod-tokens.ts` converts the rest, directory by directory". The
  * file it names has never existed in this repo's history, so the glob never
  * grew: `lib/theme/tokens.ts` landed in 5f13197 with 23 files importing it and
@@ -77,7 +77,7 @@ interface Change {
 function sourceFiles(): string[] {
   // git is the file list: it already knows what is tracked and skips node_modules,
   // .next and anything ignored, without this script re-deriving those rules.
-  const out = execFileSync("git", ["ls-files", "app", "components", "lib"], {
+  const out = execFileSync("git", ["ls-files", "app", "shared", "lib"], {
     cwd: ROOT,
     encoding: "utf8",
   });

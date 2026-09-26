@@ -1,4 +1,4 @@
-import { AssignedHub } from "@/components/assignments/assigned-hub";
+import { AssignedHub } from "@/shared/components/assignments/assigned-hub";
 import { loadStudentAssignments } from "@/lib/assignments/student";
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
@@ -16,7 +16,7 @@ import {
   type Live,
   type PassageCard,
   type TestCard,
-} from "./read-hub";
+} from "./_components/read-hub";
 import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

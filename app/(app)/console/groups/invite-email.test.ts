@@ -16,7 +16,7 @@ import { describe, expect, it } from "vitest";
 const src = readFileSync(fileURLToPath(new URL("./actions.ts", import.meta.url)), "utf8")
   .replace(/\/\*[\s\S]*?\*\//g, "")
   .replace(/(^|[^:])\/\/.*$/gm, "$1");
-const panel = readFileSync(fileURLToPath(new URL("./invite-member-panel.tsx", import.meta.url)), "utf8");
+const panel = readFileSync(fileURLToPath(new URL("../_components/invite-member-panel.tsx", import.meta.url)), "utf8");
 
 function fn(name: string): string {
   const start = src.search(new RegExp(`(export )?(async )?function ${name}\\b`));

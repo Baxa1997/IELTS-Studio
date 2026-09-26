@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { BandCard } from "@/app/(app)/dashboard/band-card";
+import { BandCard } from "@/shared/components/estimates/band-card";
 import { requireOrgUser } from "@/lib/auth";
 import { loadStudentEstimates } from "@/lib/estimates/load";
 import {

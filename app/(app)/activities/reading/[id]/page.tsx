@@ -1,4 +1,4 @@
-import { AttemptReview } from "@/components/console/attempt-review";
+import { AttemptReview } from "@/shared/components/console/attempt-review";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 

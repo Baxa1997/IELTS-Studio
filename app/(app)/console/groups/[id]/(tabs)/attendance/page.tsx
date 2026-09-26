@@ -6,8 +6,8 @@ import { attendanceRateFrom } from "@/lib/console/attendance-marks";
 import { loadGroupDetail } from "@/lib/console/groups";
 import { ENROLLED } from "@/lib/console/status";
 import { createClient } from "@/lib/supabase/server";
-import { SANS } from "@/components/console/crm-ui";
-import { Board, V2, serifHead } from "../../ui";
+import { SANS } from "@/app/(app)/console/_components/crm-ui";
+import { Board, V2, serifHead } from "../_components/ui";
 import { WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

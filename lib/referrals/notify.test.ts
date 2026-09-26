@@ -23,7 +23,7 @@ const accrual = read("./accrual.ts");
 /* decideApplication moved to admin.ts when the reviewer's side was split
    out — approving is a decision, not something a referrer can do. */
 const service = read("./admin.ts");
-const shareCard = read("../../app/(app)/referrals/share-card.tsx");
+const shareCard = read("../../app/(app)/referrals/_components/share-card.tsx");
 
 describe("the earnings email says what happened, not who", () => {
   it("never puts the paying organization in a message", () => {

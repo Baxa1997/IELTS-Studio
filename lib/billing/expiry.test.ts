@@ -357,7 +357,7 @@ describe("a suspension is announced to the owner", () => {
 describe("a plan granted by hand can carry an end date", () => {
   const grant = fn(actions, "setAccountPlan");
   const revenue = code("../admin/revenue.ts");
-  const settings = read("../../app/(app)/settings/sections/billing.tsx");
+  const settings = read("../../app/(app)/settings/[section]/_components/billing.tsx");
 
   it("is stored as a 'manual' subscription row, so the nightly job ends it like Payme", () => {
     const upsert = block(grant, "if (until)");

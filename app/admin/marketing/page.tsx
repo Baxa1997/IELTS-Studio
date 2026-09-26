@@ -8,13 +8,13 @@ import {
   SANS,
   Surface,
   TONE,
-} from "@/components/admin/ui";
+} from "@/app/admin/_components/ui";
 import { requireSuperAdmin } from "@/lib/auth";
 import { marketingBucketExists } from "@/lib/marketing/assets";
 import { inSegment, loadAudience } from "@/lib/marketing/audience";
 import { loadBroadcasts } from "@/lib/marketing/broadcast";
 
-import { Composer } from "./composer";
+import { Composer } from "./_components/composer";
 
 export const dynamic = "force-dynamic";
 

@@ -18,7 +18,7 @@ import {
   TD,
   THead,
   TRow,
-} from "@/components/console/crm-ui";
+} from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { KIND_LABEL, reportHref } from "@/lib/console/attempts";
 import { loadMarkingQueue, OVERDUE_HOURS } from "@/lib/console/marking";

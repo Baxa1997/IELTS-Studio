@@ -25,8 +25,8 @@ import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/locales";
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const middleware = read("../../lib/supabase/middleware.ts");
 const sitemap = read("../sitemap.ts");
-const provider = read("../../components/i18n/locale-provider.tsx");
-const landing = read("./landing-page.tsx");
+const provider = read("../../shared/components/i18n/locale-provider.tsx");
+const landing = read("./_components/landing-page.tsx");
 const localised = read("../[locale]/page.tsx");
 
 describe("the localised landing routes", () => {

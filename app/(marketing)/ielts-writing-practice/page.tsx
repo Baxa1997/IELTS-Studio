@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../marketing";
+import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
 
 export const metadata: Metadata = {
   title: "IELTS Writing Practice — Task 1 & Task 2 with Real Band Feedback",

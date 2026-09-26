@@ -19,9 +19,9 @@ import {
   PageHead,
   SANS,
   SOFT,
-} from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
-import { ScheduleTabs } from "@/components/console/schedule-tabs";
+} from "@/app/(app)/console/_components/crm-ui";
+import { Drawer } from "@/shared/components/console/finance-ui";
+import { ScheduleTabs } from "@/app/(app)/console/_components/schedule-tabs";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import {
@@ -37,11 +37,11 @@ import {
   weekLabel,
 } from "@/lib/console/timetable";
 
-import { BranchesManager } from "./branches-manager";
-import { SlotForm } from "./calendar-forms";
-import { RoomsManager } from "./rooms-manager";
-import { type GridRoom } from "./timetable-grid";
-import { WeekBoard } from "./week-board";
+import { BranchesManager } from "./_components/branches-manager";
+import { SlotForm } from "./_components/calendar-forms";
+import { RoomsManager } from "./_components/rooms-manager";
+import { type GridRoom } from "./_components/timetable-grid";
+import { WeekBoard } from "./_components/week-board";
 import {
   BODY,
   CONSOLE_CANVAS,

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-import { VocabularyList, type VocabItem } from "./vocabulary-list";
+import { VocabularyList, type VocabItem } from "./_components/vocabulary-list";
 
 export const dynamic = "force-dynamic";
 

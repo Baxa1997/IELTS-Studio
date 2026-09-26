@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { CentersGuide, centersMetadata } from "@/app/how-to-use/education-centers/centers-guide";
+import { CentersGuide, centersMetadata } from "@/app/how-to-use/education-centers/_components/centers-guide";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/locales";
 
 /**

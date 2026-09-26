@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { type Tone } from "@/components/console/crm-ui";
+import { type Tone } from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { KIND_LABEL } from "@/lib/console/attempts";
 import {
@@ -9,9 +9,9 @@ import {
   type PracticeStatus,
 } from "@/lib/console/practice-board";
 
-import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
+import { PracticeGallery, type GalleryItem } from "@/shared/components/practice/gallery";
 
-import { RemindButton } from "./remind-button";
+import { RemindButton } from "./_components/remind-button";
 
 export const dynamic = "force-dynamic";
 

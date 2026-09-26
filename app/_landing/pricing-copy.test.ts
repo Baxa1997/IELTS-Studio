@@ -13,7 +13,7 @@ import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
  *
  * `lib/billing/plans.ts` is the single definition the quota code, the checkout
  * and the billing screens read, and it holds the feature copy in English.
- * `app/_landing/landing-page.tsx` renders those features from message keys, so
+ * `app/_landing/_components/landing-page.tsx` renders those features from message keys, so
  * the landing page can speak three languages. Nothing in the type system ties
  * the two lists together: add a feature to the plan and the card silently drops
  * it, because the card iterates the KEYS, not the plan.
@@ -24,7 +24,7 @@ import { PLAN_ORDER, PLAN_TIERS, type OrgPlan } from "@/lib/billing/plans";
  */
 
 const read = (p: string) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
-const landing = read("./landing-page.tsx");
+const landing = read("./_components/landing-page.tsx");
 
 /** `PLAN_FEATURES` as the landing page declares it: plan → message keys. */
 function declaredFeatureKeys(): Record<string, string[]> {

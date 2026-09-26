@@ -24,7 +24,7 @@ import {
   WASH,
 } from "@/lib/lessons/theme";
 
-import { Composer } from "./composer";
+import { Composer } from "./_components/composer";
 import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

@@ -20,8 +20,8 @@ import {
   TD,
   THead,
   TRow,
-} from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
+} from "@/app/(app)/console/_components/crm-ui";
+import { Drawer } from "@/shared/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import {
@@ -33,9 +33,9 @@ import {
 import { formatMoney, parseMoney } from "@/lib/finance/money";
 import { prettyDate, resolvePeriod } from "@/lib/finance/period";
 
-import { DeskForm, TransferForm } from "./desk-forms";
-import { TransactionForm } from "./transaction-form";
-import { DownloadLink } from "@/components/console/file-links";
+import { DeskForm, TransferForm } from "./_components/desk-forms";
+import { TransactionForm } from "../_components/transaction-form";
+import { DownloadLink } from "@/app/(app)/console/finance/_components/file-links";
 import {
   CONSOLE_CANVAS,
   INDIGO_FILL,

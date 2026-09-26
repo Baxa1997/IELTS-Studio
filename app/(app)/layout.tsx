@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
 
-import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { getLocale } from "@/lib/i18n/server";
 import { Hanken_Grotesk, Manrope, Newsreader, Source_Serif_4 } from "next/font/google";
 
-import { PlanCard } from "@/components/app-shell/plan-card";
-import { QuotaBar } from "@/components/app-shell/quota-bar";
-import { AppShell } from "@/components/app-shell/shell";
-import { NotificationBell } from "@/components/app-shell/notification-bell";
+import { PlanCard } from "@/shared/components/app-shell/plan-card";
+import { QuotaBar } from "@/shared/components/app-shell/quota-bar";
+import { AppShell } from "@/shared/components/app-shell/shell";
+import { NotificationBell } from "@/shared/components/app-shell/notification-bell";
 import {
   canManagePeople,
   contactLabel,
@@ -21,7 +21,7 @@ import { loadStudyPlan } from "@/lib/plan/service";
 import { getUsageSummary } from "@/lib/quota";
 import { createClient } from "@/lib/supabase/server";
 
-import { OnboardingTakeover } from "./onboarding/onboarding-takeover";
+import { OnboardingTakeover } from "../../shared/components/onboarding/onboarding-takeover";
 
 const hanken = Hanken_Grotesk({
   subsets: ["latin"],

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { signOut } from "@/app/(auth)/actions";
+import { signOut } from "@/lib/auth-actions";
 import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";

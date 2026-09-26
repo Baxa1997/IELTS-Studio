@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BrandLogo } from "@/components/brand/logo";
+import { BrandLogo } from "@/shared/components/brand/logo";
 import { getSession, roleHome } from "@/lib/auth";
 import { absoluteUrl, getSiteUrl } from "@/lib/seo";
 
-import { PublicGrader } from "./grader";
+import { PublicGrader } from "./_components/grader";
 import { BRAND, BRAND_FILL, FAINT, PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP, PANEL, SLATE_BODY, SLATE_BODY as MUTED, SLATE_INK as INK, SLATE_LINE as LINE, SLATE_STRONG, WARM_LINE_SOFT, WELL as SOFT, WHITE } from "@/lib/theme/tokens";
 
 // ---- Brand tokens (mirrors the internal writing studio / essay-feedback look) --

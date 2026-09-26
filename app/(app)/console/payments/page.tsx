@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { Card, Empty, FAINT, INK, MUTED, SANS, Table, TD, THead, TRow } from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
-import { PageHead } from "@/components/console/page-ui";
+import { Card, Empty, FAINT, INK, MUTED, SANS, Table, TD, THead, TRow } from "@/app/(app)/console/_components/crm-ui";
+import { Drawer } from "@/shared/components/console/finance-ui";
+import { PageHead } from "@/shared/components/console/page-ui";
 import { canManagePeople, requireOrgUser, roleHome } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadFinancePeople, loadFinanceSettings } from "@/lib/finance/load";
@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/finance/money";
 import { monthStart, today } from "@/lib/finance/period";
 import { createClient } from "@/lib/supabase/server";
 
-import { TransactionForm } from "../finance/transaction-form";
+import { TransactionForm } from "../_components/transaction-form";
 import { WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

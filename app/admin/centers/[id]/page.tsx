@@ -24,15 +24,15 @@ import {
   TableRow,
   TONE,
   clip,
-} from "@/components/admin/ui";
-import { MenuIcon } from "@/components/admin/menu-icons";
-import { OverflowMenu } from "@/components/admin/menu";
+} from "@/app/admin/_components/ui";
+import { MenuIcon } from "@/app/admin/_components/menu-icons";
+import { OverflowMenu } from "@/app/admin/_components/menu";
 import { loadCenterActivity } from "@/lib/admin/activity";
 import { loadCenterDetail } from "@/lib/admin/platform";
 import { ago, daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
 
-import { CenterActions } from "./center-actions";
+import { CenterActions } from "./_components/center-actions";
 import { EMPTY_FILL, PANEL, SLATE_AMBER, WARM_WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

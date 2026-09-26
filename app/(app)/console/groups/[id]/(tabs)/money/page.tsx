@@ -8,7 +8,7 @@ import { formatMoney, toMajor } from "@/lib/finance/money";
 import { monthLabel, monthStart, prettyDate, today } from "@/lib/finance/period";
 import { describeProration } from "@/lib/finance/tuition";
 
-import { PricingPanel } from "../../pricing-panel";
+import { PricingPanel } from "./_components/pricing-panel";
 import {
   Card,
   CardHead,
@@ -26,7 +26,7 @@ import {
   TRow,
   Table,
   TextLink,
-} from "@/components/console/crm-ui";
+} from "@/app/(app)/console/_components/crm-ui";
 
 export const dynamic = "force-dynamic";
 

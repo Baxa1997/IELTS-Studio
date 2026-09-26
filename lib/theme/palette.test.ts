@@ -16,7 +16,7 @@ const ROOT = process.cwd();
  * Every stylesheet that declares palette tokens.
  *
  * ⚠️ NOT ALL OF THEM ARE .css FILES. The Speaking surface's "Lucida" scale is a
- * template literal inside `app/(shell)/speak/lucida.tsx`, scoped under
+ * template literal inside `shared/components/speaking/lucida.tsx`, scoped under
  * `.lucida` so its warm-violet palette cannot leak into the rest of the app —
  * and it is a palette like any other, with exactly the same way of going wrong.
  * Reading only globals.css would leave the largest scoped palette in the
@@ -25,7 +25,7 @@ const ROOT = process.cwd();
 const css =
   readFileSync(join(ROOT, "app/globals.css"), "utf8") +
   "\n" +
-  readFileSync(join(ROOT, "app/(shell)/speak/lucida.tsx"), "utf8");
+  readFileSync(join(ROOT, "shared/components/speaking/lucida.tsx"), "utf8");
 
 /**
  * Every declaration of `prefix`, split by theme.
@@ -184,7 +184,7 @@ describe("the runtime palette", () => {
     }
   });
 
-  for (const source of ["lib/theme/tokens.ts", "app/_landing/design.ts"]) {
+  for (const source of ["lib/theme/tokens.ts", "app/_landing/_lib/design.ts"]) {
     it(`${source} exports no colour literal except WHITE`, () => {
       // A hex here is baked at build time and cannot follow the theme. WHITE is
       // the single deliberate exception — it is the ink on a filled accent and

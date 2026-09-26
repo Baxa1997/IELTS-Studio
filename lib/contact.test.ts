@@ -13,14 +13,16 @@
  * is "is there exactly one place where the answer lives", which is the only
  * property that makes the address correctable in one edit.
  *
- * Sources are enumerated with `git ls-files` — the same approach as the theme
- * guards — so a new file is covered the moment it is tracked.
+ * Sources are enumerated with `sourceFiles` (test/source-files.ts) — the same
+ * list the theme guards walk — so a new file is covered the moment it is on
+ * disk, staged or not.
  */
 
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
+
+import { sourceFiles } from "@/test/source-files";
 
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_TEL_HREF, CONTACT_WHATSAPP_HREF } from "./contact";
 
@@ -28,9 +30,7 @@ import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_TEL_HREF, CONTACT_WHATSAPP_HREF }
 const HOME = "lib/contact.ts";
 
 function trackedSources(): string[] {
-  const out = execFileSync("git", ["ls-files", "app", "components", "lib"], { encoding: "utf8" });
-  return out
-    .split("\n")
+  return sourceFiles("app", "shared", "lib")
     .filter((f) => /\.tsx?$/.test(f) && !f.endsWith(".test.ts") && !f.endsWith(".test.tsx"))
     .filter((f) => f !== HOME);
 }
@@ -41,29 +41,14 @@ const digits = (s: string) => s.replace(/[^0-9]/g, "");
 
 describe("the contact details live in exactly one file", () => {
   it("no other source hardcodes the email", () => {
-    const offenders = trackedSources().filter((f) => {
-      // The deletions in a working tree are still listed by `git ls-files`
-      // until they are staged, so a missing file is skipped rather than thrown.
-      let src: string;
-      try {
-        src = readFileSync(f, "utf8");
-      } catch {
-        return false;
-      }
-      return src.includes(CONTACT_EMAIL);
-    });
+    const offenders = trackedSources().filter((f) => readFileSync(f, "utf8").includes(CONTACT_EMAIL));
     expect(offenders, `import CONTACT_EMAIL from @/${HOME} instead`).toEqual([]);
   });
 
   it("no other source hardcodes the phone, in any spelling", () => {
     const bare = digits(CONTACT_PHONE);
     const offenders = trackedSources().filter((f) => {
-      let src: string;
-      try {
-        src = readFileSync(f, "utf8");
-      } catch {
-        return false;
-      }
+      const src = readFileSync(f, "utf8");
       return src.includes(CONTACT_PHONE) || src.includes(bare);
     });
     expect(offenders, `import CONTACT_PHONE from @/${HOME} instead`).toEqual([]);

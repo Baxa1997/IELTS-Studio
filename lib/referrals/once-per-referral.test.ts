@@ -78,7 +78,7 @@ describe("the accrual path declines quietly", () => {
 
 describe("what a referrer is promised", () => {
   const page = read("../../app/(app)/referrals/page.tsx");
-  const form = read("../../app/(app)/referrals/apply-form.tsx");
+  const form = read("../../app/(app)/referrals/_components/apply-form.tsx");
 
   it("never promises recurring commission", () => {
     // The copy said "every month they keep paying" while the code paid once.

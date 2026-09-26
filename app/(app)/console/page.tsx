@@ -25,7 +25,7 @@ import {
   Stack,
   Tag,
   TextLink,
-} from "@/components/console/crm-ui";
+} from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadDay } from "@/lib/console/attendance";
 import { loadCenterSettings } from "@/lib/console/center-settings";
@@ -34,8 +34,8 @@ import { loadCenterReport, SKILL_UNIT } from "@/lib/console/reports";
 import { centerNow, registersToMark } from "@/lib/console/schedule";
 import { createClient } from "@/lib/supabase/server";
 
-import { NeedsAttention } from "./needs-attention";
-import { PendingInvites, type PendingInvite } from "./pending-invites";
+import { NeedsAttention } from "./_components/needs-attention";
+import { PendingInvites, type PendingInvite } from "./_components/pending-invites";
 import { WARM_LINE, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

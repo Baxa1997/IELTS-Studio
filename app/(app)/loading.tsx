@@ -1,4 +1,4 @@
-import { PageSkeleton } from "@/components/app-shell/page-skeleton";
+import { PageSkeleton } from "@/shared/components/app-shell/page-skeleton";
 
 /**
  * Suspense fallback for every page in the (app) group. Because these pages are

@@ -1,7 +1,7 @@
 import { Hanken_Grotesk, Manrope, Newsreader, Sora } from "next/font/google";
 
-import { DESIGN_CSS } from "@/app/_landing/design-chrome";
-import { SiteFooter } from "@/app/_landing/site-footer";
+import { DESIGN_CSS } from "@/app/_landing/_components/design-chrome";
+import { SiteFooter } from "@/app/_landing/_components/site-footer";
 
 // The public grader wears the same Option A brand as the internal writing
 // studio/feedback pages (serif display + Hanken UI), scoped via CSS variables so

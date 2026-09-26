@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { LessonSections } from "@/components/lessons/lesson-sections";
+import { LessonSections } from "@/shared/components/lessons/lesson-sections";
 import { requireOrgUser } from "@/lib/auth";
 import { loadLesson } from "@/lib/lessons/load";
 import { INK, READING, SERIF } from "@/lib/lessons/theme";
 
-import { LessonRunner } from "./lesson-runner";
+import { LessonRunner } from "@/shared/components/lessons/lesson-runner";
 
 export const dynamic = "force-dynamic";
 

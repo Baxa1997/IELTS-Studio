@@ -1,4 +1,4 @@
-import { Block } from "@/components/app-shell/page-skeleton";
+import { Block } from "@/shared/components/app-shell/page-skeleton";
 import { PANEL } from "@/lib/theme/tokens";
 import { PRACTICE_GRID_COLUMNS } from "@/lib/practice/grid";
 

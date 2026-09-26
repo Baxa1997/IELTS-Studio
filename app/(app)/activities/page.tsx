@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireOrgUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-import { PracticeGallery, type GalleryItem } from "@/components/practice/gallery";
+import { PracticeGallery, type GalleryItem } from "@/shared/components/practice/gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -105,7 +105,7 @@ export default async function ActivitiesPage() {
 
   /* Mapped into the gallery's flat shape here rather than in the component —
      the grid is shared with the teacher's library and a student's report, and
-     each of those has a different row of its own. See components/practice/gallery.tsx. */
+     each of those has a different row of its own. See shared/components/practice/gallery.tsx. */
   const items: GalleryItem[] = [
     ...writing.map((r) => ({
       id: r.id,

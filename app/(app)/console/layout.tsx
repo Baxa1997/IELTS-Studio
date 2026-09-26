@@ -2,17 +2,17 @@ import { cache } from "react";
 import { Suspense } from "react";
 import { Work_Sans } from "next/font/google";
 
-import { ConsoleChrome } from "@/components/console/console-chrome";
-import { EnrolStudentPanel } from "@/components/console/enrol-student-panel";
-import { ToastHost } from "@/components/console/toast";
+import { ConsoleChrome } from "@/app/(app)/console/_components/console-chrome";
+import { EnrolStudentPanel } from "@/app/(app)/console/_components/enrol-student-panel";
+import { ToastHost } from "@/shared/components/console/toast";
 import { canManagePeople, isOrgOwner, requireOrgUser, requireStaff } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadSubjects, loadTeacherSubjects } from "@/lib/console/subjects";
 import { loadFinanceSettings } from "@/lib/finance/load";
 
-import { CreateGroupForm } from "./groups/group-forms";
-import { InviteMemberPanel } from "./groups/invite-member-panel";
-import { AddTeacherPanel } from "./teachers/add-teacher-panel";
+import { CreateGroupForm } from "./_components/group-forms";
+import { InviteMemberPanel } from "./_components/invite-member-panel";
+import { AddTeacherPanel } from "./_components/add-teacher-panel";
 
 /* The console's body type. It lived in `(app)/layout.tsx` until this subtree
    claimed it — which meant every student route preloaded the staff console's

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { AssignToClass } from "@/components/console/assign-to-class";
+import { AssignToClass } from "@/shared/components/console/assign-to-class";
 import { requireOrgUser } from "@/lib/auth";
 import { buildCoachLearnerContext } from "@/lib/coach/learner-context";
 import type { NoteMeta, ReadingQuestionType } from "@/lib/reading/types";
@@ -8,8 +8,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { PAGE_GRAD_BOTTOM, PAGE_GRAD_TOP } from "@/lib/theme/tokens";
 
-import type { DeliveredQuestion } from "../../_shared/question-inputs";
-import { ReadingTestRunner, type ResumeState, type TestPassage } from "./test-runner";
+import type { DeliveredQuestion } from "../../_components/question-inputs";
+import { ReadingTestRunner, type ResumeState, type TestPassage } from "./_components/test-runner";
 
 export const dynamic = "force-dynamic";
 

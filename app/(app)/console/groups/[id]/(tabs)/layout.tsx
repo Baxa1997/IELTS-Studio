@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 
-import { PageHead } from "@/components/console/crm-ui";
+import { PageHead } from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupSummary } from "@/lib/console/groups";
 
-import { GroupTabs } from "./tabs-nav";
+import { GroupTabs } from "./_components/tabs-nav";
 
 /**
  * The chrome every group tab shares: who this group is, and the row of tabs.

@@ -153,6 +153,57 @@ handles that. It is about what a file is expected to explain.
 - **MATCH THE FILE YOU ARE IN.** Comment density, naming and idiom should look
   like the surrounding code, not like a different codebase.
 
+## Folder structure
+
+Adopted 2026-09-26 across the whole of `app/`. Every route folder follows it;
+a helper sitting loose beside a `page.tsx` is a regression, not a style.
+
+```
+app/<route>/            page.tsx, layout.tsx, loading.tsx, actions.ts — Next's files stay at the root
+  _components/          components only this route (and its child routes) use
+  _hooks/  _types/      hooks / types shared by several files of this route
+  _lib/                 plain helpers and constants for this route
+shared/components/      used by two or more areas, grouped by domain (ui/, app-shell/, speaking/ …)
+lib/<domain>/           server logic, data access, and server actions more than one area calls
+```
+
+- **THE UNDERSCORE IS LOAD-BEARING.** `_x` is Next's private folder: never a
+  route, whatever is put inside it later. `components/` without it becomes a
+  URL the day someone drops a `page.tsx` in it.
+- **A SUBFOLDER EXISTS ONLY WHEN IT HAS SOMETHING IN IT.** No empty `_hooks/`.
+  A type or hook used by one file stays in that file.
+- **PLACEMENT FOLLOWS USE, NOT TOPIC.** A file lives in the deepest route folder
+  that covers every file importing it: a panel only the homework tab uses sits
+  in `groups/[id]/(tabs)/homework/_components/`, one three console sections
+  share sits in `console/_components/`. Used by two AREAS → `shared/`.
+  - `(app)`, `(shell)` and `(studio)` are frames, not areas — a file the writing
+    hub and the writing studio both run is shared (`shared/components/writing/`).
+    `(auth)`, `(marketing)` and `(legal)` ARE areas.
+  - `app/[locale]/x` is the same page as `app/x`, so it does not make `x`'s
+    components shared.
+  - An `import type` does not place a file. `writing-studio.tsx` stays with the
+    studio although the hub imports a type from it.
+  - Two exceptions, both deliberate: `app/_landing/` is the public site's own
+    module (the landing page, marketing, legal and the docs all draw on it), and
+    `shared/components/ui/` is the shadcn kit — `components.json` points the CLI
+    there, so a primitive stays in it even while one area uses it.
+- **IMPORTS FLOW ONE WAY: `app/` → `shared/` → `lib/`, AND ESLINT ENFORCES IT**
+  (`no-restricted-imports` in eslint.config.mjs). A server action a route calls
+  for itself stays in its `actions.ts`; one that another area or a shared
+  component calls goes in `lib/<domain>/` (`lib/auth-actions.ts`,
+  `lib/console/practice-actions.ts`, `lib/estimates/actions.ts` …).
+- **⚠️ A TEST THAT SCANS SOURCE FILES USES `sourceFiles()`** from
+  `test/source-files.ts`, never `git ls-files` directly. The index is not the
+  disk: moved-but-unstaged files vanish from it, so five guards would have gone
+  on passing while scanning none of `shared/`.
+- **⚠️ A TEST THAT MATCHES AN IMPORT BY ITS TEXT BREAKS SILENTLY ON A MOVE.**
+  `svg-vars.test.ts` finds palette imports with a regex over the specifier; the
+  move changed `./design` into `../_lib/design` and it would have stopped seeing
+  30 of 237 without failing. When you move a file, grep the tests for its name.
+- **⚠️ MOVING A SERVER ACTION CHANGES ITS ID.** A tab opened before the deploy
+  can fail its next submit until it reloads. Harmless, but do not mistake it for
+  a bug in the action.
+
 ## How grading must work (the anti-inflation playbook)
 
 The `ielts-examiner` skill encodes this; honor it on every grading call:

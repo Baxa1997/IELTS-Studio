@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 
-import { VoiceLabClient } from "./voice-lab-client";
+import { VoiceLabClient } from "./_components/voice-lab-client";
 
 export const dynamic = "force-dynamic";
 

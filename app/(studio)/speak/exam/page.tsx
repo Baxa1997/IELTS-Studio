@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { requireOrgUser } from "@/lib/auth";
 
-import { ExamPage } from "./exam-client";
+import { ExamPage } from "./_components/exam-client";
 
 export const dynamic = "force-dynamic";
 

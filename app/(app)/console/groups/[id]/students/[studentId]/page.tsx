@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { StudentReportView } from "@/components/console/student-report-view";
+import { StudentReportView } from "@/app/(app)/console/_components/student-report-view";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroupDetail } from "@/lib/console/groups";
 import { loadStudentReport } from "@/lib/console/student-report";

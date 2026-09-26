@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { loadStudyPlan } from "@/lib/plan/service";
 
-import { OnboardingForm } from "./onboarding-form";
+import { OnboardingForm } from "./_components/onboarding-form";
 import { SLATE_BODY as MUTED, SLATE_INK as INK } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

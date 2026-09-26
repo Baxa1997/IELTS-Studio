@@ -1,0 +1,325 @@
+"use client";
+
+import { READING_GAP_MARKER, type ReadingQuestionType } from "@/lib/reading/constants";
+import type { NoteMeta } from "@/lib/reading/types";
+
+import { BRAND, INK, SANS } from "@/shared/components/reading/tokens";
+import { BRAND_FILL, BRAND_SOFT, PANEL, SLATE_STRONG, WHITE } from "@/lib/theme/tokens";
+
+/** Answer-free question as delivered to the browser (no key/proof/explanation). */
+export interface DeliveredQuestion {
+  id: string;
+  question_type: ReadingQuestionType;
+  order_index: number;
+  prompt: string;
+  options: string[] | null;
+  /** Completion groups: the group's word-limit phrase (rendered in the heading). */
+  word_limit?: string | null;
+  /** Note completion: optional sub-heading grouping consecutive note lines. */
+  section?: string | null;
+  /** Note completion: structured layout for this line (title/indent/context). */
+  note_meta?: NoteMeta | null;
+}
+
+const LETTERS = "ABCDEFGHIJKLMNOP".split("");
+const VERDICT_OPTIONS: Record<"tfng" | "ynng", [string, string][]> = {
+  tfng: [
+    ["true", "True"],
+    ["false", "False"],
+    ["not_given", "Not Given"],
+  ],
+  ynng: [
+    ["yes", "Yes"],
+    ["no", "No"],
+    ["not_given", "Not Given"],
+  ],
+};
+
+const ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv"];
+function roman(i: number): string {
+  return ROMAN[i] ?? String(i + 1);
+}
+
+/** The per-type answer input for one reading question (radio pills, MCQ, select,
+ *  or free text). Controlled — the runner owns the answers map. */
+export function QuestionInput({
+  question,
+  value,
+  onChange,
+}: {
+  question: DeliveredQuestion;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { id, question_type, options } = question;
+
+  switch (question_type) {
+    case "true_false_not_given":
+    case "yes_no_not_given": {
+      const choices = VERDICT_OPTIONS[question_type === "true_false_not_given" ? "tfng" : "ynng"];
+      return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {choices.map(([val, label]) => (
+            <Pill key={val} name={`q-${id}`} value={val} label={label} checked={value === val} onChange={onChange} />
+          ))}
+        </div>
+      );
+    }
+
+    case "multiple_choice": {
+      if (!options?.length) return <TextAnswer value={value} onChange={onChange} />;
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+          {options.map((opt, i) => (
+            <Radio key={i} name={`q-${id}`} value={opt} label={`${LETTERS[i] ?? i + 1}. ${opt}`} checked={value === opt} onChange={onChange} />
+          ))}
+        </div>
+      );
+    }
+
+    case "matching_headings":
+    case "matching_information":
+    case "matching_features":
+    case "matching_sentence_endings": {
+      if (!options?.length) return <TextAnswer value={value} onChange={onChange} />;
+      // Headings are labelled with roman numerals, sentence endings and the
+      // matching-features people with letters (A–F), and matching-information
+      // answers carry the bare option text (paragraph letters).
+      const label = (i: number) =>
+        question_type === "matching_headings"
+          ? `${roman(i)}. ${options[i]}`
+          : question_type === "matching_sentence_endings" || question_type === "matching_features"
+            ? `${LETTERS[i] ?? i + 1}. ${options[i]}`
+            : options[i];
+      return (
+        <select value={value} onChange={(e) => onChange(e.target.value)} className="lp-input" style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--ex-select-line)", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}>
+          <option value="">Choose…</option>
+          {options.map((opt, i) => (
+            <option key={i} value={opt}>
+              {label(i)}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    case "sentence_completion":
+    case "summary_completion":
+    case "note_completion":
+    default:
+      return <TextAnswer value={value} onChange={onChange} />;
+  }
+}
+
+function TextAnswer({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder="Type your answer…"
+      autoComplete="off"
+      spellCheck={false}
+      className="lp-input"
+      style={{ width: "100%", maxWidth: 360, padding: "10px 12px", border: "1px solid var(--ex-select-line)", borderRadius: 10, background: PANEL, fontFamily: SANS, fontSize: 14, color: INK }}
+    />
+  );
+}
+
+/** A bordered fill-in-the-blank input sized to sit INLINE inside a sentence
+ *  (Cambridge gap-fill style). Width grows with the typed answer. */
+export function InlineBlank({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={label}
+      placeholder="…"
+      autoComplete="off"
+      spellCheck={false}
+      className="lp-input"
+      style={{
+        display: "inline-block",
+        width: `${Math.max(7, Math.min(22, value.length + 3))}ch`,
+        margin: "0 4px",
+        padding: "3px 9px",
+        border: `1.5px solid ${value.trim() ? BRAND : "var(--ex-idle)"}`,
+        borderRadius: 8,
+        background: value.trim() ? BRAND_SOFT : PANEL,
+        fontFamily: SANS,
+        fontWeight: 600,
+        fontSize: "inherit",
+        lineHeight: "inherit",
+        color: INK,
+        verticalAlign: "baseline",
+        textAlign: "center",
+      }}
+    />
+  );
+}
+
+/**
+ * A completion question rendered as the FULL sentence with the answer typed into a
+ * bordered blank INSIDE the sentence (not a separate box below it). The generator
+ * marks the gap with a run of underscores; if none is present (legacy data) the
+ * blank is appended so the sentence still reads with the input in line.
+ */
+export function GapSentence({
+  prompt,
+  value,
+  onChange,
+  questionNumber,
+}: {
+  prompt: string;
+  value: string;
+  onChange: (v: string) => void;
+  questionNumber: number;
+}) {
+  const label = `Answer for question ${questionNumber}`;
+  const match = prompt.match(READING_GAP_MARKER);
+  let before = prompt;
+  let after = "";
+  if (match && match.index != null) {
+    before = prompt.slice(0, match.index);
+    after = prompt.slice(match.index + match[0].length);
+  }
+  return (
+    <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.9, color: INK }}>
+      {before}
+      <InlineBlank value={value} onChange={onChange} label={label} />
+      {after}
+    </span>
+  );
+}
+
+/** A compact INLINE dropdown for a word-bank gap (summary completion, list A–J).
+ *  Stores the option TEXT as the value so grading matches the answer-key text, and
+ *  shows "A — ending" so the student reads the letter the exam expects. */
+export function InlineSelect({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={label}
+      className="lp-input"
+      style={{
+        display: "inline-block",
+        maxWidth: "min(58vw, 260px)",
+        margin: "0 4px",
+        padding: "3px 8px",
+        border: `1.5px solid ${value.trim() ? BRAND : "var(--ex-idle)"}`,
+        borderRadius: 8,
+        background: value.trim() ? BRAND_SOFT : PANEL,
+        fontFamily: SANS,
+        fontWeight: 600,
+        fontSize: "inherit",
+        lineHeight: "inherit",
+        color: INK,
+        verticalAlign: "baseline",
+        cursor: "pointer",
+      }}
+    >
+      <option value="">— choose —</option>
+      {options.map((opt, i) => (
+        <option key={i} value={opt}>
+          {LETTERS[i] ?? i + 1} — {opt}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/**
+ * A word-bank completion line: the summary sentence with an inline DROPDOWN at the
+ * gap instead of a typed blank (the answer is chosen from the A–J list, not typed).
+ * Splits the prompt at the underscore gap exactly like GapSentence.
+ */
+export function GapSelectSentence({
+  prompt,
+  options,
+  value,
+  onChange,
+  questionNumber,
+}: {
+  prompt: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  questionNumber: number;
+}) {
+  const label = `Answer for question ${questionNumber}`;
+  const match = prompt.match(READING_GAP_MARKER);
+  let before = prompt;
+  let after = "";
+  if (match && match.index != null) {
+    before = prompt.slice(0, match.index);
+    after = prompt.slice(match.index + match[0].length);
+  }
+  return (
+    <span style={{ display: "block", fontFamily: SANS, fontSize: 16, lineHeight: 1.9, color: INK }}>
+      {before}
+      <InlineSelect options={options} value={value} onChange={onChange} label={label} />
+      {after}
+    </span>
+  );
+}
+
+const SR_ONLY: React.CSSProperties = { position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)" };
+
+/** Flat uppercase verdict chip (TRUE / FALSE / NOT GIVEN), exam-paper style.
+ *  Resting border+background live in the .rd-vpill CSS class so :hover can work;
+ *  inline styles carry only the checked state (inline always wins over the class). */
+function Pill({ name, value, label, checked, onChange }: { name: string; value: string; label: string; checked: boolean; onChange: (v: string) => void }) {
+  return (
+    <label
+      className="rd-vpill"
+      style={{
+        position: "relative", // contain the visually-hidden radio so focusing it
+        // (on click) can't scroll the pane to the runner's top-left origin.
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        borderRadius: 9,
+        padding: "8px 16px",
+        border: checked ? `1.5px solid ${BRAND_FILL}` : undefined,
+        background: checked ? BRAND_FILL : undefined,
+        transition: "background .14s ease, border-color .14s ease",
+      }}
+    >
+      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={SR_ONLY} />
+      <span style={{ fontFamily: SANS, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: checked ? WHITE : SLATE_STRONG, transition: "color .14s ease" }}>{label}</span>
+    </label>
+  );
+}
+
+function Radio({ name, value, label, checked, onChange }: { name: string; value: string; label: string; checked: boolean; onChange: (v: string) => void }) {
+  return (
+    <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer", fontFamily: SANS, fontSize: 14, color: INK }}>
+      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} style={{ marginTop: 3, accentColor: BRAND }} />
+      <span style={{ lineHeight: 1.5 }}>{label}</span>
+    </label>
+  );
+}
+
+/**
+ * The exam countdown.
+ *
+ * Re-exported rather than defined here: this one used to count with a
+ * `setInterval` that decremented a number, which handed a candidate free time in
+ * a throttled background tab. `shared/components/exam/timer.tsx` derives from the wall
+ * clock instead and is covered by tests. The re-export keeps the four call sites
+ * that already import `Timer` from this module working unchanged.
+ */
+export { Timer, formatClock } from "@/shared/components/exam/timer";

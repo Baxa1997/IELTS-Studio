@@ -1,14 +1,14 @@
 import { cookies } from "next/headers";
 
-import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { getLocale } from "@/lib/i18n/server";
 import { Hanken_Grotesk, JetBrains_Mono, Newsreader } from "next/font/google";
 
-import { OnboardingTakeover } from "@/app/(app)/onboarding/onboarding-takeover";
-import { PlanCard } from "@/components/app-shell/plan-card";
-import { QuotaBar } from "@/components/app-shell/quota-bar";
-import { AppShell } from "@/components/app-shell/shell";
-import { NotificationBell } from "@/components/app-shell/notification-bell";
+import { OnboardingTakeover } from "@/shared/components/onboarding/onboarding-takeover";
+import { PlanCard } from "@/shared/components/app-shell/plan-card";
+import { QuotaBar } from "@/shared/components/app-shell/quota-bar";
+import { AppShell } from "@/shared/components/app-shell/shell";
+import { NotificationBell } from "@/shared/components/app-shell/notification-bell";
 import { contactLabel, isHomeworkOnlyStudent, requireOrgUser, roleHome } from "@/lib/auth";
 import { loadInbox } from "@/lib/notifications/load";
 import { loadStudyPlan } from "@/lib/plan/service";

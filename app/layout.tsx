@@ -3,11 +3,11 @@ import { Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { getSiteUrl, PREVIEW_IMAGE, SEO_DESCRIPTION, SEO_KEYWORDS, SITE_NAME } from "@/lib/seo";
-import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { LocaleProvider } from "@/shared/components/i18n/locale-provider";
 import { DEFAULT_LOCALE, HTML_LANG } from "@/lib/i18n/locales";
-import { ThemeFab } from "@/components/theme/theme-fab";
-import { ThemeProvider } from "@/components/theme/theme-provider";
-import { ThemeScript } from "@/components/theme/theme-script";
+import { ThemeFab } from "@/shared/components/theme/theme-fab";
+import { ThemeProvider } from "@/shared/components/theme/theme-provider";
+import { ThemeScript } from "@/shared/components/theme/theme-script";
 
 // Geist Sans used to be loaded here too. Nothing referenced --font-geist-sans —
 // not a component, not globals.css, not the Tailwind theme (which maps

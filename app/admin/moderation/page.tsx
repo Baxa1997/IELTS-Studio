@@ -17,7 +17,7 @@ import {
   Surface,
   TONE,
   clip,
-} from "@/components/admin/ui";
+} from "@/app/admin/_components/ui";
 import { loadConductFlags } from "@/lib/admin/moderation";
 import { calendarAgo, within } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";

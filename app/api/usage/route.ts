@@ -4,7 +4,7 @@ import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 import { getUsageSummary } from "@/lib/quota";
 
 /**
- * The plan dialog's numbers, read when it opens (components/app-shell/plan-card.tsx).
+ * The plan dialog's numbers, read when it opens (shared/components/app-shell/plan-card.tsx).
  *
  * The rail's copy comes from the layout, and a layout does not re-render on a
  * client-side navigation — so after a practice or a mock it still shows the

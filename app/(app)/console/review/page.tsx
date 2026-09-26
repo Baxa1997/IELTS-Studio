@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PromptReviewRow, type PendingPrompt } from "@/app/(app)/console/prompt-studio";
-import { buttonVariants } from "@/components/ui/button";
+import { PromptReviewRow, type PendingPrompt } from "@/app/(app)/console/review/_components/prompt-studio";
+import { buttonVariants } from "@/shared/components/ui/button";
 import { requireOrgUser } from "@/lib/auth";
 import { loadReviewQueue } from "@/lib/console/review";
 import { cn } from "@/lib/utils";
 
-import { ReadingReviewRow } from "./reading-review-row";
+import { ReadingReviewRow } from "./_components/reading-review-row";
 
 export const dynamic = "force-dynamic";
 

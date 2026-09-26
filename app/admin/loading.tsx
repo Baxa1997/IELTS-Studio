@@ -1,4 +1,4 @@
-import { PageSkeleton } from "@/components/app-shell/page-skeleton";
+import { PageSkeleton } from "@/shared/components/app-shell/page-skeleton";
 
 /**
  * Suspense fallback for the platform console.

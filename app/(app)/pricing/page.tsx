@@ -1,7 +1,7 @@
 import { requireOrgUser } from "@/lib/auth";
 import { getUsageSummary } from "@/lib/quota";
 
-import { PricingTiers } from "./pricing-tiers";
+import { PricingTiers } from "./_components/pricing-tiers";
 
 export const dynamic = "force-dynamic";
 

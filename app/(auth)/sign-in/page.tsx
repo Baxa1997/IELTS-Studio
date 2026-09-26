@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { DESIGN_CSS, Wordmark } from "@/app/_landing/design-chrome";
-import { landingManrope, landingSora } from "@/app/_landing/fonts";
+import { DESIGN_CSS, Wordmark } from "@/app/_landing/_components/design-chrome";
+import { landingManrope, landingSora } from "@/app/_landing/_lib/fonts";
 import {
   BRAND_PANEL,
   CANVAS,
@@ -13,11 +13,11 @@ import {
   RADIUS,
   SANS,
   WHITE,
-} from "@/app/_landing/design";
-import { LangPicker } from "@/app/_landing/lang-picker";
+} from "@/app/_landing/_lib/design";
+import { LangPicker } from "@/app/_landing/_components/lang-picker";
 import { getSession, roleHome, safeNextPath } from "@/lib/auth";
 
-import { DesignSignInForm } from "./design-form";
+import { DesignSignInForm } from "./_components/design-form";
 
 /**
  * Sign-in, rebuilt to the design canvas.

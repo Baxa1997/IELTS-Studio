@@ -1,4 +1,4 @@
-import { AttemptReview } from "@/components/console/attempt-review";
+import { AttemptReview } from "@/shared/components/console/attempt-review";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,7 +6,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";
 
-import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../trap-explain";
+import { TRAP_EXPLAIN, type StoredQResult, type StoredResult } from "../../_lib/trap-explain";
 import {
   BRAND,
   BRAND_SOFT as TINT,

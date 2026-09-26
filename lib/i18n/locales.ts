@@ -1,7 +1,7 @@
 /**
  * The three languages the product ships in.
  *
- * These are not a guess: `app/_landing/lang-picker.tsx` has drawn a UZ / EN / RU
+ * These are not a guess: `app/_landing/_components/lang-picker.tsx` has drawn a UZ / EN / RU
  * control in the marketing header and on the sign-in page since the redesign,
  * and its own docstring recorded that the control moved a tick and nothing else,
  * because "there is no i18n layer in this app". This module is that layer, and

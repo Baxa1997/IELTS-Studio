@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Bar, Card, CardHead, FAINT, INDIGO, INK, Kpi, KpiRow, MUTED, NAVY, Notice, ON_NAVY, PageTitle, Pill, SERIF, SOFT, Split, Surface, TONE } from "@/components/admin/ui";
+import { Bar, Card, CardHead, FAINT, INDIGO, INK, Kpi, KpiRow, MUTED, NAVY, Notice, ON_NAVY, PageTitle, Pill, SERIF, SOFT, Split, Surface, TONE } from "@/app/admin/_components/ui";
 import { loadRevenue } from "@/lib/admin/revenue";
 import { requireSuperAdmin } from "@/lib/auth";
 import { PLAN_ORDER, PLAN_TIERS } from "@/lib/billing/plans";

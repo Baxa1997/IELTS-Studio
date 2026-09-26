@@ -28,7 +28,7 @@ import {
   TRow,
   LINE,
   SERIF,
-} from "@/components/console/crm-ui";
+} from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { buildFindings } from "@/lib/console/report-findings";
 import { loadWorkOverview } from "@/lib/console/recent-work";
@@ -36,9 +36,9 @@ import { loadCenterReport, SKILLS, SKILL_UNIT, type SkillName } from "@/lib/cons
 import { ALWAYS_CURRENT, type RangeKey } from "@/lib/console/window";
 import { createClient } from "@/lib/supabase/server";
 
-import { ReportAlerts } from "./alerts-button";
-import { RangePicker } from "./range-picker";
-import { ExportReportButton } from "./export-button";
+import { ReportAlerts } from "./_components/alerts-button";
+import { RangePicker } from "./_components/range-picker";
+import { ExportReportButton } from "./_components/export-button";
 import { MUTED as TK_MUTED } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

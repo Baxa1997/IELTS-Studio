@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { LessonSections } from "@/components/lessons/lesson-sections";
+import { LessonSections } from "@/shared/components/lessons/lesson-sections";
 import { requireOrgUser, roleHome } from "@/lib/auth";
 import { BLUEPRINT_LABEL, BLUEPRINT_TINT } from "@/lib/console/lessons";
 import { loadGroups } from "@/lib/console/groups";
@@ -25,10 +25,10 @@ import {
 } from "@/lib/lessons/theme";
 import { isOpen } from "@/lib/lessons/types";
 
-import { GiveToStudents } from "./give-to-students";
-import { PrintableWorksheet } from "./printable";
-import { LessonStaffBar } from "./staff-bar";
-import { WorksheetButton } from "./worksheet";
+import { GiveToStudents } from "./_components/give-to-students";
+import { PrintableWorksheet } from "./_components/printable";
+import { LessonStaffBar } from "./_components/staff-bar";
+import { WorksheetButton } from "./_components/worksheet";
 import { PANEL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

@@ -23,10 +23,10 @@ import {
   WELL,
 } from "@/lib/theme/tokens";
 
-import { ApplyForm } from "./apply-form";
-import { EarningsHero } from "./earnings-hero";
-import { Ledger } from "./ledger";
-import { PitchPanel } from "./pitch-panel";
+import { ApplyForm } from "./_components/apply-form";
+import { EarningsHero } from "./_components/earnings-hero";
+import { Ledger } from "./_components/ledger";
+import { PitchPanel } from "./_components/pitch-panel";
 
 export const dynamic = "force-dynamic";
 

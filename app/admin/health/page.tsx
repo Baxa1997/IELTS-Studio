@@ -17,7 +17,7 @@ import {
   Surface,
   TONE,
   clip,
-} from "@/components/admin/ui";
+} from "@/app/admin/_components/ui";
 import { ago, loadAuditLog, phraseAction } from "@/lib/admin/audit";
 import { humanMs, loadHealth, type LatencyRow } from "@/lib/admin/health";
 import { requireSuperAdmin } from "@/lib/auth";

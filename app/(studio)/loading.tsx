@@ -1,4 +1,4 @@
-import { StudioShellSkeleton } from "@/components/app-shell/studio-skeleton";
+import { StudioShellSkeleton } from "@/shared/components/app-shell/studio-skeleton";
 
 /**
  * Suspense fallback for the (studio) group. The library/hub pages render their own

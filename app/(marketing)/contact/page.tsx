@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { CONTACT_EMAIL } from "@/lib/contact";
 
-import { A, B, P, PageTitle, Sec } from "../marketing";
+import { A, B, P, PageTitle, Sec } from "../_components/marketing";
 
 export const metadata: Metadata = {
   title: "Contact EngProgress — Support & Feedback",

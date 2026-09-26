@@ -18,7 +18,7 @@ import { requireOrgUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
+import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../_components/report";
 
 export const dynamic = "force-dynamic";
 

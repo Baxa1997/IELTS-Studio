@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import { Bar, Card, Empty, FAINT, HEAD_BG, INDIGO, INK, Identity, Kpi, KpiRow, LINE, NAVY, ON_NAVY, PageTitle, Pill, SOFT, Surface, TONE, TableHead, TableRow } from "@/components/admin/ui";
-import { MenuIcon } from "@/components/admin/menu-icons";
-import { OverflowMenu } from "@/components/admin/menu";
+import { Bar, Card, Empty, FAINT, HEAD_BG, INDIGO, INK, Identity, Kpi, KpiRow, LINE, NAVY, ON_NAVY, PageTitle, Pill, SOFT, Surface, TONE, TableHead, TableRow } from "@/app/admin/_components/ui";
+import { MenuIcon } from "@/app/admin/_components/menu-icons";
+import { OverflowMenu } from "@/app/admin/_components/menu";
 import { loadCenters, type CenterRow } from "@/lib/admin/platform";
 import { requireSuperAdmin } from "@/lib/auth";
 import { BODY, PANEL, SOFT_INK, WELL } from "@/lib/theme/tokens";

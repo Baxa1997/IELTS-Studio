@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../marketing";
+import { A, B, Cta, Faq, LI, P, PageTitle, Related, Sec, UL } from "../_components/marketing";
 
 export const metadata: Metadata = {
   title: "IELTS Reading Practice — Every Question Type, With Trap Explanations",

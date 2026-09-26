@@ -33,7 +33,7 @@ const PRINT_WIDTH = 100;
 /** The two palettes, and the CSS prefix each one's tokens resolve through. */
 const PALETTES = [
   { module: "@/lib/theme/tokens", source: "lib/theme/tokens.ts", prefix: "--tk-" },
-  { module: "@/app/_landing/design", source: "app/_landing/design.ts", prefix: "--mk-" },
+  { module: "@/app/_landing/_lib/design", source: "app/_landing/_lib/design.ts", prefix: "--mk-" },
 ] as const;
 
 type PaletteId = (typeof PALETTES)[number]["module"];
@@ -131,7 +131,7 @@ function tokensByValue(): Map<PaletteId, Map<string, { surface: string; ink: str
 }
 
 function sourceFiles(): string[] {
-  const out = execFileSync("git", ["ls-files", "app", "components"], {
+  const out = execFileSync("git", ["ls-files", "app", "shared"], {
     cwd: ROOT,
     encoding: "utf8",
   });
@@ -139,7 +139,7 @@ function sourceFiles(): string[] {
     .split("\n")
     .filter((f) => /\.tsx?$/.test(f))
     .filter((f) => !f.endsWith(".test.ts") && !f.endsWith(".test.tsx"))
-    .filter((f) => f !== "app/_landing/design.ts");
+    .filter((f) => f !== "app/_landing/_lib/design.ts");
 }
 
 /**
@@ -151,8 +151,8 @@ function sourceFiles(): string[] {
  * a file that imports neither is placed by path.
  */
 function paletteFor(file: string, src: string): PaletteId | null {
-  if (/from "@\/app\/_landing\/design"|from "\.\/design"|from "\.\.\/design"/.test(src)) {
-    return "@/app/_landing/design";
+  if (/from "@\/app\/_landing\/_lib\/design"|from "\.\/design"|from "\.\.\/_lib\/design"|from "\.\.\/design"/.test(src)) {
+    return "@/app/_landing/_lib/design";
   }
   if (/from "@\/lib\/theme\/tokens"/.test(src)) return "@/lib/theme/tokens";
   const marketing =
@@ -161,7 +161,7 @@ function paletteFor(file: string, src: string): PaletteId | null {
     file.startsWith("app/(legal)/") ||
     file.startsWith("app/how-to-use/") ||
     file === "app/page.tsx";
-  return marketing ? "@/app/_landing/design" : "@/lib/theme/tokens";
+  return marketing ? "@/app/_landing/_lib/design" : "@/lib/theme/tokens";
 }
 
 interface FileChange {
@@ -179,7 +179,7 @@ interface FileChange {
  *
  * ⚠️ WITHOUT THIS THE CODEMOD CHANGES COLOURS INSTEAD OF PRESERVING THEM, which
  * is the one thing it promises not to do. Several console screens import `MUTED`
- * and `FAINT` from `components/console/page-ui`, whose values are its own
+ * and `FAINT` from `shared/components/console/page-ui`, whose values are its own
  * (`var(--pu-muted, #5A6076)`) and are NOT the token values. Rewriting a literal
  * `#6E6C87` to a bare `MUTED` in such a file does not resolve to the token — it
  * resolves to page-ui's grey, and the screen quietly repaints. TypeScript
@@ -197,7 +197,7 @@ interface FileChange {
  */
 function palletteBound(src: string, palette: PaletteId): Set<string> {
   const spec =
-    palette === "@/lib/theme/tokens" ? palette : "(?:@/app/_landing/design|\\./design)";
+    palette === "@/lib/theme/tokens" ? palette : "(?:@/app/_landing/_lib/design|\\./design|\\.\\./_lib/design)";
   const m = src.match(new RegExp(`import \\{([^}]*)\\} from "(?:${spec})";`));
   if (!m) return new Set();
   return new Set(
@@ -293,7 +293,7 @@ function plan(): { changes: FileChange[]; skipped: Map<string, number> } {
  *  add one after the last import if there is none. */
 function withImports(src: string, palette: PaletteId, pairs: [string, string][]): string {
   const names = pairs.map(([token, local]) => (token === local ? token : `${token} as ${local}`));
-  const spec = palette === "@/lib/theme/tokens" ? palette : "(?:@/app/_landing/design|\\./design)";
+  const spec = palette === "@/lib/theme/tokens" ? palette : "(?:@/app/_landing/_lib/design|\\./design|\\.\\./_lib/design)";
   const re = new RegExp(`import \\{([^}]*)\\} from "(${spec})";`);
   const m = src.match(re);
 

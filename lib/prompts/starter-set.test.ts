@@ -127,7 +127,7 @@ describe("curated writing practice set", () => {
     });
 
     it("keeps x-axis labels short enough not to be cut off", () => {
-      // components/writing/figure.tsx truncates an axis label past 12 characters
+      // shared/components/writing/figure.tsx truncates an axis label past 12 characters
       // in the in-studio chart: "Electricity" fits, "Electricity bills" would
       // read "Electricity…".
       for (const p of academic) {

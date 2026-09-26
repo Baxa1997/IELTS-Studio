@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { LandingPage, landingMetadata } from "@/app/_landing/landing-page";
+import { LandingPage, landingMetadata } from "@/app/_landing/_components/landing-page";
 import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
 /**
@@ -21,7 +21,7 @@ import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
  * `x-default` in `landingMetadata` points at `/en` for exactly this reason —
  * the international visitor with no matching language still gets English.
  *
- * The body lives in `app/_landing/landing-page.tsx` so both routes render the
+ * The body lives in `app/_landing/_components/landing-page.tsx` so both routes render the
  * same component rather than two copies of a 900-line page drifting apart.
  */
 export const metadata: Metadata = landingMetadata(DEFAULT_LOCALE);

@@ -10,7 +10,7 @@ import {
   KpiRow,
   PageHead,
   SANS,
-} from "@/components/console/crm-ui";
+} from "@/app/(app)/console/_components/crm-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadCenterSettings } from "@/lib/console/center-settings";
 import { loadGroupDetail } from "@/lib/console/groups";
@@ -18,9 +18,9 @@ import { centerNow, lockDateFor, registerIsLocked } from "@/lib/console/schedule
 import { ENROLLED } from "@/lib/console/status";
 import { createClient } from "@/lib/supabase/server";
 
-import { DateStrip } from "../date-strip";
-import { RegisterForm, type RegisterStudent } from "../register-form";
-import { CancelLesson, CancelledBanner, LockedBanner } from "./lesson-state";
+import { DateStrip } from "../_components/date-strip";
+import { RegisterForm, type RegisterStudent } from "./_components/register-form";
+import { CancelLesson, CancelledBanner, LockedBanner } from "./_components/lesson-state";
 
 export const dynamic = "force-dynamic";
 

@@ -26,7 +26,7 @@ const code = (p: string) =>
 
 const adminSide = code("./admin.ts");
 const actions = code("../../app/admin/actions.ts");
-const payRow = code("../../app/admin/referrals/payouts/pay-row.tsx");
+const payRow = code("../../app/admin/referrals/payouts/_components/pay-row.tsx");
 const notify = code("./notify.ts");
 const migration = read("../../supabase/migrations/20260907120000_referrals.sql");
 

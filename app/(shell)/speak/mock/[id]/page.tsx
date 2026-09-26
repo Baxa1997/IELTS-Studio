@@ -1,4 +1,4 @@
-import { AttemptReview } from "@/components/console/attempt-review";
+import { AttemptReview } from "@/shared/components/console/attempt-review";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -7,11 +7,11 @@ import { reportBackLink } from "@/lib/console/report-back";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
-import { CoachChat } from "../../coach-chat";
-import { ListenBack, type LBTurn } from "../../listen-back";
-import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../report";
-import { AwaitingGrade } from "./awaiting-grade";
-import { UngradedMock } from "./ungraded";
+import { CoachChat } from "./_components/coach-chat";
+import { ListenBack, type LBTurn } from "./_components/listen-back";
+import { SpeakingReport, type SpeakMetrics, type SpeakResult } from "../../_components/report";
+import { AwaitingGrade } from "./_components/awaiting-grade";
+import { UngradedMock } from "./_components/ungraded";
 import { BRAND, PANEL, SLATE_BODY as MUTED, SLATE_LINE as LINE, SLATE_STRONG } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

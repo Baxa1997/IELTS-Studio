@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { AttemptReview } from "@/components/console/attempt-review";
-import { EssayFeedback, type CriterionScore } from "@/components/writing/essay-feedback";
-import { cleanAnnotations } from "@/components/writing/annotations";
+import { AttemptReview } from "@/shared/components/console/attempt-review";
+import { EssayFeedback, type CriterionScore } from "@/shared/components/writing/essay-feedback";
+import { cleanAnnotations } from "@/shared/components/writing/annotations";
 import { requireOrgUser } from "@/lib/auth";
 import { reportBackLink } from "@/lib/console/report-back";
 import { createClient } from "@/lib/supabase/server";

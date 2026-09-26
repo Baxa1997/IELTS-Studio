@@ -29,8 +29,8 @@ import { loadDashboard } from "@/lib/dashboard/load";
 import { countTasksThisWeek, loadStudyPlan } from "@/lib/plan/service";
 import { daysUntil, type StudyPlan } from "@/lib/plan/types";
 
-import { BandCard } from "./band-card";
-import { DashboardCoach } from "./dashboard-coach-lazy";
+import { BandCard } from "@/shared/components/estimates/band-card";
+import { DashboardCoach } from "./_components/dashboard-coach-lazy";
 import {
   BRAND,
   BRAND_SOFT as TINT,

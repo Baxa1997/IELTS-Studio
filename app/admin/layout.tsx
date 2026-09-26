@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { Hanken_Grotesk, Newsreader, Source_Serif_4, Work_Sans } from "next/font/google";
 
-import { AdminHeader } from "@/components/admin/header";
-import { AppShell } from "@/components/app-shell/shell";
+import { AdminHeader } from "@/app/admin/_components/header";
+import { AppShell } from "@/shared/components/app-shell/shell";
 import { requireSuperAdmin } from "@/lib/auth";
 
 const hanken = Hanken_Grotesk({
@@ -28,7 +28,7 @@ const newsreader = Newsreader({
  * two font families they never see.
  *
  * The rail keeps the app's own type. Only the page area picks these up, via
- * `Surface` in components/admin/ui.tsx.
+ * `Surface` in app/admin/_components/ui.tsx.
  */
 const workSans = Work_Sans({
   subsets: ["latin"],
@@ -56,7 +56,7 @@ const sourceSerif = Source_Serif_4({
  * should not have the furniture move under them between surfaces.
  *
  * The variant also drops the shell's own padding, because each admin page owns
- * its inset (see `Surface` in components/admin/ui.tsx).
+ * its inset (see `Surface` in app/admin/_components/ui.tsx).
  *
  * The font variables have to be declared here too: this route group sits
  * outside (app), so it doesn't inherit that layout's `lp-root` wrapper.

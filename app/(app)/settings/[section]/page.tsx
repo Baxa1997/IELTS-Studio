@@ -2,13 +2,13 @@ import { redirect } from "next/navigation";
 
 import { isHomeworkOnlyStudent, requireOrgUser } from "@/lib/auth";
 
-import { resolveLearnerSection } from "../learner-sections";
-import { LearnerAccountSection } from "../sections/account";
-import { AppearanceSection } from "../sections/appearance";
-import { LearnerBillingSection } from "../sections/billing";
-import { DeleteAccountSection } from "../sections/delete";
-import { LearnerSettingsFrame } from "../sections/frame";
-import { StudyGoalSection } from "../sections/goal";
+import { resolveLearnerSection } from "./_lib/learner-sections";
+import { LearnerAccountSection } from "./_components/account";
+import { AppearanceSection } from "@/shared/components/account/appearance";
+import { LearnerBillingSection } from "./_components/billing";
+import { DeleteAccountSection } from "./_components/delete";
+import { LearnerSettingsFrame } from "./_components/frame";
+import { StudyGoalSection } from "./_components/goal";
 
 export const dynamic = "force-dynamic";
 

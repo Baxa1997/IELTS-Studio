@@ -1,8 +1,9 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { sourceFiles } from "@/test/source-files";
 
 /**
  * THE SHELL'S STYLESHEET MAY NOT NAME A COLOUR.
@@ -34,7 +35,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = process.cwd();
 
 /** The families this covers: the sidebar, the plan button, the shell frame and
- *  the `components/ui/*` kit (`.ui-`). */
+ *  the `shared/components/ui/*` kit (`.ui-`). */
 const FAMILY = /\.(lp-sb-|lp-plan-|lp-shell-|lp-nav-spin|ui-)/;
 
 /** Declarations that carry a colour. `box-shadow` is deliberately out: a shadow
@@ -101,16 +102,11 @@ function rules(): { selector: string; body: string }[] {
  */
 const CSS_BLOCK = /const\s+[A-Za-z_0-9]*CSS\s*=\s*`([\s\S]*?)`;/g;
 /** The footer's ground does not follow the theme, so its inks must not either. */
-const CSS_EXEMPT = new Set(["app/_landing/footer-css.ts"]);
+const CSS_EXEMPT = new Set(["app/_landing/_lib/footer-css.ts"]);
 
 describe("stylesheets written as template literals", () => {
   const blocks: { file: string; body: string }[] = [];
-  const files = execFileSync("git", ["ls-files", "app", "components"], {
-    cwd: ROOT,
-    encoding: "utf8",
-  })
-    .split("\n")
-    .filter((f) => /\.tsx?$/.test(f) && !CSS_EXEMPT.has(f));
+  const files = sourceFiles("app", "shared").filter((f) => /\.tsx?$/.test(f) && !CSS_EXEMPT.has(f));
   for (const file of files) {
     const src = readFileSync(join(ROOT, file), "utf8");
     for (const m of src.matchAll(CSS_BLOCK)) {

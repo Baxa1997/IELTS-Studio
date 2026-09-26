@@ -15,14 +15,14 @@ import {
   SOFT,
   Surface,
   clip,
-} from "@/components/admin/ui";
+} from "@/app/admin/_components/ui";
 import { requireSuperAdmin } from "@/lib/auth";
 import { loadAccountDetail, type AdminLedgerRow, type Check } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { formatMoney, STATUS_LABEL } from "@/lib/referrals/types";
 import { BRAND, BRAND_LINE, BRAND_SOFT, GREEN, PANEL, TINT } from "@/lib/theme/tokens";
 
-import { DecisionBar } from "../decision-bar";
+import { DecisionBar } from "./_components/decision-bar";
 
 export const dynamic = "force-dynamic";
 

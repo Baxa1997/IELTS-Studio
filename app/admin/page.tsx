@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ChartLegend, PlatformChart } from "@/components/admin/platform-chart";
+import { ChartLegend, PlatformChart } from "@/app/admin/_components/platform-chart";
 import {
   Bar,
   Card,
@@ -22,7 +22,7 @@ import {
   Surface,
   TONE,
   clip,
-} from "@/components/admin/ui";
+} from "@/app/admin/_components/ui";
 import {
   loadCenters,
   loadEngagement,
@@ -34,7 +34,7 @@ import { loadRevenue } from "@/lib/admin/revenue";
 import { daysSince } from "@/lib/admin/time";
 import { requireSuperAdmin } from "@/lib/auth";
 
-import { OrgReviewRow } from "./org-review-row";
+import { OrgReviewRow } from "./_components/org-review-row";
 import { INDIGO_FILL, ON_INDIGO, WARM_WELL, WHITE } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

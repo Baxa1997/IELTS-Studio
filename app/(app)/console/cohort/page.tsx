@@ -6,7 +6,7 @@ import type { CohortStatus, SkillCell, StudentRow, TrendPoint } from "@/lib/cons
 import { loadCohortDashboard } from "@/lib/console/load";
 import { cn } from "@/lib/utils";
 
-import { ExportCohortButton } from "./export-button";
+import { ExportCohortButton } from "./_components/export-button";
 
 export const dynamic = "force-dynamic";
 

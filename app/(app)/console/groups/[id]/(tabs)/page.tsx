@@ -10,10 +10,10 @@ import { formatMoney } from "@/lib/finance/money";
 import { monthStart, today } from "@/lib/finance/period";
 import { createClient } from "@/lib/supabase/server";
 
-import { AddStudentPanel } from "../add-student-panel";
-import { BulkAddPanel } from "../bulk-add-panel";
-import { RosterToolbar, StudentsManager } from "../students-manager";
-import { V2, card as v2card, serifHead } from "../ui";
+import { AddStudentPanel } from "./_components/add-student-panel";
+import { BulkAddPanel } from "./_components/bulk-add-panel";
+import { RosterToolbar, StudentsManager } from "./_components/students-manager";
+import { V2, card as v2card, serifHead } from "./_components/ui";
 import {
   Card,
   CardHead,
@@ -23,7 +23,7 @@ import {
   SANS,
   Stack,
   Tag,
-} from "@/components/console/crm-ui";
+} from "@/app/(app)/console/_components/crm-ui";
 
 export const dynamic = "force-dynamic";
 

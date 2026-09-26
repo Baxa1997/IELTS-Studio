@@ -1,13 +1,13 @@
 import Link from "next/link";
 
-import { Card, Empty, FAINT, HEAD_BG, INK, LINE, MUTED, PageTitle, ROW_RULE, SANS, SOFT, Surface, clip } from "@/components/admin/ui";
+import { Card, Empty, FAINT, HEAD_BG, INK, LINE, MUTED, PageTitle, ROW_RULE, SANS, SOFT, Surface, clip } from "@/app/admin/_components/ui";
 import { requireSuperAdmin } from "@/lib/auth";
 import { loadDecidedAccounts, loadPendingApplications, loadProgrammeTotals } from "@/lib/referrals/admin";
 import { loadSettings } from "@/lib/referrals/service";
 import { STATUS_LABEL, type ReferralAccount } from "@/lib/referrals/types";
 import { BRAND, BRAND_LINE, BRAND_SOFT, PANEL, TINT } from "@/lib/theme/tokens";
 
-import { ProgrammeSummary } from "./summary";
+import { ProgrammeSummary } from "./_components/summary";
 
 export const dynamic = "force-dynamic";
 

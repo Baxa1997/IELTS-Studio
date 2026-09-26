@@ -11,7 +11,7 @@ import {
   Panel,
   SANS,
   TINT,
-} from "@/components/console/page-ui";
+} from "@/shared/components/console/page-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadInbox } from "@/lib/notifications/load";
 

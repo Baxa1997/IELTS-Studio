@@ -11,7 +11,7 @@ import { DEFAULT_LOCALE, HTML_LANG, LOCALES, localePath } from "@/lib/i18n/local
  * listing nothing — so this list grows as each page gets a localised route, not
  * before.
  *
- * ⚠️ MIRRORED BY `LOCALISED_ROUTES` IN `components/i18n/locale-provider.tsx`,
+ * ⚠️ MIRRORED BY `LOCALISED_ROUTES` IN `shared/components/i18n/locale-provider.tsx`,
  * and a test asserts the two sets are equal. Grow them together or the picker
  * offers a URL this sitemap does not claim.
  */

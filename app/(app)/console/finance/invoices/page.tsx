@@ -21,8 +21,8 @@ import {
   THead,
   Toolbar,
   TRow,
-} from "@/components/console/crm-ui";
-import { Drawer } from "@/components/console/finance-ui";
+} from "@/app/(app)/console/_components/crm-ui";
+import { Drawer } from "@/shared/components/console/finance-ui";
 import { requireOrgUser } from "@/lib/auth";
 import { loadGroups } from "@/lib/console/groups";
 import { loadFinanceSettings, loadInvoices } from "@/lib/finance/load";
@@ -30,9 +30,9 @@ import { formatMoney, toMajor } from "@/lib/finance/money";
 import { monthLabel, monthStart, prettyDate, recentMonths, today } from "@/lib/finance/period";
 import { createClient } from "@/lib/supabase/server";
 
-import { TransactionForm } from "../transaction-form";
-import { GenerateInvoicesForm, GroupFeeForm } from "./invoice-forms";
-import { DownloadLink } from "@/components/console/file-links";
+import { TransactionForm } from "../../_components/transaction-form";
+import { GenerateInvoicesForm, GroupFeeForm } from "./_components/invoice-forms";
+import { DownloadLink } from "@/app/(app)/console/finance/_components/file-links";
 import { PANEL, WARM_LINE, WARM_LINE_DEEP, WELL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";

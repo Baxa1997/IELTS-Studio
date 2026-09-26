@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { LearnerGuide, learnerMetadata } from "@/app/how-to-use/learner-guide";
+import { LearnerGuide, learnerMetadata } from "@/app/how-to-use/_components/learner-guide";
 import { DEFAULT_LOCALE, isLocale, LOCALES, type Locale } from "@/lib/i18n/locales";
 
 /**

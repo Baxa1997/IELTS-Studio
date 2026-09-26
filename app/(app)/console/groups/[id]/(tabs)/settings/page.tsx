@@ -7,9 +7,9 @@ import { ENROLLED } from "@/lib/console/status";
 import { phoneKey } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/server";
 
-import { CloseGroupButton, DeleteGroupButton } from "../../../group-forms";
-import { SANS } from "@/components/console/crm-ui";
-import { V2, card as v2card, serifHead } from "../../ui";
+import { CloseGroupButton, DeleteGroupButton } from "@/app/(app)/console/_components/group-forms";
+import { SANS } from "@/app/(app)/console/_components/crm-ui";
+import { V2, card as v2card, serifHead } from "../_components/ui";
 import { PANEL } from "@/lib/theme/tokens";
 
 export const dynamic = "force-dynamic";
