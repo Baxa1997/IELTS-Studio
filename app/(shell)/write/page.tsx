@@ -7,6 +7,7 @@ import { pitchDifficulty } from "@/lib/plan/types";
 import { seedStarterPrompts } from "@/lib/prompts/starter";
 import { DEFAULT_DIFFICULTY } from "@/lib/prompts/types";
 import { createClient } from "@/lib/supabase/server";
+import { resolveWriteTab } from "@/lib/writing/hub-tabs";
 
 import { WritingLibrary, type LibraryPrompt, type PromptDraft, type PromptMark } from "./_components/library";
 
@@ -18,7 +19,11 @@ export const dynamic = "force-dynamic";
  * own; each choice navigates to /write/[id] — the full-screen editor (no sidebar).
  * Practised prompts carry their best band and link straight to that essay's feedback.
  */
-export default async function WritePage() {
+export default async function WritePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string | string[] }>;
+}) {
   const { profile } = await requireOrgUser();
   // A center student gets this skill's homework here, not a library and
   // not a redirect: "Writing" in the menu should open Writing and
@@ -154,6 +159,9 @@ export default async function WritePage() {
       pitchBand={pitchBand}
       isTeacher={profile.role === "teacher"}
       groups={teacherGroups}
+      // A bare /write — the menu's link — is Task 1; the studio's way back names
+      // the tab it came from. See lib/writing/hub-tabs.
+      initialTab={resolveWriteTab((await searchParams).tab)}
     />
   );
 }

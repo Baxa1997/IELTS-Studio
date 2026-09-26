@@ -6,7 +6,7 @@ import type { MessageKey } from "@/lib/i18n";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { ArrowRight, Check, ClipboardCheck, Loader2, PenLine, Sparkles } from "lucide-react";
 
 import { AiGenerateSection, AiGenerateButton } from "@/shared/components/ai-generate-section";
@@ -28,6 +28,7 @@ import {
   levelSectionTitle,
 } from "@/lib/practice/levels";
 import { TASK2_CATEGORIES } from "@/lib/prompts/constants";
+import { WRITE_TABS, writeHubHref, type WriteTab } from "@/lib/writing/hub-tabs";
 import { UpgradeNotice } from "@/shared/components/billing/upgrade-notice";
 import { LegalFooter } from "@/shared/components/legal-footer";
 // These live with the full-screen runner in the (studio) group; the hub library
@@ -73,15 +74,10 @@ const cardStyle: React.CSSProperties = {
   boxShadow: "var(--pc-shadow)",
 };
 
-/* ⚠️ THESE HOLD KEYS, NOT LABELS. A module constant is evaluated once at import
-   — outside React, before any locale is known — so it cannot call `t()`. The
-   render translates it instead. */
-const TABS: { key: string; labelKey: MessageKey; soon?: boolean }[] = [
-  { key: "check_own", labelKey: "write.checkOwn" },
-  { key: "task1_academic", labelKey: "write.acadT1" },
-  { key: "task2", labelKey: "write.acadT2" },
-  { key: "task1_general", labelKey: "write.gt" },
-];
+/* The tab list and the tab a visit opens on live in lib/writing/hub-tabs, shared
+   with the page (which reads `?tab=`) and the studio (whose way back names it).
+   Widened here only so a tab can still be marked `soon`. */
+const TABS: readonly { key: WriteTab; labelKey: MessageKey; soon?: boolean }[] = WRITE_TABS;
 
 /** Task-type options shared by the "check own writing" and custom-prompt panels. */
 const TASK_OPTIONS: { k: string; lKey: MessageKey }[] = [
@@ -128,7 +124,10 @@ export function WritingLibrary({
   pitchBand,
   isTeacher = false,
   groups = [],
+  initialTab,
 }: {
+  /** The tab the URL asked for — rendered from the first paint, so nothing jumps. */
+  initialTab: WriteTab;
   library: LibraryPrompt[];
   /** Prompt ids the learner has already attempted — badged + filterable, but every
    *  card still starts a fresh attempt. Past grades are reviewed under Activities. */
@@ -154,25 +153,13 @@ export function WritingLibrary({
   const [level, setLevel] = useState(7);
   const [genCategory, setGenCategory] = useState("");
   const [preference, setPreference] = useState("");
-  const [tab, setTab] = useState<string>("check_own");
-  // Remember the active tab across navigation. Generating a topic sends you to the
-  // (studio) runner and back, which remounts AppShell (it lives in a different route
-  // group) and would otherwise reset this to the first tab. sessionStorage survives
-  // that remount; restored after mount to avoid a hydration mismatch.
-  useEffect(() => {
-    const saved = sessionStorage.getItem("write_tab");
-    // Restore after mount (not a lazy initializer) so the client's first render
-    // matches the server's, avoiding a hydration mismatch on the tab.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from sessionStorage on mount
-    if (saved && TABS.some((t) => t.key === saved)) setTab(saved);
-  }, []);
+  const [tab, setTab] = useState<string>(initialTab);
   function selectTab(key: string) {
     setTab(key);
-    try {
-      sessionStorage.setItem("write_tab", key);
-    } catch {
-      // sessionStorage can throw in private mode — remembering the tab is best-effort.
-    }
+    // Into the URL, without a server round trip (Next folds history.replaceState
+    // into its router): a reload or the browser's Back returns to this tab, and
+    // the menu's bare /write still opens on Task 1. See lib/writing/hub-tabs.
+    window.history.replaceState(null, "", writeHubHref(key));
   }
   const [busy, setBusy] = useState(false);
   const [generatingKind, setGeneratingKind] = useState<string | null>(null);

@@ -30,6 +30,7 @@ import { cleanAnnotations, type Annotation } from "@/shared/components/writing/a
 import { EssayFeedback } from "@/shared/components/writing/essay-feedback";
 import { FigureView } from "@/shared/components/writing/figure";
 import type { Figure } from "@/lib/writing/figure";
+import { writeHubHref } from "@/lib/writing/hub-tabs";
 
 import { saveDraft } from "../../actions";
 import { IELTS_STUDIO_THEME, accentStrong, type StudioTheme } from "../_lib/studio-theme";
@@ -319,9 +320,10 @@ export function WritingStudio({
     } catch {
       /* best-effort cleanup — navigation proceeds regardless */
     }
-    router.push("/write");
+    // Back to the tab this prompt lives on, not to wherever a bare /write opens.
+    router.push(writeHubHref(taskKind));
     router.refresh(); // re-fetch the library so a freshly generated prompt shows
-  }, [persist, prompt.id, router]);
+  }, [persist, prompt.id, router, taskKind]);
 
   // Upload/paste a photo or PDF of a written answer → transcribe to editable text.
   // Faithful transcription server-side; we append it (non-destructive) so a typed
@@ -418,7 +420,7 @@ export function WritingStudio({
         essayText={lastGraded}
         annotations={cleanAnnotations(grading.annotations)}
         promptText={prompt.prompt_text}
-        backHref="/write"
+        backHref={writeHubHref(taskKind)}
         backLabel="Library"
         onRevise={revise}
         disclaimer={disclaimer ?? undefined}
