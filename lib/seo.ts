@@ -123,6 +123,9 @@ export const PUBLIC_ROUTES = [
   { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly" },
   { path: "/how-to-use", label: "How to use EngProgress — learner guide", section: "product", priority: 0.7, changeFrequency: "monthly" },
   { path: "/how-to-use/education-centers", label: "How to use EngProgress — education centre guide", section: "product", priority: 0.7, changeFrequency: "monthly" },
+  // The front page only. The articles are listed from lib/blog by the sitemap
+  // and by llms.txt, so publishing a post never means editing this list.
+  { path: "/blog", label: "Blog — IELTS tips, English stories and EngProgress news", section: "product", priority: 0.7, changeFrequency: "weekly" },
   { path: "/sign-in", label: "Sign in", section: "about", priority: 0.3, changeFrequency: "yearly" },
   { path: "/contact", label: "Contact and support", section: "about", priority: 0.4, changeFrequency: "yearly" },
   { path: "/privacy", label: "Privacy policy", section: "about", priority: 0.2, changeFrequency: "yearly" },

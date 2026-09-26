@@ -295,6 +295,30 @@ export const uz: Messages = {
   "lp.proofSub":
     "Imtihonchi tizimi haqiqatda chiqaradigan hisobot koʻrinishi. Ataylab ehtiyotkor: ikki band orasida pastrogʻini qoʻyadi va nima yetishmayotganini aniq aytadi.",
 
+  "blog.name": "Blog",
+  "blog.eyebrow": "Blogdan",
+  "blog.title": "Oʻqishga arziydigan maqolalar",
+  "blog.sub":
+    "IELTS strategiyalari, ingliz soʻzlari ortidagi hikoyalar va EngProgress yangiliklari — ingliz tilida yozilgan, shuning uchun ularni oʻqishning oʻzi ham mashq.",
+  "blog.allStories": "Barcha maqolalar",
+  "blog.minRead": "{n} daqiqalik oʻqish",
+  "blog.by": "Muallif: {author}",
+  "blog.updated": "Yangilangan: {date}",
+  "blog.photo": "Surat: {credit}",
+  "blog.catIelts": "IELTS",
+  "blog.catEnglish": "Ingliz tili",
+  "blog.catStories": "Hikoyalar",
+  "blog.catEngprogress": "EngProgress yangiliklari",
+  "blog.indexTitle": "EngProgress blogi",
+  "blog.indexLead":
+    "Imtihon strategiyalari, ingliz soʻzlari ortidagi hikoyalar va bizning yangiliklarimiz. Har bir maqola ingliz tilida — uni oʻqish ham mashq.",
+  "blog.latest": "Soʻnggi maqolalar",
+  "blog.related": "Keyingi maqolalar",
+  "blog.shareTelegram": "Telegramda ulashish",
+  "blog.metaTitle": "Blog — IELTS maslahatlari, ingliz tili hikoyalari va yangiliklar",
+  "blog.metaDesc":
+    "Amaliy IELTS strategiyalari, ingliz soʻzlari ortidagi hikoyalar va EngProgress yangiliklari. Har bir maqola ingliz tilida yozilgan — uni oʻqish ham mashq.",
+
   /* ── bosh sahifa metama'lumotlari (SEO) ──────────────────────────────── */
   "lp.metaTitle":
     "AI band baholashi bilan IELTS mashqi — Writing, Reading, Listening, Speaking va CEFR",

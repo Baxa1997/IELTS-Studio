@@ -55,6 +55,9 @@ const PUBLIC_PATHS = [
   // which is exactly what still happens to /pricing.
   "/how-to-use",
   "/demo",
+  // The blog and every article under it. Crawlers and signed-out readers are
+  // the whole audience; without this each one is bounced to /sign-in.
+  "/blog",
   "/contact",
   "/privacy",
   "/terms",

@@ -41,6 +41,9 @@ const footer = read("./_components/site-footer.tsx");
    check belongs to matters: a class is STYLED in one file and APPLIED in the
    other, so the rename trap below is now a real gap rather than a formality. */
 const footerCss = read("./_lib/footer-css.ts");
+/* The blog's grids live in a stylesheet string, not in the page — the landing
+   section and every /blog page read it. */
+const blogCss = read("./_lib/blog-css.ts");
 
 /**
  * Every auto-fit track declared in a file, with its minimum.
@@ -106,6 +109,20 @@ describe("no grid track can be wider than its container", () => {
         new RegExp(`className="${cls}"`),
       );
     }
+  });
+
+  it("caps it on the blog, whose grids are all in one stylesheet", () => {
+    const all = tracks(blogCss);
+    expect(all.length).toBeGreaterThan(0);
+    for (const t of all) {
+      expect(t.capped, `minmax(${t.min}px, …) can overflow — wrap it in min(${t.min}px,100%)`).toBe(
+        true,
+      );
+    }
+    // The desktop splits have to come apart on a phone, and the grid cards have
+    // to turn into rows — the breakpoints are the layout, not a nicety.
+    expect(blogCss).toMatch(/@media\(max-width:900px\)\{\s*\.bl-top\{grid-template-columns:minmax\(0,1fr\)/);
+    expect(blogCss).toMatch(/@media\(max-width:560px\)\{[^}]*\.bl-grid\{gap:0\}\s*\.bl-card\{display:grid/);
   });
 
   it("leaves nothing that would overflow the narrowest phone", () => {

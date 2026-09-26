@@ -15,6 +15,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { sourceFiles } from "@/test/source-files";
+
 import { PLATFORM_FEATURES, SEO_KEYWORDS } from "./seo";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -38,6 +40,9 @@ const PUBLIC = [
   "app/(marketing)/ielts-speaking-practice/page.tsx",
   "lib/seo.ts",
   "lib/i18n/messages/en.ts",
+  // Every blog post, found rather than listed — a new article about the grader
+  // is exactly where this claim would come back.
+  ...sourceFiles("lib/blog/posts").filter((f) => f.endsWith(".ts")),
 ];
 
 describe("claims about grading accuracy", () => {

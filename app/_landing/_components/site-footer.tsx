@@ -104,6 +104,7 @@ const COLUMNS: { heading: MessageKey; links: { label: MessageKey; href: string }
       // The two competitor comparisons and the Cambridge marketing page were
       // deleted, not just unlinked — the Cambridge content moved into the guide.
       { label: "mk.footForCenters", href: "/for-education-centers" },
+      { label: "blog.name", href: "/blog" },
       { label: "mk.footContact", href: "/contact" },
     ],
   },

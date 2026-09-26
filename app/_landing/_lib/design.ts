@@ -14,6 +14,8 @@
  * These are `BRAND*`, and they mean the marketing colour.
  */
 
+import type { BlogCategory } from "@/lib/blog/types";
+
 /* ── brand ─────────────────────────────────────────────────────────────────── */
 
 /** The burgundy. Buttons, links, accents, the logo mark. */
@@ -125,6 +127,27 @@ export { withAlpha } from "@/lib/theme/tokens";
 /** "Verified · calibrated", the stat delta, the Band-9 float. */
 export const GREEN = "var(--mk-green)";
 export const GREEN_TINT = "var(--mk-green-tint)";
+
+/* ── blog covers ───────────────────────────────────────────────────────────── */
+
+/**
+ * The two gradient stops behind each category's generated cover, which carries
+ * its kicker in `WHITE`. EngProgress news wears the hero's own stops, so a post
+ * about us looks like the rest of our marketing. `lib/theme/palette.test.ts`
+ * holds every stop to AA against white, in both themes.
+ */
+export const BLOG_COVER: Record<BlogCategory, { a: string; b: string }> = {
+  ielts: { a: "var(--mk-cover-ielts-a)", b: "var(--mk-cover-ielts-b)" },
+  english: { a: "var(--mk-cover-english-a)", b: "var(--mk-cover-english-b)" },
+  stories: { a: "var(--mk-cover-stories-a)", b: "var(--mk-cover-stories-b)" },
+  engprogress: { a: HERO_B, b: HERO_A },
+};
+
+/** The ring and the dot grid drawn on a cover — white in both themes, because
+ *  every cover ground is dark in both. */
+export const COVER_RING = "var(--mk-cover-ring)";
+export const COVER_RING_SOFT = "var(--mk-cover-ring-soft)";
+export const COVER_DOT = "var(--mk-cover-dot)";
 
 /* ── type ──────────────────────────────────────────────────────────────────── */
 /*

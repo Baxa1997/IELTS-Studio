@@ -1031,6 +1031,46 @@
   --mk-brand-fill-deep: #a93c14; /* white clears 6.3:1 */
 }
 
+/* ── blog covers (`--mk-cover-*`) ──────────────────────────────────────────
+ *
+ * The generated cover behind each post: a two-stop ground per category, with
+ * the post's kicker set on it in WHITE. So both stops must carry white text in
+ * BOTH themes — `lib/theme/palette.test.ts` measures every one. The EngProgress
+ * category has no tokens of its own: it wears the hero stops, which already
+ * pass the same check.
+ *
+ * Dark runs a step deeper rather than inverting. A cover is a picture, and
+ * pictures do not invert; it only has to stop glowing against a near-black page.
+ *
+ * The inks drawn ON a cover (the ring, the dot grid) are white-at-an-alpha in
+ * BOTH columns, for the footer's reason: the ground under them is dark in both
+ * themes, so an ink that followed the theme would vanish. They are tokens
+ * anyway so the stylesheet names a role, not a colour.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --mk-cover-ring: rgba(255, 255, 255, 0.2);
+  --mk-cover-ring-soft: rgba(255, 255, 255, 0.12);
+  --mk-cover-dot: rgba(255, 255, 255, 0.13);
+  --mk-cover-ielts-a: #0e5f5b;
+  --mk-cover-ielts-b: #062f2d;
+  --mk-cover-english-a: #2f3a8f;
+  --mk-cover-english-b: #151a47;
+  --mk-cover-stories-a: #8a4a0c;
+  --mk-cover-stories-b: #3b1e04;
+}
+
+.dark {
+  --mk-cover-ring: rgba(255, 255, 255, 0.2);
+  --mk-cover-ring-soft: rgba(255, 255, 255, 0.12);
+  --mk-cover-dot: rgba(255, 255, 255, 0.13);
+  --mk-cover-ielts-a: #0d4d4a;
+  --mk-cover-ielts-b: #052523;
+  --mk-cover-english-a: #283276;
+  --mk-cover-english-b: #10143a;
+  --mk-cover-stories-a: #74400c;
+  --mk-cover-stories-b: #2c1703;
+}
+
 /* ── THE SHELL PALETTE (`--sh-*`) ──────────────────────────────────────────
  *
  * The rail and the two grounds it sits between. A THIRD palette, and it has to

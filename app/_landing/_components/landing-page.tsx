@@ -7,6 +7,8 @@ import type { MessageKey, Translate } from "@/lib/i18n";
 import Link from "next/link";
 
 import { Band9Card } from "@/app/_landing/_components/band9-card";
+import { LeadStory, StoryRow } from "@/app/_landing/_components/blog-stories";
+import { BLOG_CSS } from "@/app/_landing/_lib/blog-css";
 import { DEMO_TABS } from "@/app/_landing/_lib/demo-content";
 import { DeferredReportShowcase } from "@/app/_landing/_components/deferred-report-showcase";
 import { DemoTabs } from "@/app/_landing/_components/demo-tabs";
@@ -46,6 +48,7 @@ import {
   solidButton,
 } from "@/app/_landing/_lib/design";
 import { PLAN_ORDER, planTier, type OrgPlan } from "@/lib/billing/plans";
+import { leadPost, otherPosts } from "@/lib/blog";
 import {
   getSiteUrl,
   LANDING_DESCRIPTION,
@@ -313,6 +316,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
           <Stats t={t} />
           <HeroProcessDemo />
           <DemoSection t={t} />
+          <BlogSection t={t} locale={locale} />
           <ResultsSection t={t} />
           <Platform t={t} />
           <Pricing t={t} />
@@ -909,6 +913,45 @@ function DemoSection({ t }: { t: Translate }) {
           style={{ ...ghostButton(), display: "inline-block", fontSize: 15, padding: "13px 24px" }}
         >
           {t("lp.openDemo")}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The newest writing from /blog: the lead story on the left, the next three as
+ * rows on the right, stacking on a phone.
+ *
+ * The CHROME follows the page's locale and the STORIES stay English — they are
+ * English articles, and reading them is the point. `blog-stories.tsx` marks the
+ * English parts with `lang="en"` so a screen reader on `/` switches voice for
+ * them. Static like the rest of the page: the posts are code, so a new post
+ * reaches this section with the deploy that publishes it.
+ */
+function BlogSection({ t, locale }: { t: Translate; locale: Locale }) {
+  const lang = HTML_LANG[locale];
+  return (
+    <section id="blog" className="lp-below-fold" style={{ ...SHELL, padding: "56px 28px 20px" }}>
+      <style>{BLOG_CSS}</style>
+      <Head eyebrow={t("blog.eyebrow")} title={t("blog.title")} sub={t("blog.sub")} />
+      <div className="bl-top" style={{ marginTop: 36 }}>
+        <LeadStory post={leadPost()} t={t} lang={lang} layout="stacked" />
+        <div className="bl-rows">
+          {otherPosts()
+            .slice(0, 3)
+            .map((p) => (
+              <StoryRow key={p.slug} post={p} t={t} lang={lang} />
+            ))}
+        </div>
+      </div>
+      <div style={{ textAlign: "center", marginTop: 30 }}>
+        <Link
+          href="/blog"
+          className="lp-ghost"
+          style={{ ...ghostButton(), display: "inline-block", fontSize: 15, padding: "13px 24px" }}
+        >
+          {t("blog.allStories")} →
         </Link>
       </div>
     </section>

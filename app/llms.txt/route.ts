@@ -1,4 +1,5 @@
 import { PLAN_ORDER, planTier } from "@/lib/billing/plans";
+import { POSTS } from "@/lib/blog";
 import { DEFAULT_LOCALE, LOCALE_NAMES, LOCALES, localePath } from "@/lib/i18n/locales";
 import { absoluteUrl, PLATFORM_FEATURES, PUBLIC_ROUTES, SEO_DESCRIPTION, SITE_NAME } from "@/lib/seo";
 
@@ -70,6 +71,10 @@ export function GET(): Response {
     "## Pages",
     "",
     ...product.map((r) => `- [${r.label}](${absoluteUrl(r.path)})`),
+    "",
+    "## Blog",
+    "",
+    ...POSTS.map((p) => `- [${p.title}](${absoluteUrl(`/blog/${p.slug}`)}): ${p.standfirst}`),
     "",
     "## Optional",
     "",

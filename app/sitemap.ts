@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { POSTS } from "@/lib/blog";
 import { absoluteUrl, PUBLIC_ROUTES } from "@/lib/seo";
 import { DEFAULT_LOCALE, HTML_LANG, LOCALES, localePath } from "@/lib/i18n/locales";
 
@@ -20,6 +21,21 @@ const LOCALISED = new Set(["/", "/how-to-use", "/how-to-use/education-centers"])
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
+  /* Every article, from the same list /blog renders — publishing a post puts it
+     here with no second edit. English-only and unprefixed, like the other
+     single-language pages, and dated by the post rather than by the build so a
+     crawler can tell an old article from a changed one. */
+  const posts: MetadataRoute.Sitemap = POSTS.map((p) => ({
+    url: absoluteUrl(`/blog/${p.slug}`),
+    lastModified: new Date(`${p.updated ?? p.published}T00:00:00Z`),
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...pages(lastModified), ...posts];
+}
+
+function pages(lastModified: Date): MetadataRoute.Sitemap {
   return PUBLIC_ROUTES.flatMap((route) => {
     const many = LOCALISED.has(route.path);
     /* A single-language route is served unprefixed, i.e. at the DEFAULT

@@ -311,6 +311,33 @@ export const en = {
   "lp.proofSub":
     "The report layout the examiner engine actually produces. Conservative by design: between two bands it rounds down and names exactly what is missing.",
 
+  /* ── the blog: the landing section and /blog's chrome ─────────────────
+     The ARTICLES stay in English in every locale (see lib/blog/types.ts);
+     only the furniture around them is translated. */
+  "blog.name": "Blog",
+  "blog.eyebrow": "From the blog",
+  "blog.title": "Reading worth your time",
+  "blog.sub":
+    "IELTS strategy, the stories behind English words, and news from EngProgress — written in English, so reading them is practice too.",
+  "blog.allStories": "All stories",
+  "blog.minRead": "{n} min read",
+  "blog.by": "By {author}",
+  "blog.updated": "Updated {date}",
+  "blog.photo": "Photo: {credit}",
+  "blog.catIelts": "IELTS",
+  "blog.catEnglish": "English",
+  "blog.catStories": "Stories",
+  "blog.catEngprogress": "EngProgress news",
+  "blog.indexTitle": "The EngProgress blog",
+  "blog.indexLead":
+    "Exam strategy, the stories behind English words, and news from us. Every article is in English — reading it is practice too.",
+  "blog.latest": "Latest stories",
+  "blog.related": "Read next",
+  "blog.shareTelegram": "Share on Telegram",
+  "blog.metaTitle": "Blog — IELTS tips, English stories and news",
+  "blog.metaDesc":
+    "Practical IELTS strategy, the stories behind English words, and news from EngProgress. Every article is written in English, so reading it is practice too.",
+
   /* ── landing metadata (SEO) ──────────────────────────────────────────── */
   "lp.metaTitle":
     "IELTS Practice with AI Band Feedback — Writing, Reading, Listening, Speaking & CEFR",

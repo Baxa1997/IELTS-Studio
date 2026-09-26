@@ -138,6 +138,21 @@ describe("the runtime palette", () => {
     expect(contrast(hex, against), `${token} (${hex}) vs ${against}`).toBeGreaterThanOrEqual(AA);
   });
 
+  /* The blog covers set the post's kicker in white on BOTH stops, and a cover
+     is the same picture in both themes — so unlike the pairs above, light has
+     to pass too. */
+  it.each(
+    ["ielts", "english", "stories"].flatMap((c) =>
+      (["a", "b"] as const).flatMap((stop) =>
+        (["light", "dark"] as const).map((theme) => [`--mk-cover-${c}-${stop}`, theme] as const),
+      ),
+    ),
+  )("keeps white legible on the blog cover %s in %s", (token, theme) => {
+    const hex = vars(theme)[token];
+    expect(hex, `${token} has no ${theme} value`).toBeTruthy();
+    expect(contrast(hex, "#ffffff"), `${token} (${hex}) vs white`).toBeGreaterThanOrEqual(AA);
+  });
+
   it.each([
     ["--tk-panel", "the card it sits on"],
     ["--tk-brand-soft", "its own tint"],

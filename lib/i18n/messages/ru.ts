@@ -290,6 +290,30 @@ export const ru: Messages = {
   "lp.proofSub":
     "Так выглядит отчёт, который действительно выдаёт движок экзаменатора. Намеренно осторожен: между двумя band округляет вниз и называет, чего именно не хватает.",
 
+  "blog.name": "Блог",
+  "blog.eyebrow": "Из блога",
+  "blog.title": "Статьи, которые стоит прочитать",
+  "blog.sub":
+    "Стратегии IELTS, истории английских слов и новости EngProgress — на английском, так что чтение тоже становится практикой.",
+  "blog.allStories": "Все статьи",
+  "blog.minRead": "{n} мин чтения",
+  "blog.by": "Автор: {author}",
+  "blog.updated": "Обновлено {date}",
+  "blog.photo": "Фото: {credit}",
+  "blog.catIelts": "IELTS",
+  "blog.catEnglish": "Английский",
+  "blog.catStories": "Истории",
+  "blog.catEngprogress": "Новости EngProgress",
+  "blog.indexTitle": "Блог EngProgress",
+  "blog.indexLead":
+    "Стратегии экзамена, истории английских слов и наши новости. Каждая статья на английском — читать её тоже практика.",
+  "blog.latest": "Свежие статьи",
+  "blog.related": "Читайте также",
+  "blog.shareTelegram": "Поделиться в Telegram",
+  "blog.metaTitle": "Блог — советы по IELTS, истории английского и новости",
+  "blog.metaDesc":
+    "Практичные стратегии IELTS, истории английских слов и новости EngProgress. Каждая статья написана на английском — читать её тоже практика.",
+
   /* ── метаданные главной (SEO) ────────────────────────────────────────── */
   "lp.metaTitle":
     "Подготовка к IELTS с оценкой band от ИИ — Writing, Reading, Listening, Speaking и CEFR",
