@@ -96,3 +96,41 @@ export function getSiteUrl(): string {
 export function absoluteUrl(path: string): string {
   return new URL(path, `${getSiteUrl()}/`).toString();
 }
+
+/**
+ * Every page a signed-out visitor — or a crawler — can actually read.
+ *
+ * ONE LIST, TWO READERS: `app/sitemap.ts` for search engines and
+ * `app/llms.txt/route.ts` for answer engines. It lived inside the sitemap until
+ * llms.txt needed it too; a second copy would have been the first to go stale.
+ *
+ * ⚠️ /pricing is deliberately absent. It lives under app/(app) and calls
+ * requireOrgUser(), so an anonymous request 307s to /sign-in — listing it
+ * advertised a URL no crawler could index. The public prices are the landing
+ * page's #pricing section. A new public page ALSO needs PUBLIC_PATHS in
+ * lib/supabase/middleware.ts, or every crawler is redirected away from it.
+ */
+export const PUBLIC_ROUTES = [
+  { path: "/", label: "EngProgress — IELTS and CEFR practice with AI band feedback", section: "product", priority: 1, changeFrequency: "weekly" },
+  { path: "/grade", label: "Free IELTS Writing checker — paste an essay, get a band per criterion", section: "product", priority: 0.85, changeFrequency: "monthly" },
+  { path: "/demo", label: "Interactive product demo", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/ielts-practice", label: "IELTS practice — all four skills", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/ielts-writing-practice", label: "IELTS Writing practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/ielts-reading-practice", label: "IELTS Reading practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/ielts-listening-practice", label: "IELTS Listening practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/ielts-speaking-practice", label: "IELTS Speaking practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/cefr-multilevel-practice", label: "CEFR / Multilevel (Uzbekistan DTM) practice", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/for-education-centers", label: "For education centres — teachers, groups, homework and reports", section: "product", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/how-to-use", label: "How to use EngProgress — learner guide", section: "product", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/how-to-use/education-centers", label: "How to use EngProgress — education centre guide", section: "product", priority: 0.7, changeFrequency: "monthly" },
+  { path: "/sign-in", label: "Sign in", section: "about", priority: 0.3, changeFrequency: "yearly" },
+  { path: "/contact", label: "Contact and support", section: "about", priority: 0.4, changeFrequency: "yearly" },
+  { path: "/privacy", label: "Privacy policy", section: "about", priority: 0.2, changeFrequency: "yearly" },
+  { path: "/terms", label: "Terms of service", section: "about", priority: 0.2, changeFrequency: "yearly" },
+] as const satisfies ReadonlyArray<{
+  path: string;
+  label: string;
+  section: "product" | "about";
+  priority: number;
+  changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
+}>;

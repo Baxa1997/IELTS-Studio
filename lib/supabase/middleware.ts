@@ -42,6 +42,9 @@ const PUBLIC_PATHS = [
      themselves, with no browser and no cookie at all. */
   "/unsubscribe",
   "/api/unsubscribe",
+  // The plain-text summary for answer engines. A crawler has no session, so
+  // without this it would read a redirect to /sign-in instead of the file.
+  "/llms.txt",
   // A shared lesson. The token in the path is the whole credential, and a
   // student opening a teacher's link has no account to be redirected to.
   "/p",
