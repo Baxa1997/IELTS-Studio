@@ -169,13 +169,44 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           </button>
         </div>
 
+        {/* THE OTHER DOOR INTO THE REFERRAL PROGRAMME.
+            A `?ref=` link is caught by the proxy and never needs typing, but a
+            link is not how most of this gets shared here — a code read aloud in
+            a class, sent in a voice note, or written on a whiteboard has no URL
+            to click. Without this field those referrers simply go uncredited,
+            and they are the ones the programme is for. Optional, and silent
+            when wrong: a bad code must not block somebody signing up.
+
+            ⚠️ ABOVE THE GOOGLE BUTTON, OUTSIDE THE <form>. It used to sit at the
+            bottom of the email form, so the three in four people who sign up
+            with Google clicked straight past it and never saw it. Up here it
+            belongs to both doors: `form="su_form"` still posts it with the email
+            sign-up, and `withGoogle` reads it through `referral` before leaving
+            the page. Drop the `form` attribute and the email path silently stops
+            sending the code. */}
+        <label htmlFor="su_ref" style={{ ...label, marginTop: 22 }}>
+          {t("su.referral")}{" "}
+          <span style={{ fontWeight: 500, color: MUTED }}>{t("su.optional")}</span>
+        </label>
+        <input
+          ref={referral}
+          id="su_ref"
+          name="referral_code"
+          form="su_form"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder={t("su.referralHint")}
+          style={field}
+        />
+
         <button
           type="button"
           onClick={withGoogle}
           disabled={googlePending}
           style={{
             width: "100%",
-            marginTop: 22,
+            marginTop: 16,
             background: PANEL,
             border: `1px solid ${FIELD}`,
             borderRadius: RADIUS.field,
@@ -214,7 +245,7 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
           <span style={{ flex: 1, height: 1, background: LINE }} />
         </div>
 
-        <form action={formAction}>
+        <form id="su_form" action={formAction}>
           <label htmlFor="su_name" style={label}>
             {t("su.name")}
           </label>
@@ -256,28 +287,6 @@ export function SignUpDialog({ open, onClose }: { open: boolean; onClose: () => 
             autoComplete="new-password"
             required
             placeholder={t("su.passwordHint")}
-            style={field}
-          />
-
-          {/* THE OTHER DOOR INTO THE REFERRAL PROGRAMME.
-              A `?ref=` link is caught by the proxy and never needs typing, but a
-              link is not how most of this gets shared here — a code read aloud in
-              a class, sent in a voice note, or written on a whiteboard has no URL
-              to click. Without this field those referrers simply go uncredited,
-              and they are the ones the programme is for. Optional, and silent
-              when wrong: a bad code must not block somebody signing up. */}
-          <label htmlFor="su_ref" style={{ ...label, marginTop: 14 }}>
-            {t("su.referral")}{" "}
-            <span style={{ fontWeight: 500, color: MUTED }}>{t("su.optional")}</span>
-          </label>
-          <input
-            ref={referral}
-            id="su_ref"
-            name="referral_code"
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            placeholder={t("su.referralHint")}
             style={field}
           />
 

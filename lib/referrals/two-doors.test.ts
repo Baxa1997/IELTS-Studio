@@ -127,3 +127,17 @@ describe("a referral survives the trip through someone else's device or Google",
     expect(authActions).toMatch(/export async function rememberReferralCode\(raw: string\): Promise<void> \{\s*await stashReferralCode\(raw\);/);
   });
 });
+
+describe("the typed-code field is where a Google sign-up will see it", () => {
+  it("sits above the Google button, not at the bottom of the email form", () => {
+    const field = dialog.indexOf('id="su_ref"');
+    expect(field).toBeGreaterThan(-1);
+    expect(field).toBeLessThan(dialog.indexOf("onClick={withGoogle}"));
+  });
+
+  it("still posts with the email form it now sits outside of", () => {
+    // Outside the <form>, only the `form` attribute keeps it in the FormData.
+    expect(dialog).toMatch(/id="su_ref"\s*name="referral_code"\s*form="su_form"/);
+    expect(dialog).toMatch(/<form id="su_form" action=\{formAction\}>/);
+  });
+});
