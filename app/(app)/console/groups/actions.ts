@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { after } from "next/server";
 
 import { canManagePeople, requireOrgUser } from "@/lib/auth";
 import { explainClashes, findClashes, type SlotLike } from "@/lib/console/slot-clash";
@@ -1335,6 +1336,8 @@ export interface ResetPasswordState {
     /** True when the new password reached their Telegram, so the teacher knows
      *  whether they still have to hand it over in person. */
     sentTelegram?: boolean;
+    /** What happened to the email copy — absent when there is no real address. */
+    emailNote?: string;
   };
 }
 
@@ -1397,7 +1400,7 @@ export async function resetStudentPassword(
   const admin = createAdminClient();
   const { data: student } = await admin
     .from("profiles")
-    .select("full_name, username, role, organization_id")
+    .select("full_name, username, role, organization_id, contact_email")
     .eq("id", studentId)
     .maybeSingle();
   if (!student || student.organization_id !== profile.organization_id) {
@@ -1430,6 +1433,21 @@ export async function resetStudentPassword(
     signInUrl: `${serverEnv.outboundSiteUrl}/sign-in`,
   });
 
+  // And by email, when the student gave a real address. The one channel that
+  // reaches a student who never connected Telegram — the account form already
+  // emails first credentials to the same address, so a reset now does too.
+  const contact = realContactEmail(student.contact_email as string | null);
+  const emailNote = contact
+    ? await sendCredentials({
+        to: contact,
+        name: (student.full_name as string | null) ?? "there",
+        login: (student.username as string | null) ?? "—",
+        password,
+        centerName: (org2?.name as string | null) ?? "your center",
+        kind: "reset",
+      })
+    : undefined;
+
   revalidatePath(`/console/groups/${groupId}`);
   revalidatePath(`/console/students/${studentId}`);
   return {
@@ -1439,6 +1457,7 @@ export async function resetStudentPassword(
       login: (student.username as string | null) ?? "—",
       password,
       sentTelegram,
+      emailNote,
     },
   };
 }
@@ -1558,6 +1577,8 @@ export interface BulkStudentState {
   }[];
   /** Lines that produced no account, each with the reason. */
   skipped?: { line: string; reason: string }[];
+  /** How many of `created` are being emailed their details, after the response. */
+  emailing?: number;
 }
 
 /** One class at a time. Each student costs an auth-user round trip, so a bigger
@@ -1578,10 +1599,12 @@ const MAX_BULK_STUDENTS = 30;
  * (`dilnoza.r`) and de-duplicated against every login on the platform AND the
  * rest of the paste. A missing password is generated.
  *
- * DELIBERATELY SENDS NO EMAIL, unlike the single-student form. Thirty SMTP round
- * trips inside one request is how this times out, and the credentials sheet the
- * teacher downloads is the delivery mechanism here. An address given on a line
- * still lands on the account, so that student keeps email password reset.
+ * EMAIL GOES OUT AFTER THE RESPONSE, NEVER BEFORE IT. Thirty SMTP round trips
+ * inside the request is how this used to risk timing out with the passwords
+ * never shown — the worst outcome this action has. So the sheet is returned
+ * first and `after()` sends each student with a real address their details
+ * once it is on the teacher's screen. The sheet stays the guaranteed delivery;
+ * the emails are a bonus that cannot cost it.
  *
  * Every row is independent: one bad line is reported and skipped, it never costs
  * the other twenty-nine their accounts.
@@ -1723,7 +1746,41 @@ export async function addStudentsBulk(
   if (created.length === 0) {
     return { error: "No accounts were created.", skipped };
   }
-  return { created, skipped: skipped.length > 0 ? skipped : undefined };
+
+  const toEmail = created.filter((c) => realContactEmail(c.email));
+  if (toEmail.length > 0) {
+    const { data: org } = await admin
+      .from("organizations")
+      .select("name")
+      .eq("id", profile.organization_id)
+      .maybeSingle();
+    const centerName = (org?.name as string | null) ?? "your center";
+    // ⚠️ `after`, not awaited here: see the note above the function. A few at a
+    // time, because every send opens its own SMTP connection.
+    after(async () => {
+      let next = 0;
+      const worker = async () => {
+        while (next < toEmail.length) {
+          const c = toEmail[next++];
+          const note = await sendCredentials({
+            to: c.email!,
+            name: c.name,
+            login: c.login,
+            password: c.password,
+            centerName,
+          });
+          if (!note.startsWith("Sign-in details emailed")) console.error("[bulk-add] " + note);
+        }
+      };
+      await Promise.all(Array.from({ length: 4 }, worker));
+    });
+  }
+
+  return {
+    created,
+    skipped: skipped.length > 0 ? skipped : undefined,
+    emailing: toEmail.length > 0 ? toEmail.length : undefined,
+  };
 }
 
 /** `Name`, `Name, login`, `Name, email`, `Name, login, email` — in any order
@@ -1966,29 +2023,38 @@ async function sendInviteEmail(args: {
     : `Couldn't email it (${result.detail}) — share the link below instead.`;
 }
 
-/** Email a new student their sign-in details. Returns a line for the teacher
- *  about what happened — sending is best-effort, never a blocker. */
+/** Email a student their sign-in details — a new account, or a password a
+ *  teacher has just reset. Returns a line for the teacher about what happened;
+ *  sending is best-effort, never a blocker. */
 async function sendCredentials(args: {
   to: string;
   name: string;
   login: string;
   password: string;
   centerName: string;
+  kind?: "new" | "reset";
 }): Promise<string> {
-  const signInUrl = `${serverEnv.siteUrl}/sign-in`;
+  // `outboundSiteUrl`: `siteUrl` is localhost whenever this runs off Vercel.
+  const signInUrl = `${serverEnv.outboundSiteUrl}/sign-in`;
+  const reset = args.kind === "reset";
+  const lead = reset
+    ? `${args.centerName} has set a new password for your EngProgress account. Your old one no longer works.`
+    : `${args.centerName} has set up your EngProgress account for IELTS practice.`;
   const result = await sendEmail({
     to: args.to,
-    subject: `Your ${args.centerName} account on EngProgress`,
+    subject: reset
+      ? `Your new EngProgress password from ${args.centerName}`
+      : `Your ${args.centerName} account on EngProgress`,
     text:
       `Hi ${args.name},\n\n` +
-      `${args.centerName} has set up your EngProgress account for IELTS practice.\n\n` +
+      `${lead}\n\n` +
       `Sign in here: ${signInUrl}\n` +
       `Login:    ${args.login}\n` +
       `Password: ${args.password}\n\n` +
       `Please change your password after you sign in.\n\n— EngProgress`,
     html:
       `<p>Hi ${escapeHtml(args.name)},</p>` +
-      `<p><strong>${escapeHtml(args.centerName)}</strong> has set up your EngProgress account for IELTS practice.</p>` +
+      `<p>${escapeHtml(lead)}</p>` +
       `<p><a href="${signInUrl}">Sign in here</a></p>` +
       `<p>Login: <strong>${escapeHtml(args.login)}</strong><br>` +
       `Password: <strong>${escapeHtml(args.password)}</strong></p>` +
@@ -1998,6 +2064,13 @@ async function sendCredentials(args: {
   return result.sent
     ? `Sign-in details emailed to ${args.to}.`
     : `Couldn't email the details (${result.detail}) — hand them over below instead.`;
+}
+
+/** A contact address a message can actually reach, or null. The synthetic
+ *  students.engprogress.com address has no mail exchanger (`centerAuthEmail`). */
+function realContactEmail(raw: string | null | undefined): string | null {
+  const email = raw?.trim() ?? "";
+  return email.includes("@") && !email.endsWith("students.engprogress.com") ? email : null;
 }
 
 function escapeHtml(s: string): string {

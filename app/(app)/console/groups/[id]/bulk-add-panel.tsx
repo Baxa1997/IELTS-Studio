@@ -137,10 +137,18 @@ export function BulkAddPanel({ groupId }: { groupId: string }) {
       {created.length > 0 ? (
         <div className="space-y-3 rounded-md border border-emerald-500/40 bg-emerald-500/5 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium">
-              {created.length} account{created.length === 1 ? "" : "s"} created. Save these now —
-              the passwords are not shown again.
-            </p>
+            <div>
+              <p className="text-sm font-medium">
+                {created.length} account{created.length === 1 ? "" : "s"} created. Save these now —
+                the passwords are not shown again.
+              </p>
+              {state.emailing ? (
+                <p className="text-muted-foreground text-xs">
+                  Also emailing sign-in details to the {state.emailing} student
+                  {state.emailing === 1 ? "" : "s"} with an address.
+                </p>
+              ) : null}
+            </div>
             <div className="flex gap-2">
               <Button type="button" size="sm" onClick={download}>
                 Download CSV

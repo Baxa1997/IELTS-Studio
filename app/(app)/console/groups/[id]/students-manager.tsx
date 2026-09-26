@@ -544,6 +544,15 @@ function ResetPasswordForm({
             <code style={credStyle}>{state.done.login}</code>
             <code style={credStyle}>{state.done.password}</code>
           </span>
+          {/* Where else it went, so the teacher knows whether handing it over
+              in person is still their job. */}
+          {state.done.sentTelegram || state.done.emailNote ? (
+            <span style={{ fontSize: 12.5, color: MUTED }}>
+              {[state.done.sentTelegram ? "Also sent to their Telegram." : null, state.done.emailNote ?? null]
+                .filter(Boolean)
+                .join(" ")}
+            </span>
+          ) : null}
         </div>
         <button
           type="button"
