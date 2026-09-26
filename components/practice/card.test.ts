@@ -179,6 +179,26 @@ function hue(hex: string): number {
   return (h * 60 + 360) % 360;
 }
 
+/**
+ * How far a colour is from grey, 0–1: the spread between its strongest and
+ * weakest channel.
+ *
+ * ⚠️ A GREY HAS NO HUE, ONLY ROUNDING. Writing's dark ink is the warm grey
+ * #c9c8c6 — its channels differ by 3 in 255 — and `hue()` still returns a
+ * number for it, 40°, squarely in the amber arc. That number is noise: nobody
+ * sees amber in a grey. The arc rule is about a skill that LOOKS like a status
+ * colour, so it applies only to inks with enough chroma to have a visible hue.
+ */
+function chroma(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return (Math.max(...c) - Math.min(...c)) / 255;
+}
+
+/** Below this an ink reads as grey. The amber a status pill actually uses sits
+ *  above 0.5; the muddiest ink that could still pass for one is well over 0.1. */
+const NEUTRAL_CHROMA = 0.08;
+
 /** Every skill label the three hubs hand to CardHead, in its three written
  *  forms: `label="READING · …"`, `label={["WRITING", …]}` and `label: "LISTENING"`. */
 function skillsPassedByHubs(): string[] {
@@ -233,7 +253,9 @@ describe("the card keeps the hover the stylesheet gives it", () => {
        states this rule — it is why Listening is blue and not the obvious teal —
        and nothing was checking it. */
     for (const [skill, tone] of Object.entries(SKILL_TONES)) {
-      const h = hue(resolve(tone.ink, theme));
+      const ink = resolve(tone.ink, theme);
+      if (chroma(ink) < NEUTRAL_CHROMA) continue; // grey — no hue to confuse
+      const h = hue(ink);
       expect(
         h > 70 && h < 170,
         `${skill} ${theme}: hue ${Math.round(h)}° is in the green arc`,
